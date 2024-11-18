@@ -4,7 +4,8 @@
     "editor.detectIndentation": true,
     "editor.formatOnSave": true,
     "prettier.enable": false,
-
+    "files.eol": "\n",
+    
     "[javascript]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
