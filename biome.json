@@ -14,7 +14,8 @@
         "enabled": true,
         "indentStyle": "space",
         "indentWidth": 4,
-        "lineEnding": "lf"
+        "lineEnding": "lf",
+        "lineWidth": 80
     },
     "organizeImports": {
         "enabled": true
