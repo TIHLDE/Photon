@@ -9,10 +9,12 @@ export const env = createEnv({
         NODE_ENV: z
             .enum(["development", "test", "production"])
             .default("development"),
-        DATABASE_URL: z.string()
+        DATABASE_URL: z.string(),
+        AUTH_FRONTEND_URL: z.string(),
     },
     runtimeEnv: {
         NODE_ENV: process.env.NODE_ENV,
-        DATABASE_URL: process.env.DATABASE_URL
+        DATABASE_URL: process.env.DATABASE_URL,
+        AUTH_FRONTEND_URL: process.env.AUTH_FRONTEND_URL
     }
 })
