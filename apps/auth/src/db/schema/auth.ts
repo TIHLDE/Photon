@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm";
-import { pgTableCreator, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
-
-export const createTable = pgTableCreator((name) => `auth_${name}`);
+import { timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { createTable } from ".";
 
 export const users = createTable("user", {
     id: uuid("id").defaultRandom().primaryKey(),
@@ -37,4 +36,4 @@ export const passwordResets = createTable("password_reset", {
     token: varchar("token", { length: 255 }).notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-}) 
+})
