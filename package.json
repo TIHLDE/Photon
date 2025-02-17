@@ -14,5 +14,8 @@
     "packageManager": "pnpm@8.15.6",
     "engines": {
         "node": ">=18"
+    },
+    "dependencies": {
+        "@heroicons/react": "^2.2.0"
     }
 }
