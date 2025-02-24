@@ -1,0 +1,59 @@
+import { useEffect, useState } from 'react';
+import { BellIcon, SunIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import clsx from 'clsx';
+
+const navigationItems = [
+  { id: 'home', text: 'Hjem', to: '/' },
+  { id: 'linjene', text: 'Linjene', to: '/linjene' },
+  { id: 'bedpres', text: 'Bedriftspresentasjoner', to: '/bedpres' },
+  { id: 'stillinger', text: 'Stillingsannonser', to: '/stillinger' },
+  { id: 'kontakt', text: 'Kontakt oss', to: '/kontakt' },
+];
+
+const TopBar: React.FC = () => {
+  const [isOnTop, setIsOnTop] = useState(true);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const handleScroll = () => setIsOnTop(window.scrollY < 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <header
+      className={clsx(
+        'fixed z-30 w-full top-0 transition-all duration-150 backdrop-blur-md',
+        isOnTop ? 'bg-transparent' : 'bg-background/95 dark:bg-background/60',
+      )}
+    >
+      <nav className="flex items-center justify-between py-3 px-8 w-full">
+        <Link href="/" aria-label="Til forsiden" className="text-primary font-bold text-2xl flex items-center gap-2">
+          <img src="/components/miscellaneous/TihldeLogo.svg" alt="TIHLDE" className="h-4" />
+        </Link>
+        <div className="hidden sm:flex gap-5">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.id}
+              href={item.to}
+              className={clsx(
+                'text-sm font-medium transition-colors dark:text-white/80 dark:hover:text-white',
+                pathname === item.to ? 'font-bold text-muted-foreground dark:text-white' : 'text-gray-600 dark:text-gray-400',
+              )}
+            >
+              {item.text}
+            </Link>
+          ))}
+        </div>
+        <div className="flex gap-4">
+          <SunIcon className="h-6 w-6 cursor-pointer text-gray-600 dark:text-gray-300" />
+          <BellIcon className="h-6 w-6 cursor-pointer text-gray-600 dark:text-gray-300" />
+        </div>
+      </nav>
+    </header>
+  );
+};
+
+export default TopBar;
