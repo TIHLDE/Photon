@@ -35,7 +35,7 @@ const TopBar: React.FC = () => {
         <Link href="/" aria-label="Til forsiden" className="text-primary font-bold text-2xl flex items-center gap-2">
           <TihldeLogo size='large' className='w-44 h-auto'/>
         </Link>
-        <div className="hidden sm:flex gap-5">
+        <div className="hidden sm:flex gap-6">
           {navigationItems.map((item) => (
             <Link
               key={item.id}

@@ -10,7 +10,7 @@ export default function Hero() {
                 </div>
                 <div className="mx-auto max-w-4xl text-center px-4 py-44 flex items-center justify-center flex-col text-white">
                     <p className="text-[hsl(230,100%,79%)] mb-2">Møt morgendagens IT-talenter!</p>
-                    <h1 className="mb-4 text-5xl font-extrabold md:text-7xl bg-gradient-to-r from-white/50 via-white to-white/50 bg-clip-text text-transparent">
+                    <h1 className="mb-4 text-5xl font-extrabold md:text-7xl">
                         Samarbeid med TIHLDE
                     </h1>
 

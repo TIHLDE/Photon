@@ -13,13 +13,13 @@ export default function Hjem() {
       {/* Om TIHLDE */}
       <section className="max-w-5xl px-4 py-16">
         <div className="grid gap-8 md:grid-cols-5">
-          <div className="col-span-2">
-            <h2 className="mb-6 text-4xl font-bold">Om TIHLDE</h2>
+          <div className="md:col-span-2">
+            <h2 className="mb-6 text-3xl font-bold">Om TIHLDE</h2>
             <p className="mb-4 text-gray-300 text-lg leading-relaxed">
               Vi er linjeforeningen for datastudenter, og vårt mål er å knytte tettere bånd mellom studenter og næringslivet. Gjennom våre aktiviteter får bedrifter muligheten til å nå motiverte studenter som søker utfordringer og nye muligheter.
             </p>
           </div>
-          <div className="flex items-center justify-center col-span-3">
+          <div className="flex items-center justify-center md:col-span-3">
             {/* Eksempelbilde eller annet innhold */}
             <div className="relative h-64 w-full bg-gray-800">
               <p className="absolute inset-0 flex items-center justify-center text-gray-600">
@@ -33,13 +33,13 @@ export default function Hjem() {
       {/* Bedriftspresentasjoner */}
       <section className="max-w-5xl px-4 py-16">
         <div className="grid gap-8 md:grid-cols-5">
-          <div className="col-span-2">
-            <h2 className="mb-6 text-4xl font-bold">Bedriftspresentasjoner</h2>
+          <div className="md:col-span-2">
+            <h2 className="mb-6 text-3xl font-bold">Bedriftspresentasjoner</h2>
             <p className="mb-4 text-gray-300 text-lg leading-relaxed">
               En bedriftspresentasjon lar dere introdusere organisasjonen for TIHLDE-studentene, vise hva dere tilbyr og hvordan dere jobber. Etter presentasjonen følger middag og mingling med bedriftsrepresentanter.
             </p>
           </div>
-          <div className="flex items-center justify-center col-span-3 md:order-first">
+          <div className="flex items-center justify-center md:col-span-3 md:order-first">
             {/* Eksempelbilde eller annet innhold */}
             <div className="relative h-64 w-full bg-gray-800">
               <p className="absolute inset-0 flex items-center justify-center text-gray-600">
@@ -52,13 +52,13 @@ export default function Hjem() {
 
       <section className="max-w-5xl px-4 py-16">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-5">
-          <div className="md:col-span-2">
-            <h2 className="mb-6 text-4xl font-bold">Stillingannonser</h2>
+          <div className="md:md:col-span-2">
+            <h2 className="mb-6 text-3xl font-bold">Stillingannonser</h2>
             <p className="mb-4 text-gray-300 text-lg leading-relaxed">
-            Publiser relevante stillinger, internships eller trainee-programmer direkte til våre medlemmer. Sikre deg de beste kandidatene!
+              Publiser relevante stillinger, internships eller trainee-programmer direkte til våre medlemmer. Sikre deg de beste kandidatene!
             </p>
           </div>
-          <div className="flex items-center justify-center col-span-3">
+          <div className="flex items-center justify-center md:col-span-3">
             {/* Eksempelbilde eller annet innhold */}
             <div className="relative h-64 w-full bg-gray-800">
               <p className="absolute inset-0 flex items-center justify-center text-gray-600">
