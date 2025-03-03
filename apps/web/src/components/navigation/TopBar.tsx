@@ -3,12 +3,14 @@ import { BellIcon, SunIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
+import TihldeLogo from '../miscellaneous/TihldeLogo';
+
 
 const navigationItems = [
   { id: 'home', text: 'Hjem', to: '/' },
   { id: 'linjene', text: 'Linjene', to: '/linjene' },
-  { id: 'bedpres', text: 'Bedriftspresentasjoner', to: '/bedpres' },
-  { id: 'stillinger', text: 'Stillingsannonser', to: '/stillinger' },
+  { id: 'bedpres', text: 'Bedriftspresentasjon', to: '/bedriftspresentasjon' },
+  { id: 'stillinger', text: 'Annonser', to: '/annonser' },
   { id: 'kontakt', text: 'Kontakt oss', to: '/kontakt' },
 ];
 
@@ -31,7 +33,7 @@ const TopBar: React.FC = () => {
     >
       <nav className="flex items-center justify-between py-3 px-8 w-full">
         <Link href="/" aria-label="Til forsiden" className="text-primary font-bold text-2xl flex items-center gap-2">
-          <img src="/components/miscellaneous/TihldeLogo.svg" alt="TIHLDE" className="h-4" />
+          <TihldeLogo size='large' className='w-44 h-auto'/>
         </Link>
         <div className="hidden sm:flex gap-5">
           {navigationItems.map((item) => (
