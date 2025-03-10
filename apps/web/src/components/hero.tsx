@@ -18,7 +18,7 @@ export default function Hero() {
                         Vi tilbyr unike muligheter for bedrifter til å knytte seg til en ny generasjon IT-eksperter. Utforsk våre tilbud og bli en del av nettverket som inspirerer, engasjerer og rekrutterer!
                     </p>
                     <a
-                        href="#tilbud"
+                        href="/kontakt"
                         className="inline-flex items-center gap-2 rounded bg-[hsl(220,62%,41%)] px-6 py-3 font-semibold transition-opacity text-white hover:opacity-70"
                     >
                         Meld interesse

@@ -9,11 +9,10 @@
     --foreground: #333333;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #1a1923;
-        --foreground: #ffffff;
-    }
+/* Bruk dark mode-klassen på html for å overstyre temaet */
+html.dark {
+    --background: #1a1923;
+    --foreground: #ffffff;
 }
 
 body {
