@@ -6,10 +6,11 @@ import BottomBar from "@/components/navigation/BottomBar"
 import Hero from "@/components/hero"
 import Image from "next/image"
 import TihldeLogo from "@/components/miscellaneous/TihldeLogo"
+import { ArrowDown } from "lucide-react"
 
 export default function Hjem() {
   return (
-    <div className="relative flex flex-col items-center justify-center">
+    <div className="relative flex flex-col items-center justify-center --background-color">
       <Navbar />
       <div
         aria-hidden="true"
@@ -24,8 +25,15 @@ export default function Hjem() {
         />
       </div>
       <Hero />
+
+      <section className="max-w-7xl px-4 py-12 h-auto justify-center">
+        <div className="flex flex-row items-center justify-center space-x-4 text-black dark:text-white">
+          <h2 className="mb-2 text-3xl font-bold text-black dark:text-white">Se hva vi kan tilby</h2>
+          <ArrowDown className="w-8 h-8 md:col-span-5" />
+        </div>
+      </section>
       {/* Om TIHLDE */}
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid md:gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Om TIHLDE</h2>
@@ -56,7 +64,7 @@ export default function Hjem() {
       </div>
 
       {/* Bedriftspresentasjoner */}
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Bedriftspresentasjoner</h2>
@@ -86,7 +94,7 @@ export default function Hjem() {
         />
       </div>
 
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Kurs og workshops</h2>
@@ -103,7 +111,7 @@ export default function Hjem() {
         </div>
       </section>
 
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Bedriftsbesøk</h2>
@@ -120,7 +128,7 @@ export default function Hjem() {
         </div>
       </section>
 
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Bedriftsekskursjon</h2>
@@ -137,7 +145,7 @@ export default function Hjem() {
         </div>
       </section>
 
-      <section className="max-w-5xl px-4 py-16 h-auto justify-center">
+      <section className="max-w-5xl px-4 py-12 h-auto justify-center">
         <div className="grid gap-8 md:grid-cols-5 place-items-center">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Stillingannonser</h2>
@@ -167,7 +175,7 @@ export default function Hjem() {
       </div>
 
       {/* Linjene */}
-      < section id="linjene" className="max-w-5xl px-4 py-16" >
+      < section id="linjene" className="max-w-5xl px-4 py-12" >
         <h2 className="mb-2 text-3xl font-bold">Linjene</h2>
         <div className="grid gap-8 md:grid-cols-2">
           <div className="rounded border border-gray-800 p-4">

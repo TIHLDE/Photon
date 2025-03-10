@@ -18,15 +18,20 @@ const TopBar: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const pathname = usePathname();
 
-  // Sjekk om brukeren har en lagret tema-preferanse ved oppstart
+  // Initialiser tema basert på lagret preferanse eller systemets dark mode
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
-    if (storedTheme === 'dark') {
-      setIsDarkMode(true);
+
+    if (storedTheme) {
+      setIsDarkMode(storedTheme === 'dark');
+    } else {
+      // Bruk systemets preferanse hvis ingen lagret verdi finnes
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(systemPrefersDark);
     }
   }, []);
 
-  // Oppdater klassen på <html> og lagre tema-preferansen når dark mode endres
+  // Oppdaterer HTML-taggen og lagrer brukerens valg
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -62,9 +67,9 @@ const TopBar: React.FC = () => {
               key={item.id}
               href={item.to}
               className={clsx(
-                'text-sm font-medium transition-colors dark:text-gray-300 dark:hover:text-white',
+                'text-sm font-medium transition-colors hover:text-black dark:hover:text-white',
                 pathname === item.to
-                  ? 'font-bold text-muted-foreground dark:text-white'
+                  ? 'font-bold text-muted-foreground text-black dark:text-white'
                   : 'text-gray-600 dark:text-gray-400',
               )}
             >
