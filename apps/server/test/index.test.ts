@@ -1,4 +1,4 @@
-import { test, expect } from "vitest";
+import { test, expect, describe, beforeAll } from "vitest";
 import app from "../src/index.js";
 
 test("GET /", async () => {
