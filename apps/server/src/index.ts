@@ -1,7 +1,6 @@
 import { serve } from "@hono/node-server";
 import { PrismaClient } from "@prisma/client";
 import { Hono } from "hono";
-import { env } from "node:process";
 
 declare module "hono" {
     interface Context {
