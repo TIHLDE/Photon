@@ -3,7 +3,9 @@
     "type": "module",
     "scripts": {
         "dev": "tsx watch src/index.ts",
-        "test": "vitest"
+        "test": "vitest",
+        "db:push": "prisma db push",
+        "db:seed": "prisma db reset && prisma db seed"
     },
     "dependencies": {
         "@hono/node-server": "^1.13.7",

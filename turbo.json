@@ -14,8 +14,16 @@
             "dependsOn": ["^check-types"]
         },
         "dev": {
+            "dependsOn": ["db:push"],
             "cache": false,
             "persistent": true
+        },
+        "db:push": {
+            "dependsOn": ["docker#dev:up"],
+            "cache": false
+        },
+        "docker#dev:up": {
+            "cache": false
         }
     }
 }

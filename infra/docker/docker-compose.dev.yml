@@ -7,15 +7,15 @@ services:
     container_name: auth_db
     restart: always
     environment:
-      POSTGRES_USER: ${AUTH_DB_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${AUTH_DB_POSTGRES_PASSWORD}
-      POSTGRES_DB: ${AUTH_DB_POSTGRES_DB}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: db
     ports:
       - "5432:5432"
     volumes:
       - auth_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U db"]
       interval: 10s
       timeout: 5s
       retries: 5

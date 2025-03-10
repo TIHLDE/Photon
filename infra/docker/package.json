@@ -1,7 +1,6 @@
 {
     "name": "docker",
     "scripts": {
-        "dev:up": "docker-compose -f docker-compose.dev.yml up -d",
-        "prod:up": "docker-compose -f docker-compose.prod.yml up -d"
+        "dev:up": "docker compose -f docker-compose.dev.yml up -d --wait"
     }
 }
