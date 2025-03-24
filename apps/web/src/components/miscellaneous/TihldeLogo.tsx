@@ -1,5 +1,5 @@
-import { cn } from '../../lib/utils';
-import { isAfterDateOfYear, isBeforeDateOfYear } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+//import { isAfterDateOfYear, isBeforeDateOfYear } from '@/lib/utils';
 
 export type TihldeLogoProps = {
   size: 'small' | 'large';
@@ -88,7 +88,7 @@ const TihldeLogo = ({ size, className }: TihldeLogoProps) => {
         </g>
       </g>
       {/* Show snow if between December 1st and January 6th */}
-      {(isAfterDateOfYear(11, 1) || isBeforeDateOfYear(0, 6)) && <Santa />}
+        {/*{(isAfterDateOfYear(11, 1) || isBeforeDateOfYear(0, 6)) && <Santa />}*/}
     </svg>
   );
 };
