@@ -1,6 +1,6 @@
 import { format, getYear, isAfter, isBefore, parseISO, subMinutes } from 'date-fns';
 import { nb as nbLocale } from 'date-fns/locale';
-import slugify from 'slugify';
+//import slugify from 'slugify';
 import { FormFieldType, JobPostType, MembershipType, StrikeReason, Study, UserClass, UserStudy } from '../types/Enums';
 
 export const isAfterDateOfYear = (month: number, date: number) => isAfter(new Date(), new Date(getYear(new Date()), month, date, 0, 0, 0));
@@ -10,7 +10,7 @@ export const isBeforeDateOfYear = (month: number, date: number) => isBefore(new 
  * Slugify a string to make it safe to use in an URL
  * @param text The string the slugify
  */
-export const urlEncode = (text = '') => slugify(text, { lower: true, strict: true, locale: 'nb' });
+//export const urlEncode = (text = '') => slugify(text, { lower: true, strict: true, locale: 'nb' });
 
 /**
  * Test if an URL points to an external website or an internal page
