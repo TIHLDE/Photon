@@ -4,32 +4,58 @@ import Navbar from "@/components/navigation/TopBar"
 import BottomBar from "@/components/navigation/BottomBar"
 import Footer from "@/components/navigation/Footer"
 
-export default function Linjene() {
-    return (
-        <div className="flex flex-col items-center justify-center">
-            <Navbar />
-            {/* Om TIHLDE */}
-            <section className="max-w-5xl px-4 py-16">
-                <div className="grid gap-8 md:grid-cols-5">
-                    <div className="col-span-2">
-                        <h2 className="mb-6 text-4xl font-bold">Kontakt</h2>
-                        <p className="mb-4 text-gray-300 text-lg leading-relaxed">
-                            Vi er linjeforeningen for datastudenter, og vårt mål er å knytte tettere bånd mellom studenter og næringslivet. Gjennom våre aktiviteter får bedrifter muligheten til å nå motiverte studenter som søker utfordringer og nye muligheter.
-                        </p>
-                    </div>
-                    <div className="flex items-center justify-center col-span-3">
-                        {/* Eksempelbilde eller annet innhold */}
-                        <div className="relative h-64 w-full bg-gray-800">
-                            <p className="absolute inset-0 flex items-center justify-center text-gray-600">
-                                Bilde
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+const linjer = [
+  {
+    title: "Digital forretningsutvikling",
+    description:
+      "I krysningen mellom informatikk, økonomi, marked, organisasjon og ledelse møter du de som studerer digital forretningsutvikling.",
+  },
+  {
+    title: "Dataingeniør",
+    description:
+      "Studiet gir et solid grunnlag for systemutvikling av digitale løsninger, med fokus på funksjonalitet, sikkerhet og brukertilpasning.",
+  },
+  {
+    title: "Digital infrastruktur og cybersikkerhet",
+    description:
+      "Studiet kombinerer informatikk med praktiske ferdigheter innen digital infrastruktur og sikkerhet.",
+  },
+  {
+    title: "Digital transformasjon",
+    description:
+      "Studiet gir avansert kompetanse i digital transformasjon, med fokus på hvordan virksomheter kan utnytte digitale teknologier for strategisk utvikling og effektivisering.",
+  },
+  {
+    title: "Informasjonsbehandling",
+    description:
+      "Dette nettbaserte bachelorstudiet kvalifiserer studentene til å organisere og tilrettelegge informasjon i en virksomhet, med fokus på programmering, webløsninger og datasikkerhet.",
+  },
+];
 
-            <BottomBar />
-            <Footer />
+export default function Linjene() {
+  return (
+    <div className="flex flex-col items-center justify-center">
+      <Navbar />
+      {/* Om TIHLDE Linjene */}
+      <section id="linjene" className="max-w-5xl px-4 py-16">
+        <h2 className="mb-2 text-3xl font-bold">Linjene</h2>
+        <div className="flex flex-col gap-8">
+          {linjer.map((linje, idx) => (
+            <div
+              key={idx}
+              className="p-6"
+            >
+              <h3 className="mb-2 text-xl font-semibold">{linje.title}</h3>
+              <p className="text-gray-300 leading-relaxed">
+                {linje.description}
+              </p>
+            </div>
+          ))}
         </div>
-    )
+      </section>
+
+      <BottomBar />
+      <Footer />
+    </div>
+  )
 }

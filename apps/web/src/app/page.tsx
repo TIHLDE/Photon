@@ -170,39 +170,44 @@ export default function Hjem() {
       < section id="linjene" className="max-w-5xl px-4 py-16" >
         <h2 className="mb-2 text-3xl font-bold">Linjene</h2>
         <div className="grid gap-8 md:grid-cols-2">
-          <div className="rounded border border-gray-800 p-4">
+          <div className="rounded  -gray-800 p-4">
 
             <h3 className="mb-2 text-xl font-semibold">
               Digital forretningsutvikling
             </h3>
             <p className="text-gray-300">
-              Fokus på hvordan digital teknologi kan skape nye muligheter,
-              effektivisere prosesser og utvikle forretningsmodeller.
+              I krysningen mellom informatikk, økonomi, marked, organisasjon og ledelse møter du de som studerer digital forretningsutvikling.
             </p>
           </div>
-          <div className="rounded border border-gray-800 p-4">
-            <h3 className="mb-2 text-xl font-semibold">Datateknologi</h3>
-            <p className="text-gray-300">
-              Omhandler grunnleggende prinsipper i informatikk, programmering og
-              algoritmer.
-            </p>
-          </div>
-          <div className="rounded border border-gray-800 p-4">
+          <div className="rounded  -gray-800 p-4">
+
             <h3 className="mb-2 text-xl font-semibold">
-              Digital infrastruktur og cybersikkerhet
+              Dataingeniør
             </h3>
             <p className="text-gray-300">
-              Lærer hvordan man drifter og sikrer IT-infrastruktur i en verden
-              der cybertrusler stadig øker.
+              Studiet gir et solid grunnlag for systemutvikling av digitale løsninger, med fokus på funksjonalitet, sikkerhet og brukertilpasning.
             </p>
           </div>
-          <div className="rounded border border-gray-800 p-4">
+          <div className="p-4">
+            <h3 className="mb-2 text-xl font-semibold">Digital infrastruktur og cybersikkerhet</h3>
+            <p className="text-gray-300">
+              Studiet kombinerer informatikk med praktiske ferdigheter innen digital infrastruktur og sikkerhet.
+            </p>
+          </div>
+          <div className="p-4">
             <h3 className="mb-2 text-xl font-semibold">
               Digital transformasjon
             </h3>
             <p className="text-gray-300">
-              Forståelse for hvordan bedrifter og organisasjoner kan utnytte
-              teknologi for å forbedre og fornye seg.
+              Studiet gir avansert kompetanse i digital transformasjon, med fokus på hvordan virksomheter kan utnytte digitale teknologier for strategisk utvikling og effektivisering.
+            </p>
+          </div>
+          <div className="p-4">
+            <h3 className="mb-2 text-xl font-semibold">
+              Informasjonsbehandling
+            </h3>
+            <p className="text-gray-300">
+              Dette nettbaserte bachelorstudiet kvalifiserer studentene til å organisere og tilrettelegge informasjon i en virksomhet, med fokus på programmering, webløsninger og datasikkerhet.
             </p>
           </div>
         </div>
