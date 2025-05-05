@@ -37,12 +37,12 @@ export default function Linjene() {
     <div className="flex flex-col items-center justify-center">
       <Navbar />
       {/* Om TIHLDE Linjene */}
-      <section id="linjene" className="max-w-5xl px-4 py-16">
-        <h2 className="mb-2 text-3xl font-bold">Linjene</h2>
-        <div className="flex flex-col gap-8">
-          {linjer.map((linje, idx) => (
+      <section id="linjene" className="max-w-5xl px-4 py-16 mt-32">
+        <h1 className="mb-4 text-5xl font-bold md:text-6xl">Linjene</h1>
+        <div className="flex flex-col gap-8 mt-8">
+          {linjer.map((linje) => (
             <div
-              key={idx}
+              key={linje.title}
               className="p-6"
             >
               <h3 className="mb-2 text-xl font-semibold">{linje.title}</h3>

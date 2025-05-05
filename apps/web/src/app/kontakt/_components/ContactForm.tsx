@@ -119,7 +119,7 @@ export default function ContactForm() {
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-4">
                             <Label className="text-sm font-medium">
-                                Timeframe <span className="text-red-500">*</span>
+                                Timeframe
                             </Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center space-x-2">
@@ -167,7 +167,7 @@ export default function ContactForm() {
 
                         <div className="space-y-4">
                             <Label className="text-sm font-medium">
-                                Interests <span className="text-red-500">*</span>
+                                Interests
                             </Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center space-x-2">
@@ -252,6 +252,10 @@ export default function ContactForm() {
                     <Button
                         type="submit"
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        onClick={() => {
+                            console.log("Form submitted")
+                        }
+                        }
                     >
                         Submit
                     </Button>
