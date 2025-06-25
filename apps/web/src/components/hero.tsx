@@ -20,10 +20,10 @@ export default function Hero() {
                     </p>
                     <Link
                         href="/kontakt"
-                        className="inline-flex items-center gap-2 rounded bg-[hsl(220,62%,41%)] px-6 py-3 font-semibold transition-opacity text-white hover:opacity-70"
+                        className="inline-flex items-center gap-2 rounded bg-primary px-6 py-3 font-semibold transition-opacity text-white hover:opacity-70"
                     >
                         Meld interesse
-                        <MegaphoneIcon className="h-6 w-6 text-white" />
+                        <MegaphoneIcon className="h-6 w-6" />
                     </Link>
 
                 </div>
