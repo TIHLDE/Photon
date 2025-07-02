@@ -36,6 +36,9 @@ importers:
       '@photon/db':
         specifier: workspace:^
         version: link:../../packages/database
+      '@scalar/hono-api-reference':
+        specifier: ^0.9.7
+        version: 0.9.7(hono@4.8.3)
       better-auth:
         specifier: ^1.2.12
         version: 1.2.12
@@ -3240,6 +3243,39 @@ packages:
     dev: true
     optional: true
 
+  /@scalar/core@0.3.5:
+    resolution: {integrity: sha512-tcLLaGT/otQuEZzTtWUlnBMtcs95gcqwJSQCHqDui2v/+2ctV3FKjGJFoZLutICmQaSGLk0zNt14w39/VAsEqw==}
+    engines: {node: '>=20'}
+    dependencies:
+      '@scalar/types': 0.2.5
+    dev: false
+
+  /@scalar/hono-api-reference@0.9.7(hono@4.8.3):
+    resolution: {integrity: sha512-IJngqUlvIEZ7e4VrUUdviNbGQIx6NoHb7XrkTAUMLYvcTw1J3TcdFY4i7hWiD4bp2z+pVbi3UFStlt7y6KzdUA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4.0.0
+    dependencies:
+      '@scalar/core': 0.3.5
+      hono: 4.8.3
+    dev: false
+
+  /@scalar/openapi-types@0.3.4:
+    resolution: {integrity: sha512-MfHRX1jqLcf6kwDDeXSYENywZXJLZx9Jn8r7DCQApw2QJW/yxb4GnCU0vygCh5KBk1GVJ4x6pyXiWNozb+fGAw==}
+    engines: {node: '>=20'}
+    dependencies:
+      zod: 3.24.1
+    dev: false
+
+  /@scalar/types@0.2.5:
+    resolution: {integrity: sha512-kXulR6peh+zzP9DFqhncUKtvnV59e6Cf/y3N5Q8RQIa8huRB+901MbXewUEXV4MXYzMMBKJXRgc1LwwbAZUtRA==}
+    engines: {node: '>=20'}
+    dependencies:
+      '@scalar/openapi-types': 0.3.4
+      nanoid: 5.1.5
+      zod: 3.24.1
+    dev: false
+
   /@selderee/plugin-htmlparser2@0.11.0:
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
     dependencies:
@@ -5356,6 +5392,12 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  /nanoid@5.1.5:
+    resolution: {integrity: sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    dev: false
+
   /nanostores@0.11.4:
     resolution: {integrity: sha512-k1oiVNN4hDK8NcNERSZLQiMfRzEGtfnvZvdBvey3SQbgn8Dcrk0h1I6vpxApjb10PFUflZrgJ2WEZyJQ+5v7YQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -7032,6 +7074,10 @@ packages:
       zod: ^3.21.4
     dependencies:
       zod: 3.25.67
+    dev: false
+
+  /zod@3.24.1:
+    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
     dev: false
 
   /zod@3.25.67:
