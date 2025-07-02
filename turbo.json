@@ -10,19 +10,39 @@
         "lint": {
             "dependsOn": ["^lint"]
         },
-        "check-types": {
-            "dependsOn": ["^check-types"]
+        "typecheck": {
+            "dependsOn": ["^typecheck", "^check-types"]
         },
         "dev": {
-            "dependsOn": ["db:push"],
+            "dependsOn": ["@photon/db#db:push"],
             "cache": false,
             "persistent": true
         },
         "db:push": {
-            "dependsOn": ["docker#dev:up"],
+            "dependsOn": ["@photon/docker#dev:up"],
             "cache": false
         },
-        "docker#dev:up": {
+        "db:migrate": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "cache": false
+        },
+        "db:studio": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "cache": false,
+            "persistent": true
+        },
+        "db:seed": {
+            "dependsOn": ["@photon/db#db:push"],
+            "cache": false
+        },
+        "db:reset": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "cache": false
+        },
+        "db:generate": {
+            "cache": false
+        },
+        "dev:up": {
             "cache": false
         }
     }
