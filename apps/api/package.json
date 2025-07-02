@@ -1,0 +1,26 @@
+{
+    "name": "api",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/index.ts",
+        "build": "tsup",
+        "start": "node dist/index.js",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@hono/node-server": "^1.14.4",
+        "@hono/zod-validator": "^0.7.0",
+        "@photon/db": "workspace:^",
+        "better-auth": "^1.2.12",
+        "hono": "^4.8.3",
+        "hono-openapi": "^0.4.8",
+        "zod": "^3.25.67",
+        "zod-openapi": "^4.2.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.17",
+        "tsup": "^8.5.0",
+        "tsx": "^4.19.3",
+        "typescript": "^5.8.3"
+    }
+}
