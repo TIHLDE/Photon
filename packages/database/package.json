@@ -1,0 +1,31 @@
+{
+    "name": "@photon/db",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "db:generate": "prisma generate",
+        "db:migrate": "prisma migrate dev --skip-generate",
+        "db:push": "prisma db push --skip-generate",
+        "db:studio": "prisma studio",
+        "db:reset": "prisma migrate reset --force",
+        "db:seed": "prisma db seed",
+        "db:deploy": "prisma migrate deploy",
+        "db:status": "prisma migrate status",
+        "db:format": "prisma format",
+        "postinstall": "prisma generate"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.10.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.8",
+        "prisma": "^6.10.1",
+        "tsx": "^4.19.3"
+    },
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "prisma": {
+        "seed": "tsx prisma/seed.ts"
+    }
+}
