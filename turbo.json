@@ -42,6 +42,9 @@
         "db:generate": {
             "cache": false
         },
+        "db:format": {
+            "cache": false
+        },
         "dev:up": {
             "cache": false
         }
