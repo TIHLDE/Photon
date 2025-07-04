@@ -106,36 +106,6 @@ export async function assignRolesToUser(userId: string, roleNames: string[]) {
     }
 }
 
-export async function getUsersWithRole(roleName: string) {
-    return await prisma.user.findMany({
-        where: {
-            userRoles: {
-                some: {
-                    role: {
-                        name: roleName,
-                    },
-                },
-            },
-        },
-        include: {
-            userRoles: {
-                include: {
-                    role: true,
-                },
-            },
-        },
-    });
-}
-
-export async function getUserRoleAssignments(userId: string) {
-    return await prisma.userRole.findMany({
-        where: { userId },
-        include: {
-            role: true,
-        },
-    });
-}
-
 export async function assignPermissionToRole(
     roleName: string,
     permissionName: string,
@@ -261,39 +231,4 @@ export async function assignPermissionsToRole(
             error: error instanceof Error ? error.message : "Unknown error",
         };
     }
-}
-
-export async function getRolesWithPermission(permissionName: string) {
-    return await prisma.role.findMany({
-        where: {
-            permissions: {
-                some: {
-                    permission: {
-                        name: permissionName,
-                    },
-                },
-            },
-        },
-        include: {
-            permissions: {
-                include: {
-                    permission: true,
-                },
-            },
-        },
-    });
-}
-
-export async function getRolePermissionAssignments(roleName: string) {
-    return await prisma.rolePermission.findMany({
-        where: {
-            role: {
-                name: roleName,
-            },
-        },
-        include: {
-            permission: true,
-            role: true,
-        },
-    });
 }

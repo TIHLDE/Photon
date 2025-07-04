@@ -3,11 +3,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { auth } from "./lib/auth";
 import { session } from "./middleware/session";
-import router from "./routes/example";
 import { openAPISpecs } from "hono-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
+import { routes as eventRoutes } from "~/routers/events";
 
 const app = new Hono()
+    .basePath("/api")
     .use(
         "/api/auth/**",
         cors({
@@ -36,7 +37,7 @@ const app = new Hono()
             user,
         });
     })
-    .route("/", router);
+    .route("/events", eventRoutes);
 
 app.get(
     "/openapi",
@@ -59,7 +60,7 @@ app.get(
     "/docs",
     Scalar({
         theme: "saturn",
-        url: "/openapi",
+        url: "/api/openapi",
     }),
 );
 
