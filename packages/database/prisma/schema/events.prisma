@@ -1,0 +1,51 @@
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  WAITLISTED
+  CANCELLED
+}
+
+model Event {
+  id                String      @id @default(cuid())
+  title             String
+  description       String
+  startDate         DateTime
+  endDate           DateTime?
+  location          String?
+  maxParticipants   Int?
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  status            EventStatus @default(DRAFT)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  organizerId   String
+  organizer     User                @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  registrations EventRegistration[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String             @id @default(cuid())
+  status    RegistrationStatus @default(REGISTERED)
+  notes     String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  // Relations
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation("EventRegistrations", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}

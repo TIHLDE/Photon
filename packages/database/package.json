@@ -12,18 +12,20 @@
         "db:deploy": "prisma migrate deploy",
         "db:status": "prisma migrate status",
         "db:format": "prisma format",
-        "postinstall": "prisma generate"
+        "postinstall": "db:generate"
     },
     "dependencies": {
         "@prisma/client": "^6.10.1"
     },
     "devDependencies": {
-        "@types/node": "^24.0.8",
+        "@types/node": "^24.0.10",
+        "dotenv": "^17.0.1",
         "prisma": "^6.10.1",
         "tsx": "^4.19.3"
     },
     "exports": {
-        ".": "./src/index.ts"
+        ".": "./src/index.ts",
+        "./queries": "./src/queries/index.ts"
     },
     "prisma": {
         "seed": "tsx prisma/seed.ts"

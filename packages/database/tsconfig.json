@@ -1,9 +1,5 @@
 {
-  "extends": "../tsconfig/node/bundler.json",
-  "compilerOptions": {
-    "types": ["node"],
-    "lib": ["es2022"]
-  },
-  "include": ["src/**/*", "prisma/seed.ts"],
+  "extends": "../tsconfig/node/library.json",
+  "include": ["src/**/*", "prisma/seed.ts", "prisma.config.ts"],
   "exclude": ["node_modules", "generated"]
 }
