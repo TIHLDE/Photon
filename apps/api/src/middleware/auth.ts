@@ -1,21 +1,26 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import type { Session, User } from "~/lib/auth";
+import { auth, type Session, type User } from "~/lib/auth";
 
-type Variables = {
-    user: User | null;
-    session: Session | null;
+type AuthVariables = {
+    user: User;
+    session: Session;
 };
 
-export const requireAuth = createMiddleware<{ Variables: Variables }>(
+export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
     async (c, next) => {
-        const user = c.get("user");
+        const session = await auth.api.getSession({
+            headers: c.req.raw.headers,
+        });
 
-        if (!user) {
+        if (!session) {
             throw new HTTPException(401, {
                 message: "Authentication required",
             });
         }
+
+        c.set("user", session.user);
+        c.set("session", session.session);
 
         await next();
     },

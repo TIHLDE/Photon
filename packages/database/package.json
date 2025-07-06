@@ -12,7 +12,7 @@
         "db:deploy": "prisma migrate deploy",
         "db:status": "prisma migrate status",
         "db:format": "prisma format",
-        "postinstall": "db:generate"
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@prisma/client": "^6.10.1"

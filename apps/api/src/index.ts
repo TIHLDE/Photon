@@ -5,12 +5,13 @@ import { auth } from "./lib/auth";
 import { session } from "./middleware/session";
 import { openAPISpecs } from "hono-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import { routes as eventRoutes } from "~/routers/events";
+import { eventRoutes } from "~/routes/events/routes";
+import { hc } from "hono/client";
 
 const app = new Hono()
     .basePath("/api")
     .use(
-        "/api/auth/**",
+        "/auth/**",
         cors({
             origin: "http://localhost:3000",
             allowHeaders: ["Content-Type", "Authorization"],
@@ -20,7 +21,7 @@ const app = new Hono()
             credentials: true,
         }),
     )
-    .on(["POST", "GET"], "/api/auth/*", (c) => {
+    .on(["POST", "GET"], "/auth/*", (c) => {
         return auth.handler(c.req.raw);
     })
     .get("/", (c) => {
@@ -70,6 +71,8 @@ serve(
         port: 4000,
     },
     (info) => {
-        console.log(`Server is running on http://localhost:${info.port}`);
+        console.log(`Server is running on http://localhost:${info.port}/api`);
     },
 );
+
+export type AppType = typeof app;
