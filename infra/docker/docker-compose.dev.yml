@@ -2,23 +2,23 @@
 name: "photon_dev"
 
 services:
-  auth_db:
+  photon_db:
     image: postgres
-    container_name: auth_db
+    container_name: photon_db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: db
+      POSTGRES_DB: photon_db
     ports:
       - "5432:5432"
     volumes:
-      - auth_db_data:/var/lib/postgresql/data
+      - photon_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d photon_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
-  auth_db_data:
+  photon_db_data:

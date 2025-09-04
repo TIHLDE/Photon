@@ -1,0 +1,15 @@
+{
+    "name": "@photon/transactional",
+    "version": "1.0.0",
+    "scripts": {
+        "dev": "email dev --port 5000"
+    },
+    "dependencies": {
+        "@react-email/components": "0.1.1",
+        "react": "19.0.0-rc-66855b96-20241106",
+        "react-dom": "19.0.0-rc-66855b96-20241106"
+    },
+    "devDependencies": {
+        "react-email": "4.0.17"
+    }
+}

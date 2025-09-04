@@ -1,5 +1,7 @@
 {
-    "name": "docker",
+    "name": "@photon/docker",
+    "version": "1.0.0",
+    "private": true,
     "scripts": {
         "dev:up": "docker compose -f docker-compose.dev.yml up -d --wait"
     }

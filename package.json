@@ -4,7 +4,15 @@
     "scripts": {
         "build": "turbo build",
         "dev": "turbo dev",
-        "lint": "turbo lint"
+        "lint": "turbo lint",
+        "typecheck": "turbo typecheck",
+        "db:push": "turbo db:push",
+        "db:migrate": "turbo db:migrate",
+        "db:studio": "turbo db:studio",
+        "db:seed": "turbo db:seed",
+        "db:reset": "turbo db:reset",
+        "db:generate": "turbo db:generate",
+        "db:format": "turbo db:format"
     },
     "devDependencies": {
         "@biomejs/biome": "^1.9.4",
