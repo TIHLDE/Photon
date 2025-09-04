@@ -21,7 +21,7 @@ const Footer = () => {
 
   return (
     <div className='px-4 py-16 md:px-20 md:py-16 text-white w-full max-w-7xl mx-auto'>
-      <div className='flex flex-col items-center md:space-y-0 md:flex-row md:justify-between md:items-start w-full'>
+      <div className='flex flex-col items-center space-y-12 md:space-y-0 md:flex-row md:justify-between md:items-start w-full'>
         {/* Left side - Tihlde logo with social icons */}
         <div className='flex flex-col items-center md:items-start space-y-6'>
           <Link href="/" aria-label="Til forsiden" className="text-primary font-bold text-2xl">
