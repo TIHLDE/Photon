@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
     --background: #fafafa;
     --foreground: #333333;
@@ -10,7 +9,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 219 66% 33%;
+    --primary: hsl(220, 62%, 41%);
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -36,12 +35,12 @@
         --card-foreground: 210 40% 98%;
         --popover: 222.2 84% 4.9%;
         --popover-foreground: 210 40% 98%;
-        --primary: 219 100% 81%;
+        --primary: hsl(220, 62%, 41%);
         --primary-foreground: 0 0% 0%;
         --secondary: 217.2 32.6% 17.5%;
         --secondary-foreground: 210 40% 98%;
         --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
+        --muted-foreground: hsl(0, 0%, 85%);
         --accent: 217.2 32.6% 17.5%;
         --accent-foreground: 210 40% 98%;
         --destructive: 0 100% 69%;

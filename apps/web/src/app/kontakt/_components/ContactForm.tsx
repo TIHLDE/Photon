@@ -47,23 +47,23 @@ export default function ContactForm() {
     }
 
     return (
-        <Card className="overflow-hidden border-slate-700 bg-slate-800/50 shadow-lg">
-            <CardContent className="p-0">
-                <div className="border-b border-slate-700 bg-slate-800 p-6">
-                    <h2 className="text-2xl font-bold">Get in Touch</h2>
-                    <p className="text-sm text-slate-300">Fill out the form below and we'll respond promptly</p>
+        <Card className="border-0 overflow-hidden bg-slate-800/50">
+            <CardContent className="p-0 border-0">
+                <div className="p-6">
+                    <h2 className="text-2xl font-bold">Ta kontakt med oss</h2>
+                    <p className="text-sm text-slate-300">Fyll ut kontaktskjemaet, så hører du fra oss straks.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8 p-6">
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="company" className="text-sm font-medium">
-                                Company <span className="text-red-500">*</span>
+                                Bedrift <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="company"
-                                placeholder="Your company name"
-                                className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                placeholder="Navn på bedriften"
+                                className="bg-slate-900 text-white placeholder:text-slate-500"
                                 value={formData.company}
                                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                                 required
@@ -72,12 +72,12 @@ export default function ContactForm() {
 
                         <div className="space-y-2">
                             <Label htmlFor="contactPerson" className="text-sm font-medium">
-                                Contact Person <span className="text-red-500">*</span>
+                                Kontaktperson <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="contactPerson"
-                                placeholder="Full name"
-                                className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                placeholder="Fullt navn"
+                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
                                 value={formData.contactPerson}
                                 onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                                 required
@@ -88,13 +88,13 @@ export default function ContactForm() {
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-sm font-medium">
-                                Email <span className="text-red-500">*</span>
+                                E-post <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="your.email@company.com"
-                                className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                placeholder="eksempel@bedrift.com"
+                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 required
@@ -103,13 +103,13 @@ export default function ContactForm() {
 
                         <div className="space-y-2">
                             <Label htmlFor="phone" className="text-sm font-medium">
-                                Phone Number
+                                Telefonnummer
                             </Label>
                             <Input
                                 id="phone"
                                 type="tel"
-                                placeholder="+1 (555) 000-0000"
-                                className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                placeholder="+47 987 65 432"
+                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                             />
@@ -119,7 +119,7 @@ export default function ContactForm() {
                     <div className="grid gap-6 md:grid-cols-2">
                         <div className="space-y-4">
                             <Label className="text-sm font-medium">
-                                Timeframe
+                                Tidsramme
                             </Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center space-x-2">
@@ -129,7 +129,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setTimeframe({ ...timeframe, q1: checked as boolean })}
                                     />
                                     <label htmlFor="q1" className="text-sm">
-                                        Q1 (Jan-Mar)
+                                        Q1 (jan-mar)
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -139,7 +139,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setTimeframe({ ...timeframe, q2: checked as boolean })}
                                     />
                                     <label htmlFor="q2" className="text-sm">
-                                        Q2 (Apr-Jun)
+                                        Q2 (apr-jun)
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -149,7 +149,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setTimeframe({ ...timeframe, q3: checked as boolean })}
                                     />
                                     <label htmlFor="q3" className="text-sm">
-                                        Q3 (Jul-Sep)
+                                        Q3 (aug-sep)
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -159,7 +159,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setTimeframe({ ...timeframe, q4: checked as boolean })}
                                     />
                                     <label htmlFor="q4" className="text-sm">
-                                        Q4 (Oct-Dec)
+                                        Q4 (okt-des)
                                     </label>
                                 </div>
                             </div>
@@ -167,7 +167,7 @@ export default function ContactForm() {
 
                         <div className="space-y-4">
                             <Label className="text-sm font-medium">
-                                Interests
+                                Interesser
                             </Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="flex items-center space-x-2">
@@ -179,7 +179,7 @@ export default function ContactForm() {
                                         }
                                     />
                                     <label htmlFor="companyPresentation" className="text-sm">
-                                        Company Presentation
+                                        Bedriftspresentasjon
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -189,17 +189,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setInterests({ ...interests, workshop: checked as boolean })}
                                     />
                                     <label htmlFor="workshop" className="text-sm">
-                                        Workshop
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="companyVisit"
-                                        checked={interests.companyVisit}
-                                        onCheckedChange={(checked) => setInterests({ ...interests, companyVisit: checked as boolean })}
-                                    />
-                                    <label htmlFor="companyVisit" className="text-sm">
-                                        Company Visit
+                                        Kurs og workshop
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -209,17 +199,17 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setInterests({ ...interests, advertisement: checked as boolean })}
                                     />
                                     <label htmlFor="advertisement" className="text-sm">
-                                        Advertisement
+                                        Jobbannonse
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <Checkbox
-                                        id="collaboration"
+                                        id="companyExcursion"
                                         checked={interests.collaboration}
                                         onCheckedChange={(checked) => setInterests({ ...interests, collaboration: checked as boolean })}
                                     />
-                                    <label htmlFor="collaboration" className="text-sm">
-                                        Collaboration
+                                    <label htmlFor="companyExcursion" className="text-sm">
+                                        Bedriftsekskursjon
                                     </label>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -229,7 +219,7 @@ export default function ContactForm() {
                                         onCheckedChange={(checked) => setInterests({ ...interests, other: checked as boolean })}
                                     />
                                     <label htmlFor="other" className="text-sm">
-                                        Other
+                                        Annet
                                     </label>
                                 </div>
                             </div>
@@ -238,12 +228,12 @@ export default function ContactForm() {
 
                     <div className="space-y-2">
                         <Label htmlFor="message" className="text-sm font-medium">
-                            Message
+                            Melding
                         </Label>
                         <Textarea
                             id="message"
-                            placeholder="Additional information or questions..."
-                            className="min-h-[120px] border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                            placeholder="Utfyllende beskrivelse"
+                            className="min-h-[120px] bg-slate-900 border-0 text-white placeholder:text-slate-500"
                             value={formData.message}
                             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         />
@@ -252,12 +242,8 @@ export default function ContactForm() {
                     <Button
                         type="submit"
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                        onClick={() => {
-                            console.log("Form submitted")
-                        }
-                        }
                     >
-                        Submit
+                        Send
                     </Button>
                 </form>
             </CardContent>

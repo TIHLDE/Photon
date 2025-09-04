@@ -202,14 +202,6 @@ export default function Hjem() {
               Studiet gir avansert kompetanse i digital transformasjon, med fokus på hvordan virksomheter kan utnytte digitale teknologier for strategisk utvikling og effektivisering.
             </p>
           </div>
-          <div className="p-4">
-            <h3 className="mb-2 text-xl font-semibold">
-              Informasjonsbehandling
-            </h3>
-            <p className="text-gray-300">
-              Dette nettbaserte bachelorstudiet kvalifiserer studentene til å organisere og tilrettelegge informasjon i en virksomhet, med fokus på programmering, webløsninger og datasikkerhet.
-            </p>
-          </div>
         </div>
       </section >
 
