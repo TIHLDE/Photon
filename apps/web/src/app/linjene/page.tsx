@@ -25,11 +25,6 @@ const linjer = [
     description:
       "Studiet gir avansert kompetanse i digital transformasjon, med fokus på hvordan virksomheter kan utnytte digitale teknologier for strategisk utvikling og effektivisering.",
   },
-  {
-    title: "Informasjonsbehandling",
-    description:
-      "Dette nettbaserte bachelorstudiet kvalifiserer studentene til å organisere og tilrettelegge informasjon i en virksomhet, med fokus på programmering, webløsninger og datasikkerhet.",
-  },
 ];
 
 export default function Linjene() {
