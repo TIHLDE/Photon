@@ -13,10 +13,6 @@ model User {
   accounts      Account[]
   userRoles     UserRole[]
 
-  // Events
-  organizedEvents    Event[]             @relation("EventOrganizer")
-  eventRegistrations EventRegistration[] @relation("EventRegistrations")
-
   @@unique([email])
   @@unique([username])
   @@map("user")

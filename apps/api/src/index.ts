@@ -5,41 +5,8 @@ import { auth } from "./lib/auth";
 import { session } from "./middleware/session";
 import { openAPISpecs } from "hono-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
-import { eventRoutes } from "~/routes/events/routes";
-import { hc } from "hono/client";
 
-const app = new Hono()
-    .basePath("/api")
-    .use(
-        "/auth/**",
-        cors({
-            origin: "http://localhost:3000",
-            allowHeaders: ["Content-Type", "Authorization"],
-            allowMethods: ["POST", "GET", "OPTIONS"],
-            exposeHeaders: ["Content-Length"],
-            maxAge: 600,
-            credentials: true,
-        }),
-    )
-    .on(["POST", "GET"], "/auth/*", (c) => {
-        return auth.handler(c.req.raw);
-    })
-    .get("/", (c) => {
-        return c.text("Hello Hono!");
-    })
-    .get("/session", session, (c) => {
-        const session = c.get("session");
-        const user = c.get("user");
-
-        if (!user) return c.body(null, 401);
-
-        return c.json({
-            session,
-            user,
-        });
-    })
-    .route("/events", eventRoutes);
-
+const app = new Hono();
 app.get(
     "/openapi",
     openAPISpecs(app, {
@@ -64,6 +31,36 @@ app.get(
         url: "/api/openapi",
     }),
 );
+
+app.basePath("/api")
+    .use(
+        "/auth/**",
+        cors({
+            origin: "http://localhost:3000",
+            allowHeaders: ["Content-Type", "Authorization"],
+            allowMethods: ["POST", "GET", "OPTIONS"],
+            exposeHeaders: ["Content-Length"],
+            maxAge: 600,
+            credentials: true,
+        }),
+    )
+    .on(["POST", "GET"], "/auth/*", (c) => {
+        return auth.handler(c.req.raw);
+    })
+    .get("/", (c) => {
+        return c.text("Healthy!");
+    })
+    .get("/session", session, (c) => {
+        const session = c.get("session");
+        const user = c.get("user");
+
+        if (!user) return c.body(null, 401);
+
+        return c.json({
+            session,
+            user,
+        });
+    });
 
 serve(
     {

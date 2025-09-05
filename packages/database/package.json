@@ -24,8 +24,7 @@
         "tsx": "^4.19.3"
     },
     "exports": {
-        ".": "./src/index.ts",
-        "./queries": "./src/queries/index.ts"
+        ".": "./src/index.ts"
     },
     "prisma": {
         "seed": "tsx prisma/seed.ts"

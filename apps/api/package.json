@@ -10,7 +10,7 @@
     "dependencies": {
         "@hono/node-server": "^1.14.4",
         "@hono/zod-validator": "^0.7.0",
-        "@photon/db": "workspace:^",
+        "@photon/db": "workspace:*",
         "@scalar/hono-api-reference": "^0.9.7",
         "better-auth": "^1.2.12",
         "hono": "^4.8.3",
