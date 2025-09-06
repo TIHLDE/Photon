@@ -16,6 +16,14 @@ const envSchema = z.object({
         })
         .optional()
         .transform((val) => val === "true" || val === "1"),
+    SMTP_HOST: z.string({ description: "SMTP Host" }).optional(),
+    SMTP_PORT: z
+        .string({ description: "SMTP Port" })
+        .default("587")
+        .transform((val) => Number(val)),
+    SMTP_USER: z.string({ description: "SMTP User" }).optional(),
+    SMTP_PASS: z.string({ description: "SMTP Password" }).optional(),
+    SMTP_FROM: z.string({ description: "SMTP From Email Address" }).optional(),
 });
 
 /**
