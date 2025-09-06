@@ -6,6 +6,7 @@ services:
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
+      no_cache: true
     restart: unless-stopped
     ports:
       - "4000:4000"
