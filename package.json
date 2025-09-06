@@ -6,6 +6,8 @@
         "dev": "turbo dev",
         "lint": "turbo lint",
         "typecheck": "turbo typecheck",
+        "prod:up": "turbo prod:up",
+        "prod:down": "turbo prod:down",
         "db:push": "turbo db:push",
         "db:migrate": "turbo db:migrate",
         "db:studio": "turbo db:studio",

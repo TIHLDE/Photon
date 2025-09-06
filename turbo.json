@@ -14,9 +14,15 @@
             "dependsOn": ["^typecheck", "^check-types"]
         },
         "dev": {
-            "dependsOn": ["@photon/docker#dev:up"],
+            "dependsOn": ["db:push"],
             "cache": false,
             "persistent": true
+        },
+        "prod:up": {
+            "cache": false
+        },
+        "prod:down": {
+            "cache": false
         },
         "db:push": {
             "dependsOn": ["@photon/docker#dev:up"],
