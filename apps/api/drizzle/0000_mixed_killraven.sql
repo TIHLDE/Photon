@@ -1,9 +1,4 @@
-CREATE TABLE "mock_table" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"name" varchar(255),
-	"value" integer
-);
---> statement-breakpoint
+CREATE TYPE "public"."study_program_type" AS ENUM('bachelor', 'master');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -40,11 +35,8 @@ CREATE TABLE "user" (
 	"image" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"username" text NOT NULL,
-	"display_name" text,
-	"avatar" text,
-	CONSTRAINT "user_email_unique" UNIQUE("email"),
-	CONSTRAINT "user_username_unique" UNIQUE("username")
+	"legacy_token" text,
+	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 CREATE TABLE "verification" (
@@ -56,5 +48,24 @@ CREATE TABLE "verification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "study_program" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"slug" varchar(64) NOT NULL,
+	"feide_code" varchar(32) NOT NULL,
+	"display_name" varchar(128) NOT NULL,
+	"type" "study_program_type" NOT NULL,
+	CONSTRAINT "study_program_slug_unique" UNIQUE("slug"),
+	CONSTRAINT "study_program_feide_code_unique" UNIQUE("feide_code")
+);
+--> statement-breakpoint
+CREATE TABLE "study_program_membership" (
+	"user_id" varchar(255) NOT NULL,
+	"study_program_id" serial NOT NULL,
+	"start_year" integer NOT NULL,
+	CONSTRAINT "study_program_membership_user_id_study_program_id_pk" PRIMARY KEY("user_id","study_program_id")
+);
+--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "study_program_membership" ADD CONSTRAINT "study_program_membership_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "study_program_membership" ADD CONSTRAINT "study_program_membership_study_program_id_study_program_id_fk" FOREIGN KEY ("study_program_id") REFERENCES "public"."study_program"("id") ON DELETE cascade ON UPDATE no action;
