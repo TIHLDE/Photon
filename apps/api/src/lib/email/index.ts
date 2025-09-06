@@ -3,8 +3,6 @@ import { render } from "@react-email/render";
 import type { ReactElement } from "react";
 import { env } from "../env";
 
-console.log(env);
-
 const transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
