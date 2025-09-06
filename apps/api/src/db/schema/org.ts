@@ -1,14 +1,16 @@
 import {
-    pgTable,
     primaryKey,
     serial,
     text,
     varchar,
     uuid,
     integer,
+    pgTableCreator,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { pgEnum } from "drizzle-orm/pg-core";
+
+const pgTable = pgTableCreator((name) => `org_${name}`);
 
 export const studyProgramType = pgEnum("study_program_type", [
     "bachelor",
