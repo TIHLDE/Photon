@@ -10,6 +10,9 @@ import db from "~/db";
 import * as schema from "~/db/schema";
 import { feidePlugin, syncFeideHook } from "./feide";
 import { env } from "../env";
+import { sendEmail } from "../email";
+import ChangeEmailVerification from "../email/template/change-email-verification";
+import OtpSignIn from "../email/template/otp-sign-in";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -58,7 +61,11 @@ export const auth = betterAuth({
                 url,
                 user,
             }) => {
-                // TODO send email
+                sendEmail({
+                    component: ChangeEmailVerification({ url }),
+                    subject: "Verifiser din nye e-postadresse",
+                    to: newEmail,
+                });
             },
         },
     },
@@ -67,15 +74,13 @@ export const auth = betterAuth({
         openAPI(),
         emailOTP({
             sendVerificationOTP: async ({ email, otp, type }) => {
-                switch (type) {
-                    case "sign-in":
-                        // TODO send email
-                        break;
+                if (type !== "sign-in") return;
 
-                    case "email-verification":
-                        // TODO send email
-                        break;
-                }
+                sendEmail({
+                    component: OtpSignIn({ otp }),
+                    subject: "Din engangskode",
+                    to: email,
+                });
             },
         }),
     ],

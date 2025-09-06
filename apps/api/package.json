@@ -12,26 +12,36 @@
         "db:studio": "drizzle-kit studio",
         "db:drop": "drizzle-kit drop",
         "db:check": "drizzle-kit check",
-        "auth:migrate": "npx @better-auth/cli@latest generate --config src/lib/auth/auth.ts --output src/db/schema/auth.ts"
+        "auth:migrate": "npx @better-auth/cli@latest generate --config src/lib/auth/auth.ts --output src/db/schema/auth.ts",
+        "email": "email dev --port 4001 --dir src/lib/email/template"
     },
     "dependencies": {
         "@dotenvx/dotenvx": "^1.49.0",
         "@hono/node-server": "^1.14.4",
         "@hono/zod-validator": "^0.7.0",
+        "@react-email/components": "^0.5.2",
+        "@react-email/render": "^1.2.2",
         "@scalar/hono-api-reference": "^0.9.7",
         "better-auth": "^1.2.12",
         "drizzle-orm": "^0.44.5",
         "drizzle-seed": "^0.3.1",
         "hono": "^4.8.3",
         "hono-openapi": "^0.4.8",
+        "nodemailer": "^7.0.6",
         "pg": "^8.16.3",
+        "react": "19.0.0",
+        "react-dom": "19.0.0",
         "zod": "^3.25.67",
         "zod-openapi": "^4.2.4"
     },
     "devDependencies": {
+        "@react-email/preview-server": "^4.2.8",
         "@types/node": "^20.11.17",
+        "@types/nodemailer": "^7.0.1",
         "@types/pg": "^8.15.5",
+        "@types/react": "^18",
         "drizzle-kit": "^0.31.4",
+        "react-email": "4.2.8",
         "tsup": "^8.5.0",
         "tsx": "^4.19.3",
         "typescript": "^5.8.3"
