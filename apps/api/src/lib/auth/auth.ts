@@ -18,12 +18,11 @@ export const auth = betterAuth({
     }),
     baseURL: env.BASE_URL,
     emailAndPassword: {
-        enabled: true,
-        requireEmailVerification: false,
+        enabled: false,
     },
     session: {
-        expiresIn: 60 * 60 * 24 * 7,
-        updateAge: 60 * 60 * 24,
+        expiresIn: 60 * 60 * 24 * 7, // 7 days
+        updateAge: 60 * 60 * 24, // 1 day
     },
     advanced: {
         crossSubDomainCookies: {
@@ -46,18 +45,31 @@ export const auth = betterAuth({
                 input: false,
             },
         },
+        changeEmail: {
+            enabled: true,
+            sendChangeEmailVerification: async ({
+                newEmail,
+                token,
+                url,
+                user,
+            }) => {
+                // TODO send email
+            },
+        },
     },
     plugins: [
         feidePlugin(),
         openAPI(),
         emailOTP({
             sendVerificationOTP: async ({ email, otp, type }) => {
-                if (type === "sign-in") {
-                    // Send the OTP for sign in
-                } else if (type === "email-verification") {
-                    // Send the OTP for email verification
-                } else {
-                    // Send the OTP for password reset
+                switch (type) {
+                    case "sign-in":
+                        // TODO send email
+                        break;
+
+                    case "email-verification":
+                        // TODO send email
+                        break;
                 }
             },
         }),
