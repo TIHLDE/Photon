@@ -2,7 +2,7 @@
     "name": "@photon/transactional",
     "version": "1.0.0",
     "scripts": {
-        "dev": "email dev --port 5000"
+        "email": "email dev --port 5000"
     },
     "dependencies": {
         "@react-email/components": "0.1.1",
