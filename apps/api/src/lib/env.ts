@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { config } from "dotenv";
+import { config } from "@dotenvx/dotenvx";
 config({ path: "../../.env" });
 
 const envSchema = z.object({

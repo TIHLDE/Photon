@@ -15,11 +15,11 @@
         "auth:migrate": "npx @better-auth/cli@latest generate --config src/lib/auth/auth.ts --output src/db/schema/auth.ts"
     },
     "dependencies": {
+        "@dotenvx/dotenvx": "^1.49.0",
         "@hono/node-server": "^1.14.4",
         "@hono/zod-validator": "^0.7.0",
         "@scalar/hono-api-reference": "^0.9.7",
         "better-auth": "^1.2.12",
-        "dotenv": "^17.0.1",
         "drizzle-orm": "^0.44.5",
         "drizzle-seed": "^0.3.1",
         "hono": "^4.8.3",
