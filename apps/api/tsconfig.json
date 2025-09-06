@@ -1,8 +1,7 @@
 {
   "extends": "../../packages/tsconfig/node/bundler.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
+    "jsx": "react",
     "baseUrl": ".",
     "paths": {
       "~/*": [
