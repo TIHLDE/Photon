@@ -6,7 +6,7 @@
         "dev": "turbo dev",
         "lint": "turbo lint",
         "typecheck": "turbo typecheck",
-        "prod:up": "turbo prod:up",
+        "prod:up": "pnpm dlx turbo prod:up --ui stream",
         "prod:down": "turbo prod:down",
         "db:push": "turbo db:push",
         "db:migrate": "turbo db:migrate",

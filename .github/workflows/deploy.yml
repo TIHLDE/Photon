@@ -1,0 +1,39 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deployment_lock
+      cancel-in-progress: false
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
+          chmod 600 ~/.ssh/key
+          ssh-keyscan -H "${{ secrets.PROXY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy to OpenStack server
+        run: |
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/key
+          ssh -v -o StrictHostKeyChecking=no -J ${{ secrets.USER }}@${{ secrets.PROXY_HOST }} ${{ secrets.USER }}@${{ secrets.HOST }} << ENDSSH
+          sudo -i
+          cd ${{ secrets.WORKING_DIR }}
+          git fetch
+          git reset --hard origin/main
+          echo "${{ secrets.ENV }}" > .env
+          chmod 0600 .env
+          pnpm prod:up
+          ENDSSH
+
