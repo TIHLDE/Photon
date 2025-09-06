@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { config } from "dotenv";
-config();
+config({ path: "../../.env" });
 
 const envSchema = z.object({
     FEIDE_CLIENT_ID: z.string({ description: "Feide OAuth Client ID" }),

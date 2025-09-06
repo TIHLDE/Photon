@@ -1,0 +1,17 @@
+name: "photon_prod"
+
+services:
+
+  photon_prod_api:
+    container_name: photon_prod_api
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+      FEIDE_CLIENT_ID: ${FEIDE_CLIENT_ID}
+      FEIDE_CLIENT_SECRET: ${FEIDE_CLIENT_SECRET}

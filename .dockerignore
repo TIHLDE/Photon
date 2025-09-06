@@ -1,0 +1,16 @@
+node_modules
+.env
+.env.local
+.env.production
+.env.example
+.git
+.gitignore
+README.md
+*.md
+.DS_Store
+dist
+coverage
+.nyc_output
+.cache
+.vscode
+.idea
