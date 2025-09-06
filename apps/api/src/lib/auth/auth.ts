@@ -29,6 +29,11 @@ export const auth = betterAuth({
             enabled: true,
         },
     },
+    trustedOrigins: [
+        "https://tihlde.org",
+        "https://*.tihlde.org",
+        "localhost:*",
+    ],
     user: {
         additionalFields: {
             /**
