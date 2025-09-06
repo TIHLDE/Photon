@@ -83,21 +83,22 @@ interface FeideGroup {
 /**
  * Authentication plugin for Feide using OpenID Connect
  */
-export const feideAuthPlugin = genericOAuth({
-    config: [
-        {
-            providerId: FEIDE_PROVIDER_ID,
-            clientId: env.FEIDE_CLIENT_ID,
-            clientSecret: env.FEIDE_CLIENT_SECRET,
-            discoveryUrl:
-                "https://auth.dataporten.no/.well-known/openid-configuration",
-            scopes: ["openid", "userid", "profile", "groups-edu", "email"],
-            // TODO remove to use actual once localhost testing is setup
-            redirectURI: "https://tihlde.org/ny-bruker/feide",
-            getUserInfo,
-        },
-    ],
-});
+export const feidePlugin = () =>
+    genericOAuth({
+        config: [
+            {
+                providerId: FEIDE_PROVIDER_ID,
+                clientId: env.FEIDE_CLIENT_ID,
+                clientSecret: env.FEIDE_CLIENT_SECRET,
+                discoveryUrl:
+                    "https://auth.dataporten.no/.well-known/openid-configuration",
+                scopes: ["openid", "userid", "profile", "groups-edu", "email"],
+                // TODO remove to use actual once localhost testing is setup
+                redirectURI: "https://tihlde.org/ny-bruker/feide",
+                getUserInfo,
+            },
+        ],
+    });
 
 /**
  * Runs Feide tasks AFTER each auth request, to ensure synced info

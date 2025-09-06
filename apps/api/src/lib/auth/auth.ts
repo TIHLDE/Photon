@@ -8,7 +8,7 @@ import {
 } from "better-auth/plugins";
 import db from "~/db";
 import * as schema from "~/db/schema";
-import { feideAuthPlugin, syncFeideHook } from "./feide";
+import { feidePlugin, syncFeideHook } from "./feide";
 import { env } from "../env";
 
 export const auth = betterAuth({
@@ -48,7 +48,7 @@ export const auth = betterAuth({
         },
     },
     plugins: [
-        feideAuthPlugin,
+        feidePlugin(),
         openAPI(),
         emailOTP({
             sendVerificationOTP: async ({ email, otp, type }) => {
