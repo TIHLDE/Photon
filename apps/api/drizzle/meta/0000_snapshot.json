@@ -1,42 +1,11 @@
 {
-  "id": "b9a2c3d6-20c5-4a85-9492-a4c30f3af516",
+  "id": "90cca16e-bbb9-4af3-ad01-bcc392186e55",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.mock_table": {
-      "name": "mock_table",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "value": {
-          "name": "value",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.account": {
-      "name": "account",
+    "public.auth_account": {
+      "name": "auth_account",
       "schema": "",
       "columns": {
         "id": {
@@ -121,10 +90,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "account_user_id_user_id_fk": {
-          "name": "account_user_id_user_id_fk",
-          "tableFrom": "account",
-          "tableTo": "user",
+        "auth_account_user_id_auth_user_id_fk": {
+          "name": "auth_account_user_id_auth_user_id_fk",
+          "tableFrom": "auth_account",
+          "tableTo": "auth_user",
           "columnsFrom": [
             "user_id"
           ],
@@ -141,8 +110,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.session": {
-      "name": "session",
+    "public.auth_session": {
+      "name": "auth_session",
       "schema": "",
       "columns": {
         "id": {
@@ -197,10 +166,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "session_user_id_user_id_fk": {
-          "name": "session_user_id_user_id_fk",
-          "tableFrom": "session",
-          "tableTo": "user",
+        "auth_session_user_id_auth_user_id_fk": {
+          "name": "auth_session_user_id_auth_user_id_fk",
+          "tableFrom": "auth_session",
+          "tableTo": "auth_user",
           "columnsFrom": [
             "user_id"
           ],
@@ -213,8 +182,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "session_token_unique": {
-          "name": "session_token_unique",
+        "auth_session_token_unique": {
+          "name": "auth_session_token_unique",
           "nullsNotDistinct": false,
           "columns": [
             "token"
@@ -225,8 +194,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.user": {
-      "name": "user",
+    "public.auth_user": {
+      "name": "auth_user",
       "schema": "",
       "columns": {
         "id": {
@@ -274,20 +243,8 @@
           "notNull": true,
           "default": "now()"
         },
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "display_name": {
-          "name": "display_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "avatar": {
-          "name": "avatar",
+        "legacy_token": {
+          "name": "legacy_token",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -297,18 +254,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "user_email_unique": {
-          "name": "user_email_unique",
+        "auth_user_email_unique": {
+          "name": "auth_user_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
-        },
-        "user_username_unique": {
-          "name": "user_username_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "username"
           ]
         }
       },
@@ -316,8 +266,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.verification": {
-      "name": "verification",
+    "public.auth_verification": {
+      "name": "auth_verification",
       "schema": "",
       "columns": {
         "id": {
@@ -366,9 +316,143 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.org_study_program": {
+      "name": "org_study_program",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feide_code": {
+          "name": "feide_code",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "study_program_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "org_study_program_slug_unique": {
+          "name": "org_study_program_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        },
+        "org_study_program_feide_code_unique": {
+          "name": "org_study_program_feide_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "feide_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.org_study_program_membership": {
+      "name": "org_study_program_membership",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "study_program_id": {
+          "name": "study_program_id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "org_study_program_membership_user_id_auth_user_id_fk": {
+          "name": "org_study_program_membership_user_id_auth_user_id_fk",
+          "tableFrom": "org_study_program_membership",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "org_study_program_membership_study_program_id_org_study_program_id_fk": {
+          "name": "org_study_program_membership_study_program_id_org_study_program_id_fk",
+          "tableFrom": "org_study_program_membership",
+          "tableTo": "org_study_program",
+          "columnsFrom": [
+            "study_program_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "org_study_program_membership_user_id_study_program_id_pk": {
+          "name": "org_study_program_membership_user_id_study_program_id_pk",
+          "columns": [
+            "user_id",
+            "study_program_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.study_program_type": {
+      "name": "study_program_type",
+      "schema": "public",
+      "values": [
+        "bachelor",
+        "master"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

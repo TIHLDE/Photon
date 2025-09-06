@@ -1,36 +1,13 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { auth } from "./lib/auth";
+import { auth } from "./lib/auth/auth";
 import { session } from "./middleware/session";
 import { openAPISpecs } from "hono-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
+import { env } from "./lib/env";
 
 const app = new Hono();
-app.get(
-    "/openapi",
-    openAPISpecs(app, {
-        documentation: {
-            info: {
-                title: "Hono API",
-                version: "1.0.0",
-                description: "Greeting API",
-            },
-            servers: [
-                {
-                    url: "http://localhost:4000",
-                    description: "Local Server",
-                },
-            ],
-        },
-    }),
-).get(
-    "/docs",
-    Scalar({
-        theme: "saturn",
-        url: "/api/openapi",
-    }),
-);
 
 app.basePath("/api")
     .use(
@@ -61,6 +38,39 @@ app.basePath("/api")
             user,
         });
     });
+
+app.get(
+    "/openapi",
+    openAPISpecs(app, {
+        documentation: {
+            info: {
+                title: "Hono API",
+                version: "1.0.0",
+                description: "Greeting API",
+            },
+            servers: [
+                {
+                    url: "http://localhost:4000",
+                    description: "Local Server",
+                },
+            ],
+        },
+    }),
+).get(
+    "/docs",
+    Scalar({
+        theme: "saturn",
+        url: "/api/openapi",
+        sources: [
+            { url: "/openapi", title: "API" },
+            { url: "/api/auth/open-api/generate-schema", title: "Auth" },
+        ],
+    }),
+);
+
+if (env.SEED_DB) {
+    import("./db/seed").then(({ default: seed }) => seed());
+}
 
 serve(
     {

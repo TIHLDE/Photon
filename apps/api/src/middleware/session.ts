@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import { auth, type Session, type User } from "~/lib/auth";
+import { auth, type Session, type User } from "~/lib/auth/auth";
 
 export const session = createMiddleware<{
     Variables: {
