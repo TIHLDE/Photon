@@ -1,23 +1,6 @@
 name: "photon_prod"
 
 services:
-  photon_prod_db:
-    image: postgres
-    container_name: photon_prod_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   photon_prod_api:
     container_name: photon_prod_api
@@ -27,14 +10,8 @@ services:
     restart: always
     ports:
       - "4000:4000"
-    depends_on:
-      photon_prod_db:
-        condition: service_healthy
     environment:
       NODE_ENV: ${NODE_ENV}
       DATABASE_URL: ${DATABASE_URL}
       FEIDE_CLIENT_ID: ${FEIDE_CLIENT_ID}
       FEIDE_CLIENT_SECRET: ${FEIDE_CLIENT_SECRET}
-      
-volumes:
-  db_data:
