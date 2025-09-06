@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { auth } from "./lib/auth";
@@ -68,6 +69,13 @@ app.get(
     }),
 );
 
+app.get(
+    "/static/*",
+    serveStatic({
+        root: "./",
+    }),
+);
+
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
 }
@@ -75,7 +83,7 @@ if (env.SEED_DB) {
 serve(
     {
         fetch: app.fetch,
-        port: 4000,
+        port: env.PORT,
     },
     (info) => {
         console.log(`Server is running on http://localhost:${info.port}/api`);

@@ -24,6 +24,10 @@ const envSchema = z.object({
     SMTP_USER: z.string({ description: "SMTP User" }).optional(),
     SMTP_PASS: z.string({ description: "SMTP Password" }).optional(),
     SMTP_FROM: z.string({ description: "SMTP From Email Address" }).optional(),
+    PORT: z
+        .string({ description: "Port to run the server on" })
+        .default("4000")
+        .transform((val) => Number(val)),
 });
 
 /**
