@@ -1,13 +1,12 @@
-name: "photon_prod"
+name: prod
 
 services:
-
-  photon_prod_api:
-    container_name: photon_prod_api
+  photon.tihlde.org:
+    container_name: photon.tihlde.org
     build:
       context: ../..
       dockerfile: apps/api/Dockerfile
-    restart: always
+    restart: unless-stopped
     ports:
       - "4000:4000"
     environment:
