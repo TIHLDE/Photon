@@ -3,15 +3,34 @@ import { render } from "@react-email/render";
 import type { ReactElement } from "react";
 import { env } from "../env";
 
-const transporter = nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: false,
-    auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-    },
-});
+const getTransporter = () => {
+    if (!env.MAIL_HOST) {
+        console.warn("MAIL env variables not set. Using sink instead.");
+
+        // Sink
+        const transport = nodemailer.createTransport({
+            host: "localhost",
+            port: 1025,
+            secure: false,
+        });
+
+        console.log("Serving mail inbox at http://localhost:8025");
+        return transport;
+    }
+
+    // Actual SMTP
+    return nodemailer.createTransport({
+        host: env.MAIL_HOST,
+        port: env.MAIL_PORT,
+        secure: false,
+        auth: {
+            user: env.MAIL_USER,
+            pass: env.MAIL_PASS,
+        },
+    });
+};
+
+const transporter = getTransporter();
 
 type SendEmailOptions = {
     to: string;
@@ -20,13 +39,9 @@ type SendEmailOptions = {
 };
 
 export async function sendEmail({ to, subject, component }: SendEmailOptions) {
-    if (!env.SMTP_HOST) {
-        console.warn("SMTP env variables not set. Skipping email sending.");
-        return;
-    }
     const html = await render(component);
     await transporter.sendMail({
-        from: `<TIHLDE> ${env.SMTP_FROM}`,
+        from: `<TIHLDE> ${env.MAIL_FROM}`,
         to,
         subject,
         html,

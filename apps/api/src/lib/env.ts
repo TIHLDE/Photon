@@ -16,14 +16,16 @@ const envSchema = z.object({
         })
         .optional()
         .transform((val) => val === "true" || val === "1"),
-    SMTP_HOST: z.string({ description: "SMTP Host" }).optional(),
-    SMTP_PORT: z
-        .string({ description: "SMTP Port" })
+    MAIL_HOST: z.string({ description: "MAIL Host" }).optional(),
+    MAIL_PORT: z
+        .string({ description: "MAIL Port" })
         .default("587")
         .transform((val) => Number(val)),
-    SMTP_USER: z.string({ description: "SMTP User" }).optional(),
-    SMTP_PASS: z.string({ description: "SMTP Password" }).optional(),
-    SMTP_FROM: z.string({ description: "SMTP From Email Address" }).optional(),
+    MAIL_USER: z.string({ description: "MAIL User" }).optional(),
+    MAIL_PASS: z.string({ description: "MAIL Password" }).optional(),
+    MAIL_FROM: z
+        .string({ description: "MAIL From Email Address" })
+        .default("no-reply@tihlde.org"),
     PORT: z
         .string({ description: "Port to run the server on" })
         .default("4000")
