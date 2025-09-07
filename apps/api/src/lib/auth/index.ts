@@ -55,12 +55,7 @@ export const auth = betterAuth({
         },
         changeEmail: {
             enabled: true,
-            sendChangeEmailVerification: async ({
-                newEmail,
-                token,
-                url,
-                user,
-            }) => {
+            sendChangeEmailVerification: async ({ newEmail, url }) => {
                 sendEmail({
                     component: ChangeEmailVerification({ url }),
                     subject: "Verifiser din nye e-postadresse",
@@ -73,6 +68,9 @@ export const auth = betterAuth({
         feidePlugin(),
         openAPI(),
         emailOTP({
+            // TODO disable signups when in production
+            // users should only sign up via Feide (or be migrated from Lepton)
+            disableSignUp: false,
             sendVerificationOTP: async ({ email, otp, type }) => {
                 if (type !== "sign-in") return;
 
