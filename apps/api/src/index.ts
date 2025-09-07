@@ -44,7 +44,7 @@ app.get(
             info: {
                 title: "Photon API",
                 version: "1.0.0",
-                description: "Tihldes nye backend",
+                description: "TIHLDEs nye backend",
             },
             servers: [
                 {

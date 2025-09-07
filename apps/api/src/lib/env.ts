@@ -32,6 +32,10 @@ const envSchema = z.object({
         .string()
         .meta({ description: "MAIL From Email Address" })
         .default("no-reply@tihlde.org"),
+    REDIS_URL: z
+        .string()
+        .meta({ description: "Redis connection URL" })
+        .default("redis://localhost:6379"),
     PORT: z
         .string()
         .meta({ description: "Port to run the server on" })
