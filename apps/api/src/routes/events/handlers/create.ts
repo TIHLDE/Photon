@@ -4,6 +4,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
 import { event } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
+import { requirePermissions } from "~/middleware/permission";
 
 export const createRouter = new Hono();
 
@@ -56,6 +57,7 @@ createRouter.post(
         },
     }),
     requireAuth,
+    requirePermissions("events:create"),
     validator("json", createBodySchema),
     async (c) => {
         const body = await c.req.json().catch(() => null);

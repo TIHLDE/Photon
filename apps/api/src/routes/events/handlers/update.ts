@@ -5,6 +5,7 @@ import db from "~/db";
 import { event } from "~/db/schema/events";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
+import { requirePermissions } from "~/middleware/permission";
 
 export const updateRouter = new Hono();
 
@@ -66,6 +67,7 @@ updateRouter.patch(
         },
     }),
     requireAuth,
+    requirePermissions("events:update"),
     validator("param", idParamSchema),
     validator("json", updateBodySchema),
     async (c) => {
