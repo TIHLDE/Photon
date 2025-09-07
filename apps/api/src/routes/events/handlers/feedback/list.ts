@@ -1,0 +1,52 @@
+import { Hono } from "hono";
+import z from "zod";
+import { describeRoute, resolver, validator } from "hono-openapi";
+import db from "~/db";
+import { eventFeedback } from "~/db/schema/events";
+import { desc } from "drizzle-orm";
+import { requireAuth } from "~/middleware/auth";
+
+export const feedbackListRouter = new Hono();
+
+const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const feedbackSchema = z.object({
+    id: z.uuid({ version: "v7" }),
+    eventId: z.uuid({ version: "v7" }),
+    userId: z.string().nullable().optional(),
+    rating: z.number().nullable().optional(),
+    comment: z.string().nullable().optional(),
+    createdAt: z.iso.datetime(),
+});
+
+feedbackListRouter.get(
+    "/:id/feedback",
+    describeRoute({
+        tags: ["events"],
+        summary: "List feedback for event",
+        responses: {
+            200: {
+                description: "List of feedback",
+                content: {
+                    "application/json": {
+                        schema: resolver(
+                            z.object({ items: z.array(feedbackSchema) }),
+                        ),
+                    },
+                },
+            },
+        },
+    }),
+    requireAuth,
+    validator("param", idParamSchema),
+    async (c) => {
+        const id = c.req.param("id");
+        if (!id) return c.body(null, 400);
+
+        const items = await db.query.eventFeedback.findMany({
+            where: (f, { eq }) => eq(f.eventId, id),
+            orderBy: [desc(eventFeedback.createdAt)],
+        });
+
+        return c.json({ items });
+    },
+);
