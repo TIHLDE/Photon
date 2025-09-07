@@ -4,9 +4,8 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
 import { event } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
-import type { AuthVariables } from "~/middleware/auth";
 
-export const createRouter = new Hono<{ Variables: AuthVariables }>();
+export const createRouter = new Hono();
 
 const createBodySchema = z.object({
     slug: z.string().min(1),
