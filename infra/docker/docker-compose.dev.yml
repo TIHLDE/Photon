@@ -5,7 +5,7 @@ services:
   photon_dev_db:
     image: postgres
     container_name: photon_dev_db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -19,6 +19,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  
+  photon_dev_mail_sink:
+    image: axllent/mailpit:v1.27
+    container_name: photon_dev_mail_sink
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    volumes:
+      - mail_sink_data:/data
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
 volumes:
   db_data:
+  mail_sink_data:
