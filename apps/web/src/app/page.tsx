@@ -1,11 +1,31 @@
-"use client"
-
 import Navbar from "@/components/navigation/TopBar"
 import Footer from "@/components/navigation/Footer"
 import BottomBar from "@/components/navigation/BottomBar"
 import Hero from "@/components/hero"
 import Image from "next/image"
 import TihldeLogo from "@/components/miscellaneous/TihldeLogo"
+import {getJobPosts} from "@/services/getJobPosts";
+import JobPostListItem, {JobPostListItemLoading} from "@/components/JobPostListItem";
+import {Suspense} from "react";
+
+async function JobPostList() {
+    const post = await getJobPosts();
+
+    console.log(post);
+
+    if (!post || !post.results || post.length === 0) {
+        return <p className="text-black">No posts found!</p>;
+    }
+
+    return (
+        <div className="flex flex-col gap-4">
+            {post.results.map((post) => (
+                <JobPostListItem jobPost={post} />
+            ))}
+        </div>
+    )
+}
+
 
 export default function Hjem() {
   return (
@@ -138,18 +158,16 @@ export default function Hjem() {
       </section>
 
       <section className="max-w-5xl px-4 py-16 h-auto justify-center">
-        <div className="grid gap-8 md:grid-cols-5 place-items-center">
+        <div className="">
           <div className="md:col-span-2">
             <h2 className="mb-2 text-3xl font-bold">Stillingannonser</h2>
             <p className="mb-4 text-gray-300 text-lg leading-relaxed">
               Publiser relevante stillinger, internships eller trainee-programmer direkte til våre medlemmer. Sikre deg de beste kandidatene!
             </p>
           </div>
-          <div className="flex items-center justify-center md:col-span-3 md:order-first">
-            <div className="relative w-full order-first">
-              <Image src="/stillingsannonser.png" alt="Stillingsannonser" width={603} height={398} className="h-auto  rounded-lg" />
-            </div>
-          </div>
+          <Suspense fallback={<div>JobPostListItemLoading</div>}>
+              <JobPostList />
+          </Suspense>
         </div>
       </section >
 

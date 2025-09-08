@@ -1,253 +1,323 @@
 "use client"
 
-import type React from "react"
+import React, {useMemo} from "react"
+import {Button} from "@/components/ui/button"
+import {Card} from "@/components/ui/card"
+import {Input} from "@/components/ui/input"
+import MultiCheckbox from "@/components/ui/MultiCheckbox"
+import {Label} from "@/components/ui/label"
+import {Textarea} from "@/components/ui/textarea"
+import {addMonths} from 'date-fns';
+import {CompaniesEmail} from "@/types/CompaniesEmail";
+import * as z from 'zod';
+import {useForm} from '@tanstack/react-form';
+import type { AnyFieldApi } from '@tanstack/react-form'
+import {toast} from "sonner";
+import {LoaderCircle} from "lucide-react";
+import {useCompanyContact} from "@/hooks/useCompanyContact";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-
-export default function ContactForm() {
-    const [formData, setFormData] = useState({
-        company: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        message: "",
-    })
-
-    const [interests, setInterests] = useState({
-        companyPresentation: false,
-        workshop: false,
-        companyVisit: false,
-        advertisement: false,
-        collaboration: false,
-        other: false,
-    })
-
-    const [timeframe, setTimeframe] = useState({
-        q1: false,
-        q2: false,
-        q3: false,
-        q4: false,
-    })
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
-
-        console.log({ formData, interests, timeframe })
-
-        // toast({
-        //     title: "Form submitted",
-        //     description: "We'll get back to you as soon as possible.",
-        // })
-    }
-
+function FieldInfo({ field }: { field: AnyFieldApi }) {
     return (
-        <Card className="border-0 overflow-hidden bg-slate-800/50">
-            <CardContent className="p-0 border-0">
-                <div className="p-6">
-                    <h2 className="text-2xl font-bold">Ta kontakt med oss</h2>
-                    <p className="text-sm text-slate-300">Fyll ut kontaktskjemaet, så hører du fra oss straks.</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-8 p-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="company" className="text-sm font-medium">
-                                Bedrift <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="company"
-                                placeholder="Navn på bedriften"
-                                className="bg-slate-900 text-white placeholder:text-slate-500"
-                                value={formData.company}
-                                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="contactPerson" className="text-sm font-medium">
-                                Kontaktperson <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="contactPerson"
-                                placeholder="Fullt navn"
-                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
-                                value={formData.contactPerson}
-                                onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-sm font-medium">
-                                E-post <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                placeholder="eksempel@bedrift.com"
-                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-sm font-medium">
-                                Telefonnummer
-                            </Label>
-                            <Input
-                                id="phone"
-                                type="tel"
-                                placeholder="+47 987 65 432"
-                                className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-4">
-                            <Label className="text-sm font-medium">
-                                Tidsramme
-                            </Label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="q1"
-                                        checked={timeframe.q1}
-                                        onCheckedChange={(checked) => setTimeframe({ ...timeframe, q1: checked as boolean })}
-                                    />
-                                    <label htmlFor="q1" className="text-sm">
-                                        Q1 (jan-mar)
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="q2"
-                                        checked={timeframe.q2}
-                                        onCheckedChange={(checked) => setTimeframe({ ...timeframe, q2: checked as boolean })}
-                                    />
-                                    <label htmlFor="q2" className="text-sm">
-                                        Q2 (apr-jun)
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="q3"
-                                        checked={timeframe.q3}
-                                        onCheckedChange={(checked) => setTimeframe({ ...timeframe, q3: checked as boolean })}
-                                    />
-                                    <label htmlFor="q3" className="text-sm">
-                                        Q3 (aug-sep)
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="q4"
-                                        checked={timeframe.q4}
-                                        onCheckedChange={(checked) => setTimeframe({ ...timeframe, q4: checked as boolean })}
-                                    />
-                                    <label htmlFor="q4" className="text-sm">
-                                        Q4 (okt-des)
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <Label className="text-sm font-medium">
-                                Interesser
-                            </Label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="companyPresentation"
-                                        checked={interests.companyPresentation}
-                                        onCheckedChange={(checked) =>
-                                            setInterests({ ...interests, companyPresentation: checked as boolean })
-                                        }
-                                    />
-                                    <label htmlFor="companyPresentation" className="text-sm">
-                                        Bedriftspresentasjon
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="workshop"
-                                        checked={interests.workshop}
-                                        onCheckedChange={(checked) => setInterests({ ...interests, workshop: checked as boolean })}
-                                    />
-                                    <label htmlFor="workshop" className="text-sm">
-                                        Kurs og workshop
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="advertisement"
-                                        checked={interests.advertisement}
-                                        onCheckedChange={(checked) => setInterests({ ...interests, advertisement: checked as boolean })}
-                                    />
-                                    <label htmlFor="advertisement" className="text-sm">
-                                        Jobbannonse
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="companyExcursion"
-                                        checked={interests.collaboration}
-                                        onCheckedChange={(checked) => setInterests({ ...interests, collaboration: checked as boolean })}
-                                    />
-                                    <label htmlFor="companyExcursion" className="text-sm">
-                                        Bedriftsekskursjon
-                                    </label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="other"
-                                        checked={interests.other}
-                                        onCheckedChange={(checked) => setInterests({ ...interests, other: checked as boolean })}
-                                    />
-                                    <label htmlFor="other" className="text-sm">
-                                        Annet
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="message" className="text-sm font-medium">
-                            Melding
-                        </Label>
-                        <Textarea
-                            id="message"
-                            placeholder="Utfyllende beskrivelse"
-                            className="min-h-[120px] bg-slate-900 border-0 text-white placeholder:text-slate-500"
-                            value={formData.message}
-                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        />
-                    </div>
-
-                    <Button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                    >
-                        Send
-                    </Button>
-                </form>
-            </CardContent>
-        </Card>
+        <>
+            {field.state.meta.isTouched && !field.state.meta.isValid ? (
+                <em className="text-sm font-medium text-red-500">{field.state.meta.errors.map((err) => err.message).join(',')}</em>
+            ) : null}
+            {field.state.meta.isValidating ? 'Validating...' : null}
+        </>
     )
 }
 
+const formSchema = z.object({
+    bedrift: z.string().min(1, {message: 'Feltet er påkrevd'}),
+    kontaktperson: z.string().min(1, {message: 'Feltet er påkrevd'}),
+    epost: z.string().email({message: 'Ugyldig e-post'}),
+    phone: z.string().regex(/^\+?\d{1,4}\s?(\d\s?){1,14}$/, 'Ugyldig telefonnummer'),
+    time: z.array(z.string()).min(1, {message: 'Du må velge minst ett semester'}),
+    type: z.array(z.string()).min(1, {message: 'Du må velge minst en type arrangement'}),
+    comment: z.string(),
+});
+
+export default function ContactForm() {
+    const { sendContact } = useCompanyContact();
+
+    const form = useForm({
+        defaultValues: {
+            bedrift: '',
+            kontaktperson: '',
+            epost: '',
+            phone: '',
+            time: [] as string[],
+            type: [] as string[],
+            comment: '',
+        },
+        validators: {
+            onSubmit: formSchema,
+        },
+        onSubmit: async ({value}) => {
+            try {
+                const payload: CompaniesEmail = {
+                    info: {
+                        bedrift: value.bedrift,
+                        kontaktperson: value.kontaktperson,
+                        epost: value.epost,
+                        telefon: value.phone,
+                    },
+                    time: value.time,
+                    type: value.type,
+                    comment: value.comment ?? '',
+                };
+
+                console.log(payload);
+
+                const response = await sendContact(payload);
+                if (response.success) {
+                    toast.success("Skjemaet ble sendt!");
+                    form.reset();
+                } else {
+                    toast.error(response.message);
+                }
+            } catch (err: any) {
+                toast.error(err.detail);
+            }
+        },
+    });
+
+    const getSemester = (semester: number) => {
+        const date = addMonths(new Date(), 1);
+        let dateMonth = date.getMonth() + semester * 6;
+        let dateYear = date.getFullYear();
+        while (dateMonth > 11) {
+            dateMonth -= 12;
+            dateYear++;
+        }
+        const returnMonth = dateMonth > 5 ? 'Høst' : 'Vår';
+        return `${returnMonth} ${dateYear}`;
+    };
+
+    const semesters = useMemo(() => [...Array(4).keys()].map(getSemester), []);
+
+    const types = [
+        'Bedriftspresentasjon',
+        'Kurs/Workshop',
+        'Bedriftsbesøk',
+        'Annonse',
+        'Insta-takeover',
+        'Bedriftsekskursjon',
+        'Annet',
+    ];
+
+    return (
+        <Card className="border-0 overflow-hidden bg-slate-800/50">
+            <div className="px-6 pt-8">
+                <h2 className="text-2xl font-bold">Ta kontakt med oss</h2>
+                <p className="text-sm text-slate-300">Fyll ut kontaktskjemaet, så hører du fra oss straks.</p>
+            </div>
+
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation()
+                    form.handleSubmit();
+                }}
+                className="space-y-6 py-6"
+            >
+                <div className="grid gap-6 md:grid-cols-2 px-6">
+                    <div className="space-y-2 flex flex-col">
+                        <form.Field
+                            name="bedrift"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                            Bedrift <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id={field.name}
+                                            placeholder="Firmanavn"
+                                            className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
+                                            value={field.state.value || ''}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            onBlur={field.handleBlur}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+
+                    <div className="space-y-2 flex flex-col">
+                        <form.Field
+                            name="kontaktperson"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                            Kontaktperson <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id={field.name}
+                                            placeholder="Ola Nordmanne"
+                                            className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
+                                            value={field.state.value || ''}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            onBlur={field.handleBlur}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+
+                    <div className="space-y-2 flex flex-col">
+                        <form.Field
+                            name="epost"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                            Mail <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id={field.name}
+                                            placeholder="eksempel@mail.com"
+                                            className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
+                                            value={field.state.value || ''}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            onBlur={field.handleBlur}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+
+                    <div className="space-y-2 flex flex-col">
+                        <form.Field
+                            name="phone"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                            Telefon
+                                        </Label>
+                                        <Input
+                                            id={field.name}
+                                            placeholder="+47 987 21 421"
+                                            className="bg-slate-900 border-0 text-white placeholder:text-slate-500"
+                                            value={field.state.value || ''}
+                                            onChange={(e) => field.handleChange(e.target.value)}
+                                            onBlur={field.handleBlur}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 px-6">
+                    <div className="space-y-4">
+                        <form.Field
+                            name="time"
+                            mode="array"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                           Tidsramme <span className="text-red-500">*</span>
+                                        </Label>
+                                        <MultiCheckbox
+                                            label="Semester"
+                                            options={semesters}
+                                            selected={field.state.value || []}
+                                            onChange={(newVal) => field.handleChange(newVal)}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <form.Field
+                            name="type"
+                            mode="array"
+                            children={(field) => {
+                                return (
+                                    <>
+                                        <Label htmlFor={field.name} className="text-sm font-medium">
+                                            Interesser <span className="text-red-500">*</span>
+                                        </Label>
+                                        <MultiCheckbox
+                                            label="Arrangementer"
+                                            options={types}
+                                            selected={field.state.value || []}
+                                            onChange={(newVal) => field.handleChange(newVal)}
+                                        />
+
+                                        <FieldInfo field={field} />
+                                    </>
+                                )
+                            }}
+                        />
+                    </div>
+                </div>
+
+
+                <div className="space-y-2 px-6">
+                    <form.Field
+                        name="comment"
+                        children={(field) => {
+                            return (
+                                <>
+                                    <Label htmlFor={field.name} className="text-sm font-medium">
+                                       Melding
+                                    </Label>
+                                    <Textarea
+                                        id={field.name}
+                                        placeholder="Utfyllende beskrivelse"
+                                        className="bg-slate-900 border-0 h-32 text-white placeholder:text-slate-500"
+                                        value={field.state.value || ''}
+                                        onChange={(e) => field.handleChange(e.target.value)}
+                                        onBlur={field.handleBlur}
+                                    />
+
+                                    <FieldInfo field={field} />
+                                </>
+                            )
+                        }}
+                    />
+                </div>
+
+                <div className="px-6 pb-3">
+                    <form.Subscribe
+                        selector={(state) => [state.canSubmit, state.isSubmitting]}
+                        children={([canSubmit, isSubmitting]) => (
+                            <Button
+                                type="submit"
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                                disabled={!canSubmit}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                    <p>Sender</p> <LoaderCircle className="animate-spin w-12 h-12 text-white" />
+                                    </>
+                                ) : ('Send inn')}
+                            </Button>
+                        )}
+                    />
+                </div>
+            </form>
+        </Card>
+    );
+}
