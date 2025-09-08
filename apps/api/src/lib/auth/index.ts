@@ -11,8 +11,9 @@ import * as schema from "~/db/schema";
 import { feidePlugin, syncFeideHook } from "./feide";
 import { env } from "../env";
 import { sendEmail } from "../email";
-import ChangeEmailVerification from "../email/template/change-email-verification";
-import OtpSignIn from "../email/template/otp-sign-in";
+import ChangeEmailVerificationEmail from "../email/template/change-email-verification";
+import OtpSignInEmail from "../email/template/otp-sign-in";
+import ResetPasswordEmail from "../email/template/reset-password";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -21,7 +22,16 @@ export const auth = betterAuth({
     }),
     baseURL: env.BASE_URL,
     emailAndPassword: {
-        enabled: false,
+        enabled: true,
+        disableSignUp: true,
+        requireEmailVerification: true,
+        sendResetPassword: async ({ url, user }) => {
+            await sendEmail({
+                component: ResetPasswordEmail({ url }),
+                subject: "Tilbakestill ditt passord",
+                to: user.email,
+            });
+        },
     },
     session: {
         expiresIn: 60 * 60 * 24 * 7, // 7 days
@@ -57,7 +67,7 @@ export const auth = betterAuth({
             enabled: true,
             sendChangeEmailVerification: async ({ newEmail, url }) => {
                 sendEmail({
-                    component: ChangeEmailVerification({ url }),
+                    component: ChangeEmailVerificationEmail({ url }),
                     subject: "Verifiser din nye e-postadresse",
                     to: newEmail,
                 });
@@ -75,7 +85,7 @@ export const auth = betterAuth({
                 if (type !== "sign-in") return;
 
                 sendEmail({
-                    component: OtpSignIn({ otp }),
+                    component: OtpSignInEmail({ otp }),
                     subject: "Din engangskode",
                     to: email,
                 });

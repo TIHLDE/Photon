@@ -7,19 +7,15 @@ import {
     Heading,
     Html,
     Img,
-    Link,
-    Section,
     Text,
 } from "@react-email/components";
 import { env } from "../../env";
 
-interface ChangeEmailVerificationProps {
+interface ResetPasswordEmailProps {
     url: string;
 }
 
-export const ChangeEmailVerificationEmail = ({
-    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-}: ChangeEmailVerificationProps) => {
+export const ResetPasswordEmail = ({ url }: ResetPasswordEmailProps) => {
     return (
         <Html>
             <Head />
@@ -33,18 +29,18 @@ export const ChangeEmailVerificationEmail = ({
                         style={logo}
                     />
                     <Heading style={secondary}>
-                        Trygg på knappen nedenfor for å bekrefte din nye
-                        e-postadresse
+                        Tilbakestill passordet ditt
                     </Heading>
+                    <Text style={paragraph}>
+                        Klikk på knappen under for å tilbakestille passordet
+                        ditt.
+                    </Text>
                     <Button href={url} style={button}>
-                        Bekreft e-post
+                        Tilbakestill passord
                     </Button>
                     <Text style={paragraph}>
-                        Forventet du ikke denne e-posten?
-                    </Text>
-                    <Text style={paragraph}>
-                        Du kan trygt ignorere denne e-posten hvis du ikke prøvde
-                        å logge inn
+                        Hvis du ikke ba om å tilbakestille passordet, kan du
+                        trygt ignorere denne e-posten.
                     </Text>
                 </Container>
                 <Text style={footer}>Levert av INDEX</Text>
@@ -53,7 +49,7 @@ export const ChangeEmailVerificationEmail = ({
     );
 };
 
-export default ChangeEmailVerificationEmail;
+export default ResetPasswordEmail;
 
 const main = {
     backgroundColor: "#ffffff",
@@ -76,19 +72,6 @@ const logo = {
     marginBottom: "24px",
 };
 
-const tertiary = {
-    color: "#0a85ea",
-    fontSize: "11px",
-    fontWeight: 700,
-    fontFamily: "HelveticaNeue,Helvetica,Arial,sans-serif",
-    height: "16px",
-    letterSpacing: "0",
-    lineHeight: "16px",
-    margin: "16px 8px 8px 8px",
-    textTransform: "uppercase" as const,
-    textAlign: "center" as const,
-};
-
 const secondary = {
     color: "#000",
     display: "inline-block",
@@ -99,28 +82,6 @@ const secondary = {
     marginBottom: "0",
     marginTop: "0",
     width: "100%",
-    textAlign: "center" as const,
-};
-
-const codeContainer = {
-    background: "rgba(0,0,0,.05)",
-    borderRadius: "4px",
-    margin: "16px auto 14px",
-    verticalAlign: "middle",
-    width: "280px",
-};
-
-const code = {
-    color: "#000",
-    fontFamily: "HelveticaNeue-Bold",
-    fontSize: "32px",
-    fontWeight: 700,
-    letterSpacing: "6px",
-    lineHeight: "40px",
-    paddingBottom: "8px",
-    paddingTop: "8px",
-    margin: "0 auto",
-    display: "block",
     textAlign: "center" as const,
 };
 
