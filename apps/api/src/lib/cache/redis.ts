@@ -13,7 +13,6 @@ async function connect(): Promise<Client> {
     connectPromise = (async () => {
         const c = createClient({ url: env.REDIS_URL });
         c.on("error", (err) => {
-            // Surface connection issues early
             console.error("Redis client error:", err);
         });
         await c.connect();

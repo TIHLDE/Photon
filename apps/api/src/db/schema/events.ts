@@ -13,7 +13,6 @@ import { uuidv7 } from "../utils";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
-// Enums
 export const registrationStatus = pgEnum("event_registration_status", [
     "registered",
     "waitlisted",
@@ -29,7 +28,6 @@ export const paymentStatus = pgEnum("event_payment_status", [
     "failed",
 ]);
 
-// Event core
 export const event = pgTable("event", {
     id: uuidv7(),
     slug: varchar("slug", { length: 128 }).notNull().unique(),
@@ -50,7 +48,6 @@ export const event = pgTable("event", {
         .notNull(),
 });
 
-// Registrations and waitlist
 export const eventRegistration = pgTable("registration", {
     id: uuidv7(),
     eventId: uuid("event_id")
@@ -69,7 +66,6 @@ export const eventRegistration = pgTable("registration", {
         .notNull(),
 });
 
-// Points awarded for participation
 export const eventPoint = pgTable("point", {
     id: uuidv7(),
     eventId: uuid("event_id")
@@ -83,7 +79,6 @@ export const eventPoint = pgTable("point", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Payments for paid events
 export const eventPayment = pgTable("payment", {
     id: uuidv7(),
     eventId: uuid("event_id")
@@ -104,7 +99,6 @@ export const eventPayment = pgTable("payment", {
         .notNull(),
 });
 
-// Feedback after events
 export const eventFeedback = pgTable("feedback", {
     id: uuidv7(),
     eventId: uuid("event_id")

@@ -1,7 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
-import { userHasAnyRoleName, userHasRoleName } from "~/lib/auth/rbac/service";
+import { userHasAnyRoleName, userHasRoleName } from "~/lib/auth/rbac";
 
 type Variables = {
     user: User | null;

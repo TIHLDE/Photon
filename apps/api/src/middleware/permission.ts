@@ -5,7 +5,7 @@ import {
     userHasAllPermissions,
     userHasAnyPermissionName,
     userHasPermissionName,
-} from "~/lib/auth/rbac/service";
+} from "~/lib/auth/rbac";
 
 type Variables = {
     user: User | null;
