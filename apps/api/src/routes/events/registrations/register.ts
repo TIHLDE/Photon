@@ -15,9 +15,9 @@ export const registerRouter = new Hono();
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
 
 registerRouter.post(
-    "/:id/register",
+    "/register",
     describeRoute({
-        tags: ["events"],
+        tags: ["events - registrations"],
         summary: "Register for event",
         responses: {
             201: { description: "Registered" },

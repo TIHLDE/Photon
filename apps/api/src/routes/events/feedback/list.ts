@@ -2,38 +2,35 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
-import { eventPayment } from "~/db/schema/events";
+import { eventFeedback } from "~/db/schema/events";
 import { desc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
+import { requirePermissions } from "~/middleware/permission";
 
-export const paymentsListRouter = new Hono();
+export const feedbackListRouter = new Hono();
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
-const paymentSchema = z.object({
+const feedbackSchema = z.object({
     id: z.uuid({ version: "v7" }),
     eventId: z.uuid({ version: "v7" }),
-    userId: z.string(),
-    amountMinor: z.number(),
-    currency: z.string(),
-    provider: z.string().nullable().optional(),
-    providerPaymentId: z.string().nullable().optional(),
-    status: z.enum(["pending", "paid", "refunded", "failed"]),
+    userId: z.string().nullable().optional(),
+    rating: z.number().nullable().optional(),
+    comment: z.string().nullable().optional(),
     createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
 });
 
-paymentsListRouter.get(
-    "/:id/payments",
+feedbackListRouter.get(
+    "/",
     describeRoute({
-        tags: ["events"],
-        summary: "List payments for event",
+        tags: ["events - feedback"],
+        summary: "List feedback for event",
         responses: {
             200: {
-                description: "List of payments",
+                description: "List of feedback",
                 content: {
                     "application/json": {
                         schema: resolver(
-                            z.object({ items: z.array(paymentSchema) }),
+                            z.object({ items: z.array(feedbackSchema) }),
                         ),
                     },
                 },
@@ -41,14 +38,15 @@ paymentsListRouter.get(
         },
     }),
     requireAuth,
+    requirePermissions("events:feedback:list"),
     validator("param", idParamSchema),
     async (c) => {
         const id = c.req.param("id");
         if (!id) return c.body(null, 400);
 
-        const items = await db.query.eventPayment.findMany({
-            where: (p, { eq }) => eq(p.eventId, id),
-            orderBy: [desc(eventPayment.createdAt)],
+        const items = await db.query.eventFeedback.findMany({
+            where: (f, { eq }) => eq(f.eventId, id),
+            orderBy: [desc(eventFeedback.createdAt)],
         });
 
         return c.json({ items });

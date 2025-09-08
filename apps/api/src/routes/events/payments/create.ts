@@ -4,6 +4,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
 import { eventPayment } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
+import { requirePermissions } from "~/middleware/permission";
 
 export const paymentsCreateRouter = new Hono();
 
@@ -31,9 +32,9 @@ const createPaymentSchemaOpenAPI =
     await resolver(createPaymentSchema).toOpenAPISchema();
 
 paymentsCreateRouter.post(
-    "/:id/payments",
+    "/",
     describeRoute({
-        tags: ["events"],
+        tags: ["events - payments"],
         summary: "Create payment record",
         requestBody: {
             content: {
@@ -52,6 +53,7 @@ paymentsCreateRouter.post(
         },
     }),
     requireAuth,
+    requirePermissions("events:payments:create"),
     validator("param", idParamSchema),
     validator("json", createPaymentSchema),
     async (c) => {

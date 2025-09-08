@@ -25,9 +25,9 @@ const createFeedbackSchemaOpenAPI =
     await resolver(createFeedbackSchema).toOpenAPISchema();
 
 feedbackCreateRouter.post(
-    "/:id/feedback",
+    "/",
     describeRoute({
-        tags: ["events"],
+        tags: ["events - feedback"],
         summary: "Create feedback",
         requestBody: {
             content: {
@@ -49,7 +49,7 @@ feedbackCreateRouter.post(
     validator("param", idParamSchema),
     validator("json", createFeedbackSchema),
     async (c) => {
-        const id = c.req.param("id");
+        const { id } = c.req.valid("param");
         const user = c.get("user");
 
         const body = await c.req.json().catch(() => null);
@@ -61,7 +61,7 @@ feedbackCreateRouter.post(
             .insert(eventFeedback)
             .values({
                 eventId: id,
-                userId: user?.id,
+                userId: user.id,
                 rating: rating ? Number(rating) : null,
                 comment,
             })

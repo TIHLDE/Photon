@@ -6,36 +6,34 @@ import { eventRegistration } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 
-export const checkinRouter = new Hono();
+export const cancelRouter = new Hono();
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
-const checkinQuerySchema = z.object({ userId: z.string() });
 
-checkinRouter.post(
-    "/:id/checkin",
+cancelRouter.post(
+    "/cancel",
     describeRoute({
-        tags: ["events"],
-        summary: "Check-in a user",
+        tags: ["events - registrations"],
+        summary: "Cancel registration",
         responses: {
-            200: { description: "Checked in" },
+            200: { description: "Cancelled" },
             404: { description: "Not found" },
         },
     }),
     requireAuth,
     validator("param", idParamSchema),
-    validator("query", checkinQuerySchema),
     async (c) => {
         const eventId = c.req.param("id");
-        const userId = c.req.query("userId");
-        if (!eventId || !userId) return c.body(null, 400);
+        const user = c.get("user");
+        if (!eventId || !user) return c.body(null, 400);
 
         const [updated] = await db
             .update(eventRegistration)
-            .set({ status: "attended", attendedAt: new Date() })
+            .set({ status: "cancelled", waitlistPosition: null })
             .where(
                 and(
                     eq(eventRegistration.eventId, eventId),
-                    eq(eventRegistration.userId, userId),
+                    eq(eventRegistration.userId, user.id),
                 ),
             )
             .returning();
