@@ -1,7 +1,6 @@
 import {ApiResponse} from "@/types/Misc";
 
-//const UPSTREAM = process.env.TIHLDE_API_URL;
-const UPSTREAM ='https://api.tihlde.org';
+const UPSTREAM = process.env.TIHLDE_API_URL;
 
 export const apiClient = {
     async get<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
