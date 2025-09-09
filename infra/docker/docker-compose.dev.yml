@@ -3,7 +3,7 @@ name: "photon_dev"
 
 services:
   photon_dev_db:
-    image: postgres:18rc1
+    image: postgres:17.6
     container_name: photon_dev_db
     restart: unless-stopped
     environment:

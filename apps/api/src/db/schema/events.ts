@@ -9,7 +9,6 @@ import {
     uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { uuidv7 } from "../utils";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
@@ -29,7 +28,7 @@ export const paymentStatus = pgEnum("event_payment_status", [
 ]);
 
 export const event = pgTable("event", {
-    id: uuidv7(),
+    id: uuid("id").primaryKey().defaultRandom(),
     slug: varchar("slug", { length: 128 }).notNull().unique(),
     title: varchar("title", { length: 256 }).notNull(),
     description: text("description"),
@@ -49,7 +48,7 @@ export const event = pgTable("event", {
 });
 
 export const eventRegistration = pgTable("registration", {
-    id: uuidv7(),
+    id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
         .references(() => event.id, { onDelete: "cascade" }),
@@ -67,7 +66,7 @@ export const eventRegistration = pgTable("registration", {
 });
 
 export const eventPoint = pgTable("point", {
-    id: uuidv7(),
+    id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
         .references(() => event.id, { onDelete: "cascade" }),
@@ -80,7 +79,7 @@ export const eventPoint = pgTable("point", {
 });
 
 export const eventPayment = pgTable("payment", {
-    id: uuidv7(),
+    id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
         .references(() => event.id, { onDelete: "cascade" }),
@@ -100,7 +99,7 @@ export const eventPayment = pgTable("payment", {
 });
 
 export const eventFeedback = pgTable("feedback", {
-    id: uuidv7(),
+    id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
         .references(() => event.id, { onDelete: "cascade" }),
