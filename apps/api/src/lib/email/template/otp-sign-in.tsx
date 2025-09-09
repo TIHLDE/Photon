@@ -16,7 +16,7 @@ interface OtpSignInProps {
     otp: string;
 }
 
-export const OtpSignIn = ({ otp = "123456" }: OtpSignInProps) => {
+export const OtpSignInEmail = ({ otp = "123456" }: OtpSignInProps) => {
     return (
         <Html>
             <Head />
@@ -50,7 +50,7 @@ export const OtpSignIn = ({ otp = "123456" }: OtpSignInProps) => {
     );
 };
 
-export default OtpSignIn;
+export default OtpSignInEmail;
 
 const main = {
     backgroundColor: "#ffffff",

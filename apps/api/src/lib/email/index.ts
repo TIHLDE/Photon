@@ -22,7 +22,7 @@ const getTransporter = () => {
     return nodemailer.createTransport({
         host: env.MAIL_HOST,
         port: env.MAIL_PORT,
-        secure: false,
+        secure: true,
         auth: {
             user: env.MAIL_USER,
             pass: env.MAIL_PASS,
