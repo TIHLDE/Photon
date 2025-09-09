@@ -8,13 +8,13 @@ import { requirePermissions } from "~/middleware/permission";
 export const getRegistrationRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    registrationId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    registrationId: z.uuid({ version: "v4" }),
 });
 
 const registrationSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    eventId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    eventId: z.uuid({ version: "v4" }),
     userId: z.string(),
     status: z.enum([
         "registered",

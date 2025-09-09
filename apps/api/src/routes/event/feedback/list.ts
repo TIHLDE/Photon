@@ -9,10 +9,10 @@ import { requirePermissions } from "~/middleware/permission";
 
 export const listFeedbackRoute = new Hono();
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const feedbackSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    eventId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    eventId: z.uuid({ version: "v4" }),
     userId: z.string().nullable().optional(),
     rating: z.number().nullable().optional(),
     comment: z.string().nullable().optional(),

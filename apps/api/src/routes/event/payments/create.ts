@@ -8,7 +8,7 @@ import { requirePermissions } from "~/middleware/permission";
 
 export const createPaymentRoute = new Hono();
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const createPaymentSchema = z.object({
     amountMinor: z.number().int().positive(),
     currency: z.string().length(3).default("NOK"),
@@ -16,8 +16,8 @@ const createPaymentSchema = z.object({
     providerPaymentId: z.string().optional(),
 });
 const paymentSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    eventId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    eventId: z.uuid({ version: "v4" }),
     userId: z.string(),
     amountMinor: z.number(),
     currency: z.string(),

@@ -9,7 +9,7 @@ import { requirePermissions } from "~/middleware/permission";
 
 export const checkinRoute = new Hono();
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const checkinQuerySchema = z.object({ userId: z.string() });
 
 checkinRoute.post(

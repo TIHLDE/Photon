@@ -25,7 +25,7 @@ const updateBodySchema = z
     });
 
 const eventSchema = z.object({
-    id: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
     slug: z.string(),
     title: z.string(),
     description: z.string().nullable().optional(),
@@ -39,7 +39,7 @@ const eventSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
 const updateBodySchemaOpenAPI =
     await resolver(updateBodySchema).toOpenAPISchema();

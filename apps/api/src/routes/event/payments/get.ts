@@ -8,12 +8,12 @@ import { requirePermissions } from "~/middleware/permission";
 export const getPaymentRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    paymentId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    paymentId: z.uuid({ version: "v4" }),
 });
 const paymentSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    eventId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    eventId: z.uuid({ version: "v4" }),
     userId: z.string(),
     amountMinor: z.number(),
     currency: z.string(),

@@ -10,8 +10,8 @@ import { requirePermissions } from "~/middleware/permission";
 export const removeRegistrationRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    registrationId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    registrationId: z.uuid({ version: "v4" }),
 });
 
 removeRegistrationRoute.delete(

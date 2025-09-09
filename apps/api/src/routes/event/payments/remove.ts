@@ -10,8 +10,8 @@ import { and, eq } from "drizzle-orm";
 export const removePaymentRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    paymentId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    paymentId: z.uuid({ version: "v4" }),
 });
 
 removePaymentRoute.delete(

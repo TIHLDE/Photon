@@ -6,7 +6,7 @@ import db from "~/db";
 export const getRoute = new Hono();
 
 const eventSchema = z.object({
-    id: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
     slug: z.string(),
     title: z.string(),
     description: z.string().nullable().optional(),
@@ -20,7 +20,7 @@ const eventSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
 getRoute.get(
     "/:id",

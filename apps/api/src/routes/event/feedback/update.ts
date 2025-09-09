@@ -10,8 +10,8 @@ import { and, eq } from "drizzle-orm";
 export const updateFeedbackRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    feedbackId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    feedbackId: z.uuid({ version: "v4" }),
 });
 const bodySchema = z
     .object({
@@ -22,8 +22,8 @@ const bodySchema = z
         message: "Provide at least one field",
     });
 const feedbackSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    eventId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    eventId: z.uuid({ version: "v4" }),
     userId: z.string().nullable().optional(),
     rating: z.number().nullable().optional(),
     comment: z.string().nullable().optional(),

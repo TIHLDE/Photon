@@ -10,8 +10,8 @@ import { and, eq } from "drizzle-orm";
 export const removeFeedbackRoute = new Hono();
 
 const paramsSchema = z.object({
-    id: z.uuid({ version: "v7" }),
-    feedbackId: z.uuid({ version: "v7" }),
+    id: z.uuid({ version: "v4" }),
+    feedbackId: z.uuid({ version: "v4" }),
 });
 
 removeFeedbackRoute.delete(

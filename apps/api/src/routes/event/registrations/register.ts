@@ -12,7 +12,7 @@ import { requireAuth } from "~/middleware/auth";
 
 export const registerRoute = new Hono();
 
-const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
+const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
 registerRoute.post(
     "/register",
