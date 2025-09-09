@@ -2,6 +2,7 @@ import { seed } from "drizzle-seed";
 import * as schema from "../db/schema";
 
 import db from ".";
+import { auth } from "../lib/auth";
 
 export default async () => {
     // Check if any users exist
@@ -55,6 +56,15 @@ export default async () => {
             type: "bachelor",
         },
     ]);
+
+    await auth.api.createUser({
+        body: {
+            email: "test@test.com",
+            password: "index123",
+            name: "Brotherman Testern",
+            role: "admin",
+        },
+    });
 
     console.log("🌱 Successfully seeded the database");
 };

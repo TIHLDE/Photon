@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
+    admin,
     createAuthMiddleware,
     emailOTP,
     openAPI,
@@ -91,6 +92,7 @@ export const auth = betterAuth({
                 });
             },
         }),
+        admin(),
     ],
     logger: {
         disabled: false,
