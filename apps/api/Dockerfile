@@ -7,7 +7,7 @@ RUN apk update
 WORKDIR /app
 RUN npm install -g turbo
 COPY . .
-RUN turbo prune --scope=api --docker
+RUN turbo prune --scope=@photon/api --docker
 
 # Add lockfile and package.json's of isolated subworkspace
 FROM base AS installer
@@ -23,7 +23,7 @@ RUN pnpm install --frozen-lockfile
 
 # Build the project
 COPY --from=builder /app/out/full/ .
-RUN pnpm dlx turbo run build --filter=api
+RUN pnpm dlx turbo run build --filter=@photon/api
 
 FROM base AS runner
 WORKDIR /app
