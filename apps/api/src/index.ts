@@ -6,7 +6,7 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { openAPIRouteHandler } from "hono-openapi";
 import { auth } from "./lib/auth";
 import { env } from "./lib/env";
-import { eventsRoutes } from "./routes/events";
+import { eventRoutes } from "./routes/event";
 
 const app = new Hono();
 
@@ -28,7 +28,7 @@ app.basePath("/api")
     .get("/", (c) => {
         return c.text("Healthy!");
     })
-    .route("/events", eventsRoutes);
+    .route("/events", eventRoutes);
 
 app.get(
     "/static/*",

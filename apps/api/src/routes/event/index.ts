@@ -9,21 +9,21 @@ import { feedbackRouter } from "./feedback";
 import { paymentsRouter } from "./payments";
 import { paymentsWebhookRouter } from "./payments/webhook";
 
-export const eventsRoutes = new Hono();
+export const eventRoutes = new Hono();
 
 // Event routes
-eventsRoutes.route("/", listRouter);
-eventsRoutes.route("/", createRouter);
-eventsRoutes.route("/", getRouter);
-eventsRoutes.route("/", updateRouter);
-eventsRoutes.route("/", removeRouter);
+eventRoutes.route("/", listRouter);
+eventRoutes.route("/", createRouter);
+eventRoutes.route("/", getRouter);
+eventRoutes.route("/", updateRouter);
+eventRoutes.route("/", removeRouter);
 
 // Registration routes
-eventsRoutes.route("/:id/registrations", registrationsRouter);
+eventRoutes.route("/:id/registrations", registrationsRouter);
 
 // Feedback routes
-eventsRoutes.route("/:id/feedback", feedbackRouter);
+eventRoutes.route("/:id/feedback", feedbackRouter);
 
 // Payment routes
-eventsRoutes.route("/payments", paymentsWebhookRouter);
-eventsRoutes.route("/:id/payments", paymentsRouter);
+eventRoutes.route("/payments", paymentsWebhookRouter);
+eventRoutes.route("/:id/payments", paymentsRouter);
