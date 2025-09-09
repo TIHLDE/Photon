@@ -1,0 +1,22 @@
+{
+    "name": "@photon/lepton-migration",
+    "version": "0.0.0",
+    "private": true,
+    "license": "MIT",
+    "scripts": {
+        "execute": "tsx src/index.ts"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.1",
+        "tsup": "^8.5.0",
+        "tsx": "^4.19.3",
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "mysql2": "^3.14.4",
+        "@photon/api": "workspace:*"
+    }
+}
