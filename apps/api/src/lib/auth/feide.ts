@@ -94,8 +94,6 @@ export const feidePlugin = () =>
                 discoveryUrl:
                     "https://auth.dataporten.no/.well-known/openid-configuration",
                 scopes: ["openid", "userid", "profile", "groups-edu", "email"],
-                // TODO remove to use actual once localhost testing is setup
-                redirectURI: "https://tihlde.org/ny-bruker/feide",
                 getUserInfo,
             },
         ],
