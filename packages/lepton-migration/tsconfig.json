@@ -1,0 +1,17 @@
+{
+    "extends": "../tsconfig/node/bundler.json",
+    "compilerOptions": {
+        "jsx": "react",
+        "baseUrl": ".",
+        "paths": {
+            "~/*": [
+                "./src/*"
+            ]
+        },
+        "outDir": "./dist"
+    },
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
