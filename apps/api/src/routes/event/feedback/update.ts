@@ -7,7 +7,7 @@ import { requirePermissions } from "~/middleware/permission";
 import { eventFeedback } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 
-export const feedbackUpdateRouter = new Hono();
+export const updateFeedbackRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
@@ -30,7 +30,7 @@ const feedbackSchema = z.object({
     createdAt: z.iso.datetime(),
 });
 
-feedbackUpdateRouter.patch(
+updateFeedbackRoute.patch(
     "/:feedbackId",
     describeRoute({
         tags: ["events - feedback"],

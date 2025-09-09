@@ -5,7 +5,7 @@ import db from "~/db";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const registrationGetRouter = new Hono();
+export const getRegistrationRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
@@ -29,7 +29,7 @@ const registrationSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-registrationGetRouter.get(
+getRegistrationRoute.get(
     "/:registrationId",
     describeRoute({
         tags: ["events - registrations"],

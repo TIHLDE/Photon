@@ -7,14 +7,14 @@ import { requirePermissions } from "~/middleware/permission";
 import { eventPayment } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 
-export const paymentsRemoveRouter = new Hono();
+export const removePaymentRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
     paymentId: z.uuid({ version: "v7" }),
 });
 
-paymentsRemoveRouter.delete(
+removePaymentRoute.delete(
     "/:paymentId",
     describeRoute({
         tags: ["events - payments"],

@@ -5,7 +5,7 @@ import db from "~/db";
 import { eventFeedback } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
 
-export const feedbackCreateRouter = new Hono();
+export const createFeedbackRoute = new Hono();
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
 const createFeedbackSchema = z.object({
@@ -24,7 +24,7 @@ const feedbackSchema = z.object({
 const createFeedbackSchemaOpenAPI =
     await resolver(createFeedbackSchema).toOpenAPISchema();
 
-feedbackCreateRouter.post(
+createFeedbackRoute.post(
     "/",
     describeRoute({
         tags: ["events - feedback"],

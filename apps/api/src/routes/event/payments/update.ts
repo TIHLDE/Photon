@@ -7,7 +7,7 @@ import { requirePermissions } from "~/middleware/permission";
 import { eventPayment } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 
-export const paymentsUpdateRouter = new Hono();
+export const updatePaymentRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
@@ -31,7 +31,7 @@ const paymentSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-paymentsUpdateRouter.patch(
+updatePaymentRoute.patch(
     "/:paymentId",
     describeRoute({
         tags: ["events - payments"],

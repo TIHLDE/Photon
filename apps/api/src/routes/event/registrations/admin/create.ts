@@ -6,7 +6,7 @@ import { eventRegistration } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const registrationCreateAdminRouter = new Hono();
+export const createRegistrationRoute = new Hono();
 
 const paramsSchema = z.object({ id: z.uuid({ version: "v7" }) });
 const bodySchema = z.object({ userId: z.string().min(1) });
@@ -27,7 +27,7 @@ const registrationSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-registrationCreateAdminRouter.post(
+createRegistrationRoute.post(
     "/",
     describeRoute({
         tags: ["events - registrations"],

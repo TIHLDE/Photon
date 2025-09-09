@@ -3,7 +3,7 @@ import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
 
-export const getRouter = new Hono();
+export const getRoute = new Hono();
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v7" }),
@@ -22,7 +22,7 @@ const eventSchema = z.object({
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
 
-getRouter.get(
+getRoute.get(
     "/:id",
     describeRoute({
         tags: ["events"],

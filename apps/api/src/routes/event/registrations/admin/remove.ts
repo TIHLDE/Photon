@@ -7,14 +7,14 @@ import { and, eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const registrationRemoveAdminRouter = new Hono();
+export const removeRegistrationRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
     registrationId: z.uuid({ version: "v7" }),
 });
 
-registrationRemoveAdminRouter.delete(
+removeRegistrationRoute.delete(
     "/:registrationId",
     describeRoute({
         tags: ["events - registrations"],

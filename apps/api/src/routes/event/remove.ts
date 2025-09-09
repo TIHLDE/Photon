@@ -5,9 +5,9 @@ import { eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const removeRouter = new Hono();
+export const removeRoute = new Hono();
 
-removeRouter.delete(
+removeRoute.delete(
     "/:id",
     requireAuth,
     requirePermissions("events:delete"),

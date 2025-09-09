@@ -28,7 +28,7 @@ app.basePath("/api")
     .get("/", (c) => {
         return c.text("Healthy!");
     })
-    .route("/events", eventRoutes);
+    .route("/event", eventRoutes);
 
 app.get(
     "/static/*",

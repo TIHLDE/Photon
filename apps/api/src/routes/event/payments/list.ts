@@ -7,7 +7,7 @@ import { desc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const paymentsListRouter = new Hono();
+export const listPaymentRoute = new Hono();
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v7" }) });
 const paymentSchema = z.object({
@@ -23,7 +23,7 @@ const paymentSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-paymentsListRouter.get(
+listPaymentRoute.get(
     "/",
     describeRoute({
         tags: ["events - payments"],

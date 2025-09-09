@@ -7,14 +7,14 @@ import { requirePermissions } from "~/middleware/permission";
 import { eventFeedback } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 
-export const feedbackRemoveRouter = new Hono();
+export const removeFeedbackRoute = new Hono();
 
 const paramsSchema = z.object({
     id: z.uuid({ version: "v7" }),
     feedbackId: z.uuid({ version: "v7" }),
 });
 
-feedbackRemoveRouter.delete(
+removeFeedbackRoute.delete(
     "/:feedbackId",
     describeRoute({
         tags: ["events - feedback"],

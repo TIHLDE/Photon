@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 
-export const paymentsWebhookRouter = new Hono();
+export const paymentWebhookRoute = new Hono();
 
-paymentsWebhookRouter.post("/payments/webhook", async (c) => {
+paymentWebhookRoute.post("/payments/webhook", async (c) => {
     return c.body(null, 204);
 });
