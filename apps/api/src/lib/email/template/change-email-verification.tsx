@@ -33,7 +33,7 @@ export const ChangeEmailVerificationEmail = ({
                         style={logo}
                     />
                     <Heading style={secondary}>
-                        Trygg på knappen nedenfor for å bekrefte din nye
+                        Trykk på knappen nedenfor for å bekrefte din nye
                         e-postadresse
                     </Heading>
                     <Button href={url} style={button}>
