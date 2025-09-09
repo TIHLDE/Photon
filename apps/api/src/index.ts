@@ -1,12 +1,12 @@
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { auth } from "./lib/auth";
-import { session } from "./middleware/session";
-import { openAPISpecs } from "hono-openapi";
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Scalar } from "@scalar/hono-api-reference";
+import { openAPIRouteHandler } from "hono-openapi";
+import { auth } from "./lib/auth";
 import { env } from "./lib/env";
+import { eventRoutes } from "./routes/event";
 
 const app = new Hono();
 
@@ -28,26 +28,23 @@ app.basePath("/api")
     .get("/", (c) => {
         return c.text("Healthy!");
     })
-    .get("/session", session, (c) => {
-        const session = c.get("session");
-        const user = c.get("user");
+    .route("/event", eventRoutes);
 
-        if (!user) return c.body(null, 401);
-
-        return c.json({
-            session,
-            user,
-        });
-    });
+app.get(
+    "/static/*",
+    serveStatic({
+        root: "./",
+    }),
+);
 
 app.get(
     "/openapi",
-    openAPISpecs(app, {
+    openAPIRouteHandler(app, {
         documentation: {
             info: {
-                title: "Hono API",
+                title: "Photon API",
                 version: "1.0.0",
-                description: "Greeting API",
+                description: "TIHLDEs nye backend",
             },
             servers: [
                 {
@@ -69,13 +66,6 @@ app.get(
     }),
 );
 
-app.get(
-    "/static/*",
-    serveStatic({
-        root: "./",
-    }),
-);
-
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
 }
@@ -89,5 +79,3 @@ serve(
         console.log(`Server is running on http://localhost:${info.port}/api`);
     },
 );
-
-export type AppType = typeof app;

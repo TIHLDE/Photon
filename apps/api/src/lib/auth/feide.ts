@@ -5,6 +5,7 @@ import type {
     MiddlewareContext,
     MiddlewareOptions,
     OAuth2Tokens,
+    OAuth2UserInfo,
     User,
 } from "better-auth";
 import db from "../../db";
@@ -223,7 +224,7 @@ async function fetchValidStudyPrograms(
  * Creates a User object from Feide OpenID profile
  * @param accessToken Access token with "openid" scope from Feide
  */
-async function getUserInfo(tokens: OAuth2Tokens): Promise<User> {
+async function getUserInfo(tokens: OAuth2Tokens): Promise<OAuth2UserInfo> {
     if (!tokens.accessToken) {
         throw new Error("No access token provided");
     }
@@ -244,7 +245,5 @@ async function getUserInfo(tokens: OAuth2Tokens): Promise<User> {
         email: profile.email,
         emailVerified: true,
         image: undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
     };
 }

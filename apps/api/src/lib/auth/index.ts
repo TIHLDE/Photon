@@ -15,6 +15,9 @@ import { sendEmail } from "../email";
 import ChangeEmailVerificationEmail from "../email/template/change-email-verification";
 import OtpSignInEmail from "../email/template/otp-sign-in";
 import ResetPasswordEmail from "../email/template/reset-password";
+import { getRedis } from "../cache/redis";
+
+const redis = await getRedis();
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -106,6 +109,18 @@ export const auth = betterAuth({
         after: createAuthMiddleware(async (ctx) => {
             await syncFeideHook(ctx);
         }),
+    },
+    secondaryStorage: {
+        get: async (key) => {
+            return await redis.get(key);
+        },
+        set: async (key, value, ttl) => {
+            if (ttl) await redis.set(key, value, { EX: ttl });
+            else await redis.set(key, value);
+        },
+        delete: async (key) => {
+            await redis.del(key);
+        },
     },
 });
 
