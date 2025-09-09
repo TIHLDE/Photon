@@ -1,5 +1,5 @@
 {
-    "name": "api",
+    "name": "@photon/api",
     "type": "module",
     "scripts": {
         "dev": "tsx watch src/index.ts",
@@ -45,5 +45,11 @@
         "tsup": "^8.5.0",
         "tsx": "^4.19.3",
         "typescript": "^5.8.3"
+    },
+    "exports": {
+        "./auth": {
+            "default": "./dist/index.js",
+            "types": "./src/lib/auth/index.ts"
+        }
     }
 }
