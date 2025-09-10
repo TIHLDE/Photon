@@ -1,5 +1,6 @@
 import * as mysql from "mysql2";
 import { auth } from "@photon/api/auth";
+import db, { schema } from "@photon/api/db";
 
 const dump = async () => {
     // TODO use env vars
@@ -16,24 +17,33 @@ const dump = async () => {
     connection.query(
         // TODO remove limit 1
         "SELECT * FROM authtoken_token JOIN `nettside-dev`.content_user cu ON cu.user_id = authtoken_token.user_id LIMIT 1",
-        (error, results, fields) => {
+        async (error, results, fields) => {
             const data = results as LeptonUserAccount[];
+
+            console.log(data);
 
             // Create random 10 character password
             const password = Math.random().toString(36).slice(-10);
 
             for (const userAccount of data) {
-                auth.api.createUser({
+                const user = await auth.api.createUser({
                     body: {
                         email: userAccount.email,
                         password,
                         name: `${userAccount.first_name} ${userAccount.last_name}`,
-                        role: userAccount.is_superuser ? "admin" : "user",
+                        role: userAccount.is_superuser ? "admin" : "user", // better auth sdk stuff
                         data: {
                             legacyToken: userAccount.key,
                         },
                     },
                 });
+
+                if (userAccount.is_superuser) {
+                    await db.insert(schema.userRole).values({
+                        userId: user.user.id,
+                        roleId: 1,
+                    });
+                }
             }
         },
     );
