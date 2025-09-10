@@ -3,15 +3,19 @@ import { config } from "@dotenvx/dotenvx";
 config({ path: "../../.env" });
 
 const envSchema = z.object({
-    FEIDE_CLIENT_ID: z.string().meta({ description: "Feide OAuth Client ID" }),
-    FEIDE_CLIENT_SECRET: z
-        .string()
-        .meta({ description: "Feide OAuth Client Secret" }),
-    DATABASE_URL: z.string().meta({ description: "Database URL" }),
+    // CONFIG
     BASE_URL: z
         .string()
         .meta({ description: "Base URL of the application" })
         .default("http://localhost:4000"),
+    PORT: z
+        .string()
+        .meta({ description: "Port to run the server on" })
+        .default("4000")
+        .transform((val) => Number(val)),
+
+    // DATABASE
+    DATABASE_URL: z.string().meta({ description: "Database URL" }),
     SEED_DB: z
         .string()
         .meta({
@@ -20,6 +24,18 @@ const envSchema = z.object({
         })
         .optional()
         .transform((val) => val === "true" || val === "1"),
+    REDIS_URL: z
+        .string()
+        .meta({ description: "Redis connection URL" })
+        .default("redis://localhost:6379"),
+
+    // FEIDE
+    FEIDE_CLIENT_ID: z.string().meta({ description: "Feide OAuth Client ID" }),
+    FEIDE_CLIENT_SECRET: z
+        .string()
+        .meta({ description: "Feide OAuth Client Secret" }),
+
+    // EMAIL
     MAIL_HOST: z.string().meta({ description: "MAIL Host" }).optional(),
     MAIL_PORT: z
         .string()
@@ -32,15 +48,26 @@ const envSchema = z.object({
         .string()
         .meta({ description: "MAIL From Email Address" })
         .default("no-reply@tihlde.org"),
-    REDIS_URL: z
+
+    // VIPPS
+    VIPPS_SUBSCRIPTION_KEY: z
         .string()
-        .meta({ description: "Redis connection URL" })
-        .default("redis://localhost:6379"),
-    PORT: z
+        .meta({ description: "Vipps Subscription Key" })
+        .optional(),
+    VIPPS_CLIENT_ID: z
         .string()
-        .meta({ description: "Port to run the server on" })
-        .default("4000")
-        .transform((val) => Number(val)),
+        .meta({ description: "Vipps Client ID" })
+        .optional(),
+    VIPPS_CLIENT_SECRET: z
+        .string()
+        .meta({ description: "Vipps Client Secret" })
+        .optional(),
+    VIPPS_MERCHANT_SERIAL_NUMBER: z
+        .string()
+        .meta({
+            description: "Vipps Merchant Serial Number",
+        })
+        .optional(),
 });
 
 /**
