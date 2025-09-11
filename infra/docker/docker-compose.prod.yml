@@ -10,8 +10,7 @@ services:
     restart: unless-stopped
     ports:
       - "4000:4000"
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      DATABASE_URL: ${DATABASE_URL}
-      FEIDE_CLIENT_ID: ${FEIDE_CLIENT_ID}
-      FEIDE_CLIENT_SECRET: ${FEIDE_CLIENT_SECRET}
+    env_file:
+      - "../../.env"
+    extra_hosts: # Trengs for at docker containeren skal nå redis på host
+      - "host.docker.internal:host-gateway"

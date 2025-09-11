@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev:up": "docker compose --env-file ../../.env -f docker-compose.dev.yml up -d --wait",
-        "prod:up": "docker compose --env-file ../../.env -f docker-compose.prod.yml up --build --force-recreate -d --wait",
-        "prod:down": "docker compose --env-file ../../.env -f docker-compose.prod.yml down",
+        "prod:up": "docker compose -f docker-compose.prod.yml up --build --force-recreate -d --wait",
+        "prod:down": "docker compose -f docker-compose.prod.yml down",
         "prod:build": "docker compose --env-file ../../.env -f docker-compose.prod.yml build"
     }
 }
