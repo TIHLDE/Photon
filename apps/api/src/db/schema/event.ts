@@ -78,7 +78,7 @@ export const eventStrike = pgTable("strike", {
     userId: text("user_id")
         .notNull()
         .references(() => user.id, { onDelete: "cascade" }),
-    points: integer("points").notNull(),
+    count: integer("count").notNull(),
     reason: varchar("reason", { length: 256 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
