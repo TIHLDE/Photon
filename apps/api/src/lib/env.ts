@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { config } from "@dotenvx/dotenvx";
-config({ path: "../../.env" });
+config({
+    path: "../../.env",
+});
 
 const envSchema = z.object({
     // CONFIG
-    BASE_URL: z
+    ROOT_URL: z
         .string()
         .meta({ description: "Base URL of the application" })
         .default("http://localhost:4000"),
