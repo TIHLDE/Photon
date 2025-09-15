@@ -20,12 +20,17 @@ export const registrationStatus = pgEnum("event_registration_status", [
     "no_show",
 ]);
 
+export type RegistrationStatus =
+    (typeof registrationStatus)["enumValues"][number];
+
 export const paymentStatus = pgEnum("event_payment_status", [
     "pending",
     "paid",
     "refunded",
     "failed",
 ]);
+
+export type PaymentStatus = (typeof paymentStatus)["enumValues"][number];
 
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -65,7 +70,7 @@ export const eventRegistration = pgTable("registration", {
         .notNull(),
 });
 
-export const eventPoint = pgTable("point", {
+export const eventPenaltyPoint = pgTable("penalty_point", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
