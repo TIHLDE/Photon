@@ -26,7 +26,7 @@ export const ChangeEmailVerificationEmail = ({
             <Body style={main}>
                 <Container style={container}>
                     <Img
-                        src={`${env.BASE_URL}/static/logomark.jpeg`}
+                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"
