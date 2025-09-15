@@ -70,7 +70,7 @@ export const eventRegistration = pgTable("registration", {
         .notNull(),
 });
 
-export const eventPenaltyPoint = pgTable("penalty_point", {
+export const eventStrike = pgTable("strike", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
         .notNull()
