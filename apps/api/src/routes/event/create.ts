@@ -6,8 +6,6 @@ import { event } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const createRoute = new Hono();
-
 const createBodySchema = z.object({
     slug: z.string().min(1),
     title: z.string().min(1),
@@ -37,7 +35,7 @@ const eventSchema = z.object({
 const createBodySchemaOpenAPI =
     await resolver(createBodySchema).toOpenAPISchema();
 
-createRoute.post(
+export const createRoute = new Hono().post(
     "/",
     describeRoute({
         tags: ["events"],

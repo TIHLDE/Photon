@@ -5,8 +5,6 @@ import db from "~/db";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const getFeedbackRoute = new Hono();
-
 const paramsSchema = z.object({
     id: z.uuid({ version: "v4" }),
     feedbackId: z.uuid({ version: "v4" }),
@@ -20,7 +18,7 @@ const feedbackSchema = z.object({
     createdAt: z.iso.datetime(),
 });
 
-getFeedbackRoute.get(
+export const getFeedbackRoute = new Hono().get(
     "/:feedbackId",
     describeRoute({
         tags: ["events - feedback"],

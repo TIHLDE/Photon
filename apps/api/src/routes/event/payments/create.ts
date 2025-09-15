@@ -6,8 +6,6 @@ import { eventPayment } from "~/db/schema/events";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const createPaymentRoute = new Hono();
-
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const createPaymentSchema = z.object({
     amountMinor: z.number().int().positive(),
@@ -31,7 +29,7 @@ const paymentSchema = z.object({
 const createPaymentSchemaOpenAPI =
     await resolver(createPaymentSchema).toOpenAPISchema();
 
-createPaymentRoute.post(
+export const createPaymentRoute = new Hono().post(
     "/",
     describeRoute({
         tags: ["events - payments"],

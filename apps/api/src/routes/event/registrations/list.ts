@@ -5,9 +5,7 @@ import { asc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const listRegistrationsRoute = new Hono();
-
-listRegistrationsRoute.get(
+export const listRegistrationsRoute = new Hono().get(
     "/",
     requireAuth,
     requirePermissions("events:registrations:list"),

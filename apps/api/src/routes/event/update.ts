@@ -7,8 +7,6 @@ import { eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const updateRoute = new Hono();
-
 const updateBodySchema = z
     .object({
         slug: z.string().min(1).optional(),
@@ -44,7 +42,7 @@ const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const updateBodySchemaOpenAPI =
     await resolver(updateBodySchema).toOpenAPISchema();
 
-updateRoute.patch(
+export const updateRoute = new Hono().patch(
     "/:id",
     describeRoute({
         tags: ["events"],

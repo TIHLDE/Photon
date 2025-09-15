@@ -5,8 +5,6 @@ import db from "~/db";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const getPaymentRoute = new Hono();
-
 const paramsSchema = z.object({
     id: z.uuid({ version: "v4" }),
     paymentId: z.uuid({ version: "v4" }),
@@ -24,7 +22,7 @@ const paymentSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-getPaymentRoute.get(
+export const getPaymentRoute = new Hono().get(
     "/:paymentId",
     describeRoute({
         tags: ["events - payments"],

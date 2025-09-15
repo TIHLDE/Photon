@@ -27,37 +27,37 @@ import { updatePaymentRoute } from "./payments/update";
 import { removePaymentRoute } from "./payments/remove";
 import { paymentWebhookRoute } from "./payments/webhook";
 
-export const eventRoutes = new Hono();
+export const eventRoutes = new Hono()
 
-// Event routes
-eventRoutes.route("/", listRoute);
-eventRoutes.route("/", createRoute);
-eventRoutes.route("/", getRoute);
-eventRoutes.route("/", updateRoute);
-eventRoutes.route("/", removeRoute);
+    // Event routes
+    .route("/", listRoute)
+    .route("/", createRoute)
+    .route("/", getRoute)
+    .route("/", updateRoute)
+    .route("/", removeRoute)
 
-// Registration routes
-eventRoutes.route("/:id/registration", getRegistrationRoute);
-eventRoutes.route("/:id/registration", listRegistrationsRoute);
-eventRoutes.route("/:id/registration", registerRoute);
-eventRoutes.route("/:id/registration", cancelRoute);
-eventRoutes.route("/:id/registration", checkinRoute);
+    // Registration routes
+    .route("/:id/registration", getRegistrationRoute)
+    .route("/:id/registration", listRegistrationsRoute)
+    .route("/:id/registration", registerRoute)
+    .route("/:id/registration", cancelRoute)
+    .route("/:id/registration", checkinRoute)
 
-// Admin registration routes
-eventRoutes.route("/:id/registration", createRegistrationRoute);
-eventRoutes.route("/:id/registration", removeRegistrationRoute);
+    // Admin registration routes
+    .route("/:id/registration", createRegistrationRoute)
+    .route("/:id/registration", removeRegistrationRoute)
 
-// Feedback routes
-eventRoutes.route("/:id/feedback", listFeedbackRoute);
-eventRoutes.route("/:id/feedback", createFeedbackRoute);
-eventRoutes.route("/:id/feedback", getFeedbackRoute);
-eventRoutes.route("/:id/feedback", updateFeedbackRoute);
-eventRoutes.route("/:id/feedback", removeFeedbackRoute);
+    // Feedback routes
+    .route("/:id/feedback", listFeedbackRoute)
+    .route("/:id/feedback", createFeedbackRoute)
+    .route("/:id/feedback", getFeedbackRoute)
+    .route("/:id/feedback", updateFeedbackRoute)
+    .route("/:id/feedback", removeFeedbackRoute)
 
-// Payment routes
-eventRoutes.route("/:id/payment", listPaymentRoute);
-eventRoutes.route("/:id/payment", createPaymentRoute);
-eventRoutes.route("/:id/payment", getPaymentRoute);
-eventRoutes.route("/:id/payment", updatePaymentRoute);
-eventRoutes.route("/:id/payment", removePaymentRoute);
-eventRoutes.route("/payment", paymentWebhookRoute);
+    // Payment routes
+    .route("/:id/payment", listPaymentRoute)
+    .route("/:id/payment", createPaymentRoute)
+    .route("/:id/payment", getPaymentRoute)
+    .route("/:id/payment", updatePaymentRoute)
+    .route("/:id/payment", removePaymentRoute)
+    .route("/payment", paymentWebhookRoute);

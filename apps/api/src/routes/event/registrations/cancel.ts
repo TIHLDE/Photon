@@ -6,11 +6,9 @@ import { eventRegistration } from "~/db/schema/events";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 
-export const cancelRoute = new Hono();
-
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
-cancelRoute.post(
+export const cancelRoute = new Hono().post(
     "/cancel",
     describeRoute({
         tags: ["events - registrations"],

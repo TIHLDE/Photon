@@ -5,17 +5,16 @@ import {
     createAuthMiddleware,
     emailOTP,
     openAPI,
-    username,
 } from "better-auth/plugins";
 import db from "~/db";
 import * as schema from "~/db/schema";
 import { feidePlugin, syncFeideHook } from "./feide";
-import { env } from "../env";
-import { sendEmail } from "../email";
-import ChangeEmailVerificationEmail from "../email/template/change-email-verification";
-import OtpSignInEmail from "../email/template/otp-sign-in";
-import ResetPasswordEmail from "../email/template/reset-password";
-import { getRedis } from "../cache/redis";
+import { env } from "~/lib/env";
+import { sendEmail } from "~/lib/email";
+import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-verification";
+import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
+import ResetPasswordEmail from "~/lib/email/template/reset-password";
+import { getRedis } from "~/lib/cache/redis";
 
 const redis = await getRedis();
 
@@ -24,7 +23,7 @@ export const auth = betterAuth({
         provider: "pg",
         schema,
     }),
-    baseURL: env.BASE_URL,
+    baseURL: env.ROOT_URL,
     emailAndPassword: {
         enabled: true,
         disableSignUp: true,
