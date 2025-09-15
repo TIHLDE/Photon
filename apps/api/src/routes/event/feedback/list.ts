@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
-import { eventFeedback } from "~/db/schema/events";
+import { eventFeedback } from "~/db/schema/event";
 import { desc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";

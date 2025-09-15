@@ -4,7 +4,7 @@ import { describeRoute, validator } from "hono-openapi";
 import db from "~/db";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
-import { eventFeedback } from "~/db/schema/events";
+import { eventFeedback } from "~/db/schema/event";
 import { and, eq } from "drizzle-orm";
 
 const paramsSchema = z.object({

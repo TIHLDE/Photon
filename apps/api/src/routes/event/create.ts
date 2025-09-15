@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
-import { event } from "~/db/schema/events";
+import { event } from "~/db/schema/event";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 

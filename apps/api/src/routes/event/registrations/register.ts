@@ -6,7 +6,7 @@ import {
     event,
     eventRegistration,
     registrationStatus,
-} from "~/db/schema/events";
+} from "~/db/schema/event";
 import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 

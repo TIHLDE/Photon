@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import db from "~/db";
-import { eventRegistration } from "~/db/schema/events";
+import { eventRegistration } from "~/db/schema/event";
 import { asc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
