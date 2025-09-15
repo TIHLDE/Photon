@@ -7,12 +7,10 @@ import { and, eq } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const checkinRoute = new Hono();
-
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const checkinQuerySchema = z.object({ userId: z.string() });
 
-checkinRoute.post(
+export const checkinRoute = new Hono().post(
     "/checkin",
     describeRoute({
         tags: ["events - registrations"],

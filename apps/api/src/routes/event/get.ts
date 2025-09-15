@@ -3,8 +3,6 @@ import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "~/db";
 
-export const getRoute = new Hono();
-
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
     slug: z.string(),
@@ -22,7 +20,7 @@ const eventSchema = z.object({
 
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
-getRoute.get(
+export const getRoute = new Hono().get(
     "/:id",
     describeRoute({
         tags: ["events"],

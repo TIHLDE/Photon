@@ -10,11 +10,9 @@ import {
 import { eq, and, count } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 
-export const registerRoute = new Hono();
-
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 
-registerRoute.post(
+export const registerRoute = new Hono().post(
     "/register",
     describeRoute({
         tags: ["events - registrations"],

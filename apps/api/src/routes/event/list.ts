@@ -5,8 +5,6 @@ import db from "~/db";
 import { event } from "~/db/schema/events";
 import { desc, asc } from "drizzle-orm";
 
-export const listRoute = new Hono();
-
 const listQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(200).optional(),
     order: z.enum(["asc", "desc"]).optional(),
@@ -27,7 +25,7 @@ const eventSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-listRoute.get(
+export const listRoute = new Hono().get(
     "/",
     describeRoute({
         tags: ["events"],

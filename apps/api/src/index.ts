@@ -4,13 +4,12 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Scalar } from "@scalar/hono-api-reference";
 import { openAPIRouteHandler } from "hono-openapi";
-import { auth } from "./lib/auth";
-import { env } from "./lib/env";
-import { eventRoutes } from "./routes/event";
+import { auth } from "~/lib/auth";
+import { env } from "~/lib/env";
+import { eventRoutes } from "~/routes/event";
 
-const app = new Hono();
-
-app.basePath("/api")
+export const app = new Hono()
+    .basePath("/api")
     .use(
         "/auth/**",
         cors({
@@ -30,6 +29,9 @@ app.basePath("/api")
     })
     .route("/event", eventRoutes);
 
+const server = new Hono();
+server.route("/", app);
+
 app.get(
     "/static/*",
     serveStatic({
@@ -37,34 +39,36 @@ app.get(
     }),
 );
 
-app.get(
-    "/openapi",
-    openAPIRouteHandler(app, {
-        documentation: {
-            info: {
-                title: "Photon API",
-                version: "1.0.0",
-                description: "TIHLDEs nye backend",
-            },
-            servers: [
-                {
-                    url: "http://localhost:4000",
-                    description: "Local Server",
+server
+    .get(
+        "/openapi",
+        openAPIRouteHandler(app, {
+            documentation: {
+                info: {
+                    title: "Photon API",
+                    version: "1.0.0",
+                    description: "TIHLDEs nye backend",
                 },
+                servers: [
+                    {
+                        url: "http://localhost:4000",
+                        description: "Local Server",
+                    },
+                ],
+            },
+        }),
+    )
+    .get(
+        "/docs",
+        Scalar({
+            theme: "saturn",
+            url: "/openapi",
+            sources: [
+                { url: "/openapi", title: "API" },
+                { url: "/api/auth/open-api/generate-schema", title: "Auth" },
             ],
-        },
-    }),
-).get(
-    "/docs",
-    Scalar({
-        theme: "saturn",
-        url: "/api/openapi",
-        sources: [
-            { url: "/openapi", title: "API" },
-            { url: "/api/auth/open-api/generate-schema", title: "Auth" },
-        ],
-    }),
-);
+        }),
+    );
 
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
@@ -72,7 +76,7 @@ if (env.SEED_DB) {
 
 serve(
     {
-        fetch: app.fetch,
+        fetch: server.fetch,
         port: env.PORT,
     },
     (info) => {

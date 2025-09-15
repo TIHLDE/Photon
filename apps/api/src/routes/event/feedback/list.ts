@@ -7,8 +7,6 @@ import { desc } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermissions } from "~/middleware/permission";
 
-export const listFeedbackRoute = new Hono();
-
 const idParamSchema = z.object({ id: z.uuid({ version: "v4" }) });
 const feedbackSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -19,7 +17,7 @@ const feedbackSchema = z.object({
     createdAt: z.iso.datetime(),
 });
 
-listFeedbackRoute.get(
+export const listFeedbackRoute = new Hono().get(
     "/",
     describeRoute({
         tags: ["events - feedback"],
