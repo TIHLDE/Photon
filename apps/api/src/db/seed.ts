@@ -8,6 +8,7 @@ import {
 
 import db from ".";
 import { auth } from "../lib/auth";
+import { eq } from "drizzle-orm";
 
 export default async () => {
     // Check if any users exist
@@ -222,14 +223,22 @@ export default async () => {
         }
     }
 
-    await auth.api.createUser({
-        body: {
-            email: "test@test.com",
-            password: "index123",
-            name: "Brotherman Testern",
-            role: "admin",
-        },
-    });
+    const users = await db
+        .select()
+        .from(schema.user)
+        .where(eq(schema.user.email, "test@test.com"))
+        .limit(1);
+
+    if (!users.length) {
+        await auth.api.createUser({
+            body: {
+                email: "test@test.com",
+                password: "index123",
+                name: "Brotherman Testern",
+                role: "admin",
+            },
+        });
+    }
 
     console.log("🌱 Successfully seeded the database");
 };
