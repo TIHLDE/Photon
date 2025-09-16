@@ -4,6 +4,7 @@
     "scripts": {
         "build": "turbo build",
         "dev": "turbo dev",
+        "dev:fresh": "turbo dev:fresh",
         "lint": "turbo lint",
         "typecheck": "turbo typecheck",
         "prod:up": "pnpm dlx turbo prod:up --ui stream",

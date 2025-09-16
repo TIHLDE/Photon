@@ -18,6 +18,9 @@
             "cache": false,
             "persistent": true
         },
+        "dev:fresh": {
+            "cache": false
+        },
         "prod:up": {
             "cache": false
         },
@@ -39,10 +42,6 @@
         },
         "db:seed": {
             "dependsOn": ["@photon/db#db:push"],
-            "cache": false
-        },
-        "db:reset": {
-            "dependsOn": ["@photon/docker#dev:up"],
             "cache": false
         },
         "db:generate": {
