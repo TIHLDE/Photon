@@ -7,8 +7,11 @@ import {
     boolean,
     varchar,
     uuid,
+    decimal,
+    interval,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
+import { timestamps } from "../timestamps";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
@@ -34,22 +37,40 @@ export type PaymentStatus = (typeof paymentStatus)["enumValues"][number];
 
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
-    slug: varchar("slug", { length: 128 }).notNull().unique(),
     title: varchar("title", { length: 256 }).notNull(),
+    slug: varchar("slug", { length: 256 }).notNull().unique(),
     description: text("description"),
+    categorySlug: varchar("category_slug", { length: 64 }).references(
+        () => eventCategory.slug,
+        { onDelete: "set null" },
+    ),
     location: varchar("location", { length: 256 }),
-    startTime: timestamp("start_time").notNull(),
-    endTime: timestamp("end_time").notNull(),
+    imageUrl: text("image_url"),
     capacity: integer("capacity").notNull(),
     allowWaitlist: boolean("allow_waitlist").default(true).notNull(),
+    contactPersonId: text("contact_person_id").references(() => user.id, {
+        onDelete: "set null",
+    }),
     createdByUserId: text("created_by_user_id").references(() => user.id, {
         onDelete: "set null",
     }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => /* @__PURE__ */ new Date())
+    updateByUserId: text("update_by_user_id").references(() => user.id, {
+        onDelete: "set null",
+    }),
+    start: timestamp("start").notNull(),
+    end: timestamp("end").notNull(),
+    registrationStart: timestamp("registration_start"),
+    registrationEnd: timestamp("registration_end"),
+    cancellationDeadline: timestamp("cancellation_deadline"),
+    isRegistrationClosed: boolean("is_registration_closed")
+        .default(false)
         .notNull(),
+    isPaidEvent: boolean("is_paid_event").default(false).notNull(),
+    requiresSigningUp: boolean("requires_signing_up").default(false).notNull(),
+    price: decimal("price"),
+    // The time between sign up and it must be paid
+    paymentGracePeriod: interval("payment_grace_period"),
+    ...timestamps,
 });
 
 export const eventRegistration = pgTable("registration", {
@@ -63,11 +84,7 @@ export const eventRegistration = pgTable("registration", {
     status: registrationStatus("status").notNull().default("registered"),
     waitlistPosition: integer("waitlist_position"),
     attendedAt: timestamp("attended_at"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    ...timestamps,
 });
 
 export const eventStrike = pgTable("strike", {
@@ -80,7 +97,7 @@ export const eventStrike = pgTable("strike", {
         .references(() => user.id, { onDelete: "cascade" }),
     count: integer("count").notNull(),
     reason: varchar("reason", { length: 256 }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    ...timestamps,
 });
 
 export const eventPayment = pgTable("payment", {
@@ -96,11 +113,7 @@ export const eventPayment = pgTable("payment", {
     provider: varchar("provider", { length: 64 }),
     providerPaymentId: text("provider_payment_id"),
     status: paymentStatus("status").notNull().default("pending"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-        .defaultNow()
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    ...timestamps,
 });
 
 export const eventFeedback = pgTable("feedback", {
@@ -111,5 +124,10 @@ export const eventFeedback = pgTable("feedback", {
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     rating: integer("rating"), // 1-5 optional
     comment: text("comment"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    ...timestamps,
+});
+
+export const eventCategory = pgTable("category", {
+    slug: varchar("slug", { length: 64 }).primaryKey(),
+    label: varchar("label", { length: 128 }).notNull(),
 });
