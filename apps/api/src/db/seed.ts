@@ -1,7 +1,6 @@
 import { seed } from "drizzle-seed";
-import { schema } from "../db";
+import db, { schema } from "../db";
 
-import db from ".";
 import { auth } from "../lib/auth";
 import { eq } from "drizzle-orm";
 
@@ -233,29 +232,6 @@ export default async () => {
                 role: "admin",
             },
         });
-    }
-
-    const eventCategories = [
-        ["Kurs", "kurs"],
-        ["Annet", "annet"],
-        ["Fadderuka", "fadderuka"],
-        ["Bedpres", "bedpres"],
-        ["Sosialt", "sosialt"],
-        ["Aktivitet", "aktivitet"],
-    ];
-
-    for (const [label, slug] of eventCategories) {
-        const existing = await db
-            .select()
-            .from(schema.eventCategory)
-            .where(eq(schema.eventCategory.slug, slug ?? ""))
-            .limit(1);
-        if (existing.length === 0) {
-            await db.insert(schema.eventCategory).values({
-                label: label ?? "",
-                slug: slug ?? "",
-            });
-        }
     }
 
     const groups = [
