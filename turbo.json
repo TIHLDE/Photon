@@ -29,7 +29,8 @@
         },
         "db:push": {
             "dependsOn": ["@photon/docker#dev:up"],
-            "cache": false
+            "cache": false,
+            "interactive": true
         },
         "db:migrate": {
             "dependsOn": ["@photon/docker#dev:up"],
