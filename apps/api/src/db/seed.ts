@@ -223,7 +223,7 @@ export default async () => {
         .limit(1);
 
     if (!users.length) {
-        await auth.api.createUser({
+        const user = await auth.api.createUser({
             body: {
                 email: "test@test.com",
                 password: "index123",
@@ -231,6 +231,13 @@ export default async () => {
                 role: "admin",
             },
         });
+
+        const userId = user.user.id;
+
+        await db
+            .update(schema.user)
+            .set({ emailVerified: true })
+            .where(eq(schema.user.id, userId));
     }
 
     const groups = [
