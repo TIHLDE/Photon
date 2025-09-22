@@ -42,10 +42,9 @@ export const event = pgTable("event", {
     title: varchar("title", { length: 256 }).notNull(),
     slug: varchar("slug", { length: 256 }).notNull().unique(),
     description: text("description"),
-    categorySlug: varchar("category_slug", { length: 64 }).references(
-        () => eventCategory.slug,
-        { onDelete: "set null" },
-    ),
+    categorySlug: varchar("category_slug", { length: 64 })
+        .references(() => eventCategory.slug)
+        .notNull(),
     location: varchar("location", { length: 256 }),
     imageUrl: text("image_url"),
     capacity: integer("capacity"),
