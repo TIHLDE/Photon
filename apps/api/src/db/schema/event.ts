@@ -12,6 +12,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { timestamps } from "../timestamps";
+import { group } from "./org";
+import { relations } from "drizzle-orm";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
@@ -71,8 +73,22 @@ export const event = pgTable("event", {
     // The time between sign up and it must be paid
     paymentGracePeriodMinutes: integer("payment_grace_period_minutes"),
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
+    organizerGroupSlug: varchar("organizer_group_slug", {
+        length: 128,
+    }).references(() => group.slug, { onDelete: "set null" }),
     ...timestamps,
 });
+
+export const eventRelations = relations(event, ({ one }) => ({
+    category: one(eventCategory, {
+        fields: [event.categorySlug],
+        references: [eventCategory.slug],
+    }),
+    organizer: one(group, {
+        fields: [event.organizerGroupSlug],
+        references: [group.slug],
+    }),
+}));
 
 export const eventRegistration = pgTable("registration", {
     id: uuid("id").primaryKey().defaultRandom(),
