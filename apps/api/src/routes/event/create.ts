@@ -4,7 +4,6 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { parse as parseDuration } from "iso8601-duration";
 import { eq, type InferInsertModel } from "drizzle-orm";
 
 const createBodySchema = z
@@ -89,9 +88,9 @@ const createBodySchema = z
             description:
                 "Price in NOK for attending the event. Can only be set if isPaidEvent is true.",
         }),
-        paymentGracePeriod: z.iso.duration().optional().meta({
+        paymentGracePeriodMinutes: z.number().optional().meta({
             description:
-                "The time between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true.",
+                "The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true.",
         }),
 
         // Misc
@@ -135,11 +134,11 @@ const createBodySchema = z
                     path: ["price"],
                 });
             }
-            if (val.paymentGracePeriod === undefined) {
+            if (val.paymentGracePeriodMinutes === undefined) {
                 ctx.addIssue({
                     code: "custom",
                     message:
-                        "paymentGracePeriod must be set if isPaidEvent is true",
+                        "paymentGracePeriodMinutes must be set if isPaidEvent is true",
                     path: ["paymentGracePeriod"],
                 });
             }
@@ -212,19 +211,11 @@ const createBodySchema = z
         }
 
         // Payment grace period must be between 5 minutes and 6 hours
-        if (val.paymentGracePeriod) {
-            // Parse as iso duration
-            const duration = parseDuration(val.paymentGracePeriod);
-
-            const totalMinutes =
-                (duration.years ?? 0) * 12 * 30 * 24 * 60 + // years to months to days to hours to minutes
-                (duration.months ?? 0) * 30 * 24 * 60 + // months to days to hours to minutes
-                (duration.days ?? 0) * 24 * 60 + // days to hours to minutes
-                (duration.hours ?? 0) * 60 + // hours to minutes
-                (duration.minutes ?? 0) + // minutes
-                (duration.seconds ?? 0) / 60; // seconds to minutes
-
-            if (totalMinutes < 5 || totalMinutes > 60 * 6) {
+        if (val.paymentGracePeriodMinutes) {
+            if (
+                val.paymentGracePeriodMinutes < 5 ||
+                val.paymentGracePeriodMinutes > 60 * 6
+            ) {
                 ctx.addIssue({
                     code: "custom",
                     message:
@@ -352,7 +343,7 @@ export const createRoute = new Hono().post(
                 contactPersonId: body.contactPersonUserId,
                 reactionsAllowed: body.reactionsAllowed,
                 categorySlug: body.categorySlug,
-                paymentGracePeriod: body.paymentGracePeriod,
+                paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 imageUrl: body.imageUrl,
                 createdByUserId: userId,
                 updateByUserId: userId,

@@ -69,7 +69,7 @@ export const event = pgTable("event", {
     requiresSigningUp: boolean("requires_signing_up").default(false).notNull(),
     price: integer("price"),
     // The time between sign up and it must be paid
-    paymentGracePeriod: interval("payment_grace_period"),
+    paymentGracePeriodMinutes: integer("payment_grace_period_minutes"),
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
     ...timestamps,
 });
