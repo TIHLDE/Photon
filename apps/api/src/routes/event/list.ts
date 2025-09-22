@@ -2,25 +2,48 @@ import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db from "../../db";
+import { withPagination } from "../../middleware/pagination";
 
 const eventSchema = z.object({
-    id: z.uuid({ version: "v4" }),
-    slug: z.string(),
-    title: z.string(),
-    location: z.string().nullable().optional(),
-    startTime: z.iso.datetime(),
-    endTime: z.iso.datetime(),
+    id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
+    slug: z.string().meta({ description: "Event slug" }),
+    title: z.string().meta({ description: "Event title" }),
+    location: z
+        .string()
+        .nullable()
+        .optional()
+        .meta({ description: "Event location (nullable)" }),
+    startTime: z.iso
+        .datetime()
+        .meta({ description: "Event start time (ISO 8601)" }),
+    endTime: z.iso
+        .datetime()
+        .meta({ description: "Event end time (ISO 8601)" }),
     organizer: z
         .object({
-            name: z.string(),
-            slug: z.string(),
-            type: z.string(),
+            name: z.string().meta({ description: "Organizer name" }),
+            slug: z.string().meta({ description: "Organizer slug" }),
+            type: z.string().meta({ description: "Organizer type" }),
         })
-        .nullable(),
-    closed: z.boolean(),
-    image: z.url().nullable(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
+        .nullable()
+        .meta({ description: "Event organizer (nullable)" }),
+    closed: z.boolean().meta({ description: "Is registration closed" }),
+    image: z
+        .url()
+        .nullable()
+        .meta({ description: "Event image URL (nullable)" }),
+    createdAt: z.iso
+        .datetime()
+        .meta({ description: "Event creation time (ISO 8601)" }),
+    updatedAt: z.iso
+        .datetime()
+        .meta({ description: "Event update time (ISO 8601)" }),
+    category: z
+        .object({
+            slug: z.string().meta({ description: "Category slug" }),
+            label: z.string().meta({ description: "Category label" }),
+        })
+        .meta({ description: "Event category" }),
 });
 
 export const listRoute = new Hono().get(
@@ -39,6 +62,7 @@ export const listRoute = new Hono().get(
             },
         },
     }),
+    ...withPagination(),
     async (c) => {
         const events = await db.query.event.findMany({
             orderBy: (event, { desc }) => [desc(event.start)],
@@ -46,6 +70,8 @@ export const listRoute = new Hono().get(
                 organizer: true,
                 category: true,
             },
+            limit: c.get("limit"),
+            offset: c.get("offset"),
         });
 
         const returnEvents = events.map((e) => {
@@ -75,6 +101,10 @@ export const listRoute = new Hono().get(
                 image: e.imageUrl,
                 createdAt: e.createdAt.toISOString(),
                 updatedAt: e.updatedAt.toISOString(),
+                category: {
+                    slug: e.category.slug,
+                    label: e.category.label,
+                },
             } as z.infer<typeof eventSchema>;
         });
 
