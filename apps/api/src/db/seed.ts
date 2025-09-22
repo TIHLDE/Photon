@@ -1,4 +1,4 @@
-import { type DbSchema, schema } from "../db";
+import db, { type DbSchema, schema } from "../db";
 
 import { auth } from "../lib/auth";
 import { eq, type InferInsertModel } from "drizzle-orm";
