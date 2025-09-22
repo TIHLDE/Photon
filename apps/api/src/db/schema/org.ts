@@ -19,6 +19,8 @@ export const studyProgramType = pgEnum("org_study_program_type", [
     "master",
 ]);
 
+export type StudyProgramType = (typeof studyProgramType)["enumValues"][number];
+
 export const studyProgram = pgTable("study_program", {
     id: serial("id").primaryKey(),
     slug: varchar("slug", { length: 64 }).notNull().unique(),
@@ -54,6 +56,8 @@ export const groupType = pgEnum("org_group_type", [
     "tihlde",
 ]);
 
+export type GroupType = (typeof groupType)["enumValues"][number];
+
 export const group = pgTable("group", {
     imageUrl: varchar("image_url", { length: 600 }),
     name: varchar("name", { length: 128 }).notNull(),
@@ -73,6 +77,9 @@ export const groupMembershipRole = pgEnum("org_group_membership_role", [
     "member",
     "leader",
 ]);
+
+export type GroupMembershipRole =
+    (typeof groupMembershipRole)["enumValues"][number];
 
 export const groupMembership = pgTable(
     "group_membership",
