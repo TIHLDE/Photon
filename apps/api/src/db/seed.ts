@@ -1,8 +1,7 @@
-import { seed } from "drizzle-seed";
-import db, { schema } from "../db";
+import { type DbSchema, schema } from "../db";
 
 import { auth } from "../lib/auth";
-import { eq } from "drizzle-orm";
+import { eq, type InferInsertModel } from "drizzle-orm";
 
 export default async () => {
     // Check if any users exist
@@ -1076,11 +1075,11 @@ export default async () => {
             .where(eq(schema.group.slug, group.slug))
             .limit(1);
         if (!exists.length) {
-            await db.insert(schema.group).values({
+            const newGroup: InferInsertModel<DbSchema["group"]> = {
                 name: group.name,
                 slug: group.slug,
                 description: group.description,
-                finesActivated: group.fines_activated,
+                finesActivated: group.fines_activated === 1,
                 finesInfo: group.fine_info,
                 type: group.type,
                 contactEmail: group.contact_email,
@@ -1088,7 +1087,9 @@ export default async () => {
                 updatedAt: new Date(group.updated_at),
                 imageUrl: group.image,
                 finesAdminId: null,
-            });
+            };
+
+            await db.insert(schema.group).values(newGroup);
         }
     }
 
