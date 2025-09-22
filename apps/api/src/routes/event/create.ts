@@ -5,6 +5,7 @@ import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
 import { eq, type InferInsertModel } from "drizzle-orm";
+import { requireAuth } from "../../middleware/auth";
 
 const createBodySchema = z
     .object({
@@ -263,13 +264,13 @@ export const createRoute = new Hono().post(
             },
         },
     }),
-    // requireAuth,
+    requireAuth,
     // requirePermissions("events:create"),
     validator("json", createBodySchema),
     async (c) => {
         const body = c.req.valid("json");
         // const userId = c.get("user").id;
-        const userId = "3aypzcMPXy4p7fBxkLxhLZvY4w1JfzN9"; // TODO TEMP
+        const userId = c.get("user").id;
 
         await db.transaction(async (tx) => {
             const slug = await generateUniqueEventSlug(body.title, tx);
@@ -347,6 +348,7 @@ export const createRoute = new Hono().post(
                 imageUrl: body.imageUrl,
                 createdByUserId: userId,
                 updateByUserId: userId,
+                organizerGroupSlug: body.organizerGroupSlug,
             };
 
             await db.insert(schema.event).values(newEvent);
