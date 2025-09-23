@@ -223,7 +223,7 @@ export default async () => {
         .limit(1);
 
     if (!users.length) {
-        await auth.api.createUser({
+        const user = await auth.api.createUser({
             body: {
                 email: "test@test.com",
                 password: "index123",
@@ -231,6 +231,13 @@ export default async () => {
                 role: "admin",
             },
         });
+
+        const userId = user.user.id;
+
+        await db
+            .update(schema.user)
+            .set({ emailVerified: true })
+            .where(eq(schema.user.id, userId));
     }
 
     const groups = [
@@ -1090,6 +1097,30 @@ export default async () => {
             };
 
             await db.insert(schema.group).values(newGroup);
+        }
+    }
+
+    const eventCategories = [
+        { label: "Kurs", slug: "kurs" },
+        { label: "Annet", slug: "annet" },
+        { label: "Fadderuka", slug: "fadderuka" },
+        { label: "Bedpres", slug: "bedpres" },
+        { label: "Sosialt", slug: "sosialt" },
+        { label: "Aktivitet", slug: "aktivitet" },
+    ] as const;
+
+    for (const category of eventCategories) {
+        const exists = await db
+            .select()
+            .from(schema.eventCategory)
+            .where(eq(schema.eventCategory.slug, category.slug))
+            .limit(1);
+
+        if (!exists.length) {
+            await db.insert(schema.eventCategory).values({
+                label: category.label,
+                slug: category.slug,
+            });
         }
     }
 

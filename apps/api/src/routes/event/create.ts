@@ -1,39 +1,30 @@
 import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import { db } from "~/db";
-import { event } from "~/db/schema/events";
-import { requireAuth } from "~/middleware/auth";
-import { requirePermissions } from "~/middleware/permission";
-
-const createBodySchema = z.object({
-    slug: z.string().min(1),
-    title: z.string().min(1),
-    description: z.string().optional(),
-    location: z.string().optional(),
-    startTime: z.iso.datetime(),
-    endTime: z.iso.datetime(),
-    capacity: z.number().int().positive(),
-    allowWaitlist: z.boolean().optional(),
-});
+import db, { type DbSchema, schema } from "~/db";
+import { generateUniqueEventSlug } from "../../lib/event/slug";
+import { HTTPException } from "hono/http-exception";
+import { eq, type InferInsertModel } from "drizzle-orm";
+import { requireAuth } from "../../middleware/auth";
+import { createEventSchema } from "../../lib/event/schema";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
     slug: z.string(),
     title: z.string(),
-    description: z.string().nullable().optional(),
-    location: z.string().nullable().optional(),
+    description: z.string().nullable(),
+    location: z.string().nullable(),
     startTime: z.iso.datetime(),
     endTime: z.iso.datetime(),
     capacity: z.number(),
     allowWaitlist: z.boolean(),
-    createdByUserId: z.string().nullable().optional(),
+    createdByUserId: z.string().nullable(),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
 });
 
 const createBodySchemaOpenAPI =
-    await resolver(createBodySchema).toOpenAPISchema();
+    await resolver(createEventSchema).toOpenAPISchema();
 
 export const createRoute = new Hono().post(
     "/",
@@ -55,44 +46,95 @@ export const createRoute = new Hono().post(
         },
     }),
     requireAuth,
-    requirePermissions("events:create"),
-    validator("json", createBodySchema),
+    // requirePermissions("events:create"),
+    validator("json", createEventSchema),
     async (c) => {
-        const body = await c.req.json().catch(() => null);
-        if (!body) return c.body(null, 400);
+        const body = c.req.valid("json");
+        // const userId = c.get("user").id;
+        const userId = c.get("user").id;
 
-        const user = c.get("user");
+        await db.transaction(async (tx) => {
+            const slug = await generateUniqueEventSlug(body.title, tx);
+            if (slug.length > 256) {
+                throw new HTTPException(400, {
+                    message:
+                        "Generated slug is too long (> 256 chars). Please use a shorter title",
+                });
+            }
 
-        const {
-            slug,
-            title,
-            description,
-            location,
-            startTime,
-            endTime,
-            capacity,
-            allowWaitlist = true,
-        } = body;
+            // Check that category exists
+            const category = await tx
+                .select()
+                .from(schema.eventCategory)
+                .where(eq(schema.eventCategory.slug, body.categorySlug))
+                .limit(1);
+            if (category.length === 0) {
+                throw new HTTPException(400, {
+                    message: `Category with slug "${body.categorySlug}" does not exist`,
+                });
+            }
 
-        if (!slug || !title || !startTime || !endTime || !capacity) {
-            return c.json({ message: "Missing required fields" }, 400);
-        }
+            // Check that organizer group exists
+            const group = await tx
+                .select()
+                .from(schema.group)
+                .where(eq(schema.group.slug, body.organizerGroupSlug))
+                .limit(1);
+            if (group.length === 0) {
+                throw new HTTPException(400, {
+                    message: `Group with slug "${body.organizerGroupSlug}" does not exist`,
+                });
+            }
 
-        const [created] = await db
-            .insert(event)
-            .values({
+            // Check that contact person exists
+            if (body.contactPersonUserId) {
+                const contactPerson = await tx
+                    .select()
+                    .from(schema.user)
+                    .where(eq(schema.user.id, body.contactPersonUserId))
+                    .limit(1);
+                if (contactPerson.length === 0) {
+                    throw new HTTPException(400, {
+                        message: `User with ID "${body.contactPersonUserId}" does not exist`,
+                    });
+                }
+            }
+
+            const newEvent: InferInsertModel<DbSchema["event"]> = {
+                title: body.title,
+                description: body.description,
+                location: body.location,
+                start: new Date(body.start),
+                end: new Date(body.end),
+                capacity: body.capacity,
+                allowWaitlist: body.requiresSigningUp,
                 slug,
-                title,
-                description,
-                location,
-                startTime: new Date(startTime),
-                endTime: new Date(endTime),
-                capacity: Number(capacity),
-                allowWaitlist: Boolean(allowWaitlist),
-                createdByUserId: user.id,
-            })
-            .returning();
+                price: body.price,
+                isPaidEvent: body.isPaidEvent,
+                requiresSigningUp: body.requiresSigningUp,
+                registrationStart: body.registrationStart
+                    ? new Date(body.registrationStart)
+                    : undefined,
+                registrationEnd: body.registrationEnd
+                    ? new Date(body.registrationEnd)
+                    : undefined,
+                cancellationDeadline: body.cancellationDeadline
+                    ? new Date(body.cancellationDeadline)
+                    : undefined,
+                isRegistrationClosed: body.isRegistrationClosed,
+                contactPersonId: body.contactPersonUserId,
+                reactionsAllowed: body.reactionsAllowed,
+                categorySlug: body.categorySlug,
+                paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
+                imageUrl: body.imageUrl,
+                createdByUserId: userId,
+                updateByUserId: userId,
+                organizerGroupSlug: body.organizerGroupSlug,
+            };
 
-        return c.json(created, 201);
+            await db.insert(schema.event).values(newEvent);
+        });
+
+        return c.json({ message: "Event created" }, 201);
     },
 );
