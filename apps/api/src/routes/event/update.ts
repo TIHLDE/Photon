@@ -104,19 +104,45 @@ export const updateRoute = new Hono().put(
                 }
             }
 
+            const updateDateNullable = (
+                date: string | null | undefined,
+            ): Date | null | undefined => {
+                if (date === null) return null;
+                if (date) return new Date(date);
+                return undefined;
+            };
+
+            const updateDate = (date: string | undefined): Date | undefined => {
+                if (date) return new Date(date);
+                return undefined;
+            };
+
             const updatedEvent: Partial<InferInsertModel<DbSchema["event"]>> = {
-                ...body,
-                start: body.start ? new Date(body.start) : undefined,
-                end: body.end ? new Date(body.end) : undefined,
-                registrationStart: body.registrationStart
-                    ? new Date(body.registrationStart)
-                    : undefined,
-                registrationEnd: body.registrationEnd
-                    ? new Date(body.registrationEnd)
-                    : undefined,
-                cancellationDeadline: body.cancellationDeadline
-                    ? new Date(body.cancellationDeadline)
-                    : undefined,
+                allowWaitlist: body.allowWaitlist,
+                categorySlug: body.categorySlug,
+                contactPersonId: body.contactPersonUserId,
+                description: body.description,
+                location: body.location,
+                organizerGroupSlug: body.organizerGroupSlug,
+                slug: slug,
+                capacity: body.capacity,
+                createdByUserId: userId,
+                imageUrl: body.imageUrl,
+                isPaidEvent: body.isPaidEvent,
+                isRegistrationClosed: body.isRegistrationClosed,
+                paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
+                reactionsAllowed: body.reactionsAllowed,
+                requiresSigningUp: body.requiresSigningUp,
+                price: body.price,
+                updatedAt: new Date(),
+                title: body.title,
+                start: updateDate(body.start),
+                end: updateDate(body.end),
+                registrationStart: updateDateNullable(body.registrationStart),
+                registrationEnd: updateDateNullable(body.registrationEnd),
+                cancellationDeadline: updateDateNullable(
+                    body.cancellationDeadline,
+                ),
                 updateByUserId: userId,
             };
 
