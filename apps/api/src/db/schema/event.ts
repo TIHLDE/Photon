@@ -16,16 +16,32 @@ import { relations } from "drizzle-orm";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
-export const registrationStatus = pgEnum("event_registration_status", [
+export const registrationStatusVariants = [
+    // Successfully registered to the event
     "registered",
-    "waitlisted",
-    "cancelled",
-    "attended",
-    "no_show",
-]);
 
-export type RegistrationStatus =
-    (typeof registrationStatus)["enumValues"][number];
+    // Is currently on waitlist (queued for spot)
+    "waitlisted",
+
+    // Spot got cancelled (failed to pay for event)
+    "cancelled",
+
+    // User has shown up to the event (registered by NOK)
+    "attended",
+
+    // User did not show up to the event (maybe receive strike)
+    "no_show",
+
+    // User has signed up, but is not yet resolved to registered or waitlist
+    "pending",
+] as const;
+
+export const registrationStatus = pgEnum(
+    "event_registration_status",
+    registrationStatusVariants,
+);
+
+export type RegistrationStatus = (typeof registrationStatusVariants)[number];
 
 export const paymentStatus = pgEnum("event_payment_status", [
     "pending",
@@ -89,21 +105,26 @@ export const eventRelations = relations(event, ({ one, many }) => ({
     }),
     reactions: many(eventReaction),
     pools: many(eventPriorityPool),
+    favorites: many(eventFavorite),
+    registrations: many(eventRegistration),
 }));
 
-export const eventRegistration = pgTable("registration", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    status: registrationStatus("status").notNull().default("registered"),
-    waitlistPosition: integer("waitlist_position"),
-    attendedAt: timestamp("attended_at"),
-    ...timestamps,
-});
+export const eventRegistration = pgTable(
+    "registration",
+    {
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        status: registrationStatus("status").notNull().default("registered"),
+        waitlistPosition: integer("waitlist_position"),
+        attendedAt: timestamp("attended_at"),
+        ...timestamps,
+    },
+    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+);
 
 export const eventRegistrationRelations = relations(
     eventRegistration,
@@ -274,3 +295,28 @@ export const eventPriorityPoolGroupRelations = relations(
         }),
     }),
 );
+
+export const eventFavorite = pgTable(
+    "favorite",
+    {
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+);
+
+export const eventFavoriteRelations = relations(eventFavorite, ({ one }) => ({
+    user: one(user, {
+        fields: [eventFavorite.userId],
+        references: [user.id],
+    }),
+    event: one(event, {
+        fields: [eventFavorite.eventId],
+        references: [event.id],
+    }),
+}));

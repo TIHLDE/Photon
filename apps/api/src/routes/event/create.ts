@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import z from "zod";
+import z, { ZodError } from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";

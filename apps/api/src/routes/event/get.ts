@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import z, { emoji } from "zod";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import z from "zod";
+import { describeRoute, resolver } from "hono-openapi";
 import db from "../../db";
-import { withPagination } from "../../middleware/pagination";
-import { isPgMaterializedView } from "drizzle-orm/pg-core";
+import { registrationStatusVariants } from "../../db/schema";
+import { captureAuth } from "../../middleware/auth";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
@@ -86,6 +86,30 @@ const eventSchema = z.object({
     enforcesPreviousStrikes: z.boolean().meta({
         description: "Does the event enforce previous strikes for registration",
     }),
+    registration: z
+        .object({
+            createdAt: z.iso
+                .datetime()
+                .meta({ description: "When the user signed up" }),
+            updatedAt: z.iso.datetime().meta({
+                description:
+                    "When the registration was last updated by the system (moving waitlist position etc.)",
+            }),
+            status: z.enum(registrationStatusVariants),
+            waitlistPosition: z.number().nullable().meta({
+                description:
+                    "The user's position in the waitlist. Is null if not on the waitlist",
+            }),
+            attendedAt: z.iso.datetime().nullable().meta({
+                description:
+                    "When the user was registered as an attendee by TIHLDE for this event. Is null if not attended.",
+            }),
+        })
+        .nullable()
+        .meta({
+            description:
+                "The current user's registration information. This is null if not registered or if not logged in.",
+        }),
 });
 
 export const listRoute = new Hono().get(
@@ -104,6 +128,7 @@ export const listRoute = new Hono().get(
             },
         },
     }),
+    captureAuth,
     async (c) => {
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, c.req.param("eventId")),
@@ -132,6 +157,28 @@ export const listRoute = new Hono().get(
                 },
             },
         });
+
+        const user = c.get("user");
+
+        let registration: z.infer<typeof eventSchema>["registration"] = null;
+
+        if (user) {
+            const dbRegistration = await db.query.eventRegistration.findFirst({
+                where: (registration, { eq }) =>
+                    eq(registration.userId, user.id),
+            });
+
+            if (dbRegistration) {
+                registration = {
+                    attendedAt:
+                        dbRegistration.attendedAt?.toISOString() ?? null,
+                    createdAt: dbRegistration.createdAt.toISOString(),
+                    status: dbRegistration.status,
+                    updatedAt: dbRegistration.updatedAt.toISOString(),
+                    waitlistPosition: dbRegistration.waitlistPosition,
+                };
+            }
+        }
 
         if (!event) {
             return c.json("The event was not found", 404);
@@ -193,6 +240,7 @@ export const listRoute = new Hono().get(
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,
             priorityPools,
+            registration,
         };
 
         return c.json(returnEvent);
