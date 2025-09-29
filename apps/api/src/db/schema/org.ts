@@ -6,7 +6,6 @@ import {
     integer,
     pgTableCreator,
     boolean,
-    timestamp,
 } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
 import { user } from "./auth";

@@ -4,7 +4,7 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { eq, type InferInsertModel } from "drizzle-orm";
+import { eq, inArray, type InferInsertModel } from "drizzle-orm";
 import { requireAuth } from "../../middleware/auth";
 import { createEventSchema } from "../../lib/event/schema";
 
@@ -130,9 +130,48 @@ export const createRoute = new Hono().post(
                 createdByUserId: userId,
                 updateByUserId: userId,
                 organizerGroupSlug: body.organizerGroupSlug,
+                enforcesPreviousStrikes: body.enforcesPreviousStrikes,
             };
 
-            await db.insert(schema.event).values(newEvent);
+            const [event] = await db
+                .insert(schema.event)
+                .values(newEvent)
+                .returning({ eventId: schema.event.id });
+
+            const eventId = event?.eventId;
+            if (!eventId) {
+                throw new HTTPException(500, {
+                    message: "Failed to create event",
+                });
+            }
+
+            if (body.priorityPools) {
+                for (let p = 0; p < body.priorityPools.length; p++) {
+                    const pool = body.priorityPools[p];
+                    const priorityScore = 10 - p;
+                    const [insertedPool] = await tx
+                        .insert(schema.eventPriorityPool)
+                        .values({
+                            eventId,
+                            priorityScore,
+                        })
+                        .returning({ poolId: schema.eventPriorityPool.id });
+                    const poolId = insertedPool?.poolId;
+
+                    if (!poolId) {
+                        throw new HTTPException(500, {
+                            message: "Failed to create priority pool",
+                        });
+                    }
+
+                    for (const groupSlug of pool?.groups ?? []) {
+                        await tx.insert(schema.eventPriorityPoolGroup).values({
+                            groupSlug,
+                            priorityPoolId: poolId,
+                        });
+                    }
+                }
+            }
         });
 
         return c.json({ message: "Event created" }, 201);

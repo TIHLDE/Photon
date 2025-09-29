@@ -7,8 +7,7 @@ import {
     boolean,
     varchar,
     uuid,
-    decimal,
-    interval,
+    primaryKey,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { timestamps } from "../timestamps";
@@ -75,10 +74,11 @@ export const event = pgTable("event", {
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
     }).references(() => group.slug, { onDelete: "set null" }),
+    enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
     ...timestamps,
 });
 
-export const eventRelations = relations(event, ({ one }) => ({
+export const eventRelations = relations(event, ({ one, many }) => ({
     category: one(eventCategory, {
         fields: [event.categorySlug],
         references: [eventCategory.slug],
@@ -87,6 +87,8 @@ export const eventRelations = relations(event, ({ one }) => ({
         fields: [event.organizerGroupSlug],
         references: [group.slug],
     }),
+    reactions: many(eventReaction),
+    pools: many(eventPriorityPool),
 }));
 
 export const eventRegistration = pgTable("registration", {
@@ -103,6 +105,20 @@ export const eventRegistration = pgTable("registration", {
     ...timestamps,
 });
 
+export const eventRegistrationRelations = relations(
+    eventRegistration,
+    ({ one }) => ({
+        event: one(event, {
+            fields: [eventRegistration.eventId],
+            references: [event.id],
+        }),
+        user: one(user, {
+            fields: [eventRegistration.userId],
+            references: [user.id],
+        }),
+    }),
+);
+
 export const eventStrike = pgTable("strike", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
@@ -115,6 +131,17 @@ export const eventStrike = pgTable("strike", {
     reason: varchar("reason", { length: 256 }),
     ...timestamps,
 });
+
+export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
+    event: one(event, {
+        fields: [eventStrike.eventId],
+        references: [event.id],
+    }),
+    user: one(user, {
+        fields: [eventStrike.userId],
+        references: [user.id],
+    }),
+}));
 
 export const eventPayment = pgTable("payment", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -132,6 +159,17 @@ export const eventPayment = pgTable("payment", {
     ...timestamps,
 });
 
+export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
+    event: one(event, {
+        fields: [eventPayment.eventId],
+        references: [event.id],
+    }),
+    user: one(user, {
+        fields: [eventPayment.userId],
+        references: [user.id],
+    }),
+}));
+
 export const eventFeedback = pgTable("feedback", {
     id: uuid("id").primaryKey().defaultRandom(),
     eventId: uuid("event_id")
@@ -143,7 +181,96 @@ export const eventFeedback = pgTable("feedback", {
     ...timestamps,
 });
 
+export const eventFeedbackRelations = relations(eventFeedback, ({ one }) => ({
+    event: one(event, {
+        fields: [eventFeedback.eventId],
+        references: [event.id],
+    }),
+    user: one(user, {
+        fields: [eventFeedback.userId],
+        references: [user.id],
+    }),
+}));
+
 export const eventCategory = pgTable("category", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
     label: varchar("label", { length: 128 }).notNull(),
 });
+
+export const eventCategoryRelations = relations(eventCategory, ({ many }) => ({
+    events: many(event),
+}));
+
+export const eventReaction = pgTable(
+    "reaction",
+    {
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        emoji: varchar("emoji", { length: 32 }).notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+);
+
+export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
+    user: one(user, {
+        fields: [eventReaction.userId],
+        references: [user.id],
+    }),
+    event: one(event, {
+        fields: [eventReaction.eventId],
+        references: [event.id],
+    }),
+}));
+
+export const eventPriorityPool = pgTable("priority_pool", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+        .notNull()
+        .references(() => event.id, { onDelete: "cascade" }),
+    priorityScore: integer("priority_score").notNull(),
+    ...timestamps,
+});
+
+export const eventPriorityPoolRelations = relations(
+    eventPriorityPool,
+    ({ one, many }) => ({
+        event: one(event, {
+            fields: [eventPriorityPool.eventId],
+            references: [event.id],
+        }),
+        groups: many(eventPriorityPoolGroup),
+    }),
+);
+
+export const eventPriorityPoolGroup = pgTable(
+    "priority_pool_group",
+    {
+        priorityPoolId: uuid("priority_pool_id")
+            .notNull()
+            .references(() => eventPriorityPool.id, { onDelete: "cascade" }),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, { onDelete: "cascade" }),
+        ...timestamps,
+    },
+    (t) => [primaryKey({ columns: [t.priorityPoolId, t.groupSlug] })],
+);
+
+export const eventPriorityPoolGroupRelations = relations(
+    eventPriorityPoolGroup,
+    ({ one }) => ({
+        priorityPool: one(eventPriorityPool, {
+            fields: [eventPriorityPoolGroup.priorityPoolId],
+            references: [eventPriorityPool.id],
+        }),
+        group: one(group, {
+            fields: [eventPriorityPoolGroup.groupSlug],
+            references: [group.slug],
+        }),
+    }),
+);
