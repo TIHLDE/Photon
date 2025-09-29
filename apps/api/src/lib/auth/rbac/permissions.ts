@@ -1,66 +1,38 @@
-import { and, eq, inArray } from "drizzle-orm";
-import db from "~/db";
-import { permission, role, rolePermission, userRole } from "~/db/schema";
+// Canonical, hardcoded permission names. These are referenced directly in endpoints/middleware.
+export const PERMISSIONS = [
+    // Events
+    "events:create",
+    "events:update",
+    "events:delete",
+    // Event registrations
+    "events:registrations:list",
+    "events:registrations:get",
+    "events:registrations:create",
+    "events:registrations:delete",
+    "events:registrations:checkin",
+    // Event feedback
+    "events:feedback:list",
+    "events:feedback:get",
+    "events:feedback:update",
+    "events:feedback:delete",
+    // Event payments
+    "events:payments:list",
+    "events:payments:get",
+    "events:payments:create",
+    "events:payments:update",
+    "events:payments:delete",
+] as const;
 
-export async function getUserPermissions(userId: string): Promise<string[]> {
-    const rows = await db
-        .select({ name: permission.name })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
-        .innerJoin(permission, eq(rolePermission.permissionId, permission.id))
-        .where(eq(userRole.userId, userId));
-    const set = new Set(rows.map((r) => r.name));
-    return [...set];
+export type PermissionName = (typeof PERMISSIONS)[number];
+
+export const PERMISSIONS_SET = new Set<string>(
+    PERMISSIONS as readonly string[],
+);
+
+export function isPermissionName(name: string): name is PermissionName {
+    return PERMISSIONS_SET.has(name);
 }
 
-export async function userHasPermission(
-    userId: string,
-    permissionName: string,
-): Promise<boolean> {
-    const rows = await db
-        .select({ name: permission.name })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
-        .innerJoin(permission, eq(rolePermission.permissionId, permission.id))
-        .where(
-            and(
-                eq(userRole.userId, userId),
-                eq(permission.name, permissionName),
-            ),
-        )
-        .limit(1);
-    return rows.length > 0;
-}
-
-export async function userHasAnyPermission(
-    userId: string,
-    permissions: string[],
-): Promise<boolean> {
-    if (permissions.length === 0) return false;
-    const rows = await db
-        .select({ name: permission.name })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .innerJoin(rolePermission, eq(rolePermission.roleId, role.id))
-        .innerJoin(permission, eq(rolePermission.permissionId, permission.id))
-        .where(
-            and(
-                eq(userRole.userId, userId),
-                inArray(permission.name, permissions),
-            ),
-        )
-        .limit(1);
-    return rows.length > 0;
-}
-
-export async function userHasAllPermissions(
-    userId: string,
-    permissions: string[],
-): Promise<boolean> {
-    if (permissions.length === 0) return true;
-    const userPerms = await getUserPermissions(userId);
-    const set = new Set(userPerms);
-    return permissions.every((p) => set.has(p));
+export function getAllPermissionNames(): PermissionName[] {
+    return [...PERMISSIONS] as PermissionName[];
 }

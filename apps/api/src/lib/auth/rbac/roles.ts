@@ -12,6 +12,64 @@ export async function getUserRoles(userId: string): Promise<string[]> {
     return rows.map((r) => r.name);
 }
 
+export async function assignUserRole(
+    userId: string,
+    roleName: string,
+): Promise<void> {
+    const [r] = await db.select().from(role).where(eq(role.name, roleName));
+    if (!r) throw new Error(`Role not found: ${roleName}`);
+
+    await db
+        .insert(userRole)
+        .values({ userId, roleId: r.id })
+        .onConflictDoNothing();
+}
+
+export async function removeUserRole(
+    userId: string,
+    roleName: string,
+): Promise<void> {
+    const [r] = await db.select().from(role).where(eq(role.name, roleName));
+    if (!r) return;
+
+    await db
+        .delete(userRole)
+        .where(and(eq(userRole.userId, userId), eq(userRole.roleId, r.id)));
+}
+
+export async function getRoleUserIds(roleName: string): Promise<string[]> {
+    const [r] = await db.select().from(role).where(eq(role.name, roleName));
+    if (!r) return [];
+    const rows = await db
+        .select({ userId: userRole.userId })
+        .from(userRole)
+        .where(eq(userRole.roleId, r.id));
+    return rows.map((x) => x.userId);
+}
+
+export async function getUserPermissions(userId: string): Promise<string[]> {
+    const rows = await db
+        .select({ permissions: role.permissions })
+        .from(userRole)
+        .innerJoin(role, eq(userRole.roleId, role.id))
+        .where(eq(userRole.userId, userId));
+    const all = rows.flatMap((r) => r.permissions ?? []);
+    return all;
+}
+
+export async function assignRolePermissions(
+    roleName: string,
+    permissionNames: string[],
+): Promise<void> {
+    const [r] = await db.select().from(role).where(eq(role.name, roleName));
+    if (!r) throw new Error(`Role not found: ${roleName}`);
+
+    if (permissionNames.length === 0) return;
+    const existing = r.permissions ?? [];
+    const merged = [...new Set([...existing, ...permissionNames])];
+    await db.update(role).set({ permissions: merged }).where(eq(role.id, r.id));
+}
+
 export async function userHasRole(
     userId: string,
     roleName: string,
