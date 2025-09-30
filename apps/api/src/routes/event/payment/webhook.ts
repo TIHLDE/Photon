@@ -5,8 +5,27 @@ import { HTTPException } from "hono/http-exception";
 import { getPaymentDetails } from "../../../lib/vipps";
 import { eq, and } from "drizzle-orm";
 
+/**
+ * For documentation, please visit https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/events/#epayment-api-event-types
+ */
+export interface WebhookPayload {
+    msn: string;
+    reference: string;
+    pspReference: string;
+    name: string;
+    amount: Amount;
+    timestamp: Date;
+    idempotencyKey: string | null;
+    success: boolean;
+}
+
+export interface Amount {
+    currency: string;
+    value: number;
+}
+
 export const paymentWebhookRoute = new Hono().post(
-    "/payment/webhook/:id",
+    "/payment/webhook",
     describeRoute({
         tags: ["payments", "webhooks"],
         summary: "Vipps payment webhook",
@@ -25,15 +44,10 @@ export const paymentWebhookRoute = new Hono().post(
         },
     }),
     async (c) => {
-        const body = await c.req.json();
-
-        console.log(JSON.stringify(c.req));
+        const body = (await c.req.json()) as WebhookPayload;
 
         // Vipps webhook payload structure
-        const { reference, state } = body as {
-            reference?: string;
-            state?: string;
-        };
+        const { reference } = body;
 
         if (!reference) {
             throw new HTTPException(400, {
@@ -62,6 +76,7 @@ export const paymentWebhookRoute = new Hono().post(
                 "pending";
             let receivedPaymentAt: Date | null = null;
 
+            // Docs on state https://developer.vippsmobilepay.com/docs/APIs/epayment-api/api-guide/concepts/#payment-states
             switch (vippsPayment.state) {
                 case "AUTHORIZED":
                     newStatus = "paid";
