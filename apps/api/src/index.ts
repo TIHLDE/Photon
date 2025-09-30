@@ -83,6 +83,8 @@ serve(
         port: env.PORT,
     },
     (info) => {
-        console.log(`Server is running on http://localhost:${info.port}/api`);
+        console.log(
+            `📦 Server is running on http://localhost:${info.port}/api`,
+        );
     },
 );

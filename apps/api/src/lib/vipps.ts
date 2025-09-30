@@ -1,4 +1,4 @@
-import { Client } from "@vippsmobilepay/sdk";
+import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
 import { env } from "./env";
 import { getRedis } from "./cache/redis";
 
@@ -27,33 +27,6 @@ export interface CreatePaymentParams {
     returnUrl: string; // URL to redirect after payment
     description: string; // Payment description shown to user
     userPhoneNumber?: string;
-}
-
-export interface PaymentDetails {
-    reference: string;
-    state: "CREATED" | "AUTHORIZED" | "TERMINATED" | "ABORTED";
-    amount: {
-        value: number;
-        currency: string;
-    };
-    aggregate: {
-        authorizedAmount: {
-            value: number;
-            currency: string;
-        };
-        capturedAmount: {
-            value: number;
-            currency: string;
-        };
-        refundedAmount: {
-            value: number;
-            currency: string;
-        };
-        cancelledAmount: {
-            value: number;
-            currency: string;
-        };
-    };
 }
 
 const VIPPS_TOKEN_CACHE_KEY = "vipps:access_token";
@@ -168,7 +141,7 @@ export async function createPayment(
  */
 export async function getPaymentDetails(
     reference: string,
-): Promise<PaymentDetails> {
+): Promise<GetPaymentResponse> {
     const token = await getVippsToken();
 
     const response = await client.payment.info(token, reference);
@@ -179,7 +152,7 @@ export async function getPaymentDetails(
         );
     }
 
-    return response.data as PaymentDetails;
+    return response.data;
 }
 
 /**
@@ -247,7 +220,7 @@ export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
     const response = await client.webhook.register(vippsToken, {
         events: WEBHOOK_EVENTS,
         // url: env.ROOT_URL + WEBHOOK_API_PATH,
-        url: "https://27e442c20571.ngrok-free.app" + WEBHOOK_API_PATH,
+        url: env.WEBHOOK_URL + WEBHOOK_API_PATH,
     });
 
     if (!response.ok) {

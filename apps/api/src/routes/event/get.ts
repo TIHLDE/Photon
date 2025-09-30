@@ -210,7 +210,7 @@ export const listRoute = new Hono().get(
             ? {
                   paymentGracePeriodMinutes:
                       event.paymentGracePeriodMinutes || 0,
-                  price: event.price || 0,
+                  price: event.priceMinor || 0,
               }
             : null;
 

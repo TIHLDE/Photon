@@ -166,7 +166,7 @@ export const updateRoute = new Hono().put(
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 reactionsAllowed: body.reactionsAllowed,
                 requiresSigningUp: body.requiresSigningUp,
-                price: body.price,
+                priceMinor: body.price ? body.price * 100 : null,
                 updatedAt: new Date(),
                 title: body.title,
                 start: updateDate(body.start),

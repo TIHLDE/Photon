@@ -62,7 +62,7 @@ export const paymentWebhookRoute = new Hono().post(
         });
 
         if (!payment) {
-            throw new HTTPException(404, {
+            throw new HTTPException(409, {
                 message: `Payment not found for reference: ${reference}`,
             });
         }
@@ -105,9 +105,12 @@ export const paymentWebhookRoute = new Hono().post(
                 case "CREATED":
                     newStatus = "pending";
                     break;
+                case "EXPIRED":
+                    newStatus = "failed";
+                    break;
             }
 
-            // Update payment record using composite key
+            // Update payment record using id
             await db
                 .update(schema.eventPayment)
                 .set({
@@ -115,12 +118,7 @@ export const paymentWebhookRoute = new Hono().post(
                     receivedPaymentAt:
                         receivedPaymentAt || payment.receivedPaymentAt,
                 })
-                .where(
-                    and(
-                        eq(schema.eventPayment.eventId, payment.eventId),
-                        eq(schema.eventPayment.userId, payment.userId),
-                    ),
-                );
+                .where(eq(schema.eventPayment.id, payment.id));
 
             return c.json(
                 {

@@ -109,7 +109,7 @@ export const createRoute = new Hono().post(
                 capacity: body.capacity,
                 allowWaitlist: body.requiresSigningUp,
                 slug,
-                price: body.price,
+                priceMinor: body.price ? body.price * 100 : null,
                 isPaidEvent: body.isPaidEvent,
                 requiresSigningUp: body.requiresSigningUp,
                 registrationStart: body.registrationStart

@@ -5,8 +5,6 @@ import { env } from "../env";
 
 const getTransporter = () => {
     if (!env.MAIL_HOST) {
-        console.warn("MAIL env variables not set. Using sink instead.");
-
         // Sink
         const transport = nodemailer.createTransport({
             host: "localhost",
@@ -14,7 +12,7 @@ const getTransporter = () => {
             secure: false,
         });
 
-        console.log("Serving mail inbox at http://localhost:8025");
+        console.log("📧 Serving mail inbox at http://localhost:8025");
         return transport;
     }
 

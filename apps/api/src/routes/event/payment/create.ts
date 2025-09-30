@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import z from "zod";
-import db, { schema } from "../../../db";
+import db, { type DbSchema, schema } from "~/db";
+import type { InferInsertModel } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { requireAuth } from "../../../middleware/auth";
-import { createPayment } from "../../../lib/vipps";
-import { env } from "../../../lib/env";
-import { eq, and } from "drizzle-orm";
+import { requireAuth } from "~/middleware/auth";
+import { createPayment } from "~/lib/vipps";
 import { randomUUID } from "node:crypto";
 
 const createPaymentBodySchema = z.object({
@@ -85,7 +84,7 @@ export const createPaymentRoute = new Hono().post(
             throw new HTTPException(404, { message: "Event not found" });
         }
 
-        if (!event.isPaidEvent || !event.price) {
+        if (!event.isPaidEvent || !event.priceMinor) {
             throw new HTTPException(400, {
                 message: "This event does not require payment",
             });
@@ -109,17 +108,27 @@ export const createPaymentRoute = new Hono().post(
             });
         }
 
-        // Check for existing payment (composite key will also prevent duplicates)
-        const existingPayment = await db.query.eventPayment.findFirst({
+        // Check for existing pending payment
+        const existingPayments = await db.query.eventPayment.findMany({
             where: (payment, { eq, and }) =>
                 and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
         });
 
-        if (existingPayment) {
+        // Check if there is already a pending payment
+        if (existingPayments.some((p) => p.status === "pending")) {
             throw new HTTPException(409, {
-                message: "Payment already exists for this event",
+                message: "A pending payment already exists for this event",
             });
         }
+
+        // Check if already paid
+        if (existingPayments.some((p) => p.status === "paid")) {
+            throw new HTTPException(409, {
+                message: "The user has already paid for the event",
+            });
+        }
+
+        // Remaining states are either aborted or refunded. In that case they can create a new payment
 
         // Generate unique reference for Vipps
         const vippsReference = randomUUID();
@@ -127,7 +136,7 @@ export const createPaymentRoute = new Hono().post(
         try {
             // Initiate Vipps payment first
             const checkoutUrl = await createPayment({
-                amount: event.price,
+                amount: event.priceMinor,
                 currency: "NOK",
                 reference: vippsReference,
                 userFlow: body.userFlow,
@@ -135,18 +144,20 @@ export const createPaymentRoute = new Hono().post(
                 description: `Payment for ${event.title}`,
             });
 
+            const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
+                eventId,
+                userId,
+                amountMinor: event.priceMinor,
+                currency: "NOK",
+                provider: "vipps",
+                providerPaymentId: vippsReference,
+                status: "pending",
+            };
+
             // Create payment record after Vipps payment is created
             const [payment] = await db
                 .insert(schema.eventPayment)
-                .values({
-                    eventId,
-                    userId,
-                    amountMinor: event.price,
-                    currency: "NOK",
-                    provider: "vipps",
-                    providerPaymentId: vippsReference,
-                    status: "pending",
-                })
+                .values(newPayment)
                 .returning();
 
             if (!payment) {
@@ -160,7 +171,7 @@ export const createPaymentRoute = new Hono().post(
                     eventId: payment.eventId,
                     userId: payment.userId,
                     checkoutUrl,
-                    amount: event.price,
+                    amount: event.priceMinor,
                     currency: "NOK",
                 },
                 201,
