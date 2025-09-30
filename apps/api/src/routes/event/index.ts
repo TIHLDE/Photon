@@ -8,6 +8,8 @@ import { getFavoriteEventsRoute } from "./favorite/get";
 import { registerToEventRoute } from "./registration/create";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
 import { deleteEventRegistrationRoute } from "./registration/delete";
+import { createPaymentRoute } from "./payment/create";
+import { paymentWebhookRoute } from "./payment/webhook";
 
 export const eventRoutes = new Hono()
     // Event routes
@@ -25,4 +27,8 @@ export const eventRoutes = new Hono()
     // i.e. /:eventId/registration
     .route("/", registerToEventRoute)
     .route("/", getAllRegistrationsForEventsRoute)
-    .route("/", deleteEventRegistrationRoute);
+    .route("/", deleteEventRegistrationRoute)
+
+    // Payment
+    .route("/", createPaymentRoute)
+    .route("/", paymentWebhookRoute);

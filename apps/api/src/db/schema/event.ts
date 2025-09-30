@@ -164,21 +164,25 @@ export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
     }),
 }));
 
-export const eventPayment = pgTable("payment", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    amountMinor: integer("amount_minor").notNull(), // cents/øre
-    currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
-    provider: varchar("provider", { length: 64 }),
-    providerPaymentId: text("provider_payment_id"),
-    status: paymentStatus("status").notNull().default("pending"),
-    ...timestamps,
-});
+export const eventPayment = pgTable(
+    "payment",
+    {
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        amountMinor: integer("amount_minor").notNull(), // cents/øre
+        currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
+        provider: varchar("provider", { length: 64 }),
+        providerPaymentId: text("provider_payment_id"),
+        status: paymentStatus("status").notNull().default("pending"),
+        receivedPaymentAt: timestamp("received_payment_at"),
+        ...timestamps,
+    },
+    (t) => [primaryKey({ columns: [t.eventId, t.userId] })],
+);
 
 export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
     event: one(event, {
