@@ -1,9 +1,9 @@
-import z from "zod";
-import { describeRoute, resolver, validator } from "hono-openapi";
-import { schema } from "~/db";
-import { withPagination } from "~/middleware/pagination";
 import { eq, ne, or } from "drizzle-orm";
+import { describeRoute, resolver, validator } from "hono-openapi";
+import z from "zod";
+import { schema } from "~/db";
 import { route } from "~/lib/route";
+import { withPagination } from "~/middleware/pagination";
 
 const registrationsSchema = z.object({
     registeredUsers: z.array(

@@ -1,18 +1,18 @@
+import { relations } from "drizzle-orm";
 import {
+    boolean,
     integer,
     pgEnum,
     pgTableCreator,
+    primaryKey,
     text,
     timestamp,
-    boolean,
-    varchar,
     uuid,
-    primaryKey,
+    varchar,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
 import { timestamps } from "../timestamps";
+import { user } from "./auth";
 import { group } from "./org";
-import { relations } from "drizzle-orm";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 

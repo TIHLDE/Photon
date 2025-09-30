@@ -1,11 +1,11 @@
-import z from "zod";
+import { type InferInsertModel, and, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "~/lib/event/slug";
-import { HTTPException } from "hono/http-exception";
-import { and, eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "~/middleware/auth";
 import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 
 const updateFavoriteSchema = z.object({
     isFavorite: z.boolean().meta({ description: "Is favorite" }),

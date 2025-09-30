@@ -1,15 +1,15 @@
 import { route } from "../../lib/route";
 import { createRoute } from "./create";
-import { listRoute } from "./list";
-import { updateRoute } from "./update";
 import { deleteRoute } from "./delete";
-import { updateFavoriteRoute as updateFavoriteEventsRoute } from "./favorite/update";
 import { getFavoriteEventsRoute } from "./favorite/get";
-import { registerToEventRoute } from "./registration/create";
-import { getAllRegistrationsForEventsRoute } from "./registration/list";
-import { deleteEventRegistrationRoute } from "./registration/delete";
+import { updateFavoriteRoute as updateFavoriteEventsRoute } from "./favorite/update";
+import { listRoute } from "./list";
 import { createPaymentRoute } from "./payment/create";
 import { paymentWebhookRoute } from "./payment/webhook";
+import { registerToEventRoute } from "./registration/create";
+import { deleteEventRegistrationRoute } from "./registration/delete";
+import { getAllRegistrationsForEventsRoute } from "./registration/list";
+import { updateRoute } from "./update";
 
 export const eventRoutes = route()
     // Event routes

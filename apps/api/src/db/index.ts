@@ -1,4 +1,4 @@
-import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
 
 import { env } from "~/lib/env";
 
@@ -8,7 +8,9 @@ import * as schema from "./schema";
  * Factory function to create a database client.
  * Use this for dependency injection and testing.
  */
-export function createDb(connectionString: string): NodePgDatabase<typeof schema> {
+export function createDb(
+    connectionString: string,
+): NodePgDatabase<typeof schema> {
     return drizzle({
         connection: {
             connectionString,

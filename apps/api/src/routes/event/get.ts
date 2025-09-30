@@ -1,8 +1,8 @@
-import z from "zod";
 import { describeRoute, resolver } from "hono-openapi";
+import z from "zod";
 import { registrationStatusVariants } from "../../db/schema";
-import { captureAuth } from "../../middleware/auth";
 import { route } from "../../lib/route";
+import { captureAuth } from "../../middleware/auth";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),

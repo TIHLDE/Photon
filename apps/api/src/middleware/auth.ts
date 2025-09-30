@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import { auth, type Session, type User } from "~/lib/auth";
+import { type Session, type User, auth } from "~/lib/auth";
 
 type AuthVariables = {
     user: User;

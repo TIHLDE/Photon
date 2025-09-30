@@ -1,7 +1,7 @@
-import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import { withPagination } from "../../middleware/pagination";
+import z from "zod";
 import { route } from "../../lib/route";
+import { withPagination } from "../../middleware/pagination";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),

@@ -1,12 +1,12 @@
-import z from "zod";
+import { type InferInsertModel, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import { type DbSchema, schema } from "~/db";
-import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "../../middleware/auth";
+import z from "zod";
+import { type DbSchema, schema } from "~/db";
 import { updateEventSchema } from "../../lib/event/schema";
+import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
+import { requireAuth } from "../../middleware/auth";
 
 const updateBodySchemaOpenAPI =
     await resolver(updateEventSchema).toOpenAPISchema();

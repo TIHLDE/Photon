@@ -1,15 +1,15 @@
 import {
+    boolean,
+    integer,
+    pgTableCreator,
     primaryKey,
     serial,
     text,
     varchar,
-    integer,
-    pgTableCreator,
-    boolean,
 } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
-import { user } from "./auth";
 import { timestamps } from "../timestamps";
+import { user } from "./auth";
 
 const pgTable = pgTableCreator((name) => `org_${name}`);
 

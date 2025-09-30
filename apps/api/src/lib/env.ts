@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { config } from "@dotenvx/dotenvx";
+import { z } from "zod";
 config({
     path: "../../.env",
 });

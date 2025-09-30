@@ -1,8 +1,8 @@
-import { schema } from "../../db";
 import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
-import { requireAuth } from "../../middleware/auth";
+import { schema } from "../../db";
 import { route } from "../../lib/route";
+import { requireAuth } from "../../middleware/auth";
 
 export const deleteRoute = route().delete(
     "/:eventId",

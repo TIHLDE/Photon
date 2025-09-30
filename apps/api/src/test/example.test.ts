@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import {
-    setupTestContext,
-    cleanupTestContext,
-    getTestContext,
-    flushRedis,
-} from "./setup";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { schema } from "~/db";
+import {
+    cleanupTestContext,
+    flushRedis,
+    getTestContext,
+    setupTestContext,
+} from "./setup";
 
 /**
  * Example test file demonstrating how to use the new dependency injection pattern.

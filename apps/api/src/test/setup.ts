@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll } from "vitest";
 import type { AppContext } from "~/lib/context";
-import { createTestContext, closeAppContext } from "~/lib/context";
+import { closeAppContext, createTestContext } from "~/lib/context";
 
 /**
  * Global test context that can be used across all tests.

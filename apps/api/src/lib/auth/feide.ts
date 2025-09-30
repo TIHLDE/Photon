@@ -1,5 +1,3 @@
-import { genericOAuth, oAuthDiscoveryMetadata } from "better-auth/plugins";
-import { env } from "../env";
 import type {
     AuthContext,
     MiddlewareContext,
@@ -8,9 +6,11 @@ import type {
     OAuth2UserInfo,
     User,
 } from "better-auth";
+import { genericOAuth, oAuthDiscoveryMetadata } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
 import db from "../../db";
 import { account, studyProgram, studyProgramMembership } from "../../db/schema";
-import { eq } from "drizzle-orm";
+import { env } from "../env";
 
 /**
  * BetterAuth provider ID for Feide

@@ -1,7 +1,7 @@
 import { describeRoute, resolver } from "hono-openapi";
-import { requireAuth } from "~/middleware/auth";
 import z from "zod";
 import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 
 const getFavoriteSchema = z.array(
     z.object({

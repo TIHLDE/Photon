@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Body,
     Button,
@@ -9,6 +8,7 @@ import {
     Img,
     Text,
 } from "@react-email/components";
+import React from "react";
 import { env } from "../../env";
 
 interface ResetPasswordEmailProps {

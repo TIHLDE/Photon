@@ -1,12 +1,12 @@
+import { randomUUID } from "node:crypto";
+import type { InferInsertModel } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
-import type { InferInsertModel } from "drizzle-orm";
-import { HTTPException } from "hono/http-exception";
-import { requireAuth } from "~/middleware/auth";
-import { createPayment } from "~/lib/vipps";
-import { randomUUID } from "node:crypto";
 import { route } from "~/lib/route";
+import { createPayment } from "~/lib/vipps";
+import { requireAuth } from "~/middleware/auth";
 
 const createPaymentBodySchema = z.object({
     returnUrl: z

@@ -1,14 +1,14 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Scalar } from "@scalar/hono-api-reference";
+import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
+import { cors } from "hono/cors";
 import { auth } from "~/lib/auth";
+import { type AppContext, createAppContext } from "~/lib/context";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
-import { createAppContext, type AppContext } from "~/lib/context";
 
 /**
  * Hono context variables type definition.

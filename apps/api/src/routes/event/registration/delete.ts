@@ -1,10 +1,10 @@
+import { and, eq } from "drizzle-orm";
 import { describeRoute, resolver } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { and, eq } from "drizzle-orm";
-import { requireAuth } from "../../../middleware/auth";
-import { HTTPException } from "hono/http-exception";
 import { route } from "../../../lib/route";
+import { requireAuth } from "../../../middleware/auth";
 
 const deleteRegistrationSchema = z.object({});
 

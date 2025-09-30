@@ -1,7 +1,7 @@
 import db, { type DbSchema, schema } from "../db";
 
+import { type InferInsertModel, eq } from "drizzle-orm";
 import { auth } from "../lib/auth";
-import { eq, type InferInsertModel } from "drizzle-orm";
 
 export default async () => {
     // Check if any users exist

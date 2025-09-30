@@ -1,6 +1,6 @@
 import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
-import { env } from "./env";
 import { getRedis } from "./cache/redis";
+import { env } from "./env";
 
 if (
     !env.VIPPS_MERCHANT_SERIAL_NUMBER ||

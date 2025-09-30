@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import { render } from "@react-email/render";
+import nodemailer from "nodemailer";
 import type { ReactElement } from "react";
 import { env } from "../env";
 

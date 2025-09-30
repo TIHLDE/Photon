@@ -1,9 +1,9 @@
 import { describeRoute, resolver } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "../../../db";
-import { HTTPException } from "hono/http-exception";
-import { requireAuth } from "../../../middleware/auth";
 import { route } from "../../../lib/route";
+import { requireAuth } from "../../../middleware/auth";
 
 const registerSchema = z.object({
     registrationId: z

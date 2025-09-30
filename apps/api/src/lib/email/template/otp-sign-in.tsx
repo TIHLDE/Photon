@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Body,
     Container,
@@ -10,6 +9,7 @@ import {
     Section,
     Text,
 } from "@react-email/components";
+import React from "react";
 import { env } from "../../env";
 
 interface OtpSignInProps {

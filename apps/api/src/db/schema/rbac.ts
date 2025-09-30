@@ -7,8 +7,8 @@ import {
     timestamp,
     varchar,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
 import { timestamps } from "../timestamps";
+import { user } from "./auth";
 
 const pgTable = pgTableCreator((name) => `rbac_${name}`);
 
