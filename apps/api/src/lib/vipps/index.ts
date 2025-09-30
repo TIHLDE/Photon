@@ -1,5 +1,6 @@
 import { Client } from "@vippsmobilepay/sdk";
 import { env } from "../env";
+import { getRedis } from "../cache/redis";
 
 if (
     !env.VIPPS_MERCHANT_SERIAL_NUMBER ||
@@ -55,13 +56,47 @@ export interface PaymentDetails {
     };
 }
 
+const VIPPS_TOKEN_CACHE_KEY = "vipps:access_token";
+
 /**
- * Create a payment with Vipps
- * Returns the checkout URL where the user should be redirected
+ * Decode JWT and get expiration timestamp
  */
-export async function createPayment(
-    params: CreatePaymentParams,
-): Promise<string> {
+function getJwtExpiration(token: string): number | null {
+    try {
+        const parts = token.split(".");
+        if (parts.length !== 3) return null;
+
+        const payloadPart = parts[1];
+        if (!payloadPart) return null;
+
+        const payload = JSON.parse(
+            Buffer.from(payloadPart, "base64").toString("utf-8"),
+        );
+        return payload.exp ? payload.exp * 1000 : null; // Convert to milliseconds
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Get cached Vipps token or fetch a new one if expired
+ */
+async function getVippsToken(): Promise<string> {
+    const redis = await getRedis();
+
+    // Try to get cached token
+    const cachedToken = await redis.get(VIPPS_TOKEN_CACHE_KEY);
+
+    if (cachedToken) {
+        const expiration = getJwtExpiration(cachedToken);
+
+        // If token is valid and not expiring in the next 60 seconds, use it
+        if (expiration && expiration > Date.now() + 60000) {
+            return cachedToken;
+        }
+    }
+
+    // Fetch new token
     const tokenResponse = await client.auth.getToken(
         env.VIPPS_CLIENT_ID || "",
         env.VIPPS_CLIENT_SECRET || "",
@@ -73,9 +108,30 @@ export async function createPayment(
         );
     }
 
-    const response = await client.payment.create(
-        tokenResponse.data.access_token,
-        {
+    const token = tokenResponse.data.access_token;
+    const expiration = getJwtExpiration(token);
+
+    // Cache the token with appropriate TTL
+    if (expiration) {
+        const ttlSeconds = Math.floor((expiration - Date.now()) / 1000);
+        if (ttlSeconds > 0) {
+            await redis.setEx(VIPPS_TOKEN_CACHE_KEY, ttlSeconds, token);
+        }
+    }
+
+    return token;
+}
+
+/**
+ * Create a payment with Vipps
+ * Returns the checkout URL where the user should be redirected
+ */
+export async function createPayment(
+    params: CreatePaymentParams,
+): Promise<string> {
+    const token = await getVippsToken();
+
+    const response = await client.payment.create(token, {
             amount: {
                 currency: (params.currency || "NOK") as "NOK",
                 value: params.amount,
@@ -114,21 +170,9 @@ export async function createPayment(
 export async function getPaymentDetails(
     reference: string,
 ): Promise<PaymentDetails> {
-    const tokenResponse = await client.auth.getToken(
-        env.VIPPS_CLIENT_ID || "",
-        env.VIPPS_CLIENT_SECRET || "",
-    );
+    const token = await getVippsToken();
 
-    if (!tokenResponse.ok) {
-        throw new Error(
-            `Failed to get Vipps token: ${tokenResponse.error instanceof Error ? tokenResponse.error.message : "Unknown error"}`,
-        );
-    }
-
-    const response = await client.payment.info(
-        tokenResponse.data.access_token,
-        reference,
-    );
+    const response = await client.payment.info(token, reference);
 
     if (!response.ok) {
         throw new Error(
