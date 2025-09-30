@@ -1,12 +1,12 @@
-import { Hono } from "hono";
-import z, { ZodError } from "zod";
+import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { type DbSchema, schema } from "~/db";
+import { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { eq, inArray, type InferInsertModel } from "drizzle-orm";
+import { eq, type InferInsertModel } from "drizzle-orm";
 import { requireAuth } from "../../middleware/auth";
 import { createEventSchema } from "../../lib/event/schema";
+import { route } from "../../lib/route";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -26,7 +26,7 @@ const eventSchema = z.object({
 const createBodySchemaOpenAPI =
     await resolver(createEventSchema).toOpenAPISchema();
 
-export const createRoute = new Hono().post(
+export const createRoute = route().post(
     "/",
     describeRoute({
         tags: ["events"],
@@ -50,8 +50,8 @@ export const createRoute = new Hono().post(
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");
-        // const userId = c.get("user").id;
         const userId = c.get("user").id;
+        const { db } = c.get("services");
 
         await db.transaction(async (tx) => {
             const slug = await generateUniqueEventSlug(body.title, tx);

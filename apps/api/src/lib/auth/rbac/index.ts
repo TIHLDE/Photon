@@ -1,13 +1,15 @@
 import { and, eq, inArray } from "drizzle-orm";
-import db from "~/db";
 import { permission, role, rolePermission, userRole } from "~/db/schema";
-import { getRedis } from "~/lib/cache/redis";
+import type { AppContext } from "~/lib/context";
 
 const userPermsCacheKey = (userId: string) => `rbac:user:${userId}:perms`;
 const userRolesCacheKey = (userId: string) => `rbac:user:${userId}:roles`;
 
-export async function getRolesForUser(userId: string): Promise<string[]> {
-    const redis = await getRedis();
+export async function getRolesForUser(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const { db, redis } = ctx;
     const cacheKey = userRolesCacheKey(userId);
 
     const cached = await redis.get(cacheKey);
@@ -24,8 +26,11 @@ export async function getRolesForUser(userId: string): Promise<string[]> {
     return value;
 }
 
-export async function getPermissionsForUser(userId: string): Promise<string[]> {
-    const redis = await getRedis();
+export async function getPermissionsForUser(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const { db, redis } = ctx;
     const cacheKey = userPermsCacheKey(userId);
 
     const cached = await redis.get(cacheKey);
@@ -46,54 +51,61 @@ export async function getPermissionsForUser(userId: string): Promise<string[]> {
 }
 
 export async function userHasRoleName(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<boolean> {
-    const roles = await getRolesForUser(userId);
+    const roles = await getRolesForUser(ctx, userId);
     return roles.includes(roleName);
 }
 
 export async function userHasAnyRoleName(
+    ctx: AppContext,
     userId: string,
     roleNames: string[],
 ): Promise<boolean> {
     if (roleNames.length === 0) return false;
-    const roles = await getRolesForUser(userId);
+    const roles = await getRolesForUser(ctx, userId);
     const set = new Set(roles);
     return roleNames.some((r) => set.has(r));
 }
 
 export async function userHasPermissionName(
+    ctx: AppContext,
     userId: string,
     permissionName: string,
 ): Promise<boolean> {
-    const perms = await getPermissionsForUser(userId);
+    const perms = await getPermissionsForUser(ctx, userId);
     return perms.includes(permissionName);
 }
 
 export async function userHasAnyPermissionName(
+    ctx: AppContext,
     userId: string,
     permissionNames: string[],
 ): Promise<boolean> {
     if (permissionNames.length === 0) return false;
-    const perms = await getPermissionsForUser(userId);
+    const perms = await getPermissionsForUser(ctx, userId);
     const set = new Set(perms);
     return permissionNames.some((p) => set.has(p));
 }
 
 export async function userHasAllPermissions(
+    ctx: AppContext,
     userId: string,
     permissionNames: string[],
 ): Promise<boolean> {
-    const perms = await getPermissionsForUser(userId);
+    const perms = await getPermissionsForUser(ctx, userId);
     const set = new Set(perms);
     return permissionNames.every((p) => set.has(p));
 }
 
 export async function assignRoleToUser(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<void> {
+    const { db, redis } = ctx;
     const [r] = await db.select().from(role).where(eq(role.name, roleName));
     if (!r) throw new Error(`Role not found: ${roleName}`);
 
@@ -102,15 +114,16 @@ export async function assignRoleToUser(
         .values({ userId, roleId: r.id })
         .onConflictDoNothing();
 
-    const redis = await getRedis();
     await redis.del(userRolesCacheKey(userId));
     await redis.del(userPermsCacheKey(userId));
 }
 
 export async function removeRoleFromUser(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<void> {
+    const { db, redis } = ctx;
     const [r] = await db.select().from(role).where(eq(role.name, roleName));
     if (!r) return;
 
@@ -118,15 +131,16 @@ export async function removeRoleFromUser(
         .delete(userRole)
         .where(and(eq(userRole.userId, userId), eq(userRole.roleId, r.id)));
 
-    const redis = await getRedis();
     await redis.del(userRolesCacheKey(userId));
     await redis.del(userPermsCacheKey(userId));
 }
 
 export async function assignPermissionsToRole(
+    ctx: AppContext,
     roleName: string,
     permissionNames: string[],
 ): Promise<void> {
+    const { db, redis } = ctx;
     const [r] = await db.select().from(role).where(eq(role.name, roleName));
     if (!r) throw new Error(`Role not found: ${roleName}`);
 
@@ -150,7 +164,6 @@ export async function assignPermissionsToRole(
         .select({ userId: userRole.userId })
         .from(userRole)
         .where(eq(userRole.roleId, r.id));
-    const redis = await getRedis();
     await Promise.all(
         usersWithRole.flatMap((u) => [
             redis.del(userRolesCacheKey(u.userId)),

@@ -1,16 +1,28 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { env } from "~/lib/env";
 
 import * as schema from "./schema";
 
-const db = drizzle({
-    connection: {
-        connectionString: env.DATABASE_URL,
-    },
-    casing: "snake_case",
-    schema,
-});
+/**
+ * Factory function to create a database client.
+ * Use this for dependency injection and testing.
+ */
+export function createDb(connectionString: string): NodePgDatabase<typeof schema> {
+    return drizzle({
+        connection: {
+            connectionString,
+        },
+        casing: "snake_case",
+        schema,
+    });
+}
+
+/**
+ * Default database instance for backward compatibility.
+ * Prefer using createDb() and dependency injection in new code.
+ */
+const db = createDb(env.DATABASE_URL);
 
 export default db;
 export { schema, db };

@@ -8,8 +8,17 @@ import { auth } from "~/lib/auth";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
+import { createAppContext, type AppContext } from "~/lib/context";
 
-export const app = new Hono()
+/**
+ * Hono context variables type definition.
+ * This allows accessing services via c.get('services').
+ */
+type Variables = {
+    services: AppContext;
+};
+
+export const app = new Hono<{ Variables: Variables }>()
     .basePath("/api")
     .use(
         "/auth/**",
@@ -70,6 +79,18 @@ server
             ],
         }),
     );
+
+// Initialize application context with real service instances
+const appContext = await createAppContext({
+    databaseUrl: env.DATABASE_URL,
+    redisUrl: env.REDIS_URL,
+});
+
+// Inject services into all requests via middleware
+app.use("*", async (c, next) => {
+    c.set("services", appContext);
+    await next();
+});
 
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
