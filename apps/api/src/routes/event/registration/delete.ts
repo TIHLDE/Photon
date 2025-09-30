@@ -12,10 +12,10 @@ const deleteRegistrationSchemaOpenApi = await resolver(
     deleteRegistrationSchema,
 ).toOpenAPISchema();
 
-export const deleteEventRegistrationRoute = new Hono().get(
+export const deleteEventRegistrationRoute = new Hono().delete(
     "/:eventId/registration",
     describeRoute({
-        tags: ["event"],
+        tags: ["events"],
         summary: "Unregister from event",
         responses: {
             200: {

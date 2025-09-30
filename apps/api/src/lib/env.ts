@@ -4,6 +4,16 @@ config({
     path: "../../.env",
 });
 
+const toBoolean =
+    ({ defaultVal }: { defaultVal: boolean }) =>
+    (val: string | undefined) => {
+        if (!val) {
+            return defaultVal;
+        }
+
+        return val.toLowerCase() === "true" || val === "1";
+    };
+
 const envSchema = z.object({
     // CONFIG
     ROOT_URL: z
@@ -25,7 +35,7 @@ const envSchema = z.object({
                 "If the database is empty on start, will seed the database. Turned off by default",
         })
         .optional()
-        .transform((val) => val === "true" || val === "1"),
+        .transform(toBoolean({ defaultVal: false })),
     REDIS_URL: z
         .string()
         .meta({ description: "Redis connection URL" })
@@ -70,6 +80,22 @@ const envSchema = z.object({
             description: "Vipps Merchant Serial Number",
         })
         .optional(),
+    REFRESH_VIPPS_WEBHOOKS: z
+        .string()
+        .meta({
+            description:
+                "Whether to ensure Vipps webhooks are always valid by fetching against the API. This should be TRUE in production or while testing this specifically, but should NOT BE TRUE for local development, since it polls the API everytime the server is restarted; can cause rate limiting.",
+        })
+        .optional()
+        .transform(toBoolean({ defaultVal: false })),
+    VIPPS_TEST_MODE: z
+        .string()
+        .meta({
+            description:
+                "If true, sends requests to Vipps' test server instead of production. Useful for local development.",
+        })
+        .optional()
+        .transform(toBoolean({ defaultVal: false })),
 });
 
 /**

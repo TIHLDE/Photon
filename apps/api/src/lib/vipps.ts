@@ -1,6 +1,6 @@
 import { Client } from "@vippsmobilepay/sdk";
-import { env } from "../env";
-import { getRedis } from "../cache/redis";
+import { env } from "./env";
+import { getRedis } from "./cache/redis";
 
 if (
     !env.VIPPS_MERCHANT_SERIAL_NUMBER ||
@@ -16,7 +16,7 @@ if (
 const client = Client({
     merchantSerialNumber: env.VIPPS_MERCHANT_SERIAL_NUMBER,
     subscriptionKey: env.VIPPS_SUBSCRIPTION_KEY,
-    useTestMode: true, // Set to false in production
+    useTestMode: env.VIPPS_TEST_MODE, // Set to false in production
 });
 
 export interface CreatePaymentParams {
@@ -132,24 +132,23 @@ export async function createPayment(
     const token = await getVippsToken();
 
     const response = await client.payment.create(token, {
-            amount: {
-                currency: (params.currency || "NOK") as "NOK",
-                value: params.amount,
-            },
-            paymentMethod: {
-                type: "WALLET",
-            },
-            customer: params.userPhoneNumber
-                ? {
-                      phoneNumber: params.userPhoneNumber,
-                  }
-                : undefined,
-            reference: params.reference,
-            userFlow: params.userFlow,
-            returnUrl: params.returnUrl,
-            paymentDescription: params.description,
+        amount: {
+            currency: (params.currency || "NOK") as "NOK",
+            value: params.amount,
         },
-    );
+        paymentMethod: {
+            type: "WALLET",
+        },
+        customer: params.userPhoneNumber
+            ? {
+                  phoneNumber: params.userPhoneNumber,
+              }
+            : undefined,
+        reference: params.reference,
+        userFlow: params.userFlow,
+        returnUrl: params.returnUrl,
+        paymentDescription: params.description,
+    });
 
     if (!response.ok) {
         throw new Error(
@@ -182,3 +181,104 @@ export async function getPaymentDetails(
 
     return response.data as PaymentDetails;
 }
+
+/**
+ * Type of events we want to subscribe to
+ *
+ * Read more at https://developer.vippsmobilepay.com/docs/APIs/epayment-api/api-guide/webhooks/
+ */
+const WEBHOOK_EVENTS = [
+    "epayments.payment.created.v1",
+    "epayments.payment.aborted.v1",
+    "epayments.payment.expired.v1",
+    "epayments.payment.cancelled.v1",
+    "epayments.payment.captured.v1",
+    "epayments.payment.refunded.v1",
+    "epayments.payment.authorized.v1",
+    "epayments.payment.terminated.v1",
+];
+
+const WEBHOOK_ID_CACHE_KEY = "vipps:webhook_id";
+const WEBHOOK_SECRET_CACHE_KEY = "vipps:webhook_secret";
+const WEBHOOK_API_PATH = "/api/event/payment/webhook";
+
+export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
+    const vippsToken = await getVippsToken();
+
+    // Check if we have webhook registration in redis
+    const redis = await getRedis();
+    const existingWebhookId = await redis.get(WEBHOOK_ID_CACHE_KEY);
+
+    let hasRegisteredWebhook = false;
+
+    // No registered webhook (saved locally)
+    if (existingWebhookId) {
+        if (!env.REFRESH_VIPPS_WEBHOOKS) {
+            hasRegisteredWebhook = true;
+        } else {
+            const response = await client.webhook.list(vippsToken);
+
+            if (!response.ok) {
+                throw `Something went wrong while getting webhooks${response}`;
+            }
+
+            hasRegisteredWebhook = response.data.webhooks.some(
+                (w) => w.id === existingWebhookId,
+            );
+        }
+    }
+
+    if (hasRegisteredWebhook) {
+        const secret = await redis.get(WEBHOOK_SECRET_CACHE_KEY);
+        if (!secret) {
+            throw "Vipps webhook ID is present in redis, but not secret!";
+        }
+
+        if (!existingWebhookId) {
+            throw "This should not happen. Logic above results in webhookId being set.";
+        }
+
+        return {
+            id: existingWebhookId,
+            secret,
+        };
+    }
+
+    const response = await client.webhook.register(vippsToken, {
+        events: WEBHOOK_EVENTS,
+        // url: env.ROOT_URL + WEBHOOK_API_PATH,
+        url: "https://27e442c20571.ngrok-free.app" + WEBHOOK_API_PATH,
+    });
+
+    if (!response.ok) {
+        throw `Something went wrong while creating webhook ${JSON.stringify(response, null, 2)}`;
+    }
+
+    const { id, secret } = response.data;
+
+    redis.set(WEBHOOK_ID_CACHE_KEY, id);
+    redis.set(WEBHOOK_SECRET_CACHE_KEY, secret);
+
+    return {
+        id,
+        secret,
+    };
+}
+
+/**
+ * Gets the current webhook secret that should be used to validate webhooks from Vipps
+ */
+async function getWebhookSecret() {
+    const redis = await getRedis();
+
+    const secret = await redis.get(WEBHOOK_SECRET_CACHE_KEY);
+
+    if (secret) {
+        return secret;
+    }
+
+    const webhook = await setupWebhooks();
+    return webhook.secret;
+}
+
+export async function verifyVippsWebhookRequest() {}

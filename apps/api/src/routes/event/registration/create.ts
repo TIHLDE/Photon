@@ -14,7 +14,7 @@ const registerSchema = z.object({
 
 const registerSchemaOpenApi = await resolver(registerSchema).toOpenAPISchema();
 
-export const registerToEventRoute = new Hono().get(
+export const registerToEventRoute = new Hono().post(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],

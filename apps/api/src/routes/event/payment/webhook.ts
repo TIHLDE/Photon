@@ -6,7 +6,7 @@ import { getPaymentDetails } from "../../../lib/vipps";
 import { eq, and } from "drizzle-orm";
 
 export const paymentWebhookRoute = new Hono().post(
-    "/payment/webhook",
+    "/payment/webhook/:id",
     describeRoute({
         tags: ["payments", "webhooks"],
         summary: "Vipps payment webhook",
@@ -27,6 +27,8 @@ export const paymentWebhookRoute = new Hono().post(
     async (c) => {
         const body = await c.req.json();
 
+        console.log(JSON.stringify(c.req));
+
         // Vipps webhook payload structure
         const { reference, state } = body as {
             reference?: string;
@@ -41,7 +43,8 @@ export const paymentWebhookRoute = new Hono().post(
 
         // Get payment details from our database using providerPaymentId
         const payment = await db.query.eventPayment.findFirst({
-            where: (payment, { eq }) => eq(payment.providerPaymentId, reference),
+            where: (payment, { eq }) =>
+                eq(payment.providerPaymentId, reference),
         });
 
         if (!payment) {

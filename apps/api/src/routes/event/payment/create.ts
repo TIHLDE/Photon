@@ -11,7 +11,6 @@ import { randomUUID } from "node:crypto";
 
 const createPaymentBodySchema = z.object({
     returnUrl: z
-        .string()
         .url()
         .meta({ description: "URL to redirect user after payment" }),
     userFlow: z
@@ -21,9 +20,9 @@ const createPaymentBodySchema = z.object({
 });
 
 const createPaymentResponseSchema = z.object({
-    eventId: z.string().uuid(),
+    eventId: z.uuid(),
     userId: z.string(),
-    checkoutUrl: z.string().url(),
+    checkoutUrl: z.url(),
     amount: z.number(),
     currency: z.string(),
 });

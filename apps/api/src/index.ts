@@ -7,6 +7,7 @@ import { openAPIRouteHandler } from "hono-openapi";
 import { auth } from "~/lib/auth";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
+import { setupWebhooks } from "./lib/vipps";
 
 export const app = new Hono()
     .basePath("/api")
@@ -73,6 +74,8 @@ server
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
 }
+
+await setupWebhooks();
 
 serve(
     {
