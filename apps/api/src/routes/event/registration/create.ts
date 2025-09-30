@@ -1,9 +1,9 @@
-import { Hono } from "hono";
 import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
-import db, { schema } from "../../../db";
+import { schema } from "../../../db";
 import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../../../middleware/auth";
+import { route } from "../../../lib/route";
 
 const registerSchema = z.object({
     registrationId: z
@@ -14,7 +14,7 @@ const registerSchema = z.object({
 
 const registerSchemaOpenApi = await resolver(registerSchema).toOpenAPISchema();
 
-export const registerToEventRoute = new Hono().post(
+export const registerToEventRoute = route().post(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],
@@ -36,6 +36,7 @@ export const registerToEventRoute = new Hono().post(
     requireAuth,
     async (c) => {
         const eventId = c.req.param("eventId");
+        const { db } = c.get("services");
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
         });

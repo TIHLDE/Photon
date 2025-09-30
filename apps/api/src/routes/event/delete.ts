@@ -1,10 +1,10 @@
-import { Hono } from "hono";
-import db, { schema } from "../../db";
+import { schema } from "../../db";
 import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
 import { requireAuth } from "../../middleware/auth";
+import { route } from "../../lib/route";
 
-export const deleteRoute = new Hono().delete(
+export const deleteRoute = route().delete(
     "/:eventId",
     describeRoute({
         tags: ["events"],
@@ -24,6 +24,7 @@ export const deleteRoute = new Hono().delete(
     requireAuth,
     async (c) => {
         const { eventId } = c.req.param();
+        const { db } = c.get("services");
 
         // Check if the event exists
         const event = await db

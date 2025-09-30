@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { route } from "../../lib/route";
 import { createRoute } from "./create";
 import { listRoute } from "./list";
 import { updateRoute } from "./update";
@@ -11,7 +11,7 @@ import { deleteEventRegistrationRoute } from "./registration/delete";
 import { createPaymentRoute } from "./payment/create";
 import { paymentWebhookRoute } from "./payment/webhook";
 
-export const eventRoutes = new Hono()
+export const eventRoutes = route()
     // Event routes
     .route("/", createRoute)
     .route("/", listRoute)

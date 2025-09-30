@@ -1,8 +1,7 @@
-import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db from "../../db";
 import { withPagination } from "../../middleware/pagination";
+import { route } from "../../lib/route";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
@@ -46,7 +45,7 @@ const eventSchema = z.object({
         .meta({ description: "Event category" }),
 });
 
-export const listRoute = new Hono().get(
+export const listRoute = route().get(
     "/",
     describeRoute({
         tags: ["events"],
@@ -64,6 +63,7 @@ export const listRoute = new Hono().get(
     }),
     ...withPagination(),
     async (c) => {
+        const { db } = c.get("services");
         const events = await db.query.event.findMany({
             orderBy: (event, { desc }) => [desc(event.start)],
             with: {

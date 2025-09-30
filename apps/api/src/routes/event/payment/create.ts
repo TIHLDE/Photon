@@ -1,12 +1,12 @@
-import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import z from "zod";
-import db, { type DbSchema, schema } from "~/db";
+import { type DbSchema, schema } from "~/db";
 import type { InferInsertModel } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "~/middleware/auth";
 import { createPayment } from "~/lib/vipps";
 import { randomUUID } from "node:crypto";
+import { route } from "~/lib/route";
 
 const createPaymentBodySchema = z.object({
     returnUrl: z
@@ -33,7 +33,7 @@ const createPaymentResponseSchemaOpenApi = await resolver(
     createPaymentResponseSchema,
 ).toOpenAPISchema();
 
-export const createPaymentRoute = new Hono().post(
+export const createPaymentRoute = route().post(
     "/:eventId/payment",
     describeRoute({
         tags: ["events", "payments"],
@@ -74,6 +74,7 @@ export const createPaymentRoute = new Hono().post(
         const eventId = c.req.param("eventId");
         const userId = c.get("user").id;
         const body = c.req.valid("json");
+        const { db } = c.get("services");
 
         // Get event details
         const event = await db.query.event.findFirst({

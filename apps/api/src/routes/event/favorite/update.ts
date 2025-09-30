@@ -1,11 +1,11 @@
-import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { type DbSchema, schema } from "~/db";
+import { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "~/lib/event/slug";
 import { HTTPException } from "hono/http-exception";
 import { and, eq, type InferInsertModel } from "drizzle-orm";
 import { requireAuth } from "~/middleware/auth";
+import { route } from "~/lib/route";
 
 const updateFavoriteSchema = z.object({
     isFavorite: z.boolean().meta({ description: "Is favorite" }),
@@ -14,7 +14,7 @@ const updateFavoriteSchema = z.object({
 const updateBodySchemaOpenAPI =
     await resolver(updateFavoriteSchema).toOpenAPISchema();
 
-export const updateFavoriteRoute = new Hono().put(
+export const updateFavoriteRoute = route().put(
     "/:id",
     describeRoute({
         tags: ["events"],
@@ -40,6 +40,7 @@ export const updateFavoriteRoute = new Hono().put(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const eventId = c.req.param("id");
+        const { db } = c.get("services");
 
         if (!eventId) {
             throw new HTTPException(400, { message: "Event ID is required" });

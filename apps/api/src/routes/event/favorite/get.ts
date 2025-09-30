@@ -1,8 +1,7 @@
-import { Hono } from "hono";
 import { describeRoute, resolver } from "hono-openapi";
-import db from "~/db";
 import { requireAuth } from "~/middleware/auth";
 import z from "zod";
+import { route } from "~/lib/route";
 
 const getFavoriteSchema = z.array(
     z.object({
@@ -17,7 +16,7 @@ const getFavoriteSchema = z.array(
 
 const getSchemaOpenAPI = await resolver(getFavoriteSchema).toOpenAPISchema();
 
-export const getFavoriteEventsRoute = new Hono().get(
+export const getFavoriteEventsRoute = route().get(
     "/",
     describeRoute({
         tags: ["events"],
@@ -36,6 +35,7 @@ export const getFavoriteEventsRoute = new Hono().get(
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;
+        const { db } = c.get("services");
 
         // Get all favorite event IDs for the user
         const favorites = await db.query.eventFavorite.findMany({

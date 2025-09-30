@@ -1,9 +1,9 @@
-import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { schema } from "~/db";
+import { schema } from "~/db";
 import { withPagination } from "~/middleware/pagination";
 import { eq, ne, or } from "drizzle-orm";
+import { route } from "~/lib/route";
 
 const registrationsSchema = z.object({
     registeredUsers: z.array(
@@ -31,7 +31,7 @@ const registrationsSchema = z.object({
     }),
 });
 
-export const getAllRegistrationsForEventsRoute = new Hono().get(
+export const getAllRegistrationsForEventsRoute = route().get(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],
@@ -49,6 +49,8 @@ export const getAllRegistrationsForEventsRoute = new Hono().get(
     }),
     ...withPagination(),
     async (c) => {
+        const { db } = c.get("services");
+
         // since we track cancelled/no-show etc, track all statuses that have been registered succesfully
         const registeredFilter = or(
             eq(schema.eventRegistration.status, "registered"),

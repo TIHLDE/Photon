@@ -1,17 +1,17 @@
-import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { type DbSchema, schema } from "~/db";
+import { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
 import { eq, type InferInsertModel } from "drizzle-orm";
 import { requireAuth } from "../../middleware/auth";
 import { updateEventSchema } from "../../lib/event/schema";
+import { route } from "../../lib/route";
 
 const updateBodySchemaOpenAPI =
     await resolver(updateEventSchema).toOpenAPISchema();
 
-export const updateRoute = new Hono().put(
+export const updateRoute = route().put(
     "/:id",
     describeRoute({
         tags: ["events"],
@@ -34,6 +34,7 @@ export const updateRoute = new Hono().put(
         const body = c.req.valid("json");
         const eventId = c.req.param("id");
         const userId = c.get("user").id;
+        const { db } = c.get("services");
 
         await db.transaction(async (tx) => {
             // Fetch existing event

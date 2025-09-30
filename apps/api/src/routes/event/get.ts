@@ -1,9 +1,8 @@
-import { Hono } from "hono";
 import z from "zod";
 import { describeRoute, resolver } from "hono-openapi";
-import db from "../../db";
 import { registrationStatusVariants } from "../../db/schema";
 import { captureAuth } from "../../middleware/auth";
+import { route } from "../../lib/route";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
@@ -112,7 +111,7 @@ const eventSchema = z.object({
         }),
 });
 
-export const listRoute = new Hono().get(
+export const listRoute = route().get(
     "/:eventId",
     describeRoute({
         tags: ["events"],
@@ -130,6 +129,7 @@ export const listRoute = new Hono().get(
     }),
     captureAuth,
     async (c) => {
+        const { db } = c.get("services");
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, c.req.param("eventId")),
             with: {

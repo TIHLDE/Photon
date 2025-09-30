@@ -1,10 +1,10 @@
-import { Hono } from "hono";
 import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
-import db, { schema } from "~/db";
+import { schema } from "~/db";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "../../../middleware/auth";
 import { HTTPException } from "hono/http-exception";
+import { route } from "../../../lib/route";
 
 const deleteRegistrationSchema = z.object({});
 
@@ -12,7 +12,7 @@ const deleteRegistrationSchemaOpenApi = await resolver(
     deleteRegistrationSchema,
 ).toOpenAPISchema();
 
-export const deleteEventRegistrationRoute = new Hono().delete(
+export const deleteEventRegistrationRoute = route().delete(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],
@@ -30,6 +30,7 @@ export const deleteEventRegistrationRoute = new Hono().delete(
     }),
     requireAuth,
     async (c) => {
+        const { db } = c.get("services");
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(

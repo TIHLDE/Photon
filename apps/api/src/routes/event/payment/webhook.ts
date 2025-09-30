@@ -1,9 +1,9 @@
-import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import db, { schema } from "../../../db";
+import { schema } from "../../../db";
 import { HTTPException } from "hono/http-exception";
 import { getPaymentDetails } from "../../../lib/vipps";
 import { eq, and } from "drizzle-orm";
+import { route } from "../../../lib/route";
 
 /**
  * For documentation, please visit https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/events/#epayment-api-event-types
@@ -24,7 +24,7 @@ export interface Amount {
     value: number;
 }
 
-export const paymentWebhookRoute = new Hono().post(
+export const paymentWebhookRoute = route().post(
     "/payment/webhook",
     describeRoute({
         tags: ["payments", "webhooks"],
@@ -45,6 +45,7 @@ export const paymentWebhookRoute = new Hono().post(
     }),
     async (c) => {
         const body = (await c.req.json()) as WebhookPayload;
+        const { db } = c.get("services");
 
         // Vipps webhook payload structure
         const { reference } = body;
