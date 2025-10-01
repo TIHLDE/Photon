@@ -1,18 +1,8 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "~/db";
-import type { BullQueueManager, QueueLike } from "./cache/bull";
+import type { BullQueueManager } from "./cache/bull";
 import type { RedisClientType } from "./cache/redis";
 import { env } from "./env";
-import {
-    PostgreSqlContainer,
-    type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import {
-    RedisContainer,
-    type StartedRedisContainer,
-} from "@testcontainers/redis";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
 
 /**
  * Application context containing all external service dependencies.
