@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { AppContext } from "./context";
+import type { AppContext } from "./ctx";
 
 type Variables = {
     services: AppContext;

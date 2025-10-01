@@ -1,11 +1,10 @@
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
 import { auth } from "~/lib/auth";
-import { type AppContext, createAppContext } from "~/lib/context";
+import { type AppContext, createAppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
@@ -15,83 +14,91 @@ import { setupWebhooks } from "./lib/vipps";
  * This allows accessing services via c.get('services').
  */
 type Variables = {
-    services: AppContext;
+    ctx: AppContext;
 };
 
-export const app = new Hono<{ Variables: Variables }>()
-    .basePath("/api")
-    .use(
-        "/auth/**",
-        cors({
-            origin: "http://localhost:3000",
-            allowHeaders: ["Content-Type", "Authorization"],
-            allowMethods: ["POST", "GET", "OPTIONS"],
-            exposeHeaders: ["Content-Length"],
-            maxAge: 600,
-            credentials: true,
-        }),
-    )
-    .on(["POST", "GET"], "/auth/*", (c) => {
-        return auth.handler(c.req.raw);
-    })
-    .get("/", (c) => {
-        return c.text("Healthy!");
-    })
-    .route("/event", eventRoutes);
+export const createApp = async (variables?: Variables) => {
+    const api = new Hono<{ Variables: Variables }>()
+        .basePath("/api")
+        .use(
+            "/auth/**",
+            cors({
+                origin: "http://localhost:3000",
+                allowHeaders: ["Content-Type", "Authorization"],
+                allowMethods: ["POST", "GET", "OPTIONS"],
+                exposeHeaders: ["Content-Length"],
+                maxAge: 600,
+                credentials: true,
+            }),
+        )
+        .on(["POST", "GET"], "/auth/*", (c) => {
+            return auth.handler(c.req.raw);
+        })
+        .get("/", (c) => {
+            return c.text("Healthy!");
+        })
+        .route("/event", eventRoutes);
 
-const server = new Hono();
-server.route("/", app);
+    // Use or generate app context
+    let ctx: AppContext;
+    if (variables) {
+        ctx = variables.ctx;
+    } else {
+        ctx = await createAppContext();
+    }
 
-app.get(
-    "/static/*",
-    serveStatic({
-        root: "./",
-    }),
-);
+    // Inject app context into all endpoints
+    api.use("*", async (c, next) => {
+        c.set("ctx", ctx);
+        await next();
+    });
 
-server
-    .get(
-        "/openapi",
-        openAPIRouteHandler(app, {
-            documentation: {
-                info: {
-                    title: "Photon API",
-                    version: "1.0.0",
-                    description: "TIHLDEs nye backend",
+    const app = new Hono()
+        .route("/", api)
+        .get(
+            "/openapi",
+            openAPIRouteHandler(api, {
+                documentation: {
+                    info: {
+                        title: "Photon API",
+                        version: "1.0.0",
+                        description: "TIHLDEs nye backend",
+                    },
+                    servers: [
+                        {
+                            url: "http://localhost:4000",
+                            description: "Local Server",
+                        },
+                    ],
                 },
-                servers: [
+            }),
+        )
+        .get(
+            "/docs",
+            Scalar({
+                theme: "saturn",
+                url: "/openapi",
+                sources: [
+                    { url: "/openapi", title: "API" },
                     {
-                        url: "http://localhost:4000",
-                        description: "Local Server",
+                        url: "/api/auth/open-api/generate-schema",
+                        title: "Auth",
                     },
                 ],
-            },
-        }),
-    )
-    .get(
-        "/docs",
-        Scalar({
-            theme: "saturn",
-            url: "/openapi",
-            sources: [
-                { url: "/openapi", title: "API" },
-                { url: "/api/auth/open-api/generate-schema", title: "Auth" },
-            ],
-        }),
-    );
+            }),
+        );
 
-// Initialize application context with real service instances
-const appContext = await createAppContext({
-    databaseUrl: env.DATABASE_URL,
-    redisUrl: env.REDIS_URL,
-});
+    return app;
+};
 
-// Inject services into all requests via middleware
-app.use("*", async (c, next) => {
-    c.set("services", appContext);
-    await next();
-});
+const app = await createApp();
 
+/**
+ * Type of the application, which can be used to get a type-safe client
+ */
+export type App = typeof app;
+
+// Seed DB with default values if necessary
 if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
 }
@@ -100,7 +107,7 @@ await setupWebhooks();
 
 serve(
     {
-        fetch: server.fetch,
+        fetch: app.fetch,
         port: env.PORT,
     },
     (info) => {

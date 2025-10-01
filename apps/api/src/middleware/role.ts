@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import { userHasAnyRoleName, userHasRoleName } from "~/lib/auth/rbac";
-import type { AppContext } from "../lib/context";
+import type { AppContext } from "../lib/ctx";
 
 type Variables = {
     user: User | null;

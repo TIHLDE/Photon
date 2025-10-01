@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { permission, role, rolePermission, userRole } from "~/db/schema";
-import type { AppContext } from "~/lib/context";
+import type { AppContext } from "~/lib/ctx";
 
 const userPermsCacheKey = (userId: string) => `rbac:user:${userId}:perms`;
 const userRolesCacheKey = (userId: string) => `rbac:user:${userId}:roles`;
