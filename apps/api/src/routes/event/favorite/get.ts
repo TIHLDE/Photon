@@ -35,7 +35,7 @@ export const getFavoriteEventsRoute = route().get(
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         // Get all favorite event IDs for the user
         const favorites = await db.query.eventFavorite.findMany({

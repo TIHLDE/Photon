@@ -24,7 +24,7 @@ export const deleteRoute = route().delete(
     requireAuth,
     async (c) => {
         const { eventId } = c.req.param();
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         // Check if the event exists
         const event = await db

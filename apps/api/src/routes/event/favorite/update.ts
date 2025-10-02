@@ -40,7 +40,7 @@ export const updateFavoriteRoute = route().put(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const eventId = c.req.param("id");
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         if (!eventId) {
             throw new HTTPException(400, { message: "Event ID is required" });

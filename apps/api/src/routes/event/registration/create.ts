@@ -36,7 +36,7 @@ export const registerToEventRoute = route().post(
     requireAuth,
     async (c) => {
         const eventId = c.req.param("eventId");
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
         });

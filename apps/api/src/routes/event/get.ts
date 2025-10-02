@@ -129,7 +129,7 @@ export const listRoute = route().get(
     }),
     captureAuth,
     async (c) => {
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, c.req.param("eventId")),
             with: {

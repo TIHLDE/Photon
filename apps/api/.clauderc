@@ -102,7 +102,7 @@ src/
    - Use middleware via `app.use()` or route-level
    - Type routes with OpenAPI schemas when possible
    - Use the `route()` util from `~/lib/route` to create API routes
-   - Get DB, redis and queue from `c.get("services")` instead of importing singleton
+   - Get DB, redis and queue from `c.get("ctx")` instead of importing singleton
 3. **Database queries**: Always use Drizzle ORM, no raw SQL
 4. **Error handling**: Use Hono's error handler middleware
 5. **Validation**: Zod schemas co-located with routes
@@ -146,7 +146,7 @@ export const deleteEventRegistrationRoute = route().get(
     }),
     requireAuth,
     async (c) => {
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(

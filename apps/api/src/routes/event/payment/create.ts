@@ -74,7 +74,7 @@ export const createPaymentRoute = route().post(
         const eventId = c.req.param("eventId");
         const userId = c.get("user").id;
         const body = c.req.valid("json");
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         // Get event details
         const event = await db.query.event.findFirst({

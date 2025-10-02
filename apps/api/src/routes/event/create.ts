@@ -51,7 +51,7 @@ export const createRoute = route().post(
     async (c) => {
         const body = c.req.valid("json");
         const userId = c.get("user").id;
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         await db.transaction(async (tx) => {
             const slug = await generateUniqueEventSlug(body.title, tx);

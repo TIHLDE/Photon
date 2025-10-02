@@ -63,7 +63,7 @@ export const listRoute = route().get(
     }),
     ...withPagination(),
     async (c) => {
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
         const events = await db.query.event.findMany({
             orderBy: (event, { desc }) => [desc(event.start)],
             with: {

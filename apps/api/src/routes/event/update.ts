@@ -34,7 +34,7 @@ export const updateRoute = route().put(
         const body = c.req.valid("json");
         const eventId = c.req.param("id");
         const userId = c.get("user").id;
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         await db.transaction(async (tx) => {
             // Fetch existing event

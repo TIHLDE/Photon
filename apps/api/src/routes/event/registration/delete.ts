@@ -30,7 +30,7 @@ export const deleteEventRegistrationRoute = route().delete(
     }),
     requireAuth,
     async (c) => {
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(

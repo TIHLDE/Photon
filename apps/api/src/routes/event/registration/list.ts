@@ -49,7 +49,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
     }),
     ...withPagination(),
     async (c) => {
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         // since we track cancelled/no-show etc, track all statuses that have been registered succesfully
         const registeredFilter = or(

@@ -45,7 +45,7 @@ export const paymentWebhookRoute = route().post(
     }),
     async (c) => {
         const body = (await c.req.json()) as WebhookPayload;
-        const { db } = c.get("services");
+        const { db } = c.get("ctx");
 
         // Vipps webhook payload structure
         const { reference } = body;
