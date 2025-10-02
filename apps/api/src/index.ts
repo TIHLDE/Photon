@@ -3,7 +3,6 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
-import { auth } from "~/lib/auth";
 import { type AppContext, createAppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
@@ -32,6 +31,7 @@ export const createApp = async (variables?: Variables) => {
             }),
         )
         .on(["POST", "GET"], "/auth/*", (c) => {
+            const { auth } = c.get("ctx");
             return auth.handler(c.req.raw);
         })
         .get("/", (c) => {

@@ -15,6 +15,7 @@ import {
 import { createRedisClient } from "../lib/cache/redis";
 import { createDb } from "../db";
 import { createQueueManager } from "../lib/cache/bull";
+import { createAuth } from "../lib/auth";
 
 /**
  * `AppContext` with added shadow variables for doing the grunt-work of running the tests
@@ -62,10 +63,17 @@ async function createTestAppContext(): Promise<TestAppContext> {
     // Setup Bull queues
     const queueManager = createQueueManager(redisUrl);
 
+    // Setup auth
+    const auth = createAuth({
+        db,
+        redis,
+    });
+
     const defaultContext: AppContext = {
         db,
         queueManager,
         redis,
+        auth,
     };
 
     return {
