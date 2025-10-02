@@ -1,13 +1,13 @@
 import { createClient } from "redis";
 import { env } from "~/lib/env";
 
-export type RedisClientType = ReturnType<typeof createClient>;
+export type RedisClient = ReturnType<typeof createClient>;
 
 /**
  * Factory function to create and connect a Redis client.
  * Use this for dependency injection and testing.
  */
-export async function createRedisClient(url: string): Promise<RedisClientType> {
+export async function createRedisClient(url: string): Promise<RedisClient> {
     const client = createClient({ url });
     client.on("error", (err) => {
         console.error("Redis client error:", err);
@@ -21,10 +21,10 @@ export async function createRedisClient(url: string): Promise<RedisClientType> {
  * Singleton Redis client for backward compatibility.
  * Prefer using createRedisClient() and dependency injection in new code.
  */
-let client: RedisClientType | null = null;
-let connectPromise: Promise<RedisClientType> | null = null;
+let client: RedisClient | null = null;
+let connectPromise: Promise<RedisClient> | null = null;
 
-async function connect(): Promise<RedisClientType> {
+async function connect(): Promise<RedisClient> {
     if (client) return client;
     if (connectPromise) return connectPromise;
 
@@ -37,6 +37,6 @@ async function connect(): Promise<RedisClientType> {
     return connectPromise;
 }
 
-export async function getRedis(): Promise<RedisClientType> {
+export async function getRedis(): Promise<RedisClient> {
     return connect();
 }

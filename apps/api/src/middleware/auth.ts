@@ -1,10 +1,12 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
-import { type Session, type User, auth } from "~/lib/auth";
+import type { Session, User } from "~/lib/auth";
+import type { AppContext } from "../lib/ctx";
 
 type AuthVariables = {
     user: User;
     session: Session;
+    ctx: AppContext;
 };
 
 /**
@@ -13,6 +15,7 @@ type AuthVariables = {
  */
 export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
     async (c, next) => {
+        const { auth } = c.get("ctx");
         const session = await auth.api.getSession({
             headers: c.req.raw.headers,
         });
@@ -35,8 +38,9 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
  * `user` and `session` will be made available to the route handler
  */
 export const captureAuth = createMiddleware<{
-    Variables: Partial<AuthVariables>;
+    Variables: Partial<AuthVariables> & { ctx: AppContext };
 }>(async (c, next) => {
+    const { auth } = c.get("ctx");
     const session = await auth.api.getSession({
         headers: c.req.raw.headers,
     });
