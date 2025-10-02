@@ -1,4 +1,3 @@
-import React from "react";
 import {
     Body,
     Button,
@@ -11,6 +10,7 @@ import {
     Section,
     Text,
 } from "@react-email/components";
+import React from "react";
 import { env } from "../../env";
 
 interface ChangeEmailVerificationProps {

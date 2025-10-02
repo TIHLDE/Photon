@@ -1,17 +1,17 @@
-import { Hono } from "hono";
-import z from "zod";
+import { type InferInsertModel, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { type DbSchema, schema } from "~/db";
-import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "../../middleware/auth";
+import z from "zod";
+import { type DbSchema, schema } from "~/db";
 import { updateEventSchema } from "../../lib/event/schema";
+import { generateUniqueEventSlug } from "../../lib/event/slug";
+import { route } from "../../lib/route";
+import { requireAuth } from "../../middleware/auth";
 
 const updateBodySchemaOpenAPI =
     await resolver(updateEventSchema).toOpenAPISchema();
 
-export const updateRoute = new Hono().put(
+export const updateRoute = route().put(
     "/:id",
     describeRoute({
         tags: ["events"],
@@ -34,6 +34,7 @@ export const updateRoute = new Hono().put(
         const body = c.req.valid("json");
         const eventId = c.req.param("id");
         const userId = c.get("user").id;
+        const { db } = c.get("ctx");
 
         await db.transaction(async (tx) => {
             // Fetch existing event
@@ -104,6 +105,39 @@ export const updateRoute = new Hono().put(
                 }
             }
 
+            if (body.priorityPools) {
+                // Start by removing all exising
+                await tx
+                    .delete(schema.eventPriorityPool)
+                    .where(eq(schema.eventPriorityPool.eventId, eventId));
+
+                for (let p = 0; p < body.priorityPools.length; p++) {
+                    const pool = body.priorityPools[p];
+                    const priorityScore = 10 - p;
+                    const [insertedPool] = await tx
+                        .insert(schema.eventPriorityPool)
+                        .values({
+                            eventId,
+                            priorityScore,
+                        })
+                        .returning({ poolId: schema.eventPriorityPool.id });
+                    const poolId = insertedPool?.poolId;
+
+                    if (!poolId) {
+                        throw new HTTPException(500, {
+                            message: "Failed to create priority pool",
+                        });
+                    }
+
+                    for (const groupSlug of pool?.groups ?? []) {
+                        await tx.insert(schema.eventPriorityPoolGroup).values({
+                            groupSlug,
+                            priorityPoolId: poolId,
+                        });
+                    }
+                }
+            }
+
             const updateDateNullable = (
                 date: string | null | undefined,
             ): Date | null | undefined => {
@@ -133,7 +167,7 @@ export const updateRoute = new Hono().put(
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 reactionsAllowed: body.reactionsAllowed,
                 requiresSigningUp: body.requiresSigningUp,
-                price: body.price,
+                priceMinor: body.price ? body.price * 100 : null,
                 updatedAt: new Date(),
                 title: body.title,
                 start: updateDate(body.start),

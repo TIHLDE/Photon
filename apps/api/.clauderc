@@ -101,10 +101,14 @@ src/
    - Return responses with `c.json()`, `c.text()`, etc.
    - Use middleware via `app.use()` or route-level
    - Type routes with OpenAPI schemas when possible
+   - Use the `route()` util from `~/lib/route` to create API routes
+   - Get DB, redis and queue from `c.get("ctx")` instead of importing singleton
 3. **Database queries**: Always use Drizzle ORM, no raw SQL
 4. **Error handling**: Use Hono's error handler middleware
 5. **Validation**: Zod schemas co-located with routes
 6. **Tests**: Vitest tests alongside implementation files or in `__tests__/`
+7. **Imports**: Prefer using "~/" (points to src) instead of using relative imports, when importing stuff from another top-level directory in src.
+8. **Environment variables**: Use the "~/lib/env" to get environment variables with type safety, never via process.env or similar
 
 ### Example endpoint
 
@@ -112,10 +116,11 @@ src/
 import { Hono } from "hono";
 import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
-import db, { schema } from "~/db";
+import { schema } from "~/db";
 import { and, eq } from "drizzle-orm";
 import { requireAuth } from "../../../middleware/auth";
 import { HTTPException } from "hono/http-exception";
+import { route } from "~/lib/route"
 
 const deleteRegistrationSchema = z.object({});
 
@@ -123,7 +128,7 @@ const deleteRegistrationSchemaOpenApi = await resolver(
     deleteRegistrationSchema,
 ).toOpenAPISchema();
 
-export const deleteEventRegistrationRoute = new Hono().get(
+export const deleteEventRegistrationRoute = route().get(
     "/:eventId/registration",
     describeRoute({
         tags: ["event"],
@@ -141,6 +146,7 @@ export const deleteEventRegistrationRoute = new Hono().get(
     }),
     requireAuth,
     async (c) => {
+        const { db } = c.get("ctx");
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(

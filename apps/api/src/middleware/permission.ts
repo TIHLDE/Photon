@@ -6,10 +6,12 @@ import {
     userHasAnyPermissionName,
     userHasPermissionName,
 } from "~/lib/auth/rbac";
+import type { AppContext } from "../lib/ctx";
 
 type Variables = {
     user: User | null;
     session: Session | null;
+    ctx: AppContext;
 };
 
 export const requirePermissions = (...permissions: string[]) =>
@@ -23,6 +25,7 @@ export const requirePermissions = (...permissions: string[]) =>
         }
 
         const hasPermissions = await userHasAllPermissions(
+            c.get("ctx"),
             user.id,
             permissions,
         );
@@ -47,6 +50,7 @@ export const requireAnyPermission = (...permissions: string[]) =>
         }
 
         const hasPermission = await userHasAnyPermissionName(
+            c.get("ctx"),
             user.id,
             permissions,
         );
@@ -71,6 +75,7 @@ export const withPermissionCheck = (permissionName: string) =>
         }
 
         const hasPermission = await userHasPermissionName(
+            c.get("ctx"),
             user.id,
             permissionName,
         );

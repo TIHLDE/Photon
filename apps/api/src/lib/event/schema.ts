@@ -56,10 +56,19 @@ const eventMutationSchema = z.object({
     }),
 
     // Priority & pools
-    priorityPools: z.array(z.string()).nullable().meta({
-        description:
-            "List of group slugs that are prioritized for signing up. The more of these groups a user is in, the higher priority they get.",
-    }),
+    priorityPools: z
+        .array(
+            z.object({
+                groups: z
+                    .array(z.string())
+                    .meta({ description: "Group slugs in this pool" }),
+            }),
+        )
+        .nullable()
+        .meta({
+            description:
+                "List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority.",
+        }),
     onlyAllowPrioritized: z.boolean().meta({
         description:
             "Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools.",

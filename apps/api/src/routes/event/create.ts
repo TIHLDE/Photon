@@ -1,12 +1,12 @@
-import { Hono } from "hono";
-import z from "zod";
+import { type InferInsertModel, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
-import db, { type DbSchema, schema } from "~/db";
-import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
-import { eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "../../middleware/auth";
+import z from "zod";
+import { type DbSchema, schema } from "~/db";
 import { createEventSchema } from "../../lib/event/schema";
+import { generateUniqueEventSlug } from "../../lib/event/slug";
+import { route } from "../../lib/route";
+import { requireAuth } from "../../middleware/auth";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -26,7 +26,7 @@ const eventSchema = z.object({
 const createBodySchemaOpenAPI =
     await resolver(createEventSchema).toOpenAPISchema();
 
-export const createRoute = new Hono().post(
+export const createRoute = route().post(
     "/",
     describeRoute({
         tags: ["events"],
@@ -50,8 +50,8 @@ export const createRoute = new Hono().post(
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");
-        // const userId = c.get("user").id;
         const userId = c.get("user").id;
+        const { db } = c.get("ctx");
 
         await db.transaction(async (tx) => {
             const slug = await generateUniqueEventSlug(body.title, tx);
@@ -109,7 +109,7 @@ export const createRoute = new Hono().post(
                 capacity: body.capacity,
                 allowWaitlist: body.requiresSigningUp,
                 slug,
-                price: body.price,
+                priceMinor: body.price ? body.price * 100 : null,
                 isPaidEvent: body.isPaidEvent,
                 requiresSigningUp: body.requiresSigningUp,
                 registrationStart: body.registrationStart
@@ -130,9 +130,48 @@ export const createRoute = new Hono().post(
                 createdByUserId: userId,
                 updateByUserId: userId,
                 organizerGroupSlug: body.organizerGroupSlug,
+                enforcesPreviousStrikes: body.enforcesPreviousStrikes,
             };
 
-            await db.insert(schema.event).values(newEvent);
+            const [event] = await db
+                .insert(schema.event)
+                .values(newEvent)
+                .returning({ eventId: schema.event.id });
+
+            const eventId = event?.eventId;
+            if (!eventId) {
+                throw new HTTPException(500, {
+                    message: "Failed to create event",
+                });
+            }
+
+            if (body.priorityPools) {
+                for (let p = 0; p < body.priorityPools.length; p++) {
+                    const pool = body.priorityPools[p];
+                    const priorityScore = 10 - p;
+                    const [insertedPool] = await tx
+                        .insert(schema.eventPriorityPool)
+                        .values({
+                            eventId,
+                            priorityScore,
+                        })
+                        .returning({ poolId: schema.eventPriorityPool.id });
+                    const poolId = insertedPool?.poolId;
+
+                    if (!poolId) {
+                        throw new HTTPException(500, {
+                            message: "Failed to create priority pool",
+                        });
+                    }
+
+                    for (const groupSlug of pool?.groups ?? []) {
+                        await tx.insert(schema.eventPriorityPoolGroup).values({
+                            groupSlug,
+                            priorityPoolId: poolId,
+                        });
+                    }
+                }
+            }
         });
 
         return c.json({ message: "Event created" }, 201);
