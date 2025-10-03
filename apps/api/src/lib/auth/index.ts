@@ -6,16 +6,16 @@ import {
     emailOTP,
     openAPI,
 } from "better-auth/plugins";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "~/db/schema";
 import { sendEmail } from "~/lib/email";
 import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-verification";
 import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
 import ResetPasswordEmail from "~/lib/email/template/reset-password";
 import { env } from "~/lib/env";
-import { feidePlugin, syncFeideHook } from "./feide";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "../../db";
 import type { RedisClient } from "../cache/redis";
+import { feidePlugin, syncFeideHook } from "./feide";
 
 export const createAuth = (ctx: {
     db: NodePgDatabase<DbSchema>;

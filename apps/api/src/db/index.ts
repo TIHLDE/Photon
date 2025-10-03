@@ -1,6 +1,6 @@
 import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
-import { env } from "~/lib/env";
 import type { Pool } from "pg";
+import { env } from "~/lib/env";
 
 import * as schema from "./schema";
 
