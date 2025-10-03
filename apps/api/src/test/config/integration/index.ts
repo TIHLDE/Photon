@@ -7,11 +7,10 @@ import {
     type StartedRedisContainer,
 } from "@testcontainers/redis";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { testClient } from "hono/testing";
 import { Pool } from "pg";
-import { test } from "vitest";
+import { afterAll, test } from "vitest";
+import { createApp } from "~/index";
 import { createDb } from "~/db";
-import { type App, createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
 import { createQueueManager } from "~/lib/cache/bull";
 import { createRedisClient } from "~/lib/cache/redis";
@@ -39,8 +38,22 @@ export type TestAppContext = AppContext & {
 };
 
 /**
- * Create a test context with mock or test container instances.
- * Override specific services as needed for different test scenarios.
+ * File-scoped shared test context and containers.
+ * These are initialized once per test file in beforeAll.
+ *
+ * IMPORTANT: This approach relies on Vitest's default thread pool behavior where
+ * each test file runs in its own worker thread with isolated module scope.
+ * If you change Vitest config to use `fileParallelism: false` or `singleThread: true`,
+ * test files may share this variable causing conflicts. In that case, refactor to use
+ * WeakMap or suite-level hooks instead.
+ */
+let sharedTestContext: TestAppContext | null = null;
+
+const POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME = "after-migration";
+
+/**
+ * Create a test context with test container instances.
+ * This should be called once per test file in beforeAll.
  */
 async function createTestAppContext(): Promise<TestAppContext> {
     // Setup Postgres
@@ -56,6 +69,14 @@ async function createTestAppContext(): Promise<TestAppContext> {
     const db = createDb({ pool: postgresPool });
     await migrate(db, { migrationsFolder: "./drizzle" });
 
+    // Close pool before taking snapshot to avoid "database is being accessed" error
+    await postgresPool.end();
+    await postgresContainer.snapshot(POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME);
+
+    // Reconnect after snapshot
+    const newPool = new Pool({ connectionString: postgresUrl });
+    const newDb = createDb({ pool: newPool });
+
     // Setup Redis
     const redisContainer = await new RedisContainer("redis:7.4-alpine").start();
     const redisUrl = redisContainer.getConnectionUrl();
@@ -66,12 +87,12 @@ async function createTestAppContext(): Promise<TestAppContext> {
 
     // Setup auth
     const auth = createAuth({
-        db,
+        db: newDb,
         redis,
     });
 
     const defaultContext: AppContext = {
-        db,
+        db: newDb,
         queueManager,
         redis,
         auth,
@@ -81,13 +102,50 @@ async function createTestAppContext(): Promise<TestAppContext> {
         ...defaultContext,
         _postgresContainer: postgresContainer,
         _redisContainer: redisContainer,
-        _postgresPool: postgresPool,
+        _postgresPool: newPool,
     };
 }
 
 /**
- * Cleanup function to close all connections in a context.
- * Call this in afterAll hooks or when shutting down the app.
+ * Reset the database by truncating all tables.
+ * Call this in beforeEach to ensure a fresh DB for each test.
+ */
+async function resetDatabase(ctx: TestAppContext): Promise<void> {
+    // Close existing connections before restoring snapshot
+    await ctx._postgresPool.end();
+
+    // Restore snapshot
+    await ctx._postgresContainer.restoreSnapshot(
+        POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME,
+    );
+
+    // Reconnect with new pool
+    const postgresUrl = ctx._postgresContainer.getConnectionUri();
+    const newPool = new Pool({ connectionString: postgresUrl });
+    ctx._postgresPool = newPool;
+
+    // Recreate db instance
+    const newDb = createDb({ pool: newPool });
+    ctx.db = newDb;
+
+    // Recreate auth with new db
+    ctx.auth = createAuth({
+        db: newDb,
+        redis: ctx.redis,
+    });
+}
+
+/**
+ * Flush all Redis data.
+ * Call this in beforeEach to ensure a fresh Redis for each test.
+ */
+async function resetRedis(ctx: TestAppContext): Promise<void> {
+    await ctx.redis.flushAll();
+}
+
+/**
+ * Cleanup function to close all connections and stop containers.
+ * Call this in afterAll hooks when shutting down the test file.
  */
 async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
     // Close client connections
@@ -96,8 +154,8 @@ async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
 
     // Destroy containers
     await Promise.allSettled([
-        await ctx._redisContainer?.stop({ remove: true }),
-        await ctx._postgresContainer?.stop({ remove: true }),
+        ctx._redisContainer?.stop({ remove: true }),
+        ctx._postgresContainer?.stop({ remove: true }),
     ]);
 }
 
@@ -111,26 +169,31 @@ export type IntegrationTestContext = {
 } & AppContext;
 
 /**
- * Extends the base test with an `ctx` fixture for integration testing.
+ * Extends the base test with file-scoped test containers and per-test database/Redis reset.
  *
  * The `ctx` fixture provides:
- * - A hono client to perform requests
+ * - A hono app instance to perform requests
  * - Common services such as database and redis for direct access
+ * - Test utilities for common operations
  *
- * The fixture automatically handles setup and teardown:
- * - Creates a new client for each test
- * - Creates and tears down fresh services
+ * Setup and teardown behavior:
+ * - beforeAll: Creates containers once per test file (Postgres + Redis)
+ * - beforeEach: Truncates all tables and flushes Redis
+ * - afterAll: Stops containers and closes connections
+ *
+ * This approach significantly improves performance by:
+ * - Reusing containers across tests in the same file
+ * - Truncating tables instead of re-migrating
+ * - Only flushing Redis instead of recreating containers
  *
  * @example
- * integrationTest('should do something', async ({ ctx }) => {
- *   // Access services
- *   const { db, redis, queueManager, client } = ctx;
+ * integrationTest.describe('My feature', () => {
+ *   integrationTest('should do something', async ({ ctx }) => {
+ *     const { db, redis, app, utils } = ctx;
  *
- *   // Send client requests to test endpoints
- *   const response = await client.query(...);
- *
- *   // Use database
- *   const rows = await db.query(...);
+ *     // Test with fresh database state
+ *     const response = await utils.client.get('/api/endpoint');
+ *   });
  * });
  *
  * @see IntegrationTestContext
@@ -139,19 +202,32 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
     ctx: [
         // biome-ignore lint/correctness/noEmptyPattern: Destructing pattern required here but is empty
         async ({}, use) => {
-            // Setup
-            const ctx = await createTestAppContext();
-            const app = await createApp({ ctx });
+            // Initialize shared context once per file
+            if (!sharedTestContext) {
+                sharedTestContext = await createTestAppContext();
 
-            // Execute
+                // Setup afterAll cleanup hook
+                afterAll(async () => {
+                    if (sharedTestContext) {
+                        await closeTestAppContext(sharedTestContext);
+                        sharedTestContext = null;
+                    }
+                });
+            }
+
+            // Reset state before each test
+            await resetDatabase(sharedTestContext);
+            await resetRedis(sharedTestContext);
+
+            // Create fresh app instance for this test
+            const app = await createApp({ ctx: sharedTestContext });
+
+            // Execute test
             await use({
-                ...ctx,
+                ...sharedTestContext,
                 app,
-                utils: createTestUtils({ ...ctx, app }),
+                utils: createTestUtils({ ...sharedTestContext, app }),
             });
-
-            // Cleanup
-            await closeTestAppContext(ctx);
         },
         { scope: "test", auto: true },
     ],
