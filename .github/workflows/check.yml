@@ -31,7 +31,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check linting
-        run: pnpm lint
+        run: pnpm lint --ui stream
 
       # - name: Check formatting
       #   run: pnpm format:check
