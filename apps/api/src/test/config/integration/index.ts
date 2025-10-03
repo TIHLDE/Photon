@@ -215,10 +215,6 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
                 });
             }
 
-            // Reset state before each test
-            await resetDatabase(sharedTestContext);
-            await resetRedis(sharedTestContext);
-
             // Create fresh app instance for this test
             const app = await createApp({ ctx: sharedTestContext });
 
@@ -228,6 +224,10 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
                 app,
                 utils: createTestUtils({ ...sharedTestContext, app }),
             });
+
+            // Reset state before each test
+            await resetDatabase(sharedTestContext);
+            await resetRedis(sharedTestContext);
         },
         { scope: "test", auto: true },
     ],
