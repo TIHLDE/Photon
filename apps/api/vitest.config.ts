@@ -10,7 +10,7 @@ export default defineConfig({
         sequence: {
             concurrent: false,
         },
-        maxConcurrency: 4, // 4 postgres and 4 redis containers
+        maxConcurrency: 1, // 2 containers per concurrent task
     },
     resolve: {
         alias: {

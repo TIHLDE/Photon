@@ -61,12 +61,12 @@
     },
     "exports": {
         "./auth": {
-            "default": "./dist/index.js",
-            "types": "./src/lib/auth/index.ts"
+            "types": "./src/lib/auth/index.ts",
+            "default": "./dist/index.js"
         },
         "./db": {
-            "default": "./dist/index.js",
-            "types": "./src/db/index.ts"
+            "types": "./src/db/index.ts",
+            "default": "./dist/index.js"
         }
     }
 }
