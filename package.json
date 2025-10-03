@@ -8,6 +8,7 @@
         "lint": "turbo lint",
         "lint:fix": "turbo lint:fix",
         "format": "turbo format",
+        "test": "turbo test",
         "typecheck": "turbo typecheck",
         "prod:up": "pnpm dlx turbo prod:up --ui stream",
         "prod:down": "turbo prod:down",
