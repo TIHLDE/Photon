@@ -9,8 +9,8 @@ import {
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { afterAll, test } from "vitest";
-import { createApp } from "~/index";
 import { createDb } from "~/db";
+import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
 import { createQueueManager } from "~/lib/cache/bull";
 import { createRedisClient } from "~/lib/cache/redis";
