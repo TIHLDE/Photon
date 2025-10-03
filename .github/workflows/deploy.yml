@@ -12,6 +12,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     concurrency:
       group: deployment_lock
       cancel-in-progress: false
@@ -39,4 +40,3 @@ jobs:
           chmod 0600 .env
           pnpm prod:up
           ENDSSH
-

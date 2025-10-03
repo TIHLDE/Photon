@@ -31,5 +31,5 @@ jobs:
       - name: Check linting
         run: pnpm lint --ui stream
 
-      - name: Check formatting
+      - name: Check building
         run: pnpm build --ui stream
