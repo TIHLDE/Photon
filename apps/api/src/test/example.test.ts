@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { schema } from "~/db";
-import { integrationTest } from "./integration";
+import { integrationTest } from "./config/integration";
 
 integrationTest(
     "Test that dependencies are working",

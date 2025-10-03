@@ -10,17 +10,18 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { testClient } from "hono/testing";
 import { Pool } from "pg";
 import { test } from "vitest";
+import { createDb } from "~/db";
+import { type App, createApp } from "~/index";
+import { createAuth } from "~/lib/auth";
+import { createQueueManager } from "~/lib/cache/bull";
+import { createRedisClient } from "~/lib/cache/redis";
 import type { AppContext } from "~/lib/ctx";
-import { type App, createApp } from "..";
-import { createDb } from "../db";
-import { createAuth } from "../lib/auth";
-import { createQueueManager } from "../lib/cache/bull";
-import { createRedisClient } from "../lib/cache/redis";
+import { createTestUtils } from "./util";
 
 /**
  * `AppContext` with added shadow variables for doing the grunt-work of running the tests
  */
-type TestAppContext = AppContext & {
+export type TestAppContext = AppContext & {
     /**
      * Running Redis container for direct test-container manipulation
      */
@@ -105,7 +106,8 @@ async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
  * a hono client and all services used by the backend for direct access
  */
 export type IntegrationTestContext = {
-    client: ReturnType<typeof testClient<App>>;
+    app: Awaited<ReturnType<typeof createApp>>;
+    utils: ReturnType<typeof createTestUtils>;
 } & AppContext;
 
 /**
@@ -140,12 +142,12 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
             // Setup
             const ctx = await createTestAppContext();
             const app = await createApp({ ctx });
-            const client = testClient(app);
 
             // Execute
             await use({
                 ...ctx,
-                client,
+                app,
+                utils: createTestUtils({ ...ctx, app }),
             });
 
             // Cleanup

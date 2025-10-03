@@ -30,6 +30,7 @@ const envSchema = z
             description:
                 "The URL to use to send webhook requests to Photon. May be different if using NGROK or similar when developing locally. Otherwise, will default to the same value as ROOT_URL",
         }),
+        NODE_ENV: z.enum(["production", "development", "test"]),
 
         // DATABASE
         DATABASE_URL: z.string().meta({ description: "Database URL" }),

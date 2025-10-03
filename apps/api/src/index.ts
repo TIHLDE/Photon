@@ -3,6 +3,7 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { type AppContext, createAppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
@@ -47,13 +48,12 @@ export const createApp = async (variables?: Variables) => {
         ctx = await createAppContext();
     }
 
-    // Inject app context into all endpoints
-    api.use("*", async (c, next) => {
-        c.set("ctx", ctx);
-        await next();
-    });
-
-    const app = new Hono()
+    const app = new Hono<{ Variables: Variables }>()
+        .use(logger())
+        .use("*", async (c, next) => {
+            c.set("ctx", ctx);
+            await next();
+        })
         .route("/", api)
         .get(
             "/openapi",
@@ -103,16 +103,18 @@ if (env.SEED_DB) {
     import("./db/seed").then(({ default: seed }) => seed());
 }
 
-await setupWebhooks();
+if (env.NODE_ENV !== "test") {
+    await setupWebhooks();
 
-serve(
-    {
-        fetch: app.fetch,
-        port: env.PORT,
-    },
-    (info) => {
-        console.log(
-            `📦 Server is running on http://localhost:${info.port}/api`,
-        );
-    },
-);
+    serve(
+        {
+            fetch: app.fetch,
+            port: env.PORT,
+        },
+        (info) => {
+            console.log(
+                `📦 Server is running on http://localhost:${info.port}/api`,
+            );
+        },
+    );
+}
