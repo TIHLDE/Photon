@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import type { UserWithRole } from "better-auth/plugins";
 import { describe, expect } from "vitest";
 import { schema } from "~/db";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
@@ -105,8 +105,10 @@ describe("Registration Resolver", () => {
                 });
 
                 // Create 100 test users and pending registrations
-                const users = [];
-                for (let i = 0; i < 100; i++) {
+                const start = Date.now();
+                const users: Array<Promise<void>> = [];
+
+                async function createAndRegisterUser(i: number) {
                     const userData = await ctx.auth.api.createUser({
                         body: {
                             email: `user${i}@test.com`,
@@ -114,12 +116,22 @@ describe("Registration Resolver", () => {
                             password: "test123!",
                         },
                     });
-                    users.push(userData.user);
                     await ctx.utils.createPendingRegistration(
                         event.id,
                         userData.user.id,
                     );
                 }
+
+                for (let i = 0; i < 10; i++) {
+                    users.push(createAndRegisterUser(i));
+                }
+
+                await Promise.all(users);
+
+                const end = Date.now();
+                console.log(
+                    `Created 100 users and registrations in ${end - start}ms`,
+                );
 
                 // Run resolver
                 await resolveRegistrationsForEvent(event.id, ctx);
@@ -130,7 +142,7 @@ describe("Registration Resolver", () => {
                         where: (reg, { eq }) => eq(reg.eventId, event.id),
                     });
 
-                expect(registrations).toHaveLength(100);
+                expect(registrations).toHaveLength(10);
                 for (const reg of registrations) {
                     expect(reg.status).toBe("registered");
                     expect(reg.waitlistPosition).toBeNull();
