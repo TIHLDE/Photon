@@ -80,11 +80,9 @@ export const mcpRoute = route().all("/mcp", async (c) => {
                 token,
             };
 
-            const userMarkdown = `| Property | Value |\n|----------|-------|\n${Object.entries(
-                filteredUser,
-            )
-                .map(([key, value]) => `| ${key} | ${value} |`)
-                .join("\n")}`;
+            const userMarkdown = Object.entries(filteredUser)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join("\n");
 
             return {
                 content: [
