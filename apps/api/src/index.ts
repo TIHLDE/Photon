@@ -8,6 +8,7 @@ import { type AppContext, createAppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
+import { mcpRoute } from "./test/mcp";
 
 /**
  * Hono context variables type definition.
@@ -38,7 +39,8 @@ export const createApp = async (variables?: Variables) => {
         .get("/", (c) => {
             return c.text("Healthy!");
         })
-        .route("/event", eventRoutes);
+        .route("/event", eventRoutes)
+        .route("/", mcpRoute);
 
     // Use or generate app context
     let ctx: AppContext;
