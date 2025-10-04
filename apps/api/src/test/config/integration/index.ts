@@ -16,6 +16,7 @@ import { createQueueManager } from "~/lib/cache/bull";
 import { createRedisClient } from "~/lib/cache/redis";
 import type { AppContext } from "~/lib/ctx";
 import { createTestUtils } from "./util";
+import { Container } from "@react-email/components";
 
 /**
  * `AppContext` with added shadow variables for doing the grunt-work of running the tests
@@ -51,11 +52,7 @@ let sharedTestContext: TestAppContext | null = null;
 
 const POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME = "after-migration";
 
-/**
- * Create a test context with test container instances.
- * This should be called once per test file in beforeAll.
- */
-async function createTestAppContext(): Promise<TestAppContext> {
+async function createPostgres() {
     // Setup Postgres
     const postgresContainer = await new PostgreSqlContainer(
         "postgres:17.6",
@@ -77,10 +74,41 @@ async function createTestAppContext(): Promise<TestAppContext> {
     const newPool = new Pool({ connectionString: postgresUrl });
     const newDb = createDb({ pool: newPool });
 
+    return {
+        container: postgresContainer,
+        pool: newPool,
+        db: newDb,
+    };
+}
+
+async function createRedis() {
     // Setup Redis
     const redisContainer = await new RedisContainer("redis:7.4-alpine").start();
     const redisUrl = redisContainer.getConnectionUrl();
     const redis = await createRedisClient(redisUrl);
+
+    return {
+        container: redisContainer,
+        redis,
+        redisUrl,
+    };
+}
+
+/**
+ * Create a test context with test container instances.
+ * This should be called once per test file in beforeAll.
+ */
+async function createTestAppContext(): Promise<TestAppContext> {
+    const [postgresVals, redisVals] = await Promise.all([
+        createPostgres(),
+        createRedis(),
+    ]);
+    const {
+        container: postgresContainer,
+        pool: newPool,
+        db: newDb,
+    } = postgresVals;
+    const { container: redisContainer, redis, redisUrl } = redisVals;
 
     // Setup Bull queues
     const queueManager = createQueueManager(redisUrl);
