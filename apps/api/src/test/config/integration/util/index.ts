@@ -1,6 +1,8 @@
 import type { TestAppContext } from "..";
 import type { createApp } from "../../../..";
+import { createCreatePendingRegistration } from "./create-pending-registration";
 import { createSetupEventCategories } from "./create-setup-event-categories";
+import { createCreateTestEvent } from "./create-test-event";
 import { createCreateTestUser } from "./create-test-user";
 import { createGetClientForUser } from "./get-client-for-user";
 import { createSetupGroups } from "./setup-groups";
@@ -15,5 +17,7 @@ export const createTestUtils = (ctx: TestUtilContext) => {
         clientForUser: createGetClientForUser(ctx),
         setupGroups: createSetupGroups(ctx),
         setupEventCategories: createSetupEventCategories(ctx),
+        createTestEvent: createCreateTestEvent(ctx),
+        createPendingRegistration: createCreatePendingRegistration(ctx),
     };
 };
