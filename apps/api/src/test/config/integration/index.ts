@@ -8,7 +8,7 @@ import {
 } from "@testcontainers/redis";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-import { afterAll, test } from "vitest";
+import { afterAll, onTestFinished, test } from "vitest";
 import { createDb } from "~/db";
 import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
@@ -149,13 +149,16 @@ async function resetRedis(ctx: TestAppContext): Promise<void> {
  */
 async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
     // Close client connections
-    await ctx._postgresPool?.end();
+    // biome-ignore lint/style/noNonNullAssertion: Will never be null here
+    await ctx._postgresPool!.end();
     ctx.redis.destroy();
 
     // Destroy containers
-    await Promise.allSettled([
-        ctx._redisContainer?.stop({ remove: true }),
-        ctx._postgresContainer?.stop({ remove: true }),
+    await Promise.all([
+        // biome-ignore lint/style/noNonNullAssertion: Will never be null here
+        ctx._redisContainer!.stop({ remove: true, timeout: 1000 }),
+        // biome-ignore lint/style/noNonNullAssertion: Will never be null here
+        ctx._postgresContainer!.stop({ remove: true, timeout: 1000 }),
     ]);
 }
 
@@ -205,14 +208,6 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
             // Initialize shared context once per file
             if (!sharedTestContext) {
                 sharedTestContext = await createTestAppContext();
-
-                // Setup afterAll cleanup hook
-                afterAll(async () => {
-                    if (sharedTestContext) {
-                        await closeTestAppContext(sharedTestContext);
-                        sharedTestContext = null;
-                    }
-                });
             }
 
             // Create fresh app instance for this test
@@ -231,4 +226,14 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
         },
         { scope: "test", auto: true },
     ],
+});
+
+// Setup afterAll cleanup hook
+afterAll(async () => {
+    console.log("CLEANUP");
+
+    if (sharedTestContext) {
+        await closeTestAppContext(sharedTestContext);
+        sharedTestContext = null;
+    }
 });

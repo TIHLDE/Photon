@@ -10,7 +10,8 @@ export default defineConfig({
         sequence: {
             concurrent: false,
         },
-        maxConcurrency: 1, // 2 containers per concurrent task
+        maxWorkers: 1, // 2 containers per worker
+        maxConcurrency: 1,
     },
     resolve: {
         alias: {
