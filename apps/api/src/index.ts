@@ -98,12 +98,12 @@ export const createApp = async (variables?: Variables) => {
  */
 export type App = Awaited<ReturnType<typeof createApp>>;
 
-// Seed DB with default values if necessary
-if (env.SEED_DB && env.NODE_ENV !== "test") {
-    import("./db/seed").then(({ default: seed }) => seed());
-}
-
 if (env.NODE_ENV !== "test") {
+    // Seed DB with default values if necessary
+    if (env.SEED_DB) {
+        import("./db/seed").then(({ default: seed }) => seed());
+    }
+
     await setupWebhooks();
 
     const app = await createApp();
