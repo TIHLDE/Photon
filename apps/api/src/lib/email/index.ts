@@ -4,6 +4,10 @@ import type { ReactElement } from "react";
 import { env } from "../env";
 
 const getTransporter = () => {
+    if (env.NODE_ENV === "test") {
+        return;
+    }
+
     if (!env.MAIL_HOST) {
         // Sink
         const transport = nodemailer.createTransport({
@@ -38,6 +42,13 @@ type SendEmailOptions = {
 
 export async function sendEmail({ to, subject, component }: SendEmailOptions) {
     const html = await render(component);
+    if (!transporter) {
+        console.log("To:", to);
+        console.log("Subject:", subject);
+        console.log("HTML:", html);
+        return;
+    }
+
     await transporter.sendMail({
         from: `<TIHLDE> ${env.MAIL_FROM}`,
         to,

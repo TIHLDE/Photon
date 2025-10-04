@@ -230,8 +230,6 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
 
 // Setup afterAll cleanup hook
 afterAll(async () => {
-    console.log("CLEANUP");
-
     if (sharedTestContext) {
         await closeTestAppContext(sharedTestContext);
         sharedTestContext = null;

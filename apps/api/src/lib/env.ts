@@ -1,8 +1,11 @@
 import { config } from "@dotenvx/dotenvx";
 import { z } from "zod";
-config({
-    path: "../../.env",
-});
+
+if (process.env.NODE_ENV !== "test") {
+    config({
+        path: "../../.env",
+    });
+}
 
 const toBoolean =
     ({ defaultVal }: { defaultVal: boolean }) =>
@@ -118,8 +121,36 @@ const envSchema = z
         return vals;
     });
 
+type Env = z.infer<typeof envSchema>;
+
+const testEnvVariables: Env = {
+    DATABASE_URL: "",
+    FEIDE_CLIENT_ID: "test-feide-client-id",
+    FEIDE_CLIENT_SECRET: "test-feide-client-secret",
+    NODE_ENV: "test",
+    PORT: 4000,
+    MAIL_FROM: "",
+    MAIL_PORT: 0,
+    REDIS_URL: "",
+    REFRESH_VIPPS_WEBHOOKS: false,
+    ROOT_URL: "http://localhost:4000",
+    SEED_DB: false,
+    VIPPS_TEST_MODE: true,
+    WEBHOOK_URL: "",
+    MAIL_HOST: "",
+    MAIL_PASS: "",
+    MAIL_USER: "",
+    VIPPS_CLIENT_ID: "abc",
+    VIPPS_CLIENT_SECRET: "abc",
+    VIPPS_MERCHANT_SERIAL_NUMBER: "abc",
+    VIPPS_SUBSCRIPTION_KEY: "abc",
+};
+
 /**
  * The application's environment variables.
  * Use this instead of `process.env` directly, to ensure type safety.
  */
-export const env = envSchema.parse(process.env);
+export const env =
+    process.env.NODE_ENV === "test"
+        ? testEnvVariables
+        : envSchema.parse(process.env);
