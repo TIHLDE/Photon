@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import type { AppContext } from "../ctx";
 import { schema } from "../../db";
 import type { RegistrationStatus } from "../../db/schema/event";
+import type { AppContext } from "../ctx";
 import {
     calculateWaitlistPosition,
     findSwapTarget,
@@ -33,8 +33,11 @@ export async function resolveRegistrationsForEvent(
     ctx: AppContext,
 ): Promise<void> {
     // Step 1: Fetch pending registrations from Redis
-    const pendingKeys: Array<{ userId: string; createdAtISO: string; key: string }> =
-        [];
+    const pendingKeys: Array<{
+        userId: string;
+        createdAtISO: string;
+        key: string;
+    }> = [];
 
     for await (const keys of ctx.redis.scanIterator({
         MATCH: `registration:${eventId}:*`,
@@ -54,7 +57,8 @@ export async function resolveRegistrationsForEvent(
     // Sort by timestamp ASC (FIFO - first come, first served)
     pendingKeys.sort(
         (a, b) =>
-            new Date(a.createdAtISO).getTime() - new Date(b.createdAtISO).getTime(),
+            new Date(a.createdAtISO).getTime() -
+            new Date(b.createdAtISO).getTime(),
     );
 
     if (pendingKeys.length === 0) {
@@ -186,7 +190,10 @@ export async function resolveRegistrationsForEvent(
                     .where(
                         and(
                             eq(schema.eventRegistration.eventId, eventId),
-                            eq(schema.eventRegistration.userId, swapTarget.userId),
+                            eq(
+                                schema.eventRegistration.userId,
+                                swapTarget.userId,
+                            ),
                         ),
                     );
 
@@ -257,7 +264,8 @@ export async function resolveRegistrationsForEvent(
         // Recalculate waitlist positions if:
         // 1. A swap occurred (non-prioritized user moved to waitlist)
         // 2. A prioritized user joined the waitlist (they jump ahead of non-prioritized)
-        const shouldRecalculateWaitlist = swappedUserId || (finalStatus === "waitlisted" && isPrioritized);
+        const shouldRecalculateWaitlist =
+            swappedUserId || (finalStatus === "waitlisted" && isPrioritized);
 
         if (shouldRecalculateWaitlist) {
             const waitlisted = await ctx.db.query.eventRegistration.findMany({

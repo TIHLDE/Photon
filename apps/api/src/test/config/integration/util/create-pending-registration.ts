@@ -3,8 +3,7 @@ import { schema } from "../../../../db";
 import { registrationKey } from "../../../../lib/event/resolve-registration";
 
 export const createCreatePendingRegistration =
-    (ctx: TestUtilContext) =>
-    async (eventId: string, userId: string) => {
+    (ctx: TestUtilContext) => async (eventId: string, userId: string) => {
         // Insert pending registration in database
         const [reg] = await ctx.db
             .insert(schema.eventRegistration)

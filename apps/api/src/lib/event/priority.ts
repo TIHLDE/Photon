@@ -52,7 +52,9 @@ export function isUserPrioritized({
         const poolGroupSlugs = pool.groups.map((g) => g.groupSlug);
 
         // User must belong to ALL groups in the pool
-        const hasAllGroups = poolGroupSlugs.every((slug) => userGroupSlugs.has(slug));
+        const hasAllGroups = poolGroupSlugs.every((slug) =>
+            userGroupSlugs.has(slug),
+        );
 
         if (hasAllGroups && poolGroupSlugs.length > 0) {
             return true;
@@ -161,12 +163,16 @@ export async function calculateWaitlistPosition(
     }
 
     // Find the user in the appropriate list
-    const prioritizedIndex = prioritizedList.findIndex((r) => r.userId === userId);
+    const prioritizedIndex = prioritizedList.findIndex(
+        (r) => r.userId === userId,
+    );
     if (prioritizedIndex !== -1) {
         return prioritizedIndex + 1;
     }
 
-    const nonPrioritizedIndex = nonPrioritizedList.findIndex((r) => r.userId === userId);
+    const nonPrioritizedIndex = nonPrioritizedList.findIndex(
+        (r) => r.userId === userId,
+    );
     if (nonPrioritizedIndex !== -1) {
         return prioritizedList.length + nonPrioritizedIndex + 1;
     }

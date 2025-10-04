@@ -24,10 +24,14 @@ describe("Registration Resolver", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Check registration was resolved to 'registered' status
-                const registration = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
-                });
+                const registration =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, user.id),
+                            ),
+                    });
 
                 expect(registration?.status).toBe("registered");
                 expect(registration?.waitlistPosition).toBeNull();
@@ -69,14 +73,20 @@ describe("Registration Resolver", () => {
                 // Check first user got the spot
                 const reg1 = await ctx.db.query.eventRegistration.findFirst({
                     where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user1.id)),
+                        and(
+                            eq(reg.eventId, event.id),
+                            eq(reg.userId, user1.id),
+                        ),
                 });
                 expect(reg1?.status).toBe("registered");
 
                 // Check second user was waitlisted
                 const reg2 = await ctx.db.query.eventRegistration.findFirst({
                     where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user2.id)),
+                        and(
+                            eq(reg.eventId, event.id),
+                            eq(reg.userId, user2.id),
+                        ),
                 });
                 expect(reg2?.status).toBe("waitlisted");
                 expect(reg2?.waitlistPosition).toBe(1);
@@ -90,7 +100,9 @@ describe("Registration Resolver", () => {
                 await ctx.utils.setupEventCategories();
 
                 // Create unlimited event
-                const event = await ctx.utils.createTestEvent({ capacity: null });
+                const event = await ctx.utils.createTestEvent({
+                    capacity: null,
+                });
 
                 // Create 100 test users and pending registrations
                 const users = [];
@@ -103,16 +115,20 @@ describe("Registration Resolver", () => {
                         },
                     });
                     users.push(userData.user);
-                    await ctx.utils.createPendingRegistration(event.id, userData.user.id);
+                    await ctx.utils.createPendingRegistration(
+                        event.id,
+                        userData.user.id,
+                    );
                 }
 
                 // Run resolver
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Check all users are registered
-                const registrations = await ctx.db.query.eventRegistration.findMany({
-                    where: (reg, { eq }) => eq(reg.eventId, event.id),
-                });
+                const registrations =
+                    await ctx.db.query.eventRegistration.findMany({
+                        where: (reg, { eq }) => eq(reg.eventId, event.id),
+                    });
 
                 expect(registrations).toHaveLength(100);
                 for (const reg of registrations) {
@@ -170,45 +186,57 @@ describe("Registration Resolver", () => {
                 });
 
                 // Register non-prioritized user first (gets the spot)
-                await ctx.utils.createPendingRegistration(event.id, nonPrioritizedUser.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    nonPrioritizedUser.id,
+                );
 
                 // Run resolver
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Verify non-prioritized user has the spot
-                const nonPriorityReg1 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, nonPrioritizedUser.id),
-                        ),
-                });
+                const nonPriorityReg1 =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, nonPrioritizedUser.id),
+                            ),
+                    });
                 expect(nonPriorityReg1?.status).toBe("registered");
 
                 // Wait a moment
                 await new Promise((resolve) => setTimeout(resolve, 10));
 
                 // Now prioritized user registers (should swap)
-                await ctx.utils.createPendingRegistration(event.id, prioritizedUser.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    prioritizedUser.id,
+                );
 
                 // Run resolver again
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Check prioritized user got the spot
-                const priorityReg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, prioritizedUser.id)),
-                });
+                const priorityReg =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, prioritizedUser.id),
+                            ),
+                    });
                 expect(priorityReg?.status).toBe("registered");
 
                 // Check non-prioritized user was moved to waitlist
-                const nonPriorityReg2 = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, nonPrioritizedUser.id),
-                        ),
-                });
+                const nonPriorityReg2 =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, nonPrioritizedUser.id),
+                            ),
+                    });
                 expect(nonPriorityReg2?.status).toBe("waitlisted");
             },
             500_000,
@@ -264,15 +292,22 @@ describe("Registration Resolver", () => {
                 await new Promise((resolve) => setTimeout(resolve, 10));
 
                 // Partial user tries to register (should NOT swap)
-                await ctx.utils.createPendingRegistration(event.id, partialUser.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    partialUser.id,
+                );
 
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Partial user should be waitlisted (not prioritized)
-                const partialReg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, partialUser.id)),
-                });
+                const partialReg =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, partialUser.id),
+                            ),
+                    });
                 expect(partialReg?.status).toBe("waitlisted");
             },
             500_000,
@@ -382,7 +417,10 @@ describe("Registration Resolver", () => {
 
                 // Non-prioritized user gets the spot
                 const firstUser = await ctx.utils.createTestUser();
-                await ctx.utils.createPendingRegistration(event.id, firstUser.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    firstUser.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // User with 3 strikes who is in priority pool
@@ -405,17 +443,21 @@ describe("Registration Resolver", () => {
                     reason: "Too many strikes",
                 });
 
-                await ctx.utils.createPendingRegistration(event.id, strikedUserData.user.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    strikedUserData.user.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Striked user should NOT swap (despite being in priority pool)
-                const strikedReg = await ctx.db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(
-                            eq(reg.eventId, event.id),
-                            eq(reg.userId, strikedUserData.user.id),
-                        ),
-                });
+                const strikedReg =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (reg, { and, eq }) =>
+                            and(
+                                eq(reg.eventId, event.id),
+                                eq(reg.userId, strikedUserData.user.id),
+                            ),
+                    });
                 expect(strikedReg?.status).toBe("waitlisted");
             },
             500_000,
@@ -448,60 +490,97 @@ describe("Registration Resolver", () => {
 
                 // User 1: prioritized, gets the spot
                 const user1Data = await ctx.auth.api.createUser({
-                    body: { email: "user1@test.com", name: "User 1", password: "test123!" },
+                    body: {
+                        email: "user1@test.com",
+                        name: "User 1",
+                        password: "test123!",
+                    },
                 });
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: user1Data.user.id,
                     groupSlug: "index",
                     role: "member",
                 });
-                await ctx.utils.createPendingRegistration(event.id, user1Data.user.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    user1Data.user.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 await new Promise((resolve) => setTimeout(resolve, 10));
 
                 // User 2: non-prioritized, waitlisted
                 const user2Data = await ctx.auth.api.createUser({
-                    body: { email: "user2@test.com", name: "User 2", password: "test123!" },
+                    body: {
+                        email: "user2@test.com",
+                        name: "User 2",
+                        password: "test123!",
+                    },
                 });
-                await ctx.utils.createPendingRegistration(event.id, user2Data.user.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    user2Data.user.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 await new Promise((resolve) => setTimeout(resolve, 10));
 
                 // User 3: prioritized, waitlisted
                 const user3Data = await ctx.auth.api.createUser({
-                    body: { email: "user3@test.com", name: "User 3", password: "test123!" },
+                    body: {
+                        email: "user3@test.com",
+                        name: "User 3",
+                        password: "test123!",
+                    },
                 });
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: user3Data.user.id,
                     groupSlug: "index",
                     role: "member",
                 });
-                await ctx.utils.createPendingRegistration(event.id, user3Data.user.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    user3Data.user.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 await new Promise((resolve) => setTimeout(resolve, 10));
 
                 // User 4: non-prioritized, waitlisted
                 const user4Data = await ctx.auth.api.createUser({
-                    body: { email: "user4@test.com", name: "User 4", password: "test123!" },
+                    body: {
+                        email: "user4@test.com",
+                        name: "User 4",
+                        password: "test123!",
+                    },
                 });
-                await ctx.utils.createPendingRegistration(event.id, user4Data.user.id);
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    user4Data.user.id,
+                );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Check positions: prioritized users should be ahead
                 const reg2 = await ctx.db.query.eventRegistration.findFirst({
                     where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user2Data.user.id)),
+                        and(
+                            eq(reg.eventId, event.id),
+                            eq(reg.userId, user2Data.user.id),
+                        ),
                 });
                 const reg3 = await ctx.db.query.eventRegistration.findFirst({
                     where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user3Data.user.id)),
+                        and(
+                            eq(reg.eventId, event.id),
+                            eq(reg.userId, user3Data.user.id),
+                        ),
                 });
                 const reg4 = await ctx.db.query.eventRegistration.findFirst({
                     where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, event.id), eq(reg.userId, user4Data.user.id)),
+                        and(
+                            eq(reg.eventId, event.id),
+                            eq(reg.userId, user4Data.user.id),
+                        ),
                 });
 
                 expect(reg3?.waitlistPosition).toBe(1); // Prioritized user first
@@ -531,7 +610,9 @@ describe("Registration Resolver", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Redis key should be cleaned up
-                const key = await ctx.redis.get(`registration:${event.id}:${user.id}`);
+                const key = await ctx.redis.get(
+                    `registration:${event.id}:${user.id}`,
+                );
                 expect(key).toBeNull();
             },
             500_000,

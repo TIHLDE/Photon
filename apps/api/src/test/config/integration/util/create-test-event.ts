@@ -5,8 +5,7 @@ import { schema } from "../../../../db";
 type EventInsert = InferInsertModel<typeof schema.event>;
 
 export const createCreateTestEvent =
-    (ctx: TestUtilContext) =>
-    async (overrides?: Partial<EventInsert>) => {
+    (ctx: TestUtilContext) => async (overrides?: Partial<EventInsert>) => {
         const now = Date.now();
         const defaults: EventInsert = {
             title: "Test Event",
