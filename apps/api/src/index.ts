@@ -93,20 +93,20 @@ export const createApp = async (variables?: Variables) => {
     return app;
 };
 
-const app = await createApp();
-
 /**
  * Type of the application, which can be used to get a type-safe client
  */
-export type App = typeof app;
+export type App = Awaited<ReturnType<typeof createApp>>;
 
 // Seed DB with default values if necessary
-if (env.SEED_DB) {
+if (env.SEED_DB && env.NODE_ENV !== "test") {
     import("./db/seed").then(({ default: seed }) => seed());
 }
 
 if (env.NODE_ENV !== "test") {
     await setupWebhooks();
+
+    const app = await createApp();
 
     serve(
         {
