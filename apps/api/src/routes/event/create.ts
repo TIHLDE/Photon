@@ -5,8 +5,9 @@ import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
 import { eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "../../middleware/auth";
+import { requirePermission } from "../../middleware/permission";
 import { createEventSchema } from "../../lib/event/schema";
+import { requireAuth } from "~/middleware/auth";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -31,6 +32,7 @@ export const createRoute = new Hono().post(
     describeRoute({
         tags: ["events"],
         summary: "Create event",
+        description: "Create a new event. Requires 'events:create' permission.",
         requestBody: {
             content: {
                 "application/json": { schema: createBodySchemaOpenAPI.schema },
@@ -43,14 +45,16 @@ export const createRoute = new Hono().post(
                     "application/json": { schema: resolver(eventSchema) },
                 },
             },
+            403: {
+                description: "Forbidden - Missing events:create permission",
+            },
         },
     }),
     requireAuth,
-    // requirePermissions("events:create"),
+    requirePermission("events:create"),
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");
-        // const userId = c.get("user").id;
         const userId = c.get("user").id;
 
         await db.transaction(async (tx) => {

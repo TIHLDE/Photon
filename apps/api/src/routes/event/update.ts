@@ -5,17 +5,37 @@ import db, { type DbSchema, schema } from "~/db";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { HTTPException } from "hono/http-exception";
 import { eq, type InferInsertModel } from "drizzle-orm";
-import { requireAuth } from "../../middleware/auth";
+import { requireOwnershipOrAnyPermission } from "../../middleware/ownership";
 import { updateEventSchema } from "../../lib/event/schema";
+import { requireAuth } from "~/middleware/auth";
 
 const updateBodySchemaOpenAPI =
     await resolver(updateEventSchema).toOpenAPISchema();
+
+/**
+ * Check if a user is the creator/owner of an event.
+ */
+const isEventOwner = async (
+    eventId: string,
+    userId: string,
+): Promise<boolean> => {
+    const event = await db
+        .select()
+        .from(schema.event)
+        .where(eq(schema.event.id, eventId))
+        .limit(1)
+        .then((res) => res[0]);
+
+    return event?.createdByUserId === userId;
+};
 
 export const updateRoute = new Hono().put(
     "/:id",
     describeRoute({
         tags: ["events"],
         summary: "Update event",
+        description:
+            "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
         requestBody: {
             content: {
                 "application/json": { schema: updateBodySchemaOpenAPI.schema },
@@ -25,10 +45,18 @@ export const updateRoute = new Hono().put(
             200: {
                 description: "Updated",
             },
+            403: {
+                description:
+                    "Forbidden - You must be the event creator or have events:update/events:manage permission",
+            },
             404: { description: "Not found" },
         },
     }),
     requireAuth,
+    requireOwnershipOrAnyPermission("id", isEventOwner, [
+        "events:update",
+        "events:manage",
+    ]),
     validator("json", updateEventSchema),
     async (c) => {
         const body = c.req.valid("json");
