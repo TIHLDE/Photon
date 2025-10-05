@@ -16,6 +16,9 @@
         "format": {
             "dependsOn": ["^format"]
         },
+        "test:watch": {
+            "dependsOn": ["^test:watch"]
+        },
         "test": {
             "dependsOn": ["^test"]
         },
