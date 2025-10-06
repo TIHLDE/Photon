@@ -39,7 +39,7 @@ jobs:
           HOST: ${{ vars.HOST }}
           USER: ${{ vars.USER }}
           WORKING_DIR: ${{ vars.WORKING_DIR }}
-          VAULTWARDEN_ITEM_ID: ${{ vars.VAULTWARDEN_ITEM_ID }}
+          VAULTWARDEN_ITEM_ID: ${{ secrets.VAULTWARDEN_ITEM_ID }}
         run: |
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
