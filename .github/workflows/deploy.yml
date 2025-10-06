@@ -34,7 +34,7 @@ jobs:
           PROXY_HOST: ${{ vars.PROXY_HOST }}
           HOST: ${{ vars.HOST }}
           USER: ${{ vars.USER }}
-          WORKING_DIR: ${{ vars.WORKING_DIR }}
+          WORKING_DIRECTORY: ${{ vars.WORKING_DIRECTORY }}
           VAULTWARDEN_ITEM_ID: ${{ secrets.VAULTWARDEN_ITEM_ID }}
           ENV_RELATIVE_PATH: ${{ vars.ENV_RELATIVE_PATH }}
         run: |
@@ -43,9 +43,9 @@ jobs:
           ssh -o StrictHostKeyChecking=no -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
           set -euo pipefail
           sudo -i
-          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIR/$ENV_RELATIVE_PATH
-          chmod 0600 $WORKING_DIR/$ENV_RELATIVE_PATH
-          cd $WORKING_DIR
+          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIRECTORY/$ENV_RELATIVE_PATH
+          chmod 0600 $WORKING_DIRECTORY/$ENV_RELATIVE_PATH
+          cd $WORKING_DIRECTORY
           git fetch
           git reset --hard origin/main
           pnpm prod:up
