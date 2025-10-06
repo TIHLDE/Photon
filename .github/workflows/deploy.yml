@@ -1,12 +1,15 @@
 name: Deploy to Drift
 
 on:
+  push:
+    branches:
+      - main
   # workflow_run:
   #   workflows: ["Check Code Quality"]
   #   types:
   #     - completed
-  branches:
-    - main
+  #   branches:
+  #     - main
 
 jobs:
   deploy:
