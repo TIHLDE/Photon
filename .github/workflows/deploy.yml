@@ -7,7 +7,6 @@ on:
       - completed
     branches:
       - main
-
 jobs:
   deploy:
     name: Deploy
@@ -37,16 +36,17 @@ jobs:
           USER: ${{ vars.USER }}
           WORKING_DIR: ${{ vars.WORKING_DIR }}
           VAULTWARDEN_ITEM_ID: ${{ secrets.VAULTWARDEN_ITEM_ID }}
+          ENV_RELATIVE_PATH: ${{ vars.ENV_RELATIVE_PATH }}
         run: |
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
           ssh -o StrictHostKeyChecking=no -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
           set -euo pipefail
           sudo -i
-          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIR/.env
+          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIR/$ENV_RELATIVE_PATH
+          chmod 0600 $WORKING_DIR/$ENV_RELATIVE_PATH
           cd $WORKING_DIR
           git fetch
           git reset --hard origin/main
-          chmod 0600 .env
           pnpm prod:up
           ENDSSH
