@@ -5,6 +5,7 @@ import z from "zod";
 import { schema } from "~/db";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
+import { registrationKey } from "../../../lib/event/resolve-registration";
 
 const deleteRegistrationSchema = z.object({});
 
@@ -30,7 +31,16 @@ export const deleteEventRegistrationRoute = route().delete(
     }),
     requireAuth,
     async (c) => {
-        const { db } = c.get("ctx");
+        const { db, redis } = c.get("ctx");
+
+        // Cleanup pending registration if any
+        await redis.del(
+            registrationKey({
+                eventId: c.req.param("eventId"),
+                userId: c.get("user").id,
+            }),
+        );
+
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(
