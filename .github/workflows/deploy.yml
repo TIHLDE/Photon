@@ -43,7 +43,7 @@ jobs:
         run: |
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
-          ssh -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
+          ssh -o StrictHostKeyChecking=no -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
           set -euo pipefail
           sudo -i
           ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIR/.env
