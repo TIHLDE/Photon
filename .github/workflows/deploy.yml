@@ -33,38 +33,20 @@ jobs:
           chmod 600 ~/.ssh/key
           ssh-keyscan -H $PROXY_HOST >> ~/.ssh/known_hosts
 
-      - name: Install BitWarden CLI
-        run: |
-          npm install -g @bitwarden/cli
-
-      - name: Log in to VaultWarden using BitWarden CLI
-        env:
-          BW_CLIENTID: ${{ secrets.VAULTWARDEN_CLIENT_ID }}
-          BW_CLIENTSECRET: ${{ secrets.VAULTWARDEN_CLIENT_SECRET }}
-          VAULTWARDEN_URL: ${{ vars.VAULTWARDEN_URL }}
-        run: |
-          bw config server $VAULTWARDEN_URL
-          bw login --apikey
-
-      - name: Get environment variables from VaultWarden
-        env:
-          VAULTWARDEN_MASTER_PASSWORD: ${{ secrets.VAULTWARDEN_MASTER_PASSWORD }}
-          VAULTWARDEN_ITEM_ID: ${{ vars.VAULTWARDEN_ITEM_ID }}
-        run: echo $VAULTWARDEN_MASTER_PASSWORD | bw get item $VAULTWARDEN_ITEM_ID | jq -M -r ".notes" > .env
-
       - name: Deploy to OpenStack server
         env:
           PROXY_HOST: ${{ vars.PROXY_HOST }}
           HOST: ${{ vars.HOST }}
           USER: ${{ vars.USER }}
           WORKING_DIR: ${{ vars.WORKING_DIR }}
+          VAULTWARDEN_ITEM_ID: ${{ vars.VAULTWARDEN_ITEM_ID }}
         run: |
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
-          scp -J $USER@$PROXY_HOST .env $USER@$HOST:$WORKING_DIR/.env
           ssh -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
           set -euo pipefail
           sudo -i
+          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIR/.env
           cd $WORKING_DIR
           git fetch
           git reset --hard origin/main
