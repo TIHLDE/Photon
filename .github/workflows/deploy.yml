@@ -1,18 +1,18 @@
 name: Deploy to Drift
 
 on:
-  workflow_run:
-    workflows: ["Check Code Quality"]
-    types:
-      - completed
-    branches:
-      - main
+  # workflow_run:
+  #   workflows: ["Check Code Quality"]
+  #   types:
+  #     - completed
+  branches:
+    - main
 
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     concurrency:
       group: deployment_lock
       cancel-in-progress: false
