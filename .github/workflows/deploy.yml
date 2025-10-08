@@ -1,17 +1,14 @@
 name: Deploy to Drift
 
 on:
-  workflow_run:
-    workflows: ["Check Code Quality"]
-    types:
-      - completed
+  push:
     branches:
       - main
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     concurrency:
       group: deployment_lock
       cancel-in-progress: false
@@ -35,18 +32,40 @@ jobs:
           HOST: ${{ vars.HOST }}
           USER: ${{ vars.USER }}
           WORKING_DIRECTORY: ${{ vars.WORKING_DIRECTORY }}
+          VAULTWARDEN_MASTER_PASSWORD: ${{ secrets.VAULTWARDEN_MASTER_PASSWORD }}
           VAULTWARDEN_ITEM_ID: ${{ secrets.VAULTWARDEN_ITEM_ID }}
           ENV_RELATIVE_PATH: ${{ vars.ENV_RELATIVE_PATH }}
         run: |
+          # Start ssh-agent and add the SSH key
           eval $(ssh-agent -s)
           ssh-add ~/.ssh/key
+
+          # SSH into the server via the proxy and run deployment commands
           ssh -o StrictHostKeyChecking=no -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
+
+          # WE ARE NOW ON THE REMOTE SERVER
+
+          # If any command fails, the script will exit immediately with a non-zero status
           set -euo pipefail
-          sudo -i
-          ./get-env.sh $VAULTWARDEN_ITEM_ID $WORKING_DIRECTORY/$ENV_RELATIVE_PATH
-          chmod 0600 $WORKING_DIRECTORY/$ENV_RELATIVE_PATH
-          cd $WORKING_DIRECTORY
-          git fetch
-          git reset --hard origin/main
-          pnpm prod:up
+
+          # Run the deployment commands as root
+          sudo bash -c '
+
+            # Exit immediately if a command exits with a non-zero status
+            set -euo pipefail
+
+            # Load environment variables from Vaultwarden
+            cd
+            ./get-env.sh "$VAULTWARDEN_MASTER_PASSWORD" "$VAULTWARDEN_ITEM_ID" "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
+
+            # Change permissions of .env to be readable only by the owner
+            chmod 0600 "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
+
+            # Navigate to the working directory, pull the latest code, and run the deployment command
+            cd "$WORKING_DIRECTORY"
+            git fetch
+            git reset --hard origin/main
+            pnpm prod:up
+          '
+
           ENDSSH
