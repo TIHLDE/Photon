@@ -492,6 +492,33 @@ export async function createRole(
     return result;
 }
 
+export async function createTestingRole(
+    ctx: AppContext,
+    roleData: {
+        name: string;
+        description?: string;
+        permissions?: string[];
+        position: number;
+    },
+): Promise<typeof role.$inferSelect> {
+    const db = ctx.db;
+    const [newRole] = await db
+        .insert(role)
+        .values({
+            name: roleData.name,
+            description: roleData.description,
+            position: roleData.position,
+            permissions: roleData.permissions ?? [],
+        })
+        .returning();
+
+    if (!newRole) {
+        throw new Error("Failed to create testing role");
+    }
+
+    return newRole;
+}
+
 /**
  * Delete a role.
  * User must be able to manage the role (have higher position number).
