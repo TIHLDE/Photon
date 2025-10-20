@@ -1,11 +1,11 @@
 import type { UserWithRole } from "better-auth/plugins";
 import type { TestUtilContext } from ".";
+import type { Permission } from "../../../../lib/auth/rbac/permissions";
 import {
     assignUserRole,
     createRole,
     createTestingRole,
 } from "../../../../lib/auth/rbac/roles";
-import type { Permission } from "../../../../lib/auth/rbac/permissions";
 
 export const createGiveUserPermissions =
     (ctx: TestUtilContext) =>
