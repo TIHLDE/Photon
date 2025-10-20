@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
 import { schema } from "../../db";
+import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
+import { requireOwnershipOrPermission } from "../../middleware/ownership";
 
 export const deleteRoute = route().delete(
     "/:eventId",
@@ -10,10 +12,14 @@ export const deleteRoute = route().delete(
         tags: ["events"],
         summary: "Delete an event",
         description:
-            "Delete an event by its ID. This action is irreversible and will remove all associated data, including registrations and feedback.",
+            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.",
         responses: {
             200: {
                 description: "Event successfully deleted",
+            },
+            403: {
+                description:
+                    "Forbidden - You must be the event creator or have events:delete permission",
             },
             404: {
                 description:
@@ -22,6 +28,7 @@ export const deleteRoute = route().delete(
         },
     }),
     requireAuth,
+    requireOwnershipOrPermission("eventId", isEventOwner, "events:delete"),
     async (c) => {
         const { eventId } = c.req.param();
         const { db } = c.get("ctx");
@@ -43,6 +50,13 @@ export const deleteRoute = route().delete(
             await tx.delete(schema.event).where(eq(schema.event.id, eventId));
         });
 
-        return c.json({ message: "Event successfully deleted" }, 200);
+        return c.json(
+            {
+                message: c.get("isResourceOwner")
+                    ? "Your event has been successfully deleted"
+                    : "Event successfully deleted",
+            },
+            200,
+        );
     },
 );

@@ -1,7 +1,7 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type DbSchema, createDb } from "~/db";
 import { type AuthInstance, createAuth } from "./auth";
-import { type BullQueueManager, createQueueManager } from "./cache/bull";
+import { QueueManager } from "./cache/queue";
 import { type RedisClient, createRedisClient } from "./cache/redis";
 import { env } from "./env";
 
@@ -15,7 +15,7 @@ export interface AppContext {
     /** Redis client instance */
     redis: RedisClient;
     /** Queue manager for creating/accessing Bull queues */
-    queueManager: BullQueueManager;
+    queue: QueueManager;
     /** BetterAuth instance */
     auth: AuthInstance;
 }
@@ -27,13 +27,13 @@ export interface AppContext {
 export async function createAppContext(): Promise<AppContext> {
     const db = createDb({ connectionString: env.DATABASE_URL });
     const redis = await createRedisClient(env.REDIS_URL);
-    const queueManager = createQueueManager(env.REDIS_URL);
     const auth = createAuth({ db, redis });
+    const queue = new QueueManager(env.REDIS_URL);
 
     return {
         db,
         redis,
-        queueManager,
+        queue,
         auth,
     };
 }
