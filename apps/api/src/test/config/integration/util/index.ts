@@ -5,6 +5,7 @@ import { createSetupEventCategories } from "./create-setup-event-categories";
 import { createCreateTestEvent } from "./create-test-event";
 import { createCreateTestUser } from "./create-test-user";
 import { createGetClientForUser } from "./get-client-for-user";
+import { createGiveUserPermissions } from "./give-user-permission";
 import { createSetupGroups } from "./setup-groups";
 
 export type TestUtilContext = TestAppContext & {
@@ -19,5 +20,6 @@ export const createTestUtils = (ctx: TestUtilContext) => {
         setupEventCategories: createSetupEventCategories(ctx),
         createTestEvent: createCreateTestEvent(ctx),
         createPendingRegistration: createCreatePendingRegistration(ctx),
+        giveUserPermissions: createGiveUserPermissions(ctx),
     };
 };
