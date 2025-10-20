@@ -3,7 +3,7 @@ import { z } from "zod";
 
 if (process.env.NODE_ENV !== "test") {
     config({
-        path: "../../.env",
+        path: "./.env",
     });
 }
 
