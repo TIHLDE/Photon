@@ -48,6 +48,9 @@ export const createApp = async (variables?: Variables) => {
         ctx = variables.ctx;
     } else {
         ctx = await createAppContext();
+
+        // Setup cron jobs
+        // TODO
     }
 
     const app = new Hono<{ Variables: Variables }>()
