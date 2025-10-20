@@ -1,12 +1,15 @@
 import { createMiddleware } from "hono/factory";
-import { auth, type Session, type User } from "~/lib/auth";
+import type { Session, User } from "~/lib/auth";
+import type { AppContext } from "../lib/ctx";
 
 export const session = createMiddleware<{
     Variables: {
         user: User | null;
         session: Session | null;
+        ctx: AppContext;
     };
 }>(async (c, next) => {
+    const { auth } = c.get("ctx");
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
     if (!session) {

@@ -1,3 +1,5 @@
+import { aP } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
+import type { AppContext } from "~/lib/ctx";
 import { getUserPermissions } from "./roles";
 
 /**
@@ -103,10 +105,11 @@ export function getPermissionsForScope(scope: keyof Registry): string[] {
  * }
  */
 export async function hasPermission(
+    ctx: AppContext,
     userId: string,
     permissionName: string,
 ): Promise<boolean> {
-    const permissions = await getUserPermissions(userId);
+    const permissions = await getUserPermissions(ctx, userId);
     const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
     const permSet = new Set(valid);
 
@@ -126,12 +129,13 @@ export async function hasPermission(
  * }
  */
 export async function hasAnyPermission(
+    ctx: AppContext,
     userId: string,
     permissionNames: string[],
 ): Promise<boolean> {
     if (permissionNames.length === 0) return false;
 
-    const permissions = await getUserPermissions(userId);
+    const permissions = await getUserPermissions(ctx, userId);
     const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
     const permSet = new Set(valid);
 
@@ -151,12 +155,13 @@ export async function hasAnyPermission(
  * }
  */
 export async function hasAllPermissions(
+    ctx: AppContext,
     userId: string,
     permissionNames: string[],
 ): Promise<boolean> {
     if (permissionNames.length === 0) return false;
 
-    const permissions = await getUserPermissions(userId);
+    const permissions = await getUserPermissions(ctx, userId);
     const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
     const permSet = new Set(valid);
 

@@ -1,0 +1,110 @@
+# Photon - NOK Backend
+
+Backend system for NOK built as a TypeScript monorepo using Turborepo.
+
+## Project Structure
+
+This is a **pnpm workspace + Turborepo monorepo** with the following structure:
+
+```
+/
+├── apps/
+│   ├── api/          # Hono API server (Node.js)
+│   └── web/          # Next.js web application
+├── packages/
+│   ├── tsconfig/     # Shared TypeScript configurations
+│   └── lepton-migration/  # Database migration utilities
+└── infra/            # Infrastructure & Docker configs
+```
+
+## Tech Stack
+
+- **API**: Hono (Node.js server), better-auth (authentication), Drizzle ORM (database)
+- **Web**: Next.js
+- **Database**: PostgreSQL with Drizzle ORM
+- **Queue**: Bull (Redis-based job queue)
+- **Email**: React Email + Nodemailer
+- **Validation**: Zod
+- **Testing**: Vitest
+- **Linting/Formatting**: Biome
+- **Build**: tsup (API), Turbo for orchestration
+- **Package Manager**: pnpm v8.15.6
+- **Node**: >= 18
+
+## Common Commands
+
+### Development
+- `pnpm dev` - Start all apps in dev mode
+- `pnpm dev:fresh` - Start with fresh cache
+- `pnpm build` - Build all packages
+- `pnpm typecheck` - Type check all packages
+- `pnpm lint` - Lint with Biome
+
+### Database (Drizzle ORM)
+- `pnpm db:push` - Push schema changes to DB
+- `pnpm db:migrate` - Run migrations
+- `pnpm db:studio` - Open Drizzle Studio
+- `pnpm db:generate` - Generate migrations
+- `pnpm db:seed` - Seed database
+- `pnpm db:reset` - Reset database
+
+### Production
+- `pnpm prod:up` - Start production containers
+- `pnpm prod:down` - Stop production containers
+
+## TypeScript Configuration Strategy
+
+Use presets from `packages/tsconfig/` for consistency:
+
+- **base.json** - Shared strict baseline
+- **node/node.json** - Scripts/CLIs run directly by Node/tsx
+- **node/bundler.json** - Node code built with bundler (tsup/esbuild)
+- **node/library.json** - Node libraries consumed via bundlers
+- **web/nextjs.json** - Next.js apps
+- **web/react-library.json** - React component libraries
+- **web/web-library.json** - Browser libraries (no React)
+
+## Code Style & Conventions
+
+- **Linting/Formatting**: Use Biome (`biome.json` at root)
+- **Module System**: ESM (type: "module" in package.json)
+- **Validation**: Use Zod schemas
+- **API Routes**: Hono router with OpenAPI documentation via hono-openapi
+- **Auth**: better-auth library (`src/lib/auth/index.ts`)
+- **Email Templates**: React Email components in `apps/api/src/lib/email/template/`
+
+## API Structure (`apps/api/`)
+
+```
+src/
+├── db/           # Drizzle schemas and database connection
+├── lib/          # Shared utilities (auth, email, etc.)
+├── middleware/   # Hono middleware
+├── routes/       # API route handlers
+└── index.ts      # App entry point
+```
+
+Key features:
+- PostgreSQL via Drizzle ORM
+- better-auth for authentication
+- Bull queues for background jobs
+- React Email for email templates
+- Scalar API reference for docs
+
+## Important Files
+
+- `.env` / `.env.example` - Environment variables
+- `turbo.json` - Turborepo pipeline configuration
+- `pnpm-workspace.yaml` - pnpm workspace definition
+- `biome.json` - Biome linter/formatter config
+
+## When Writing Code
+
+1. **Always use existing TypeScript presets** from `packages/tsconfig/`
+2. **Follow Biome rules** - code is automatically formatted
+3. **Use Zod for validation** schemas
+4. **Prefer Drizzle ORM** for database queries
+5. **Use Hono patterns** for API routes
+6. **Write tests with Vitest** when adding features
+7. **Update OpenAPI docs** when changing API routes
+

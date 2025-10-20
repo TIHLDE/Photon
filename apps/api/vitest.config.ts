@@ -6,6 +6,12 @@ export default defineConfig({
         coverage: {
             provider: "v8",
         },
+        fileParallelism: true,
+        sequence: {
+            concurrent: false,
+        },
+        maxWorkers: 1, // 2 containers per worker
+        maxConcurrency: 1,
     },
     resolve: {
         alias: {

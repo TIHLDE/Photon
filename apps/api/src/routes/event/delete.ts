@@ -1,28 +1,12 @@
-import { Hono } from "hono";
-import db, { schema } from "../../db";
 import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
+import { schema } from "../../db";
+import { route } from "../../lib/route";
+import { requireAuth } from "../../middleware/auth";
 import { requireOwnershipOrPermission } from "../../middleware/ownership";
-import { requireAuth } from "~/middleware/auth";
+import { isEventOwner } from "../../lib/event/middleware";
 
-/**
- * Check if a user is the creator/owner of an event.
- */
-const isEventOwner = async (
-    eventId: string,
-    userId: string,
-): Promise<boolean> => {
-    const event = await db
-        .select()
-        .from(schema.event)
-        .where(eq(schema.event.id, eventId))
-        .limit(1)
-        .then((res) => res[0]);
-
-    return event?.createdByUserId === userId;
-};
-
-export const deleteRoute = new Hono().delete(
+export const deleteRoute = route().delete(
     "/:eventId",
     describeRoute({
         tags: ["events"],
@@ -47,7 +31,7 @@ export const deleteRoute = new Hono().delete(
     requireOwnershipOrPermission("eventId", isEventOwner, "events:delete"),
     async (c) => {
         const { eventId } = c.req.param();
-        const isOwner = c.get("isResourceOwner");
+        const { db } = c.get("ctx");
 
         // Check if the event exists
         const event = await db
@@ -68,7 +52,7 @@ export const deleteRoute = new Hono().delete(
 
         return c.json(
             {
-                message: isOwner
+                message: c.get("isResourceOwner")
                     ? "Your event has been successfully deleted"
                     : "Event successfully deleted",
             },

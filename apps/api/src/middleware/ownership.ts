@@ -8,11 +8,13 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import { hasPermission, hasAnyPermission } from "~/lib/auth/rbac/permissions";
+import type { AppContext } from "~/lib/ctx";
 
 type Variables = {
     user: User | null;
     session: Session | null;
     isResourceOwner?: boolean;
+    ctx: AppContext;
 };
 
 /**
@@ -26,6 +28,7 @@ type Variables = {
  * };
  */
 export type ResourceOwnershipChecker = (
+    ctx: AppContext,
     resourceId: string,
     userId: string,
 ) => Promise<boolean>;
@@ -65,11 +68,19 @@ export const requireOwnershipOrPermission = (
         }
 
         // Check ownership first
-        const isOwner = await ownershipChecker(resourceId, user.id);
+        const isOwner = await ownershipChecker(
+            c.get("ctx"),
+            resourceId,
+            user.id,
+        );
 
         if (!isOwner) {
             // Not owner, check permission
-            const hasPerm = await hasPermission(user.id, permissionName);
+            const hasPerm = await hasPermission(
+                c.get("ctx"),
+                user.id,
+                permissionName,
+            );
             if (!hasPerm) {
                 throw new HTTPException(403, {
                     message:
@@ -117,11 +128,19 @@ export const requireOwnershipOrAnyPermission = (
         }
 
         // Check ownership first
-        const isOwner = await ownershipChecker(resourceId, user.id);
+        const isOwner = await ownershipChecker(
+            c.get("ctx"),
+            resourceId,
+            user.id,
+        );
 
         if (!isOwner) {
             // Not owner, check any permission
-            const hasPerm = await hasAnyPermission(user.id, permissionNames);
+            const hasPerm = await hasAnyPermission(
+                c.get("ctx"),
+                user.id,
+                permissionNames,
+            );
             if (!hasPerm) {
                 throw new HTTPException(403, {
                     message:

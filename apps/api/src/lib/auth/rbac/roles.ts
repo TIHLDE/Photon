@@ -14,13 +14,18 @@
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
-import db from "~/db";
 import { role, userRole } from "~/db/schema";
+import type { AppContext } from "~/lib/ctx";
+import type { DbTransaction } from "~/db";
 
 /**
  * Get all role names assigned to a user.
  */
-export async function getUserRoles(userId: string): Promise<string[]> {
+export async function getUserRoles(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const db = ctx.db;
     const rows = await db
         .select({ name: role.name })
         .from(userRole)
@@ -33,7 +38,8 @@ export async function getUserRoles(userId: string): Promise<string[]> {
 /**
  * Get a role by its name.
  */
-export async function getRoleByName(roleName: string) {
+export async function getRoleByName(ctx: AppContext, roleName: string) {
+    const db = ctx.db;
     const [r] = await db.select().from(role).where(eq(role.name, roleName));
     return r ?? null;
 }
@@ -41,7 +47,8 @@ export async function getRoleByName(roleName: string) {
 /**
  * Get a role by its ID.
  */
-export async function getRoleById(roleId: number) {
+export async function getRoleById(ctx: AppContext, roleId: number) {
+    const db = ctx.db;
     const [r] = await db.select().from(role).where(eq(role.id, roleId));
     return r ?? null;
 }
@@ -50,7 +57,8 @@ export async function getRoleById(roleId: number) {
  * Get all roles from database, ordered by position (best first).
  * Higher position = better role, so descending order.
  */
-export async function getAllRoles() {
+export async function getAllRoles(ctx: AppContext) {
+    const db = ctx.db;
     return await db.select().from(role).orderBy(sql`${role.position} DESC`);
 }
 
@@ -58,9 +66,11 @@ export async function getAllRoles() {
  * Check if a user has a specific role.
  */
 export async function userHasRole(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<boolean> {
+    const db = ctx.db;
     const rows = await db
         .select({ name: role.name })
         .from(userRole)
@@ -74,10 +84,12 @@ export async function userHasRole(
  * Check if a user has any of the specified roles.
  */
 export async function userHasAnyRole(
+    ctx: AppContext,
     userId: string,
     roleNames: string[],
 ): Promise<boolean> {
     if (roleNames.length === 0) return false;
+    const db = ctx.db;
     const rows = await db
         .select({ name: role.name })
         .from(userRole)
@@ -93,12 +105,14 @@ export async function userHasAnyRole(
  * Does nothing if already assigned (upsert behavior).
  */
 export async function assignUserRole(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<void> {
-    const r = await getRoleByName(roleName);
+    const r = await getRoleByName(ctx, roleName);
     if (!r) throw new Error(`Role not found: ${roleName}`);
 
+    const db = ctx.db;
     await db
         .insert(userRole)
         .values({ userId, roleId: r.id })
@@ -110,12 +124,14 @@ export async function assignUserRole(
  * Does nothing if role doesn't exist or isn't assigned.
  */
 export async function removeUserRole(
+    ctx: AppContext,
     userId: string,
     roleName: string,
 ): Promise<void> {
-    const r = await getRoleByName(roleName);
+    const r = await getRoleByName(ctx, roleName);
     if (!r) return;
 
+    const db = ctx.db;
     await db
         .delete(userRole)
         .where(and(eq(userRole.userId, userId), eq(userRole.roleId, r.id)));
@@ -124,10 +140,14 @@ export async function removeUserRole(
 /**
  * Get all user IDs that have a specific role.
  */
-export async function getRoleUserIds(roleName: string): Promise<string[]> {
-    const r = await getRoleByName(roleName);
+export async function getRoleUserIds(
+    ctx: AppContext,
+    roleName: string,
+): Promise<string[]> {
+    const r = await getRoleByName(ctx, roleName);
     if (!r) return [];
 
+    const db = ctx.db;
     const rows = await db
         .select({ userId: userRole.userId })
         .from(userRole)
@@ -140,7 +160,11 @@ export async function getRoleUserIds(roleName: string): Promise<string[]> {
  * Get all permissions for a user (from all their roles).
  * Returns raw array with potential duplicates - should be deduplicated by caller.
  */
-export async function getUserPermissions(userId: string): Promise<string[]> {
+export async function getUserPermissions(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const db = ctx.db;
     const rows = await db
         .select({ permissions: role.permissions })
         .from(userRole)
@@ -157,10 +181,11 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
  * Throws if role doesn't exist.
  */
 export async function assignRolePermissions(
+    ctx: AppContext,
     roleName: string,
     permissionNames: string[],
 ): Promise<void> {
-    const r = await getRoleByName(roleName);
+    const r = await getRoleByName(ctx, roleName);
     if (!r) throw new Error(`Role not found: ${roleName}`);
 
     if (permissionNames.length === 0) return;
@@ -168,6 +193,7 @@ export async function assignRolePermissions(
     const existing = r.permissions ?? [];
     const merged = [...new Set([...existing, ...permissionNames])];
 
+    const db = ctx.db;
     await db.update(role).set({ permissions: merged }).where(eq(role.id, r.id));
 }
 
@@ -177,12 +203,14 @@ export async function assignRolePermissions(
  * Throws if role doesn't exist.
  */
 export async function setRolePermissions(
+    ctx: AppContext,
     roleName: string,
     permissionNames: string[],
 ): Promise<void> {
-    const r = await getRoleByName(roleName);
+    const r = await getRoleByName(ctx, roleName);
     if (!r) throw new Error(`Role not found: ${roleName}`);
 
+    const db = ctx.db;
     await db
         .update(role)
         .set({ permissions: permissionNames })
@@ -198,7 +226,7 @@ export async function setRolePermissions(
  */
 async function shiftRolesUp(
     fromPosition: number,
-    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    tx: DbTransaction,
 ): Promise<void> {
     // Get all roles at or above this position
     const rolesToShift = await tx
@@ -224,7 +252,7 @@ async function shiftRolesUp(
  */
 async function shiftRolesDown(
     deletedPosition: number,
-    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    tx: DbTransaction,
 ): Promise<void> {
     const rolesToShift = await tx
         .select()
@@ -251,7 +279,7 @@ async function shiftRolesDown(
 async function shiftRolesDownInRange(
     fromPosition: number,
     toPosition: number,
-    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    tx: DbTransaction,
 ): Promise<void> {
     // Get all roles in range [fromPosition, toPosition)
     const rolesToShift = await tx
@@ -285,7 +313,7 @@ async function shiftRolesDownInRange(
 async function shiftRolesUpInRange(
     fromPosition: number,
     toPosition: number,
-    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    tx: DbTransaction,
 ): Promise<void> {
     // Get all roles in range [toPosition, fromPosition)
     const rolesToShift = await tx
@@ -331,13 +359,14 @@ async function shiftRolesUpInRange(
  * // Note: Roles shift automatically to maintain unique positions
  */
 export async function reorderRole(
+    ctx: AppContext,
     userId: string,
     roleId: number,
     newPosition: number,
 ): Promise<void> {
     const [userPosition, targetRole] = await Promise.all([
-        getUserHighestRolePosition(userId),
-        getRoleById(roleId),
+        getUserHighestRolePosition(ctx, userId),
+        getRoleById(ctx, roleId),
     ]);
 
     if (userPosition === null) {
@@ -369,6 +398,7 @@ export async function reorderRole(
         return;
     }
 
+    const db = ctx.db;
     await db.transaction(async (tx) => {
         if (newPosition > oldPosition) {
             // Moving up in hierarchy (higher position number)
@@ -415,6 +445,7 @@ export async function reorderRole(
  * // New role gets position 4, admin shifts to 5
  */
 export async function createRole(
+    ctx: AppContext,
     creatorUserId: string,
     roleData: {
         name: string;
@@ -422,7 +453,10 @@ export async function createRole(
         permissions?: string[];
     },
 ): Promise<typeof role.$inferSelect> {
-    const creatorPosition = await getUserHighestRolePosition(creatorUserId);
+    const creatorPosition = await getUserHighestRolePosition(
+        ctx,
+        creatorUserId,
+    );
 
     if (creatorPosition === null) {
         throw new Error("User has no roles and cannot create roles");
@@ -432,6 +466,7 @@ export async function createRole(
     const newPosition = creatorPosition;
 
     // Use transaction to ensure atomic shift + insert
+    const db = ctx.db;
     const result = await db.transaction(async (tx) => {
         // Shift all roles at creator's position and above up by 1 (increment)
         await shiftRolesUp(newPosition, tx);
@@ -465,12 +500,13 @@ export async function createRole(
  * @param roleId - Role to delete
  */
 export async function deleteRole(
+    ctx: AppContext,
     userId: string,
     roleId: number,
 ): Promise<void> {
     const [userPosition, targetRole] = await Promise.all([
-        getUserHighestRolePosition(userId),
-        getRoleById(roleId),
+        getUserHighestRolePosition(ctx, userId),
+        getRoleById(ctx, roleId),
     ]);
 
     if (userPosition === null) {
@@ -486,6 +522,7 @@ export async function deleteRole(
         throw new Error("Cannot delete this role - insufficient hierarchy");
     }
 
+    const db = ctx.db;
     await db.transaction(async (tx) => {
         // delete the role
         await tx.delete(role).where(eq(role.id, roleId));
@@ -508,8 +545,10 @@ export async function deleteRole(
  * - root (position 5) - highest
  */
 export async function getUserHighestRolePosition(
+    ctx: AppContext,
     userId: string,
 ): Promise<number | null> {
+    const db = ctx.db;
     const rows = await db
         .select({ position: role.position })
         .from(userRole)
@@ -532,12 +571,13 @@ export async function getUserHighestRolePosition(
  * - moderator (position 3) CANNOT manage another moderator (position 3) ✗ (siblings)
  */
 export async function userCanManageUser(
+    ctx: AppContext,
     managerId: string,
     targetUserId: string,
 ): Promise<boolean> {
     const [managerPosition, targetPosition] = await Promise.all([
-        getUserHighestRolePosition(managerId),
-        getUserHighestRolePosition(targetUserId),
+        getUserHighestRolePosition(ctx, managerId),
+        getUserHighestRolePosition(ctx, targetUserId),
     ]);
 
     if (managerPosition === null || targetPosition === null) return false;

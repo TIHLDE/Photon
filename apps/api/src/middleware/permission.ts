@@ -11,10 +11,12 @@ import {
     hasAnyPermission,
     hasAllPermissions,
 } from "~/lib/auth/rbac/permissions";
+import type { AppContext } from "../lib/ctx";
 
 type Variables = {
     user: User | null;
     session: Session | null;
+    ctx: AppContext;
 };
 
 /**
@@ -34,7 +36,11 @@ export const requirePermission = (permissionName: string) =>
             });
         }
 
-        const hasPerm = await hasPermission(user.id, permissionName);
+        const hasPerm = await hasPermission(
+            c.get("ctx"),
+            user.id,
+            permissionName,
+        );
 
         if (!hasPerm) {
             throw new HTTPException(403, {
@@ -62,7 +68,11 @@ export const requireAnyPermission = (...permissions: string[]) =>
             });
         }
 
-        const hasPerm = await hasAnyPermission(user.id, permissions);
+        const hasPerm = await hasAnyPermission(
+            c.get("ctx"),
+            user.id,
+            permissions,
+        );
 
         if (!hasPerm) {
             throw new HTTPException(403, {
@@ -90,7 +100,11 @@ export const requireAllPermissions = (...permissions: string[]) =>
             });
         }
 
-        const hasPerms = await hasAllPermissions(user.id, permissions);
+        const hasPerms = await hasAllPermissions(
+            c.get("ctx"),
+            user.id,
+            permissions,
+        );
 
         if (!hasPerms) {
             throw new HTTPException(403, {

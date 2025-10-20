@@ -1,0 +1,23 @@
+{
+    "mcpServers": {
+        "photon": {
+            "type": "http",
+            "url": "http://localhost:4000/api/mcp"
+        },
+        "postgres": {
+            "command": "docker",
+            "args": [
+                "run",
+                "-i",
+                "--rm",
+                "-e",
+                "DATABASE_URI",
+                "crystaldba/postgres-mcp",
+                "--access-mode=unrestricted"
+            ],
+            "env": {
+                "DATABASE_URI": "postgresql://postgres:password@localhost:5432/photon_db"
+            }
+        }
+    }
+}

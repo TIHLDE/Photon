@@ -21,10 +21,12 @@ import {
     userHasAnyRole,
     getUserHighestRolePosition,
 } from "~/lib/auth/rbac/roles";
+import type { AppContext } from "../lib/ctx";
 
 type Variables = {
     user: User | null;
     session: Session | null;
+    ctx: AppContext;
 };
 
 /**
@@ -45,7 +47,7 @@ export const requireRole = (roleName: string) =>
             });
         }
 
-        const hasRole = await userHasRole(user.id, roleName);
+        const hasRole = await userHasRole(c.get("ctx"), user.id, roleName);
 
         if (!hasRole) {
             throw new HTTPException(403, {
@@ -74,7 +76,7 @@ export const requireAnyRole = (...roles: string[]) =>
             });
         }
 
-        const hasRole = await userHasAnyRole(user.id, roles);
+        const hasRole = await userHasAnyRole(c.get("ctx"), user.id, roles);
 
         if (!hasRole) {
             throw new HTTPException(403, {
@@ -112,7 +114,10 @@ export const requireRoleManagement = (
             });
         }
 
-        const managerPos = await getUserHighestRolePosition(user.id);
+        const managerPos = await getUserHighestRolePosition(
+            c.get("ctx"),
+            user.id,
+        );
         if (managerPos === null) {
             throw new HTTPException(403, {
                 message: "Insufficient role hierarchy",

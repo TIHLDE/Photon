@@ -1,22 +1,35 @@
 import { createClient } from "redis";
 import { env } from "~/lib/env";
 
-type Client = ReturnType<typeof createClient>;
+export type RedisClient = ReturnType<typeof createClient>;
 
-let client: Client | null = null;
-let connectPromise: Promise<Client> | null = null;
+/**
+ * Factory function to create and connect a Redis client.
+ * Use this for dependency injection and testing.
+ */
+export async function createRedisClient(url: string): Promise<RedisClient> {
+    const client = createClient({ url });
+    client.on("error", (err) => {
+        console.error("Redis client error:", err);
+    });
+    await client.connect();
+    await client.ping();
+    return client;
+}
 
-async function connect(): Promise<Client> {
+/**
+ * Singleton Redis client for backward compatibility.
+ * Prefer using createRedisClient() and dependency injection in new code.
+ */
+let client: RedisClient | null = null;
+let connectPromise: Promise<RedisClient> | null = null;
+
+async function connect(): Promise<RedisClient> {
     if (client) return client;
     if (connectPromise) return connectPromise;
 
     connectPromise = (async () => {
-        const c = createClient({ url: env.REDIS_URL });
-        c.on("error", (err) => {
-            console.error("Redis client error:", err);
-        });
-        await c.connect();
-        await c.ping();
+        const c = await createRedisClient(env.REDIS_URL);
         client = c;
         return c;
     })();
@@ -24,8 +37,6 @@ async function connect(): Promise<Client> {
     return connectPromise;
 }
 
-export async function getRedis(): Promise<Client> {
+export async function getRedis(): Promise<RedisClient> {
     return connect();
 }
-
-export type RedisClientType = Client;
