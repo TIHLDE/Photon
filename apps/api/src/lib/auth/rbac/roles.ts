@@ -14,9 +14,9 @@
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
+import type { DbTransaction } from "~/db";
 import { role, userRole } from "~/db/schema";
 import type { AppContext } from "~/lib/ctx";
-import type { DbTransaction } from "~/db";
 
 /**
  * Get all role names assigned to a user.

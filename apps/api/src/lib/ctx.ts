@@ -1,9 +1,9 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type DbSchema, createDb } from "~/db";
 import { type AuthInstance, createAuth } from "./auth";
+import { QueueManager } from "./cache/queue";
 import { type RedisClient, createRedisClient } from "./cache/redis";
 import { env } from "./env";
-import { QueueManager } from "./cache/queue";
 
 /**
  * Application context containing all external service dependencies.

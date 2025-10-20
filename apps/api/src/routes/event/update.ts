@@ -3,12 +3,12 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
+import { isEventOwner } from "../../lib/event/middleware";
 import { updateEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 import { requireOwnershipOrAnyPermission } from "../../middleware/ownership";
-import { isEventOwner } from "../../lib/event/middleware";
 
 const updateBodySchemaOpenAPI =
     await resolver(updateEventSchema).toOpenAPISchema();

@@ -14,8 +14,8 @@ import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
 import { createRedisClient } from "~/lib/cache/redis";
 import type { AppContext } from "~/lib/ctx";
-import { createTestUtils } from "./util";
 import { QueueManager } from "../../../lib/cache/queue";
+import { createTestUtils } from "./util";
 
 /**
  * `AppContext` with added shadow variables for doing the grunt-work of running the tests

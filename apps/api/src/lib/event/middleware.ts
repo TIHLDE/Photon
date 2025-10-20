@@ -1,6 +1,6 @@
+import { eq } from "drizzle-orm";
 import { schema } from "~/db";
 import type { AppContext } from "~/lib/ctx";
-import { eq } from "drizzle-orm";
 
 /**
  * Check if a user is the creator/owner of an event.

@@ -7,9 +7,9 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import {
-    hasPermission,
-    hasAnyPermission,
     hasAllPermissions,
+    hasAnyPermission,
+    hasPermission,
 } from "~/lib/auth/rbac/permissions";
 import type { AppContext } from "../lib/ctx";
 

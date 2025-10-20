@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
 import { schema } from "../../db";
+import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 import { requireOwnershipOrPermission } from "../../middleware/ownership";
-import { isEventOwner } from "../../lib/event/middleware";
 
 export const deleteRoute = route().delete(
     "/:eventId",

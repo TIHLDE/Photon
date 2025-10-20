@@ -12,14 +12,14 @@
  * For access control, use: requirePermission() from permission.ts
  */
 
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
-import type { Context } from "hono";
 import {
-    userHasRole,
-    userHasAnyRole,
     getUserHighestRolePosition,
+    userHasAnyRole,
+    userHasRole,
 } from "~/lib/auth/rbac/roles";
 import type { AppContext } from "../lib/ctx";
 
