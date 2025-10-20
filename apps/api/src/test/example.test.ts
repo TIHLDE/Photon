@@ -17,7 +17,7 @@ integrationTest(
         expect(value).toBe("test-value");
 
         // Use the test queue manager
-        const queue = ctx.queueManager.getQueue("test-queue");
+        const queue = ctx.queue.getQueue("registration");
 
         expect(queue).toBeDefined();
         expect(typeof queue.add).toBe("function");

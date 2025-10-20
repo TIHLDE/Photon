@@ -57,166 +57,61 @@ export default async () => {
         ]);
     }
 
-    // Seed RBAC defaults
-    const [adminRole] = await db
+    // Seed RBAC defaults - Create default roles with hierarchy
+    // NOTE: These positions are ONLY for initial seeding!
+    // In production, use createRole() which automatically positions roles.
+    // Positions should be contiguous (1, 2, 3, 4...) where higher = better role.
+    // The shifting logic handles insertions automatically!
+    const { PERMISSIONS } = await import("../lib/auth/rbac/permissions");
+
+    // Root role - highest in hierarchy (position 5)
+    await db
         .insert(schema.role)
-        .values({ name: "admin", description: "Administrator", position: 1 })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsCreate] = await db
-        .insert(schema.permission)
-        .values({ name: "events:create", description: "Create events" })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsUpdate] = await db
-        .insert(schema.permission)
-        .values({ name: "events:update", description: "Update events" })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsDelete] = await db
-        .insert(schema.permission)
-        .values({ name: "events:delete", description: "Delete events" })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsRegistrationsList] = await db
-        .insert(schema.permission)
         .values({
-            name: "events:registrations:list",
-            description: "List event registrations",
+            name: "root",
+            description: "System administrator with full access",
+            position: 5, // Manually set ONLY for seeding - highest number = highest role
+            permissions: Array.from(PERMISSIONS),
         })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsRegistrationsCheckin] = await db
-        .insert(schema.permission)
+        .onConflictDoNothing();
+
+    // Admin role - second highest (position 4)
+    await db
+        .insert(schema.role)
         .values({
-            name: "events:registrations:checkin",
-            description: "Check-in users to events",
+            name: "admin",
+            description: "Administrator with most permissions",
+            position: 4, // Just below root
+            permissions: Array.from(PERMISSIONS).filter((p) => p !== "root"),
         })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsFeedbackList] = await db
-        .insert(schema.permission)
+        .onConflictDoNothing();
+
+    // Moderator role (position 2)
+    await db
+        .insert(schema.role)
         .values({
-            name: "events:feedback:list",
-            description: "List feedback for events",
+            name: "moderator",
+            description: "Moderator with limited permissions",
+            position: 2, // Below admin
+            permissions: [
+                "events:view",
+                "events:create",
+                "users:view",
+                "roles:view",
+            ],
         })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsPaymentsList] = await db
-        .insert(schema.permission)
+        .onConflictDoNothing();
+
+    // Member role - lowest in hierarchy (position 1)
+    await db
+        .insert(schema.role)
         .values({
-            name: "events:payments:list",
-            description: "List payments for events",
+            name: "member",
+            description: "Regular member with basic permissions",
+            position: 1, // Lowest role
+            permissions: ["events:view"],
         })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsPaymentsCreate] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:payments:create",
-            description: "Create event payment records",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsPaymentsGet] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:payments:get",
-            description: "Get a single payment",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsPaymentsUpdate] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:payments:update",
-            description: "Update a payment record",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsPaymentsDelete] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:payments:delete",
-            description: "Delete a payment record",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsRegistrationsGet] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:registrations:get",
-            description: "Get a single registration",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsRegistrationsCreate] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:registrations:create",
-            description: "Admin create registration for a user",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsRegistrationsDelete] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:registrations:delete",
-            description: "Admin delete registration",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsFeedbackGet] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:feedback:get",
-            description: "Get a single feedback",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsFeedbackUpdate] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:feedback:update",
-            description: "Update feedback",
-        })
-        .onConflictDoNothing()
-        .returning();
-    const [eventsFeedbackDelete] = await db
-        .insert(schema.permission)
-        .values({
-            name: "events:feedback:delete",
-            description: "Delete feedback",
-        })
-        .onConflictDoNothing()
-        .returning();
-    if (adminRole) {
-        for (const p of [
-            eventsCreate,
-            eventsUpdate,
-            eventsDelete,
-            eventsRegistrationsList,
-            eventsRegistrationsCheckin,
-            eventsRegistrationsGet,
-            eventsRegistrationsCreate,
-            eventsRegistrationsDelete,
-            eventsFeedbackList,
-            eventsFeedbackGet,
-            eventsFeedbackUpdate,
-            eventsFeedbackDelete,
-            eventsPaymentsList,
-            eventsPaymentsCreate,
-            eventsPaymentsGet,
-            eventsPaymentsUpdate,
-            eventsPaymentsDelete,
-        ]) {
-            if (!p) continue;
-            await db
-                .insert(schema.rolePermission)
-                .values({ roleId: adminRole.id, permissionId: p.id })
-                .onConflictDoNothing();
-        }
-    }
+        .onConflictDoNothing();
 
     const users = await db
         .select()

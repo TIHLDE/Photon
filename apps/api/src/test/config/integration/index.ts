@@ -8,15 +8,14 @@ import {
 } from "@testcontainers/redis";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-import { afterAll, onTestFinished, test } from "vitest";
+import { afterAll, test } from "vitest";
 import { createDb } from "~/db";
 import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
-import { createQueueManager } from "~/lib/cache/bull";
 import { createRedisClient } from "~/lib/cache/redis";
 import type { AppContext } from "~/lib/ctx";
+import { QueueManager } from "../../../lib/cache/queue";
 import { createTestUtils } from "./util";
-import { Container } from "@react-email/components";
 
 /**
  * `AppContext` with added shadow variables for doing the grunt-work of running the tests
@@ -111,7 +110,7 @@ async function createTestAppContext(): Promise<TestAppContext> {
     const { container: redisContainer, redis, redisUrl } = redisVals;
 
     // Setup Bull queues
-    const queueManager = createQueueManager(redisUrl);
+    const queue = new QueueManager(redisUrl);
 
     // Setup auth
     const auth = createAuth({
@@ -121,7 +120,7 @@ async function createTestAppContext(): Promise<TestAppContext> {
 
     const defaultContext: AppContext = {
         db: newDb,
-        queueManager,
+        queue,
         redis,
         auth,
     };

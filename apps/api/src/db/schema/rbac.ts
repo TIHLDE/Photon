@@ -4,7 +4,6 @@ import {
     primaryKey,
     serial,
     text,
-    timestamp,
     varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
@@ -17,29 +16,9 @@ export const role = pgTable("role", {
     name: varchar("name", { length: 64 }).notNull().unique(),
     description: varchar("description", { length: 256 }),
     position: integer("position").notNull().default(1000),
+    permissions: text("permissions").array(),
     ...timestamps,
 });
-
-export const permission = pgTable("permission", {
-    id: serial("id").primaryKey(),
-    name: varchar("name", { length: 128 }).notNull().unique(),
-    description: varchar("description", { length: 256 }),
-    ...timestamps,
-});
-
-export const rolePermission = pgTable(
-    "role_permission",
-    {
-        roleId: integer("role_id")
-            .notNull()
-            .references(() => role.id, { onDelete: "cascade" }),
-        permissionId: integer("permission_id")
-            .notNull()
-            .references(() => permission.id, { onDelete: "cascade" }),
-        ...timestamps,
-    },
-    (t) => [primaryKey({ columns: [t.roleId, t.permissionId] })],
-);
 
 export const userRole = pgTable(
     "user_role",

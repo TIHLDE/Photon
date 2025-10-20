@@ -7,6 +7,7 @@ import { createEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
+import { requirePermission } from "../../middleware/permission";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -31,6 +32,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["events"],
         summary: "Create event",
+        description: "Create a new event. Requires 'events:create' permission.",
         requestBody: {
             content: {
                 "application/json": { schema: createBodySchemaOpenAPI.schema },
@@ -43,10 +45,13 @@ export const createRoute = route().post(
                     "application/json": { schema: resolver(eventSchema) },
                 },
             },
+            403: {
+                description: "Forbidden - Missing events:create permission",
+            },
         },
     }),
     requireAuth,
-    // requirePermissions("events:create"),
+    requirePermission("events:create"),
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");
