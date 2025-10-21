@@ -5,15 +5,10 @@
             "url": "http://localhost:4000/api/mcp"
         },
         "postgres": {
-            "command": "docker",
+            "command": "sh",
             "args": [
-                "run",
-                "-i",
-                "--rm",
-                "-e",
-                "DATABASE_URI",
-                "crystaldba/postgres-mcp",
-                "--access-mode=unrestricted"
+                "-c",
+                "docker rm -f postgres-mcp 2>/dev/null; docker run -i --rm --name postgres-mcp -e DATABASE_URI=\"$DATABASE_URI\" crystaldba/postgres-mcp --access-mode=unrestricted"
             ],
             "env": {
                 "DATABASE_URI": "postgresql://postgres:password@localhost:5432/photon_db"
