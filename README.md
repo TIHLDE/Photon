@@ -1,63 +1,58 @@
 # Photon
 
-Ny backend for Kvark - skrevet i TypeScript.
+Ny backend for Kvark - en moderne, typesikker API-server bygget med TypeScript og Hono.
 
-![Static Badge](https://img.shields.io/badge/Language-Typescript-blue?logo=typescript)
-![Static Badge](https://img.shields.io/badge/Website-NextJS-black?logo=nextdotjs)
-![Static Badge](https://img.shields.io/badge/Server-Hono-orange?logo=hono)
+![Static Badge](https://img.shields.io/badge/Language-TypeScript-blue?logo=typescript)
+![Static Badge](https://img.shields.io/badge/Framework-Hono-orange?logo=hono)
+![Static Badge](https://img.shields.io/badge/Database-PostgreSQL-blue?logo=postgresql)
 
-## 🏗️ Arkitektur
+## 📖 Om prosjektet
 
-### Prosjektstruktur
+Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, type-sikkerhet og utvikleropplevelse. Serveren tilbyr autentisering via Feide, hendelseshåndtering, betalingsintegrasjon med Vipps MobilePay, og mye mer.
 
-```
-photon/
-├── apps/
-│   ├── api/              # Hono API-server
-│   └── web/              # Next.js webapplikasjon
-├── packages/
-│   ├── tsconfig/         # Delte TypeScript-konfigurasjoner
-│   └── lepton-migration/ # Databasemigrasjonsverktøy
-└── infra/
-    └── docker/           # Docker Compose-oppsett
-```
+## ✨ Hovedfunksjoner
 
-### Teknologistack
+- **🔐 Autentisering**: Better Auth med Feide OAuth2-integrasjon for norsk utdanningssektor
+- **📅 Hendelseshåndtering**: Komplett API for arrangementer, påmelding og administrasjon
+- **💳 Betalingsintegrasjon**: Vipps MobilePay-integrasjon med automatisk webhook-oppsett
+- **📧 E-postsystem**: React Email-baserte maler med lokal forhåndsvisning
+- **⚡ Jobbkø**: BullMQ med Redis for asynkron behandling
+- **📊 OpenAPI-dokumentasjon**: Automatisk generert API-dokumentasjon med Scalar
+- **🧪 Testing**: Vitest med Testcontainers for integrasjonstester
 
-#### Backend (API)
-- **Framework**: Hono v4 - minimalistisk og raskt web-rammeverk
-- **Database**: PostgreSQL 17 med Drizzle ORM
-- **Cache/Kø**: Redis 7.4 med Bull for jobbhåndtering
-- **Autentisering**: Better Auth med Feide OAuth2-integrasjon
-- **Validering**: Zod v4 for typesikker skjemavalidering
-- **API-dokumentasjon**: OpenAPI med Scalar
+## 🛠️ Teknologistack
 
-#### Frontend (Web)
-- **Framework**: Next.js med React 19
-- **Styling**: (sjekk webappkonfigurasjon for detaljer)
+### Backend
+- **Hono v4** - Minimalistisk og lynrask web-rammeverk
+- **PostgreSQL 17** - Relasjonsdatabase
+- **Drizzle ORM** - Type-sikker database-toolkit
+- **Redis 7.4** - Cache og meldingskø
+- **BullMQ** - Robust jobbkøhåndtering
+- **Better Auth** - Moderne autentiseringsløsning
+- **Zod v4** - Type-sikker validering
 
-#### DevOps & Verktøy
-- **Monorepo**: Turborepo for rask byggeprosess og caching
-- **Pakkebehandler**: pnpm v8
-- **Kodeformatering**: Biome for linting og formatering
-- **Testing**: Vitest med testcontainers for integrasjonstester
-- **Bygging**: tsup med esbuild
-- **E-postutvikling**: Mailpit for lokal e-posttesting
+### Utviklingsverktøy
+- **TypeScript 5.9** - Statisk typing
+- **Biome** - Rask linting og formatering
+- **Vitest** - Enhetstesting og integrasjonstesting
+- **tsup** - Rask bundling med esbuild
+- **pnpm** - Effektiv pakkebehandling
+- **Docker Compose** - Lokal utviklingsmiljø
 
-## 🚀 Komme i gang
+## 🚀 Kom i gang
 
 ### Forutsetninger
 
 - **Node.js** ≥18
-- **pnpm** v8.15.6 eller nyere
-- **Docker** og Docker Compose (for lokal utvikling)
+- **pnpm** ≥8.15.6
+- **Docker** og **Docker Compose**
 
 ### Installasjon
 
 1. **Klon repositoryet**
    ```bash
    git clone <repository-url>
-   cd photon
+   cd Photon
    ```
 
 2. **Installer avhengigheter**
@@ -66,147 +61,96 @@ photon/
    ```
 
 3. **Konfigurer miljøvariabler**
+
+   Kopier eksempelfilen og rediger verdiene:
    ```bash
    cp .env.example .env
    ```
 
-   Rediger `.env` og fyll inn nødvendige verdier:
-   - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` - databaseinnlogging
-   - `FEIDE_CLIENT_ID`, `FEIDE_CLIENT_SECRET` - Feide OAuth-legitimasjon
-   - `DATABASE_URL` - PostgreSQL-tilkoblingsstreng
+   Nødvendige miljøvariabler:
+   ```env
+   # Database
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=password
+   POSTGRES_DB=photon_db
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/photon_db
 
-4. **Start Docker-tjenester**
+   # Feide OAuth
+   FEIDE_CLIENT_ID=<din-feide-client-id>
+   FEIDE_CLIENT_SECRET=<din-feide-client-secret>
+
+   # Seeding (valgfritt)
+   SEED_DB=true
+   ```
+4. **Start utviklingsmiljøet**
+   ```bash
+   pnpm docker:dev
+   ```
+
+   Dette starter automatisk:
+   - PostgreSQL på port 5432
+   - Redis på port 6379
+   - Mailsink på port 1025
+
+5. **Migrer databasen**
+   ```bash
+   pnpm db:push
+   ```
+
+   Dette dytter det nåværende skjemaet til databasen
+  
+6. **Kjør serveren**
    ```bash
    pnpm dev
    ```
-   Dette starter automatisk:
-   - PostgreSQL-database (port 5432)
-   - Redis-server (port 6379)
-   - Mailpit e-postserver (port 8025 for web UI, 1025 for SMTP)
-   - Databaseskjema pushes automatisk
 
-### Utvikling
+   Dette starter:
+   - API-server på `http://localhost:4000/api`
+   - Epost-klient på `http://localhost:8025`
 
+## 📦 Prosjektstruktur
+
+```
+Photon/
+├── src/
+│   ├── db/                  # Database-skjemaer og konfigurering
+│   │   └── schema/          # Drizzle-skjemadefinisjoner
+│   ├── lib/                 # Delte biblioteker og hjelpere
+│   │   ├── auth/            # Autentiseringslogikk og RBAC
+│   │   ├── cache/           # Redis cache-funksjoner
+│   │   ├── email/           # E-postmaler og sending
+│   │   └── event/           # Hendelseslogikk
+│   ├── routes/              # API-ruter
+│   │   └── event/           # Hendelsesrelaterte endpoints
+│   ├── middleware/          # Hono-middleware
+│   ├── test/                # Test-utilities og konfigurering
+│   └── index.ts             # Hovedapplikasjonsfil
+├── docker-compose.dev.yml   # Utviklingsmiljø
+├── docker-compose.prod.yml  # Produksjonsmiljø
+├── Dockerfile               # Container-definisjon
+├── drizzle.config.ts        # Drizzle ORM-konfigurasjon
+├── tsup.config.ts           # Build-konfigurasjon
+└── vitest.config.ts         # Test-konfigurasjon
+```
+
+## 🎯 Utviklingskommandoer
+
+### Generelt
 ```bash
-# Start alle applikasjoner i dev-modus
+# Start utviklingsserver (med watch-modus)
 pnpm dev
-
-# Start med ren cache
-pnpm dev:fresh
-
-# Kjør tester
-pnpm test
-
-# Kjør tester i watch-modus
-pnpm test:watch
-
-# Linting og formatering
-pnpm lint
-pnpm lint:fix
-pnpm format
-
-# Typekontroll
-pnpm typecheck
 
 # Bygg for produksjon
 pnpm build
+
+# Start produksjonsserver
+pnpm start
+
+# Typekontroll
+pnpm typecheck
 ```
 
-## 🗄️ Database
-
-### Vanlige databasekommandoer
-
-```bash
-# Push skjemaendringer til database
-pnpm db:push
-
-# Generer migrasjoner
-pnpm db:generate
-
-# Kjør migrasjoner
-pnpm db:migrate
-
-# Åpne Drizzle Studio (database GUI)
-pnpm db:studio
-
-# Formater skjemafiler
-pnpm db:format
-
-# Tilbakestill database
-pnpm db:reset
-
-# Seed database med testdata
-pnpm db:seed
-```
-
-### Databasemigrasjoner
-
-Prosjektet bruker Drizzle ORM for databasehåndtering. Skjemaer defineres i TypeScript og migrasjoner genereres automatisk.
-
-## 📧 E-postutvikling
-
-E-postmaler utvikles med React Email og kan forhåndsvises lokalt:
-
-```bash
-cd apps/api
-pnpm email
-```
-
-Dette starter en utviklingsserver på `http://localhost:4001` hvor du kan forhåndsvise og teste e-postmaler.
-
-I utviklingsmiljø fanges alle utgående e-poster opp av Mailpit. Åpne `http://localhost:8025` for å se sendte e-poster.
-
-## 🔐 Autentisering
-
-Prosjektet bruker Better Auth med Feide-integrasjon for autentisering. Feide er en norsk føderasjonstjeneste for utdanningssektoren.
-
-For å konfigurere Feide:
-1. Registrer applikasjonen din hos Feide
-2. Legg til `FEIDE_CLIENT_ID` og `FEIDE_CLIENT_SECRET` i `.env`
-3. Konfigurer callback-URL i Feide Dashboard
-
-## 💳 Vipps-integrasjon
-
-Prosjektet inkluderer integrasjon med Vipps MobilePay for betalingshåndtering. Webhook-oppsett konfigureres automatisk ved oppstart.
-
-## 📦 TypeScript-konfigurasjon
-
-Prosjektet tilbyr gjenbrukbare TypeScript-konfigurasjoner for ulike bruksområder:
-
-### Basis
-- **`packages/tsconfig/base.json`**
-  Delt streng grunnkonfigurasjon. Alle andre preset utvider denne.
-
-### Node.js
-- **`packages/tsconfig/node/node.json`**
-  For skript, CLI-er eller servere som kjøres direkte av Node/tsx.
-  Bruker ESM med `NodeNext`-oppløsning og `types: ["node"]`.
-
-- **`packages/tsconfig/node/bundler.json`**
-  For Node-kode som bygges med en bundler (tsup/esbuild).
-  Bruker ESM med `Bundler`-oppløsning.
-
-- **`packages/tsconfig/node/library.json`**
-  For Node-biblioteker som konsumeres via bundlere.
-  Hvis du trenger `.d.ts`-output, legg til en `tsconfig.build.json` som aktiverer deklarasjonsutgivelse.
-
-### Web/Frontend
-- **`packages/tsconfig/web/nextjs.json`**
-  For Next.js-applikasjoner. Inkluderer `jsx: "preserve"` og Next TypeScript-plugin.
-
-- **`packages/tsconfig/web/react-library.json`**
-  For React-komponentbiblioteker. Bruker `jsx: "react-jsx"`.
-
-- **`packages/tsconfig/web/web-library.json`**
-  For nettleserbiblioteker som ikke bruker React.
-
-## 🧪 Testing
-
-Prosjektet bruker Vitest for testing med støtte for:
-- Enhetstester
-- Integrasjonstester med Testcontainers
-- Dekningsrapporter med `@vitest/coverage-v8`
-
+### Testing
 ```bash
 # Kjør alle tester
 pnpm test
@@ -215,38 +159,170 @@ pnpm test
 pnpm test:watch
 
 # Generer dekningsrapport
-cd apps/api
 pnpm coverage
 ```
 
-## 🐳 Docker & Produksjon
-
-### Lokal utvikling
-Docker Compose håndterer alle nødvendige tjenester for lokal utvikling:
-- PostgreSQL database
-- Redis cache/kø
-- Mailpit e-postserver
-
-### Produksjonsutrulling
+### Kodeformatering
 ```bash
+# Sjekk kode med Biome
+pnpm lint
+
+# Fiks automatiske problemer
+pnpm lint:fix
+
+# Formater kode
+pnpm format
+```
+
+### Database
+```bash
+# Push skjema til database (utvikling)
+pnpm db:push
+
+# Generer migrasjoner
+pnpm db:generate
+
+# Kjør migrasjoner
+pnpm db:migrate
+
+# Åpne Drizzle Studio
+pnpm db:studio
+
+# Sjekk migrasjonsstatus
+pnpm db:check
+
+# Slett migrasjon
+pnpm db:drop
+```
+
+### E-post
+```bash
+# Start React Email forhåndsvisning
+pnpm email
+```
+
+Åpner utviklingsserver på `http://localhost:4001` for å forhåndsvise e-postmaler.
+
+### Docker
+```bash
+# Start utviklingsmiljø
+pnpm docker:dev
+
+# Stopp utviklingsmiljø
+pnpm docker:dev:down
+
 # Start produksjonsmiljø
-pnpm prod:up
+pnpm docker:prod
 
 # Stopp produksjonsmiljø
-pnpm prod:down
+pnpm docker:prod:down
 ```
+
+## 🔐 Autentisering
+
+Photon bruker Better Auth med Feide-integrasjon for autentisering.
+
+Normalt sett trengs ikke feide for å benytte APIet, da vi også tilbyr autentisering via epost. Dersom du trenger Feide-credentials for testing, kan du be om dev-nøkler av repo-ansvarlig.
+
+### Oppsett av Feide
+
+For å benytte Feide trenger du følgende miljøvariabler:
+
+```
+FEIDE_CLIENT_ID="client_id ..."
+FEIDE_CLIENT_SECRET="client_secret ..."
+```
+
+### Rollehåndtering (RBAC)
+
+Photon inkluderer role-based access control (RBAC) i `src/lib/auth/rbac/` for finkornet tilgangskontroll.
+
+## 💳 Vipps-integrasjon
+
+Prosjektet har innebygd støtte for Vipps MobilePay. Webhooks konfigureres automatisk ved oppstart av serveren.
+
+Vipps-variabler trengs ikke for å kjøre serveren. Men om du ønsker å teste Vipps må du sette opp følgende miljøvariabler:
+```
+VIPPS_SUBSCRIPTION_KEY       = "subscription_key ..."
+VIPPS_CLIENT_ID              = "client_id ..."
+VIPPS_CLIENT_SECRET          = "client_secret ..."
+VIPPS_MERCHANT_SERIAL_NUMBER = "merchant_serial_number ..."
+VIPPS_TEST_MODE              = "true" # kjører mot test-api (du slipper å faktisk betale)
+```
+
+Du trenger også Vipps testing-appen og et fake mobilnummer. Du finner mer info på [Vipps sin dokumentasjon](https://developer.vippsmobilepay.com/docs/knowledge-base/test-environment/).
+
+## 📧 E-postutvikling
+
+E-postmaler utvikles med React Email og støtter full React-komponent-syntaks.
+
+```bash
+# Start forhåndsvisning
+pnpm email
+```
+
+Forhåndsvisning kjører på port 4001.
 
 ## 📚 API-dokumentasjon
 
-API-dokumentasjon genereres automatisk via OpenAPI og er tilgjengelig når API-serveren kjører:
-- **API Endpoint**: `http://localhost:3000/api`
-- **API-dokumentasjon**: Tilgjengelig via Scalar API Reference
+API-dokumentasjonen genereres automatisk fra OpenAPI-spesifikasjonen og er tilgjengelig når serveren kjører:
 
-## 🔧 Verktøy & Anbefalt oppsett
+- **API Base URL**: `http://localhost:4000/api`
+- **OpenAPI Schema**: `http://localhost:4000/openapi`
+- **Dokumentasjon**: `http://localhost:4000/docs`
 
-- **Editor**: VS Code med anbefalte extensions (sjekk `.vscode/`-mappen)
-- **Git Hooks**: Pre-commit hooks for linting og formatering
-- **Biome**: Rask linting og formatering på tvers av hele monorepoen
+Dokumentasjonen bruker Scalar API Reference og inkluderer både API-ruter og autentiseringsendpoints.
+
+## 🧪 Testing
+
+Photon bruker Vitest for testing med støtte for:
+
+- **Enhetstester** - Rask testing av individuelle funksjoner
+- **Integrasjonstester** - Testing med ekte database via Testcontainers
+- **Dekningsrapporter** - Generert med @vitest/coverage-v8
+
+### Kjøre tester
+
+```bash
+# Alle tester
+pnpm test
+
+# Watch-modus
+pnpm test:watch
+
+# Med dekning
+pnpm coverage
+```
+
+Testcontainers starter automatisk PostgreSQL- og Redis-containere for integrasjonstester, så sørg for at Docker kjører når du skal kjøre testene.
+
+Om du ønsker å kjøre flere tester parallellt (fordi du har en beefy PC), kan du justere følgende i `vitest.config.ts`:
+```ts
+maxWorkers: 1 // sett til hva du vil
+```
+
+## 🐳 Docker
+
+Prosjektet inkluderer Docker-oppsett for både utvikling og produksjon.
+
+### Utviklingsmiljø
+
+```bash
+pnpm docker:dev
+```
+
+Starter:
+- PostgreSQL 17
+- Redis 7.4
+- Mailpit
+
+### Produksjonsmiljø
+
+```bash
+pnpm docker:prod
+```
+
+Bygger og starter API-serveren sammen med alle nødvendige tjenester.
 
 ## 🤝 Bidra
 
@@ -256,16 +332,10 @@ API-dokumentasjon genereres automatisk via OpenAPI og er tilgjengelig når API-s
 4. Push til branchen (`git push origin feature/ny-funksjon`)
 5. Åpne en Pull Request
 
-Følg kodestandardene som håndheves av Biome, og sørg for at alle tester passerer før du sender inn PR.
+### Retningslinjer
 
-## 📄 Lisens
+- Følg kodestandardene håndhevet av Biome
+- Skriv tester for ny funksjonalitet
+- Oppdater dokumentasjonen ved behov
+- Sørg for at alle tester passerer før du sender inn PR
 
-[Spesifiser lisens her]
-
-## 📞 Kontakt & Support
-
-[Legg til kontaktinformasjon eller supportressurser]
-
----
-
-Bygget med ❤️ for norsk utdanningssektor
