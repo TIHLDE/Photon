@@ -29,7 +29,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check linting
-        run: pnpm lint --ui stream
+        run: pnpm lint
 
       - name: Check building
-        run: pnpm build --ui stream
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test

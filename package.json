@@ -1,36 +1,89 @@
 {
     "name": "photon",
     "private": true,
+    "type": "module",
     "scripts": {
-        "build": "turbo build",
-        "dev": "turbo dev",
-        "dev:fresh": "turbo dev:fresh",
-        "lint": "turbo lint",
-        "lint:fix": "turbo lint:fix",
-        "format": "turbo format",
-        "test": "turbo test",
-        "typecheck": "turbo typecheck",
-        "prod:up": "pnpm dlx turbo prod:up --ui stream",
-        "prod:down": "turbo prod:down",
-        "db:push": "turbo db:push",
-        "db:migrate": "turbo db:migrate",
-        "db:studio": "turbo db:studio",
-        "db:seed": "turbo db:seed",
-        "db:reset": "turbo db:reset",
-        "db:generate": "turbo db:generate",
-        "db:format": "turbo db:format"
+        "dev": "tsx watch src/index.ts",
+        "build": "tsup",
+        "start": "node dist/index.js",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "coverage": "vitest run --coverage",
+        "typecheck": "tsc --noEmit",
+        "lint": "npx biome check .",
+        "lint:fix": "npx biome check --write --unsafe .",
+        "format": "npx biome format --write .",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate",
+        "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
+        "db:drop": "drizzle-kit drop",
+        "db:check": "drizzle-kit check",
+        "auth:migrate": "npx @better-auth/cli@latest generate --config src/lib/auth/index.ts --output src/db/schema/auth.ts",
+        "email": "email dev --port 4001 --dir src/lib/email/template",
+        "docker:dev": "docker compose -f docker-compose.dev.yml up -d --wait",
+        "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
+        "docker:prod": "docker compose -f docker-compose.prod.yml up --build --force-recreate -d --wait",
+        "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
+    },
+    "dependencies": {
+        "@dotenvx/dotenvx": "^1.49.0",
+        "@hono/mcp": "^0.1.4",
+        "@hono/node-server": "^1.19.1",
+        "@hono/standard-validator": "^0.1.5",
+        "@react-email/components": "^0.5.2",
+        "@react-email/render": "^1.2.2",
+        "@scalar/hono-api-reference": "^0.9.16",
+        "@socotra/modelcontextprotocol-sdk": "^1.18.0",
+        "@vippsmobilepay/sdk": "^2.4.2",
+        "better-auth": "^1.3.26",
+        "bullmq": "^5.59.0",
+        "drizzle-orm": "^0.44.5",
+        "drizzle-seed": "^0.3.1",
+        "hono": "^4.9.7",
+        "hono-openapi": "^1.0.2",
+        "nodemailer": "^7.0.7",
+        "pg": "^8.16.3",
+        "react": "19.1.1",
+        "react-dom": "19.1.1",
+        "redis": "^5.8.2",
+        "zod": "^4.1.5"
     },
     "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@turbo/gen": "^2.4.4",
-        "turbo": "^2.3.0",
-        "typescript": "5.5.4"
+        "@react-email/preview-server": "^4.2.8",
+        "@testcontainers/postgresql": "^11.7.0",
+        "@testcontainers/redis": "^11.7.0",
+        "@types/bull": "^4.10.4",
+        "@types/node": "^24.3.1",
+        "@types/nodemailer": "^7.0.1",
+        "@types/pg": "^8.15.5",
+        "@types/react": "^19.1.12",
+        "@vitest/coverage-v8": "^3.2.4",
+        "drizzle-kit": "^0.31.4",
+        "react-email": "4.2.8",
+        "testcontainers": "^11.7.0",
+        "tsup": "^8.5.0",
+        "tsx": "^4.20.5",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
     },
     "packageManager": "pnpm@8.15.6",
     "engines": {
         "node": ">=18"
     },
-    "dependencies": {
-        "@heroicons/react": "^2.2.0"
+    "exports": {
+        "./auth": {
+            "types": "./src/lib/auth/index.ts",
+            "default": "./dist/index.js"
+        },
+        "./db": {
+            "types": "./src/db/index.ts",
+            "default": "./dist/index.js"
+        },
+        "./ctx": {
+            "types": "./src/lib/ctx.ts",
+            "default": "./dist/index.js"
+        }
     }
 }
