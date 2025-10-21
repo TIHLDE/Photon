@@ -1,5 +1,5 @@
 import { assert, describe, test } from "vitest";
-import { parseValidStudyPrograms } from "../../lib/auth/feide";
+import { parseValidStudyPrograms } from "~/lib/auth/feide";
 
 describe("feide parse valid study programs", () => {
     test("parses valid study programs", () => {
