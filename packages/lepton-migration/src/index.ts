@@ -1,8 +1,12 @@
 import * as mysql from "mysql2";
-import { auth } from "@photon/api/auth";
-import db, { schema } from "@photon/api/db";
+import { createAuth } from "photon/auth";
+import { createAppContext } from "photon/ctx";
+import db, { schema } from "photon/db";
 
 const dump = async () => {
+    const ctx = await createAppContext();
+    const auth = createAuth(ctx);
+
     // TODO use env vars
     const connection = mysql.createConnection({
         host: "localhost",

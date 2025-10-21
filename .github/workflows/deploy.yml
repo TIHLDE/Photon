@@ -68,7 +68,7 @@ jobs:
             cd "$WORKING_DIRECTORY"
             git fetch
             git reset --hard origin/main
-            pnpm prod:up
+            pnpm docker:prod
           '
 
           ENDSSH

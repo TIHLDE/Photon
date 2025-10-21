@@ -4,13 +4,13 @@ services:
   photon.tihlde.org:
     container_name: photon.tihlde.org
     build:
-      context: ../..
-      dockerfile: apps/api/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       no_cache: true
     restart: unless-stopped
     ports:
       - "4000:4000"
     env_file:
-      - "../../.env"
+      - ".env"
     extra_hosts: # Trengs for at docker containeren skal nå redis på host
       - "host.docker.internal:host-gateway"
