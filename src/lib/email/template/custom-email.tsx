@@ -9,8 +9,8 @@ import {
     Text,
 } from "@react-email/components";
 import React from "react";
-import type { EmailContentBlock } from "../schema";
 import { env } from "../../env";
+import type { EmailContentBlock } from "../schema";
 
 interface CustomEmailProps {
     subject: string;

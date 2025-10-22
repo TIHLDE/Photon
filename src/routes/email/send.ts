@@ -1,13 +1,13 @@
-import React from "react";
+import type { MiddlewareHandler } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import React from "react";
 import { z } from "zod";
-import { CustomEmail } from "~/lib/email/template/custom-email";
 import { enqueueEmail } from "~/lib/email";
-import { route } from "~/lib/route";
-import { env } from "~/lib/env";
-import type { MiddlewareHandler } from "hono";
 import { sendCustomEmailSchema } from "~/lib/email/schema";
+import { CustomEmail } from "~/lib/email/template/custom-email";
+import { env } from "~/lib/env";
+import { route } from "~/lib/route";
 
 const sendEmailResponseSchema = z.object({
     success: z.boolean(),
