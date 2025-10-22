@@ -299,14 +299,10 @@ export async function resolveRegistrationsForEvent(
                 (finalStatus === "waitlisted" && isPrioritized);
 
             if (shouldRecalculateWaitlist) {
-                const waitlisted =
-                    await tx.query.eventRegistration.findMany({
-                        where: (r, { and, eq }) =>
-                            and(
-                                eq(r.eventId, eventId),
-                                eq(r.status, "waitlisted"),
-                            ),
-                    });
+                const waitlisted = await tx.query.eventRegistration.findMany({
+                    where: (r, { and, eq }) =>
+                        and(eq(r.eventId, eventId), eq(r.status, "waitlisted")),
+                });
 
                 for (const wReg of waitlisted) {
                     const newPosition = await calculateWaitlistPosition(

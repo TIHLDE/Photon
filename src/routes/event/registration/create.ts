@@ -32,7 +32,8 @@ export const registerToEventRoute = route().post(
                 description: "Event not found",
             },
             409: {
-                description: "Event is not open for registration or user already registered",
+                description:
+                    "Event is not open for registration or user already registered",
             },
         },
     }),
@@ -58,11 +59,12 @@ export const registerToEventRoute = route().post(
         }
 
         // Check if user is already registered
-        const existingRegistration =
-            await db.query.eventRegistration.findFirst({
+        const existingRegistration = await db.query.eventRegistration.findFirst(
+            {
                 where: (reg, { and, eq }) =>
                     and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
-            });
+            },
+        );
 
         if (existingRegistration) {
             throw new HTTPException(409, {

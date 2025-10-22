@@ -12,15 +12,18 @@ function startRegistrationResolverCron(ctx: AppContext): void {
     cron.schedule("*/5 * * * * *", async () => {
         try {
             // Query database for distinct events with pending registrations
-            const eventsWithPending = await ctx.db.query.eventRegistration.findMany({
-                where: (reg, { eq }) => eq(reg.status, "pending"),
-                columns: {
-                    eventId: true,
-                },
-            });
+            const eventsWithPending =
+                await ctx.db.query.eventRegistration.findMany({
+                    where: (reg, { eq }) => eq(reg.status, "pending"),
+                    columns: {
+                        eventId: true,
+                    },
+                });
 
             // Get unique event IDs
-            const eventIds = new Set(eventsWithPending.map((reg) => reg.eventId));
+            const eventIds = new Set(
+                eventsWithPending.map((reg) => reg.eventId),
+            );
 
             // Resolve registrations for each event that has pending registrations
             if (eventIds.size > 0) {

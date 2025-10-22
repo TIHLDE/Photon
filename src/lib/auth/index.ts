@@ -13,8 +13,8 @@ import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-veri
 import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
 import ResetPasswordEmail from "~/lib/email/template/reset-password";
 import { env } from "~/lib/env";
-import { feidePlugin, syncFeideHook } from "./feide";
 import type { AppContext } from "../ctx";
+import { feidePlugin, syncFeideHook } from "./feide";
 
 export const createAuth = (ctx: Omit<AppContext, "auth">) =>
     betterAuth({
