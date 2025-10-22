@@ -3,7 +3,6 @@ import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { registrationKey } from "../../../lib/event/resolve-registration";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
 
@@ -31,15 +30,7 @@ export const deleteEventRegistrationRoute = route().delete(
     }),
     requireAuth,
     async (c) => {
-        const { db, redis } = c.get("ctx");
-
-        // Cleanup pending registration if any
-        await redis.del(
-            registrationKey({
-                eventId: c.req.param("eventId"),
-                userId: c.get("user").id,
-            }),
-        );
+        const { db } = c.get("ctx");
 
         const [deleted] = await db
             .delete(schema.eventRegistration)

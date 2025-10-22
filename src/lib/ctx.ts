@@ -3,6 +3,7 @@ import { type DbSchema, createDb } from "~/db";
 import { type AuthInstance, createAuth } from "./auth";
 import { QueueManager } from "./cache/queue";
 import { type RedisClient, createRedisClient } from "./cache/redis";
+import { type EmailTransporter, createEmailTransporter } from "./email";
 import { env } from "./env";
 
 /**
@@ -18,6 +19,8 @@ export interface AppContext {
     queue: QueueManager;
     /** BetterAuth instance */
     auth: AuthInstance;
+    /** Email transporter instance */
+    mailer: EmailTransporter;
 }
 
 /**
@@ -27,13 +30,15 @@ export interface AppContext {
 export async function createAppContext(): Promise<AppContext> {
     const db = createDb({ connectionString: env.DATABASE_URL });
     const redis = await createRedisClient(env.REDIS_URL);
-    const auth = createAuth({ db, redis });
     const queue = new QueueManager(env.REDIS_URL);
+    const mailer = createEmailTransporter();
+    const auth = createAuth({ db, redis, mailer, queue });
 
     return {
         db,
         redis,
         queue,
         auth,
+        mailer,
     };
 }
