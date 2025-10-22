@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { type AppContext, createAppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
+import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
 import { mcpRoute } from "./test/mcp";
@@ -39,6 +40,7 @@ export const createApp = async (variables?: Variables) => {
         .get("/", (c) => {
             return c.text("Healthy!");
         })
+        .route("/email", emailRoutes)
         .route("/event", eventRoutes)
         .route("/", mcpRoute);
 

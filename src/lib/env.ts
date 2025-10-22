@@ -71,6 +71,13 @@ const envSchema = z
             .string()
             .meta({ description: "MAIL From Email Address" })
             .default("no-reply@tihlde.org"),
+        EMAIL_API_KEY: z
+            .string()
+            .meta({
+                description:
+                    "API key for external services to send emails via the API",
+            })
+            .optional(),
 
         // VIPPS
         VIPPS_SUBSCRIPTION_KEY: z
@@ -140,6 +147,7 @@ const testEnvVariables: Env = {
     MAIL_HOST: "",
     MAIL_PASS: "",
     MAIL_USER: "",
+    EMAIL_API_KEY: "test-email-api-key",
     VIPPS_CLIENT_ID: "abc",
     VIPPS_CLIENT_SECRET: "abc",
     VIPPS_MERCHANT_SERIAL_NUMBER: "abc",
