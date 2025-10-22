@@ -2,6 +2,12 @@ import { and, eq } from "drizzle-orm";
 import { schema } from "../../db";
 import type { RegistrationStatus } from "../../db/schema/event";
 import type { AppContext } from "../ctx";
+import { sendEmail } from "../email";
+import { RegistrationBlockedEmail } from "../email/template/registration-blocked";
+import { RegistrationConfirmedEmail } from "../email/template/registration-confirmed";
+import { SwappedToWaitlistEmail } from "../email/template/swapped-to-waitlist";
+import { WaitlistPlacementEmail } from "../email/template/waitlist-placement";
+import { env } from "../env";
 import {
     calculateWaitlistPosition,
     findSwapTarget,
@@ -147,7 +153,20 @@ export async function resolveRegistrationsForEvent(
                 );
             await ctx.redis.del(key);
 
-            // TODO: Send notification to user with reason
+            // Send notification to user with reason
+            const user = await ctx.db.query.user.findFirst({
+                where: (user, { eq }) => eq(user.id, userId),
+            });
+            if (user) {
+                await sendEmail({
+                    to: user.email,
+                    subject: "Påmelding ikke godkjent",
+                    component: RegistrationBlockedEmail({
+                        eventName: event.title,
+                        reason,
+                    }),
+                });
+            }
             console.log(`User ${userId} blocked from registration: ${reason}`);
             continue;
         }
@@ -200,7 +219,7 @@ export async function resolveRegistrationsForEvent(
                 swappedUserId = swapTarget.userId;
                 finalStatus = "registered";
 
-                // TODO: Send notification to swapped user
+                // Send notification to swapped user (will calculate position later)
                 // TODO: Check if swapped user had paid
                 // TODO: If paid, issue refund via payment processor
                 console.log(
@@ -253,7 +272,36 @@ export async function resolveRegistrationsForEvent(
         // TODO:   Create payment record with expiration = now + paymentGracePeriodMinutes
         // TODO:   Start payment countdown timer
 
-        // TODO: Send notification to user based on finalStatus
+        // Send notification to user based on finalStatus
+        const user = await ctx.db.query.user.findFirst({
+            where: (user, { eq }) => eq(user.id, userId),
+        });
+
+        if (user) {
+            const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
+
+            if (finalStatus === "registered") {
+                await sendEmail({
+                    to: user.email,
+                    subject: `Du er påmeldt ${event.title}!`,
+                    component: RegistrationConfirmedEmail({
+                        eventName: event.title,
+                        eventUrl,
+                    }),
+                });
+            } else if (finalStatus === "waitlisted" && waitlistPosition) {
+                await sendEmail({
+                    to: user.email,
+                    subject: `Du er på venteliste for ${event.title}`,
+                    component: WaitlistPlacementEmail({
+                        eventName: event.title,
+                        eventUrl,
+                        position: waitlistPosition,
+                    }),
+                });
+            }
+        }
+
         console.log(
             `User ${userId} resolved to status: ${finalStatus}${waitlistPosition ? ` (position ${waitlistPosition})` : ""}`,
         );
@@ -290,6 +338,25 @@ export async function resolveRegistrationsForEvent(
                             eq(schema.eventRegistration.userId, wReg.userId),
                         ),
                     );
+
+                // Send email to swapped user
+                if (wReg.userId === swappedUserId && newPosition) {
+                    const swappedUser = await ctx.db.query.user.findFirst({
+                        where: (user, { eq }) => eq(user.id, wReg.userId),
+                    });
+                    if (swappedUser) {
+                        const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
+                        await sendEmail({
+                            to: swappedUser.email,
+                            subject: `Endring i din påmelding til ${event.title}`,
+                            component: SwappedToWaitlistEmail({
+                                eventName: event.title,
+                                eventUrl,
+                                position: newPosition,
+                            }),
+                        });
+                    }
+                }
             }
         }
 
