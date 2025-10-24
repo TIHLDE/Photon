@@ -1,4 +1,5 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
@@ -93,6 +94,12 @@ export const createApp = async (variables?: Variables) => {
                         title: "Auth",
                     },
                 ],
+            }),
+        )
+        .get(
+            "/static/*",
+            serveStatic({
+                root: "./",
             }),
         );
 
