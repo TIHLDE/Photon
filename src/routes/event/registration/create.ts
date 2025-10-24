@@ -2,15 +2,14 @@ import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "../../../db";
-import { registrationKey } from "../../../lib/event/resolve-registration";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
 
 const registerSchema = z.object({
-    registrationId: z
-        .string()
-        .meta({ description: "The ID of the registration" }),
+    eventId: z.string().uuid(),
+    userId: z.string(),
     status: z.literal("pending"),
+    createdAt: z.string(),
 });
 
 const registerSchemaOpenApi = await resolver(registerSchema).toOpenAPISchema();
@@ -33,7 +32,8 @@ export const registerToEventRoute = route().post(
                 description: "Event not found",
             },
             409: {
-                description: "Event is not open for registration",
+                description:
+                    "Event is not open for registration or user already registered",
             },
         },
     }),
@@ -41,7 +41,9 @@ export const registerToEventRoute = route().post(
     async (c) => {
         const now = new Date();
         const eventId = c.req.param("eventId");
-        const { db, redis } = c.get("ctx");
+        const userId = c.get("user").id;
+        const { db } = c.get("ctx");
+
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
         });
@@ -56,18 +58,32 @@ export const registerToEventRoute = route().post(
             });
         }
 
-        // Add to cache for resolving the registration
-        await redis.set(
-            registrationKey({
-                eventId: event.id,
-                userId: c.get("user").id,
-            }),
-            now.toISOString(),
+        // Check if user is already registered
+        const existingRegistration = await db.query.eventRegistration.findFirst(
+            {
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+            },
         );
 
-        return c.json({
-            createdAt: now.toISOString(),
+        if (existingRegistration) {
+            throw new HTTPException(409, {
+                message: "User is already registered for this event",
+            });
+        }
+
+        // Create pending registration in database
+        await db.insert(schema.eventRegistration).values({
+            eventId,
+            userId,
             status: "pending",
+        });
+
+        return c.json({
+            eventId,
+            userId,
+            status: "pending" as const,
+            createdAt: now.toISOString(),
         });
     },
 );

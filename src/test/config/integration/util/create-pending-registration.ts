@@ -1,6 +1,5 @@
 import type { TestUtilContext } from ".";
 import { schema } from "../../../../db";
-import { registrationKey } from "../../../../lib/event/resolve-registration";
 
 export const createCreatePendingRegistration =
     (ctx: TestUtilContext) => async (eventId: string, userId: string) => {
@@ -13,12 +12,6 @@ export const createCreatePendingRegistration =
         if (!reg) {
             throw new Error("Failed to create pending registration");
         }
-
-        // Add to Redis cache for resolver to pick up
-        await ctx.redis.set(
-            registrationKey({ eventId, userId }),
-            reg.createdAt.toISOString(),
-        );
 
         return reg;
     };

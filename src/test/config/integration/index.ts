@@ -116,6 +116,8 @@ async function createTestAppContext(): Promise<TestAppContext> {
     const auth = createAuth({
         db: newDb,
         redis,
+        queue,
+        mailer: undefined,
     });
 
     const defaultContext: AppContext = {
@@ -123,6 +125,7 @@ async function createTestAppContext(): Promise<TestAppContext> {
         queue,
         redis,
         auth,
+        mailer: undefined, // No email sending in tests
     };
 
     return {
@@ -159,6 +162,8 @@ async function resetDatabase(ctx: TestAppContext): Promise<void> {
     ctx.auth = createAuth({
         db: newDb,
         redis: ctx.redis,
+        queue: ctx.queue,
+        mailer: undefined,
     });
 }
 

@@ -1,4 +1,4 @@
-import { type Job, Queue, Worker } from "bullmq";
+import { type Job, Queue, Worker, type WorkerOptions } from "bullmq";
 
 type QueueName = "registration" | "email";
 
@@ -27,11 +27,13 @@ export class QueueManager {
     createWorker<T = any, R = any>(
         queueName: QueueName,
         job: (job: Job<T, R>) => Promise<R>,
+        options?: Omit<WorkerOptions, "connection">,
     ): Worker<T, R> {
         return new Worker<T, R>(queueName, job, {
             connection: {
                 url: this.redisUrl,
             },
+            ...options,
         });
     }
 }

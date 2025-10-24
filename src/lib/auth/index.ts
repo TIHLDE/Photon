@@ -2,26 +2,21 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
     admin,
+    bearer,
     createAuthMiddleware,
     emailOTP,
     openAPI,
 } from "better-auth/plugins";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "~/db/schema";
-import { sendEmail } from "~/lib/email";
+import { enqueueEmail, sendEmail } from "~/lib/email";
 import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-verification";
 import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
 import ResetPasswordEmail from "~/lib/email/template/reset-password";
 import { env } from "~/lib/env";
-import type { DbSchema } from "../../db";
-import type { RedisClient } from "../cache/redis";
+import type { AppContext } from "../ctx";
 import { feidePlugin, syncFeideHook } from "./feide";
 
-export const createAuth = (ctx: {
-    db: NodePgDatabase<DbSchema>;
-    /** Redis client instance */
-    redis: RedisClient;
-}) =>
+export const createAuth = (ctx: Omit<AppContext, "auth">) =>
     betterAuth({
         database: drizzleAdapter(ctx.db, {
             provider: "pg",
@@ -73,11 +68,14 @@ export const createAuth = (ctx: {
             changeEmail: {
                 enabled: true,
                 sendChangeEmailVerification: async ({ newEmail, url }) => {
-                    sendEmail({
-                        component: ChangeEmailVerificationEmail({ url }),
-                        subject: "Verifiser din nye e-postadresse",
-                        to: newEmail,
-                    });
+                    await enqueueEmail(
+                        {
+                            component: ChangeEmailVerificationEmail({ url }),
+                            subject: "Verifiser din nye e-postadresse",
+                            to: newEmail,
+                        },
+                        ctx,
+                    );
                 },
             },
         },
@@ -89,16 +87,18 @@ export const createAuth = (ctx: {
                 // users should only sign up via Feide (or be migrated from Lepton)
                 disableSignUp: false,
                 sendVerificationOTP: async ({ email, otp, type }) => {
-                    if (type !== "sign-in") return;
-
-                    sendEmail({
-                        component: OtpSignInEmail({ otp }),
-                        subject: "Din engangskode",
-                        to: email,
-                    });
+                    await enqueueEmail(
+                        {
+                            component: OtpSignInEmail({ otp }),
+                            subject: "Din engangskode",
+                            to: email,
+                        },
+                        ctx,
+                    );
                 },
             }),
             admin(),
+            bearer(),
         ],
         logger: {
             disabled: false,

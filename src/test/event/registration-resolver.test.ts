@@ -605,27 +605,21 @@ describe("Registration Resolver", () => {
 
     describe("Edge Cases", () => {
         integrationTest(
-            "Orphaned Redis key without DB record gets cleaned up",
+            "Handles event with no pending registrations gracefully",
             async ({ ctx }) => {
                 await ctx.utils.setupEventCategories();
 
                 const event = await ctx.utils.createTestEvent();
-                const user = await ctx.utils.createTestUser();
 
-                // Add Redis key without DB record
-                await ctx.redis.set(
-                    `registration:${event.id}:${user.id}`,
-                    new Date().toISOString(),
-                );
-
-                // Run resolver
+                // Run resolver with no pending registrations
                 await resolveRegistrationsForEvent(event.id, ctx);
 
-                // Redis key should be cleaned up
-                const key = await ctx.redis.get(
-                    `registration:${event.id}:${user.id}`,
-                );
-                expect(key).toBeNull();
+                // Should complete without error
+                const registrations =
+                    await ctx.db.query.eventRegistration.findMany({
+                        where: (reg, { eq }) => eq(reg.eventId, event.id),
+                    });
+                expect(registrations).toHaveLength(0);
             },
             500_000,
         );
