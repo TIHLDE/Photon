@@ -1,11 +1,9 @@
 import { type DbSchema, schema } from "../db";
 
 import { type InferInsertModel, eq } from "drizzle-orm";
-import { createAppContext } from "../lib/ctx";
+import type { AppContext } from "../lib/ctx";
 
-export default async () => {
-    const { db, auth } = await createAppContext();
-
+export default async ({ db, auth }: AppContext) => {
     // Check if any users exist
     const studyGroupCount = await db
         .select()

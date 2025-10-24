@@ -20,6 +20,18 @@ type Variables = {
 };
 
 export const createApp = async (variables?: Variables) => {
+    // Use or generate app context
+    let ctx: AppContext;
+    if (variables) {
+        ctx = variables.ctx;
+    } else {
+        ctx = await createAppContext();
+
+        // Setup cron jobs and workers
+        const { startBackgroundJobs } = await import("./lib/jobs");
+        startBackgroundJobs(ctx);
+    }
+
     const api = new Hono<{ Variables: Variables }>()
         .basePath("/api")
         .use(
@@ -43,18 +55,6 @@ export const createApp = async (variables?: Variables) => {
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
         .route("/", mcpRoute);
-
-    // Use or generate app context
-    let ctx: AppContext;
-    if (variables) {
-        ctx = variables.ctx;
-    } else {
-        ctx = await createAppContext();
-
-        // Setup cron jobs and workers
-        const { startBackgroundJobs } = await import("./lib/jobs");
-        startBackgroundJobs(ctx);
-    }
 
     const app = new Hono<{ Variables: Variables }>()
         .use(logger())
@@ -96,6 +96,11 @@ export const createApp = async (variables?: Variables) => {
             }),
         );
 
+    // Seed DB with default values if necessary
+    if (env.SEED_DB) {
+        import("./db/seed").then(({ default: seed }) => seed(ctx));
+    }
+
     return app;
 };
 
@@ -105,11 +110,6 @@ export const createApp = async (variables?: Variables) => {
 export type App = Awaited<ReturnType<typeof createApp>>;
 
 if (env.NODE_ENV !== "test") {
-    // Seed DB with default values if necessary
-    if (env.SEED_DB) {
-        import("./db/seed").then(({ default: seed }) => seed());
-    }
-
     await setupWebhooks();
 
     const app = await createApp();
