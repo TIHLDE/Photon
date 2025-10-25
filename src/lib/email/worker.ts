@@ -46,8 +46,8 @@ export function startEmailWorker(ctx: AppContext): Worker<EmailJobData, void> {
         },
     );
 
-    worker.on("completed", (job, returnvalue) => {
-        console.log(`✅ Email job ${job.id} completed`, returnvalue);
+    worker.on("completed", (job) => {
+        console.log(`✅ Email job ${job.id} completed`);
     });
 
     worker.on("failed", (job, err) => {
