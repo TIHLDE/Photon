@@ -96,7 +96,6 @@ export const sendEmailRoute = route().post(
         try {
             // Create the email component
             const emailComponent = React.createElement(CustomEmail, {
-                subject: body.subject,
                 content: body.content,
             });
 
