@@ -11,6 +11,7 @@ import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
 import { mcpRoute } from "./test/mcp";
+import { notificationRoutes } from "./routes/notification";
 
 /**
  * Hono context variables type definition.
@@ -55,6 +56,7 @@ export const createApp = async (variables?: Variables) => {
         })
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
+        .route("/notification", notificationRoutes)
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
