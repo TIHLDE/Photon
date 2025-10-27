@@ -134,6 +134,9 @@ if (env.NODE_ENV !== "test") {
             console.log(
                 `📦 Server is running on http://localhost:${info.port}/api`,
             );
+            console.log(
+                `📋 Documentation is running on http://localhost:${info.port}/docs`,
+            );
         },
     );
 }
