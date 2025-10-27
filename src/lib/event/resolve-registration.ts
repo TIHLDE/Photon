@@ -2,12 +2,12 @@ import { and, eq } from "drizzle-orm";
 import { schema } from "../../db";
 import type { RegistrationStatus } from "../../db/schema/event";
 import type { AppContext } from "../ctx";
-import { enqueueEmail } from "../email";
 import { RegistrationBlockedEmail } from "../email/template/registration-blocked";
 import { RegistrationConfirmedEmail } from "../email/template/registration-confirmed";
 import { SwappedToWaitlistEmail } from "../email/template/swapped-to-waitlist";
 import { WaitlistPlacementEmail } from "../email/template/waitlist-placement";
 import { env } from "../env";
+import { sendNotification } from "../notification";
 import {
     calculateWaitlistPosition,
     findSwapTarget,
@@ -128,22 +128,19 @@ export async function resolveRegistrationsForEvent(
                     );
 
                 // Send notification to user with reason
-                const user = await tx.query.user.findFirst({
-                    where: (user, { eq }) => eq(user.id, userId),
-                });
-                if (user) {
-                    await enqueueEmail(
-                        {
-                            to: user.email,
-                            subject: "Påmelding ikke godkjent",
-                            component: RegistrationBlockedEmail({
-                                eventName: event.title,
-                                reason,
-                            }),
-                        },
-                        ctx,
-                    );
-                }
+                await sendNotification(
+                    {
+                        userId,
+                        title: "Påmelding ikke godkjent",
+                        description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
+                        link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
+                        customEmailTemplate: RegistrationBlockedEmail({
+                            eventName: event.title,
+                            reason,
+                        }),
+                    },
+                    ctx,
+                );
                 console.log(
                     `User ${userId} blocked from registration: ${reason}`,
                 );
@@ -252,39 +249,37 @@ export async function resolveRegistrationsForEvent(
             // TODO:   Start payment countdown timer
 
             // Send notification to user based on finalStatus
-            const user = await tx.query.user.findFirst({
-                where: (user, { eq }) => eq(user.id, userId),
-            });
+            const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
 
-            if (user) {
-                const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
-
-                if (finalStatus === "registered") {
-                    await enqueueEmail(
-                        {
-                            to: user.email,
-                            subject: `Du er påmeldt ${event.title}!`,
-                            component: RegistrationConfirmedEmail({
-                                eventName: event.title,
-                                eventUrl,
-                            }),
-                        },
-                        ctx,
-                    );
-                } else if (finalStatus === "waitlisted" && waitlistPosition) {
-                    await enqueueEmail(
-                        {
-                            to: user.email,
-                            subject: `Du er på venteliste for ${event.title}`,
-                            component: WaitlistPlacementEmail({
-                                eventName: event.title,
-                                eventUrl,
-                                position: waitlistPosition,
-                            }),
-                        },
-                        ctx,
-                    );
-                }
+            if (finalStatus === "registered") {
+                await sendNotification(
+                    {
+                        userId,
+                        title: `Du er påmeldt ${event.title}!`,
+                        description: `Din påmelding til ${event.title} er bekreftet.`,
+                        link: eventUrl,
+                        customEmailTemplate: RegistrationConfirmedEmail({
+                            eventName: event.title,
+                            eventUrl,
+                        }),
+                    },
+                    ctx,
+                );
+            } else if (finalStatus === "waitlisted" && waitlistPosition) {
+                await sendNotification(
+                    {
+                        userId,
+                        title: `Du er på venteliste for ${event.title}`,
+                        description: `Du er nå på venteliste for ${event.title} (posisjon ${waitlistPosition}).`,
+                        link: eventUrl,
+                        customEmailTemplate: WaitlistPlacementEmail({
+                            eventName: event.title,
+                            eventUrl,
+                            position: waitlistPosition,
+                        }),
+                    },
+                    ctx,
+                );
             }
 
             console.log(
@@ -327,24 +322,21 @@ export async function resolveRegistrationsForEvent(
 
                     // Send email to swapped user
                     if (wReg.userId === swappedUserId && newPosition) {
-                        const swappedUser = await tx.query.user.findFirst({
-                            where: (user, { eq }) => eq(user.id, wReg.userId),
-                        });
-                        if (swappedUser) {
-                            const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
-                            await enqueueEmail(
-                                {
-                                    to: swappedUser.email,
-                                    subject: `Endring i din påmelding til ${event.title}`,
-                                    component: SwappedToWaitlistEmail({
-                                        eventName: event.title,
-                                        eventUrl,
-                                        position: newPosition,
-                                    }),
-                                },
-                                ctx,
-                            );
-                        }
+                        const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
+                        await sendNotification(
+                            {
+                                userId: wReg.userId,
+                                title: `Endring i din påmelding til ${event.title}`,
+                                description: `Din påmelding til ${event.title} har blitt flyttet til venteliste (posisjon ${newPosition}).`,
+                                link: eventUrl,
+                                customEmailTemplate: SwappedToWaitlistEmail({
+                                    eventName: event.title,
+                                    eventUrl,
+                                    position: newPosition,
+                                }),
+                            },
+                            ctx,
+                        );
                     }
                 }
             }

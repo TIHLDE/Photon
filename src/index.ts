@@ -10,6 +10,7 @@ import { env } from "~/lib/env";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
+import { notificationRoutes } from "./routes/notification";
 import { mcpRoute } from "./test/mcp";
 
 /**
@@ -55,6 +56,7 @@ export const createApp = async (variables?: Variables) => {
         })
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
+        .route("/notification", notificationRoutes)
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
