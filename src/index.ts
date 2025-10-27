@@ -78,6 +78,10 @@ export const createApp = async (variables?: Variables) => {
                             url: "http://localhost:4000",
                             description: "Local Server",
                         },
+                        {
+                            url: "https://photon.tihlde.org",
+                            description: "Production Server",
+                        },
                     ],
                 },
             }),
