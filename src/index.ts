@@ -10,8 +10,8 @@ import { env } from "~/lib/env";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { setupWebhooks } from "./lib/vipps";
-import { mcpRoute } from "./test/mcp";
 import { notificationRoutes } from "./routes/notification";
+import { mcpRoute } from "./test/mcp";
 
 /**
  * Hono context variables type definition.

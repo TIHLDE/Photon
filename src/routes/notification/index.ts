@@ -4,6 +4,6 @@ import { listNotificationsRoute } from "./list";
 import { markReadNotificationRoute } from "./mark-read";
 
 export const notificationRoutes = route()
-	.route("/", listNotificationsRoute)
-	.route("/", deleteNotificationRoute)
-	.route("/", markReadNotificationRoute);
+    .route("/", listNotificationsRoute)
+    .route("/", deleteNotificationRoute)
+    .route("/", markReadNotificationRoute);
