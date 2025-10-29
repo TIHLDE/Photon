@@ -80,7 +80,8 @@ describe("send email endpoint", () => {
                         },
                         {
                             type: "text",
-                            content: "This email is sent to multiple recipients.",
+                            content:
+                                "This email is sent to multiple recipients.",
                         },
                         {
                             type: "button",
@@ -101,9 +102,9 @@ describe("send email endpoint", () => {
                 recipientCount: 3,
             });
             expect(json.jobIds).toHaveLength(3);
-            json.jobIds.forEach((jobId: unknown) => {
+            for (const jobId of json.jobIds) {
                 expect(typeof jobId).toBe("string");
-            });
+            }
 
             // Verify Redis queue has all the jobs
             const emailQueue = ctx.queue.getQueue(EMAIL_QUEUE_NAME);
@@ -116,13 +117,15 @@ describe("send email endpoint", () => {
             expect(jobRecipients).toEqual(recipients.sort());
 
             // Verify all jobs have the same subject and content
-            jobs.forEach((job) => {
+            for (const job of jobs) {
                 expect(job?.data.subject).toBe("Multi-Recipient Test");
                 expect(job?.data.html).toContain("Announcement");
-                expect(job?.data.html).toContain("This email is sent to multiple recipients.");
+                expect(job?.data.html).toContain(
+                    "This email is sent to multiple recipients.",
+                );
                 expect(job?.data.html).toContain("Click Here");
                 expect(job?.data.html).toContain("https://example.com");
-            });
+            }
         },
         500_000,
     );
