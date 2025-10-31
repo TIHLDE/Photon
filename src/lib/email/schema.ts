@@ -45,8 +45,16 @@ export const emailContentBlockSchema = z.discriminatedUnion("type", [
  */
 export const sendCustomEmailSchema = z.object({
     to: z
-        .email("Must be a valid email address")
-        .meta({ description: "Recipient email address" }),
+        .union([
+            z.email("Must be a valid email address"),
+            z
+                .array(z.email("Each recipient must be a valid email address"))
+                .min(1, "Must provide at least one recipient"),
+        ])
+        .meta({
+            description:
+                "Recipient email address (string) or list of recipient email addresses (array)",
+        }),
     subject: z
         .string()
         .min(1, "Subject cannot be empty")
