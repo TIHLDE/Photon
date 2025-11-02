@@ -24,7 +24,8 @@
         "docker:dev": "docker compose -f docker-compose.dev.yml up -d --wait",
         "docker:dev:down": "docker compose -f docker-compose.dev.yml down",
         "docker:prod": "docker compose -f docker-compose.prod.yml up --build --force-recreate -d --wait",
-        "docker:prod:down": "docker compose -f docker-compose.prod.yml down"
+        "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
+        "docker:fresh": "docker compose -f docker-compose.dev.yml down -v && docker compose -f docker-compose.dev.yml up -d --wait"
     },
     "dependencies": {
         "@dotenvx/dotenvx": "^1.49.0",
