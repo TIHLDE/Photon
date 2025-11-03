@@ -11,9 +11,9 @@ import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { setupWebhooks } from "./lib/vipps";
+import { groupsRoutes } from "./routes/groups";
 import { notificationRoutes } from "./routes/notification";
 import { mcpRoute } from "./test/mcp";
-import { groupsRoutes } from "./routes/groups";
 
 /**
  * Hono context variables type definition.
