@@ -15,8 +15,8 @@
 
 import { eq } from "drizzle-orm";
 import { schema } from "~/db";
-import type { AppContext } from "../ctx";
 import type { ResourceOwnershipChecker } from "~/middleware/ownership";
+import type { AppContext } from "../ctx";
 
 /**
  * Check if a user is a group leader

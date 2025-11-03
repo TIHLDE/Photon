@@ -3,10 +3,10 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
-import { isGroupLeader } from "~/lib/group/middleware";
 
 const updateGroupSchema = z.object({
     imageUrl: z
@@ -73,7 +73,8 @@ export const updateRoute = route().patch(
                 description: "Bad Request - Invalid input",
             },
             403: {
-                description: "Forbidden - Not a group leader or missing groups:update permission",
+                description:
+                    "Forbidden - Not a group leader or missing groups:update permission",
             },
             404: {
                 description:

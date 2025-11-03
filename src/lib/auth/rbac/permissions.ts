@@ -1,6 +1,6 @@
 import type { AppContext } from "~/lib/ctx";
-import { getUserPermissions } from "./roles";
 import { matchesPermission, parsePermission } from "./permission-parser";
+import { getUserPermissions } from "./roles";
 
 /**
  * Canonical, hardcoded permission registry grouped by scope.

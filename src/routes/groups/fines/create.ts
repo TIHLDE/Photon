@@ -3,10 +3,10 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
-import { isGroupLeader } from "~/lib/group/middleware";
 
 const createFineSchema = z.object({
     userId: z

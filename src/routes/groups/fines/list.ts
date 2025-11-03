@@ -3,10 +3,10 @@ import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { route } from "~/lib/route";
-import { requireAuth } from "~/middleware/auth";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 import { fineSchema } from "./get";
 
 const fineListSchema = z.array(fineSchema);

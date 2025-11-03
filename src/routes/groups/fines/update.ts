@@ -3,10 +3,10 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { route } from "~/lib/route";
-import { requireAuth } from "~/middleware/auth";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 
 const updateFineSchema = z.object({
     defense: z.string().optional().meta({ description: "User's defense text" }),
@@ -121,7 +121,8 @@ export const updateFineRoute = route().patch(
             // Only fines admin or users with fines:update permission can change status or approver
             if (!isFinesAdmin && !hasUpdatePermission) {
                 throw new HTTPException(403, {
-                    message: "Only fines admin or users with fines:update permission can change fine status",
+                    message:
+                        "Only fines admin or users with fines:update permission can change fine status",
                 });
             }
         }

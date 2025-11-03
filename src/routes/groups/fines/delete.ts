@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { route } from "~/lib/route";
-import { requireAuth } from "~/middleware/auth";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 
 export const deleteFineRoute = route().delete(
     "/:groupSlug/fines/:fineId",

@@ -165,46 +165,46 @@ export const requireAllPermissions = (...permissions: string[]) =>
  * );
  */
 export const requireScopedPermission = (
-	permissionName: string,
-	scopeResolver: ScopeResolver,
+    permissionName: string,
+    scopeResolver: ScopeResolver,
 ) =>
-	createMiddleware<{ Variables: Variables }>(async (c, next) => {
-		const user = c.get("user");
+    createMiddleware<{ Variables: Variables }>(async (c, next) => {
+        const user = c.get("user");
 
-		if (!user) {
-			throw new HTTPException(401, {
-				message: "Authentication required",
-			});
-		}
+        if (!user) {
+            throw new HTTPException(401, {
+                message: "Authentication required",
+            });
+        }
 
-		const ctx = c.get("ctx");
-		const scope = scopeResolver(c);
+        const ctx = c.get("ctx");
+        const scope = scopeResolver(c);
 
-		// Check if user has permission globally
-		const hasGlobalPerm = await hasPermission(ctx, user.id, permissionName);
+        // Check if user has permission globally
+        const hasGlobalPerm = await hasPermission(ctx, user.id, permissionName);
 
-		if (hasGlobalPerm) {
-			// User has global permission, allow access
-			await next();
-			return;
-		}
+        if (hasGlobalPerm) {
+            // User has global permission, allow access
+            await next();
+            return;
+        }
 
-		// Check if user has scoped permission for this specific resource
-		const hasScopedPerm = await hasScopedPermission(
-			ctx,
-			user.id,
-			permissionName,
-			scope,
-		);
+        // Check if user has scoped permission for this specific resource
+        const hasScopedPerm = await hasScopedPermission(
+            ctx,
+            user.id,
+            permissionName,
+            scope,
+        );
 
-		if (!hasScopedPerm) {
-			throw new HTTPException(403, {
-				message: `Missing required permission: ${permissionName} for scope: ${scope}`,
-			});
-		}
+        if (!hasScopedPerm) {
+            throw new HTTPException(403, {
+                message: `Missing required permission: ${permissionName} for scope: ${scope}`,
+            });
+        }
 
-		await next();
-	});
+        await next();
+    });
 
 // Backwards-compatible aliases
 export const requirePermissions = requireAllPermissions;

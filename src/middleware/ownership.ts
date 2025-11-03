@@ -4,6 +4,7 @@
  * This is useful for operations where both the owner and admins should have access.
  */
 
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
@@ -191,7 +192,7 @@ export const requireOwnershipOrScopedPermission = (
     resourceIdParam: string,
     ownershipChecker: ResourceOwnershipChecker,
     permissionName: string,
-    scopeResolver: (c: any) => string,
+    scopeResolver: (c: Context<{ Variables: Variables }>) => string,
 ) =>
     createMiddleware<{ Variables: Variables }>(async (c, next) => {
         const user = c.get("user");
@@ -233,9 +234,7 @@ export const requireOwnershipOrScopedPermission = (
 
         // 3. Not owner and no global permission, check scoped permission
         const scope = scopeResolver(c);
-        const { hasScopedPermission } = await import(
-            "~/lib/auth/rbac/roles"
-        );
+        const { hasScopedPermission } = await import("~/lib/auth/rbac/roles");
         const hasScopedPerm = await hasScopedPermission(
             ctx,
             user.id,

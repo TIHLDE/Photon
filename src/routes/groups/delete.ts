@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
-import { isGroupLeader } from "~/lib/group/middleware";
 
 export const deleteRoute = route().delete(
     "/:slug",
@@ -19,7 +19,8 @@ export const deleteRoute = route().delete(
                 description: "Group successfully deleted",
             },
             403: {
-                description: "Forbidden - Not a group leader or missing groups:delete permission",
+                description:
+                    "Forbidden - Not a group leader or missing groups:delete permission",
             },
             404: {
                 description:

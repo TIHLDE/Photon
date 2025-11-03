@@ -3,10 +3,10 @@ import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { route } from "~/lib/route";
-import { requireAuth } from "~/middleware/auth";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 
 export const fineSchema = z.object({
     id: z.string().meta({ description: "Fine ID" }),
@@ -112,7 +112,11 @@ export const getFineRoute = route().get(
             const isFinesAdmin = group?.finesAdminId === user.id;
 
             // Check for global or scoped fines:view permission
-            const hasGlobalPerm = await hasPermission(ctx, user.id, "fines:view");
+            const hasGlobalPerm = await hasPermission(
+                ctx,
+                user.id,
+                "fines:view",
+            );
             const hasScopedPerm = await hasScopedPermission(
                 ctx,
                 user.id,
