@@ -11,6 +11,7 @@ import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { groupsRoutes } from "~/routes/groups";
 import { setupWebhooks } from "./lib/vipps";
+import { notificationRoutes } from "./routes/notification";
 import { mcpRoute } from "./test/mcp";
 
 /**
@@ -56,6 +57,7 @@ export const createApp = async (variables?: Variables) => {
         })
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
+        .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
         .route("/", mcpRoute);
 
@@ -79,6 +81,10 @@ export const createApp = async (variables?: Variables) => {
                         {
                             url: "http://localhost:4000",
                             description: "Local Server",
+                        },
+                        {
+                            url: "https://photon.tihlde.org",
+                            description: "Production Server",
                         },
                     ],
                 },
@@ -131,6 +137,9 @@ if (env.NODE_ENV !== "test") {
         (info) => {
             console.log(
                 `📦 Server is running on http://localhost:${info.port}/api`,
+            );
+            console.log(
+                `📋 Documentation is running on http://localhost:${info.port}/docs`,
             );
         },
     );

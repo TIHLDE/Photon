@@ -12,7 +12,8 @@ import { route } from "~/lib/route";
 const sendEmailResponseSchema = z.object({
     success: z.boolean(),
     message: z.string(),
-    jobId: z.string().optional(),
+    jobIds: z.array(z.string()),
+    recipientCount: z.number(),
 });
 
 const sendBodySchemaOpenAPI = await resolver(
@@ -94,26 +95,36 @@ export const sendEmailRoute = route().post(
         const { ctx } = c.var;
 
         try {
+            // Normalize 'to' field to always be an array
+            const recipients = Array.isArray(body.to) ? body.to : [body.to];
+
             // Create the email component
             const emailComponent = React.createElement(CustomEmail, {
                 content: body.content,
             });
 
-            // Queue the email for sending
-            const job = await enqueueEmail(
-                {
-                    to: body.to,
-                    subject: body.subject,
-                    component: emailComponent,
-                },
-                ctx,
+            // Queue one email job for each recipient
+            const jobs = await Promise.all(
+                recipients.map((recipient) =>
+                    enqueueEmail(
+                        {
+                            to: recipient,
+                            subject: body.subject,
+                            component: emailComponent,
+                        },
+                        ctx,
+                    ),
+                ),
             );
+
+            const jobIds = jobs.map((job) => job.id);
 
             return c.json(
                 {
                     success: true,
-                    message: "Email queued successfully",
-                    jobId: job.id,
+                    message: `Email${recipients.length > 1 ? "s" : ""} queued successfully`,
+                    jobIds,
+                    recipientCount: recipients.length,
                 },
                 200,
             );
