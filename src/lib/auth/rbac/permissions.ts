@@ -17,10 +17,9 @@ export const PERMISSION_REGISTRY = {
     "events:registrations": ["view", "create", "delete", "checkin", "manage"],
     "events:feedback": ["view", "create", "update", "delete"],
     "events:payments": ["view", "create", "update", "delete", "refund"],
-
-    // Group permissions
     groups: ["view", "create", "update", "delete", "manage"],
     fines: ["view", "create", "update", "delete", "manage"],
+    forms: ["view", "create", "update", "delete", "manage"],
 } as const;
 
 /**
