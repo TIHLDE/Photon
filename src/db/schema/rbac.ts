@@ -33,3 +33,41 @@ export const userRole = pgTable(
     },
     (t) => [primaryKey({ columns: [t.userId, t.roleId] })],
 );
+
+/**
+ * Direct user permissions - for granting individual permissions without creating roles.
+ * Supports optional scoping to specific resources (e.g., "group:fotball", "event:123").
+ *
+ * Examples:
+ * - { userId: "123", permission: "events:create", scope: null } → Can create any event
+ * - { userId: "123", permission: "events:update", scope: "group:fotball" } → Can only update events for football group
+ * - { userId: "456", permission: "fines:manage", scope: "group:index" } → Can manage fines for Index group
+ */
+export const userPermission = pgTable(
+    "user_permission",
+    {
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        permission: varchar("permission", { length: 64 }).notNull(),
+        /**
+         * Optional scope for the permission.
+         * Format: "resource_type:resource_id"
+         * Examples: "group:fotball", "event:123abc", null (global)
+         */
+        scope: varchar("scope", { length: 128 }),
+        /**
+         * User who granted this permission (for audit trail)
+         */
+        grantedBy: text("granted_by").references(() => user.id, {
+            onDelete: "set null",
+        }),
+        ...timestamps,
+    },
+    (t) => [
+        // Composite primary key: userId + permission + scope (treating null as distinct value)
+        primaryKey({
+            columns: [t.userId, t.permission, t.scope],
+        }),
+    ],
+);

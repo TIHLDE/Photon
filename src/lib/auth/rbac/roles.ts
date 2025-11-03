@@ -15,7 +15,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { DbTransaction } from "~/db";
-import { role, userRole } from "~/db/schema";
+import { role, userPermission, userRole } from "~/db/schema";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -157,10 +157,10 @@ export async function getRoleUserIds(
 }
 
 /**
- * Get all permissions for a user (from all their roles).
+ * Get all permissions for a user from their roles.
  * Returns raw array with potential duplicates - should be deduplicated by caller.
  */
-export async function getUserPermissions(
+async function getRolePermissions(
     ctx: AppContext,
     userId: string,
 ): Promise<string[]> {
@@ -173,6 +173,44 @@ export async function getUserPermissions(
 
     const all = rows.flatMap((r) => r.permissions ?? []);
     return all;
+}
+
+/**
+ * Get all direct permissions for a user (not from roles).
+ * Returns array of permission strings in format "permission" or "permission@scope".
+ */
+async function getDirectUserPermissions(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const { formatPermission } = await import("./permission-parser");
+    const db = ctx.db;
+    const rows = await db
+        .select({
+            permission: userPermission.permission,
+            scope: userPermission.scope,
+        })
+        .from(userPermission)
+        .where(eq(userPermission.userId, userId));
+
+    // Format as "permission" or "permission@scope"
+    return rows.map((r) => formatPermission(r.permission, r.scope));
+}
+
+/**
+ * Get all permissions for a user (from roles + direct permissions).
+ * Returns raw array with potential duplicates - should be deduplicated by caller.
+ */
+export async function getUserPermissions(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const [rolePerms, directPerms] = await Promise.all([
+        getRolePermissions(ctx, userId),
+        getDirectUserPermissions(ctx, userId),
+    ]);
+
+    return [...rolePerms, ...directPerms];
 }
 
 /**
@@ -612,4 +650,144 @@ export async function userCanManageUser(
     // Must be strictly higher (higher number)
     // This prevents siblings (same position) from managing each other
     return managerPosition > targetPosition;
+}
+
+/**
+ * Grant a direct permission to a user.
+ * Useful for ad-hoc permissions without creating a role.
+ *
+ * @param grantedByUserId - User granting the permission (for audit trail)
+ * @param targetUserId - User receiving the permission
+ * @param permission - Permission name (e.g., "events:create")
+ * @param scope - Optional scope (e.g., "group:fotball", "event:123")
+ *
+ * @example
+ * // Grant global permission
+ * await grantUserPermission(ctx, adminId, userId, "events:create");
+ *
+ * @example
+ * // Grant scoped permission
+ * await grantUserPermission(ctx, adminId, userId, "events:update", "group:fotball");
+ */
+export async function grantUserPermission(
+    ctx: AppContext,
+    grantedByUserId: string,
+    targetUserId: string,
+    permission: string,
+    scope?: string,
+): Promise<void> {
+    const db = ctx.db;
+    await db
+        .insert(userPermission)
+        .values({
+            userId: targetUserId,
+            permission,
+            scope: scope ?? null,
+            grantedBy: grantedByUserId,
+        })
+        .onConflictDoNothing();
+}
+
+/**
+ * Revoke a direct permission from a user.
+ *
+ * @param targetUserId - User to revoke permission from
+ * @param permission - Permission name to revoke
+ * @param scope - Optional scope (must match exactly)
+ *
+ * @example
+ * // Revoke global permission
+ * await revokeUserPermission(ctx, userId, "events:create");
+ *
+ * @example
+ * // Revoke scoped permission
+ * await revokeUserPermission(ctx, userId, "events:update", "group:fotball");
+ */
+export async function revokeUserPermission(
+    ctx: AppContext,
+    targetUserId: string,
+    permission: string,
+    scope?: string,
+): Promise<void> {
+    const db = ctx.db;
+    await db
+        .delete(userPermission)
+        .where(
+            and(
+                eq(userPermission.userId, targetUserId),
+                eq(userPermission.permission, permission),
+                scope !== undefined
+                    ? eq(userPermission.scope, scope)
+                    : sql`${userPermission.scope} IS NULL`,
+            ),
+        );
+}
+
+/**
+ * Get all direct permissions for a user with their scopes.
+ * Returns full permission objects including scope information.
+ *
+ * @example
+ * const perms = await getUserPermissionsWithScope(ctx, userId);
+ * // [
+ * //   { permission: "events:create", scope: null },
+ * //   { permission: "events:update", scope: "group:fotball" },
+ * // ]
+ */
+export async function getUserPermissionsWithScope(
+    ctx: AppContext,
+    userId: string,
+): Promise<Array<{ permission: string; scope: string | null }>> {
+    const db = ctx.db;
+    const rows = await db
+        .select({
+            permission: userPermission.permission,
+            scope: userPermission.scope,
+        })
+        .from(userPermission)
+        .where(eq(userPermission.userId, userId));
+
+    return rows;
+}
+
+/**
+ * Check if a user has a permission for a specific resource scope.
+ * Checks both global permissions and scoped permissions (from roles AND direct grants).
+ *
+ * Rules:
+ * - Global permission (no scope) matches ANY scope request
+ * - Scoped permission only matches exact scope
+ *
+ * @param userId - User to check
+ * @param permission - Permission name (e.g., "events:update")
+ * @param scope - Resource scope (e.g., "group:fotball")
+ * @returns true if user has the permission globally OR for the specific scope
+ *
+ * @example
+ * // Check if user can update events for football group
+ * // Returns true if user has:
+ * // - "events:update" (global, from role or direct grant)
+ * // - "events:update@group:fotball" (scoped, from role or direct grant)
+ * if (await hasScopedPermission(ctx, userId, "events:update", "group:fotball")) {
+ *     // Allow update
+ * }
+ */
+export async function hasScopedPermission(
+    ctx: AppContext,
+    userId: string,
+    permissionName: string,
+    requiredScope: string,
+): Promise<boolean> {
+    const { matchesPermission } = await import("./permission-parser");
+
+    // Get ALL permissions (from roles + direct grants)
+    const permissions = await getUserPermissions(ctx, userId);
+
+    // Root grants everything
+    if (permissions.includes("root")) return true;
+
+    // Check if any granted permission matches
+    return permissions.some((grantedPerm) =>
+        matchesPermission(grantedPerm, permissionName, requiredScope),
+    );
 }

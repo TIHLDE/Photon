@@ -1,5 +1,5 @@
-import { aP } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 import type { AppContext } from "~/lib/ctx";
+import { matchesPermission, parsePermission } from "./permission-parser";
 import { getUserPermissions } from "./roles";
 
 /**
@@ -17,6 +17,10 @@ export const PERMISSION_REGISTRY = {
     "events:registrations": ["view", "create", "delete", "checkin", "manage"],
     "events:feedback": ["view", "create", "update", "delete"],
     "events:payments": ["view", "create", "update", "delete", "refund"],
+
+    // Group permissions
+    groups: ["view", "create", "update", "delete", "manage"],
+    fines: ["view", "create", "update", "delete", "manage"],
 } as const;
 
 /**
@@ -96,12 +100,15 @@ export function getPermissionsForScope(scope: keyof Registry): string[] {
 }
 
 /**
- * Check if a user has a specific permission.
+ * Check if a user has a specific permission GLOBALLY (no scope restriction).
  * Automatically checks for "root" permission which grants everything.
  *
+ * This checks if the user has the permission without any scope restriction,
+ * meaning they can use it for ANY resource.
+ *
  * @example
- * if (await hasPermission(userId, 'events:delete')) {
- *     // User can delete events
+ * if (await hasPermission(ctx, userId, 'events:delete')) {
+ *     // User can delete ANY event (global permission)
  * }
  */
 export async function hasPermission(
@@ -110,22 +117,25 @@ export async function hasPermission(
     permissionName: string,
 ): Promise<boolean> {
     const permissions = await getUserPermissions(ctx, userId);
-    const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
-    const permSet = new Set(valid);
 
     // Root permission grants everything
-    if (permSet.has("root")) return true;
+    if (permissions.includes("root")) return true;
 
-    return permSet.has(permissionName);
+    // Check if user has the permission globally (without scope)
+    // This means the permission string is exactly the permission name (no "@scope")
+    return permissions.some((p) => {
+        const parsed = parsePermission(p);
+        return parsed.permission === permissionName && parsed.scope === null;
+    });
 }
 
 /**
- * Check if a user has any of the specified permissions.
+ * Check if a user has any of the specified permissions GLOBALLY.
  * Automatically checks for "root" permission which grants everything.
  *
  * @example
- * if (await hasAnyPermission(userId, ['events:update', 'events:manage'])) {
- *     // User can update or manage events
+ * if (await hasAnyPermission(ctx, userId, ['events:update', 'events:manage'])) {
+ *     // User can update or manage ANY event (global permissions)
  * }
  */
 export async function hasAnyPermission(
@@ -136,22 +146,26 @@ export async function hasAnyPermission(
     if (permissionNames.length === 0) return false;
 
     const permissions = await getUserPermissions(ctx, userId);
-    const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
-    const permSet = new Set(valid);
 
     // Root permission grants everything
-    if (permSet.has("root")) return true;
+    if (permissions.includes("root")) return true;
 
-    return permissionNames.some((p) => permSet.has(p));
+    // Check if user has any of the permissions globally
+    return permissionNames.some((requiredPerm) =>
+        permissions.some((p) => {
+            const parsed = parsePermission(p);
+            return parsed.permission === requiredPerm && parsed.scope === null;
+        }),
+    );
 }
 
 /**
- * Check if a user has all of the specified permissions.
+ * Check if a user has all of the specified permissions GLOBALLY.
  * Automatically checks for "root" permission which grants everything.
  *
  * @example
- * if (await hasAllPermissions(userId, ['events:create', 'events:update'])) {
- *     // User can both create and update events
+ * if (await hasAllPermissions(ctx, userId, ['events:create', 'events:update'])) {
+ *     // User can both create and update ANY event (global permissions)
  * }
  */
 export async function hasAllPermissions(
@@ -162,11 +176,15 @@ export async function hasAllPermissions(
     if (permissionNames.length === 0) return false;
 
     const permissions = await getUserPermissions(ctx, userId);
-    const valid = permissions.filter((p) => PERMISSIONS_SET.has(p));
-    const permSet = new Set(valid);
 
     // Root permission grants everything
-    if (permSet.has("root")) return true;
+    if (permissions.includes("root")) return true;
 
-    return permissionNames.every((p) => permSet.has(p));
+    // Check if user has all of the permissions globally
+    return permissionNames.every((requiredPerm) =>
+        permissions.some((p) => {
+            const parsed = parsePermission(p);
+            return parsed.permission === requiredPerm && parsed.scope === null;
+        }),
+    );
 }
