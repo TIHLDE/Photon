@@ -181,15 +181,12 @@ async function resetRedis(ctx: TestAppContext): Promise<void> {
  */
 async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
     // Close client connections
-    // biome-ignore lint/style/noNonNullAssertion: Will never be null here
     await ctx._postgresPool!.end();
     ctx.redis.destroy();
 
     // Destroy containers
     await Promise.all([
-        // biome-ignore lint/style/noNonNullAssertion: Will never be null here
         ctx._redisContainer!.stop({ remove: true, timeout: 1000 }),
-        // biome-ignore lint/style/noNonNullAssertion: Will never be null here
         ctx._postgresContainer!.stop({ remove: true, timeout: 1000 }),
     ]);
 }

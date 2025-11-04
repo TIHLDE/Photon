@@ -3,6 +3,9 @@ import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
 import { getFavoriteEventsRoute } from "./favorite/get";
 import { updateFavoriteRoute as updateFavoriteEventsRoute } from "./favorite/update";
+import { createEventFormRoute } from "./form/create";
+import { getEventFormRoute } from "./form/get";
+import { listEventFormsRoute } from "./form/list";
 import { listRoute } from "./list";
 import { createPaymentRoute } from "./payment/create";
 import { paymentWebhookRoute } from "./payment/webhook";
@@ -31,4 +34,9 @@ export const eventRoutes = route()
 
     // Payment
     .route("/", createPaymentRoute)
-    .route("/", paymentWebhookRoute);
+    .route("/", paymentWebhookRoute)
+
+    // Forms
+    .route("/", createEventFormRoute)
+    .route("/", listEventFormsRoute)
+    .route("/", getEventFormRoute);

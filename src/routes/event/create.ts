@@ -24,6 +24,10 @@ const eventSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
+const createEventResponseSchema = z.object({
+    eventId: z.string().uuid(),
+});
+
 const createBodySchemaOpenAPI =
     await resolver(createEventSchema).toOpenAPISchema();
 
@@ -42,7 +46,9 @@ export const createRoute = route().post(
             201: {
                 description: "Created",
                 content: {
-                    "application/json": { schema: resolver(eventSchema) },
+                    "application/json": {
+                        schema: resolver(createEventResponseSchema),
+                    },
                 },
             },
             403: {
@@ -57,6 +63,8 @@ export const createRoute = route().post(
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
+
+        let createdEventId: string | undefined;
 
         await db.transaction(async (tx) => {
             const slug = await generateUniqueEventSlug(body.title, tx);
@@ -150,6 +158,8 @@ export const createRoute = route().post(
                 });
             }
 
+            createdEventId = eventId;
+
             if (body.priorityPools) {
                 for (let p = 0; p < body.priorityPools.length; p++) {
                     const pool = body.priorityPools[p];
@@ -179,6 +189,12 @@ export const createRoute = route().post(
             }
         });
 
-        return c.json({ message: "Event created" }, 201);
+        if (!createdEventId) {
+            throw new HTTPException(500, {
+                message: "Failed to create event",
+            });
+        }
+
+        return c.json({ eventId: createdEventId }, 201);
     },
 );
