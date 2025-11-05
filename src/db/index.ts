@@ -52,6 +52,7 @@ export function createDb(config?: {
 /**
  * Default database instance for backward compatibility.
  * Prefer using createDb() and dependency injection in new code.
+ * @deprecated
  */
 const db = createDb();
 
