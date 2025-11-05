@@ -1,10 +1,12 @@
 import { config } from "@dotenvx/dotenvx";
 import { z } from "zod";
 
-if (process.env.NODE_ENV !== "test") {
+try {
     config({
         path: ".env",
     });
+} catch (e) {
+    console.warn("⚠️ Could not load .env file, proceeding without it.");
 }
 
 const toBoolean =
@@ -34,6 +36,14 @@ const envSchema = z
                 "The URL to use to send webhook requests to Photon. May be different if using NGROK or similar when developing locally. Otherwise, will default to the same value as ROOT_URL",
         }),
         NODE_ENV: z.enum(["production", "development", "test"]),
+        MAX_TEST_WORKERS: z
+            .string()
+            .transform((val) => Number(val))
+            .default(1)
+            .meta({
+                description:
+                    "Maximum number of test workers to use when running tests. Only used in test environment.",
+            }),
 
         // DATABASE
         DATABASE_URL: z.string().meta({ description: "Database URL" }),
@@ -152,6 +162,9 @@ const testEnvVariables: Env = {
     VIPPS_CLIENT_SECRET: "abc",
     VIPPS_MERCHANT_SERIAL_NUMBER: "abc",
     VIPPS_SUBSCRIPTION_KEY: "abc",
+    MAX_TEST_WORKERS: process.env.MAX_TEST_WORKERS
+        ? Number(process.env.MAX_TEST_WORKERS)
+        : 1,
 };
 
 /**
