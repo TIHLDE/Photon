@@ -8,7 +8,6 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-import React from "react";
 import { env } from "../../env";
 import type { EmailContentBlock } from "../schema";
 import { emailStyles } from "./styles";

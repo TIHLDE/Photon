@@ -1,9 +1,8 @@
-import { type InferInsertModel, and, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import { type DbSchema, schema } from "~/db";
-import { generateUniqueEventSlug } from "~/lib/event/slug";
+import { schema } from "~/db";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 

@@ -9,7 +9,6 @@ import {
     Section,
     Text,
 } from "@react-email/components";
-import React from "react";
 import { env } from "../../env";
 import { emailStyles } from "./styles";
 

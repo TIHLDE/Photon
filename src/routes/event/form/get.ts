@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
 import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { getEventFormWithDetails, userHasSubmitted } from "~/lib/form/service";
 import { route } from "~/lib/route";
