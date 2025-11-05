@@ -8,7 +8,7 @@ import {
     openAPI,
 } from "better-auth/plugins";
 import * as schema from "~/db/schema";
-import { enqueueEmail, sendEmail } from "~/lib/email";
+import { enqueueEmail } from "~/lib/email";
 import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-verification";
 import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
 import ResetPasswordEmail from "~/lib/email/template/reset-password";
@@ -28,11 +28,14 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             disableSignUp: true,
             requireEmailVerification: true,
             sendResetPassword: async ({ url, user }) => {
-                await sendEmail({
-                    component: ResetPasswordEmail({ url }),
-                    subject: "Tilbakestill ditt passord",
-                    to: user.email,
-                });
+                await enqueueEmail(
+                    {
+                        component: ResetPasswordEmail({ url }),
+                        subject: "Tilbakestill ditt passord",
+                        to: user.email,
+                    },
+                    ctx,
+                );
             },
         },
         session: {
@@ -83,9 +86,9 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             feidePlugin(),
             openAPI(),
             emailOTP({
-                // TODO disable signups when in production
-                // users should only sign up via Feide (or be migrated from Lepton)
-                disableSignUp: false,
+                // Disable sign-up in production
+                // Users should only sign up via Feide (or be migrated from Lepton)
+                disableSignUp: env.NODE_ENV === "production",
                 sendVerificationOTP: async ({ email, otp, type }) => {
                     await enqueueEmail(
                         {
@@ -109,8 +112,8 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             },
         },
         hooks: {
-            after: createAuthMiddleware(async (ctx) => {
-                await syncFeideHook(ctx);
+            after: createAuthMiddleware(async (middlewareCtx) => {
+                await syncFeideHook(middlewareCtx, ctx);
             }),
         },
         secondaryStorage: {

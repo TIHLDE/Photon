@@ -52,12 +52,10 @@ export function createDb(config?: {
 /**
  * Default database instance for backward compatibility.
  * Prefer using createDb() and dependency injection in new code.
- * @deprecated
  */
-const db = createDb();
+const __db = createDb();
 
-export default db;
-export { schema, db };
+export { __db, schema };
 
 /**
  * Database schema type
@@ -68,5 +66,5 @@ export type DbSchema = typeof schema;
  * Type of a transaction
  */
 export type DbTransaction = Parameters<
-    Parameters<(typeof db)["transaction"]>[0]
+    Parameters<(typeof __db)["transaction"]>[0]
 >[0];

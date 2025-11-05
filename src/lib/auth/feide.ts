@@ -4,12 +4,11 @@ import type {
     MiddlewareOptions,
     OAuth2Tokens,
     OAuth2UserInfo,
-    User,
 } from "better-auth";
-import { genericOAuth, oAuthDiscoveryMetadata } from "better-auth/plugins";
+import { genericOAuth } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
-import db from "../../db";
 import { account, studyProgram, studyProgramMembership } from "../../db/schema";
+import type { AppContext } from "../ctx";
 import { env } from "../env";
 
 /**
@@ -103,29 +102,30 @@ export const feidePlugin = () =>
  * Runs Feide tasks AFTER each auth request, to ensure synced info
  *
  * Important to note that this should run in the BetterAuth "after" hook
- * @param ctx Middleware context
+ * @param middlewareContext Middleware context
  */
 export const syncFeideHook: (
-    ctx: MiddlewareContext<
+    middlewareCtx: MiddlewareContext<
         MiddlewareOptions,
         AuthContext & {
             returned?: unknown;
             responseHeaders?: Headers;
         }
     >,
-) => Promise<void> = async (ctx) => {
+    ctx: Omit<AppContext, "auth">,
+) => Promise<void> = async (middlewareContext, ctx) => {
     if (
-        ctx.path.startsWith("/oauth2/callback") &&
-        ctx.params.providerId === FEIDE_PROVIDER_ID
+        middlewareContext.path.startsWith("/oauth2/callback") &&
+        middlewareContext.params.providerId === FEIDE_PROVIDER_ID
     ) {
-        const session = ctx.context.newSession;
+        const session = middlewareContext.context.newSession;
         if (!session) {
             throw new Error("No session found after Feide callback executed");
         }
 
         const userId = session.user.id;
 
-        const feideAccount = await db
+        const feideAccount = await ctx.db
             .select({ accessToken: account.accessToken })
             .from(account)
             .where(eq(account.userId, userId))
@@ -140,7 +140,7 @@ export const syncFeideHook: (
         const groups = await fetchValidStudyPrograms(token);
 
         // Add user to all valid study programs
-        await db.transaction(async (tx) => {
+        await ctx.db.transaction(async (tx) => {
             for (const feideGroup of groups) {
                 const sp = await tx
                     .select({ id: studyProgram.id })

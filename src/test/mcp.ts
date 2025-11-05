@@ -3,11 +3,11 @@ import { McpServer } from "@socotra/modelcontextprotocol-sdk/server/mcp.js";
 import type { UserWithRole } from "better-auth/plugins/admin";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { db, schema } from "../db";
+import { schema } from "../db";
 import { route } from "../lib/route";
 
 export const mcpRoute = route().all("/mcp", async (c) => {
-    const { auth } = c.get("ctx");
+    const { auth, db } = c.get("ctx");
     const transport = new StreamableHTTPTransport();
 
     // Your MCP server implementation
