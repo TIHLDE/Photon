@@ -11,6 +11,8 @@ import {
 } from "@react-email/components";
 import { env } from "../../env";
 import { emailStyles } from "./styles";
+// biome-ignore lint/correctness/noUnusedImports: <explanation>
+import React from "react";
 
 interface SwappedToWaitlistEmailProps {
     eventName: string;

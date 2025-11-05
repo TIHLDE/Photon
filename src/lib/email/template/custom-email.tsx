@@ -11,6 +11,8 @@ import {
 import { env } from "../../env";
 import type { EmailContentBlock } from "../schema";
 import { emailStyles } from "./styles";
+// biome-ignore lint/correctness/noUnusedImports: <explanation>
+import React from "react";
 
 interface CustomEmailProps {
     content: EmailContentBlock[];
