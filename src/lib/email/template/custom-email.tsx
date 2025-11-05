@@ -8,11 +8,11 @@ import {
     Img,
     Text,
 } from "@react-email/components";
+// biome-ignore lint/correctness/noUnusedImports: <explanation>
+import React from "react";
 import { env } from "../../env";
 import type { EmailContentBlock } from "../schema";
 import { emailStyles } from "./styles";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
-import React from "react";
 
 interface CustomEmailProps {
     content: EmailContentBlock[];

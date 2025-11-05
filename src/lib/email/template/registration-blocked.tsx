@@ -7,10 +7,10 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-import { env } from "../../env";
-import { emailStyles } from "./styles";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
+import { env } from "../../env";
+import { emailStyles } from "./styles";
 
 interface RegistrationBlockedEmailProps {
     eventName: string;
