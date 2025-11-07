@@ -1,5 +1,5 @@
-import { eq, ne, or } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { eq, or } from "drizzle-orm";
+import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
 import { route } from "~/lib/route";

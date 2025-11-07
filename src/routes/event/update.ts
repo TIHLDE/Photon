@@ -1,7 +1,6 @@
 import { type InferInsertModel, eq } from "drizzle-orm";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { type DbSchema, schema } from "~/db";
 import { isEventOwner } from "../../lib/event/middleware";
 import { updateEventSchema } from "../../lib/event/schema";

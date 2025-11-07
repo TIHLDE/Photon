@@ -176,6 +176,10 @@ const WEBHOOK_SECRET_CACHE_KEY = "vipps:webhook_secret";
 const WEBHOOK_API_PATH = "/api/event/payment/webhook";
 
 export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
+    if (env.VIPPS_TEST_MODE) {
+        return { id: "test", secret: "test" };
+    }
+
     const vippsToken = await getVippsToken();
 
     // Check if we have webhook registration in redis

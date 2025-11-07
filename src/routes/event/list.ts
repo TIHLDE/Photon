@@ -1,4 +1,4 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
 import { route } from "../../lib/route";
 import { withPagination } from "../../middleware/pagination";

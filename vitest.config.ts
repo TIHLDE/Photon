@@ -1,5 +1,6 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
+import { env } from "./src/lib/env";
 
 export default defineConfig({
     test: {
@@ -10,7 +11,7 @@ export default defineConfig({
         sequence: {
             concurrent: false,
         },
-        maxWorkers: 1, // 2 containers per worker
+        maxWorkers: env.MAX_TEST_WORKERS, // 2 containers per worker
         maxConcurrency: 1,
     },
     resolve: {

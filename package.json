@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "tsx watch src/index.ts",
+        "dev": "tsx watch --localstorage-file=.cache/localstorage src/index.ts",
         "build": "tsup",
         "start": "node dist/index.js",
         "test": "vitest run",

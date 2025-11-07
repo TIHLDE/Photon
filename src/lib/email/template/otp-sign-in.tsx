@@ -8,6 +8,7 @@ import {
     Section,
     Text,
 } from "@react-email/components";
+// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
 import { env } from "../../env";
 import { emailStyles } from "./styles";

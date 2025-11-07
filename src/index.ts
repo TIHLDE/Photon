@@ -127,7 +127,7 @@ export const createApp = async (variables?: Variables) => {
 export type App = Awaited<ReturnType<typeof createApp>>;
 
 if (env.NODE_ENV !== "test") {
-    await setupWebhooks();
+    void (await setupWebhooks());
 
     const app = await createApp();
 

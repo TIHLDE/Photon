@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import db, { type DbTransaction, schema } from "~/db";
+import { type DbTransaction, schema } from "~/db";
 
 /**
  * Generates a unique slug for an event based on the given title.
@@ -11,7 +11,7 @@ import db, { type DbTransaction, schema } from "~/db";
  */
 export const generateUniqueEventSlug = async (
     title: string,
-    transaction?: DbTransaction,
+    transaction: DbTransaction,
 ): Promise<string> => {
     let isUnique = false;
     let slug = title
@@ -28,7 +28,7 @@ export const generateUniqueEventSlug = async (
         .replace(/-{2,}/g, "-");
 
     while (!isUnique) {
-        const [existingEvent] = await (transaction ?? db)
+        const [existingEvent] = await transaction
             .select()
             .from(schema.event)
             .where(eq(schema.event.slug, slug))

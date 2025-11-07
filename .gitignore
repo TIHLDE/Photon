@@ -38,3 +38,7 @@ yarn-error.log*
 .DS_Store
 *.pem
 .vscode/launch.json
+
+# Cache
+.cache/*
+!.cache/.gitkeep

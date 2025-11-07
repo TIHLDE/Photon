@@ -1,5 +1,5 @@
 import type { AppContext } from "~/lib/ctx";
-import { matchesPermission, parsePermission } from "./permission-parser";
+import { parsePermission } from "./permission-parser";
 import { getUserPermissions } from "./roles";
 
 /**

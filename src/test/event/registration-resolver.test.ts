@@ -1,4 +1,3 @@
-import type { UserWithRole } from "better-auth/plugins";
 import { describe, expect } from "vitest";
 import { schema } from "~/db";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
