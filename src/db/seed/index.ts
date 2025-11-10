@@ -1,11 +1,11 @@
-import type { AppContext } from "../../lib/ctx";
 import { schema } from "..";
+import type { AppContext } from "../../lib/ctx";
 
 // Import all seed modules
 import seedAuth from "./auth";
-import seedRbac from "./rbac";
-import seedOrg from "./org";
 import seedEvent from "./event";
+import seedOrg from "./org";
+import seedRbac from "./rbac";
 
 /**
  * Main seed orchestrator
