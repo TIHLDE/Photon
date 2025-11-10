@@ -40,16 +40,9 @@ export const userSettings = pgTable("settings", {
     ...timestamps,
 });
 
-export const userSettingsRelations = relations(
-    userSettings,
-    ({ one, many }) => ({
-        user: one(user, {
-            fields: [userSettings.userId],
-            references: [user.id],
-        }),
-        allergies: many(userAllergy),
-    }),
-);
+export const userSettingsRelations = relations(userSettings, ({ many }) => ({
+    allergies: many(userAllergy),
+}));
 
 export const allergy = pgTable("allergy", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
@@ -58,15 +51,15 @@ export const allergy = pgTable("allergy", {
 });
 
 export const allergyRelations = relations(allergy, ({ many }) => ({
-    users: many(userAllergy),
+    userSettings: many(userAllergy),
 }));
 
 export const userAllergy = pgTable(
-    "user_allergy",
+    "user_setting_allergy",
     {
         userId: text("user_id")
             .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
+            .references(() => userSettings.userId, { onDelete: "cascade" }),
         allergySlug: varchar("allergy_slug", { length: 64 })
             .notNull()
             .references(() => allergy.slug, { onDelete: "cascade" }),
@@ -76,9 +69,9 @@ export const userAllergy = pgTable(
 );
 
 export const userAllergyRelations = relations(userAllergy, ({ one }) => ({
-    user: one(user, {
+    userSettings: one(userSettings, {
         fields: [userAllergy.userId],
-        references: [user.id],
+        references: [userSettings.userId],
     }),
     allergy: one(allergy, {
         fields: [userAllergy.allergySlug],
