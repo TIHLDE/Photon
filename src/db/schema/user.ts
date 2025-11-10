@@ -26,18 +26,17 @@ export const userSettings = pgTable("settings", {
     userId: text("user_id")
         .primaryKey()
         .references(() => user.id, { onDelete: "cascade" }),
-    gender: gender("gender"),
+    gender: gender("gender").notNull(),
     allowsPhotosByDefault: boolean("allows_photos_by_default")
         .default(false)
         .notNull(),
-    acceptsEventRules: boolean("accepts_event_rules").default(false).notNull(),
-    image: text("image"),
+    acceptsEventRules: boolean("accepts_event_rules").notNull(),
+    imageUrl: text("image_url"),
     bioDescription: text("bio_description"),
     githubUrl: varchar("github_url", { length: 256 }),
     linkedinUrl: varchar("linkedin_url", { length: 256 }),
-    receiveMailCommunication: boolean("receive_mail_communication")
-        .default(true)
-        .notNull(),
+    receiveMailCommunication: boolean("receive_mail_communication").notNull(),
+    isOnboarded: boolean("is_onboarded").default(false).notNull(),
     ...timestamps,
 });
 

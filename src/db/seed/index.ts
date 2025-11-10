@@ -6,6 +6,7 @@ import seedAuth from "./auth";
 import seedEvent from "./event";
 import seedOrg from "./org";
 import seedRbac from "./rbac";
+import seedUser from "./user";
 
 /**
  * Main seed orchestrator
@@ -32,13 +33,16 @@ export default async (ctx: AppContext) => {
     // 1. RBAC (roles must exist before users)
     await seedRbac(ctx);
 
-    // 2. Auth (users)
+    // 2. User (allergies - reference data)
+    await seedUser(ctx);
+
+    // 3. Auth (users)
     await seedAuth(ctx);
 
-    // 3. Org (groups)
+    // 4. Org (groups)
     await seedOrg(ctx);
 
-    // 4. Event (categories)
+    // 5. Event (categories)
     await seedEvent(ctx);
 
     console.log("🌱 Successfully seeded the database");

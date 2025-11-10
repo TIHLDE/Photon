@@ -15,6 +15,7 @@ import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
 import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
+import { userRoutes } from "./routes/user";
 import { mcpRoute } from "./test/mcp";
 
 /**
@@ -65,6 +66,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/groups", groupsRoutes)
         .route("/news", newsRoutes)
         .route("/jobs", jobRoutes)
+        .route("/user", userRoutes)
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
