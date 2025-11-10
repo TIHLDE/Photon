@@ -36,6 +36,13 @@
       "when": 1762187477137,
       "tag": "0004_slim_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762790898211,
+      "tag": "0005_organic_sentry",
+      "breakpoints": true
     }
   ]
 }
