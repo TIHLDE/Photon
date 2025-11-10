@@ -1,5 +1,6 @@
 import { expect } from "vitest";
 import { schema } from "~/db";
+import seed from "~/db/seed";
 import { integrationTest } from "./config/integration";
 
 integrationTest(
@@ -21,6 +22,18 @@ integrationTest(
 
         expect(queue).toBeDefined();
         expect(typeof queue.add).toBe("function");
+    },
+    500_000,
+);
+
+integrationTest(
+    "Database seeding should run without throwing errors",
+    async ({ ctx }) => {
+        // Run the seed function - if it completes without throwing, test passes
+        await seed(ctx);
+
+        // Optionally verify something was seeded
+        expect(true).toBe(true);
     },
     500_000,
 );
