@@ -20,6 +20,13 @@ export const PERMISSION_REGISTRY = {
     groups: ["view", "create", "update", "delete", "manage"],
     fines: ["view", "create", "update", "delete", "manage"],
     forms: ["view", "create", "update", "delete", "manage"],
+
+    // News permissions
+    news: ["view", "create", "update", "delete", "manage"],
+    "news:reactions": ["create", "delete"],
+
+    // Job permissions
+    jobs: ["view", "create", "update", "delete", "manage"],
 } as const;
 
 /**

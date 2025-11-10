@@ -12,6 +12,8 @@ import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { setupWebhooks } from "./lib/vipps";
 import { groupsRoutes } from "./routes/groups";
+import { jobRoutes } from "./routes/job";
+import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
 import { mcpRoute } from "./test/mcp";
 
@@ -61,6 +63,8 @@ export const createApp = async (variables?: Variables) => {
         .route("/forms", formRoutes)
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
+        .route("/news", newsRoutes)
+        .route("/jobs", jobRoutes)
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
