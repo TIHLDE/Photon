@@ -5,6 +5,7 @@ import { QueueManager } from "./cache/queue";
 import { type RedisClient, createRedisClient } from "./cache/redis";
 import { type EmailTransporter, createEmailTransporter } from "./email";
 import { env } from "./env";
+import { type StorageClient, createStorageClient } from "./storage";
 
 /**
  * Application context containing all external service dependencies.
@@ -21,6 +22,8 @@ export interface AppContext {
     auth: AuthInstance;
     /** Email transporter instance */
     mailer: EmailTransporter;
+    /** Storage bucket client instance */
+    bucket: StorageClient;
 }
 
 /**
@@ -32,7 +35,8 @@ export async function createAppContext(): Promise<AppContext> {
     const redis = await createRedisClient(env.REDIS_URL);
     const queue = new QueueManager(env.REDIS_URL);
     const mailer = createEmailTransporter();
-    const auth = createAuth({ db, redis, mailer, queue });
+    const bucket = await createStorageClient();
+    const auth = createAuth({ db, redis, mailer, queue, bucket });
 
     return {
         db,
@@ -40,5 +44,6 @@ export async function createAppContext(): Promise<AppContext> {
         queue,
         auth,
         mailer,
+        bucket,
     };
 }
