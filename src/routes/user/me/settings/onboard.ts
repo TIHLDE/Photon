@@ -1,11 +1,11 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { route } from "~/lib/route";
 import {
     UserSettingsSchema,
     createUserSettings,
     getUserSettings,
 } from "~/lib/user/settings";
-import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 const schemaOpenAPI = await resolver(UserSettingsSchema).toOpenAPISchema();

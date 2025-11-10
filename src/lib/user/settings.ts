@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
 import { genderVariants, userAllergy, userSettings } from "../../db/schema";
 import type { AppContext } from "../ctx";
-import { z } from "zod";
 
 export const UserAllergySchema = z.object({
     slug: z.string(),

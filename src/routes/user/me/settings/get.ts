@@ -1,8 +1,8 @@
 import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import { UserSettingsSchema, getUserSettings } from "~/lib/user/settings";
 import { route } from "~/lib/route";
+import { UserSettingsSchema, getUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
 
 const responseSchema = UserSettingsSchema.extend({
