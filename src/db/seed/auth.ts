@@ -29,5 +29,17 @@ export default async ({ db, auth }: AppContext) => {
             .update(schema.user)
             .set({ emailVerified: true })
             .where(eq(schema.user.id, userId));
+
+        await db.insert(schema.userSettings).values({
+            userId,
+            acceptsEventRules: true,
+            allowsPhotosByDefault: true,
+            gender: "male",
+            receiveMailCommunication: true,
+            bioDescription: "I am a test user created during seeding.",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isOnboarded: true,
+        });
     }
 };
