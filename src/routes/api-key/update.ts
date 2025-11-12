@@ -1,14 +1,32 @@
-import { describeRoute, validator } from "hono-openapi";
-import z from "zod";
+import { describeRoute, resolver, validator } from "hono-openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
+import { apiKeySchema, idParamSchema } from "./schemas";
+import z from "zod";
 
 const updateApiKeySchema = z.object({
-    name: z.string().min(1).max(100).optional(),
-    description: z.string().min(1).max(500).optional(),
-    permissions: z.array(z.string()).min(1).optional(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
+    name: z
+        .string()
+        .min(1)
+        .max(100)
+        .optional()
+        .meta({ description: "Name for the API key" }),
+    description: z
+        .string()
+        .min(1)
+        .max(500)
+        .optional()
+        .meta({ description: "Detailed description of the API key's purpose" }),
+    permissions: z
+        .array(z.string())
+        .min(1)
+        .optional()
+        .meta({ description: "Array of permissions granted to this API key" }),
+    metadata: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .meta({ description: "Optional metadata as key-value pairs" }),
 });
 
 export const updateRoute = route().patch(
@@ -21,6 +39,11 @@ export const updateRoute = route().patch(
         responses: {
             200: {
                 description: "API key updated successfully",
+                content: {
+                    "application/json": {
+                        schema: resolver(apiKeySchema),
+                    },
+                },
             },
             403: {
                 description: "Forbidden - Missing api-keys:update permission",
@@ -32,11 +55,12 @@ export const updateRoute = route().patch(
     }),
     requireAuth,
     requirePermission("api-keys:update"),
+    validator("param", idParamSchema),
     validator("json", updateApiKeySchema),
     async (c) => {
         const body = c.req.valid("json");
         const { apiKey: service } = c.get("service");
-        const { id } = c.req.param();
+        const { id } = c.req.valid("param");
 
         const updatedApiKey = await service.update(id, body);
 
