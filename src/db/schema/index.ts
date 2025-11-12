@@ -6,4 +6,5 @@ export * from "./notification";
 export * from "./form";
 export * from "./news";
 export * from "./job";
+export * from "./api-key";
 export * from "./user";

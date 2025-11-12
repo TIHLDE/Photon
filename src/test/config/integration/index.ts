@@ -13,7 +13,7 @@ import { createDb } from "~/db";
 import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
 import { createRedisClient } from "~/lib/cache/redis";
-import type { AppContext } from "~/lib/ctx";
+import { type AppContext, createAppServices } from "~/lib/ctx";
 import { QueueManager } from "../../../lib/cache/queue";
 import { createTestUtils } from "./util";
 
@@ -240,7 +240,10 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
             }
 
             // Create fresh app instance for this test
-            const app = await createApp({ ctx: sharedTestContext });
+            const app = await createApp({
+                ctx: sharedTestContext,
+                service: createAppServices(sharedTestContext),
+            });
 
             // Execute test
             await use({
