@@ -1,5 +1,4 @@
 import { expect } from "vitest";
-import { schema } from "~/db";
 import { integrationTest } from "~/test/config/integration";
 
 integrationTest(
@@ -7,70 +6,23 @@ integrationTest(
     async ({ ctx }) => {
         const { db } = ctx;
 
-        // Create a test user with api-keys permissions
-        const [testUser] = await db
-            .insert(schema.user)
-            .values({
-                id: "test-user-id",
-                name: "Test User",
-                email: "test@example.com",
-                emailVerified: true,
-            })
-            .returning();
-
-        if (!testUser) {
-            throw new Error("Failed to create test user");
-        }
-
-        // Assign permissions directly to user
-        await db.insert(schema.userPermission).values([
-            {
-                userId: testUser.id,
-                permission: "api-keys:view",
-                scope: null,
-            },
-            {
-                userId: testUser.id,
-                permission: "api-keys:create",
-                scope: null,
-            },
-            {
-                userId: testUser.id,
-                permission: "api-keys:update",
-                scope: null,
-            },
-            {
-                userId: testUser.id,
-                permission: "api-keys:delete",
-                scope: null,
-            },
+        // Create a test user with api-keys permissions using the utility functions
+        const testUser = await ctx.utils.createTestUser();
+        await ctx.utils.giveUserPermissions(testUser, [
+            "api-keys:view",
+            "api-keys:create",
+            "api-keys:update",
+            "api-keys:delete",
         ]);
 
-        // Create a session for the user
-        const [session] = await db
-            .insert(schema.session)
-            .values({
-                id: "test-session-id",
-                token: "test-token",
-                userId: testUser.id,
-                expiresAt: new Date(Date.now() + 1000 * 60 * 60), // 1 hour
-            })
-            .returning();
-
-        if (!session) {
-            throw new Error("Failed to create test session");
-        }
-
-        const client = ctx.utils.client({
-            Cookie: `better-auth.session_token=${session.token}`,
-        });
+        const client = await ctx.utils.clientForUser(testUser);
 
         // ===== TEST 1: CREATE API KEY =====
         const createResponse = await client.api["api-keys"].$post({
             json: {
                 name: "Test Integration Key",
                 description: "Used for integration testing",
-                permissions: ["email:send", "news:view"],
+                permissions: ["email:send", "users:view"],
                 metadata: {
                     environment: "test",
                     service: "integration-test",
@@ -84,7 +36,7 @@ integrationTest(
         expect(createdKey).toMatchObject({
             name: "Test Integration Key",
             description: "Used for integration testing",
-            permissions: ["email:send", "news:view"],
+            permissions: ["email:send", "users:view"],
             metadata: {
                 environment: "test",
                 service: "integration-test",
@@ -115,7 +67,7 @@ integrationTest(
         expect(validationResult.apiKey).toMatchObject({
             id: apiKeyId,
             name: "Test Integration Key",
-            permissions: ["email:send", "news:view"],
+            permissions: ["email:send", "users:view"],
         });
 
         // Verify lastUsedAt was updated
@@ -163,7 +115,7 @@ integrationTest(
         expect(apiKey).toMatchObject({
             id: apiKeyId,
             name: "Test Integration Key",
-            permissions: ["email:send", "news:view"],
+            permissions: ["email:send", "users:view"],
         });
 
         // Verify full key is NOT included
@@ -281,37 +233,9 @@ integrationTest(
         expect(deletedGetResponse.status).toBe(404);
 
         // ===== TEST 15: UNAUTHORIZED ACCESS (no permissions) =====
-        const [unauthorizedUser] = await db
-            .insert(schema.user)
-            .values({
-                id: "unauthorized-user",
-                name: "Unauthorized User",
-                email: "unauthorized@example.com",
-                emailVerified: true,
-            })
-            .returning();
-
-        if (!unauthorizedUser) {
-            throw new Error("Failed to create unauthorized user");
-        }
-
-        const [unauthorizedSession] = await db
-            .insert(schema.session)
-            .values({
-                id: "unauthorized-session",
-                token: "unauthorized-token",
-                userId: unauthorizedUser.id,
-                expiresAt: new Date(Date.now() + 1000 * 60 * 60),
-            })
-            .returning();
-
-        if (!unauthorizedSession) {
-            throw new Error("Failed to create unauthorized session");
-        }
-
-        const unauthorizedClient = ctx.utils.client({
-            Cookie: `better-auth.session_token=${unauthorizedSession.token}`,
-        });
+        const unauthorizedUser = await ctx.utils.createTestUser();
+        const unauthorizedClient =
+            await ctx.utils.clientForUser(unauthorizedUser);
 
         const unauthorizedCreateResponse = await unauthorizedClient.api[
             "api-keys"
@@ -338,7 +262,7 @@ integrationTest(
             json: {
                 name: "Invalid Permissions Key",
                 description: "Should fail",
-                permissions: ["invalid:permission"],
+                permissions: ["nonexistent:action"],
             },
         });
 
