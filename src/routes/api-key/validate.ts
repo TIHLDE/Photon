@@ -1,9 +1,18 @@
-import { describeRoute, validator } from "hono-openapi";
-import z from "zod";
+import { describeRoute, resolver, validator } from "hono-openapi";
 import { route } from "~/lib/route";
+import { apiKeySchema } from "./schemas";
+import z from "zod";
 
 const validateApiKeySchema = z.object({
     key: z.string().min(1).meta({ description: "The API key to validate" }),
+});
+
+const validateApiKeyResponseSchema = z.object({
+    valid: z.boolean().meta({ description: "Whether the API key is valid" }),
+    apiKey: apiKeySchema.optional().meta({
+        description:
+            "The API key details and permissions if valid. Undefined if invalid.",
+    }),
 });
 
 export const validateRoute = route().post(
@@ -17,6 +26,11 @@ export const validateRoute = route().post(
             200: {
                 description:
                     "Validation result. If valid=true, includes the API key details and permissions.",
+                content: {
+                    "application/json": {
+                        schema: resolver(validateApiKeyResponseSchema),
+                    },
+                },
             },
         },
     }),

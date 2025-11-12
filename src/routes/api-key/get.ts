@@ -1,8 +1,9 @@
-import { describeRoute } from "hono-openapi";
+import { describeRoute, resolver, validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
+import { apiKeySchema, idParamSchema } from "./schemas";
 
 export const getRoute = route().get(
     "/:id",
@@ -14,6 +15,11 @@ export const getRoute = route().get(
         responses: {
             200: {
                 description: "API key details",
+                content: {
+                    "application/json": {
+                        schema: resolver(apiKeySchema),
+                    },
+                },
             },
             404: {
                 description: "API key not found",
@@ -25,9 +31,10 @@ export const getRoute = route().get(
     }),
     requireAuth,
     requirePermission("api-keys:view"),
+    validator("param", idParamSchema),
     async (c) => {
         const { apiKey: service } = c.get("service");
-        const { id } = c.req.param();
+        const { id } = c.req.valid("param");
 
         const apiKey = await service.getById(id);
 
