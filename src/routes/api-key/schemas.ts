@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const idParamSchema = z.object({
-    id: z.uuidv4().meta({ description: "API key ID" }),
+    id: z.uuid().meta({ description: "API key ID" }),
 });
 
 export const apiKeySchema = z.object({
