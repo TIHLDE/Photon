@@ -191,7 +191,10 @@ async function fetchValidStudyPrograms(
     }
 
     const groups = (await response.json()) as FeideGroup[];
+    return parseValidStudyPrograms(groups);
+}
 
+export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
     return groups.flatMap((g) => {
         if (g.type !== "fc:fs:kull") return [];
         const parts = g.id.split(":"); // i.e. fc:fs:fs:kull:ntnu.no:BIDATA:2023H
