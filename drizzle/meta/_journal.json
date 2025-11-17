@@ -50,6 +50,13 @@
       "when": 1762801208633,
       "tag": "0006_flimsy_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1763383329504,
+      "tag": "0007_cynical_veda",
+      "breakpoints": true
     }
   ]
 }
