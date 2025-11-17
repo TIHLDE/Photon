@@ -17,6 +17,7 @@ export const updateRoute = route().put(
     describeRoute({
         tags: ["events"],
         summary: "Update event",
+        operationId: "updateEvent",
         description:
             "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
         requestBody: {

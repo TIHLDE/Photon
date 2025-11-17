@@ -28,6 +28,7 @@ export const updateFineRoute = route().patch(
     describeRoute({
         tags: ["fines"],
         summary: "Partially update fine",
+        operationId: "updateFine",
         description:
             "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
         requestBody: {

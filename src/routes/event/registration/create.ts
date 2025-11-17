@@ -19,6 +19,7 @@ export const registerToEventRoute = route().post(
     describeRoute({
         tags: ["events"],
         summary: "Register to an event",
+        operationId: "createEventRegistration",
         responses: {
             200: {
                 description: "OK",

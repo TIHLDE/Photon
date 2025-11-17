@@ -11,6 +11,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["events"],
         summary: "Delete an event",
+        operationId: "deleteEvent",
         description:
             "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.",
         responses: {

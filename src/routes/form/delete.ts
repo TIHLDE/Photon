@@ -12,6 +12,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["forms"],
         summary: "Delete form",
+        operationId: "deleteForm",
         description:
             "Delete a form and all associated data. Requires permission to manage the form.",
         responses: {

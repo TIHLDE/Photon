@@ -9,6 +9,7 @@ export const getRoute = route().get(
     describeRoute({
         tags: ["jobs"],
         summary: "Get job posting",
+        operationId: "getJob",
         description: "Get a single job posting by ID. Public endpoint.",
         responses: {
             200: {

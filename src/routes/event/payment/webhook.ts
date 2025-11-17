@@ -29,6 +29,7 @@ export const paymentWebhookRoute = route().post(
     describeRoute({
         tags: ["payments", "webhooks"],
         summary: "Vipps payment webhook",
+        operationId: "handlePaymentWebhook",
         description:
             "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.",
         responses: {

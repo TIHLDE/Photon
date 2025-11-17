@@ -38,6 +38,7 @@ export const createPaymentRoute = route().post(
     describeRoute({
         tags: ["events", "payments"],
         summary: "Create payment for event",
+        operationId: "createEventPayment",
         description:
             "Initiates a Vipps payment for an event registration. User must have a registered status for the event.",
         requestBody: {

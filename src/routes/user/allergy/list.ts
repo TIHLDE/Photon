@@ -23,6 +23,7 @@ export const listAllergiesRoute = route().get(
     describeRoute({
         tags: ["user"],
         summary: "List all allergies",
+        operationId: "listAllergies",
         description:
             "Retrieve a list of all possible allergies that users can have.",
         responses: {

@@ -116,6 +116,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["events"],
         summary: "Get event by ID",
+        operationId: "getEvent",
         responses: {
             200: {
                 description: "OK",

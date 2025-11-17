@@ -33,6 +33,7 @@ export const listNotificationsRoute = route().get(
     describeRoute({
         tags: ["notifications"],
         summary: "List notifications for authenticated user",
+        operationId: "listNotifications",
         description:
             "Returns paginated list of notifications for the authenticated user, ordered by most recent first",
         responses: {

@@ -22,6 +22,7 @@ export const createReactionRoute = route().post(
     describeRoute({
         tags: ["news"],
         summary: "Add reaction to news",
+        operationId: "createNewsReaction",
         description:
             "Add or update emoji reaction to a news article. Requires authentication.",
         requestBody: {

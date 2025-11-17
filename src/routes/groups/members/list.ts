@@ -22,6 +22,7 @@ export const listMembersRoute = route().get(
     describeRoute({
         tags: ["groups"],
         summary: "List group members",
+        operationId: "listGroupMembers",
         description: "Retrieve a list of all members in a group.",
         responses: {
             200: {

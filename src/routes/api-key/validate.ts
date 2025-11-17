@@ -20,6 +20,7 @@ export const validateRoute = route().post(
     describeRoute({
         tags: ["api-keys"],
         summary: "Validate API key",
+        operationId: "validateApiKey",
         description:
             "Check if an API key is valid and return its details. This is a public endpoint that does not require authentication. Updates the lastUsedAt timestamp if the key is valid.",
         responses: {

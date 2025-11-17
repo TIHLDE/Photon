@@ -17,6 +17,7 @@ export const deleteEventRegistrationRoute = route().delete(
     describeRoute({
         tags: ["events"],
         summary: "Unregister from event",
+        operationId: "deleteEventRegistration",
         responses: {
             200: {
                 description: "OK",

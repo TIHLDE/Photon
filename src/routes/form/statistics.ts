@@ -35,6 +35,7 @@ export const statisticsRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "Get form statistics",
+        operationId: "getFormStatistics",
         description:
             "Get aggregated statistics for a form. Requires permission to manage the form.",
         responses: {

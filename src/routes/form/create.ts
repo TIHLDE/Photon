@@ -23,6 +23,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["forms"],
         summary: "Create form",
+        operationId: "createForm",
         description:
             "Create a new base form template. Requires 'forms:create' permission.",
         responses: {

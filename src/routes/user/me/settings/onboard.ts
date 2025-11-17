@@ -15,6 +15,7 @@ export const onboardRoute = route().post(
     describeRoute({
         tags: ["user"],
         summary: "Complete user onboarding",
+        operationId: "onboardUser",
         description:
             "Create initial user settings and mark the user as onboarded. Can only be called once per user.",
         requestBody: {

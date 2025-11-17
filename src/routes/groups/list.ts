@@ -12,6 +12,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["groups"],
         summary: "List groups",
+        operationId: "listGroups",
         description:
             "Retrieve a list of all groups. Supports optional filtering by type and search query.",
         responses: {

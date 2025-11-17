@@ -12,6 +12,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["news"],
         summary: "Delete news article",
+        operationId: "deleteNews",
         description:
             "Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.",
         responses: {

@@ -12,6 +12,7 @@ export const deleteFineRoute = route().delete(
     describeRoute({
         tags: ["fines"],
         summary: "Delete a fine",
+        operationId: "deleteFine",
         description:
             "Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.",
         responses: {

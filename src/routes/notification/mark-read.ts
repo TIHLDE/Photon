@@ -30,6 +30,7 @@ export const markReadNotificationRoute = route().patch(
     describeRoute({
         tags: ["notifications"],
         summary: "Mark notification as read or unread",
+        operationId: "markNotificationRead",
         description:
             "Update the read status of a notification. User must be authenticated and own the notification.",
         requestBody: {

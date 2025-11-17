@@ -64,6 +64,7 @@ export const updateRoute = route().patch(
     describeRoute({
         tags: ["jobs"],
         summary: "Update job posting",
+        operationId: "updateJob",
         description:
             "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
         requestBody: {

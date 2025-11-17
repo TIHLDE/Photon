@@ -11,6 +11,7 @@ export const removeMemberRoute = route().delete(
     describeRoute({
         tags: ["groups"],
         summary: "Remove member from group",
+        operationId: "removeGroupMember",
         description:
             "Remove a member from a group. Requires 'groups:manage' permission.",
         responses: {

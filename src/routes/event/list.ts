@@ -50,6 +50,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["events"],
         summary: "List events",
+        operationId: "listEvents",
         responses: {
             200: {
                 description: "OK",

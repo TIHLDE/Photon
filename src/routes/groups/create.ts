@@ -60,6 +60,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["groups"],
         summary: "Create group",
+        operationId: "createGroup",
         description: "Create a new group. Requires 'groups:create' permission.",
         requestBody: {
             content: {

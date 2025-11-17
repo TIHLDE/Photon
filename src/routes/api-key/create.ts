@@ -31,6 +31,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["api-keys"],
         summary: "Create API key",
+        operationId: "createApiKey",
         description:
             "Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission.",
         responses: {

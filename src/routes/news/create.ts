@@ -41,6 +41,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["news"],
         summary: "Create news article",
+        operationId: "createNews",
         description:
             "Create a new news article. Requires 'news:create' permission.",
         requestBody: {

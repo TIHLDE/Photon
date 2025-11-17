@@ -18,6 +18,7 @@ export const getSettingsRoute = route().get(
     describeRoute({
         tags: ["user"],
         summary: "Get current user settings",
+        operationId: "getUserSettings",
         description:
             "Retrieve the authenticated user's settings including preferences and allergies.",
         responses: {

@@ -40,6 +40,7 @@ export const getRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "Get form",
+        operationId: "getForm",
         description: "Get a form by ID with all fields and options",
         responses: {
             200: {

@@ -25,6 +25,7 @@ export const listEventFormsRoute = route().get(
     describeRoute({
         tags: ["events", "forms"],
         summary: "List event forms",
+        operationId: "listEventForms",
         description: "Get all forms (survey and evaluation) for an event",
         responses: {
             200: {

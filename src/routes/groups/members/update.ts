@@ -20,6 +20,7 @@ export const updateMemberRoleRoute = route().patch(
     describeRoute({
         tags: ["groups"],
         summary: "Update member role",
+        operationId: "updateGroupMemberRole",
         description:
             "Update a member's role in a group. Requires 'groups:manage' permission.",
         requestBody: {

@@ -9,6 +9,7 @@ export const getRoute = route().get(
     describeRoute({
         tags: ["news"],
         summary: "Get news article",
+        operationId: "getNews",
         description: "Get a single news article by ID. Public endpoint.",
         responses: {
             200: {

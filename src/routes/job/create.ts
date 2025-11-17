@@ -104,6 +104,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["jobs"],
         summary: "Create job posting",
+        operationId: "createJob",
         description:
             "Create a new job posting. Requires 'jobs:create' permission.",
         requestBody: {

@@ -36,6 +36,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
     describeRoute({
         tags: ["events"],
         summary: "Get event registrations",
+        operationId: "listEventRegistrations",
         responses: {
             200: {
                 description: "OK",

@@ -12,6 +12,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["jobs"],
         summary: "Delete job posting",
+        operationId: "deleteJob",
         description:
             "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
         responses: {

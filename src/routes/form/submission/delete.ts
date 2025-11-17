@@ -14,6 +14,7 @@ export const deleteSubmissionWithReasonRoute = route().delete(
     describeRoute({
         tags: ["forms"],
         summary: "Delete submission with reason",
+        operationId: "deleteFormSubmission",
         description:
             "Delete a submission and notify the user with a reason. Admin only.",
         responses: {

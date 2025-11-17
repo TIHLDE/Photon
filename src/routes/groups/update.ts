@@ -58,6 +58,7 @@ export const updateRoute = route().patch(
     describeRoute({
         tags: ["groups"],
         summary: "Partially update group",
+        operationId: "updateGroup",
         description:
             "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
         requestBody: {

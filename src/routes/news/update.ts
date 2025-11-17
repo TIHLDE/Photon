@@ -25,6 +25,7 @@ export const updateRoute = route().patch(
     describeRoute({
         tags: ["news"],
         summary: "Update news article",
+        operationId: "updateNews",
         description:
             "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
         requestBody: {

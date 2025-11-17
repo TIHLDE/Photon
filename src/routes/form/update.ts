@@ -13,6 +13,7 @@ export const updateRoute = route().patch(
     describeRoute({
         tags: ["forms"],
         summary: "Update form",
+        operationId: "updateForm",
         description: "Update a form. Requires permission to manage the form.",
         responses: {
             200: {

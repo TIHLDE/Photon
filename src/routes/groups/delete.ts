@@ -12,6 +12,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["groups"],
         summary: "Delete a group",
+        operationId: "deleteGroup",
         description:
             "Delete a group by its slug. Requires being a group leader OR having 'groups:delete' permission (globally or scoped to this group). This action is irreversible and will remove all associated data, including memberships and fines.",
         responses: {

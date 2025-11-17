@@ -21,6 +21,9 @@ export const getFavoriteEventsRoute = route().get(
     describeRoute({
         tags: ["events"],
         summary: "Get all my favorite events",
+        description:
+            "Retrieve a list of all events you have marked as favorite.",
+        operationId: "getFavoriteEvents",
         responses: {
             200: {
                 description: "List of favorite events",

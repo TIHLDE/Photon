@@ -31,6 +31,7 @@ export const getRoute = route().get(
     describeRoute({
         tags: ["groups"],
         summary: "Get group by slug",
+        operationId: "getGroup",
         description:
             "Retrieve detailed information about a specific group by its slug identifier.",
         responses: {

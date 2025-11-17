@@ -24,6 +24,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "List forms",
+        operationId: "listForms",
         description:
             "List all form templates by default. Use ?all=true to include all forms. Returns template forms by default.",
         responses: {

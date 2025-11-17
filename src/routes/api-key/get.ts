@@ -10,6 +10,7 @@ export const getRoute = route().get(
     describeRoute({
         tags: ["api-keys"],
         summary: "Get API key",
+        operationId: "getApiKey",
         description:
             "Get a single API key by ID. Does not include the full key value. Requires 'api-keys:view' permission.",
         responses: {

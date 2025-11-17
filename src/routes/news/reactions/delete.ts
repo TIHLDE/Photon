@@ -10,6 +10,7 @@ export const deleteReactionRoute = route().delete(
     describeRoute({
         tags: ["news"],
         summary: "Remove reaction from news",
+        operationId: "deleteNewsReaction",
         description: "Remove your emoji reaction from a news article.",
         responses: {
             200: {

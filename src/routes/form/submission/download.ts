@@ -12,6 +12,7 @@ export const downloadSubmissionsRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "Download submissions as CSV",
+        operationId: "downloadFormSubmissions",
         description:
             "Download all submissions for a form as CSV. Requires permission to manage the form.",
         responses: {

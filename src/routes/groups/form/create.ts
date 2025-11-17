@@ -13,6 +13,7 @@ export const createGroupFormRoute = route().post(
     describeRoute({
         tags: ["groups", "forms"],
         summary: "Create group form",
+        operationId: "createGroupForm",
         description:
             "Create a form for a group. Requires group leader permission or forms:create permission.",
         responses: {

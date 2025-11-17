@@ -34,6 +34,7 @@ export const updateRoute = route().patch(
     describeRoute({
         tags: ["api-keys"],
         summary: "Update API key",
+        operationId: "updateApiKey",
         description:
             "Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.",
         responses: {

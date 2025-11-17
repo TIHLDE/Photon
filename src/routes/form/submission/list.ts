@@ -39,6 +39,7 @@ export const listSubmissionsRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "List submissions",
+        operationId: "listFormSubmissions",
         description:
             "List all submissions for a form. Requires permission to manage the form.",
         responses: {

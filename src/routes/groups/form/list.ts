@@ -29,6 +29,7 @@ export const listGroupFormsRoute = route().get(
     describeRoute({
         tags: ["groups", "forms"],
         summary: "List group forms",
+        operationId: "listGroupForms",
         description: "Get all forms for a group, filtered by user permissions",
         responses: {
             200: {

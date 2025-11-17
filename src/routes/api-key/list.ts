@@ -12,6 +12,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["api-keys"],
         summary: "List API keys",
+        operationId: "listApiKeys",
         description:
             "Get a list of all API keys. Does not include the full key values. Requires 'api-keys:view' permission.",
         responses: {

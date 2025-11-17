@@ -8,6 +8,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["jobs"],
         summary: "List job postings",
+        operationId: "listJobs",
         description:
             "Get a list of job postings. Supports search and expired filtering. Public endpoint.",
         responses: {

@@ -9,6 +9,7 @@ export const regenerateRoute = route().post(
     describeRoute({
         tags: ["api-keys"],
         summary: "Regenerate API key",
+        operationId: "regenerateApiKey",
         description:
             "Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.",
         responses: {

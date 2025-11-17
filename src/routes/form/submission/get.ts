@@ -37,6 +37,7 @@ export const getSubmissionRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "Get submission",
+        operationId: "getFormSubmission",
         description:
             "Get a specific submission. Can view own submission or requires permission to manage the form.",
         responses: {

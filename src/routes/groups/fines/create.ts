@@ -34,6 +34,7 @@ export const createFineRoute = route().post(
     describeRoute({
         tags: ["fines"],
         summary: "Create fine",
+        operationId: "createFine",
         description:
             "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
         requestBody: {

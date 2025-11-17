@@ -42,6 +42,7 @@ export const getFineRoute = route().get(
     describeRoute({
         tags: ["fines"],
         summary: "Get fine by ID",
+        operationId: "getFine",
         description:
             "Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.",
         responses: {

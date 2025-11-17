@@ -18,6 +18,7 @@ export const updateFavoriteRoute = route().put(
     describeRoute({
         tags: ["events"],
         summary: "Update event favorite",
+        operationId: "updateEventFavorite",
         requestBody: {
             content: {
                 "application/json": { schema: updateBodySchemaOpenAPI.schema },

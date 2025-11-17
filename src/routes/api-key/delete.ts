@@ -14,6 +14,7 @@ export const deleteRoute = route().delete(
     describeRoute({
         tags: ["api-keys"],
         summary: "Delete API key",
+        operationId: "deleteApiKey",
         description:
             "Delete an API key. This action is irreversible. Requires 'api-keys:delete' permission.",
         responses: {

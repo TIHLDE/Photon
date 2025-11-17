@@ -16,6 +16,7 @@ export const listFinesRoute = route().get(
     describeRoute({
         tags: ["fines"],
         summary: "List fines for a group",
+        operationId: "listFines",
         description:
             "Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.",
         responses: {

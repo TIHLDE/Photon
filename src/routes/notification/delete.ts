@@ -21,6 +21,7 @@ export const deleteNotificationRoute = route().delete(
     describeRoute({
         tags: ["notifications"],
         summary: "Delete notification",
+        operationId: "deleteNotification",
         description:
             "Delete a notification by ID. User must be authenticated and own the notification.",
         responses: {

@@ -13,6 +13,7 @@ export const createEventFormRoute = route().post(
     describeRoute({
         tags: ["events", "forms"],
         summary: "Create event form",
+        operationId: "createEventForm",
         description:
             "Create a survey or evaluation form for an event. Requires event write permission.",
         responses: {

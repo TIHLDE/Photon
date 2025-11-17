@@ -8,6 +8,7 @@ export const listRoute = route().get(
     describeRoute({
         tags: ["news"],
         summary: "List news articles",
+        operationId: "listNews",
         description:
             "Get a paginated list of all news articles. Public endpoint.",
         responses: {

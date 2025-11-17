@@ -61,6 +61,7 @@ export const sendEmailRoute = route().post(
     describeRoute({
         tags: ["email"],
         summary: "Send custom email",
+        operationId: "sendCustomEmail",
         description:
             "Send a custom email with structured content blocks. Requires API key authentication via Bearer token.",
         requestBody: {

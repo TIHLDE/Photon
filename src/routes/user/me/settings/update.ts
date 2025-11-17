@@ -17,6 +17,7 @@ export const updateSettingsRoute = route().patch(
     describeRoute({
         tags: ["user"],
         summary: "Update user settings",
+        operationId: "updateUserSettings",
         description:
             "Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.",
         requestBody: {

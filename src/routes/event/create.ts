@@ -36,6 +36,7 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["events"],
         summary: "Create event",
+        operationId: "createEvent",
         description: "Create a new event. Requires 'events:create' permission.",
         requestBody: {
             content: {

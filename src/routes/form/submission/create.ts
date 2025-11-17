@@ -14,6 +14,7 @@ export const createSubmissionRoute = route().post(
     describeRoute({
         tags: ["forms"],
         summary: "Create submission",
+        operationId: "createFormSubmission",
         description: "Submit answers to a form",
         responses: {
             201: {

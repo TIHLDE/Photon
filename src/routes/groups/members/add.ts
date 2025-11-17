@@ -26,6 +26,7 @@ export const addMemberRoute = route().post(
     describeRoute({
         tags: ["groups"],
         summary: "Add member to group",
+        operationId: "addGroupMember",
         description:
             "Add a member to a group. Requires 'groups:manage' permission.",
         requestBody: {
