@@ -7,3 +7,4 @@ export * from "./form";
 export * from "./news";
 export * from "./job";
 export * from "./user";
+export * from "./api-key";

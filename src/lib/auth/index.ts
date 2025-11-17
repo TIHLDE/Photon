@@ -131,6 +131,15 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
     });
 
 /**
+ * DO NOT USE
+ * This is exported only for use with the BetterAuth CLI so it can discover the instance and resolve plugins
+ * for generating database migrations.
+ *
+ * Uncomment when needed
+ */
+// export const auth = createAuth(await createAppContext());
+
+/**
  * The type of the BetterAuth instance
  */
 export type AuthInstance = ReturnType<typeof createAuth>;
