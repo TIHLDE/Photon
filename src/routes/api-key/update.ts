@@ -1,9 +1,9 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
+import z from "zod";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
 import { apiKeySchema, idParamSchema } from "./schemas";
-import z from "zod";
 
 const updateApiKeySchema = z.object({
     name: z

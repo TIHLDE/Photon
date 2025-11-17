@@ -1,7 +1,7 @@
 import { describeRoute, resolver, validator } from "hono-openapi";
+import z from "zod";
 import { route } from "~/lib/route";
 import { apiKeySchema } from "./schemas";
-import z from "zod";
 
 const validateApiKeySchema = z.object({
     key: z.string().min(1).meta({ description: "The API key to validate" }),
