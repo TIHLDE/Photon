@@ -5,6 +5,7 @@ import { QueueManager } from "./cache/queue";
 import { type RedisClient, createRedisClient } from "./cache/redis";
 import { type EmailTransporter, createEmailTransporter } from "./email";
 import { env } from "./env";
+import { type ApiKeyService, createApiKeyService } from "./service/api-key";
 
 /**
  * Application context containing all external service dependencies.
@@ -40,5 +41,15 @@ export async function createAppContext(): Promise<AppContext> {
         queue,
         auth,
         mailer,
+    };
+}
+
+export interface AppServices {
+    apiKey: ApiKeyService;
+}
+
+export function createAppServices(ctx: AppContext): AppServices {
+    return {
+        apiKey: createApiKeyService(ctx),
     };
 }

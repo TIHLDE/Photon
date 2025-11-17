@@ -13,7 +13,7 @@ import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-veri
 import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
 import ResetPasswordEmail from "~/lib/email/template/reset-password";
 import { env } from "~/lib/env";
-import type { AppContext } from "../ctx";
+import { type AppContext, createAppContext } from "../ctx";
 import { feidePlugin, syncFeideHook } from "./feide";
 
 export const createAuth = (ctx: Omit<AppContext, "auth">) =>
@@ -129,6 +129,16 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             },
         },
     });
+
+/**
+ * DO NOT USE
+ * This is exported only for use with the BetterAuth CLI so it can discover the instance and resolve plugins
+ * for generating database migrations.
+ *
+ * Mark as deprecated to visually discourage usage.
+ * @deprecated
+ */
+export const auth = createAuth(await createAppContext());
 
 /**
  * The type of the BetterAuth instance
