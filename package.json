@@ -28,6 +28,7 @@
         "docker:fresh": "docker compose -f docker-compose.dev.yml down -v && docker compose -f docker-compose.dev.yml up -d --wait"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.927.0",
         "@dotenvx/dotenvx": "^1.49.0",
         "@hono/mcp": "^0.1.4",
         "@hono/node-server": "^1.19.1",
@@ -54,6 +55,7 @@
     "devDependencies": {
         "@biomejs/biome": "^1.9.4",
         "@react-email/preview-server": "^4.2.8",
+        "@testcontainers/minio": "^11.8.0",
         "@testcontainers/postgresql": "^11.7.0",
         "@testcontainers/redis": "^11.7.0",
         "@types/bull": "^4.10.4",

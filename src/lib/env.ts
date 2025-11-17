@@ -60,6 +60,29 @@ const envSchema = z
             .meta({ description: "Redis connection URL" })
             .default("redis://localhost:6379"),
 
+        // MINIO
+        MINIO_ENDPOINT: z
+            .string()
+            .meta({ description: "MinIO endpoint (without http/https)" })
+            .default("localhost:9000"),
+        MINIO_ROOT_USER: z
+            .string()
+            .meta({ description: "MinIO root username" })
+            .default("minioadmin"),
+        MINIO_ROOT_PASSWORD: z
+            .string()
+            .meta({ description: "MinIO root password" })
+            .default("minioadmin"),
+        MINIO_BUCKET_NAME: z
+            .string()
+            .meta({ description: "MinIO bucket name for file storage" })
+            .default("photon-files"),
+        MINIO_USE_SSL: z
+            .string()
+            .meta({ description: "Use SSL for MinIO connection" })
+            .optional()
+            .transform(toBoolean({ defaultVal: false })),
+
         // FEIDE
         FEIDE_CLIENT_ID: z
             .string()
@@ -149,6 +172,11 @@ const testEnvVariables: Env = {
     MAIL_FROM: "",
     MAIL_PORT: 0,
     REDIS_URL: "",
+    MINIO_ENDPOINT: "",
+    MINIO_ROOT_USER: "minioadmin",
+    MINIO_ROOT_PASSWORD: "minioadmin",
+    MINIO_BUCKET_NAME: "test-bucket",
+    MINIO_USE_SSL: false,
     REFRESH_VIPPS_WEBHOOKS: false,
     ROOT_URL: "http://localhost:4000",
     SEED_DB: false,

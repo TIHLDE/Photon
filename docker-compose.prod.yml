@@ -14,3 +14,25 @@ services:
       - ".env"
     extra_hosts: # Trengs for at docker containeren skal nå redis på host
       - "host.docker.internal:host-gateway"
+
+  photon_minio:
+    image: minio/minio:latest
+    container_name: photon_minio
+    restart: unless-stopped
+    ports:
+      - "192.168.0.6:9000:9000"
+      - "192.168.0.6:9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  minio_data:
