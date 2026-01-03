@@ -33,7 +33,7 @@ export class RouteDescriptorBuilder {
 
     public schemaResponse(
         statusCode: StatusCode,
-        schema: ZodType | undefined = undefined,
+        schema: ZodType,
         description = "",
         options: Omit<OutputOptions, "description"> & {
             mediaType?: string;
