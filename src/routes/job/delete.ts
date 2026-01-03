@@ -1,32 +1,25 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
 import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 export const deleteRoute = route().delete(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["jobs"],
         summary: "Delete job posting",
         operationId: "deleteJob",
         description:
             "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
-        responses: {
-            200: {
-                description: "Job posting deleted successfully",
-            },
-            403: {
-                description: "Forbidden - Insufficient permissions",
-            },
-            404: {
-                description: "Job posting not found",
-            },
-        },
-    }),
+    })
+        .response(200, "Job posting deleted successfully")
+        .forbidden("Insufficient permissions")
+        .notFound("Job posting not found")
+        .build(),
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;

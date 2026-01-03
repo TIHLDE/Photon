@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import z from "zod";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -31,29 +32,17 @@ const updateApiKeySchema = z.object({
 
 export const updateRoute = route().patch(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["api-keys"],
         summary: "Update API key",
         operationId: "updateApiKey",
         description:
             "Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.",
-        responses: {
-            200: {
-                description: "API key updated successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(apiKeySchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing api-keys:update permission",
-            },
-            404: {
-                description: "API key not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, apiKeySchema, "API key updated successfully")
+        .forbidden("Missing api-keys:update permission")
+        .notFound("API key not found")
+        .build(),
     requireAuth,
     requirePermission("api-keys:update"),
     validator("param", idParamSchema),

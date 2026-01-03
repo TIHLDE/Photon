@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -36,29 +36,17 @@ const submissionListResponseSchema = z.array(
 
 export const listSubmissionsRoute = route().get(
     "/:formId/submissions",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["forms"],
         summary: "List submissions",
         operationId: "listFormSubmissions",
         description:
             "List all submissions for a form. Requires permission to manage the form.",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(submissionListResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, submissionListResponseSchema)
+        .forbidden()
+        .notFound()
+        .build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

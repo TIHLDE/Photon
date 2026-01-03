@@ -2,7 +2,6 @@
     "extends": "./packages/tsconfig/node/bundler.json",
     "compilerOptions": {
         "jsx": "react",
-        "baseUrl": ".",
         "paths": {
             "~/*": ["./src/*"]
         },

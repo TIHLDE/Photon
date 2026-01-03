@@ -1,6 +1,7 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -33,31 +34,19 @@ const createNewsSchema = z.object({
         .meta({ description: "Whether reactions are enabled" }),
 });
 
-const createNewsSchemaOpenAPI =
-    await resolver(createNewsSchema).toOpenAPISchema();
-
 export const createRoute = route().post(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["news"],
         summary: "Create news article",
         operationId: "createNews",
         description:
             "Create a new news article. Requires 'news:create' permission.",
-        requestBody: {
-            content: {
-                "application/json": { schema: createNewsSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "News article created successfully",
-            },
-            403: {
-                description: "Forbidden - Missing news:create permission",
-            },
-        },
-    }),
+    })
+
+        .response(201, "News article created successfully")
+        .forbidden("Missing news:create permission")
+        .build(),
     requireAuth,
     requirePermission("news:create"),
     validator("json", createNewsSchema),

@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 
@@ -12,35 +12,22 @@ const deleteNotificationResponseSchema = z.object({
         .meta({ description: "Whether deletion was successful" }),
 });
 
-const deleteNotificationSchemaOpenApi = await resolver(
-    deleteNotificationResponseSchema,
-).toOpenAPISchema();
-
 export const deleteNotificationRoute = route().delete(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["notifications"],
         summary: "Delete notification",
         operationId: "deleteNotification",
         description:
             "Delete a notification by ID. User must be authenticated and own the notification.",
-        responses: {
-            200: {
-                description: "Notification deleted successfully",
-                content: {
-                    "application/json": {
-                        schema: deleteNotificationSchemaOpenApi.schema,
-                    },
-                },
-            },
-            404: {
-                description: "Notification not found or not owned by user",
-            },
-            401: {
-                description: "Unauthorized - user not authenticated",
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            200,
+            deleteNotificationResponseSchema,
+            "Notification deleted successfully",
+        )
+        .notFound("Notification not found or not owned by user")
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

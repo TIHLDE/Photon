@@ -1,5 +1,5 @@
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -14,27 +14,17 @@ const getFavoriteSchema = z.array(
     }),
 );
 
-const getSchemaOpenAPI = await resolver(getFavoriteSchema).toOpenAPISchema();
-
 export const getFavoriteEventsRoute = route().get(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["events"],
         summary: "Get all my favorite events",
         description:
             "Retrieve a list of all events you have marked as favorite.",
         operationId: "getFavoriteEvents",
-        responses: {
-            200: {
-                description: "List of favorite events",
-                content: {
-                    "application/json": {
-                        schema: getSchemaOpenAPI.schema,
-                    },
-                },
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, getFavoriteSchema, "List of favorite events")
+        .build(),
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;

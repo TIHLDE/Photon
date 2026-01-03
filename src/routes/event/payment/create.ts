@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { InferInsertModel } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
@@ -26,49 +27,24 @@ const createPaymentResponseSchema = z.object({
     currency: z.string(),
 });
 
-const createPaymentBodySchemaOpenApi = await resolver(
-    createPaymentBodySchema,
-).toOpenAPISchema();
-const createPaymentResponseSchemaOpenApi = await resolver(
-    createPaymentResponseSchema,
-).toOpenAPISchema();
-
 export const createPaymentRoute = route().post(
     "/:eventId/payment",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["events", "payments"],
         summary: "Create payment for event",
         operationId: "createEventPayment",
         description:
             "Initiates a Vipps payment for an event registration. User must have a registered status for the event.",
-        requestBody: {
-            content: {
-                "application/json": {
-                    schema: createPaymentBodySchemaOpenApi.schema,
-                },
-            },
-        },
-        responses: {
-            201: {
-                description: "Payment created successfully",
-                content: {
-                    "application/json": {
-                        schema: createPaymentResponseSchemaOpenApi.schema,
-                    },
-                },
-            },
-            400: {
-                description:
-                    "Bad request - event not found or not a paid event",
-            },
-            404: {
-                description: "Event or registration not found",
-            },
-            409: {
-                description: "Payment already exists for this user and event",
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            201,
+            createPaymentResponseSchema,
+            "Payment created successfully",
+        )
+        .badRequest("event not found or not a paid event")
+        .notFound("Event or registration not found")
+        .response(409, "Payment already exists for this user and event")
+        .build(),
     requireAuth,
     validator("json", createPaymentBodySchema),
     async (c) => {

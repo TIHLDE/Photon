@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 
@@ -20,41 +21,23 @@ const markReadResponseSchema = z.object({
         .meta({ description: "Notification update time (ISO 8601)" }),
 });
 
-const markReadSchemaOpenApi = await resolver(markReadSchema).toOpenAPISchema();
-const markReadResponseSchemaOpenApi = await resolver(
-    markReadResponseSchema,
-).toOpenAPISchema();
-
 export const markReadNotificationRoute = route().patch(
     "/:id/read",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["notifications"],
         summary: "Mark notification as read or unread",
         operationId: "markNotificationRead",
         description:
             "Update the read status of a notification. User must be authenticated and own the notification.",
-        requestBody: {
-            content: {
-                "application/json": { schema: markReadSchemaOpenApi.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Notification updated successfully",
-                content: {
-                    "application/json": {
-                        schema: markReadResponseSchemaOpenApi.schema,
-                    },
-                },
-            },
-            404: {
-                description: "Notification not found or not owned by user",
-            },
-            401: {
-                description: "Unauthorized - user not authenticated",
-            },
-        },
-    }),
+    })
+
+        .schemaResponse(
+            200,
+            markReadResponseSchema,
+            "Notification updated successfully",
+        )
+        .notFound("Notification not found or not owned by user")
+        .build(),
     requireAuth,
     validator("json", markReadSchema),
     async (c) => {

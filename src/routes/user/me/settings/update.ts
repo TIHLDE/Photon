@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     UpdateUserSettingsSchema,
@@ -8,41 +9,26 @@ import {
 } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
 
-const schemaOpenAPI = await resolver(
-    UpdateUserSettingsSchema,
-).toOpenAPISchema();
-
 export const updateSettingsRoute = route().patch(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["user"],
         summary: "Update user settings",
         operationId: "updateUserSettings",
         description:
             "Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.",
-        requestBody: {
-            content: {
-                "application/json": { schema: schemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Settings updated successfully",
-                content: {
-                    "application/json": {
-                        schema: schemaOpenAPI.schema,
-                    },
-                },
-            },
-            400: {
-                description: "Bad Request - Invalid input",
-            },
-            404: {
-                description:
-                    "Not Found - User settings do not exist (user needs to complete onboarding first)",
-            },
-        },
-    }),
+    })
+
+        .schemaResponse(
+            200,
+            UpdateUserSettingsSchema,
+            "Settings updated successfully",
+        )
+        .badRequest("Invalid input")
+        .notFound(
+            "User settings do not exist (user needs to complete onboarding first)",
+        )
+        .build(),
     requireAuth,
     validator("json", UpdateUserSettingsSchema),
     async (c) => {

@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -11,37 +12,19 @@ const updateMemberRoleSchema = z.object({
     role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
 });
 
-const updateMemberRoleSchemaOpenAPI = await resolver(
-    updateMemberRoleSchema,
-).toOpenAPISchema();
-
 export const updateMemberRoleRoute = route().patch(
     "/:groupSlug/members/:userId",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["groups"],
         summary: "Update member role",
         operationId: "updateGroupMemberRole",
         description:
             "Update a member's role in a group. Requires 'groups:manage' permission.",
-        requestBody: {
-            content: {
-                "application/json": {
-                    schema: updateMemberRoleSchemaOpenAPI.schema,
-                },
-            },
-        },
-        responses: {
-            200: {
-                description: "Member role updated successfully",
-            },
-            403: {
-                description: "Forbidden - Missing groups:manage permission",
-            },
-            404: {
-                description: "Not Found - Group, user, or membership not found",
-            },
-        },
-    }),
+    })
+        .response(200, "Member role updated successfully")
+        .forbidden("Missing groups:manage permission")
+        .notFound("Group, user, or membership not found")
+        .build(),
     requireAuth,
     requirePermission("groups:manage"),
     validator("json", updateMemberRoleSchema),

@@ -1,8 +1,8 @@
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { getEventFormWithDetails, userHasSubmitted } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -36,29 +36,17 @@ const eventFormDetailResponseSchema = z.object({
 
 export const getEventFormRoute = route().get(
     "/:eventId/forms/:type",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["events", "forms"],
         summary: "Get event form",
         operationId: "getEventForm",
         description:
             "Get a specific form (survey or evaluation) for an event with all fields and options",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(eventFormDetailResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Evaluation forms require attendance",
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, eventFormDetailResponseSchema, "Success")
+        .forbidden("Evaluation forms require attendance")
+        .notFound("Form not found")
+        .build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

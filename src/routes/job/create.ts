@@ -1,6 +1,7 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -96,34 +97,20 @@ const createJobSchema = z
         },
     );
 
-const createJobSchemaOpenAPI =
-    await resolver(createJobSchema).toOpenAPISchema();
-
 export const createRoute = route().post(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["jobs"],
         summary: "Create job posting",
         operationId: "createJob",
         description:
             "Create a new job posting. Requires 'jobs:create' permission.",
-        requestBody: {
-            content: {
-                "application/json": { schema: createJobSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "Job posting created successfully",
-            },
-            400: {
-                description: "Bad Request - Invalid input",
-            },
-            403: {
-                description: "Forbidden - Missing jobs:create permission",
-            },
-        },
-    }),
+    })
+
+        .response(201, "Job posting created successfully")
+        .badRequest("Invalid input")
+        .forbidden("Missing jobs:create permission")
+        .build(),
     requireAuth,
     requirePermission("jobs:create"),
     validator("json", createJobSchema),

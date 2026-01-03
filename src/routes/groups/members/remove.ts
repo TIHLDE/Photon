@@ -1,31 +1,24 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
 
 export const removeMemberRoute = route().delete(
     "/:groupSlug/members/:userId",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["groups"],
         summary: "Remove member from group",
         operationId: "removeGroupMember",
         description:
             "Remove a member from a group. Requires 'groups:manage' permission.",
-        responses: {
-            204: {
-                description: "Member removed successfully",
-            },
-            403: {
-                description: "Forbidden - Missing groups:manage permission",
-            },
-            404: {
-                description: "Not Found - Group, user, or membership not found",
-            },
-        },
-    }),
+    })
+        .response(204, "Member removed successfully")
+        .forbidden("Missing groups:manage permission")
+        .notFound("Group, user, or membership not found")
+        .build(),
     requireAuth,
     requirePermission("groups:manage"),
     async (c) => {

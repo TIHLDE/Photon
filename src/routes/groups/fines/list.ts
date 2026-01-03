@@ -1,10 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { fineSchema } from "./get";
@@ -13,30 +13,21 @@ const fineListSchema = z.array(fineSchema);
 
 export const listFinesRoute = route().get(
     "/:groupSlug/fines",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["fines"],
         summary: "List fines for a group",
         operationId: "listFines",
         description:
             "Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.",
-        responses: {
-            200: {
-                description: "List of fines retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(fineListSchema),
-                    },
-                },
-            },
-            403: {
-                description:
-                    "Forbidden - Not authorized to view fines for this group",
-            },
-            404: {
-                description: "Not Found - Group not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            200,
+            fineListSchema,
+            "List of fines retrieved successfully",
+        )
+        .forbidden("Not authorized to view fines for this group")
+        .notFound("Group not found")
+        .build(),
     requireAuth,
     async (c) => {
         const ctx = c.get("ctx");

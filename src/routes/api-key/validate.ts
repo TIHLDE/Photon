@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { apiKeySchema } from "./schemas";
 
@@ -23,18 +24,13 @@ export const validateRoute = route().post(
         operationId: "validateApiKey",
         description:
             "Check if an API key is valid and return its details. This is a public endpoint that does not require authentication. Updates the lastUsedAt timestamp if the key is valid.",
-        responses: {
-            200: {
-                description:
-                    "Validation result. If valid=true, includes the API key details and permissions.",
-                content: {
-                    "application/json": {
-                        schema: resolver(validateApiKeyResponseSchema),
-                    },
-                },
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            200,
+            validateApiKeyResponseSchema,
+            "Validation result. If valid=true, includes the API key details and permissions.",
+        )
+        .build(),
     validator("json", validateApiKeySchema),
     async (c) => {
         const { key } = c.req.valid("json");

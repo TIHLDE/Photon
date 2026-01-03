@@ -1,7 +1,7 @@
 import { asc, eq, ilike, or } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { groupSchema } from "./get";
 
@@ -15,17 +15,13 @@ export const listRoute = route().get(
         operationId: "listGroups",
         description:
             "Retrieve a list of all groups. Supports optional filtering by type and search query.",
-        responses: {
-            200: {
-                description: "List of groups retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(groupListSchema),
-                    },
-                },
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            200,
+            groupListSchema,
+            "List of groups retrieved successfully",
+        )
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
         const searchQuery = c.req.query("search");

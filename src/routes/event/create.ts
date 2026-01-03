@@ -1,8 +1,9 @@
 import { type InferInsertModel, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { createEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
@@ -28,35 +29,17 @@ const createEventResponseSchema = z.object({
     eventId: z.string().uuid(),
 });
 
-const createBodySchemaOpenAPI =
-    await resolver(createEventSchema).toOpenAPISchema();
-
 export const createRoute = route().post(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["events"],
         summary: "Create event",
         operationId: "createEvent",
         description: "Create a new event. Requires 'events:create' permission.",
-        requestBody: {
-            content: {
-                "application/json": { schema: createBodySchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "Created",
-                content: {
-                    "application/json": {
-                        schema: resolver(createEventResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing events:create permission",
-            },
-        },
-    }),
+    })
+        .schemaResponse(201, createEventResponseSchema, "Created")
+        .forbidden("Missing events:create permission")
+        .build(),
     requireAuth,
     requirePermission("events:create"),
     validator("json", createEventSchema),

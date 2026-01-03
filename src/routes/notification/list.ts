@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { schema } from "../../db";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
@@ -24,32 +24,17 @@ const notificationSchema = z.object({
         .meta({ description: "Notification update time (ISO 8601)" }),
 });
 
-const notificationSchemaOpenApi = await resolver(
-    z.array(notificationSchema),
-).toOpenAPISchema();
-
 export const listNotificationsRoute = route().get(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["notifications"],
         summary: "List notifications for authenticated user",
         operationId: "listNotifications",
         description:
             "Returns paginated list of notifications for the authenticated user, ordered by most recent first",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: notificationSchemaOpenApi.schema,
-                    },
-                },
-            },
-            401: {
-                description: "Unauthorized - user not authenticated",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, z.array(notificationSchema), "OK")
+        .build(),
     requireAuth,
     ...withPagination(),
     async (c) => {

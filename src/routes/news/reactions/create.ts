@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -14,37 +15,20 @@ const createReactionSchema = z.object({
         .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
 });
 
-const createReactionSchemaOpenAPI =
-    await resolver(createReactionSchema).toOpenAPISchema();
-
 export const createReactionRoute = route().post(
     "/:id/reactions",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["news"],
         summary: "Add reaction to news",
         operationId: "createNewsReaction",
         description:
             "Add or update emoji reaction to a news article. Requires authentication.",
-        requestBody: {
-            content: {
-                "application/json": {
-                    schema: createReactionSchemaOpenAPI.schema,
-                },
-            },
-        },
-        responses: {
-            201: {
-                description: "Reaction added successfully",
-            },
-            403: {
-                description:
-                    "Forbidden - Reactions not allowed on this news article",
-            },
-            404: {
-                description: "News article not found",
-            },
-        },
-    }),
+    })
+
+        .response(201, "Reaction added successfully")
+        .forbidden("Reactions not allowed on this news article")
+        .notFound("News article not found")
+        .build(),
     requireAuth,
     validator("json", createReactionSchema),
     async (c) => {

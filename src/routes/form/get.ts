@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -37,25 +37,15 @@ const formDetailResponseSchema = z.object({
 
 export const getRoute = route().get(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["forms"],
         summary: "Get form",
         operationId: "getForm",
         description: "Get a form by ID with all fields and options",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(formDetailResponseSchema),
-                    },
-                },
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, formDetailResponseSchema, "Success")
+        .notFound("Form not found")
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

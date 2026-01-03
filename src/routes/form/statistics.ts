@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { calculateFormStatistics, canManageForm } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -32,29 +32,17 @@ const statisticsResponseSchema = z.object({
 
 export const statisticsRoute = route().get(
     "/:id/statistics",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["forms"],
         summary: "Get form statistics",
         operationId: "getFormStatistics",
         description:
             "Get aggregated statistics for a form. Requires permission to manage the form.",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(statisticsResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, statisticsResponseSchema, "Success")
+        .forbidden()
+        .notFound()
+        .build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

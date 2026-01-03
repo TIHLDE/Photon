@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -10,29 +11,17 @@ const updateFavoriteSchema = z.object({
     isFavorite: z.boolean().meta({ description: "Is favorite" }),
 });
 
-const updateBodySchemaOpenAPI =
-    await resolver(updateFavoriteSchema).toOpenAPISchema();
-
 export const updateFavoriteRoute = route().put(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["events"],
         summary: "Update event favorite",
         operationId: "updateEventFavorite",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateBodySchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Updated",
-            },
-            404: {
-                description: "Not found",
-            },
-        },
-    }),
+    })
+
+        .response(200, "Updated")
+        .notFound()
+        .build(),
     requireAuth,
     // requirePermissions("events:create"),
     validator("json", updateFavoriteSchema),

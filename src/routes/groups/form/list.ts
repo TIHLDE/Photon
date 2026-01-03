@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -26,25 +26,15 @@ const groupFormListResponseSchema = z.array(
 
 export const listGroupFormsRoute = route().get(
     "/:slug/forms",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["groups", "forms"],
         summary: "List group forms",
         operationId: "listGroupForms",
         description: "Get all forms for a group, filtered by user permissions",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(groupFormListResponseSchema),
-                    },
-                },
-            },
-            404: {
-                description: "Group not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(200, groupFormListResponseSchema, "Success")
+        .notFound("Group not found")
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

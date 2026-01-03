@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     UserSettingsSchema,
@@ -8,36 +9,19 @@ import {
 } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
 
-const schemaOpenAPI = await resolver(UserSettingsSchema).toOpenAPISchema();
-
 export const onboardRoute = route().post(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["user"],
         summary: "Complete user onboarding",
         operationId: "onboardUser",
         description:
             "Create initial user settings and mark the user as onboarded. Can only be called once per user.",
-        requestBody: {
-            content: {
-                "application/json": { schema: schemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "User onboarded successfully",
-                content: {
-                    "application/json": {
-                        schema: schemaOpenAPI.schema,
-                    },
-                },
-            },
-            400: {
-                description:
-                    "Bad Request - User has already completed onboarding",
-            },
-        },
-    }),
+    })
+
+        .schemaResponse(201, UserSettingsSchema, "User onboarded successfully")
+        .badRequest("User has already completed onboarding")
+        .build(),
     requireAuth,
     validator("json", UserSettingsSchema),
     async (c) => {

@@ -1,32 +1,27 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm, updateFieldsAndOptions } from "~/lib/form/service";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { updateFormSchema } from "../../lib/form/schema";
 
 export const updateRoute = route().patch(
     "/:id",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["forms"],
         summary: "Update form",
         operationId: "updateForm",
         description: "Update a form. Requires permission to manage the form.",
-        responses: {
-            200: {
-                description: "Success",
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+
+        .response(200, "Success")
+        .forbidden()
+        .notFound()
+        .build(),
     requireAuth,
     validator("json", updateFormSchema),
     async (c) => {

@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -52,34 +53,18 @@ const createGroupSchema = z.object({
         .meta({ description: "User ID of the fines administrator" }),
 });
 
-const createGroupSchemaOpenAPI =
-    await resolver(createGroupSchema).toOpenAPISchema();
-
 export const createRoute = route().post(
     "/",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["groups"],
         summary: "Create group",
         operationId: "createGroup",
         description: "Create a new group. Requires 'groups:create' permission.",
-        requestBody: {
-            content: {
-                "application/json": { schema: createGroupSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "Group created successfully",
-            },
-            400: {
-                description:
-                    "Bad Request - Invalid input or slug already exists",
-            },
-            403: {
-                description: "Forbidden - Missing groups:create permission",
-            },
-        },
-    }),
+    })
+        .response(201, "Group created successfully")
+        .badRequest("Invalid input or slug already exists")
+        .forbidden("Missing groups:create permission")
+        .build(),
     requireAuth,
     requirePermission("groups:create"),
     validator("json", createGroupSchema),

@@ -1,6 +1,6 @@
 import { desc } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 export const listRoute = route().get(
@@ -16,7 +16,7 @@ export const listRoute = route().get(
                 description: "List of news articles",
             },
         },
-    }),
+    }).build(),
     async (c) => {
         const { db } = c.get("ctx");
 

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 const memberSchema = z.object({
@@ -24,20 +24,14 @@ export const listMembersRoute = route().get(
         summary: "List group members",
         operationId: "listGroupMembers",
         description: "Retrieve a list of all members in a group.",
-        responses: {
-            200: {
-                description: "List of members retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(memberListSchema),
-                    },
-                },
-            },
-            404: {
-                description: "Not Found - Group not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse(
+            200,
+            memberListSchema,
+            "List of members retrieved successfully",
+        )
+        .notFound("Group not found")
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
         const groupSlug = c.req.param("groupSlug");

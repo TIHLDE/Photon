@@ -1,26 +1,21 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
+import { describeAuthenticatedRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 export const deleteReactionRoute = route().delete(
     "/:id/reactions",
-    describeRoute({
+    describeAuthenticatedRoute({
         tags: ["news"],
         summary: "Remove reaction from news",
         operationId: "deleteNewsReaction",
         description: "Remove your emoji reaction from a news article.",
-        responses: {
-            200: {
-                description: "Reaction removed successfully",
-            },
-            404: {
-                description: "News article or reaction not found",
-            },
-        },
-    }),
+    })
+        .response(200, "Reaction removed successfully")
+        .notFound("News article or reaction not found")
+        .build(),
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;
