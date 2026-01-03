@@ -27,7 +27,6 @@ export const updateRoute = route().patch(
         description:
             "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
     })
-
         .response(200, "News article updated successfully")
         .forbidden("Insufficient permissions")
         .notFound("News article not found")

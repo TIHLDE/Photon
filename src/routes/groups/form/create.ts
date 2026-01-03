@@ -18,7 +18,6 @@ export const createGroupFormRoute = route().post(
         description:
             "Create a form for a group. Requires group leader permission or forms:create permission.",
     })
-
         .response(201, "Created")
         .forbidden()
         .notFound("Group not found")

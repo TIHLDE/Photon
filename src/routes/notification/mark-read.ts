@@ -30,7 +30,6 @@ export const markReadNotificationRoute = route().patch(
         description:
             "Update the read status of a notification. User must be authenticated and own the notification.",
     })
-
         .schemaResponse(
             200,
             markReadResponseSchema,

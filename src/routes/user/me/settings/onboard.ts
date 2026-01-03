@@ -18,7 +18,6 @@ export const onboardRoute = route().post(
         description:
             "Create initial user settings and mark the user as onboarded. Can only be called once per user.",
     })
-
         .schemaResponse(201, UserSettingsSchema, "User onboarded successfully")
         .badRequest("User has already completed onboarding")
         .build(),

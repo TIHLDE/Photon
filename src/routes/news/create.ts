@@ -43,7 +43,6 @@ export const createRoute = route().post(
         description:
             "Create a new news article. Requires 'news:create' permission.",
     })
-
         .response(201, "News article created successfully")
         .forbidden("Missing news:create permission")
         .build(),

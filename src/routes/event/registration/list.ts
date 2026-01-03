@@ -38,7 +38,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         summary: "Get event registrations",
         operationId: "listEventRegistrations",
     })
-        .schemaResponse(200, registrationsSchema, "OK")
+        .schemaResponse(200, z.array(registrationsSchema), "OK")
         .build(),
     ...withPagination(),
     async (c) => {

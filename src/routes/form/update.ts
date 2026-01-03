@@ -17,7 +17,6 @@ export const updateRoute = route().patch(
         operationId: "updateForm",
         description: "Update a form. Requires permission to manage the form.",
     })
-
         .response(200, "Success")
         .forbidden()
         .notFound()

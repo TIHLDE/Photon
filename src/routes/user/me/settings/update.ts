@@ -18,7 +18,6 @@ export const updateSettingsRoute = route().patch(
         description:
             "Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.",
     })
-
         .schemaResponse(
             200,
             UpdateUserSettingsSchema,

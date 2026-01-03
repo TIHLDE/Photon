@@ -30,7 +30,6 @@ export const updateFineRoute = route().patch(
         description:
             "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
     })
-
         .response(200, "Fine updated successfully")
         .badRequest("Invalid status transition")
         .forbidden("Not authorized to update this fine")

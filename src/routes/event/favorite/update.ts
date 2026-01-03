@@ -18,7 +18,6 @@ export const updateFavoriteRoute = route().put(
         summary: "Update event favorite",
         operationId: "updateEventFavorite",
     })
-
         .response(200, "Updated")
         .notFound()
         .build(),
