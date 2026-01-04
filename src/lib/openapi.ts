@@ -1,10 +1,14 @@
+import type { MiddlewareHandler } from "hono";
 import {
     type DescribeRouteOptions,
     describeRoute as _describeRoute,
     resolver,
+    uniqueSymbol,
 } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
 import type { StatusCode } from "hono/utils/http-status";
-import type { ZodType } from "zod/v4";
+import { type ZodType, z } from "zod/v4";
+import { HTTPAppException, httpAppExceptionSchema } from "./errors";
 
 type ResponsesType = NonNullable<DescribeRouteOptions["responses"]>;
 type OutputOptions = ResponsesType[keyof ResponsesType];
@@ -65,7 +69,7 @@ export class RouteDescriptorBuilder {
     }
 
     public badRequest(
-        description: string = "",
+        description = "",
         options: Omit<OutputOptions, "description"> = {},
     ) {
         return this.response(
@@ -76,7 +80,7 @@ export class RouteDescriptorBuilder {
     }
 
     public notFound(
-        description: string = "",
+        description = "",
         options: Omit<OutputOptions, "description"> = {},
     ) {
         return this.response(
@@ -87,7 +91,7 @@ export class RouteDescriptorBuilder {
     }
 
     public forbidden(
-        description: string = "",
+        description = "",
         options: Omit<OutputOptions, "description"> = {},
     ) {
         return this.response(
@@ -98,7 +102,7 @@ export class RouteDescriptorBuilder {
     }
 
     public unauthorized(
-        description: string = "",
+        description = "",
         options: Omit<OutputOptions, "description"> = {},
     ) {
         return this.response(
@@ -108,17 +112,53 @@ export class RouteDescriptorBuilder {
         );
     }
 
+    public errorResponses(errorResponses: Error[]) {
+        for (const error of errorResponses) {
+            if (error instanceof HTTPAppException) {
+                this.schemaResponse(
+                    error.status as StatusCode,
+                    httpAppExceptionSchema,
+                    error.providedMessage,
+                );
+                continue;
+            }
+
+            // Standard Hono HTTP Exception
+            // This might sometimes be wrong since it can contain a response object as well
+            if (error instanceof HTTPException) {
+                this.response(error.status as StatusCode, error.message, {
+                    content: {
+                        "text/plain": {
+                            schema: resolver(z.string()),
+                        },
+                    },
+                });
+            }
+            // TODO: Add other error types
+        }
+        return this;
+    }
+
     public build() {
         return _describeRoute(this.options);
     }
+
+    public getSpec() {
+        return this.options;
+    }
 }
 
-export function describeRoute(options: DescribeRouteOptions) {
+export function describeRoute(options: DescribeRouteOptions = {}) {
     return new RouteDescriptorBuilder(options);
 }
 
-export function describeAuthenticatedRoute(options: DescribeRouteOptions) {
-    return new RouteDescriptorBuilder(options).unauthorized(
-        "Missing authorization header",
-    );
+export function describeMiddleware<T extends MiddlewareHandler>(
+    middleware: T,
+    spec: DescribeRouteOptions,
+): T {
+    return Object.assign(middleware, {
+        [uniqueSymbol]: {
+            spec,
+        },
+    });
 }

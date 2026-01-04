@@ -21,6 +21,8 @@ import {
     userHasAnyRole,
     userHasRole,
 } from "~/lib/auth/rbac/roles";
+import { HTTPAppException } from "~/lib/errors";
+import { describeMiddleware, describeRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 type Variables = {
@@ -38,25 +40,42 @@ type Variables = {
  * app.get('/admin-dashboard', requireRole('admin'), async (c) => { ... })
  */
 export const requireRole = (roleName: string) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const hasRole = await userHasRole(c.get("ctx"), user.id, roleName);
+            const hasRole = await userHasRole(c.get("ctx"), user.id, roleName);
 
-        if (!hasRole) {
-            throw new HTTPException(403, {
-                message: `Missing required role: ${roleName}`,
-            });
-        }
+            if (!hasRole) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required role: ${roleName}`,
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeRoute({
+            // TODO: Fix this
+            // security: [
+            //     {
+            //         bearerAuth: [`role:${roleName}`]
+            //     }
+            // ]
+        })
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required role: ${roleName}`,
+                }),
+            ])
+            .getSpec(),
+    );
 
 /**
  * Middleware to require ANY of the provided roles.
@@ -67,25 +86,41 @@ export const requireRole = (roleName: string) =>
  * app.get('/moderator-tools', requireAnyRole('admin', 'moderator'), async (c) => { ... })
  */
 export const requireAnyRole = (...roles: string[]) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const hasRole = await userHasAnyRole(c.get("ctx"), user.id, roles);
+            const hasRole = await userHasAnyRole(c.get("ctx"), user.id, roles);
 
-        if (!hasRole) {
-            throw new HTTPException(403, {
-                message: `Missing required roles. Need one of: ${roles.join(", ")}`,
-            });
-        }
+            if (!hasRole) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required roles. Need one of: ${roles.join(", ")}`,
+                    meta: {
+                        roles,
+                    },
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required roles. Need one of: ${roles.join(", ")}`,
+                    meta: {
+                        roles,
+                    },
+                }),
+            ])
+            .getSpec(),
+    );
 
 /**
  * Middleware to check if current user can manage a target role based on hierarchy.
@@ -105,34 +140,45 @@ export const requireRoleManagement = (
         c: Context<{ Variables: Variables }>,
     ) => Promise<number>,
 ) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const managerPos = await getUserHighestRolePosition(
-            c.get("ctx"),
-            user.id,
-        );
-        if (managerPos === null) {
-            throw new HTTPException(403, {
-                message: "Insufficient role hierarchy",
-            });
-        }
+            const managerPos = await getUserHighestRolePosition(
+                c.get("ctx"),
+                user.id,
+            );
+            if (managerPos === null) {
+                throw new HTTPException(403, {
+                    message: "Insufficient role hierarchy",
+                });
+            }
 
-        const targetPos = await getTargetRolePosition(c);
+            const targetPos = await getTargetRolePosition(c);
 
-        // Lower position number = higher in hierarchy
-        // Must be strictly higher to prevent siblings from managing each other
-        if (!(managerPos < targetPos)) {
-            throw new HTTPException(403, {
-                message: "You cannot manage this role",
-            });
-        }
+            // Lower position number = higher in hierarchy
+            // Must be strictly higher to prevent siblings from managing each other
+            if (!(managerPos < targetPos)) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: "You cannot manage this role",
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message:
+                        "Insufficient role hierarchy or not able to manage said role",
+                }),
+            ])
+            .getSpec(),
+    );

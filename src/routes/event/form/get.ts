@@ -2,7 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { getEventFormWithDetails, userHasSubmitted } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -36,7 +36,7 @@ const eventFormDetailResponseSchema = z.object({
 
 export const getEventFormRoute = route().get(
     "/:eventId/forms/:type",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events", "forms"],
         summary: "Get event form",
         operationId: "getEventForm",

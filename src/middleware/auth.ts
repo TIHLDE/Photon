@@ -1,7 +1,9 @@
 import { createMiddleware } from "hono/factory";
-import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
+import { describeMiddleware, describeRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
+
+import { HTTPAppException } from "~/lib/errors";
 
 type AuthVariables = {
     user: User;
@@ -13,24 +15,32 @@ type AuthVariables = {
  * Requires that the user is authenticated to access the endpoint.
  * `user` and `session` will be made available to the route handler
  */
-export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
-    async (c, next) => {
+export const requireAuth = describeMiddleware(
+    createMiddleware<{ Variables: AuthVariables }>(async (c, next) => {
         const { auth } = c.get("ctx");
         const session = await auth.api.getSession({
             headers: c.req.raw.headers,
         });
 
         if (!session) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
+            throw HTTPAppException.Unauthorized();
         }
 
         c.set("user", session.user);
         c.set("session", session.session);
 
         await next();
-    },
+    }),
+    describeRoute({
+        // TODO: Fix this
+        // security: [
+        //     {
+        //         bearerAuth: []
+        //     }
+        // ]
+    })
+        .errorResponses([HTTPAppException.Unauthorized()])
+        .getSpec(),
 );
 
 /**

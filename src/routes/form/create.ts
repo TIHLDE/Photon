@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { createFieldsAndOptions } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -21,7 +21,7 @@ const formResponseSchema = z.object({
 
 export const createRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Create form",
         operationId: "createForm",
@@ -29,7 +29,6 @@ export const createRoute = route().post(
             "Create a new base form template. Requires 'forms:create' permission.",
     })
         .schemaResponse(201, formResponseSchema, "Created")
-        .forbidden("Missing forms:create permission")
         .build(),
     requireAuth,
     requirePermission("forms:create"),

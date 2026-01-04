@@ -3,13 +3,13 @@ import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 export const deleteRoute = route().delete(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Delete form",
         operationId: "deleteForm",

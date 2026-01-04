@@ -1,6 +1,6 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     UserSettingsSchema,
@@ -11,7 +11,7 @@ import { requireAuth } from "~/middleware/auth";
 
 export const onboardRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["user"],
         summary: "Complete user onboarding",
         operationId: "onboardUser",

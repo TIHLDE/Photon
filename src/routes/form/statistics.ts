@@ -4,7 +4,7 @@ import { z } from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { calculateFormStatistics, canManageForm } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -32,7 +32,7 @@ const statisticsResponseSchema = z.object({
 
 export const statisticsRoute = route().get(
     "/:id/statistics",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Get form statistics",
         operationId: "getFormStatistics",

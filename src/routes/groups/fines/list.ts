@@ -4,7 +4,7 @@ import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { fineSchema } from "./get";
@@ -13,7 +13,7 @@ const fineListSchema = z.array(fineSchema);
 
 export const listFinesRoute = route().get(
     "/:groupSlug/fines",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["fines"],
         summary: "List fines for a group",
         operationId: "listFines",

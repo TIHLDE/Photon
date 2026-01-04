@@ -1,7 +1,7 @@
 import { validator } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -99,7 +99,7 @@ const createJobSchema = z
 
 export const createRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["jobs"],
         summary: "Create job posting",
         operationId: "createJob",
@@ -108,7 +108,6 @@ export const createRoute = route().post(
     })
         .response(201, "Job posting created successfully")
         .badRequest("Invalid input")
-        .forbidden("Missing jobs:create permission")
         .build(),
     requireAuth,
     requirePermission("jobs:create"),

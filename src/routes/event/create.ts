@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { createEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
@@ -31,7 +31,7 @@ const createEventResponseSchema = z.object({
 
 export const createRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Create event",
         operationId: "createEvent",

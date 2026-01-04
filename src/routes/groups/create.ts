@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -55,7 +55,7 @@ const createGroupSchema = z.object({
 
 export const createRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["groups"],
         summary: "Create group",
         operationId: "createGroup",
@@ -63,7 +63,6 @@ export const createRoute = route().post(
     })
         .response(201, "Group created successfully")
         .badRequest("Invalid input or slug already exists")
-        .forbidden("Missing groups:create permission")
         .build(),
     requireAuth,
     requirePermission("groups:create"),

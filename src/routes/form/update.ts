@@ -4,14 +4,14 @@ import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm, updateFieldsAndOptions } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { updateFormSchema } from "../../lib/form/schema";
 
 export const updateRoute = route().patch(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Update form",
         operationId: "updateForm",

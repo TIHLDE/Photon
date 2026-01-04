@@ -5,7 +5,7 @@ import z from "zod";
 import { schema } from "~/db";
 import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
 import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -20,7 +20,7 @@ const updateNewsSchema = z.object({
 
 export const updateRoute = route().patch(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["news"],
         summary: "Update news article",
         operationId: "updateNews",

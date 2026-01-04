@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -17,7 +17,7 @@ const createReactionSchema = z.object({
 
 export const createReactionRoute = route().post(
     "/:id/reactions",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["news"],
         summary: "Add reaction to news",
         operationId: "createNewsReaction",

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -21,7 +21,7 @@ const formListResponseSchema = z.array(
 
 export const listRoute = route().get(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "List forms",
         operationId: "listForms",

@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { enqueueEmail } from "~/lib/email";
 import FormSubmissionDeletedEmail from "~/lib/email/template/form-submission-deleted";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -12,7 +12,7 @@ import { deleteSubmissionWithReasonSchema } from "../../../lib/form/schema";
 
 export const deleteSubmissionWithReasonRoute = route().delete(
     "/:formId/submissions/:id/destroy_with_reason",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Delete submission with reason",
         operationId: "deleteFormSubmission",

@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 
@@ -14,7 +14,7 @@ const deleteNotificationResponseSchema = z.object({
 
 export const deleteNotificationRoute = route().delete(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["notifications"],
         summary: "Delete notification",
         operationId: "deleteNotification",

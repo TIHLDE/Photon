@@ -1,6 +1,6 @@
 import { validator } from "hono-openapi";
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -12,7 +12,7 @@ const deleteApiKeyResponseSchema = z.object({
 
 export const deleteRoute = route().delete(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["api-keys"],
         summary: "Delete API key",
         operationId: "deleteApiKey",
@@ -24,7 +24,6 @@ export const deleteRoute = route().delete(
             deleteApiKeyResponseSchema,
             "API key deleted successfully",
         )
-        .forbidden("Missing api-keys:delete permission")
         .notFound("API key not found")
         .build(),
     requireAuth,

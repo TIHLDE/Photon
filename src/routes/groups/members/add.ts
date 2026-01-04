@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -21,7 +21,7 @@ const addMemberSchema = z.object({
 
 export const addMemberRoute = route().post(
     "/:groupSlug/members",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["groups"],
         summary: "Add member to group",
         operationId: "addGroupMember",
@@ -30,7 +30,6 @@ export const addMemberRoute = route().post(
     })
         .response(201, "Member added successfully")
         .badRequest("User already a member or user not found")
-        .forbidden("Missing groups:manage permission")
         .notFound("Group not found")
         .build(),
     requireAuth,

@@ -1,6 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { UserSettingsSchema, getUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
@@ -13,7 +13,7 @@ const responseSchema = UserSettingsSchema.extend({
 
 export const getSettingsRoute = route().get(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["user"],
         summary: "Get current user settings",
         operationId: "getUserSettings",

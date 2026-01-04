@@ -2,14 +2,14 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
 
 export const deleteRoute = route().delete(
     "/:slug",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["groups"],
         summary: "Delete a group",
         operationId: "deleteGroup",

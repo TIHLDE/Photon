@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 
@@ -23,7 +23,7 @@ const markReadResponseSchema = z.object({
 
 export const markReadNotificationRoute = route().patch(
     "/:id/read",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["notifications"],
         summary: "Mark notification as read or unread",
         operationId: "markNotificationRead",

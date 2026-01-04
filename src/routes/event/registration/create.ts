@@ -1,6 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../../db";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
@@ -14,7 +14,7 @@ const registerSchema = z.object({
 
 export const registerToEventRoute = route().post(
     "/:eventId/registration",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Register to an event",
         operationId: "createEventRegistration",

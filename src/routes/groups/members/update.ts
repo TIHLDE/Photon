@@ -3,7 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -14,7 +14,7 @@ const updateMemberRoleSchema = z.object({
 
 export const updateMemberRoleRoute = route().patch(
     "/:groupSlug/members/:userId",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["groups"],
         summary: "Update member role",
         operationId: "updateGroupMemberRole",
@@ -22,7 +22,6 @@ export const updateMemberRoleRoute = route().patch(
             "Update a member's role in a group. Requires 'groups:manage' permission.",
     })
         .response(200, "Member role updated successfully")
-        .forbidden("Missing groups:manage permission")
         .notFound("Group, user, or membership not found")
         .build(),
     requireAuth,

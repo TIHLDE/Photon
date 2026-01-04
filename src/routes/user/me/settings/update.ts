@@ -1,6 +1,6 @@
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     UpdateUserSettingsSchema,
@@ -11,7 +11,7 @@ import { requireAuth } from "~/middleware/auth";
 
 export const updateSettingsRoute = route().patch(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["user"],
         summary: "Update user settings",
         operationId: "updateUserSettings",

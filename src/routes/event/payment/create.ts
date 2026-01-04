@@ -4,7 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
@@ -29,7 +29,7 @@ const createPaymentResponseSchema = z.object({
 
 export const createPaymentRoute = route().post(
     "/:eventId/payment",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events", "payments"],
         summary: "Create payment for event",
         operationId: "createEventPayment",

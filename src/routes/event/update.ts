@@ -2,7 +2,7 @@ import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type DbSchema, schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { isEventOwner } from "../../lib/event/middleware";
 import { updateEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
@@ -12,7 +12,7 @@ import { requireOwnershipOrAnyPermission } from "../../middleware/ownership";
 
 export const updateRoute = route().put(
     "/:id",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Update event",
         operationId: "updateEvent",

@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
@@ -29,7 +29,7 @@ const createFineSchema = z.object({
 
 export const createFineRoute = route().post(
     "/:groupSlug/fines",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["fines"],
         summary: "Create fine",
         operationId: "createFine",

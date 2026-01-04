@@ -5,14 +5,14 @@ import { schema } from "~/db";
 import { enqueueEmail } from "~/lib/email";
 import FormSubmissionEmail from "~/lib/email/template/form-submission";
 import { validateAndCreateSubmission } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createSubmissionSchema } from "../../../lib/form/schema";
 
 export const createSubmissionRoute = route().post(
     "/:formId/submissions",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["forms"],
         summary: "Create submission",
         operationId: "createFormSubmission",

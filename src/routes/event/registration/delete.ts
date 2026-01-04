@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
 
 export const deleteEventRegistrationRoute = route().delete(
     "/:eventId/registration",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Unregister from event",
         operationId: "deleteEventRegistration",

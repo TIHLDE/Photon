@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 export const deleteReactionRoute = route().delete(
     "/:id/reactions",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["news"],
         summary: "Remove reaction from news",
         operationId: "deleteNewsReaction",

@@ -5,7 +5,7 @@ import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -23,7 +23,7 @@ const updateFineSchema = z.object({
 
 export const updateFineRoute = route().patch(
     "/:groupSlug/fines/:fineId",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["fines"],
         summary: "Partially update fine",
         operationId: "updateFine",

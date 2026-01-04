@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -22,7 +22,7 @@ const eventFormListResponseSchema = z.array(
 
 export const listEventFormsRoute = route().get(
     "/:eventId/forms",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events", "forms"],
         summary: "List event forms",
         operationId: "listEventForms",

@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -26,7 +26,7 @@ const groupFormListResponseSchema = z.array(
 
 export const listGroupFormsRoute = route().get(
     "/:slug/forms",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["groups", "forms"],
         summary: "List group forms",
         operationId: "listGroupForms",

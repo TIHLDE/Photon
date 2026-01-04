@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../db";
 import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
@@ -8,7 +8,7 @@ import { requireOwnershipOrPermission } from "../../middleware/ownership";
 
 export const deleteRoute = route().delete(
     "/:eventId",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Delete an event",
         operationId: "deleteEvent",

@@ -1,6 +1,6 @@
 import { validator } from "hono-openapi";
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -29,7 +29,7 @@ const createApiKeySchema = z.object({
 
 export const createRoute = route().post(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["api-keys"],
         summary: "Create API key",
         operationId: "createApiKey",
@@ -41,7 +41,6 @@ export const createRoute = route().post(
             createApiKeyResponseSchema,
             "API key created successfully. The 'key' field contains the full API key and will not be shown again.",
         )
-        .forbidden("Missing api-keys:create permission")
         .build(),
     requireAuth,
     requirePermission("api-keys:create"),

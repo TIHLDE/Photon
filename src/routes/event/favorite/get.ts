@@ -1,5 +1,5 @@
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -16,7 +16,7 @@ const getFavoriteSchema = z.array(
 
 export const getFavoriteEventsRoute = route().get(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["events"],
         summary: "Get all my favorite events",
         description:

@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import z from "zod";
-import { describeAuthenticatedRoute } from "~/lib/openapi";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../db";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
@@ -26,7 +26,7 @@ const notificationSchema = z.object({
 
 export const listNotificationsRoute = route().get(
     "/",
-    describeAuthenticatedRoute({
+    describeRoute({
         tags: ["notifications"],
         summary: "List notifications for authenticated user",
         operationId: "listNotifications",
