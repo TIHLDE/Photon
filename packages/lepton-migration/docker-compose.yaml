@@ -1,0 +1,36 @@
+name: "lepton_migration"
+
+services:
+  lepton_mysql:
+    image: mysql:8.0
+    container_name: lepton_migration_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: lepton
+      MYSQL_USER: lepton
+      MYSQL_PASSWORD: lepton
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./dumps:/docker-entrypoint-initdb.d:ro
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-prootpassword",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
