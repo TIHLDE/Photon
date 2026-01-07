@@ -37,8 +37,12 @@ export const createRoute = route().post(
         operationId: "createEvent",
         description: "Create a new event. Requires 'events:create' permission.",
     })
-        .schemaResponse(201, createEventResponseSchema, "Created")
-        .forbidden("Missing events:create permission")
+        .schemaResponse({
+            statusCode: 201,
+            schema: createEventResponseSchema,
+            description: "Created",
+        })
+        .forbidden({ description: "Missing events:create permission" })
         .build(),
     requireAuth,
     requirePermission("events:create"),

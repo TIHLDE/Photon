@@ -106,8 +106,11 @@ export const createRoute = route().post(
         description:
             "Create a new job posting. Requires 'jobs:create' permission.",
     })
-        .response(201, "Job posting created successfully")
-        .badRequest("Invalid input")
+        .response({
+            statusCode: 201,
+            description: "Job posting created successfully",
+        })
+        .badRequest({ description: "Invalid input" })
         .build(),
     requireAuth,
     requirePermission("jobs:create"),

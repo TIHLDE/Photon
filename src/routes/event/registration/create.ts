@@ -18,13 +18,20 @@ export const registerToEventRoute = route().post(
         tags: ["events"],
         summary: "Register to an event",
         operationId: "createEventRegistration",
+        description:
+            "Create a new registration for the authenticated user to attend an event, initially with pending status",
     })
-        .schemaResponse(200, registerSchema, "OK")
-        .notFound("Event not found")
-        .response(
-            409,
-            "Event is not open for registration or user already registered",
-        )
+        .schemaResponse({
+            statusCode: 200,
+            schema: registerSchema,
+            description: "OK",
+        })
+        .notFound({ description: "Event not found" })
+        .response({
+            statusCode: 409,
+            description:
+                "Event is not open for registration or user already registered",
+        })
         .build(),
     requireAuth,
     async (c) => {

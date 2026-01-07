@@ -39,7 +39,11 @@ export const statisticsRoute = route().get(
         description:
             "Get aggregated statistics for a form. Requires permission to manage the form.",
     })
-        .schemaResponse(200, statisticsResponseSchema, "Success")
+        .schemaResponse({
+            statusCode: 200,
+            schema: statisticsResponseSchema,
+            description: "Success",
+        })
         .forbidden()
         .notFound()
         .build(),

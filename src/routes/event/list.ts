@@ -51,8 +51,14 @@ export const listRoute = route().get(
         tags: ["events"],
         summary: "List events",
         operationId: "listEvents",
+        description:
+            "Retrieve a paginated list of all events with basic information including organizer and category details",
     })
-        .schemaResponse(200, z.array(eventSchema), "OK")
+        .schemaResponse({
+            statusCode: 200,
+            schema: z.array(eventSchema),
+            description: "OK",
+        })
         .build(),
     ...withPagination(),
     async (c) => {

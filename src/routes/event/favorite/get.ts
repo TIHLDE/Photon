@@ -23,7 +23,11 @@ export const getFavoriteEventsRoute = route().get(
             "Retrieve a list of all events you have marked as favorite.",
         operationId: "getFavoriteEvents",
     })
-        .schemaResponse(200, getFavoriteSchema, "List of favorite events")
+        .schemaResponse({
+            statusCode: 200,
+            schema: getFavoriteSchema,
+            description: "List of favorite events",
+        })
         .build(),
     requireAuth,
     async (c) => {

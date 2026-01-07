@@ -12,8 +12,8 @@ export const getRoute = route().get(
         operationId: "getJob",
         description: "Get a single job posting by ID. Public endpoint.",
     })
-        .response(200, "Job posting details")
-        .notFound("Job posting not found")
+        .response({ statusCode: 200, description: "Job posting details" })
+        .notFound({ description: "Job posting not found" })
         .build(),
     async (c) => {
         const { db } = c.get("ctx");

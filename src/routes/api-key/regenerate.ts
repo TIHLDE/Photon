@@ -14,12 +14,13 @@ export const regenerateRoute = route().post(
         description:
             "Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.",
     })
-        .schemaResponse(
-            200,
-            createApiKeyResponseSchema,
-            "API key regenerated successfully. The 'key' field contains the new API key and will not be shown again.",
-        )
-        .notFound("API key not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: createApiKeyResponseSchema,
+            description:
+                "API key regenerated successfully. The 'key' field contains the new API key and will not be shown again.",
+        })
+        .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
     requirePermission("api-keys:update"),

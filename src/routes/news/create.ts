@@ -43,7 +43,10 @@ export const createRoute = route().post(
         description:
             "Create a new news article. Requires 'news:create' permission.",
     })
-        .response(201, "News article created successfully")
+        .response({
+            statusCode: 201,
+            description: "News article created successfully",
+        })
         .build(),
     requireAuth,
     requirePermission("news:create"),

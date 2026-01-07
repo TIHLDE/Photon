@@ -35,12 +35,14 @@ export const getRoute = route().get(
         description:
             "Retrieve detailed information about a specific group by its slug identifier.",
     })
-        .schemaResponse(
-            200,
-            groupSchema,
-            "Group details retrieved successfully",
-        )
-        .notFound("Group with the specified slug does not exist")
+        .schemaResponse({
+            statusCode: 200,
+            schema: groupSchema,
+            description: "Group details retrieved successfully",
+        })
+        .notFound({
+            description: "Group with the specified slug does not exist",
+        })
         .build(),
     async (c) => {
         const { db } = c.get("ctx");

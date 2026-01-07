@@ -28,9 +28,9 @@ export const addMemberRoute = route().post(
         description:
             "Add a member to a group. Requires 'groups:manage' permission.",
     })
-        .response(201, "Member added successfully")
-        .badRequest("User already a member or user not found")
-        .notFound("Group not found")
+        .response({ statusCode: 201, description: "Member added successfully" })
+        .badRequest({ description: "User already a member or user not found" })
+        .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
     requirePermission("groups:manage"),

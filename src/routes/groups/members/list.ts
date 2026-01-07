@@ -25,12 +25,12 @@ export const listMembersRoute = route().get(
         operationId: "listGroupMembers",
         description: "Retrieve a list of all members in a group.",
     })
-        .schemaResponse(
-            200,
-            memberListSchema,
-            "List of members retrieved successfully",
-        )
-        .notFound("Group not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: memberListSchema,
+            description: "List of members retrieved successfully",
+        })
+        .notFound({ description: "Group not found" })
         .build(),
     async (c) => {
         const { db } = c.get("ctx");

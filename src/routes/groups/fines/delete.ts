@@ -16,9 +16,9 @@ export const deleteFineRoute = route().delete(
         description:
             "Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.",
     })
-        .response(204, "Fine successfully deleted")
-        .forbidden("Not authorized to delete this fine")
-        .notFound("Fine or group not found")
+        .response({ statusCode: 204, description: "Fine successfully deleted" })
+        .forbidden({ description: "Not authorized to delete this fine" })
+        .notFound({ description: "Fine or group not found" })
         .build(),
     requireAuth,
     async (c) => {

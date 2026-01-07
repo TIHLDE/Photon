@@ -60,10 +60,18 @@ export const updateRoute = route().patch(
         description:
             "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
     })
-        .response(200, "Group updated successfully")
-        .badRequest("Invalid input")
-        .forbidden("Not a group leader or missing groups:update permission")
-        .notFound("Group with the specified slug does not exist")
+        .response({
+            statusCode: 200,
+            description: "Group updated successfully",
+        })
+        .badRequest({ description: "Invalid input" })
+        .forbidden({
+            description:
+                "Not a group leader or missing groups:update permission",
+        })
+        .notFound({
+            description: "Group with the specified slug does not exist",
+        })
         .build(),
     requireAuth,
     requireOwnershipOrScopedPermission(

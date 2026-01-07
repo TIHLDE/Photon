@@ -21,12 +21,14 @@ export const deleteNotificationRoute = route().delete(
         description:
             "Delete a notification by ID. User must be authenticated and own the notification.",
     })
-        .schemaResponse(
-            200,
-            deleteNotificationResponseSchema,
-            "Notification deleted successfully",
-        )
-        .notFound("Notification not found or not owned by user")
+        .schemaResponse({
+            statusCode: 200,
+            schema: deleteNotificationResponseSchema,
+            description: "Notification deleted successfully",
+        })
+        .notFound({
+            description: "Notification not found or not owned by user",
+        })
         .build(),
     requireAuth,
     async (c) => {

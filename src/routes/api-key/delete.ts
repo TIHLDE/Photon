@@ -19,12 +19,12 @@ export const deleteRoute = route().delete(
         description:
             "Delete an API key. This action is irreversible. Requires 'api-keys:delete' permission.",
     })
-        .schemaResponse(
-            200,
-            deleteApiKeyResponseSchema,
-            "API key deleted successfully",
-        )
-        .notFound("API key not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: deleteApiKeyResponseSchema,
+            description: "API key deleted successfully",
+        })
+        .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
     requirePermission("api-keys:delete"),

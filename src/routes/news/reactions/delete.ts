@@ -13,8 +13,11 @@ export const deleteReactionRoute = route().delete(
         operationId: "deleteNewsReaction",
         description: "Remove your emoji reaction from a news article.",
     })
-        .response(200, "Reaction removed successfully")
-        .notFound("News article or reaction not found")
+        .response({
+            statusCode: 200,
+            description: "Reaction removed successfully",
+        })
+        .notFound({ description: "News article or reaction not found" })
         .build(),
     requireAuth,
     async (c) => {

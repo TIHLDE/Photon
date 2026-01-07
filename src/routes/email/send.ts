@@ -56,20 +56,22 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
 export const sendEmailRoute = route().post(
     "/send",
     describeRoute({
-        tags: ["email"],
+        tags: ["emails"],
         summary: "Send custom email",
         operationId: "sendCustomEmail",
         description:
             "Send a custom email with structured content blocks. Requires API key authentication via Bearer token.",
     })
-        .schemaResponse(
-            200,
-            sendEmailResponseSchema,
-            "Email queued successfully",
-        )
-        .unauthorized("Missing or invalid Authorization header")
-        .forbidden("Invalid API key")
-        .response(503, "Email API not configured")
+        .schemaResponse({
+            statusCode: 200,
+            schema: sendEmailResponseSchema,
+            description: "Email queued successfully",
+        })
+        .unauthorized({
+            description: "Missing or invalid Authorization header",
+        })
+        .forbidden({ description: "Invalid API key" })
+        .response({ statusCode: 503, description: "Email API not configured" })
         .build(),
     requireEmailApiKey,
     validator("json", sendCustomEmailSchema),

@@ -28,8 +28,12 @@ export const listEventFormsRoute = route().get(
         operationId: "listEventForms",
         description: "Get all forms (survey and evaluation) for an event",
     })
-        .schemaResponse(200, eventFormListResponseSchema, "Success")
-        .notFound("Event not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: eventFormListResponseSchema,
+            description: "Success",
+        })
+        .notFound({ description: "Event not found" })
         .build(),
     requireAuth,
     async (c) => {

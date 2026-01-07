@@ -18,10 +18,13 @@ export const createSubmissionRoute = route().post(
         operationId: "createFormSubmission",
         description: "Submit answers to a form",
     })
-        .response(201, "Created")
-        .forbidden("Cannot submit to this form")
-        .notFound()
-        .response(409, "Conflict - Duplicate submission not allowed")
+        .response({ statusCode: 201, description: "Created" })
+        .forbidden({ description: "Cannot submit to this form" })
+        .notFound({ description: "Form not found" })
+        .response({
+            statusCode: 409,
+            description: "Conflict - Duplicate submission not allowed",
+        })
         .build(),
     requireAuth,
     validator("json", createSubmissionSchema),

@@ -14,20 +14,21 @@ const responseSchema = UserSettingsSchema.extend({
 export const getSettingsRoute = route().get(
     "/",
     describeRoute({
-        tags: ["user"],
+        tags: ["users"],
         summary: "Get current user settings",
         operationId: "getUserSettings",
         description:
             "Retrieve the authenticated user's settings including preferences and allergies.",
     })
-        .schemaResponse(
-            200,
-            responseSchema,
-            "User settings retrieved successfully",
-        )
-        .notFound(
-            "User settings do not exist (user needs to complete onboarding)",
-        )
+        .schemaResponse({
+            statusCode: 200,
+            schema: responseSchema,
+            description: "User settings retrieved successfully",
+        })
+        .notFound({
+            description:
+                "User settings do not exist (user needs to complete onboarding)",
+        })
         .build(),
     requireAuth,
     async (c) => {

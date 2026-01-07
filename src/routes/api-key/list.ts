@@ -16,7 +16,11 @@ export const listRoute = route().get(
         description:
             "Get a list of all API keys. Does not include the full key values. Requires 'api-keys:view' permission.",
     })
-        .schemaResponse(200, listApiKeysResponseSchema, "List of API keys")
+        .schemaResponse({
+            statusCode: 200,
+            schema: listApiKeysResponseSchema,
+            description: "List of API keys",
+        })
         .build(),
     requireAuth,
     requirePermission("api-keys:view"),

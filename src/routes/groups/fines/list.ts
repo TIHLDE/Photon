@@ -20,13 +20,15 @@ export const listFinesRoute = route().get(
         description:
             "Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.",
     })
-        .schemaResponse(
-            200,
-            fineListSchema,
-            "List of fines retrieved successfully",
-        )
-        .forbidden("Not authorized to view fines for this group")
-        .notFound("Group not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: fineListSchema,
+            description: "List of fines retrieved successfully",
+        })
+        .forbidden({
+            description: "Not authorized to view fines for this group",
+        })
+        .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
     async (c) => {

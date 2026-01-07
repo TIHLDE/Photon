@@ -21,8 +21,11 @@ export const updateMemberRoleRoute = route().patch(
         description:
             "Update a member's role in a group. Requires 'groups:manage' permission.",
     })
-        .response(200, "Member role updated successfully")
-        .notFound("Group, user, or membership not found")
+        .response({
+            statusCode: 200,
+            description: "Member role updated successfully",
+        })
+        .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
     requirePermission("groups:manage"),

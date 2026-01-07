@@ -16,11 +16,11 @@ export const listRoute = route().get(
         description:
             "Retrieve a list of all groups. Supports optional filtering by type and search query.",
     })
-        .schemaResponse(
-            200,
-            groupListSchema,
-            "List of groups retrieved successfully",
-        )
+        .schemaResponse({
+            statusCode: 200,
+            schema: groupListSchema,
+            description: "List of groups retrieved successfully",
+        })
         .build(),
     async (c) => {
         const { db } = c.get("ctx");

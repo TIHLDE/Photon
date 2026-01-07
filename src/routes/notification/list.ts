@@ -33,7 +33,11 @@ export const listNotificationsRoute = route().get(
         description:
             "Returns paginated list of notifications for the authenticated user, ordered by most recent first",
     })
-        .schemaResponse(200, z.array(notificationSchema), "OK")
+        .schemaResponse({
+            statusCode: 200,
+            schema: z.array(notificationSchema),
+            description: "OK",
+        })
         .build(),
     requireAuth,
     ...withPagination(),

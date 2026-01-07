@@ -61,8 +61,11 @@ export const createRoute = route().post(
         operationId: "createGroup",
         description: "Create a new group. Requires 'groups:create' permission.",
     })
-        .response(201, "Group created successfully")
-        .badRequest("Invalid input or slug already exists")
+        .response({
+            statusCode: 201,
+            description: "Group created successfully",
+        })
+        .badRequest({ description: "Invalid input or slug already exists" })
         .build(),
     requireAuth,
     requirePermission("groups:create"),

@@ -41,9 +41,13 @@ export const getSubmissionRoute = route().get(
         description:
             "Get a specific submission. Can view own submission or requires permission to manage the form.",
     })
-        .schemaResponse(200, submissionDetailResponseSchema)
-        .forbidden()
-        .notFound()
+        .schemaResponse({
+            statusCode: 200,
+            schema: submissionDetailResponseSchema,
+            description: "Success",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Submission not found" })
         .build(),
     requireAuth,
     async (c) => {

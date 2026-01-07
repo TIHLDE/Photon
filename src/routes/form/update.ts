@@ -17,9 +17,9 @@ export const updateRoute = route().patch(
         operationId: "updateForm",
         description: "Update a form. Requires permission to manage the form.",
     })
-        .response(200, "Success")
-        .forbidden()
-        .notFound()
+        .response({ statusCode: 200, description: "Success" })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Form not found" })
         .build(),
     requireAuth,
     validator("json", updateFormSchema),
