@@ -22,7 +22,7 @@ import {
     userHasRole,
 } from "~/lib/auth/rbac/roles";
 import { HTTPAppException } from "~/lib/errors";
-import { describeMiddleware, describeRoute } from "~/lib/openapi";
+import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 type Variables = {
@@ -59,14 +59,7 @@ export const requireRole = (roleName: string) =>
 
             await next();
         }),
-        describeRoute({
-            // TODO: Fix this
-            // security: [
-            //     {
-            //         bearerAuth: [`role:${roleName}`]
-            //     }
-            // ]
-        })
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
@@ -108,7 +101,7 @@ export const requireAnyRole = (...roles: string[]) =>
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
@@ -171,7 +164,7 @@ export const requireRoleManagement = (
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
