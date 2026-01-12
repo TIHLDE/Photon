@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
 import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -26,7 +26,7 @@ export const deleteRoute = route().delete(
                 description: "News article not found",
             },
         },
-    }),
+    }).build(),
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;

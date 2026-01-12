@@ -1,16 +1,14 @@
 import { type InferInsertModel, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type DbSchema, schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { isEventOwner } from "../../lib/event/middleware";
 import { updateEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 import { requireOwnershipOrAnyPermission } from "../../middleware/ownership";
-
-const updateBodySchemaOpenAPI =
-    await resolver(updateEventSchema).toOpenAPISchema();
 
 export const updateRoute = route().put(
     "/:id",
@@ -20,22 +18,14 @@ export const updateRoute = route().put(
         operationId: "updateEvent",
         description:
             "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateBodySchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Updated",
-            },
-            403: {
-                description:
-                    "Forbidden - You must be the event creator or have events:update/events:manage permission",
-            },
-            404: { description: "Not found" },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "Updated" })
+        .forbidden({
+            description:
+                "You must be the event creator or have events:update/events:manage permission",
+        })
+        .notFound({ description: "Not found" })
+        .build(),
     requireAuth,
     requireOwnershipOrAnyPermission("id", isEventOwner, [
         "events:update",

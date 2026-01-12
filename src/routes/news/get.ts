@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 export const getRoute = route().get(
@@ -19,7 +19,7 @@ export const getRoute = route().get(
                 description: "News article not found",
             },
         },
-    }),
+    }).build(),
     async (c) => {
         const { db } = c.get("ctx");
         const { id } = c.req.param();

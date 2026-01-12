@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -17,23 +18,14 @@ export const deleteRoute = route().delete(
         operationId: "deleteApiKey",
         description:
             "Delete an API key. This action is irreversible. Requires 'api-keys:delete' permission.",
-        responses: {
-            200: {
-                description: "API key deleted successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(deleteApiKeyResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing api-keys:delete permission",
-            },
-            404: {
-                description: "API key not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: deleteApiKeyResponseSchema,
+            description: "API key deleted successfully",
+        })
+        .notFound({ description: "API key not found" })
+        .build(),
     requireAuth,
     requirePermission("api-keys:delete"),
     validator("param", idParamSchema),

@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { enqueueEmail } from "~/lib/email";
 import FormSubmissionEmail from "~/lib/email/template/form-submission";
 import { validateAndCreateSubmission } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createSubmissionSchema } from "../../../lib/form/schema";
@@ -16,21 +17,15 @@ export const createSubmissionRoute = route().post(
         summary: "Create submission",
         operationId: "createFormSubmission",
         description: "Submit answers to a form",
-        responses: {
-            201: {
-                description: "Created",
-            },
-            403: {
-                description: "Forbidden - Cannot submit to this form",
-            },
-            404: {
-                description: "Form not found",
-            },
-            409: {
-                description: "Conflict - Duplicate submission not allowed",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 201, description: "Created" })
+        .forbidden({ description: "Cannot submit to this form" })
+        .notFound({ description: "Form not found" })
+        .response({
+            statusCode: 409,
+            description: "Conflict - Duplicate submission not allowed",
+        })
+        .build(),
     requireAuth,
     validator("json", createSubmissionSchema),
     async (c) => {

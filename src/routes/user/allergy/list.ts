@@ -1,5 +1,5 @@
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 const allergySchema = z.object({
@@ -16,27 +16,21 @@ const allergySchema = z.object({
 
 const responseSchema = z.array(allergySchema);
 
-const schemaOpenAPI = await resolver(responseSchema).toOpenAPISchema();
-
 export const listAllergiesRoute = route().get(
     "/",
     describeRoute({
-        tags: ["user"],
+        tags: ["users"],
         summary: "List all allergies",
         operationId: "listAllergies",
         description:
             "Retrieve a list of all possible allergies that users can have.",
-        responses: {
-            200: {
-                description: "List of allergies retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: schemaOpenAPI.schema,
-                    },
-                },
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: responseSchema,
+            description: "List of allergies retrieved successfully",
+        })
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
 

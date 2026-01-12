@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import React from "react";
 import { z } from "zod";
@@ -7,6 +7,7 @@ import { enqueueEmail } from "~/lib/email";
 import { sendCustomEmailSchema } from "~/lib/email/schema";
 import { CustomEmail } from "~/lib/email/template/custom-email";
 import { env } from "~/lib/env";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 const sendEmailResponseSchema = z.object({
@@ -15,10 +16,6 @@ const sendEmailResponseSchema = z.object({
     jobIds: z.array(z.string()),
     recipientCount: z.number(),
 });
-
-const sendBodySchemaOpenAPI = await resolver(
-    sendCustomEmailSchema,
-).toOpenAPISchema();
 
 /**
  * Middleware to validate API key from Bearer token
@@ -59,36 +56,23 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
 export const sendEmailRoute = route().post(
     "/send",
     describeRoute({
-        tags: ["email"],
+        tags: ["emails"],
         summary: "Send custom email",
         operationId: "sendCustomEmail",
         description:
             "Send a custom email with structured content blocks. Requires API key authentication via Bearer token.",
-        requestBody: {
-            content: {
-                "application/json": { schema: sendBodySchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Email queued successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(sendEmailResponseSchema),
-                    },
-                },
-            },
-            401: {
-                description: "Missing or invalid Authorization header",
-            },
-            403: {
-                description: "Invalid API key",
-            },
-            503: {
-                description: "Email API not configured",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: sendEmailResponseSchema,
+            description: "Email queued successfully",
+        })
+        .unauthorized({
+            description: "Missing or invalid Authorization header",
+        })
+        .forbidden({ description: "Invalid API key" })
+        .response({ statusCode: 503, description: "Email API not configured" })
+        .build(),
     requireEmailApiKey,
     validator("json", sendCustomEmailSchema),
     async (c) => {

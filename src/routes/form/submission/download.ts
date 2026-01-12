@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -29,7 +29,7 @@ export const downloadSubmissionsRoute = route().get(
                 description: "Form not found",
             },
         },
-    }),
+    }).build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

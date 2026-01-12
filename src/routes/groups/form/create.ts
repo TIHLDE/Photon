@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { createFieldsAndOptions } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createGroupFormSchema } from "../../../lib/form/schema";
@@ -16,18 +17,11 @@ export const createGroupFormRoute = route().post(
         operationId: "createGroupForm",
         description:
             "Create a form for a group. Requires group leader permission or forms:create permission.",
-        responses: {
-            201: {
-                description: "Created",
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Group not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 201, description: "Created" })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Group not found" })
+        .build(),
     requireAuth,
     validator("json", createGroupFormSchema),
     async (c) => {

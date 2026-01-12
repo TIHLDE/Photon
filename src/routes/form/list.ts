@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -27,17 +27,13 @@ export const listRoute = route().get(
         operationId: "listForms",
         description:
             "List all form templates by default. Use ?all=true to include all forms. Returns template forms by default.",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(formListResponseSchema),
-                    },
-                },
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: formListResponseSchema,
+            description: "Success",
+        })
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

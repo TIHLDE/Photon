@@ -1,5 +1,5 @@
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -15,20 +15,13 @@ export const listRoute = route().get(
         operationId: "listApiKeys",
         description:
             "Get a list of all API keys. Does not include the full key values. Requires 'api-keys:view' permission.",
-        responses: {
-            200: {
-                description: "List of API keys",
-                content: {
-                    "application/json": {
-                        schema: resolver(listApiKeysResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing api-keys:view permission",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: listApiKeysResponseSchema,
+            description: "List of API keys",
+        })
+        .build(),
     requireAuth,
     requirePermission("api-keys:view"),
     async (c) => {

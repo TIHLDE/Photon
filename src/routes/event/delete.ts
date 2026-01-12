@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../db";
 import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
@@ -14,20 +14,17 @@ export const deleteRoute = route().delete(
         operationId: "deleteEvent",
         description:
             "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.",
-        responses: {
-            200: {
-                description: "Event successfully deleted",
-            },
-            403: {
-                description:
-                    "Forbidden - You must be the event creator or have events:delete permission",
-            },
-            404: {
-                description:
-                    "Not Found - Event with the specified ID does not exist",
-            },
-        },
-    }),
+    })
+        .response({
+            statusCode: 200,
+            description: "Event successfully deleted",
+        })
+        .forbidden({
+            description:
+                "You must be the event creator or have events:delete permission",
+        })
+        .notFound({ description: "Event with the specified ID does not exist" })
+        .build(),
     requireAuth,
     requireOwnershipOrPermission("eventId", isEventOwner, "events:delete"),
     async (c) => {

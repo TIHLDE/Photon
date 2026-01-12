@@ -1,4 +1,5 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -12,24 +13,15 @@ export const regenerateRoute = route().post(
         operationId: "regenerateApiKey",
         description:
             "Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.",
-        responses: {
-            200: {
-                description:
-                    "API key regenerated successfully. The 'key' field contains the new API key and will not be shown again.",
-                content: {
-                    "application/json": {
-                        schema: resolver(createApiKeyResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing api-keys:update permission",
-            },
-            404: {
-                description: "API key not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: createApiKeyResponseSchema,
+            description:
+                "API key regenerated successfully. The 'key' field contains the new API key and will not be shown again.",
+        })
+        .notFound({ description: "API key not found" })
+        .build(),
     requireAuth,
     requirePermission("api-keys:update"),
     validator("param", idParamSchema),

@@ -1,5 +1,6 @@
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -13,23 +14,14 @@ export const getRoute = route().get(
         operationId: "getApiKey",
         description:
             "Get a single API key by ID. Does not include the full key value. Requires 'api-keys:view' permission.",
-        responses: {
-            200: {
-                description: "API key details",
-                content: {
-                    "application/json": {
-                        schema: resolver(apiKeySchema),
-                    },
-                },
-            },
-            404: {
-                description: "API key not found",
-            },
-            403: {
-                description: "Forbidden - Missing api-keys:view permission",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: apiKeySchema,
+            description: "API key details",
+        })
+        .notFound({ description: "API key not found" })
+        .build(),
     requireAuth,
     requirePermission("api-keys:view"),
     validator("param", idParamSchema),

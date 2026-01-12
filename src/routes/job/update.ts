@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
 import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -56,9 +57,6 @@ const updateJobSchema = z
         },
     );
 
-const updateJobSchemaOpenAPI =
-    await resolver(updateJobSchema).toOpenAPISchema();
-
 export const updateRoute = route().patch(
     "/:id",
     describeRoute({
@@ -67,23 +65,14 @@ export const updateRoute = route().patch(
         operationId: "updateJob",
         description:
             "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateJobSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Job posting updated successfully",
-            },
-            403: {
-                description: "Forbidden - Insufficient permissions",
-            },
-            404: {
-                description: "Job posting not found",
-            },
-        },
-    }),
+    })
+        .response({
+            statusCode: 200,
+            description: "Job posting updated successfully",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Job posting not found" })
+        .build(),
     requireAuth,
     validator("json", updateJobSchema),
     async (c) => {

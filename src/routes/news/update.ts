@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
 import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -17,9 +18,6 @@ const updateNewsSchema = z.object({
     emojisAllowed: z.boolean().optional(),
 });
 
-const updateNewsSchemaOpenAPI =
-    await resolver(updateNewsSchema).toOpenAPISchema();
-
 export const updateRoute = route().patch(
     "/:id",
     describeRoute({
@@ -28,23 +26,14 @@ export const updateRoute = route().patch(
         operationId: "updateNews",
         description:
             "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateNewsSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "News article updated successfully",
-            },
-            403: {
-                description: "Forbidden - Insufficient permissions",
-            },
-            404: {
-                description: "News article not found",
-            },
-        },
-    }),
+    })
+        .response({
+            statusCode: 200,
+            description: "News article updated successfully",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "News article not found" })
+        .build(),
     requireAuth,
     validator("json", updateNewsSchema),
     async (c) => {

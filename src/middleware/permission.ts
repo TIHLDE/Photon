@@ -10,7 +10,6 @@
 
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
-import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import {
     hasAllPermissions,
@@ -18,6 +17,8 @@ import {
     hasPermission,
 } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { HTTPAppException } from "~/lib/errors";
+import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 type Variables = {
@@ -44,29 +45,42 @@ export type ScopeResolver = (c: Context) => string;
  * app.delete('/events/:id', requirePermission('events:delete'), async (c) => { ... })
  */
 export const requirePermission = (permissionName: string) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const hasPerm = await hasPermission(
-            c.get("ctx"),
-            user.id,
-            permissionName,
-        );
+            const hasPerm = await hasPermission(
+                c.get("ctx"),
+                user.id,
+                permissionName,
+            );
 
-        if (!hasPerm) {
-            throw new HTTPException(403, {
-                message: `Missing required permission: ${permissionName}`,
-            });
-        }
+            if (!hasPerm) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permission: ${permissionName}`,
+                    meta: {
+                        permission: permissionName,
+                    },
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeMiddlewareRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permission: ${permissionName}`,
+                }),
+            ])
+            .getSpec(),
+    );
 
 /**
  * Middleware to require ANY of the provided permissions.
@@ -76,29 +90,42 @@ export const requirePermission = (permissionName: string) =>
  * app.post('/events', requireAnyPermission('events:create', 'events:manage'), async (c) => { ... })
  */
 export const requireAnyPermission = (...permissions: string[]) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const hasPerm = await hasAnyPermission(
-            c.get("ctx"),
-            user.id,
-            permissions,
-        );
+            const hasPerm = await hasAnyPermission(
+                c.get("ctx"),
+                user.id,
+                permissions,
+            );
 
-        if (!hasPerm) {
-            throw new HTTPException(403, {
-                message: `Missing required permissions. Need one of: ${permissions.join(", ")}`,
-            });
-        }
+            if (!hasPerm) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permissions. Need one of: ${permissions.join(", ")}`,
+                    meta: {
+                        permissions,
+                    },
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeMiddlewareRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permissions. Need one of: ${permissions.join(", ")}`,
+                }),
+            ])
+            .getSpec(),
+    );
 
 /**
  * Middleware to require ALL of the provided permissions.
@@ -108,29 +135,45 @@ export const requireAnyPermission = (...permissions: string[]) =>
  * app.post('/admin/users', requireAllPermissions('users:create', 'users:manage'), async (c) => { ... })
  */
 export const requireAllPermissions = (...permissions: string[]) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw new HTTPAppException({
+                    status: 401,
+                    message: "Authentication required",
+                });
+            }
 
-        const hasPerms = await hasAllPermissions(
-            c.get("ctx"),
-            user.id,
-            permissions,
-        );
+            const hasPerms = await hasAllPermissions(
+                c.get("ctx"),
+                user.id,
+                permissions,
+            );
 
-        if (!hasPerms) {
-            throw new HTTPException(403, {
-                message: `Missing required permissions: ${permissions.join(", ")}`,
-            });
-        }
+            if (!hasPerms) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permissions: ${permissions.join(", ")}`,
+                    meta: {
+                        permissions,
+                    },
+                });
+            }
 
-        await next();
-    });
+            await next();
+        }),
+        describeMiddlewareRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permissions: ${permissions.join(", ")}`,
+                }),
+            ])
+            .getSpec(),
+    );
 
 /**
  * Middleware to require a permission with optional scoping.
@@ -168,43 +211,61 @@ export const requireScopedPermission = (
     permissionName: string,
     scopeResolver: ScopeResolver,
 ) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+    describeMiddleware(
+        createMiddleware<{ Variables: Variables }>(async (c, next) => {
+            const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+            if (!user) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        const ctx = c.get("ctx");
-        const scope = scopeResolver(c);
+            const ctx = c.get("ctx");
+            const scope = scopeResolver(c);
 
-        // Check if user has permission globally
-        const hasGlobalPerm = await hasPermission(ctx, user.id, permissionName);
+            // Check if user has permission globally
+            const hasGlobalPerm = await hasPermission(
+                ctx,
+                user.id,
+                permissionName,
+            );
 
-        if (hasGlobalPerm) {
-            // User has global permission, allow access
+            if (hasGlobalPerm) {
+                // User has global permission, allow access
+                await next();
+                return;
+            }
+
+            // Check if user has scoped permission for this specific resource
+            const hasScopedPerm = await hasScopedPermission(
+                ctx,
+                user.id,
+                permissionName,
+                scope,
+            );
+
+            if (!hasScopedPerm) {
+                throw new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permission: ${permissionName} for scope: ${scope}`,
+                    meta: {
+                        permission: permissionName,
+                        scope,
+                    },
+                });
+            }
+
             await next();
-            return;
-        }
-
-        // Check if user has scoped permission for this specific resource
-        const hasScopedPerm = await hasScopedPermission(
-            ctx,
-            user.id,
-            permissionName,
-            scope,
-        );
-
-        if (!hasScopedPerm) {
-            throw new HTTPException(403, {
-                message: `Missing required permission: ${permissionName} for scope: ${scope}`,
-            });
-        }
-
-        await next();
-    });
+        }),
+        describeMiddlewareRoute()
+            .errorResponses([
+                HTTPAppException.Unauthorized(),
+                new HTTPAppException({
+                    status: 403,
+                    message: `Missing required permission: ${permissionName} for resource scope`,
+                }),
+            ])
+            .getSpec(),
+    );
 
 // Backwards-compatible aliases
 export const requirePermissions = requireAllPermissions;

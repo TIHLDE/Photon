@@ -1,5 +1,5 @@
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { withPagination } from "../../middleware/pagination";
 
@@ -51,17 +51,15 @@ export const listRoute = route().get(
         tags: ["events"],
         summary: "List events",
         operationId: "listEvents",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: resolver(z.array(eventSchema)),
-                    },
-                },
-            },
-        },
-    }),
+        description:
+            "Retrieve a paginated list of all events with basic information including organizer and category details",
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: z.array(eventSchema),
+            description: "OK",
+        })
+        .build(),
     ...withPagination(),
     async (c) => {
         const { db } = c.get("ctx");

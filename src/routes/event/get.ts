@@ -1,5 +1,5 @@
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { registrationStatusVariants } from "../../db/schema";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
@@ -111,23 +111,21 @@ const eventSchema = z.object({
         }),
 });
 
-export const listRoute = route().get(
+export const getRoute = route().get(
     "/:eventId",
     describeRoute({
         tags: ["events"],
         summary: "Get event by ID",
         operationId: "getEvent",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: resolver(z.array(eventSchema)),
-                    },
-                },
-            },
-        },
-    }),
+        description:
+            "Retrieve detailed information about a specific event, including registration status for the authenticated user if available",
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: eventSchema,
+            description: "The event was found",
+        })
+        .build(),
     captureAuth,
     async (c) => {
         const { db } = c.get("ctx");

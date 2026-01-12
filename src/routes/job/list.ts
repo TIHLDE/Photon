@@ -1,6 +1,6 @@
 import { and, desc, gt, ilike, or } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 export const listRoute = route().get(
@@ -11,12 +11,9 @@ export const listRoute = route().get(
         operationId: "listJobs",
         description:
             "Get a list of job postings. Supports search and expired filtering. Public endpoint.",
-        responses: {
-            200: {
-                description: "List of job postings",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "List of job postings" })
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
         const { search, expired } = c.req.query();

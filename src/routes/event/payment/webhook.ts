@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../../db";
 import { route } from "../../../lib/route";
 import { getPaymentDetails } from "../../../lib/vipps";
@@ -32,18 +32,14 @@ export const paymentWebhookRoute = route().post(
         operationId: "handlePaymentWebhook",
         description:
             "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.",
-        responses: {
-            200: {
-                description: "Webhook processed successfully",
-            },
-            400: {
-                description: "Invalid webhook payload",
-            },
-            404: {
-                description: "Payment not found",
-            },
-        },
-    }),
+    })
+        .response({
+            statusCode: 200,
+            description: "Webhook processed successfully",
+        })
+        .badRequest({ description: "Invalid webhook payload" })
+        .notFound({ description: "Payment not found" })
+        .build(),
     async (c) => {
         const body = (await c.req.json()) as WebhookPayload;
         const { db } = c.get("ctx");

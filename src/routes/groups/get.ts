@@ -1,6 +1,6 @@
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 export const groupSchema = z.object({
@@ -34,21 +34,16 @@ export const getRoute = route().get(
         operationId: "getGroup",
         description:
             "Retrieve detailed information about a specific group by its slug identifier.",
-        responses: {
-            200: {
-                description: "Group details retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(groupSchema),
-                    },
-                },
-            },
-            404: {
-                description:
-                    "Not Found - Group with the specified slug does not exist",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: groupSchema,
+            description: "Group details retrieved successfully",
+        })
+        .notFound({
+            description: "Group with the specified slug does not exist",
+        })
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
         const slug = c.req.param("slug");

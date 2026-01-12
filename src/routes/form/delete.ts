@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -15,18 +15,11 @@ export const deleteRoute = route().delete(
         operationId: "deleteForm",
         description:
             "Delete a form and all associated data. Requires permission to manage the form.",
-        responses: {
-            200: {
-                description: "Success",
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Form not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "Success" })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Form not found" })
+        .build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

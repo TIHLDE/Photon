@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -15,18 +15,11 @@ export const deleteFineRoute = route().delete(
         operationId: "deleteFine",
         description:
             "Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.",
-        responses: {
-            204: {
-                description: "Fine successfully deleted",
-            },
-            403: {
-                description: "Forbidden - Not authorized to delete this fine",
-            },
-            404: {
-                description: "Not Found - Fine or group not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 204, description: "Fine successfully deleted" })
+        .forbidden({ description: "Not authorized to delete this fine" })
+        .notFound({ description: "Fine or group not found" })
+        .build(),
     requireAuth,
     async (c) => {
         const fineId = c.req.param("fineId");

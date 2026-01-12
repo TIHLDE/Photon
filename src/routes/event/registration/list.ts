@@ -1,7 +1,7 @@
 import { eq, or } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { withPagination } from "~/middleware/pagination";
 
@@ -37,17 +37,15 @@ export const getAllRegistrationsForEventsRoute = route().get(
         tags: ["events"],
         summary: "Get event registrations",
         operationId: "listEventRegistrations",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: resolver(z.array(registrationsSchema)),
-                    },
-                },
-            },
-        },
-    }),
+        description:
+            "Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts",
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: z.array(registrationsSchema),
+            description: "OK",
+        })
+        .build(),
     ...withPagination(),
     async (c) => {
         const { db } = c.get("ctx");

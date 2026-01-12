@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import { describeRoute } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 
 export const getRoute = route().get(
@@ -11,15 +11,10 @@ export const getRoute = route().get(
         summary: "Get job posting",
         operationId: "getJob",
         description: "Get a single job posting by ID. Public endpoint.",
-        responses: {
-            200: {
-                description: "Job posting details",
-            },
-            404: {
-                description: "Job posting not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "Job posting details" })
+        .notFound({ description: "Job posting not found" })
+        .build(),
     async (c) => {
         const { db } = c.get("ctx");
         const { id } = c.req.param();

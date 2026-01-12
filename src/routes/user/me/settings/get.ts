@@ -1,6 +1,6 @@
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { UserSettingsSchema, getUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
@@ -11,31 +11,25 @@ const responseSchema = UserSettingsSchema.extend({
     }),
 });
 
-const schemaOpenAPI = await resolver(responseSchema).toOpenAPISchema();
-
 export const getSettingsRoute = route().get(
     "/",
     describeRoute({
-        tags: ["user"],
+        tags: ["users"],
         summary: "Get current user settings",
         operationId: "getUserSettings",
         description:
             "Retrieve the authenticated user's settings including preferences and allergies.",
-        responses: {
-            200: {
-                description: "User settings retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: schemaOpenAPI.schema,
-                    },
-                },
-            },
-            404: {
-                description:
-                    "Not Found - User settings do not exist (user needs to complete onboarding)",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: responseSchema,
+            description: "User settings retrieved successfully",
+        })
+        .notFound({
+            description:
+                "User settings do not exist (user needs to complete onboarding)",
+        })
+        .build(),
     requireAuth,
     async (c) => {
         const userId = c.get("user").id;

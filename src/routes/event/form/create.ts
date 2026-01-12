@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { createFieldsAndOptions } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createEventFormSchema } from "../../../lib/form/schema";
@@ -16,22 +17,12 @@ export const createEventFormRoute = route().post(
         operationId: "createEventForm",
         description:
             "Create a survey or evaluation form for an event. Requires event write permission.",
-        responses: {
-            201: {
-                description: "Created",
-            },
-            400: {
-                description:
-                    "Bad request - Form already exists for this event type",
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Event not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 201, description: "Created" })
+        .badRequest({ description: "Form already exists for this event type" })
+        .forbidden({ description: "Cant create form for specified event" })
+        .notFound({ description: "Event not found" })
+        .build(),
     requireAuth,
     validator("json", createEventFormSchema),
     async (c) => {
