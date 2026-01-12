@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { createFieldsAndOptions } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -23,22 +24,16 @@ export const createRoute = route().post(
     describeRoute({
         tags: ["forms"],
         summary: "Create form",
+        operationId: "createForm",
         description:
             "Create a new base form template. Requires 'forms:create' permission.",
-        responses: {
-            201: {
-                description: "Created",
-                content: {
-                    "application/json": {
-                        schema: resolver(formResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Missing forms:create permission",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 201,
+            schema: formResponseSchema,
+            description: "Created",
+        })
+        .build(),
     requireAuth,
     requirePermission("forms:create"),
     validator("json", createFormSchema),

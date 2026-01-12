@@ -6,6 +6,7 @@ import { updateFavoriteRoute as updateFavoriteEventsRoute } from "./favorite/upd
 import { createEventFormRoute } from "./form/create";
 import { getEventFormRoute } from "./form/get";
 import { listEventFormsRoute } from "./form/list";
+import { getRoute } from "./get";
 import { listRoute } from "./list";
 import { createPaymentRoute } from "./payment/create";
 import { paymentWebhookRoute } from "./payment/webhook";
@@ -20,6 +21,7 @@ export const eventRoutes = route()
     .route("/", listRoute)
     .route("/", updateRoute)
     .route("/", deleteRoute)
+    .route("/", getRoute)
 
     // Favorites
     .route("/favorite", updateFavoriteEventsRoute)

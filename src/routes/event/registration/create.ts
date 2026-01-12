@@ -1,6 +1,6 @@
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
+import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../../db";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
@@ -12,31 +12,27 @@ const registerSchema = z.object({
     createdAt: z.string(),
 });
 
-const registerSchemaOpenApi = await resolver(registerSchema).toOpenAPISchema();
-
 export const registerToEventRoute = route().post(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],
         summary: "Register to an event",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: registerSchemaOpenApi.schema,
-                    },
-                },
-            },
-            404: {
-                description: "Event not found",
-            },
-            409: {
-                description:
-                    "Event is not open for registration or user already registered",
-            },
-        },
-    }),
+        operationId: "createEventRegistration",
+        description:
+            "Create a new registration for the authenticated user to attend an event, initially with pending status",
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: registerSchema,
+            description: "OK",
+        })
+        .notFound({ description: "Event not found" })
+        .response({
+            statusCode: 409,
+            description:
+                "Event is not open for registration or user already registered",
+        })
+        .build(),
     requireAuth,
     async (c) => {
         const now = new Date();

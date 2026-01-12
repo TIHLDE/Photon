@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -18,37 +19,19 @@ const addMemberSchema = z.object({
         .meta({ description: "Membership role" }),
 });
 
-const addMemberSchemaOpenAPI =
-    await resolver(addMemberSchema).toOpenAPISchema();
-
 export const addMemberRoute = route().post(
     "/:groupSlug/members",
     describeRoute({
         tags: ["groups"],
         summary: "Add member to group",
+        operationId: "addGroupMember",
         description:
             "Add a member to a group. Requires 'groups:manage' permission.",
-        requestBody: {
-            content: {
-                "application/json": { schema: addMemberSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "Member added successfully",
-            },
-            400: {
-                description:
-                    "Bad Request - User already a member or user not found",
-            },
-            403: {
-                description: "Forbidden - Missing groups:manage permission",
-            },
-            404: {
-                description: "Not Found - Group not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 201, description: "Member added successfully" })
+        .badRequest({ description: "User already a member or user not found" })
+        .notFound({ description: "Group not found" })
+        .build(),
     requireAuth,
     requirePermission("groups:manage"),
     validator("json", addMemberSchema),

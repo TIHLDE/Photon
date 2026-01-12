@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -42,25 +42,18 @@ export const getFineRoute = route().get(
     describeRoute({
         tags: ["fines"],
         summary: "Get fine by ID",
+        operationId: "getFine",
         description:
             "Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.",
-        responses: {
-            200: {
-                description: "Fine details retrieved successfully",
-                content: {
-                    "application/json": {
-                        schema: resolver(fineSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden - Not authorized to view this fine",
-            },
-            404: {
-                description: "Not Found - Fine or group not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: fineSchema,
+            description: "Fine details retrieved successfully",
+        })
+        .forbidden({ description: "Not authorized to view this fine" })
+        .notFound({ description: "Fine or group not found" })
+        .build(),
     requireAuth,
     async (c) => {
         const ctx = c.get("ctx");

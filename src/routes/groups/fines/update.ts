@@ -1,10 +1,11 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -20,36 +21,20 @@ const updateFineSchema = z.object({
         .meta({ description: "User who approved the fine" }),
 });
 
-const updateFineSchemaOpenAPI =
-    await resolver(updateFineSchema).toOpenAPISchema();
-
 export const updateFineRoute = route().patch(
     "/:groupSlug/fines/:fineId",
     describeRoute({
         tags: ["fines"],
         summary: "Partially update fine",
+        operationId: "updateFine",
         description:
             "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateFineSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Fine updated successfully",
-            },
-            400: {
-                description: "Bad Request - Invalid status transition",
-            },
-            403: {
-                description: "Forbidden - Not authorized to update this fine",
-            },
-            404: {
-                description: "Not Found - Fine or group not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "Fine updated successfully" })
+        .badRequest({ description: "Invalid status transition" })
+        .forbidden({ description: "Not authorized to update this fine" })
+        .notFound({ description: "Fine or group not found" })
+        .build(),
     requireAuth,
     validator("json", updateFineSchema),
     async (c) => {

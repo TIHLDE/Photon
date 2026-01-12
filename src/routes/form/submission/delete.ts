@@ -1,9 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { enqueueEmail } from "~/lib/email";
 import FormSubmissionDeletedEmail from "~/lib/email/template/form-submission-deleted";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requirePermission } from "~/middleware/permission";
@@ -14,17 +15,13 @@ export const deleteSubmissionWithReasonRoute = route().delete(
     describeRoute({
         tags: ["forms"],
         summary: "Delete submission with reason",
+        operationId: "deleteFormSubmission",
         description:
             "Delete a submission and notify the user with a reason. Admin only.",
-        responses: {
-            200: {
-                description: "Success",
-            },
-            404: {
-                description: "Submission not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 200, description: "Success" })
+        .notFound({ description: "Submission not found" })
+        .build(),
     requireAuth,
     requirePermission("forms:manage"),
     validator("json", deleteSubmissionWithReasonSchema),

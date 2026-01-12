@@ -36,6 +36,27 @@
       "when": 1762187477137,
       "tag": "0004_slim_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762790898211,
+      "tag": "0005_organic_sentry",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762801208633,
+      "tag": "0006_flimsy_human_robot",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1763383329504,
+      "tag": "0007_cynical_veda",
+      "breakpoints": true
     }
   ]
 }

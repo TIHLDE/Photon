@@ -17,7 +17,7 @@ import { createDb } from "~/db";
 import { createApp } from "~/index";
 import { createAuth } from "~/lib/auth";
 import { createRedisClient } from "~/lib/cache/redis";
-import type { AppContext } from "~/lib/ctx";
+import { type AppContext, createAppServices } from "~/lib/ctx";
 import { createStorageClient } from "~/lib/storage";
 import { QueueManager } from "../../../lib/cache/queue";
 import { createTestUtils } from "./util";
@@ -108,21 +108,12 @@ async function createMinio() {
     const minioContainer = await new MinioContainer(
         "minio/minio:latest",
     ).start();
-    const endpoint = `${minioContainer.getHost()}:${minioContainer.getPort()}`;
-    const accessKeyId = minioContainer.getUsername();
-    const secretAccessKey = minioContainer.getPassword();
-
-    const bucket = await createStorageClient({
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-        bucketName: "test-bucket",
-        useSSL: false,
-    });
 
     return {
         container: minioContainer,
-        bucket,
+        endpoint: `${minioContainer.getHost()}:${minioContainer.getPort()}`,
+        accessKeyId: minioContainer.getUsername(),
+        secretAccessKey: minioContainer.getPassword(),
     };
 }
 
@@ -142,7 +133,22 @@ async function createTestAppContext(): Promise<TestAppContext> {
         db: newDb,
     } = postgresVals;
     const { container: redisContainer, redis, redisUrl } = redisVals;
-    const { container: minioContainer, bucket } = minioVals;
+    const {
+        container: minioContainer,
+        endpoint,
+        accessKeyId,
+        secretAccessKey,
+    } = minioVals;
+
+    // Create storage client with database for file tracking
+    const bucket = await createStorageClient({
+        endpoint,
+        accessKeyId,
+        secretAccessKey,
+        bucketName: "test-bucket",
+        useSSL: false,
+        db: newDb,
+    });
 
     // Setup Bull queues
     const queue = new QueueManager(redisUrl);
@@ -231,6 +237,7 @@ async function resetBucket(ctx: TestAppContext): Promise<void> {
         secretAccessKey,
         bucketName: "test-bucket",
         useSSL: false,
+        db: ctx.db,
     });
 }
 
@@ -300,7 +307,10 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
             }
 
             // Create fresh app instance for this test
-            const app = await createApp({ ctx: sharedTestContext });
+            const app = await createApp({
+                ctx: sharedTestContext,
+                service: createAppServices(sharedTestContext),
+            });
 
             // Execute test
             await use({

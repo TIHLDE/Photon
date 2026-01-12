@@ -5,14 +5,23 @@ import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { type AppContext, createAppContext } from "~/lib/ctx";
+import {
+    type AppContext,
+    type AppServices,
+    createAppContext,
+    createAppServices,
+} from "~/lib/ctx";
 import { env } from "~/lib/env";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { setupWebhooks } from "./lib/vipps";
+import { apiKeyRoutes } from "./routes/api-key";
 import { groupsRoutes } from "./routes/groups";
+import { jobRoutes } from "./routes/job";
+import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
+import { userRoutes } from "./routes/user";
 import { mcpRoute } from "./test/mcp";
 
 /**
@@ -21,15 +30,19 @@ import { mcpRoute } from "./test/mcp";
  */
 type Variables = {
     ctx: AppContext;
+    service: AppServices;
 };
 
 export const createApp = async (variables?: Variables) => {
     // Use or generate app context
     let ctx: AppContext;
+    let service: AppServices;
     if (variables) {
         ctx = variables.ctx;
+        service = variables.service;
     } else {
         ctx = await createAppContext();
+        service = createAppServices(ctx);
 
         // Setup cron jobs and workers
         const { startBackgroundJobs } = await import("./lib/jobs");
@@ -56,17 +69,22 @@ export const createApp = async (variables?: Variables) => {
         .get("/", (c) => {
             return c.text("Healthy!");
         })
+        .route("/api-keys", apiKeyRoutes)
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
         .route("/forms", formRoutes)
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
+        .route("/news", newsRoutes)
+        .route("/jobs", jobRoutes)
+        .route("/user", userRoutes)
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
         .use(logger())
         .use("*", async (c, next) => {
             c.set("ctx", ctx);
+            c.set("service", service);
             await next();
         })
         .route("/", api)

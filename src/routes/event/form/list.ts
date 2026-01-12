@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { userHasSubmitted } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -25,21 +25,16 @@ export const listEventFormsRoute = route().get(
     describeRoute({
         tags: ["events", "forms"],
         summary: "List event forms",
+        operationId: "listEventForms",
         description: "Get all forms (survey and evaluation) for an event",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(eventFormListResponseSchema),
-                    },
-                },
-            },
-            404: {
-                description: "Event not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: eventFormListResponseSchema,
+            description: "Success",
+        })
+        .notFound({ description: "Event not found" })
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

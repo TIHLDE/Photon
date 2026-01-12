@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
@@ -50,38 +51,28 @@ const updateGroupSchema = z.object({
         .meta({ description: "User ID of the fines administrator" }),
 });
 
-const updateGroupSchemaOpenAPI =
-    await resolver(updateGroupSchema).toOpenAPISchema();
-
 export const updateRoute = route().patch(
     "/:slug",
     describeRoute({
         tags: ["groups"],
         summary: "Partially update group",
+        operationId: "updateGroup",
         description:
             "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
-        requestBody: {
-            content: {
-                "application/json": { schema: updateGroupSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            200: {
-                description: "Group updated successfully",
-            },
-            400: {
-                description: "Bad Request - Invalid input",
-            },
-            403: {
-                description:
-                    "Forbidden - Not a group leader or missing groups:update permission",
-            },
-            404: {
-                description:
-                    "Not Found - Group with the specified slug does not exist",
-            },
-        },
-    }),
+    })
+        .response({
+            statusCode: 200,
+            description: "Group updated successfully",
+        })
+        .badRequest({ description: "Invalid input" })
+        .forbidden({
+            description:
+                "Not a group leader or missing groups:update permission",
+        })
+        .notFound({
+            description: "Group with the specified slug does not exist",
+        })
+        .build(),
     requireAuth,
     requireOwnershipOrScopedPermission(
         "slug",

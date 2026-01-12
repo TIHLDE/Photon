@@ -10,9 +10,9 @@
         "test:watch": "vitest",
         "coverage": "vitest run --coverage",
         "typecheck": "tsc --noEmit",
-        "lint": "npx biome check .",
-        "lint:fix": "npx biome check --write --unsafe .",
-        "format": "npx biome format --write .",
+        "lint": "biome check .",
+        "lint:fix": "biome check --write --unsafe .",
+        "format": "biome format --write .",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",
@@ -73,7 +73,7 @@
         "typescript": "^5.9.2",
         "vitest": "^3.2.4"
     },
-    "packageManager": "pnpm@8.15.6",
+    "packageManager": "pnpm@10.21.0",
     "engines": {
         "node": ">=18"
     },

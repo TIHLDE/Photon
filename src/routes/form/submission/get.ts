@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { canManageForm } from "~/lib/form/service";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
@@ -37,25 +37,18 @@ export const getSubmissionRoute = route().get(
     describeRoute({
         tags: ["forms"],
         summary: "Get submission",
+        operationId: "getFormSubmission",
         description:
             "Get a specific submission. Can view own submission or requires permission to manage the form.",
-        responses: {
-            200: {
-                description: "Success",
-                content: {
-                    "application/json": {
-                        schema: resolver(submissionDetailResponseSchema),
-                    },
-                },
-            },
-            403: {
-                description: "Forbidden",
-            },
-            404: {
-                description: "Submission not found",
-            },
-        },
-    }),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: submissionDetailResponseSchema,
+            description: "Success",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Submission not found" })
+        .build(),
     requireAuth,
     async (c) => {
         const { db, ...ctx } = c.get("ctx");

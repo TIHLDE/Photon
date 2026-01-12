@@ -1,33 +1,21 @@
 import { and, eq } from "drizzle-orm";
-import { describeRoute, resolver } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { schema } from "~/db";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
-
-const deleteRegistrationSchema = z.object({});
-
-const deleteRegistrationSchemaOpenApi = await resolver(
-    deleteRegistrationSchema,
-).toOpenAPISchema();
 
 export const deleteEventRegistrationRoute = route().delete(
     "/:eventId/registration",
     describeRoute({
         tags: ["events"],
         summary: "Unregister from event",
-        responses: {
-            200: {
-                description: "OK",
-                content: {
-                    "application/json": {
-                        schema: deleteRegistrationSchemaOpenApi.schema,
-                    },
-                },
-            },
-        },
-    }),
+        operationId: "deleteEventRegistration",
+        description:
+            "Remove the authenticated user's registration from an event",
+    })
+        .response({ statusCode: 200, description: "OK" })
+        .build(),
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");

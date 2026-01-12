@@ -1,9 +1,10 @@
 import { eq } from "drizzle-orm";
-import { describeRoute, resolver, validator } from "hono-openapi";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
@@ -26,38 +27,24 @@ const createFineSchema = z.object({
     defense: z.string().optional().meta({ description: "User's defense text" }),
 });
 
-const createFineSchemaOpenAPI =
-    await resolver(createFineSchema).toOpenAPISchema();
-
 export const createFineRoute = route().post(
     "/:groupSlug/fines",
     describeRoute({
         tags: ["fines"],
         summary: "Create fine",
+        operationId: "createFine",
         description:
             "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
-        requestBody: {
-            content: {
-                "application/json": { schema: createFineSchemaOpenAPI.schema },
-            },
-        },
-        responses: {
-            201: {
-                description: "Fine created successfully",
-            },
-            400: {
-                description:
-                    "Bad Request - Invalid input or fines not activated for group",
-            },
-            403: {
-                description:
-                    "Forbidden - Not authorized to create fines for this group",
-            },
-            404: {
-                description: "Not Found - Group or user not found",
-            },
-        },
-    }),
+    })
+        .response({ statusCode: 201, description: "Fine created successfully" })
+        .badRequest({
+            description: "Invalid input or fines not activated for group",
+        })
+        .forbidden({
+            description: "Not authorized to create fines for this group",
+        })
+        .notFound({ description: "Group or user not found" })
+        .build(),
     requireAuth,
     requireOwnershipOrScopedPermission(
         "groupSlug",
