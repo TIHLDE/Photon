@@ -25,11 +25,12 @@ export const validateRoute = route().post(
         description:
             "Check if an API key is valid and return its details. This is a public endpoint that does not require authentication. Updates the lastUsedAt timestamp if the key is valid.",
     })
-        .schemaResponse(
-            200,
-            validateApiKeyResponseSchema,
-            "Validation result. If valid=true, includes the API key details and permissions.",
-        )
+        .schemaResponse({
+            statusCode: 200,
+            schema: validateApiKeyResponseSchema,
+            description:
+                "Validation result. If valid=true, includes the API key details and permissions.",
+        })
         .build(),
     validator("json", validateApiKeySchema),
     async (c) => {

@@ -17,9 +17,11 @@ export const updateFavoriteRoute = route().put(
         tags: ["events"],
         summary: "Update event favorite",
         operationId: "updateEventFavorite",
+        description:
+            "Mark or unmark an event as a favorite for the authenticated user",
     })
-        .response(200, "Updated")
-        .notFound()
+        .response({ statusCode: 200, description: "Updated" })
+        .notFound({ description: "Event not found" })
         .build(),
     requireAuth,
     // requirePermissions("events:create"),

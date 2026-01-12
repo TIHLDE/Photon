@@ -36,10 +36,14 @@ export const createFineRoute = route().post(
         description:
             "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
     })
-        .response(201, "Fine created successfully")
-        .badRequest("Invalid input or fines not activated for group")
-        .forbidden("Not authorized to create fines for this group")
-        .notFound("Group or user not found")
+        .response({ statusCode: 201, description: "Fine created successfully" })
+        .badRequest({
+            description: "Invalid input or fines not activated for group",
+        })
+        .forbidden({
+            description: "Not authorized to create fines for this group",
+        })
+        .notFound({ description: "Group or user not found" })
         .build(),
     requireAuth,
     requireOwnershipOrScopedPermission(

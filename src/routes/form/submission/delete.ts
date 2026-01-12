@@ -19,8 +19,8 @@ export const deleteSubmissionWithReasonRoute = route().delete(
         description:
             "Delete a submission and notify the user with a reason. Admin only.",
     })
-        .response(200, "Success")
-        .notFound()
+        .response({ statusCode: 200, description: "Success" })
+        .notFound({ description: "Submission not found" })
         .build(),
     requireAuth,
     requirePermission("forms:manage"),

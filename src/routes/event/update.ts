@@ -19,11 +19,12 @@ export const updateRoute = route().put(
         description:
             "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
     })
-        .response(200, "Updated")
-        .forbidden(
-            "You must be the event creator or have events:update/events:manage permission",
-        )
-        .notFound("Not found")
+        .response({ statusCode: 200, description: "Updated" })
+        .forbidden({
+            description:
+                "You must be the event creator or have events:update/events:manage permission",
+        })
+        .notFound({ description: "Not found" })
         .build(),
     requireAuth,
     requireOwnershipOrAnyPermission("id", isEventOwner, [

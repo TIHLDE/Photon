@@ -32,8 +32,12 @@ export const listGroupFormsRoute = route().get(
         operationId: "listGroupForms",
         description: "Get all forms for a group, filtered by user permissions",
     })
-        .schemaResponse(200, groupFormListResponseSchema, "Success")
-        .notFound("Group not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: groupFormListResponseSchema,
+            description: "Success",
+        })
+        .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
     async (c) => {

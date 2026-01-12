@@ -36,14 +36,17 @@ export const createPaymentRoute = route().post(
         description:
             "Initiates a Vipps payment for an event registration. User must have a registered status for the event.",
     })
-        .schemaResponse(
-            201,
-            createPaymentResponseSchema,
-            "Payment created successfully",
-        )
-        .badRequest("event not found or not a paid event")
-        .notFound("Event or registration not found")
-        .response(409, "Payment already exists for this user and event")
+        .schemaResponse({
+            statusCode: 201,
+            schema: createPaymentResponseSchema,
+            description: "Payment created successfully",
+        })
+        .badRequest({ description: "event not found or not a paid event" })
+        .notFound({ description: "Event or registration not found" })
+        .response({
+            statusCode: 409,
+            description: "Payment already exists for this user and event",
+        })
         .build(),
     requireAuth,
     validator("json", createPaymentBodySchema),

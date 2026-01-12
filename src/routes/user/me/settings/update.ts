@@ -12,21 +12,22 @@ import { requireAuth } from "~/middleware/auth";
 export const updateSettingsRoute = route().patch(
     "/",
     describeRoute({
-        tags: ["user"],
+        tags: ["users"],
         summary: "Update user settings",
         operationId: "updateUserSettings",
         description:
             "Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.",
     })
-        .schemaResponse(
-            200,
-            UpdateUserSettingsSchema,
-            "Settings updated successfully",
-        )
-        .badRequest("Invalid input")
-        .notFound(
-            "User settings do not exist (user needs to complete onboarding first)",
-        )
+        .schemaResponse({
+            statusCode: 200,
+            schema: UpdateUserSettingsSchema,
+            description: "Settings updated successfully",
+        })
+        .badRequest({ description: "Invalid input" })
+        .notFound({
+            description:
+                "User settings do not exist (user needs to complete onboarding first)",
+        })
         .build(),
     requireAuth,
     validator("json", UpdateUserSettingsSchema),

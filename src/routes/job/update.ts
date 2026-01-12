@@ -66,9 +66,12 @@ export const updateRoute = route().patch(
         description:
             "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
     })
-        .response(200, "Job posting updated successfully")
-        .forbidden("Insufficient permissions")
-        .notFound("Job posting not found")
+        .response({
+            statusCode: 200,
+            description: "Job posting updated successfully",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Job posting not found" })
         .build(),
     requireAuth,
     validator("json", updateJobSchema),

@@ -117,8 +117,14 @@ export const getRoute = route().get(
         tags: ["events"],
         summary: "Get event by ID",
         operationId: "getEvent",
+        description:
+            "Retrieve detailed information about a specific event, including registration status for the authenticated user if available",
     })
-        .schemaResponse(200, eventSchema, "The event was found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: eventSchema,
+            description: "The event was found",
+        })
         .build(),
     captureAuth,
     async (c) => {

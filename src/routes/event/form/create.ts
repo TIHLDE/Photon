@@ -18,10 +18,10 @@ export const createEventFormRoute = route().post(
         description:
             "Create a survey or evaluation form for an event. Requires event write permission.",
     })
-        .response(201, "Created")
-        .badRequest("Form already exists for this event type")
-        .forbidden("Cant create form for specified event")
-        .notFound("Event not found")
+        .response({ statusCode: 201, description: "Created" })
+        .badRequest({ description: "Form already exists for this event type" })
+        .forbidden({ description: "Cant create form for specified event" })
+        .notFound({ description: "Event not found" })
         .build(),
     requireAuth,
     validator("json", createEventFormSchema),

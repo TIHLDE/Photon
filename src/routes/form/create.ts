@@ -28,7 +28,11 @@ export const createRoute = route().post(
         description:
             "Create a new base form template. Requires 'forms:create' permission.",
     })
-        .schemaResponse(201, formResponseSchema, "Created")
+        .schemaResponse({
+            statusCode: 201,
+            schema: formResponseSchema,
+            description: "Created",
+        })
         .build(),
     requireAuth,
     requirePermission("forms:create"),

@@ -36,11 +36,12 @@ export const createRoute = route().post(
         description:
             "Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission.",
     })
-        .schemaResponse(
-            201,
-            createApiKeyResponseSchema,
-            "API key created successfully. The 'key' field contains the full API key and will not be shown again.",
-        )
+        .schemaResponse({
+            statusCode: 201,
+            schema: createApiKeyResponseSchema,
+            description:
+                "API key created successfully. The 'key' field contains the full API key and will not be shown again.",
+        })
         .build(),
     requireAuth,
     requirePermission("api-keys:create"),

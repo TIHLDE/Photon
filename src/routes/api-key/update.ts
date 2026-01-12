@@ -39,8 +39,12 @@ export const updateRoute = route().patch(
         description:
             "Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.",
     })
-        .schemaResponse(200, apiKeySchema, "API key updated successfully")
-        .notFound("API key not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: apiKeySchema,
+            description: "API key updated successfully",
+        })
+        .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
     requirePermission("api-keys:update"),

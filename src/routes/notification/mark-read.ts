@@ -30,12 +30,14 @@ export const markReadNotificationRoute = route().patch(
         description:
             "Update the read status of a notification. User must be authenticated and own the notification.",
     })
-        .schemaResponse(
-            200,
-            markReadResponseSchema,
-            "Notification updated successfully",
-        )
-        .notFound("Notification not found or not owned by user")
+        .schemaResponse({
+            statusCode: 200,
+            schema: markReadResponseSchema,
+            description: "Notification updated successfully",
+        })
+        .notFound({
+            description: "Notification not found or not owned by user",
+        })
         .build(),
     requireAuth,
     validator("json", markReadSchema),

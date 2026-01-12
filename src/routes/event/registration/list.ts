@@ -37,8 +37,14 @@ export const getAllRegistrationsForEventsRoute = route().get(
         tags: ["events"],
         summary: "Get event registrations",
         operationId: "listEventRegistrations",
+        description:
+            "Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts",
     })
-        .schemaResponse(200, z.array(registrationsSchema), "OK")
+        .schemaResponse({
+            statusCode: 200,
+            schema: z.array(registrationsSchema),
+            description: "OK",
+        })
         .build(),
     ...withPagination(),
     async (c) => {

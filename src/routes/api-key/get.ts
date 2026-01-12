@@ -15,8 +15,12 @@ export const getRoute = route().get(
         description:
             "Get a single API key by ID. Does not include the full key value. Requires 'api-keys:view' permission.",
     })
-        .schemaResponse(200, apiKeySchema, "API key details")
-        .notFound("API key not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: apiKeySchema,
+            description: "API key details",
+        })
+        .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
     requirePermission("api-keys:view"),

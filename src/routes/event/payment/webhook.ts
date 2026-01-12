@@ -33,9 +33,12 @@ export const paymentWebhookRoute = route().post(
         description:
             "Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.",
     })
-        .response(200, "Webhook processed successfully")
-        .badRequest("Invalid webhook payload")
-        .notFound("Payment not found")
+        .response({
+            statusCode: 200,
+            description: "Webhook processed successfully",
+        })
+        .badRequest({ description: "Invalid webhook payload" })
+        .notFound({ description: "Payment not found" })
         .build(),
     async (c) => {
         const body = (await c.req.json()) as WebhookPayload;

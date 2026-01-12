@@ -30,10 +30,10 @@ export const updateFineRoute = route().patch(
         description:
             "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
     })
-        .response(200, "Fine updated successfully")
-        .badRequest("Invalid status transition")
-        .forbidden("Not authorized to update this fine")
-        .notFound("Fine or group not found")
+        .response({ statusCode: 200, description: "Fine updated successfully" })
+        .badRequest({ description: "Invalid status transition" })
+        .forbidden({ description: "Not authorized to update this fine" })
+        .notFound({ description: "Fine or group not found" })
         .build(),
     requireAuth,
     validator("json", updateFineSchema),

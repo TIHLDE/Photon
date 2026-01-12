@@ -15,8 +15,11 @@ export const removeMemberRoute = route().delete(
         description:
             "Remove a member from a group. Requires 'groups:manage' permission.",
     })
-        .response(204, "Member removed successfully")
-        .notFound("Group, user, or membership not found")
+        .response({
+            statusCode: 204,
+            description: "Member removed successfully",
+        })
+        .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
     requirePermission("groups:manage"),

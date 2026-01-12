@@ -18,7 +18,7 @@ import {
 } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/roles";
 import { HTTPAppException } from "~/lib/errors";
-import { describeMiddleware, describeRoute } from "~/lib/openapi";
+import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 type Variables = {
@@ -71,7 +71,7 @@ export const requirePermission = (permissionName: string) =>
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
@@ -116,7 +116,7 @@ export const requireAnyPermission = (...permissions: string[]) =>
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
@@ -164,7 +164,7 @@ export const requireAllPermissions = (...permissions: string[]) =>
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({
@@ -256,7 +256,7 @@ export const requireScopedPermission = (
 
             await next();
         }),
-        describeRoute()
+        describeMiddlewareRoute()
             .errorResponses([
                 HTTPAppException.Unauthorized(),
                 new HTTPAppException({

@@ -43,8 +43,12 @@ export const getRoute = route().get(
         operationId: "getForm",
         description: "Get a form by ID with all fields and options",
     })
-        .schemaResponse(200, formDetailResponseSchema, "Success")
-        .notFound("Form not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: formDetailResponseSchema,
+            description: "Success",
+        })
+        .notFound({ description: "Form not found" })
         .build(),
     requireAuth,
     async (c) => {

@@ -16,9 +16,9 @@ export const deleteRoute = route().delete(
         description:
             "Delete a form and all associated data. Requires permission to manage the form.",
     })
-        .response(200, "Success")
-        .forbidden()
-        .notFound()
+        .response({ statusCode: 200, description: "Success" })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "Form not found" })
         .build(),
     requireAuth,
     async (c) => {

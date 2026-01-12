@@ -28,7 +28,11 @@ export const listRoute = route().get(
         description:
             "List all form templates by default. Use ?all=true to include all forms. Returns template forms by default.",
     })
-        .schemaResponse(200, formListResponseSchema, "Success")
+        .schemaResponse({
+            statusCode: 200,
+            schema: formListResponseSchema,
+            description: "Success",
+        })
         .build(),
     requireAuth,
     async (c) => {

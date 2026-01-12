@@ -12,7 +12,7 @@ export const listRoute = route().get(
         description:
             "Get a list of job postings. Supports search and expired filtering. Public endpoint.",
     })
-        .response(200, "List of job postings")
+        .response({ statusCode: 200, description: "List of job postings" })
         .build(),
     async (c) => {
         const { db } = c.get("ctx");

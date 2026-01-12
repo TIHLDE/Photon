@@ -43,9 +43,13 @@ export const getEventFormRoute = route().get(
         description:
             "Get a specific form (survey or evaluation) for an event with all fields and options",
     })
-        .schemaResponse(200, eventFormDetailResponseSchema, "Success")
-        .forbidden("Evaluation forms require attendance")
-        .notFound("Form not found")
+        .schemaResponse({
+            statusCode: 200,
+            schema: eventFormDetailResponseSchema,
+            description: "Success",
+        })
+        .forbidden({ description: "Evaluation forms require attendance" })
+        .notFound({ description: "Form not found" })
         .build(),
     requireAuth,
     async (c) => {

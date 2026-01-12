@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import type { Session, User } from "~/lib/auth";
-import { describeMiddleware, describeRoute } from "~/lib/openapi";
+import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 import { HTTPAppException } from "~/lib/errors";
@@ -31,14 +31,7 @@ export const requireAuth = describeMiddleware(
 
         await next();
     }),
-    describeRoute({
-        // TODO: Fix this
-        // security: [
-        //     {
-        //         bearerAuth: []
-        //     }
-        // ]
-    })
+    describeMiddlewareRoute()
         .errorResponses([HTTPAppException.Unauthorized()])
         .getSpec(),
 );

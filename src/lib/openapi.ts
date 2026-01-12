@@ -10,21 +10,64 @@ import type { StatusCode } from "hono/utils/http-status";
 import { type ZodType, z } from "zod/v4";
 import { HTTPAppException, httpAppExceptionSchema } from "./errors";
 
+/**
+ * All tags available for API endpoints
+ */
+const tags = [
+    "api-keys",
+    "emails",
+    "events",
+    "forms",
+    "groups",
+    "fines",
+    "jobs",
+    "news",
+    "notifications",
+    "payments",
+    "users",
+    "webhooks",
+] as const;
+
+/**
+ * Further constrains DescribeRouteOptions to increase consistency
+ */
+type CustomDescribeRouteOptions = {
+    operationId: string;
+    summary: string;
+    description: string;
+    tags: (typeof tags)[number][];
+} & DescribeRouteOptions;
+
+/**
+ * Remove overlapped fields from options passed in as additional options
+ */
+type AdditionalDescribeRouteOptions = Omit<
+    DescribeRouteOptions,
+    keyof CustomDescribeRouteOptions
+>;
+
 type ResponsesType = NonNullable<DescribeRouteOptions["responses"]>;
 type OutputOptions = ResponsesType[keyof ResponsesType];
 
 export class RouteDescriptorBuilder {
-    private options: DescribeRouteOptions;
+    private options: CustomDescribeRouteOptions;
 
-    constructor(options: DescribeRouteOptions) {
+    constructor(options: CustomDescribeRouteOptions) {
         this.options = options;
     }
 
-    public response(
-        statusCode: StatusCode,
-        description: string,
-        options: Omit<OutputOptions, "description"> = {},
-    ) {
+    /**
+     * Define a response that does not need a schema. If you use an output schema, please use [schemaResponse] instead.
+     */
+    public response({
+        statusCode,
+        description,
+        options = {},
+    }: {
+        statusCode: StatusCode;
+        description: string;
+        options?: AdditionalDescribeRouteOptions;
+    }) {
         this.options.responses = {
             ...this.options.responses,
             [statusCode]: {
@@ -32,17 +75,26 @@ export class RouteDescriptorBuilder {
                 ...options,
             },
         };
+
         return this;
     }
 
-    public schemaResponse(
-        statusCode: StatusCode,
-        schema: ZodType,
-        description = "",
-        options: Omit<OutputOptions, "description"> & {
+    /**
+     * Define a response with a type-safe schema
+     */
+    public schemaResponse({
+        statusCode,
+        schema,
+        description,
+        options = {},
+    }: {
+        statusCode: StatusCode;
+        schema: ZodType;
+        description: string;
+        options?: AdditionalDescribeRouteOptions & {
             mediaType?: string;
-        } = {},
-    ) {
+        };
+    }) {
         const desc = description || undefined;
         const { mediaType = "application/json", ...rest } = options;
         const content =
@@ -68,68 +120,111 @@ export class RouteDescriptorBuilder {
         return this;
     }
 
-    public badRequest(
+    /**
+     * Define a 400 Bad Request response for this route
+     */
+    public badRequest({
         description = "",
-        options: Omit<OutputOptions, "description"> = {},
-    ) {
-        return this.response(
-            400,
-            description ? `Bad Request - ${description}` : "Bad Request",
+        options = {},
+    }: {
+        description?: string;
+        options?: Omit<OutputOptions, "description">;
+    } = {}) {
+        return this.response({
+            statusCode: 400,
+            description: description
+                ? `Bad Request - ${description}`
+                : "Bad Request",
             options,
-        );
+        });
     }
 
-    public notFound(
+    /**
+     * Define a 404 Not Found response for this route
+     */
+    public notFound({
         description = "",
-        options: Omit<OutputOptions, "description"> = {},
-    ) {
-        return this.response(
-            404,
-            description ? `Not Found - ${description}` : "Not Found",
+        options = {},
+    }: {
+        description?: string;
+        options?: Omit<OutputOptions, "description">;
+    } = {}) {
+        return this.response({
+            statusCode: 404,
+            description: description
+                ? `Not Found - ${description}`
+                : "Not Found",
             options,
-        );
+        });
     }
 
-    public forbidden(
+    /**
+     * Define a 403 Forbidden response for this route
+     */
+    public forbidden({
         description = "",
-        options: Omit<OutputOptions, "description"> = {},
-    ) {
-        return this.response(
-            403,
-            description ? `Forbidden - ${description}` : "Forbidden",
+        options = {},
+    }: {
+        description?: string;
+        options?: Omit<OutputOptions, "description">;
+    } = {}) {
+        return this.response({
+            statusCode: 403,
+            description: description
+                ? `Forbidden - ${description}`
+                : "Forbidden",
             options,
-        );
+        });
     }
 
-    public unauthorized(
+    /**
+     * Define a 401 Unauthorized response for this route
+     */
+    public unauthorized({
         description = "",
-        options: Omit<OutputOptions, "description"> = {},
-    ) {
-        return this.response(
-            401,
-            description ? `Unauthorized - ${description}` : "Unauthorized",
+        options = {},
+    }: {
+        description?: string;
+        options?: Omit<OutputOptions, "description">;
+    } = {}) {
+        return this.response({
+            statusCode: 401,
+            description: description
+                ? `Unauthorized - ${description}`
+                : "Unauthorized",
             options,
-        );
+        });
     }
 
-    public errorResponses(errorResponses: Error[]) {
-        for (const error of errorResponses) {
+    /**
+     * Define custom error responses for this route.
+     *
+     * You can define known errors by using the HTTPAppException class with named constructors.
+     *
+     * Example: `.errorResponses({ errors: [HTTPAppException.NotFound("User not found")] })`
+     */
+    public errorResponses(errors: Error[]) {
+        for (const error of errors) {
             if (error instanceof HTTPAppException) {
-                this.schemaResponse(
-                    error.status as StatusCode,
-                    httpAppExceptionSchema,
-                    error.providedMessage,
-                );
+                this.schemaResponse({
+                    statusCode: error.status as StatusCode,
+                    schema: httpAppExceptionSchema,
+                    description: error.providedMessage,
+                });
                 continue;
             }
 
             // Standard Hono HTTP Exception
             // This might sometimes be wrong since it can contain a response object as well
             if (error instanceof HTTPException) {
-                this.response(error.status as StatusCode, error.message, {
-                    content: {
-                        "text/plain": {
-                            schema: resolver(z.string()),
+                this.response({
+                    statusCode: error.status as StatusCode,
+                    description: error.message,
+                    options: {
+                        content: {
+                            "text/plain": {
+                                schema: resolver(z.string()),
+                            },
                         },
                     },
                 });
@@ -139,17 +234,34 @@ export class RouteDescriptorBuilder {
         return this;
     }
 
+    /**
+     * Build an OpenAPI route description for this API endpoint
+     */
     public build() {
         return _describeRoute(this.options);
     }
 
+    /**
+     * Get the internal/raw OpenAPI specification options
+     */
     public getSpec() {
         return this.options;
     }
 }
 
-export function describeRoute(options: DescribeRouteOptions = {}) {
+/**
+ * Creates a RouteDescriptorBuilder for API endpoints
+ */
+export function describeRoute(options: CustomDescribeRouteOptions) {
     return new RouteDescriptorBuilder(options);
+}
+
+/**
+ * Creates a RouteDescriptorBuilder for middleware
+ */
+export function describeMiddlewareRoute() {
+    // Middlware do not need route required parameters
+    return new RouteDescriptorBuilder({} as CustomDescribeRouteOptions);
 }
 
 export function describeMiddleware<T extends MiddlewareHandler>(

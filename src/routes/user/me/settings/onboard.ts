@@ -12,14 +12,18 @@ import { requireAuth } from "~/middleware/auth";
 export const onboardRoute = route().post(
     "/",
     describeRoute({
-        tags: ["user"],
+        tags: ["users"],
         summary: "Complete user onboarding",
         operationId: "onboardUser",
         description:
             "Create initial user settings and mark the user as onboarded. Can only be called once per user.",
     })
-        .schemaResponse(201, UserSettingsSchema, "User onboarded successfully")
-        .badRequest("User has already completed onboarding")
+        .schemaResponse({
+            statusCode: 201,
+            schema: UserSettingsSchema,
+            description: "User onboarded successfully",
+        })
+        .badRequest({ description: "User has already completed onboarding" })
         .build(),
     requireAuth,
     validator("json", UserSettingsSchema),

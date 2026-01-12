@@ -24,9 +24,14 @@ export const createReactionRoute = route().post(
         description:
             "Add or update emoji reaction to a news article. Requires authentication.",
     })
-        .response(201, "Reaction added successfully")
-        .forbidden("Reactions not allowed on this news article")
-        .notFound("News article not found")
+        .response({
+            statusCode: 201,
+            description: "Reaction added successfully",
+        })
+        .forbidden({
+            description: "Reactions not allowed on this news article",
+        })
+        .notFound({ description: "News article not found" })
         .build(),
     requireAuth,
     validator("json", createReactionSchema),
