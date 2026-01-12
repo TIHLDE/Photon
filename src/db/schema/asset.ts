@@ -39,8 +39,9 @@ export const asset = pgTable("file", {
 
     /**
      * User who uploaded the file (nullable for system uploads)
+     * Note: auth_user.id is text type, so we must use text here
      */
-    uploadedById: uuid("uploaded_by_id").references(() => user.id, {
+    uploadedById: text("uploaded_by_id").references(() => user.id, {
         onDelete: "set null",
     }),
 

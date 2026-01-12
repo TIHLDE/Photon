@@ -4,7 +4,7 @@ CREATE TABLE "asset_file" (
 	"original_filename" varchar(512) NOT NULL,
 	"content_type" varchar(255),
 	"size" bigint NOT NULL,
-	"uploaded_by_id" uuid,
+	"uploaded_by_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "asset_file_key_unique" UNIQUE("key")

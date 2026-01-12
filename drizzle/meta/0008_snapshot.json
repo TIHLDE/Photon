@@ -1,5 +1,5 @@
 {
-  "id": "dd8aef0a-b367-43cd-a993-d55f421bb9d9",
+  "id": "b0dd70ab-560d-4817-a070-c6b9f4df6b4b",
   "prevId": "54f24175-7e6e-4fc3-bbd8-05f71207f2a9",
   "version": "7",
   "dialect": "postgresql",
@@ -145,7 +145,7 @@
         },
         "uploaded_by_id": {
           "name": "uploaded_by_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
