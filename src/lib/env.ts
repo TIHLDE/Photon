@@ -60,6 +60,53 @@ const envSchema = z
             .meta({ description: "Redis connection URL" })
             .default("redis://localhost:6379"),
 
+        // S3-COMPATIBLE STORAGE (MinIO for dev, OpenStack Swift for prod)
+        S3_ENDPOINT: z
+            .string()
+            .meta({
+                description:
+                    "S3-compatible storage endpoint. For MinIO: 'localhost:9000', for OpenStack: 'object.trd1.stack.it.ntnu.no'",
+            })
+            .default("localhost:9000"),
+        S3_ACCESS_KEY_ID: z
+            .string()
+            .meta({
+                description:
+                    "S3 access key ID. For MinIO: root user, for OpenStack: application credential ID",
+            })
+            .default("minioadmin"),
+        S3_SECRET_ACCESS_KEY: z
+            .string()
+            .meta({
+                description:
+                    "S3 secret access key. For MinIO: root password, for OpenStack: application credential secret",
+            })
+            .default("minioadmin"),
+        S3_BUCKET_NAME: z
+            .string()
+            .meta({ description: "S3 bucket/container name for file storage" })
+            .default("photon-files"),
+        S3_REGION: z
+            .string()
+            .meta({
+                description:
+                    "S3 region. For MinIO: 'us-east-1' (default), for OpenStack: 'TRD1'",
+            })
+            .default("us-east-1"),
+        S3_USE_SSL: z
+            .string()
+            .meta({ description: "Use SSL/TLS for S3 connection" })
+            .optional()
+            .transform(toBoolean({ defaultVal: false })),
+        S3_FORCE_PATH_STYLE: z
+            .string()
+            .meta({
+                description:
+                    "Force path-style URLs (required for MinIO, optional for OpenStack)",
+            })
+            .optional()
+            .transform(toBoolean({ defaultVal: true })),
+
         // FEIDE
         FEIDE_CLIENT_ID: z
             .string()
@@ -149,6 +196,13 @@ const testEnvVariables: Env = {
     MAIL_FROM: "",
     MAIL_PORT: 0,
     REDIS_URL: "",
+    S3_ENDPOINT: "",
+    S3_ACCESS_KEY_ID: "minioadmin",
+    S3_SECRET_ACCESS_KEY: "minioadmin",
+    S3_BUCKET_NAME: "test-bucket",
+    S3_REGION: "us-east-1",
+    S3_USE_SSL: false,
+    S3_FORCE_PATH_STYLE: true,
     REFRESH_VIPPS_WEBHOOKS: false,
     ROOT_URL: "http://localhost:4000",
     SEED_DB: false,

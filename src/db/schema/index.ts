@@ -8,3 +8,4 @@ export * from "./news";
 export * from "./job";
 export * from "./user";
 export * from "./api-key";
+export * from "./asset";
