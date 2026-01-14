@@ -20,6 +20,9 @@ export default async ({ db, auth }: AppContext) => {
                 password: "index123",
                 name: "Brotherman Testern",
                 role: "admin",
+                data: {
+                    username: "brotherman",
+                },
             },
         });
 
