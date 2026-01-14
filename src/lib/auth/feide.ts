@@ -157,6 +157,25 @@ export const syncFeideHook: (
 
                 const studyProgramId = sp[0].id;
 
+                const existing = await tx
+                    .select({
+                        userId: studyProgramMembership.userId,
+                        studyProgramId: studyProgramMembership.studyProgramId,
+                    })
+                    .from(studyProgramMembership)
+                    .where(
+                        eq(studyProgramMembership.userId, userId) &&
+                            eq(
+                                studyProgramMembership.studyProgramId,
+                                studyProgramId,
+                            ),
+                    )
+                    .limit(1);
+
+                if (existing[0]) {
+                    continue;
+                }
+
                 await tx.insert(studyProgramMembership).values({
                     userId,
                     studyProgramId,
