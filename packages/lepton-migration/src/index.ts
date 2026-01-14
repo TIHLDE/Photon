@@ -1,28 +1,28 @@
 import * as mysql from "mysql2";
-import { createAuth } from "photon/auth";
 import { createAppContext } from "photon/ctx";
 import { __db as db, schema } from "photon/db";
 
 const dump = async () => {
     const ctx = await createAppContext();
-    const auth = createAuth(ctx);
+    const { auth } = ctx;
 
     // TODO use env vars
     const connection = mysql.createConnection({
         host: "localhost",
         port: 3306,
         user: "root",
-        password: "password",
-        database: "nettside-dev",
+        password: "rootpassword",
+        database: "lepton",
     });
 
     connection.connect();
 
     connection.query(
-        // TODO remove limit 1
-        "SELECT * FROM authtoken_token JOIN `nettside-dev`.content_user cu ON cu.user_id = authtoken_token.user_id LIMIT 1",
+        "SELECT * FROM authtoken_token JOIN `lepton`.content_user cu ON cu.user_id = authtoken_token.user_id",
         async (error, results, fields) => {
             const data = results as LeptonUserAccount[];
+
+            console.log(error);
 
             console.log(data);
 
@@ -35,19 +35,13 @@ const dump = async () => {
                         email: userAccount.email,
                         password,
                         name: `${userAccount.first_name} ${userAccount.last_name}`,
-                        role: userAccount.is_superuser ? "admin" : "user", // better auth sdk stuff
+                        role: "user",
                         data: {
                             legacyToken: userAccount.key,
+                            username: userAccount.user_id,
                         },
                     },
                 });
-
-                if (userAccount.is_superuser) {
-                    await db.insert(schema.userRole).values({
-                        userId: user.user.id,
-                        roleId: 1,
-                    });
-                }
             }
         },
     );
