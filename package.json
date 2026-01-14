@@ -42,7 +42,7 @@
         "bullmq": "^5.59.0",
         "drizzle-orm": "^0.44.5",
         "drizzle-seed": "^0.3.1",
-        "hono": "^4.10.3",
+        "hono": "^4.11.4",
         "hono-openapi": "^1.0.2",
         "node-cron": "^4.2.1",
         "nodemailer": "^7.0.7",
