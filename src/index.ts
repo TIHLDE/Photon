@@ -51,17 +51,6 @@ export const createApp = async (variables?: Variables) => {
 
     const api = new Hono<{ Variables: Variables }>()
         .basePath("/api")
-        .use(
-            "/auth/**",
-            cors({
-                origin: "http://localhost:3000",
-                allowHeaders: ["Content-Type", "Authorization"],
-                allowMethods: ["POST", "GET", "OPTIONS"],
-                exposeHeaders: ["Content-Length"],
-                maxAge: 600,
-                credentials: true,
-            }),
-        )
         .on(["POST", "GET"], "/auth/*", (c) => {
             const { auth } = c.get("ctx");
             return auth.handler(c.req.raw);
@@ -87,6 +76,17 @@ export const createApp = async (variables?: Variables) => {
             c.set("service", service);
             await next();
         })
+        .use(
+            "*",
+            cors({
+                origin: "http://localhost:3000",
+                allowHeaders: ["Content-Type", "Authorization"],
+                allowMethods: ["POST", "GET", "OPTIONS"],
+                exposeHeaders: ["Content-Length"],
+                maxAge: 600,
+                credentials: true,
+            }),
+        )
         .route("/", api)
         .get(
             "/openapi",

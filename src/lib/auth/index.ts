@@ -6,6 +6,7 @@ import {
     createAuthMiddleware,
     emailOTP,
     openAPI,
+    username,
 } from "better-auth/plugins";
 import * as schema from "~/db/schema";
 import { enqueueEmail } from "~/lib/email";
@@ -15,6 +16,7 @@ import ResetPasswordEmail from "~/lib/email/template/reset-password";
 import { env } from "~/lib/env";
 import type { AppContext } from "../ctx";
 import { feidePlugin, syncFeideHook } from "./feide";
+import { syncLegacyTokenHook } from "./lepton";
 
 export const createAuth = (ctx: Omit<AppContext, "auth">) =>
     betterAuth({
@@ -46,11 +48,13 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             crossSubDomainCookies: {
                 enabled: true,
             },
+            cookiePrefix: "photon",
         },
         trustedOrigins: [
             "https://tihlde.org",
             "https://*.tihlde.org",
-            "localhost:*",
+            "localhost:3000",
+            "http://localhost:3000",
         ],
         user: {
             additionalFields: {
@@ -102,6 +106,7 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             }),
             admin(),
             bearer(),
+            username(),
         ],
         logger: {
             disabled: false,
@@ -114,6 +119,7 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
         hooks: {
             after: createAuthMiddleware(async (middlewareCtx) => {
                 await syncFeideHook(middlewareCtx, ctx);
+                await syncLegacyTokenHook(middlewareCtx, ctx);
             }),
         },
         secondaryStorage: {

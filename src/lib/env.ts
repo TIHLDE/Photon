@@ -26,6 +26,10 @@ const envSchema = z
             .string()
             .meta({ description: "Base URL of the application" })
             .default("http://localhost:4000"),
+        WEBSITE_URL: z
+            .string()
+            .meta({ description: "URL of Kvark frontend" })
+            .default("http://localhost:3000"),
         PORT: z
             .string()
             .meta({ description: "Port to run the server on" })
@@ -188,6 +192,7 @@ const envSchema = z
 type Env = z.infer<typeof envSchema>;
 
 const testEnvVariables: Env = {
+    WEBSITE_URL: "http://localhost:3000",
     DATABASE_URL: "",
     FEIDE_CLIENT_ID: "test-feide-client-id",
     FEIDE_CLIENT_SECRET: "test-feide-client-secret",
