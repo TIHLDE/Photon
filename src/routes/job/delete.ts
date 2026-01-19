@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { hasScopedPermission } from "~/lib/auth/rbac/roles";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -40,32 +39,15 @@ export const deleteRoute = route().delete(
             });
         }
 
-        // Check permissions: global (delete or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["jobs:delete", "jobs:manage"],
-        );
-        const hasScopedDeletePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:delete",
-            `job-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:manage",
-            `job-${id}`,
-        );
+        // Check permissions: global or scoped (delete or manage) OR creator
+        const scope = `job-${id}`;
+        const [hasDeletePermission, hasManagePermission] = await Promise.all([
+            hasScopedPermission(c.get("ctx"), userId, "jobs:delete", scope),
+            hasScopedPermission(c.get("ctx"), userId, "jobs:manage", scope),
+        ]);
         const isCreator = job.createdById === userId;
 
-        if (
-            !hasGlobalPermission &&
-            !hasScopedDeletePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
+        if (!hasDeletePermission && !hasManagePermission && !isCreator) {
             throw new HTTPException(403, {
                 message:
                     "You do not have permission to delete this job posting",

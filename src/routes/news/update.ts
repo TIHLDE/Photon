@@ -3,8 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { hasScopedPermission } from "~/lib/auth/rbac/roles";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -53,32 +52,15 @@ export const updateRoute = route().patch(
             });
         }
 
-        // Check permissions: global (update or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["news:update", "news:manage"],
-        );
-        const hasScopedUpdatePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:update",
-            `news-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:manage",
-            `news-${id}`,
-        );
+        // Check permissions: global or scoped (update or manage) OR creator
+        const scope = `news-${id}`;
+        const [hasUpdatePermission, hasManagePermission] = await Promise.all([
+            hasScopedPermission(c.get("ctx"), userId, "news:update", scope),
+            hasScopedPermission(c.get("ctx"), userId, "news:manage", scope),
+        ]);
         const isCreator = newsArticle.createdById === userId;
 
-        if (
-            !hasGlobalPermission &&
-            !hasScopedUpdatePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
+        if (!hasUpdatePermission && !hasManagePermission && !isCreator) {
             throw new HTTPException(403, {
                 message:
                     "You do not have permission to update this news article",

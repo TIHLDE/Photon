@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { hasScopedPermission } from "~/lib/auth/rbac/roles";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -44,32 +43,15 @@ export const deleteRoute = route().delete(
             });
         }
 
-        // Check permissions: global (delete or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["news:delete", "news:manage"],
-        );
-        const hasScopedDeletePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:delete",
-            `news-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:manage",
-            `news-${id}`,
-        );
+        // Check permissions: global or scoped (delete or manage) OR creator
+        const scope = `news-${id}`;
+        const [hasDeletePermission, hasManagePermission] = await Promise.all([
+            hasScopedPermission(c.get("ctx"), userId, "news:delete", scope),
+            hasScopedPermission(c.get("ctx"), userId, "news:manage", scope),
+        ]);
         const isCreator = newsArticle.createdById === userId;
 
-        if (
-            !hasGlobalPermission &&
-            !hasScopedDeletePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
+        if (!hasDeletePermission && !hasManagePermission && !isCreator) {
             throw new HTTPException(403, {
                 message:
                     "You do not have permission to delete this news article",
