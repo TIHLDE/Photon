@@ -1,6 +1,5 @@
 import * as mysql from "mysql2";
 import { createAppContext } from "photon/ctx";
-import { __db as db, schema } from "photon/db";
 
 const dump = async () => {
     const ctx = await createAppContext();

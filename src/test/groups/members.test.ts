@@ -247,19 +247,24 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$delete({
-                    param: { groupSlug: group.slug, userId: memberUser.user.id },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: memberUser.user.id,
+                    },
                 });
 
                 expect(response.status).toBe(204);
 
                 // Verify member was removed
-                const membership = await ctx.db.query.groupMembership.findFirst({
-                    where: (m, { and, eq }) =>
-                        and(
-                            eq(m.userId, memberUser.user.id),
-                            eq(m.groupSlug, group.slug),
-                        ),
-                });
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: (m, { and, eq }) =>
+                            and(
+                                eq(m.userId, memberUser.user.id),
+                                eq(m.groupSlug, group.slug),
+                            ),
+                    },
+                );
 
                 expect(membership).toBeUndefined();
             },
@@ -291,7 +296,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$delete({
-                    param: { groupSlug: group.slug, userId: memberUser.user.id },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: memberUser.user.id,
+                    },
                 });
 
                 expect(response.status).toBe(403);
@@ -312,7 +320,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$delete({
-                    param: { groupSlug: group.slug, userId: "non-existent-user" },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: "non-existent-user",
+                    },
                 });
 
                 expect(response.status).toBe(404);
@@ -381,11 +392,11 @@ describe("group members", () => {
                     },
                 ]);
 
-                const response = await client.api.groups[":groupSlug"].members.$get(
-                    {
-                        param: { groupSlug: group.slug },
-                    },
-                );
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({
+                    param: { groupSlug: group.slug },
+                });
 
                 expect(response.status).toBe(200);
 
@@ -410,11 +421,11 @@ describe("group members", () => {
                     slug: "empty-group",
                 });
 
-                const response = await client.api.groups[":groupSlug"].members.$get(
-                    {
-                        param: { groupSlug: group.slug },
-                    },
-                );
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({
+                    param: { groupSlug: group.slug },
+                });
 
                 expect(response.status).toBe(200);
 
@@ -431,11 +442,11 @@ describe("group members", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                const response = await client.api.groups[":groupSlug"].members.$get(
-                    {
-                        param: { groupSlug: "non-existent" },
-                    },
-                );
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({
+                    param: { groupSlug: "non-existent" },
+                });
 
                 expect(response.status).toBe(404);
             },
@@ -473,7 +484,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$patch({
-                    param: { groupSlug: group.slug, userId: memberUser.user.id },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: memberUser.user.id,
+                    },
                     json: {
                         role: "leader",
                     },
@@ -516,7 +530,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$patch({
-                    param: { groupSlug: group.slug, userId: leaderUser.user.id },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: leaderUser.user.id,
+                    },
                     json: {
                         role: "member",
                     },
@@ -555,7 +572,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$patch({
-                    param: { groupSlug: group.slug, userId: memberUser.user.id },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: memberUser.user.id,
+                    },
                     json: {
                         role: "leader",
                     },
@@ -579,7 +599,10 @@ describe("group members", () => {
                 const response = await client.api.groups[":groupSlug"].members[
                     ":userId"
                 ].$patch({
-                    param: { groupSlug: group.slug, userId: "non-existent-user" },
+                    param: {
+                        groupSlug: group.slug,
+                        userId: "non-existent-user",
+                    },
                     json: {
                         role: "leader",
                     },

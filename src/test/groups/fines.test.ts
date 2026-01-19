@@ -35,7 +35,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: targetUser.user.id,
@@ -77,7 +79,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: targetUser.user.id,
@@ -112,7 +116,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: targetUser.user.id,
@@ -145,7 +151,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: targetUser.user.id,
@@ -176,7 +184,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: "non-existent" },
                     json: {
                         userId: targetUser.user.id,
@@ -203,7 +213,9 @@ describe("fines", () => {
                     finesActivated: true,
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: "non-existent-user",
@@ -238,7 +250,9 @@ describe("fines", () => {
                     },
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$post({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
                     param: { groupSlug: group.slug },
                     json: {
                         userId: targetUser.user.id,
@@ -298,7 +312,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$delete({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                 });
 
                 expect(response.status).toBe(204);
@@ -350,7 +367,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$delete({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                 });
 
                 expect(response.status).toBe(403);
@@ -422,7 +442,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$get({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                 });
 
                 expect(response.status).toBe(200);
@@ -472,7 +495,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$get({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                 });
 
                 expect(response.status).toBe(403);
@@ -554,7 +580,9 @@ describe("fines", () => {
                     },
                 ]);
 
-                const response = await client.api.groups[":groupSlug"].fines.$get({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
                     param: { groupSlug: group.slug },
                 });
 
@@ -579,7 +607,9 @@ describe("fines", () => {
                     finesActivated: true,
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$get({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
                     param: { groupSlug: group.slug },
                 });
 
@@ -602,7 +632,9 @@ describe("fines", () => {
                     finesActivated: true,
                 });
 
-                const response = await client.api.groups[":groupSlug"].fines.$get({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
                     param: { groupSlug: group.slug },
                 });
 
@@ -619,7 +651,9 @@ describe("fines", () => {
 
                 await ctx.utils.giveUserPermissions(user, ["fines:view"]);
 
-                const response = await client.api.groups[":groupSlug"].fines.$get({
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
                     param: { groupSlug: "non-existent" },
                 });
 
@@ -669,7 +703,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$patch({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                     json: {
                         status: "approved",
                     },
@@ -722,7 +759,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$patch({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                     json: {
                         status: "rejected",
                     },
@@ -773,7 +813,10 @@ describe("fines", () => {
                 const response = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
                 ].$patch({
-                    param: { groupSlug: group.slug, fineId: fine.id.toString() },
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: fine.id.toString(),
+                    },
                     json: {
                         status: "approved",
                     },
