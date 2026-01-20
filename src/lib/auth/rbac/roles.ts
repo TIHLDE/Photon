@@ -791,3 +791,41 @@ export async function hasScopedPermission(
         matchesPermission(grantedPerm, permissionName, requiredScope),
     );
 }
+
+/**
+ * Check if a user has any of the specified permissions for a specific resource scope.
+ * More efficient than calling hasScopedPermission multiple times.
+ *
+ * @param userId - User to check
+ * @param permissionNames - Permission names to check (user needs ANY of these)
+ * @param scope - Resource scope (e.g., "group:fotball")
+ * @returns true if user has any of the permissions globally OR for the specific scope
+ *
+ * @example
+ * if (await hasAnyScopedPermission(ctx, userId, ["events:update", "events:manage"], "group:fotball")) {
+ *     // Allow update
+ * }
+ */
+export async function hasAnyScopedPermission(
+    ctx: AppContext,
+    userId: string,
+    permissionNames: string[],
+    requiredScope: string,
+): Promise<boolean> {
+    if (permissionNames.length === 0) return false;
+
+    const { matchesPermission } = await import("./permission-parser");
+
+    // Get ALL permissions once (from roles + direct grants)
+    const permissions = await getUserPermissions(ctx, userId);
+
+    // Root grants everything
+    if (permissions.includes("root")) return true;
+
+    // Check if any granted permission matches any of the required permissions
+    return permissionNames.some((requiredPerm) =>
+        permissions.some((grantedPerm) =>
+            matchesPermission(grantedPerm, requiredPerm, requiredScope),
+        ),
+    );
+}

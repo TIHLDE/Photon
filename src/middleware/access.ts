@@ -33,7 +33,10 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import { hasAnyPermission, hasPermission } from "~/lib/auth/rbac/permissions";
-import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import {
+    hasAnyScopedPermission,
+    hasScopedPermission,
+} from "~/lib/auth/rbac/roles";
 import type { AppContext } from "~/lib/ctx";
 
 type Variables = {
@@ -130,11 +133,21 @@ export const requireAccess = (options: RequireAccessOptions) =>
         if (options.scope) {
             // Scoped permission check (global OR scoped)
             const scope = options.scope(c);
-            for (const perm of permissions) {
-                if (await hasScopedPermission(ctx, user.id, perm, scope)) {
-                    hasAccess = true;
-                    break;
-                }
+            const firstPermission = permissions[0];
+            if (permissions.length === 1 && firstPermission) {
+                hasAccess = await hasScopedPermission(
+                    ctx,
+                    user.id,
+                    firstPermission,
+                    scope,
+                );
+            } else {
+                hasAccess = await hasAnyScopedPermission(
+                    ctx,
+                    user.id,
+                    permissions,
+                    scope,
+                );
             }
         } else {
             // Global permission check only
