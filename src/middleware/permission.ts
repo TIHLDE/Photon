@@ -16,7 +16,7 @@ import {
     hasAnyPermission,
     hasPermission,
 } from "~/lib/auth/rbac/permissions";
-import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { hasScopedPermission } from "~/lib/auth/rbac/permissions";
 import { HTTPAppException } from "~/lib/errors";
 import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";

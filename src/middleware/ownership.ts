@@ -234,7 +234,9 @@ export const requireOwnershipOrScopedPermission = (
 
         // 3. Not owner and no global permission, check scoped permission
         const scope = scopeResolver(c);
-        const { hasScopedPermission } = await import("~/lib/auth/rbac/roles");
+        const { hasScopedPermission } = await import(
+            "~/lib/auth/rbac/permissions"
+        );
         const hasScopedPerm = await hasScopedPermission(
             ctx,
             user.id,

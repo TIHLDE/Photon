@@ -32,11 +32,12 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
-import { hasAnyPermission, hasPermission } from "~/lib/auth/rbac/permissions";
 import {
+    hasAnyPermission,
     hasAnyScopedPermission,
+    hasPermission,
     hasScopedPermission,
-} from "~/lib/auth/rbac/roles";
+} from "~/lib/auth/rbac/permissions";
 import type { AppContext } from "~/lib/ctx";
 
 type Variables = {

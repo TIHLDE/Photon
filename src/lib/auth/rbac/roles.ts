@@ -1,39 +1,26 @@
 /**
- * Role management utilities for Discord-like RBAC system.
+ * Role management for Discord-like RBAC system.
  *
- * This module handles all role-related operations including:
+ * This module handles all role-related operations:
+ * - Role CRUD (create, read, update, delete)
  * - User-role assignments
- * - Permission management
  * - Role hierarchy (position-based, Discord-like)
+ * - Role permission management
  *
  * Role Hierarchy:
  * - Higher position number = higher in hierarchy (better role)
  * - Users can only manage users/roles with LOWER position numbers (strictly less than)
  * - Users cannot modify their own highest role
- * - Example: admin (position 5) can manage moderator (position 3), but not themselves or position 5+
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { DbTransaction } from "~/db";
-import { role, userPermission, userRole } from "~/db/schema";
+import { role, userRole } from "~/db/schema";
 import type { AppContext } from "~/lib/ctx";
 
-/**
- * Get all role names assigned to a user.
- */
-export async function getUserRoles(
-    ctx: AppContext,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
-        .select({ name: role.name })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .where(eq(userRole.userId, userId));
-
-    return rows.map((r) => r.name);
-}
+// =============================================================================
+// Role Queries
+// =============================================================================
 
 /**
  * Get a role by its name.
@@ -60,6 +47,27 @@ export async function getRoleById(ctx: AppContext, roleId: number) {
 export async function getAllRoles(ctx: AppContext) {
     const db = ctx.db;
     return await db.select().from(role).orderBy(sql`${role.position} DESC`);
+}
+
+// =============================================================================
+// User-Role Operations
+// =============================================================================
+
+/**
+ * Get all role names assigned to a user.
+ */
+export async function getUserRoles(
+    ctx: AppContext,
+    userId: string,
+): Promise<string[]> {
+    const db = ctx.db;
+    const rows = await db
+        .select({ name: role.name })
+        .from(userRole)
+        .innerJoin(role, eq(userRole.roleId, role.id))
+        .where(eq(userRole.userId, userId));
+
+    return rows.map((r) => r.name);
 }
 
 /**
@@ -156,62 +164,9 @@ export async function getRoleUserIds(
     return rows.map((x) => x.userId);
 }
 
-/**
- * Get all permissions for a user from their roles.
- * Returns raw array with potential duplicates - should be deduplicated by caller.
- */
-async function getRolePermissions(
-    ctx: AppContext,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
-        .select({ permissions: role.permissions })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .where(eq(userRole.userId, userId));
-
-    const all = rows.flatMap((r) => r.permissions ?? []);
-    return all;
-}
-
-/**
- * Get all direct permissions for a user (not from roles).
- * Returns array of permission strings in format "permission" or "permission@scope".
- */
-async function getDirectUserPermissions(
-    ctx: AppContext,
-    userId: string,
-): Promise<string[]> {
-    const { formatPermission } = await import("./permission-parser");
-    const db = ctx.db;
-    const rows = await db
-        .select({
-            permission: userPermission.permission,
-            scope: userPermission.scope,
-        })
-        .from(userPermission)
-        .where(eq(userPermission.userId, userId));
-
-    // Format as "permission" or "permission@scope"
-    return rows.map((r) => formatPermission(r.permission, r.scope));
-}
-
-/**
- * Get all permissions for a user (from roles + direct permissions).
- * Returns raw array with potential duplicates - should be deduplicated by caller.
- */
-export async function getUserPermissions(
-    ctx: AppContext,
-    userId: string,
-): Promise<string[]> {
-    const [rolePerms, directPerms] = await Promise.all([
-        getRolePermissions(ctx, userId),
-        getDirectUserPermissions(ctx, userId),
-    ]);
-
-    return [...rolePerms, ...directPerms];
-}
+// =============================================================================
+// Role Permission Management
+// =============================================================================
 
 /**
  * Assign (merge) permissions to a role.
@@ -255,25 +210,73 @@ export async function setRolePermissions(
         .where(eq(role.id, r.id));
 }
 
+// =============================================================================
+// Role Hierarchy
+// =============================================================================
+
 /**
- * Shift all roles at or above a position up by 1 (increment position numbers).
- * Used when inserting a new role to maintain unique positions.
- * Higher position = better role, so incrementing pushes them down in hierarchy.
+ * Get the highest role position (highest number) for a user.
+ * Higher position = higher in hierarchy (better role).
+ * Returns null if user has no roles.
+ */
+export async function getUserHighestRolePosition(
+    ctx: AppContext,
+    userId: string,
+): Promise<number | null> {
+    const db = ctx.db;
+    const rows = await db
+        .select({ position: role.position })
+        .from(userRole)
+        .innerJoin(role, eq(userRole.roleId, role.id))
+        .where(eq(userRole.userId, userId));
+
+    if (rows.length === 0) return null;
+
+    return Math.max(...rows.map((r) => r.position));
+}
+
+/**
+ * Check if a user can manage another user based on hierarchy.
+ * A user can manage another user if they have a strictly higher position.
  *
- * @param fromPosition - Shift all roles >= this position up by 1
+ * Discord-like behavior:
+ * - admin (position 5) CAN manage moderator (position 3) ✓
+ * - moderator (position 3) CANNOT manage admin (position 5) ✗
+ * - moderator (position 3) CANNOT manage another moderator (position 3) ✗
+ */
+export async function userCanManageUser(
+    ctx: AppContext,
+    managerId: string,
+    targetUserId: string,
+): Promise<boolean> {
+    const [managerPosition, targetPosition] = await Promise.all([
+        getUserHighestRolePosition(ctx, managerId),
+        getUserHighestRolePosition(ctx, targetUserId),
+    ]);
+
+    if (managerPosition === null || targetPosition === null) return false;
+
+    return managerPosition > targetPosition;
+}
+
+// =============================================================================
+// Role Position Shifting (Internal)
+// =============================================================================
+
+/**
+ * Shift all roles at or above a position up by 1.
+ * Used when inserting a new role.
  */
 async function shiftRolesUp(
     fromPosition: number,
     tx: DbTransaction,
 ): Promise<void> {
-    // Get all roles at or above this position
     const rolesToShift = await tx
         .select()
         .from(role)
         .where(sql`${role.position} >= ${fromPosition}`)
-        .orderBy(sql`${role.position} DESC`); // Start from highest to avoid conflicts
+        .orderBy(sql`${role.position} DESC`);
 
-    // Shift each role up by 1 (increment position)
     for (const r of rolesToShift) {
         await tx
             .update(role)
@@ -284,9 +287,6 @@ async function shiftRolesUp(
 
 /**
  * Shift all roles strictly above a deleted position down by 1.
- * This fills the gap left after deleting a role.
- *
- * @param deletedPosition - The position of the role that was deleted
  */
 async function shiftRolesDown(
     deletedPosition: number,
@@ -296,7 +296,7 @@ async function shiftRolesDown(
         .select()
         .from(role)
         .where(sql`${role.position} > ${deletedPosition}`)
-        .orderBy(role.position); // ascending, lowest first
+        .orderBy(role.position);
 
     for (const r of rolesToShift) {
         await tx
@@ -307,19 +307,14 @@ async function shiftRolesDown(
 }
 
 /**
- * Shift roles in a range down by 1 (decrement position numbers).
- * Used when moving a role up in hierarchy (to a higher position number).
- * Higher position = better role, so decrementing fills gaps when role moves up.
- *
- * @param fromPosition - Start of range (inclusive)
- * @param toPosition - End of range (exclusive)
+ * Shift roles in a range down by 1.
+ * Used when moving a role up in hierarchy.
  */
 async function shiftRolesDownInRange(
     fromPosition: number,
     toPosition: number,
     tx: DbTransaction,
 ): Promise<void> {
-    // Get all roles in range [fromPosition, toPosition)
     const rolesToShift = await tx
         .select()
         .from(role)
@@ -329,9 +324,8 @@ async function shiftRolesDownInRange(
                 sql`${role.position} < ${toPosition + 1}`,
             ),
         )
-        .orderBy(role.position); // Start from lowest to avoid conflicts
+        .orderBy(role.position);
 
-    // Shift each role down by 1 (decrement position)
     for (const r of rolesToShift) {
         await tx
             .update(role)
@@ -341,19 +335,14 @@ async function shiftRolesDownInRange(
 }
 
 /**
- * Shift roles in a range up by 1 (increment position numbers).
- * Used when moving a role down in hierarchy (to a lower position number).
- * Higher position = better role, so incrementing makes room when role moves down.
- *
- * @param toPosition - Start of range (inclusive)
- * @param fromPosition - End of range (exclusive)
+ * Shift roles in a range up by 1.
+ * Used when moving a role down in hierarchy.
  */
 async function shiftRolesUpInRange(
     fromPosition: number,
     toPosition: number,
     tx: DbTransaction,
 ): Promise<void> {
-    // Get all roles in range [toPosition, fromPosition)
     const rolesToShift = await tx
         .select()
         .from(role)
@@ -363,9 +352,8 @@ async function shiftRolesUpInRange(
                 sql`${role.position} < ${fromPosition}`,
             ),
         )
-        .orderBy(sql`${role.position} DESC`); // Start from highest to avoid conflicts
+        .orderBy(sql`${role.position} DESC`);
 
-    // Shift each role up by 1 (increment position)
     for (const r of rolesToShift) {
         await tx
             .update(role)
@@ -374,113 +362,26 @@ async function shiftRolesUpInRange(
     }
 }
 
-/**
- * Reorder a role to a new position.
- * Validates that the user can manage this reordering based on hierarchy.
- * Automatically shifts other roles to maintain unique positions.
- *
- * Discord-like behavior:
- * - Can only move roles you can manage (position < your position, strictly)
- * - Cannot move your own highest role (prevents self-demotion)
- * - Can only move them to positions < your highest role (strictly)
- * - Shifts other roles automatically to maintain unique positions
- *
- * @param userId - User performing the reorder
- * @param roleId - Role to reorder
- * @param newPosition - Desired new position (must be < user's highest role, strictly)
- *
- * @example
- * // Roles: member(1), moderator(2), event-mgr(3), admin(5)
- * // Admin drags event-mgr from 3 to 2
- * await reorderRole(adminId, eventMgrRoleId, 2);
- * // Result: member(1), event-mgr(2), moderator(3), admin(5)
- * // Note: Roles shift automatically to maintain unique positions
- */
-export async function reorderRole(
-    ctx: AppContext,
-    userId: string,
-    roleId: number,
-    newPosition: number,
-): Promise<void> {
-    const [userPosition, targetRole] = await Promise.all([
-        getUserHighestRolePosition(ctx, userId),
-        getRoleById(ctx, roleId),
-    ]);
-
-    if (userPosition === null) {
-        throw new Error("User has no roles");
-    }
-
-    if (!targetRole) {
-        throw new Error("Role not found");
-    }
-
-    if (targetRole.position === userPosition) {
-        throw new Error("Cannot modify your highest role");
-    }
-
-    // User must be able to manage the target role (user position > target position, strictly)
-    if (targetRole.position > userPosition) {
-        throw new Error("Cannot manage this role - insufficient hierarchy");
-    }
-
-    // New position must be below user's position (strictly less than)
-    if (newPosition >= userPosition) {
-        throw new Error("Cannot move role to or above your position");
-    }
-
-    const oldPosition = targetRole.position;
-
-    // If position hasn't changed, nothing to do
-    if (oldPosition === newPosition) {
-        return;
-    }
-
-    const db = ctx.db;
-    await db.transaction(async (tx) => {
-        if (newPosition > oldPosition) {
-            // Moving up in hierarchy (higher position number)
-            // Example: Moving from 2 to 4
-            // Shift roles at positions [3, 4] down by 1 to fill the gap
-            await shiftRolesDownInRange(oldPosition, newPosition, tx);
-        } else {
-            // Moving down in hierarchy (lower position number)
-            // Example: Moving from 4 to 2
-            // Shift roles at positions [2, 3] up by 1 to make room
-            await shiftRolesUpInRange(oldPosition, newPosition, tx);
-        }
-
-        // Finally, move the target role to its new position
-        await tx
-            .update(role)
-            .set({ position: newPosition })
-            .where(eq(role.id, roleId));
-    });
-}
+// =============================================================================
+// Role CRUD
+// =============================================================================
 
 /**
  * Create a new role with automatic positioning.
- * The role is created at the creator's current position, and the creator is pushed down.
- * Automatically shifts other roles up (increment) to maintain unique positions.
+ * The role is created at the creator's current position, and the creator is pushed up.
  *
- * Discord-like behavior (higher position = better):
+ * Discord-like behavior:
  * - New role gets the creator's current position
  * - Creator and all roles >= creator's position get shifted up by 1
- *
- * @param creatorUserId - User creating the role
- * @param roleData - Role information (name, description, permissions)
- * @returns The created role
  *
  * @example
  * // Before: member(1), moderator(2), admin(4)
  * // Admin creates "event-manager"
  * const newRole = await createRole(adminId, {
  *     name: 'event-manager',
- *     description: 'Can manage events',
- *     permissions: ['events:view', 'events:create', 'events:update'],
+ *     permissions: ['events:view', 'events:create'],
  * });
  * // After: member(1), moderator(2), event-manager(4), admin(5)
- * // New role gets position 4, admin shifts to 5
  */
 export async function createRole(
     ctx: AppContext,
@@ -500,16 +401,12 @@ export async function createRole(
         throw new Error("User has no roles and cannot create roles");
     }
 
-    // New role goes at creator's current position
     const newPosition = creatorPosition;
-
-    // Use transaction to ensure atomic shift + insert
     const db = ctx.db;
+
     const result = await db.transaction(async (tx) => {
-        // Shift all roles at creator's position and above up by 1 (increment)
         await shiftRolesUp(newPosition, tx);
 
-        // Insert new role at the creator's old position
         const [newRole] = await tx
             .insert(role)
             .values({
@@ -530,6 +427,9 @@ export async function createRole(
     return result;
 }
 
+/**
+ * Create a role for testing purposes (bypasses hierarchy checks).
+ */
 export async function createTestingRole(
     ctx: AppContext,
     roleData: {
@@ -560,9 +460,6 @@ export async function createTestingRole(
 /**
  * Delete a role.
  * User must be able to manage the role (have higher position number).
- *
- * @param userId - User deleting the role
- * @param roleId - Role to delete
  */
 export async function deleteRole(
     ctx: AppContext,
@@ -582,250 +479,74 @@ export async function deleteRole(
         throw new Error("Role not found");
     }
 
-    // User must be able to manage the target role (user position > target position)
     if (!(userPosition > targetRole.position)) {
         throw new Error("Cannot delete this role - insufficient hierarchy");
     }
 
     const db = ctx.db;
     await db.transaction(async (tx) => {
-        // delete the role
         await tx.delete(role).where(eq(role.id, roleId));
-
-        // shift down everyone above it
         await shiftRolesDown(targetRole.position, tx);
     });
 }
 
 /**
- * Get the highest role position (highest number) for a user.
- * Higher position = higher in hierarchy (better role).
- * Returns null if user has no roles.
- *
- * Example:
- * - member (position 1) - lowest
- * - event-manager (position 2)
- * - moderator (position 3)
- * - admin (position 4)
- * - root (position 5) - highest
- */
-export async function getUserHighestRolePosition(
-    ctx: AppContext,
-    userId: string,
-): Promise<number | null> {
-    const db = ctx.db;
-    const rows = await db
-        .select({ position: role.position })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .where(eq(userRole.userId, userId));
-
-    if (rows.length === 0) return null;
-
-    // Higher position number = higher in hierarchy
-    return Math.max(...rows.map((r) => r.position));
-}
-
-/**
- * Check if a user can manage another user based on hierarchy.
- * A user can manage another user if they have a strictly higher position (higher number).
+ * Reorder a role to a new position.
+ * Validates hierarchy and automatically shifts other roles.
  *
  * Discord-like behavior:
- * - admin (position 5) CAN manage moderator (position 3) ✓
- * - moderator (position 3) CANNOT manage admin (position 5) ✗
- * - moderator (position 3) CANNOT manage another moderator (position 3) ✗ (siblings)
+ * - Can only move roles you can manage (position < your position)
+ * - Cannot move your own highest role
+ * - Can only move them to positions < your highest role
  */
-export async function userCanManageUser(
+export async function reorderRole(
     ctx: AppContext,
-    managerId: string,
-    targetUserId: string,
-): Promise<boolean> {
-    const [managerPosition, targetPosition] = await Promise.all([
-        getUserHighestRolePosition(ctx, managerId),
-        getUserHighestRolePosition(ctx, targetUserId),
+    userId: string,
+    roleId: number,
+    newPosition: number,
+): Promise<void> {
+    const [userPosition, targetRole] = await Promise.all([
+        getUserHighestRolePosition(ctx, userId),
+        getRoleById(ctx, roleId),
     ]);
 
-    if (managerPosition === null || targetPosition === null) return false;
+    if (userPosition === null) {
+        throw new Error("User has no roles");
+    }
 
-    // Must be strictly higher (higher number)
-    // This prevents siblings (same position) from managing each other
-    return managerPosition > targetPosition;
-}
+    if (!targetRole) {
+        throw new Error("Role not found");
+    }
 
-/**
- * Grant a direct permission to a user.
- * Useful for ad-hoc permissions without creating a role.
- *
- * @param grantedByUserId - User granting the permission (for audit trail)
- * @param targetUserId - User receiving the permission
- * @param permission - Permission name (e.g., "events:create")
- * @param scope - Optional scope (e.g., "group:fotball", "event:123")
- *
- * @example
- * // Grant global permission
- * await grantUserPermission(ctx, adminId, userId, "events:create");
- *
- * @example
- * // Grant scoped permission
- * await grantUserPermission(ctx, adminId, userId, "events:update", "group:fotball");
- */
-export async function grantUserPermission(
-    ctx: AppContext,
-    grantedByUserId: string,
-    targetUserId: string,
-    permission: string,
-    scope?: string,
-): Promise<void> {
+    if (targetRole.position === userPosition) {
+        throw new Error("Cannot modify your highest role");
+    }
+
+    if (targetRole.position > userPosition) {
+        throw new Error("Cannot manage this role - insufficient hierarchy");
+    }
+
+    if (newPosition >= userPosition) {
+        throw new Error("Cannot move role to or above your position");
+    }
+
+    const oldPosition = targetRole.position;
+
+    if (oldPosition === newPosition) {
+        return;
+    }
+
     const db = ctx.db;
-    await db
-        .insert(userPermission)
-        .values({
-            userId: targetUserId,
-            permission,
-            scope: scope ?? null,
-            grantedBy: grantedByUserId,
-        })
-        .onConflictDoNothing();
-}
+    await db.transaction(async (tx) => {
+        if (newPosition > oldPosition) {
+            await shiftRolesDownInRange(oldPosition, newPosition, tx);
+        } else {
+            await shiftRolesUpInRange(oldPosition, newPosition, tx);
+        }
 
-/**
- * Revoke a direct permission from a user.
- *
- * @param targetUserId - User to revoke permission from
- * @param permission - Permission name to revoke
- * @param scope - Optional scope (must match exactly)
- *
- * @example
- * // Revoke global permission
- * await revokeUserPermission(ctx, userId, "events:create");
- *
- * @example
- * // Revoke scoped permission
- * await revokeUserPermission(ctx, userId, "events:update", "group:fotball");
- */
-export async function revokeUserPermission(
-    ctx: AppContext,
-    targetUserId: string,
-    permission: string,
-    scope?: string,
-): Promise<void> {
-    const db = ctx.db;
-    await db
-        .delete(userPermission)
-        .where(
-            and(
-                eq(userPermission.userId, targetUserId),
-                eq(userPermission.permission, permission),
-                scope !== undefined
-                    ? eq(userPermission.scope, scope)
-                    : sql`${userPermission.scope} IS NULL`,
-            ),
-        );
-}
-
-/**
- * Get all direct permissions for a user with their scopes.
- * Returns full permission objects including scope information.
- *
- * @example
- * const perms = await getUserPermissionsWithScope(ctx, userId);
- * // [
- * //   { permission: "events:create", scope: null },
- * //   { permission: "events:update", scope: "group:fotball" },
- * // ]
- */
-export async function getUserPermissionsWithScope(
-    ctx: AppContext,
-    userId: string,
-): Promise<Array<{ permission: string; scope: string | null }>> {
-    const db = ctx.db;
-    const rows = await db
-        .select({
-            permission: userPermission.permission,
-            scope: userPermission.scope,
-        })
-        .from(userPermission)
-        .where(eq(userPermission.userId, userId));
-
-    return rows;
-}
-
-/**
- * Check if a user has a permission for a specific resource scope.
- * Checks both global permissions and scoped permissions (from roles AND direct grants).
- *
- * Rules:
- * - Global permission (no scope) matches ANY scope request
- * - Scoped permission only matches exact scope
- *
- * @param userId - User to check
- * @param permission - Permission name (e.g., "events:update")
- * @param scope - Resource scope (e.g., "group:fotball")
- * @returns true if user has the permission globally OR for the specific scope
- *
- * @example
- * // Check if user can update events for football group
- * // Returns true if user has:
- * // - "events:update" (global, from role or direct grant)
- * // - "events:update@group:fotball" (scoped, from role or direct grant)
- * if (await hasScopedPermission(ctx, userId, "events:update", "group:fotball")) {
- *     // Allow update
- * }
- */
-export async function hasScopedPermission(
-    ctx: AppContext,
-    userId: string,
-    permissionName: string,
-    requiredScope: string,
-): Promise<boolean> {
-    const { matchesPermission } = await import("./permission-parser");
-
-    // Get ALL permissions (from roles + direct grants)
-    const permissions = await getUserPermissions(ctx, userId);
-
-    // Root grants everything
-    if (permissions.includes("root")) return true;
-
-    // Check if any granted permission matches
-    return permissions.some((grantedPerm) =>
-        matchesPermission(grantedPerm, permissionName, requiredScope),
-    );
-}
-
-/**
- * Check if a user has any of the specified permissions for a specific resource scope.
- * More efficient than calling hasScopedPermission multiple times.
- *
- * @param userId - User to check
- * @param permissionNames - Permission names to check (user needs ANY of these)
- * @param scope - Resource scope (e.g., "group:fotball")
- * @returns true if user has any of the permissions globally OR for the specific scope
- *
- * @example
- * if (await hasAnyScopedPermission(ctx, userId, ["events:update", "events:manage"], "group:fotball")) {
- *     // Allow update
- * }
- */
-export async function hasAnyScopedPermission(
-    ctx: AppContext,
-    userId: string,
-    permissionNames: string[],
-    requiredScope: string,
-): Promise<boolean> {
-    if (permissionNames.length === 0) return false;
-
-    const { matchesPermission } = await import("./permission-parser");
-
-    // Get ALL permissions once (from roles + direct grants)
-    const permissions = await getUserPermissions(ctx, userId);
-
-    // Root grants everything
-    if (permissions.includes("root")) return true;
-
-    // Check if any granted permission matches any of the required permissions
-    return permissionNames.some((requiredPerm) =>
-        permissions.some((grantedPerm) =>
-            matchesPermission(grantedPerm, requiredPerm, requiredScope),
-        ),
-    );
+        await tx
+            .update(role)
+            .set({ position: newPosition })
+            .where(eq(role.id, roleId));
+    });
 }

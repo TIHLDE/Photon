@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
-import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { hasScopedPermission } from "~/lib/auth/rbac/permissions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
