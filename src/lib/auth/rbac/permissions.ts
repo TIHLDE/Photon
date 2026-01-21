@@ -302,43 +302,32 @@ function hasRoot(permissions: string[]): boolean {
 }
 
 /**
- * Check if a user has a specific permission GLOBALLY (no scope restriction).
+ * Check if a user has a permission GLOBALLY (no scope restriction).
  * User can perform this action on ANY resource.
  *
+ * Accepts a single permission or array of permissions.
+ * For arrays, returns true if user has ANY of them.
+ *
  * @example
+ * // Single permission
  * if (await hasPermission(ctx, userId, 'events:delete')) {
  *     // User can delete ANY event
+ * }
+ *
+ * // Multiple permissions (ANY)
+ * if (await hasPermission(ctx, userId, ['events:update', 'events:manage'])) {
+ *     // User can update or manage ANY event
  * }
  */
 export async function hasPermission(
     ctx: AppContext,
     userId: string,
-    permissionName: string,
+    permissionName: string | string[],
 ): Promise<boolean> {
-    const permissions = await getUserPermissions(ctx, userId);
+    const permissionNames = Array.isArray(permissionName)
+        ? permissionName
+        : [permissionName];
 
-    if (hasRoot(permissions)) return true;
-
-    // Check if user has the permission globally (without scope)
-    return permissions.some((p) => {
-        const parsed = parsePermission(p);
-        return parsed.permission === permissionName && parsed.scope === null;
-    });
-}
-
-/**
- * Check if a user has ANY of the specified permissions GLOBALLY.
- *
- * @example
- * if (await hasAnyPermission(ctx, userId, ['events:update', 'events:manage'])) {
- *     // User can update or manage ANY event
- * }
- */
-export async function hasAnyPermission(
-    ctx: AppContext,
-    userId: string,
-    permissionNames: string[],
-): Promise<boolean> {
     if (permissionNames.length === 0) return false;
 
     const permissions = await getUserPermissions(ctx, userId);
@@ -361,48 +350,36 @@ export async function hasAnyPermission(
  * Check if a user has a permission for a specific scope.
  * Checks both global permissions and scoped permissions.
  *
+ * Accepts a single permission or array of permissions.
+ * For arrays, returns true if user has ANY of them (globally or scoped).
+ *
  * Rules:
  * - Global permission (no scope) matches ANY scope request
  * - Scoped permission only matches exact scope
  *
  * @example
- * // Returns true if user has:
+ * // Single permission - returns true if user has:
  * // - "events:update" (global)
  * // - "events:update@group:fotball" (scoped, exact match)
  * if (await hasScopedPermission(ctx, userId, "events:update", "group:fotball")) {
  *     // Allow update
  * }
+ *
+ * // Multiple permissions (ANY)
+ * if (await hasScopedPermission(ctx, userId, ["events:update", "events:manage"], "group:fotball")) {
+ *     // Allow update or manage
+ * }
  */
 export async function hasScopedPermission(
     ctx: AppContext,
     userId: string,
-    permissionName: string,
+    permissionName: string | string[],
     requiredScope: string,
 ): Promise<boolean> {
-    const permissions = await getUserPermissions(ctx, userId);
+    const permissionNames = Array.isArray(permissionName)
+        ? permissionName
+        : [permissionName];
 
-    if (hasRoot(permissions)) return true;
-
-    return permissions.some((grantedPerm) =>
-        matchesPermission(grantedPerm, permissionName, requiredScope),
-    );
-}
-
-/**
- * Check if a user has ANY of the specified permissions for a specific scope.
- * More efficient than calling hasScopedPermission multiple times.
- *
- * @example
- * if (await hasAnyScopedPermission(ctx, userId, ["events:update", "events:manage"], "group:fotball")) {
- *     // Allow update
- * }
- */
-export async function hasAnyScopedPermission(
-    ctx: AppContext,
-    userId: string,
-    permissionNames: string[],
-    requiredScope: string,
-): Promise<boolean> {
     if (permissionNames.length === 0) return false;
 
     const permissions = await getUserPermissions(ctx, userId);

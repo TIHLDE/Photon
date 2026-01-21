@@ -33,8 +33,6 @@ import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import type { Session, User } from "~/lib/auth";
 import {
-    hasAnyPermission,
-    hasAnyScopedPermission,
     hasPermission,
     hasScopedPermission,
 } from "~/lib/auth/rbac/permissions";
@@ -103,9 +101,6 @@ export const requireAccess = (options: RequireAccessOptions) =>
         }
 
         const ctx = c.get("ctx");
-        const permissions = Array.isArray(options.permission)
-            ? options.permission
-            : [options.permission];
 
         // 1. Check ownership first (if configured)
         if (options.ownership) {
@@ -128,40 +123,27 @@ export const requireAccess = (options: RequireAccessOptions) =>
             }
         }
 
-        // 2. Check permissions
+        // 2. Check permissions (functions accept string | string[])
         let hasAccess = false;
 
         if (options.scope) {
             // Scoped permission check (global OR scoped)
             const scope = options.scope(c);
-            const firstPermission = permissions[0];
-            if (permissions.length === 1 && firstPermission) {
-                hasAccess = await hasScopedPermission(
-                    ctx,
-                    user.id,
-                    firstPermission,
-                    scope,
-                );
-            } else {
-                hasAccess = await hasAnyScopedPermission(
-                    ctx,
-                    user.id,
-                    permissions,
-                    scope,
-                );
-            }
+            hasAccess = await hasScopedPermission(
+                ctx,
+                user.id,
+                options.permission,
+                scope,
+            );
         } else {
             // Global permission check only
-            const firstPermission = permissions[0];
-            if (permissions.length === 1 && firstPermission) {
-                hasAccess = await hasPermission(ctx, user.id, firstPermission);
-            } else {
-                hasAccess = await hasAnyPermission(ctx, user.id, permissions);
-            }
+            hasAccess = await hasPermission(ctx, user.id, options.permission);
         }
 
         if (!hasAccess) {
-            const permStr = permissions.join(" or ");
+            const permStr = Array.isArray(options.permission)
+                ? options.permission.join(" or ")
+                : options.permission;
             const scopeStr = options.scope ? " (globally or scoped)" : "";
             throw new HTTPException(403, {
                 message: `Forbidden - requires permission: ${permStr}${scopeStr}`,
