@@ -12,6 +12,7 @@ import {
     createAppServices,
 } from "~/lib/ctx";
 import { env } from "~/lib/env";
+import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
@@ -129,7 +130,9 @@ export const createApp = async (variables?: Variables) => {
             serveStatic({
                 root: "./",
             }),
-        );
+        )
+        .onError(globalErrorHandler)
+        .notFound(notFoundHandler);
 
     // Seed DB with default values if necessary
     if (env.SEED_DB) {

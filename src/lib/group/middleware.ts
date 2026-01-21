@@ -15,6 +15,7 @@
 
 import { eq } from "drizzle-orm";
 import { schema } from "~/db";
+import { isValidUUID } from "~/lib/validation/uuid";
 import type { OwnershipChecker } from "~/middleware/access";
 import type { AppContext } from "../ctx";
 
@@ -83,10 +84,7 @@ export const isFineCreator: OwnershipChecker = async (
     fineId: string,
     userId: string,
 ): Promise<boolean> => {
-    // Validate UUID format
-    const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(fineId)) {
+    if (!isValidUUID(fineId)) {
         return false;
     }
 
@@ -108,10 +106,7 @@ export const isFineRecipient = async (
     fineId: string,
     userId: string,
 ): Promise<boolean> => {
-    // Validate UUID format
-    const uuidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(fineId)) {
+    if (!isValidUUID(fineId)) {
         return false;
     }
 

@@ -7,6 +7,7 @@ import { hasPermission } from "~/lib/auth/rbac/permissions";
 import { hasScopedPermission } from "~/lib/auth/rbac/permissions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
 
 const updateFineSchema = z.object({
@@ -45,10 +46,7 @@ export const updateFineRoute = route().patch(
         const { db } = ctx;
         const user = c.get("user");
 
-        // Validate UUID format
-        const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(fineId)) {
+        if (!isValidUUID(fineId)) {
             throw new HTTPException(404, {
                 message: `Fine with ID "${fineId}" not found`,
             });

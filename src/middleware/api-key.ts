@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
+import { parseBearer, parseBearerOptional } from "~/lib/auth/bearer";
 import type { ApiKey } from "~/lib/service/api-key";
 import type { AppContext, AppServices } from "../lib/ctx";
 
@@ -17,36 +18,25 @@ type ApiKeyVariables = {
  */
 export const requireApiKey = createMiddleware<{ Variables: ApiKeyVariables }>(
     async (c, next) => {
-        const authHeader = c.req.header("Authorization");
+        const result = parseBearer(c.req.header("Authorization"));
 
-        if (!authHeader) {
+        if (!result.success) {
             throw new HTTPException(401, {
-                message: "API key required. Provide via Authorization header.",
+                message: result.error,
             });
         }
-
-        // Extract token from "Bearer <token>" format
-        const parts = authHeader.split(" ");
-        if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
-            throw new HTTPException(401, {
-                message:
-                    'Invalid Authorization header format. Expected "Bearer <api-key>"',
-            });
-        }
-
-        const key = parts[1];
 
         // Validate the API key
         const apiKeyService = c.get("service").apiKey;
-        const result = await apiKeyService.validate(key);
+        const validation = await apiKeyService.validate(result.token);
 
-        if (!result.valid || !result.apiKey) {
+        if (!validation.valid || !validation.apiKey) {
             throw new HTTPException(401, {
                 message: "Invalid or expired API key",
             });
         }
 
-        c.set("apiKey", result.apiKey);
+        c.set("apiKey", validation.apiKey);
 
         await next();
     },
@@ -64,25 +54,16 @@ export const captureApiKey = createMiddleware<{
         service: AppServices;
     };
 }>(async (c, next) => {
-    const authHeader = c.req.header("Authorization");
+    const token = parseBearerOptional(c.req.header("Authorization"));
 
-    if (!authHeader) {
+    if (!token) {
         await next();
         return;
     }
-
-    // Extract token from "Bearer <token>" format
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
-        await next();
-        return;
-    }
-
-    const key = parts[1];
 
     // Validate the API key
     const apiKeyService = c.get("service").apiKey;
-    const result = await apiKeyService.validate(key);
+    const result = await apiKeyService.validate(token);
 
     if (result.valid && result.apiKey) {
         c.set("apiKey", result.apiKey);
