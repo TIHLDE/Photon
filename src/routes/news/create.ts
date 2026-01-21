@@ -3,8 +3,8 @@ import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 const createNewsSchema = z.object({
     title: z
@@ -49,7 +49,7 @@ export const createRoute = route().post(
         })
         .build(),
     requireAuth,
-    requirePermission("news:create"),
+    requireAccess({ permission: "news:create" }),
     validator("json", createNewsSchema),
     async (c) => {
         const body = c.req.valid("json");

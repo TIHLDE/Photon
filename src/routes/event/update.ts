@@ -3,12 +3,12 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type DbSchema, schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
+import { requireAccess } from "~/middleware/access";
 import { isEventOwner } from "../../lib/event/middleware";
 import { updateEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { requireOwnershipOrAnyPermission } from "../../middleware/ownership";
 
 export const updateRoute = route().put(
     "/:id",
@@ -27,10 +27,10 @@ export const updateRoute = route().put(
         .notFound({ description: "Not found" })
         .build(),
     requireAuth,
-    requireOwnershipOrAnyPermission("id", isEventOwner, [
-        "events:update",
-        "events:manage",
-    ]),
+    requireAccess({
+        permission: ["events:update", "events:manage"],
+        ownership: { param: "id", check: isEventOwner },
+    }),
     validator("json", updateEventSchema),
     async (c) => {
         const body = c.req.valid("json");

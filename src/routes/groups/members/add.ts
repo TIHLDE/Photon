@@ -5,8 +5,8 @@ import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 const addMemberSchema = z.object({
     userId: z
@@ -33,7 +33,7 @@ export const addMemberRoute = route().post(
         .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
-    requirePermission("groups:manage"),
+    requireAccess({ permission: "groups:manage" }),
     validator("json", addMemberSchema),
     async (c) => {
         const body = c.req.valid("json");

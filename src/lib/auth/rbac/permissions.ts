@@ -25,31 +25,65 @@ import {
 // =============================================================================
 
 /**
- * Canonical permission registry grouped by domain.
- * Keys are domains, values are action names.
- * Permissions follow the format: "domain:action" (e.g. "events:create")
+ * Nested permission registry.
+ *
+ * Structure:
+ * - Each domain has an `actions` array for direct permissions
+ * - Nested sub-domains are objects with their own `actions`
+ *
+ * This generates permissions like:
+ * - "events:view", "events:create" (from events.actions)
+ * - "events:registrations:view" (from events.registrations.actions)
  */
 export const PERMISSION_REGISTRY = {
     // System permissions
-    roles: ["view", "create", "update", "delete", "assign"],
-    users: ["view", "create", "update", "delete", "manage"],
-    "api-keys": ["view", "create", "update", "delete"],
+    roles: {
+        actions: ["view", "create", "update", "delete", "assign"],
+    },
+    users: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
+    "api-keys": {
+        actions: ["view", "create", "update", "delete"],
+    },
 
     // Event permissions
-    events: ["view", "create", "update", "delete", "manage"],
-    "events:registrations": ["view", "create", "delete", "checkin", "manage"],
-    "events:feedback": ["view", "create", "update", "delete"],
-    "events:payments": ["view", "create", "update", "delete", "refund"],
-    groups: ["view", "create", "update", "delete", "manage"],
-    fines: ["view", "create", "update", "delete", "manage"],
-    forms: ["view", "create", "update", "delete", "manage"],
+    events: {
+        actions: ["view", "create", "update", "delete", "manage"],
+        registrations: {
+            actions: ["view", "create", "delete", "checkin", "manage"],
+        },
+        feedback: {
+            actions: ["view", "create", "update", "delete"],
+        },
+        payments: {
+            actions: ["view", "create", "update", "delete", "refund"],
+        },
+    },
+
+    // Group permissions
+    groups: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
+    fines: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
+    forms: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
 
     // News permissions
-    news: ["view", "create", "update", "delete", "manage"],
-    "news:reactions": ["create", "delete"],
+    news: {
+        actions: ["view", "create", "update", "delete", "manage"],
+        reactions: {
+            actions: ["create", "delete"],
+        },
+    },
 
     // Job permissions
-    jobs: ["view", "create", "update", "delete", "manage"],
+    jobs: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
 } as const;
 
 /**
@@ -63,28 +97,84 @@ export const SPECIAL_PERMISSIONS = ["root"] as const;
 // =============================================================================
 
 type Registry = typeof PERMISSION_REGISTRY;
-type Join<K extends string, V extends readonly string[]> = `${K}:${V[number]}`;
+
+/** Node in the permission tree - has actions and optional nested domains */
+type PermissionNode = {
+    readonly actions: readonly string[];
+    readonly [key: string]: readonly string[] | PermissionNode;
+};
+
+/** Recursively extract permissions from nested registry */
+type ExtractPermissions<
+    T extends PermissionNode,
+    Prefix extends string = "",
+> = {
+    [K in keyof T]: K extends "actions"
+        ? T[K] extends readonly string[]
+            ? `${Prefix}${T[K][number]}`
+            : never
+        : T[K] extends PermissionNode
+          ? ExtractPermissions<T[K], `${Prefix}${K & string}:`>
+          : never;
+}[keyof T];
+
 type PermissionFromRegistry = {
-    [K in keyof Registry]: Join<K & string, Registry[K]>;
+    [K in keyof Registry]: Registry[K] extends PermissionNode
+        ? ExtractPermissions<Registry[K], `${K & string}:`>
+        : never;
 }[keyof Registry];
+
 type SpecialPermission = (typeof SPECIAL_PERMISSIONS)[number];
 
 /**
  * Union type of all valid permission names.
- * Examples: "events:create", "users:view", "root"
+ * Examples: "events:create", "events:registrations:view", "root"
  */
 export type Permission = PermissionFromRegistry | SpecialPermission;
 
 /**
- * Flattens the permission registry into an array of permission strings.
+ * Recursively flattens the nested permission registry into permission strings.
  */
-function flattenPermissionRegistry(registry: Registry): string[] {
+function flattenPermissionRegistry(
+    node: PermissionNode,
+    prefix: string,
+): string[] {
+    const names: string[] = [];
+
+    for (const key of Object.keys(node)) {
+        const value = node[key];
+
+        if (key === "actions" && Array.isArray(value)) {
+            // Add all actions with current prefix
+            for (const action of value) {
+                names.push(`${prefix}${action}`);
+            }
+        } else if (
+            typeof value === "object" &&
+            value !== null &&
+            !Array.isArray(value)
+        ) {
+            // Recurse into nested domain
+            names.push(
+                ...flattenPermissionRegistry(
+                    value as PermissionNode,
+                    `${prefix}${key}:`,
+                ),
+            );
+        }
+    }
+
+    return names;
+}
+
+/**
+ * Flattens the entire registry from all top-level domains.
+ */
+function flattenRegistry(registry: Registry): string[] {
     const names: string[] = [];
     for (const domain of Object.keys(registry)) {
-        const actions = registry[domain as keyof Registry] as readonly string[];
-        for (const action of actions) {
-            names.push(`${domain}:${action}`);
-        }
+        const node = registry[domain as keyof Registry] as PermissionNode;
+        names.push(...flattenPermissionRegistry(node, `${domain}:`));
     }
     return names;
 }
@@ -92,17 +182,15 @@ function flattenPermissionRegistry(registry: Registry): string[] {
 /**
  * Array of all valid permissions in the system.
  */
-export const PERMISSIONS: readonly Permission[] = Object.freeze([
-    ...flattenPermissionRegistry(PERMISSION_REGISTRY),
+export const PERMISSIONS: readonly string[] = Object.freeze([
+    ...flattenRegistry(PERMISSION_REGISTRY),
     ...SPECIAL_PERMISSIONS,
-] as Permission[]);
+]);
 
 /**
  * Set of all valid permission names for O(1) lookup.
  */
-export const PERMISSIONS_SET = new Set<string>(
-    PERMISSIONS as readonly string[],
-);
+export const PERMISSIONS_SET = new Set<string>(PERMISSIONS);
 
 /**
  * Type guard to check if a string is a valid permission.
@@ -114,17 +202,8 @@ export function isPermission(name: string): name is Permission {
 /**
  * Returns all permissions as an array.
  */
-export function getAllPermissions(): Permission[] {
-    return [...PERMISSIONS] as Permission[];
-}
-
-/**
- * Returns all permissions for a specific domain.
- * Example: getPermissionsForDomain("events") returns ["events:view", "events:create", ...]
- */
-export function getPermissionsForDomain(domain: keyof Registry): string[] {
-    const actions = PERMISSION_REGISTRY[domain];
-    return actions.map((action) => `${String(domain)}:${action}`);
+export function getAllPermissions(): string[] {
+    return [...PERMISSIONS];
 }
 
 // =============================================================================
@@ -267,33 +346,6 @@ export async function hasAnyPermission(
     if (hasRoot(permissions)) return true;
 
     return permissionNames.some((requiredPerm) =>
-        permissions.some((p) => {
-            const parsed = parsePermission(p);
-            return parsed.permission === requiredPerm && parsed.scope === null;
-        }),
-    );
-}
-
-/**
- * Check if a user has ALL of the specified permissions GLOBALLY.
- *
- * @example
- * if (await hasAllPermissions(ctx, userId, ['events:create', 'events:update'])) {
- *     // User can both create and update ANY event
- * }
- */
-export async function hasAllPermissions(
-    ctx: AppContext,
-    userId: string,
-    permissionNames: string[],
-): Promise<boolean> {
-    if (permissionNames.length === 0) return false;
-
-    const permissions = await getUserPermissions(ctx, userId);
-
-    if (hasRoot(permissions)) return true;
-
-    return permissionNames.every((requiredPerm) =>
         permissions.some((p) => {
             const parsed = parsePermission(p);
             return parsed.permission === requiredPerm && parsed.scope === null;

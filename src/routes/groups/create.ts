@@ -5,8 +5,8 @@ import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 const createGroupSchema = z.object({
     slug: z
@@ -68,7 +68,7 @@ export const createRoute = route().post(
         .badRequest({ description: "Invalid input or slug already exists" })
         .build(),
     requireAuth,
-    requirePermission("groups:create"),
+    requireAccess({ permission: "groups:create" }),
     validator("json", createGroupSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -1,8 +1,8 @@
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { apiKeySchema } from "./schemas";
 
 export const listApiKeysResponseSchema = z.array(apiKeySchema);
@@ -23,7 +23,7 @@ export const listRoute = route().get(
         })
         .build(),
     requireAuth,
-    requirePermission("api-keys:view"),
+    requireAccess({ permission: "api-keys:view" }),
     async (c) => {
         const { apiKey: service } = c.get("service");
 

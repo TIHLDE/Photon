@@ -2,8 +2,8 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { apiKeySchema, idParamSchema } from "./schemas";
 
 export const getRoute = route().get(
@@ -23,7 +23,7 @@ export const getRoute = route().get(
         .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
-    requirePermission("api-keys:view"),
+    requireAccess({ permission: "api-keys:view" }),
     validator("param", idParamSchema),
     async (c) => {
         const { apiKey: service } = c.get("service");

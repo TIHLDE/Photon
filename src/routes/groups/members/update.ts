@@ -5,8 +5,8 @@ import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 const updateMemberRoleSchema = z.object({
     role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
@@ -28,7 +28,7 @@ export const updateMemberRoleRoute = route().patch(
         .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
-    requirePermission("groups:manage"),
+    requireAccess({ permission: "groups:manage" }),
     validator("json", updateMemberRoleSchema),
     async (c) => {
         const body = c.req.valid("json");

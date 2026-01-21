@@ -3,8 +3,8 @@ import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 export const removeMemberRoute = route().delete(
     "/:groupSlug/members/:userId",
@@ -22,7 +22,7 @@ export const removeMemberRoute = route().delete(
         .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
-    requirePermission("groups:manage"),
+    requireAccess({ permission: "groups:manage" }),
     async (c) => {
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");

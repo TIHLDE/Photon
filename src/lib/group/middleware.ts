@@ -15,13 +15,13 @@
 
 import { eq } from "drizzle-orm";
 import { schema } from "~/db";
-import type { ResourceOwnershipChecker } from "~/middleware/ownership";
+import type { OwnershipChecker } from "~/middleware/access";
 import type { AppContext } from "../ctx";
 
 /**
  * Check if a user is a group leader
  */
-export const isGroupLeader: ResourceOwnershipChecker = async (
+export const isGroupLeader: OwnershipChecker = async (
     ctx: AppContext,
     groupSlug: string,
     userId: string,
@@ -78,7 +78,7 @@ export const isFinesAdmin = async (
 /**
  * Check if a user created a specific fine
  */
-export const isFineCreator: ResourceOwnershipChecker = async (
+export const isFineCreator: OwnershipChecker = async (
     ctx: AppContext,
     fineId: string,
     userId: string,

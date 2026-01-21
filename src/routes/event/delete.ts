@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
+import { requireAccess } from "~/middleware/access";
 import { schema } from "../../db";
 import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { requireOwnershipOrPermission } from "../../middleware/ownership";
 
 export const deleteRoute = route().delete(
     "/:eventId",
@@ -26,7 +26,10 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Event with the specified ID does not exist" })
         .build(),
     requireAuth,
-    requireOwnershipOrPermission("eventId", isEventOwner, "events:delete"),
+    requireAccess({
+        permission: "events:delete",
+        ownership: { param: "eventId", check: isEventOwner },
+    }),
     async (c) => {
         const { eventId } = c.req.param();
         const { db } = c.get("ctx");

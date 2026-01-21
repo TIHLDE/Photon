@@ -6,8 +6,8 @@ import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
 
 const updateGroupSchema = z.object({
     imageUrl: z
@@ -74,12 +74,11 @@ export const updateRoute = route().patch(
         })
         .build(),
     requireAuth,
-    requireOwnershipOrScopedPermission(
-        "slug",
-        isGroupLeader,
-        "groups:update",
-        (c) => `group:${c.req.param("slug")}`,
-    ),
+    requireAccess({
+        permission: "groups:update",
+        scope: (c) => `group:${c.req.param("slug")}`,
+        ownership: { param: "slug", check: isGroupLeader },
+    }),
     validator("json", updateGroupSchema),
     async (c) => {
         const body = c.req.valid("json");
