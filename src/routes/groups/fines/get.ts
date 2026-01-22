@@ -3,9 +3,10 @@ import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
-import { hasScopedPermission } from "~/lib/auth/rbac/roles";
+import { hasScopedPermission } from "~/lib/auth/rbac/permissions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
 
 export const fineSchema = z.object({
@@ -62,10 +63,7 @@ export const getFineRoute = route().get(
         const groupSlug = c.req.param("groupSlug");
         const user = c.get("user");
 
-        // Validate UUID format
-        const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(fineId)) {
+        if (!isValidUUID(fineId)) {
             throw new HTTPException(404, {
                 message: `Fine with ID "${fineId}" not found`,
             });

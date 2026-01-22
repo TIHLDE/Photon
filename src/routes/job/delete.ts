@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { isJobCreator } from "~/lib/job/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
 export const deleteRoute = route().delete(
@@ -24,12 +24,16 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Job posting not found" })
         .build(),
     requireAuth,
+    requireAccess({
+        permission: ["jobs:delete", "jobs:manage"],
+        scope: (c) => `job-${c.req.param("id")}`,
+        ownership: { param: "id", check: isJobCreator },
+    }),
     async (c) => {
-        const userId = c.get("user").id;
         const { db } = c.get("ctx");
         const { id } = c.req.param();
 
-        // Fetch the job posting
+        // Check if job exists
         const job = await db.query.jobPost.findFirst({
             where: eq(schema.jobPost.id, id),
         });
@@ -37,38 +41,6 @@ export const deleteRoute = route().delete(
         if (!job) {
             throw new HTTPException(404, {
                 message: "Job posting not found",
-            });
-        }
-
-        // Check permissions: global (delete or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["jobs:delete", "jobs:manage"],
-        );
-        const hasScopedDeletePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:delete",
-            `job-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:manage",
-            `job-${id}`,
-        );
-        const isCreator = job.createdById === userId;
-
-        if (
-            !hasGlobalPermission &&
-            !hasScopedDeletePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "You do not have permission to delete this job posting",
             });
         }
 

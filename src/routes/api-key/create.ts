@@ -2,8 +2,8 @@ import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { createApiKeyResponseSchema } from "./schemas";
 
 const createApiKeySchema = z.object({
@@ -44,7 +44,7 @@ export const createRoute = route().post(
         })
         .build(),
     requireAuth,
-    requirePermission("api-keys:create"),
+    requireAccess({ permission: "api-keys:create" }),
     validator("json", createApiKeySchema),
     async (c) => {
         const body = c.req.valid("json");

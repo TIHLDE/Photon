@@ -6,8 +6,8 @@ import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
 
 const createFineSchema = z.object({
     userId: z
@@ -46,12 +46,11 @@ export const createFineRoute = route().post(
         .notFound({ description: "Group or user not found" })
         .build(),
     requireAuth,
-    requireOwnershipOrScopedPermission(
-        "groupSlug",
-        isGroupLeader,
-        "fines:create",
-        (c) => `group:${c.req.param("groupSlug")}`,
-    ),
+    requireAccess({
+        permission: "fines:create",
+        scope: (c) => `group:${c.req.param("groupSlug")}`,
+        ownership: { param: "groupSlug", check: isGroupLeader },
+    }),
     validator("json", createFineSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -3,6 +3,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import React from "react";
 import { z } from "zod";
+import { parseBearer } from "~/lib/auth/bearer";
 import { enqueueEmail } from "~/lib/email";
 import { sendCustomEmailSchema } from "~/lib/email/schema";
 import { CustomEmail } from "~/lib/email/template/custom-email";
@@ -29,22 +30,12 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
         });
     }
 
-    const authHeader = c.req.header("Authorization");
-    if (!authHeader) {
-        throw new HTTPException(401, {
-            message: "Missing Authorization header",
-        });
+    const result = parseBearer(c.req.header("Authorization"));
+    if (!result.success) {
+        throw new HTTPException(401, { message: result.error });
     }
 
-    const [scheme, token] = authHeader.split(" ");
-    if (scheme !== "Bearer" || !token) {
-        throw new HTTPException(401, {
-            message:
-                "Invalid Authorization header format. Expected: Bearer <token>",
-        });
-    }
-
-    if (token !== apiKey) {
+    if (result.token !== apiKey) {
         throw new HTTPException(403, {
             message: "Invalid API key",
         });

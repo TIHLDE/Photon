@@ -3,8 +3,8 @@ import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 
 const createJobSchema = z
     .object({
@@ -113,7 +113,7 @@ export const createRoute = route().post(
         .badRequest({ description: "Invalid input" })
         .build(),
     requireAuth,
-    requirePermission("jobs:create"),
+    requireAccess({ permission: "jobs:create" }),
     validator("json", createJobSchema),
     async (c) => {
         const body = c.req.valid("json");

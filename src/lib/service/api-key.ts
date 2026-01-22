@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { managedApiKey as apiKeyTable } from "~/db/schema/api-key";
 import type { AppContext } from "../ctx";
+import { ValidationError } from "../errors";
 
 // ============================================================================
 // Permission Registry - Type-safe permission handling for API keys
@@ -81,15 +82,16 @@ export function isApiKeyPermission(name: string): name is ApiKeyPermission {
 
 /**
  * Validates an array of permission strings and returns only valid ones.
- * Throws an error if any invalid permissions are found.
+ * Throws a ValidationError if any invalid permissions are found.
  */
 export function validateApiKeyPermissions(
     permissions: string[],
 ): ApiKeyPermission[] {
     const invalid = permissions.filter((p) => !isApiKeyPermission(p));
     if (invalid.length > 0) {
-        throw new Error(
+        throw new ValidationError(
             `Invalid API key permissions: ${invalid.join(", ")}. Valid permissions are: ${Array.from(API_KEY_PERMISSIONS).join(", ")}`,
+            { invalidPermissions: invalid },
         );
     }
     return permissions as ApiKeyPermission[];

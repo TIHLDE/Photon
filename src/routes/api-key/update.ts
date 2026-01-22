@@ -2,8 +2,8 @@ import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { apiKeySchema, idParamSchema } from "./schemas";
 
 const updateApiKeySchema = z.object({
@@ -47,7 +47,7 @@ export const updateRoute = route().patch(
         .notFound({ description: "API key not found" })
         .build(),
     requireAuth,
-    requirePermission("api-keys:update"),
+    requireAccess({ permission: "api-keys:update" }),
     validator("param", idParamSchema),
     validator("json", updateApiKeySchema),
     async (c) => {

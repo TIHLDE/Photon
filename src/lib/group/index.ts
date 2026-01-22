@@ -10,7 +10,7 @@
 
 import { and, eq } from "drizzle-orm";
 import { schema } from "~/db";
-import { hasAnyPermission, hasPermission } from "~/lib/auth/rbac/permissions";
+import { hasPermission } from "~/lib/auth/rbac/permissions";
 import {
     assignUserRole,
     getRoleById,
@@ -213,7 +213,7 @@ export async function canManageGroupResource(
     permission: string,
 ): Promise<boolean> {
     // 1. Check if user has root or management bypass permissions
-    if (await hasAnyPermission(ctx, userId, ["root", "groups:manage"])) {
+    if (await hasPermission(ctx, userId, ["root", "groups:manage"])) {
         return true;
     }
 
@@ -267,7 +267,7 @@ export async function canManageGroup(
     groupSlug: string,
 ): Promise<boolean> {
     // Root or groups:manage bypass
-    if (await hasAnyPermission(ctx, userId, ["root", "groups:manage"])) {
+    if (await hasPermission(ctx, userId, ["root", "groups:manage"])) {
         return true;
     }
 

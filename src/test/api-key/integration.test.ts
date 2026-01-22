@@ -266,8 +266,8 @@ integrationTest(
             },
         });
 
-        // The service should throw an error for invalid permissions
-        expect(invalidPermissionsResponse.status).toBe(500);
+        // The service should return a validation error for invalid permissions
+        expect(invalidPermissionsResponse.status).toBe(422);
     },
     600_000, // 10 minute timeout for comprehensive test
 );

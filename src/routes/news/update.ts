@@ -3,10 +3,10 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { isNewsCreator } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
 const updateNewsSchema = z.object({
@@ -35,14 +35,18 @@ export const updateRoute = route().patch(
         .notFound({ description: "News article not found" })
         .build(),
     requireAuth,
+    requireAccess({
+        permission: ["news:update", "news:manage"],
+        scope: (c) => `news-${c.req.param("id")}`,
+        ownership: { param: "id", check: isNewsCreator },
+    }),
     validator("json", updateNewsSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const userId = c.get("user").id;
         const { db } = c.get("ctx");
         const { id } = c.req.param();
 
-        // Fetch the news article
+        // Fetch the news article to verify it exists
         const newsArticle = await db.query.news.findFirst({
             where: eq(schema.news.id, id),
         });
@@ -50,38 +54,6 @@ export const updateRoute = route().patch(
         if (!newsArticle) {
             throw new HTTPException(404, {
                 message: "News article not found",
-            });
-        }
-
-        // Check permissions: global (update or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["news:update", "news:manage"],
-        );
-        const hasScopedUpdatePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:update",
-            `news-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "news:manage",
-            `news-${id}`,
-        );
-        const isCreator = newsArticle.createdById === userId;
-
-        if (
-            !hasGlobalPermission &&
-            !hasScopedUpdatePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "You do not have permission to update this news article",
             });
         }
 

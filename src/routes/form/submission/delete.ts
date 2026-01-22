@@ -6,8 +6,8 @@ import { enqueueEmail } from "~/lib/email";
 import FormSubmissionDeletedEmail from "~/lib/email/template/form-submission-deleted";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { deleteSubmissionWithReasonSchema } from "../../../lib/form/schema";
 
 export const deleteSubmissionWithReasonRoute = route().delete(
@@ -23,7 +23,7 @@ export const deleteSubmissionWithReasonRoute = route().delete(
         .notFound({ description: "Submission not found" })
         .build(),
     requireAuth,
-    requirePermission("forms:manage"),
+    requireAccess({ permission: "forms:manage" }),
     validator("json", deleteSubmissionWithReasonSchema),
     async (c) => {
         const body = c.req.valid("json");

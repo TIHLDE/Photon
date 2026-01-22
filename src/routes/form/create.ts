@@ -6,8 +6,8 @@ import { schema } from "~/db";
 import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requirePermission } from "~/middleware/permission";
 import { createFormSchema } from "../../lib/form/schema";
 
 const formResponseSchema = z.object({
@@ -35,7 +35,7 @@ export const createRoute = route().post(
         })
         .build(),
     requireAuth,
-    requirePermission("forms:create"),
+    requireAccess({ permission: "forms:create" }),
     validator("json", createFormSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -3,10 +3,10 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { schema } from "~/db";
-import { hasAnyPermission } from "~/lib/auth/rbac/permissions";
-import { hasPermissionForResource } from "~/lib/auth/rbac/scoped-permissions";
+import { isJobCreator } from "~/lib/job/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
 const updateJobSchema = z
@@ -74,14 +74,18 @@ export const updateRoute = route().patch(
         .notFound({ description: "Job posting not found" })
         .build(),
     requireAuth,
+    requireAccess({
+        permission: ["jobs:update", "jobs:manage"],
+        scope: (c) => `job-${c.req.param("id")}`,
+        ownership: { param: "id", check: isJobCreator },
+    }),
     validator("json", updateJobSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const userId = c.get("user").id;
         const { db } = c.get("ctx");
         const { id } = c.req.param();
 
-        // Fetch the job posting
+        // Fetch the job posting for validation
         const job = await db.query.jobPost.findFirst({
             where: eq(schema.jobPost.id, id),
         });
@@ -89,38 +93,6 @@ export const updateRoute = route().patch(
         if (!job) {
             throw new HTTPException(404, {
                 message: "Job posting not found",
-            });
-        }
-
-        // Check permissions: global (update or manage) OR scoped OR creator
-        const hasGlobalPermission = await hasAnyPermission(
-            c.get("ctx"),
-            userId,
-            ["jobs:update", "jobs:manage"],
-        );
-        const hasScopedUpdatePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:update",
-            `job-${id}`,
-        );
-        const hasScopedManagePermission = await hasPermissionForResource(
-            c.get("ctx"),
-            userId,
-            "jobs:manage",
-            `job-${id}`,
-        );
-        const isCreator = job.createdById === userId;
-
-        if (
-            !hasGlobalPermission &&
-            !hasScopedUpdatePermission &&
-            !hasScopedManagePermission &&
-            !isCreator
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "You do not have permission to update this job posting",
             });
         }
 

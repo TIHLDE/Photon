@@ -4,8 +4,8 @@ import { schema } from "~/db";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { requireOwnershipOrScopedPermission } from "~/middleware/ownership";
 
 export const deleteRoute = route().delete(
     "/:slug",
@@ -29,12 +29,11 @@ export const deleteRoute = route().delete(
         })
         .build(),
     requireAuth,
-    requireOwnershipOrScopedPermission(
-        "slug",
-        isGroupLeader,
-        "groups:delete",
-        (c) => `group:${c.req.param("slug")}`,
-    ),
+    requireAccess({
+        permission: "groups:delete",
+        scope: (c) => `group:${c.req.param("slug")}`,
+        ownership: { param: "slug", check: isGroupLeader },
+    }),
     async (c) => {
         const slug = c.req.param("slug");
         const { db } = c.get("ctx");

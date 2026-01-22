@@ -174,7 +174,7 @@ Follow the established commit style:
 ### Authentication & Authorization
 - **Auth**: Better Auth library (`src/lib/auth/index.ts`)
 - **RBAC**: Defined in `src/lib/auth/rbac/`
-- **Middleware**: Use `authMiddleware`, `requireRole`, `requirePermission`
+- **Middleware**: Use `requireAuth`, `requirePermission`, `requireOwnershipOrPermission`
 - **Feide OAuth**: Configured for Norwegian education sector
 
 ## Environment Variables

@@ -4,11 +4,11 @@ import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { type DbSchema, schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
+import { requireAccess } from "~/middleware/access";
 import { createEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { requirePermission } from "../../middleware/permission";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }),
@@ -45,7 +45,7 @@ export const createRoute = route().post(
         .forbidden({ description: "Missing events:create permission" })
         .build(),
     requireAuth,
-    requirePermission("events:create"),
+    requireAccess({ permission: "events:create" }),
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -9,7 +9,7 @@
 
 import { eq } from "drizzle-orm";
 import { schema } from "~/db";
-import { hasAnyPermission, hasPermission } from "~/lib/auth/rbac/permissions";
+import { hasPermission } from "~/lib/auth/rbac/permissions";
 import type { AppContext } from "~/lib/ctx";
 import { canManageGroupResource, getGroup, isGroupLeader } from "./index";
 
@@ -45,7 +45,7 @@ export async function canCreateFine(
     groupSlug: string,
 ): Promise<boolean> {
     // Root or fines:manage bypass
-    if (await hasAnyPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
         return true;
     }
 
@@ -76,7 +76,7 @@ export async function canApproveFine(
     fineId: string,
 ): Promise<boolean> {
     // Root or fines:manage bypass
-    if (await hasAnyPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
         return true;
     }
 
@@ -122,7 +122,7 @@ export async function canDeleteFine(
     fineId: string,
 ): Promise<boolean> {
     // Root or fines:manage bypass
-    if (await hasAnyPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
         return true;
     }
 
@@ -173,7 +173,7 @@ export async function canViewFine(
     fineId: string,
 ): Promise<boolean> {
     // Root or fines:view bypass
-    if (await hasAnyPermission(ctx, userId, ["root", "fines:view"])) {
+    if (await hasPermission(ctx, userId, ["root", "fines:view"])) {
         return true;
     }
 
@@ -282,11 +282,11 @@ export async function getGroupFines(
         hasPermission(ctx, userId, "fines:view"),
     ]);
 
-    if (!membership && !(await hasAnyPermission(ctx, userId, ["root"]))) {
+    if (!membership && !(await hasPermission(ctx, userId, ["root"]))) {
         throw new Error("Not a member of this group");
     }
 
-    if (!hasViewPerm && !(await hasAnyPermission(ctx, userId, ["root"]))) {
+    if (!hasViewPerm && !(await hasPermission(ctx, userId, ["root"]))) {
         throw new Error("Missing permission: fines:view");
     }
 

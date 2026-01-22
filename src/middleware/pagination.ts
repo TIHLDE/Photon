@@ -57,7 +57,7 @@ export const withPagination = (override?: Partial<Variables>) =>
                 Math.max(
                     Number.parseInt(
                         c.req.query("limit") || DEFAULT_LIMIT.toString(),
-                        DEFAULT_LIMIT,
+                        10,
                     ),
                     MIN_LIMIT,
                 ),
