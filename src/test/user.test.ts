@@ -128,7 +128,9 @@ describe("user endpoints", () => {
 
             expect(response.status).toBe(404);
 
-            const json = (await response.json()) as unknown as { message: string };
+            const json = (await response.json()) as unknown as {
+                message: string;
+            };
             expect(json.message).toBe(
                 "User settings not found. Please complete onboarding.",
             );
@@ -286,7 +288,9 @@ describe("user endpoints", () => {
 
             expect(response.status).toBe(400);
 
-            const json = (await response.json()) as unknown as { message: string };
+            const json = (await response.json()) as unknown as {
+                message: string;
+            };
             expect(json.message).toBe("User has already completed onboarding");
         },
         500_000,
@@ -477,7 +481,9 @@ describe("user endpoints", () => {
 
             expect(response.status).toBe(404);
 
-            const json = (await response.json()) as unknown as { message: string };
+            const json = (await response.json()) as unknown as {
+                message: string;
+            };
             expect(json.message).toBe(
                 "User settings not found. Please complete onboarding first.",
             );
