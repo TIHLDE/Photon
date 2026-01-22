@@ -5,6 +5,22 @@ import z from "zod";
 import { env } from "./env";
 
 /**
+ * Domain-level validation error for use in service/domain layers.
+ * The global error handler converts this to a 422 HTTP response.
+ *
+ * Use this when input validation fails at the service layer (not Zod schema validation).
+ */
+export class ValidationError extends Error {
+    public readonly details?: unknown;
+
+    constructor(message: string, details?: unknown) {
+        super(message);
+        this.name = "ValidationError";
+        this.details = details;
+    }
+}
+
+/**
  * Standardized error response schema for the API.
  * All errors should follow this format for consistent frontend handling.
  */
@@ -101,6 +117,16 @@ export function globalErrorHandler(err: Error, c: Context): Response {
     // Already a properly formatted HTTPAppException
     if (err instanceof HTTPAppException) {
         return err.getResponse();
+    }
+
+    // Domain-level validation errors (from service layer)
+    if (err instanceof ValidationError) {
+        const response: HttpAppExceptionData = {
+            status: 422,
+            message: err.message,
+            meta: err.details,
+        };
+        return c.json(response, 422);
     }
 
     // Zod validation errors
