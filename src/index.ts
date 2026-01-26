@@ -108,6 +108,23 @@ export const createApp = async (variables?: Variables) => {
                             description: "Production Server",
                         },
                     ],
+                    components: {
+                        securitySchemes: {
+                            bearerAuth: {
+                                type: "http",
+                                scheme: "bearer",
+                                bearerFormat: "JWT",
+                                description:
+                                    "Better Auth session or bearer token",
+                            },
+                            apiKey: {
+                                type: "apiKey",
+                                in: "header",
+                                name: "Authorization",
+                                description: "API key as Bearer token",
+                            },
+                        },
+                    },
                 },
             }),
         )

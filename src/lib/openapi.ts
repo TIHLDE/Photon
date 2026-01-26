@@ -197,6 +197,16 @@ export class RouteDescriptorBuilder {
     }
 
     /**
+     * Mark this route as requiring API key authentication.
+     * Adds security requirement and 401 response.
+     */
+    public requiresApiKey() {
+        this.options.security = [{ apiKey: [] }];
+        this.unauthorized({ description: "Missing or invalid API key" });
+        return this;
+    }
+
+    /**
      * Define custom error responses for this route.
      *
      * You can define known errors by using the HTTPAppException class with named constructors.

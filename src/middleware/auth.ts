@@ -31,9 +31,12 @@ export const requireAuth = describeMiddleware(
 
         await next();
     }),
-    describeMiddlewareRoute()
-        .errorResponses([HTTPAppException.Unauthorized()])
-        .getSpec(),
+    {
+        security: [{ bearerAuth: [] }],
+        ...describeMiddlewareRoute()
+            .errorResponses([HTTPAppException.Unauthorized()])
+            .getSpec(),
+    },
 );
 
 /**
