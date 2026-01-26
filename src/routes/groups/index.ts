@@ -7,10 +7,12 @@ import { listGroupFormsRoute } from "./form/list";
 import { getRoute } from "./get";
 import { listRoute } from "./list";
 import { membersRoutes } from "./members";
+import { mineRoute } from "./mine";
 import { updateRoute } from "./update";
 
 export const groupsRoutes = route()
     .route("/", listRoute)
+    .route("/", mineRoute)
     .route("/", createRoute)
     .route("/", updateRoute)
     .route("/", deleteRoute)
