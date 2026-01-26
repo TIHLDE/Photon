@@ -81,6 +81,9 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 
    # Seeding (valgfritt)
    SEED_DB=true
+
+   # Gjør at du ikke trenger VIPPS-nøkkler
+   VIPPS_TEST_MODE=true
    ```
 4. **Start utviklingsmiljøet**
    ```bash

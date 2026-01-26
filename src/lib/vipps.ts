@@ -2,22 +2,24 @@ import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
 import { getRedis } from "./cache/redis";
 import { env } from "./env";
 
-if (
-    !env.VIPPS_MERCHANT_SERIAL_NUMBER ||
-    !env.VIPPS_SUBSCRIPTION_KEY ||
-    !env.VIPPS_CLIENT_ID ||
-    !env.VIPPS_CLIENT_SECRET
-) {
-    throw new Error(
-        "Vipps is not configured properly. Please set VIPPS_MERCHANT_SERIAL_NUMBER, VIPPS_SUBSCRIPTION_KEY, VIPPS_CLIENT_ID, and VIPPS_CLIENT_SECRET in your environment variables.",
-    );
-}
+function getVippsClient() {
+    if (
+        !env.VIPPS_MERCHANT_SERIAL_NUMBER ||
+        !env.VIPPS_SUBSCRIPTION_KEY ||
+        !env.VIPPS_CLIENT_ID ||
+        !env.VIPPS_CLIENT_SECRET
+    ) {
+        throw new Error(
+            "Vipps is not configured properly. Please set VIPPS_MERCHANT_SERIAL_NUMBER, VIPPS_SUBSCRIPTION_KEY, VIPPS_CLIENT_ID, and VIPPS_CLIENT_SECRET in your environment variables.",
+        );
+    }
 
-const client = Client({
-    merchantSerialNumber: env.VIPPS_MERCHANT_SERIAL_NUMBER,
-    subscriptionKey: env.VIPPS_SUBSCRIPTION_KEY,
-    useTestMode: env.VIPPS_TEST_MODE, // Set to false in production
-});
+    return Client({
+        merchantSerialNumber: env.VIPPS_MERCHANT_SERIAL_NUMBER,
+        subscriptionKey: env.VIPPS_SUBSCRIPTION_KEY,
+        useTestMode: env.VIPPS_TEST_MODE, // Set to false in production
+    });
+}
 
 export interface CreatePaymentParams {
     amount: number; // Amount in minor units (øre)
@@ -55,6 +57,7 @@ function getJwtExpiration(token: string): number | null {
  * Get cached Vipps token or fetch a new one if expired
  */
 async function getVippsToken(): Promise<string> {
+    const vipps = getVippsClient();
     const redis = await getRedis();
 
     // Try to get cached token
@@ -70,7 +73,7 @@ async function getVippsToken(): Promise<string> {
     }
 
     // Fetch new token
-    const tokenResponse = await client.auth.getToken(
+    const tokenResponse = await vipps.auth.getToken(
         env.VIPPS_CLIENT_ID || "",
         env.VIPPS_CLIENT_SECRET || "",
     );
@@ -103,8 +106,9 @@ export async function createPayment(
     params: CreatePaymentParams,
 ): Promise<string> {
     const token = await getVippsToken();
+    const vipps = getVippsClient();
 
-    const response = await client.payment.create(token, {
+    const response = await vipps.payment.create(token, {
         amount: {
             currency: (params.currency || "NOK") as "NOK",
             value: params.amount,
@@ -143,8 +147,9 @@ export async function getPaymentDetails(
     reference: string,
 ): Promise<GetPaymentResponse> {
     const token = await getVippsToken();
+    const vipps = getVippsClient();
 
-    const response = await client.payment.info(token, reference);
+    const response = await vipps.payment.info(token, reference);
 
     if (!response.ok) {
         throw new Error(
@@ -179,7 +184,7 @@ export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
     if (env.VIPPS_TEST_MODE) {
         return { id: "test", secret: "test" };
     }
-
+    const vipps = getVippsClient();
     const vippsToken = await getVippsToken();
 
     // Check if we have webhook registration in redis
@@ -193,7 +198,7 @@ export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
         if (!env.REFRESH_VIPPS_WEBHOOKS) {
             hasRegisteredWebhook = true;
         } else {
-            const response = await client.webhook.list(vippsToken);
+            const response = await vipps.webhook.list(vippsToken);
 
             if (!response.ok) {
                 throw `Something went wrong while getting webhooks${response}`;
@@ -221,7 +226,7 @@ export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
         };
     }
 
-    const response = await client.webhook.register(vippsToken, {
+    const response = await vipps.webhook.register(vippsToken, {
         events: WEBHOOK_EVENTS,
         // url: env.ROOT_URL + WEBHOOK_API_PATH,
         url: env.WEBHOOK_URL + WEBHOOK_API_PATH,
