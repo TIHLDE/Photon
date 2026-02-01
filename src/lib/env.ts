@@ -4,6 +4,8 @@ import { z } from "zod";
 try {
     config({
         path: ".env",
+        ignore: ["MISSING_ENV_FILE"],
+        quiet: true,
     });
 } catch (e) {
     console.warn("⚠️ Could not load .env file, proceeding without it.");
