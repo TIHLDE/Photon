@@ -8,7 +8,7 @@ export const createOptionSchema = z.object({
 });
 
 export const updateOptionSchema = z.object({
-    id: z.string().uuid().optional(),
+    id: z.uuid().optional(),
     title: z.string().max(400),
     order: z.number().int().min(0).default(0),
 });
@@ -22,7 +22,7 @@ export const createFieldSchema = z.object({
 });
 
 export const updateFieldSchema = z.object({
-    id: z.string().uuid().optional(),
+    id: z.uuid().optional(),
     title: z.string().max(400),
     type: z.enum(["text_answer", "multiple_select", "single_select"]),
     required: z.boolean().default(false),
@@ -49,7 +49,7 @@ export const updateFormSchema = z.object({
 // ===== EVENT FORM SCHEMAS =====
 
 export const createEventFormSchema = createFormSchema.extend({
-    event: z.string().uuid(),
+    event: z.uuid(),
     type: z.enum(["survey", "evaluation"]),
 });
 
@@ -79,13 +79,13 @@ export const updateGroupFormSchema = updateFormSchema.extend({
 export const createAnswerSchema = z
     .object({
         field: z.object({
-            id: z.string().uuid(),
+            id: z.uuid(),
         }),
         answer_text: z.string().optional(),
         selected_options: z
             .array(
                 z.object({
-                    id: z.string().uuid(),
+                    id: z.uuid(),
                 }),
             )
             .optional(),

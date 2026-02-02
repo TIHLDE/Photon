@@ -10,12 +10,12 @@ import { requireAuth } from "~/middleware/auth";
 const eventTypeSchema = z.enum(["survey", "evaluation"]);
 
 const eventFormParamsSchema = z.object({
-    eventId: z.string().uuid(),
+    eventId: z.uuid(),
     type: eventTypeSchema,
 });
 
 const eventFormDetailResponseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     title: z.string(),
     description: z.string().nullable(),
     type: eventTypeSchema,
@@ -26,14 +26,14 @@ const eventFormDetailResponseSchema = z.object({
     updated_at: z.string(),
     fields: z.array(
         z.object({
-            id: z.string().uuid(),
+            id: z.uuid(),
             title: z.string(),
             type: z.enum(["text_answer", "multiple_select", "single_select"]),
             required: z.boolean(),
             order: z.number(),
             options: z.array(
                 z.object({
-                    id: z.string().uuid(),
+                    id: z.uuid(),
                     title: z.string(),
                     order: z.number(),
                 }),

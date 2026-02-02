@@ -11,7 +11,7 @@ import { requireAuth } from "~/middleware/auth";
 import { createFormSchema } from "../../lib/form/schema";
 
 const formResponseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     title: z.string(),
     description: z.string().nullable(),
     template: z.boolean(),

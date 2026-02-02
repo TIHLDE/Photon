@@ -8,7 +8,7 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 const formDetailResponseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     title: z.string(),
     description: z.string().nullable(),
     template: z.boolean(),
@@ -19,14 +19,14 @@ const formDetailResponseSchema = z.object({
     updated_at: z.string(),
     fields: z.array(
         z.object({
-            id: z.string().uuid(),
+            id: z.uuid(),
             title: z.string(),
             type: z.enum(["text_answer", "multiple_select", "single_select"]),
             required: z.boolean(),
             order: z.number(),
             options: z.array(
                 z.object({
-                    id: z.string().uuid(),
+                    id: z.uuid(),
                     title: z.string(),
                     order: z.number(),
                 }),

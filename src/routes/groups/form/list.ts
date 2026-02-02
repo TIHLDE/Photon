@@ -9,7 +9,7 @@ import { requireAuth } from "~/middleware/auth";
 
 const groupFormListResponseSchema = z.array(
     z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         title: z.string(),
         description: z.string().nullable(),
         group: z.string(),

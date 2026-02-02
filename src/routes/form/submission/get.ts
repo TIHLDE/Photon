@@ -9,7 +9,7 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 const submissionDetailResponseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     user: z.object({
         id: z.string(),
         name: z.string(),
@@ -19,12 +19,12 @@ const submissionDetailResponseSchema = z.object({
     updated_at: z.string(),
     answers: z.array(
         z.object({
-            id: z.string().uuid(),
-            field_id: z.string().uuid().nullable(),
+            id: z.uuid(),
+            field_id: z.uuid().nullable(),
             answer_text: z.string().nullable(),
             selected_options: z.array(
                 z.object({
-                    id: z.string().uuid(),
+                    id: z.uuid(),
                     title: z.string(),
                 }),
             ),

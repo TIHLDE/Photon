@@ -6,7 +6,7 @@ import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
 
 const registerSchema = z.object({
-    eventId: z.string().uuid(),
+    eventId: z.uuid(),
     userId: z.string(),
     status: z.literal("pending"),
     createdAt: z.string(),

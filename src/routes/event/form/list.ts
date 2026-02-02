@@ -9,7 +9,7 @@ import { requireAuth } from "~/middleware/auth";
 
 const eventFormListResponseSchema = z.array(
     z.object({
-        id: z.string().uuid(),
+        id: z.uuid(),
         title: z.string(),
         description: z.string().nullable(),
         type: z.enum(["survey", "evaluation"]),

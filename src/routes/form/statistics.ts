@@ -9,18 +9,18 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
 const statisticsResponseSchema = z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     title: z.string(),
     resource_type: z.string(),
     statistics: z.array(
         z.object({
-            id: z.string().uuid(),
+            id: z.uuid(),
             title: z.string(),
             type: z.enum(["multiple_select", "single_select"]),
             required: z.boolean(),
             options: z.array(
                 z.object({
-                    id: z.string().uuid(),
+                    id: z.uuid(),
                     title: z.string(),
                     answer_amount: z.number(),
                     answer_percentage: z.number(),

@@ -26,7 +26,7 @@ const eventSchema = z.object({
 });
 
 const createEventResponseSchema = z.object({
-    eventId: z.string().uuid(),
+    eventId: z.uuid(),
 });
 
 export const createRoute = route().post(
