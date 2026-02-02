@@ -4,6 +4,7 @@ import {
     admin,
     bearer,
     createAuthMiddleware,
+    customSession,
     emailOTP,
     openAPI,
     username,
@@ -17,6 +18,7 @@ import { env } from "~/lib/env";
 import type { AppContext } from "../ctx";
 import { feidePlugin, syncFeideHook } from "./feide";
 import { syncLegacyTokenHook } from "./lepton";
+import { getUserPermissions } from "./rbac/permissions";
 
 export const createAuth = (ctx: Omit<AppContext, "auth">) =>
     betterAuth({
@@ -107,6 +109,54 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             admin(),
             bearer(),
             username(),
+            customSession(async ({ user, session }) => {
+                // TODO cleanup this code, is temprorary while we find out what info is needed
+                // Fetch user settings with allergies
+                const settings = await ctx.db.query.userSettings.findFirst({
+                    where: (s, { eq }) => eq(s.userId, user.id),
+                    with: { allergies: { columns: { allergySlug: true } } },
+                });
+
+                // Fetch permissions (from roles + direct grants)
+                // Note: We cast ctx to AppContext since getUserPermissions only needs db
+                const permissions = await getUserPermissions(
+                    ctx as unknown as AppContext,
+                    user.id,
+                );
+
+                // Fetch user groups
+                const groups = await ctx.db.query.groupMembership.findMany({
+                    where: (gm, { eq }) => eq(gm.userId, user.id),
+                    with: {
+                        group: true,
+                    },
+                });
+
+                const fullSession = {
+                    user: {
+                        ...user,
+                        settings: settings
+                            ? {
+                                  ...settings,
+                                  allergies: settings.allergies.map(
+                                      (a) => a.allergySlug,
+                                  ),
+                              }
+                            : null,
+                    },
+                    session,
+                    permissions: [...new Set(permissions)], // Deduplicated
+                    groups: groups.map((g) => ({
+                        slug: g.groupSlug,
+                        name: g.group.name,
+                        type: g.group.type,
+                        role: g.role,
+                    })),
+                };
+                console.log(fullSession);
+
+                return fullSession;
+            }),
         ],
         logger: {
             disabled: false,
@@ -159,3 +209,9 @@ export type Session = AuthInstance["$Infer"]["Session"]["session"];
  * User data
  */
 export type User = AuthInstance["$Infer"]["Session"]["user"];
+
+/**
+ * Extended session response from get-session endpoint.
+ * Includes user with settings and computed permissions.
+ */
+export type ExtendedSession = AuthInstance["$Infer"]["Session"];
