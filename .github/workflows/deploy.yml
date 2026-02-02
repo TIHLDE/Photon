@@ -63,6 +63,5 @@ jobs:
           git fetch
           git reset --hard origin/main
           pnpm docker:prod
-          '
 
           ENDSSH
