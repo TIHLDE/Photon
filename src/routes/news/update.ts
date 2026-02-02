@@ -13,7 +13,7 @@ const updateNewsSchema = z.object({
     title: z.string().min(1).max(200).optional(),
     header: z.string().min(1).max(200).optional(),
     body: z.string().min(1).optional(),
-    imageUrl: z.string().url().optional().nullable(),
+    imageUrl: z.url().optional().nullable(),
     imageAlt: z.string().max(255).optional().nullable(),
     emojisAllowed: z.boolean().optional(),
 });

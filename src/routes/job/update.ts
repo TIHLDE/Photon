@@ -22,14 +22,14 @@ const updateJobSchema = z
             .enum(["full_time", "part_time", "summer_job", "other"])
             .optional(),
         email: z.string().email().max(320).optional().nullable(),
-        link: z.string().url().optional().nullable(),
+        link: z.url().optional().nullable(),
         classStart: z
             .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
             .optional(),
         classEnd: z
             .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
             .optional(),
-        imageUrl: z.string().url().optional().nullable(),
+        imageUrl: z.url().optional().nullable(),
         imageAlt: z.string().max(255).optional().nullable(),
     })
     .refine(
