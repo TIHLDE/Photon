@@ -13,6 +13,7 @@ import { pgEnum } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
 import { role } from "./rbac";
+import { relations } from "drizzle-orm";
 
 const pgTable = pgTableCreator((name) => `org_${name}`);
 
@@ -127,6 +128,20 @@ export const groupMembership = pgTable(
         ...timestamps,
     },
     (t) => [primaryKey({ columns: [t.userId, t.groupSlug] })],
+);
+
+export const groupMembershipRelations = relations(
+    groupMembership,
+    ({ one }) => ({
+        user: one(user, {
+            fields: [groupMembership.userId],
+            references: [user.id],
+        }),
+        group: one(group, {
+            fields: [groupMembership.groupSlug],
+            references: [group.slug],
+        }),
+    }),
 );
 
 export const fineStatus = pgEnum("org_fine_status", [

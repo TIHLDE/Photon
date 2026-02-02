@@ -1,0 +1,1 @@
+DROP TABLE "auth_session" CASCADE;

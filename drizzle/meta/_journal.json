@@ -71,6 +71,13 @@
       "when": 1768845312141,
       "tag": "0009_complete_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1770032113875,
+      "tag": "0010_orange_cardiac",
+      "breakpoints": true
     }
   ]
 }
