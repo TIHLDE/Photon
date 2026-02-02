@@ -1,3 +1,4 @@
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { hasPermission } from "~/lib/auth/rbac/permissions";
@@ -6,11 +7,18 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 
+const eventTypeSchema = z.enum(["survey", "evaluation"]);
+
+const eventFormParamsSchema = z.object({
+    eventId: z.string().uuid(),
+    type: eventTypeSchema,
+});
+
 const eventFormDetailResponseSchema = z.object({
     id: z.string().uuid(),
     title: z.string(),
     description: z.string().nullable(),
-    type: z.enum(["survey", "evaluation"]),
+    type: eventTypeSchema,
     resource_type: z.string(),
     viewer_has_answered: z.boolean(),
     website_url: z.string(),
@@ -52,22 +60,15 @@ export const getEventFormRoute = route().get(
         .notFound({ description: "Form not found" })
         .build(),
     requireAuth,
+    validator("param", eventFormParamsSchema),
     async (c) => {
         const { db, ...ctx } = c.get("ctx");
         const user = c.get("user");
-        const eventId = c.req.param("eventId");
-        const formType = c.req.param("type") as "survey" | "evaluation";
+        const { eventId, type: formType } = c.req.valid("param");
 
         if (!user) {
             throw new HTTPException(401, {
                 message: "Authentication required",
-            });
-        }
-
-        // Validate type
-        if (formType !== "survey" && formType !== "evaluation") {
-            throw new HTTPException(400, {
-                message: "Invalid form type. Must be 'survey' or 'evaluation'",
             });
         }
 
