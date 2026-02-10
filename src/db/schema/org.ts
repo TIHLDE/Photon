@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
     boolean,
     integer,
@@ -127,6 +128,20 @@ export const groupMembership = pgTable(
         ...timestamps,
     },
     (t) => [primaryKey({ columns: [t.userId, t.groupSlug] })],
+);
+
+export const groupMembershipRelations = relations(
+    groupMembership,
+    ({ one }) => ({
+        user: one(user, {
+            fields: [groupMembership.userId],
+            references: [user.id],
+        }),
+        group: one(group, {
+            fields: [groupMembership.groupSlug],
+            references: [group.slug],
+        }),
+    }),
 );
 
 export const fineStatus = pgEnum("org_fine_status", [
