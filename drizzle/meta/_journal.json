@@ -71,6 +71,13 @@
       "when": 1768845312141,
       "tag": "0009_complete_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1769727559441,
+      "tag": "0010_icy_violations",
+      "breakpoints": true
     }
   ]
 }

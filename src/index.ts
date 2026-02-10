@@ -18,6 +18,7 @@ import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { setupWebhooks } from "./lib/vipps";
 import { apiKeyRoutes } from "./routes/api-key";
+import { assetRoutes } from "./routes/asset";
 import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
 import { newsRoutes } from "./routes/news";
@@ -60,6 +61,7 @@ export const createApp = async (variables?: Variables) => {
             return c.text("Healthy!");
         })
         .route("/api-keys", apiKeyRoutes)
+        .route("/assets", assetRoutes)
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
         .route("/forms", formRoutes)
