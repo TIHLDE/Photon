@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
     boolean,
     integer,
@@ -13,7 +14,6 @@ import { pgEnum } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
 import { role } from "./rbac";
-import { relations } from "drizzle-orm";
 
 const pgTable = pgTableCreator((name) => `org_${name}`);
 
