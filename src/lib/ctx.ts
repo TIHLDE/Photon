@@ -1,4 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { HTTPException } from "hono/http-exception";
 import { type DbSchema, createDb } from "~/db";
 import { type AuthInstance, createAuth } from "./auth";
 import { QueueManager } from "./cache/queue";
@@ -23,8 +24,8 @@ export interface AppContext {
     auth: AuthInstance;
     /** Email transporter instance */
     mailer: EmailTransporter;
-    /** Storage bucket client instance */
-    bucket: StorageClient;
+    /** Storage bucket client instance (null if storage is unavailable) */
+    bucket: StorageClient | null;
 }
 
 /**
@@ -36,7 +37,16 @@ export async function createAppContext(): Promise<AppContext> {
     const redis = await createRedisClient(env.REDIS_URL);
     const queue = new QueueManager(env.REDIS_URL);
     const mailer = createEmailTransporter();
-    const bucket = await createStorageClient({ db });
+    let bucket: StorageClient | null = null;
+    try {
+        bucket = await createStorageClient({ db });
+    } catch (error) {
+        console.warn(
+            "⚠️ Could not connect to storage bucket, file storage will be unavailable.",
+            error instanceof Error ? error.message : error,
+        );
+    }
+
     const auth = createAuth({ db, redis, mailer, queue, bucket });
 
     return {
@@ -47,6 +57,19 @@ export async function createAppContext(): Promise<AppContext> {
         mailer,
         bucket,
     };
+}
+
+/**
+ * Get the storage bucket from context, or throw HTTP 500 if unavailable.
+ * Use this in routes that require file storage.
+ */
+export function requireBucket(ctx: AppContext): StorageClient {
+    if (!ctx.bucket) {
+        throw new HTTPException(500, {
+            message: "File storage is not available",
+        });
+    }
+    return ctx.bucket;
 }
 
 export interface AppServices {
