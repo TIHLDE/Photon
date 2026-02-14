@@ -1,0 +1,46 @@
+name: Publish SDK
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Publish SDK to GitHub Package Registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@tihlde"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set version from tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Setting SDK version to $VERSION"
+          cd packages/sdk
+          npm version $VERSION --no-git-tag-version
+
+      - name: Build SDK
+        run: pnpm --filter @tihlde/photon-sdk build
+
+      - name: Publish SDK
+        run: pnpm --filter @tihlde/photon-sdk publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
