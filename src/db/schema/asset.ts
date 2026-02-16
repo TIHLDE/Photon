@@ -1,13 +1,23 @@
 import { relations } from "drizzle-orm";
 import {
     bigint,
+    pgEnum,
     pgTableCreator,
     text,
+    timestamp,
     uuid,
     varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
+
+/**
+ * Asset status variants for staging mechanism
+ * - staged: File uploaded but not yet attached to a resource (will be cleaned up after 2 days)
+ * - ready: File promoted and attached to a resource (permanent)
+ */
+export const assetStatusVariants = ["staged", "ready"] as const;
+export const assetStatus = pgEnum("asset_status", assetStatusVariants);
 
 const pgTable = pgTableCreator((name) => `asset_${name}`);
 
@@ -44,6 +54,18 @@ export const asset = pgTable("file", {
     uploadedById: text("uploaded_by_id").references(() => user.id, {
         onDelete: "set null",
     }),
+
+    /**
+     * Asset status for staging mechanism
+     * - staged: Uploaded but not yet attached to a resource
+     * - ready: Promoted and attached to a resource
+     */
+    status: assetStatus("status").notNull().default("staged"),
+
+    /**
+     * Timestamp when the asset was promoted from staged to ready
+     */
+    promotedAt: timestamp("promoted_at"),
 
     ...timestamps,
 });

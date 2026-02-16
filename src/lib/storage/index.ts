@@ -96,6 +96,13 @@ export interface StorageClient {
         limit?: number;
         offset?: number;
     }) => Promise<schema.Asset[]>;
+
+    /**
+     * Promote an asset from "staged" to "ready" status
+     * @param key - The file key/path in the bucket
+     * @returns The updated asset or null if not found
+     */
+    promoteAsset: (key: string) => Promise<schema.Asset | null>;
 }
 
 /**
@@ -273,6 +280,27 @@ export async function createStorageClient(options?: {
         return await query;
     };
 
+    // Helper function to promote an asset from staged to ready
+    const promoteAsset = async (key: string): Promise<schema.Asset | null> => {
+        if (!db) {
+            throw new Error(
+                "Database instance required for promoteAsset operation",
+            );
+        }
+
+        const [updated] = await db
+            .update(schema.asset)
+            .set({
+                status: "ready",
+                promotedAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .where(eq(schema.asset.key, key))
+            .returning();
+
+        return updated ?? null;
+    };
+
     return {
         client,
         bucketName,
@@ -282,6 +310,7 @@ export async function createStorageClient(options?: {
         exists,
         getAsset,
         listAssets,
+        promoteAsset,
     };
 }
 

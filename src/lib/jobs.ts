@@ -1,4 +1,5 @@
 import cron from "node-cron";
+import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { startEmailWorker } from "./email/worker";
 import { resolveRegistrationsForEvent } from "./event/resolve-registration";
@@ -54,8 +55,6 @@ export function startBackgroundJobs(ctx: AppContext): void {
     // Start registration resolver cron
     startRegistrationResolverCron(ctx);
 
-    // Future workers and cron jobs can be added here
-    // Example:
-    // startPaymentExpirationWorker(ctx);
-    // startEventReminderCron(ctx);
+    // Start asset cleanup cron
+    startAssetCleanupCron(ctx);
 }
