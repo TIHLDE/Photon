@@ -10,7 +10,7 @@ Ny backend for Kvark - en moderne, typesikker API-server bygget med TypeScript o
 
 Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, type-sikkerhet og utvikleropplevelse. Serveren tilbyr autentisering via Feide, hendelseshåndtering, betalingsintegrasjon med Vipps MobilePay, og mye mer.
 
-## ✨ Hovedfunksjoner
+## ✨ Funksjonalitet
 
 - **🔐 Autentisering**: Better Auth med Feide OAuth2-integrasjon for norsk utdanningssektor
 - **📅 Hendelseshåndtering**: Komplett API for arrangementer, påmelding og administrasjon
