@@ -38,14 +38,7 @@ export async function createAppContext(): Promise<AppContext> {
     const queue = new QueueManager(env.REDIS_URL);
     const mailer = createEmailTransporter();
     let bucket: StorageClient | null = null;
-    try {
-        bucket = await createStorageClient({ db });
-    } catch (error) {
-        console.warn(
-            "⚠️ Could not connect to storage bucket, file storage will be unavailable.",
-            error instanceof Error ? error.message : error,
-        );
-    }
+    bucket = await createStorageClient({ db });
 
     const auth = createAuth({ db, redis, mailer, queue, bucket });
 
