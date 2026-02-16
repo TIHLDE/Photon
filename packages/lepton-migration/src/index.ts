@@ -1,5 +1,5 @@
+import { createAppContext } from "@photon/api/ctx";
 import * as mysql from "mysql2";
-import { createAppContext } from "photon/ctx";
 
 const dump = async () => {
     const ctx = await createAppContext();

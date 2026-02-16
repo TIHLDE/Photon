@@ -8,7 +8,7 @@
     },
     "files": {
         "ignoreUnknown": false,
-        "ignore": ["**/drizzle/**"]
+        "ignore": ["**/drizzle/**", "**/dist/**"]
     },
     "formatter": {
         "enabled": true,
@@ -30,7 +30,7 @@
     },
     "overrides": [
         {
-            "include": ["src/test/**/*.ts"],
+            "include": ["apps/api/src/test/**/*.ts"],
             "linter": {
                 "rules": {
                     "style": {

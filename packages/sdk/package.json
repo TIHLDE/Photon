@@ -1,0 +1,31 @@
+{
+    "name": "@photon/sdk",
+    "version": "0.1.0",
+    "type": "module",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./auth": {
+            "import": "./dist/auth.js",
+            "types": "./dist/auth.d.ts"
+        }
+    },
+    "files": ["dist"],
+    "scripts": {
+        "build": "tsup",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@photon/auth": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^24.3.1",
+        "tsup": "^8.5.0",
+        "typescript": "^5.8.3"
+    },
+    "peerDependencies": {
+        "better-auth": ">=1.4"
+    }
+}

@@ -5,7 +5,7 @@ services:
     container_name: photon.tihlde.org
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: apps/api/Dockerfile
       no_cache: true
     restart: unless-stopped
     ports:
