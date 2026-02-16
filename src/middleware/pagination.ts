@@ -1,80 +1,78 @@
-import { validator } from "hono-openapi";
-import { createMiddleware } from "hono/factory";
 import z from "zod";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 const MIN_LIMIT = 1;
-
 const DEFAULT_OFFSET = 0;
 
-type Variables = {
-    limit: number;
-    offset: number;
-};
+/**
+ * Schema for validating pagination parameters 
+ * 
+ * Usage:
+ * ```ts
+ * route().get(
+ *  "/items",
+ *  validator("query", PagninationSchema.extend({ // extend can be used to add more query params
+ *     search: z.string().optional(),
+ *  })),
+ *  async (c) => {}
+ * );
+ * 
+ * ```
+ */
+export const PaginationSchema = z.object({
+    pageSize: z.coerce
+        .number()
+        .min(MIN_LIMIT)
+        .max(MAX_LIMIT)
+        .default(DEFAULT_LIMIT)
+        .describe("Number of items to return"),
+    page: z.coerce
+        .number()
+        .min(0)
+        .default(DEFAULT_OFFSET)
+        .describe("Number of items to skip"),
+});
 
 /**
- * Middleware factory for handling pagination in API requests.
- *
- * Applies validation to the `limit` and `offset` query parameters, ensuring:
- * - `limit` is an optional number between 1 and 100 (default: 10).
- * - `offset` is an optional number greater than or equal to 0 (default: 0).
- *
- * The middleware sets the validated (and optionally overridden) `limit` and `offset`
- * values on the context for downstream handlers. It also handles defining properties
- * for the OpenAPI schema.
- *
- * ### Usage
- *
- * Use the spread operator to include both the OpenAPI validator and extraction middleware.
- *
+ * This is the standard response schema for when using a paginated API endpoint
+ * 
+ * The totalCount is the totla amount of items in that resource
+ * 
+ * The pages is the total amount of pages available based on the pageSize requested
+ * 
+ * THe nextPage is the next page that should be fetched, or null if there are noe more pages
+ * 
+ * Usage:
  * ```ts
- * route.get(
- *   "/",
- *   // ...middlware
- *   ...withPagination({ limit: 20 }) // i.e. override default limit to 20
- *   async (c) => {
- *     const limit = c.get("limit"); // 20
- *     const offset = c.get("offset"); // 0
- *   }
- * )
+ * const ResponseSchema = PaginationResponseSchema.extend({ // extend adds the any extra properties/lists
+ *  events: z.array(EventSchema),
+ * })
  * ```
- *
- * @param override - Optional object to override the parsed `limit` and `offset` values.
- * @returns An array of middleware functions for pagination validation and assignment.
  */
-export const withPagination = (override?: Partial<Variables>) =>
-    [
-        validator(
-            "query",
-            z.object({
-                limit: z.coerce.number().min(1).max(100).optional(),
-                offset: z.coerce.number().min(0).optional(),
-            }),
-        ),
-        createMiddleware<{ Variables: Variables }>(async (c, next) => {
-            const limit = Math.min(
-                Math.max(
-                    Number.parseInt(
-                        c.req.query("limit") || DEFAULT_LIMIT.toString(),
-                        10,
-                    ),
-                    MIN_LIMIT,
-                ),
-                MAX_LIMIT,
-            );
+export const PagniationResponseSchema = z.object({
+    totalCount: z.number().describe("Total number of items available"),
+    pages: z.number().describe("Total number of pages available"),
+    nextPage: z
+        .number()
+        .nullable()
+        .describe("The next page number that can be fetched"),
+});
 
-            const offset = Math.max(
-                Number.parseInt(
-                    c.req.query("offset") || DEFAULT_OFFSET.toString(),
-                    10,
-                ),
-                DEFAULT_OFFSET,
-            );
+/**
+ * Helper funtion to calculate the page offset to use in database calls
+ * @param page the page number to fetch
+ * @param pageSize the page size used
+ * @returns the page offset to fetch in the database
+ */
+export const getPageOffset = (page: number, pageSize: number) =>
+    page * pageSize;
 
-            c.set("limit", override?.limit ?? limit);
-            c.set("offset", override?.offset ?? offset);
-
-            await next();
-        }),
-    ] as const;
+/**
+ * Calculate the total page count based on a 0-based page index
+ * @param totalCount the total number of items available
+ * @param pageSize the size of each page
+ * @returns the total number of pages available
+ */
+export const getTotalPages = (totalCount: number, pageSize: number) =>
+    pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0;

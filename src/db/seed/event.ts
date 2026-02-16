@@ -28,5 +28,25 @@ export default async ({ db }: AppContext) => {
                 slug: category.slug,
             });
         }
+
+        const eventsExists = await db
+            .select()
+            .from(schema.event)
+            .where(eq(schema.event.categorySlug, category.slug))
+            .limit(1);
+        if (!eventsExists.length) {
+            await db.insert(schema.event).values({
+                title: `Test arrangement for ${category.label}`,
+                description: `Dette er et testarrangement i kategorien ${category.label}.`,
+                location: `Glæzz`,
+                categorySlug: category.slug,
+                start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                end: new Date(
+                    Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
+                ),
+                slug: "test-arrangement-" + category.slug,
+                enforcesPreviousStrikes: false,
+            });
+        }
     }
 };

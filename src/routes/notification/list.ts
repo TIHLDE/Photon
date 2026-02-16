@@ -4,7 +4,13 @@ import { describeRoute } from "~/lib/openapi";
 import { schema } from "../../db";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { withPagination } from "../../middleware/pagination";
+import { validator } from "hono-openapi";
+import {
+    getPageOffset,
+    getTotalPages,
+    PaginationSchema,
+    PagniationResponseSchema,
+} from "~/middleware/pagination";
 
 const notificationSchema = z.object({
     id: z.string().meta({ description: "Notification ID" }),
@@ -24,6 +30,10 @@ const notificationSchema = z.object({
         .meta({ description: "Notification update time (ISO 8601)" }),
 });
 
+const ResponseSchema = PagniationResponseSchema.extend({
+    items: z.array(notificationSchema).describe("List of notifications"),
+});
+
 export const listNotificationsRoute = route().get(
     "/",
     describeRoute({
@@ -35,23 +45,32 @@ export const listNotificationsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: z.array(notificationSchema),
+            schema: ResponseSchema,
             description: "OK",
         })
         .build(),
     requireAuth,
-    ...withPagination(),
+    validator("query", PaginationSchema),
     async (c) => {
         const { db } = c.get("ctx");
         const userId = c.get("user").id;
-        const limit = c.get("limit");
-        const offset = c.get("offset");
+        const { pageSize, page } = c.req.valid("query");
+        const pageOffset = getPageOffset(page, pageSize);
+
+        const notificationFilter = eq(schema.notification.userId, userId);
+
+        const notificationCount = await db.$count(
+            schema.notification,
+            notificationFilter,
+        );
+
+        const totalPages = getTotalPages(notificationCount, pageSize);
 
         const notifications = await db.query.notification.findMany({
-            where: eq(schema.notification.userId, userId),
             orderBy: desc(schema.notification.createdAt),
-            limit,
-            offset,
+            where: notificationFilter,
+            limit: pageSize,
+            offset: pageOffset,
         });
 
         const returnNotifications = notifications.map((n) => ({
@@ -65,6 +84,11 @@ export const listNotificationsRoute = route().get(
             updatedAt: n.updatedAt.toISOString(),
         }));
 
-        return c.json(returnNotifications);
+        return c.json({
+            totalCount: notificationCount,
+            pages: totalPages,
+            nextPage: page + 1 > totalPages ? null : page + 1,
+            items: returnNotifications,
+        } satisfies z.infer<typeof ResponseSchema>);
     },
 );

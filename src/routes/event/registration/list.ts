@@ -1,34 +1,29 @@
-import { eq, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import z from "zod";
 import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { withPagination } from "~/middleware/pagination";
+import {
+    getPageOffset,
+    getTotalPages,
+    PaginationSchema,
+    PagniationResponseSchema,
+} from "~/middleware/pagination";
 
-const registrationsSchema = z.object({
-    registeredUsers: z.array(
-        z
-            .object({
-                id: z.string().meta({ description: "User id" }),
-                name: z.string().meta({ description: "User name" }),
-                image: z
-                    .string()
-                    .nullable()
-                    .meta({ description: "User image url (if any)" }),
-            })
-            .meta({
-                description:
-                    "List of users that are on the list. This field is paginated.",
-            }),
-    ),
-    registeredCount: z.number().meta({
-        description:
-            "Total registered users. These users have access to the event.",
-    }),
-    waitlistCount: z.number().meta({
-        description:
-            "Number of users on the waitlist. These users are waiting in queue for a spot.",
-    }),
+const registeredUserSchema = z.object({
+    id: z.string().meta({ description: "User id" }),
+    name: z.string().meta({ description: "User name" }),
+    image: z
+        .string()
+        .nullable()
+        .meta({ description: "User image url (if any)" }),
+});
+
+const ResponseSchema = PagniationResponseSchema.extend({
+    registeredUsers: z
+        .array(registeredUserSchema)
+        .describe("List of registered users (paginated)"),
 });
 
 export const getAllRegistrationsForEventsRoute = route().get(
@@ -42,13 +37,16 @@ export const getAllRegistrationsForEventsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: z.array(registrationsSchema),
+            schema: ResponseSchema,
             description: "OK",
         })
         .build(),
-    ...withPagination(),
+    validator("query", PaginationSchema),
     async (c) => {
         const { db } = c.get("ctx");
+        const { pageSize, page } = c.req.valid("query");
+
+        const pageOffset = getPageOffset(page, pageSize);
 
         // since we track cancelled/no-show etc, track all statuses that have been registered succesfully
         const registeredFilter = or(
@@ -57,14 +55,18 @@ export const getAllRegistrationsForEventsRoute = route().get(
             eq(schema.eventRegistration.status, "no_show"),
         );
 
+        const filters = and(
+            eq(schema.eventRegistration.eventId, c.req.param("eventId")),
+            registeredFilter,
+        );
+
+        const registrationCount = await db.$count(schema.eventRegistration, filters);
+
         const registrations = await db.query.eventRegistration.findMany({
-            where: (registration, { eq, and }) =>
-                and(
-                    eq(registration.eventId, c.req.param("eventId")),
-                    registeredFilter,
-                ),
-            limit: c.get("limit"),
-            offset: c.get("offset"),
+            orderBy: (r) => [desc(r.createdAt)],
+            where: filters,
+            limit: pageSize,
+            offset: pageOffset,
             with: {
                 user: {
                     columns: {
@@ -76,26 +78,19 @@ export const getAllRegistrationsForEventsRoute = route().get(
             },
         });
 
-        const registeredCount = await db.$count(
-            schema.eventRegistration,
-            registeredFilter,
-        );
+        const totalPages = getTotalPages(registrationCount, pageSize);
 
-        const waitlistCount = await db.$count(
-            schema.eventRegistration,
-            eq(schema.eventRegistration.status, "waitlisted"),
-        );
+        const returnRegistrations = registrations.map((r) => ({
+            id: r.userId,
+            image: r.user.image,
+            name: r.user.name,
+        }));
 
-        const returnRegistrations: z.infer<typeof registrationsSchema> = {
-            registeredUsers: registrations.map((r) => ({
-                id: r.userId,
-                image: r.user.image,
-                name: r.user.name,
-            })),
-            waitlistCount,
-            registeredCount,
-        };
-
-        return c.json(returnRegistrations);
+        return c.json({
+            totalCount: registrationCount,
+            pages: totalPages,
+            nextPage: page + 1 > totalPages ? null : page + 1,
+            registeredUsers: returnRegistrations,
+        } satisfies z.infer<typeof ResponseSchema>);
     },
 );
