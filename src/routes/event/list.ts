@@ -1,15 +1,15 @@
+import { and, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import z from "zod";
+import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import {
-    getPageOffset,
-    getTotalPages,
     PaginationSchema,
     PagniationResponseSchema,
+    getPageOffset,
+    getTotalPages,
 } from "../../middleware/pagination";
-import { and, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
-import { schema } from "~/db";
-import { validator } from "hono-openapi";
 
 const eventSchema = z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),

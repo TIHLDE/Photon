@@ -38,13 +38,13 @@ export default async ({ db }: AppContext) => {
             await db.insert(schema.event).values({
                 title: `Test arrangement for ${category.label}`,
                 description: `Dette er et testarrangement i kategorien ${category.label}.`,
-                location: `Glæzz`,
+                location: "Glæzz",
                 categorySlug: category.slug,
                 start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
                 end: new Date(
                     Date.now() + 7 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000,
                 ),
-                slug: "test-arrangement-" + category.slug,
+                slug: `test-arrangement-${category.slug}`,
                 enforcesPreviousStrikes: false,
             });
         }

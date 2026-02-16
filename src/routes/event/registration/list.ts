@@ -5,10 +5,10 @@ import { schema } from "~/db";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
-    getPageOffset,
-    getTotalPages,
     PaginationSchema,
     PagniationResponseSchema,
+    getPageOffset,
+    getTotalPages,
 } from "~/middleware/pagination";
 
 const registeredUserSchema = z.object({
@@ -60,7 +60,10 @@ export const getAllRegistrationsForEventsRoute = route().get(
             registeredFilter,
         );
 
-        const registrationCount = await db.$count(schema.eventRegistration, filters);
+        const registrationCount = await db.$count(
+            schema.eventRegistration,
+            filters,
+        );
 
         const registrations = await db.query.eventRegistration.findMany({
             orderBy: (r) => [desc(r.createdAt)],

@@ -6,8 +6,8 @@ const MIN_LIMIT = 1;
 const DEFAULT_OFFSET = 0;
 
 /**
- * Schema for validating pagination parameters 
- * 
+ * Schema for validating pagination parameters
+ *
  * Usage:
  * ```ts
  * route().get(
@@ -17,7 +17,7 @@ const DEFAULT_OFFSET = 0;
  *  })),
  *  async (c) => {}
  * );
- * 
+ *
  * ```
  */
 export const PaginationSchema = z.object({
@@ -36,13 +36,13 @@ export const PaginationSchema = z.object({
 
 /**
  * This is the standard response schema for when using a paginated API endpoint
- * 
+ *
  * The totalCount is the totla amount of items in that resource
- * 
+ *
  * The pages is the total amount of pages available based on the pageSize requested
- * 
+ *
  * THe nextPage is the next page that should be fetched, or null if there are noe more pages
- * 
+ *
  * Usage:
  * ```ts
  * const ResponseSchema = PaginationResponseSchema.extend({ // extend adds the any extra properties/lists

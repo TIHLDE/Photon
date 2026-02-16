@@ -1,16 +1,16 @@
 import { desc, eq } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
+import {
+    PaginationSchema,
+    PagniationResponseSchema,
+    getPageOffset,
+    getTotalPages,
+} from "~/middleware/pagination";
 import { schema } from "../../db";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { validator } from "hono-openapi";
-import {
-    getPageOffset,
-    getTotalPages,
-    PaginationSchema,
-    PagniationResponseSchema,
-} from "~/middleware/pagination";
 
 const notificationSchema = z.object({
     id: z.string().meta({ description: "Notification ID" }),
