@@ -9,7 +9,7 @@ services:
       no_cache: true
     restart: unless-stopped
     ports:
-      - "192.168.0.6:4000:4000" # Binder til LAN IP så Drifts Grafana-instans kan koble seg på fra en annen lokal IP -Borgar
+      - "${BIND_ADDRESS:-127.0.0.1}:4000:4000"
     env_file:
       - ".env"
     extra_hosts: # Trengs for at docker containeren skal nå redis på host
