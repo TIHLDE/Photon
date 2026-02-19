@@ -2,7 +2,6 @@ import { env } from "@photon/core/env";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
-import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import {
@@ -126,12 +125,6 @@ export const createApp = async (variables?: Variables) => {
                 ],
             }),
         )
-        .get(
-            "/static/*",
-            serveStatic({
-                root: "./",
-            }),
-        )
         .onError(globalErrorHandler)
         .notFound(notFoundHandler);
 
@@ -152,6 +145,8 @@ if (env.NODE_ENV !== "test") {
     void (await setupWebhooks());
 
     const app = await createApp();
+    const { serveStatic } = await import("hono/bun");
+    app.get("/static/*", serveStatic({ root: "./" }));
 
     Bun.serve({
         fetch: app.fetch,
