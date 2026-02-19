@@ -7,9 +7,13 @@ import type {
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
-import { account, studyProgram, studyProgramMembership } from "../../db/schema";
-import type { AppContext } from "../ctx";
-import { env } from "../env";
+import {
+    account,
+    studyProgram,
+    studyProgramMembership,
+} from "@photon/db/schema";
+import { env } from "@photon/core/env";
+import type { AuthCreateContext } from "./index";
 
 /**
  * BetterAuth provider ID for Feide
@@ -112,7 +116,7 @@ export const syncFeideHook: (
             responseHeaders?: Headers;
         }
     >,
-    ctx: Omit<AppContext, "auth">,
+    ctx: AuthCreateContext,
 ) => Promise<void> = async (middlewareContext, ctx) => {
     if (
         middlewareContext.path.startsWith("/oauth2/callback") &&

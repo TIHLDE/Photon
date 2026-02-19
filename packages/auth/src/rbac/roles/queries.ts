@@ -5,13 +5,16 @@
  */
 
 import { eq, sql } from "drizzle-orm";
-import { role } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { role } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 
 /**
  * Get a role by its name.
  */
-export async function getRoleByName(ctx: AppContext, roleName: string) {
+export async function getRoleByName(ctx: DbCtx, roleName: string) {
     const db = ctx.db;
     const [r] = await db.select().from(role).where(eq(role.name, roleName));
     return r ?? null;
@@ -20,7 +23,7 @@ export async function getRoleByName(ctx: AppContext, roleName: string) {
 /**
  * Get a role by its ID.
  */
-export async function getRoleById(ctx: AppContext, roleId: number) {
+export async function getRoleById(ctx: DbCtx, roleId: number) {
     const db = ctx.db;
     const [r] = await db.select().from(role).where(eq(role.id, roleId));
     return r ?? null;
@@ -30,7 +33,7 @@ export async function getRoleById(ctx: AppContext, roleId: number) {
  * Get all roles from database, ordered by position (best first).
  * Higher position = better role, so descending order.
  */
-export async function getAllRoles(ctx: AppContext) {
+export async function getAllRoles(ctx: DbCtx) {
     const db = ctx.db;
     return await db.select().from(role).orderBy(sql`${role.position} DESC`);
 }

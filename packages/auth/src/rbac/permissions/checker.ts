@@ -6,13 +6,16 @@
  */
 
 import { eq } from "drizzle-orm";
-import { role, userPermission, userRole } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { role, userPermission, userRole } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
 import {
     formatPermission,
     matchesPermission,
     parsePermission,
 } from "../permission-parser";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 
 // =============================================================================
 // Get User Permissions
@@ -23,7 +26,7 @@ import {
  * Returns raw array with potential duplicates.
  */
 async function getPermissionsFromRoles(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
     const db = ctx.db;
@@ -41,7 +44,7 @@ async function getPermissionsFromRoles(
  * Returns array of permission strings in format "permission" or "permission@scope".
  */
 async function getDirectPermissions(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
     const db = ctx.db;
@@ -61,7 +64,7 @@ async function getDirectPermissions(
  * Returns raw array with potential duplicates.
  */
 export async function getUserPermissions(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
     const [rolePerms, directPerms] = await Promise.all([
@@ -83,7 +86,7 @@ export async function getUserPermissions(
  * // ]
  */
 export async function getUserPermissionsWithScope(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<Array<{ permission: string; scope: string | null }>> {
     const db = ctx.db;
@@ -128,7 +131,7 @@ function hasRoot(permissions: string[]): boolean {
  * }
  */
 export async function hasPermission(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     permissionName: string | string[],
 ): Promise<boolean> {
@@ -179,7 +182,7 @@ export async function hasPermission(
  * }
  */
 export async function hasScopedPermission(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     permissionName: string | string[],
     requiredScope: string,

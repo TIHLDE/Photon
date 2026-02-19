@@ -7,8 +7,11 @@
  */
 
 import { eq } from "drizzle-orm";
-import { role, userRole } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { role, userRole } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 
 /**
  * Get the highest role position (highest number) for a user.
@@ -16,7 +19,7 @@ import type { AppContext } from "~/lib/ctx";
  * Returns null if user has no roles.
  */
 export async function getUserHighestRolePosition(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<number | null> {
     const db = ctx.db;
@@ -41,7 +44,7 @@ export async function getUserHighestRolePosition(
  * - moderator (position 3) CANNOT manage another moderator (position 3) ✗
  */
 export async function userCanManageUser(
-    ctx: AppContext,
+    ctx: DbCtx,
     managerId: string,
     targetUserId: string,
 ): Promise<boolean> {

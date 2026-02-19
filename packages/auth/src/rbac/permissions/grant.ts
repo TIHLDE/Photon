@@ -6,8 +6,11 @@
  */
 
 import { and, eq, sql } from "drizzle-orm";
-import { userPermission } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { userPermission } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 
 /**
  * Grant a direct permission to a user.
@@ -26,7 +29,7 @@ import type { AppContext } from "~/lib/ctx";
  * await grantUserPermission(ctx, adminId, userId, "events:update", "group:fotball");
  */
 export async function grantUserPermission(
-    ctx: AppContext,
+    ctx: DbCtx,
     grantedByUserId: string,
     targetUserId: string,
     permission: string,
@@ -59,7 +62,7 @@ export async function grantUserPermission(
  * await revokeUserPermission(ctx, userId, "events:update", "group:fotball");
  */
 export async function revokeUserPermission(
-    ctx: AppContext,
+    ctx: DbCtx,
     targetUserId: string,
     permission: string,
     scope?: string,

@@ -9,18 +9,36 @@ import {
     openAPI,
     username,
 } from "better-auth/plugins";
-import * as schema from "~/db/schema";
-import { enqueueEmail } from "~/lib/email";
-import ChangeEmailVerificationEmail from "~/lib/email/template/change-email-verification";
-import OtpSignInEmail from "~/lib/email/template/otp-sign-in";
-import ResetPasswordEmail from "~/lib/email/template/reset-password";
-import { env } from "~/lib/env";
-import type { AppContext } from "../ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import * as schema from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+import { enqueueEmail } from "@photon/email";
+import type { EmailTransporter } from "@photon/email";
+import {
+    ChangeEmailVerificationEmail,
+    OtpSignInEmail,
+    ResetPasswordEmail,
+} from "@photon/email/templates";
+import { env } from "@photon/core/env";
+import type { RedisClient, QueueManager } from "@photon/core/cache";
+import type { StorageClient } from "./types";
 import { feidePlugin, syncFeideHook } from "./feide";
 import { syncLegacyTokenHook } from "./lepton";
 import { getUserPermissions } from "./rbac/permissions";
 
-export const createAuth = (ctx: Omit<AppContext, "auth">) =>
+/**
+ * Context required to create the auth instance.
+ * Uses narrow types instead of full AppContext.
+ */
+export interface AuthCreateContext {
+    db: NodePgDatabase<DbSchema>;
+    redis: RedisClient;
+    mailer: EmailTransporter;
+    queue: QueueManager;
+    bucket: StorageClient | null;
+}
+
+export const createAuth = (ctx: AuthCreateContext) =>
     betterAuth({
         database: drizzleAdapter(ctx.db, {
             provider: "pg",
@@ -118,9 +136,8 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
                 });
 
                 // Fetch permissions (from roles + direct grants)
-                // Note: We cast ctx to AppContext since getUserPermissions only needs db
                 const permissions = await getUserPermissions(
-                    ctx as unknown as AppContext,
+                    { db: ctx.db },
                     user.id,
                 );
 
@@ -185,15 +202,6 @@ export const createAuth = (ctx: Omit<AppContext, "auth">) =>
             },
         },
     });
-
-/**
- * DO NOT USE
- * This is exported only for use with the BetterAuth CLI so it can discover the instance and resolve plugins
- * for generating database migrations.
- *
- * Uncomment when needed
- */
-// export const auth = createAuth(await createAppContext());
 
 /**
  * The type of the BetterAuth instance

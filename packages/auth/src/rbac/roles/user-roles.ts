@@ -5,15 +5,18 @@
  */
 
 import { and, eq, inArray } from "drizzle-orm";
-import { role, userRole } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { role, userRole } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 import { getRoleByName } from "./queries";
 
 /**
  * Get all role names assigned to a user.
  */
 export async function getUserRoles(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
     const db = ctx.db;
@@ -30,7 +33,7 @@ export async function getUserRoles(
  * Check if a user has a specific role.
  */
 export async function userHasRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleName: string,
 ): Promise<boolean> {
@@ -48,7 +51,7 @@ export async function userHasRole(
  * Check if a user has any of the specified roles.
  */
 export async function userHasAnyRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleNames: string[],
 ): Promise<boolean> {
@@ -69,7 +72,7 @@ export async function userHasAnyRole(
  * Does nothing if already assigned (upsert behavior).
  */
 export async function assignUserRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleName: string,
 ): Promise<void> {
@@ -88,7 +91,7 @@ export async function assignUserRole(
  * Does nothing if role doesn't exist or isn't assigned.
  */
 export async function removeUserRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleName: string,
 ): Promise<void> {
@@ -105,7 +108,7 @@ export async function removeUserRole(
  * Get all user IDs that have a specific role.
  */
 export async function getRoleUserIds(
-    ctx: AppContext,
+    ctx: DbCtx,
     roleName: string,
 ): Promise<string[]> {
     const r = await getRoleByName(ctx, roleName);

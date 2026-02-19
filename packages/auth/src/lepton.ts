@@ -3,7 +3,7 @@ import type {
     MiddlewareContext,
     MiddlewareOptions,
 } from "better-auth";
-import type { AppContext } from "../ctx";
+import type { AuthCreateContext } from "./index";
 
 const LEGACY_TOKEN_COOKIE_NAME = "LEPTON_LEGACY_TOKEN";
 
@@ -21,7 +21,7 @@ export const syncLegacyTokenHook: (
             responseHeaders?: Headers;
         }
     >,
-    ctx: Omit<AppContext, "auth">,
+    ctx: AuthCreateContext,
 ) => Promise<void> = async (middlewareContext, ctx) => {
     const session =
         middlewareContext.context.newSession ??

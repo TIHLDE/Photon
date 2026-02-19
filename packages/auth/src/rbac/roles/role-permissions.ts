@@ -5,8 +5,11 @@
  */
 
 import { eq } from "drizzle-orm";
-import { role } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { role } from "@photon/db/schema";
+import type { DbSchema } from "@photon/db";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 import { getRoleByName } from "./queries";
 
 /**
@@ -15,7 +18,7 @@ import { getRoleByName } from "./queries";
  * Throws if role doesn't exist.
  */
 export async function assignRolePermissions(
-    ctx: AppContext,
+    ctx: DbCtx,
     roleName: string,
     permissionNames: string[],
 ): Promise<void> {
@@ -37,7 +40,7 @@ export async function assignRolePermissions(
  * Throws if role doesn't exist.
  */
 export async function setRolePermissions(
-    ctx: AppContext,
+    ctx: DbCtx,
     roleName: string,
     permissionNames: string[],
 ): Promise<void> {

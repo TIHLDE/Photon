@@ -6,9 +6,11 @@
  */
 
 import { and, eq, sql } from "drizzle-orm";
-import type { DbTransaction } from "~/db";
-import { role } from "~/db/schema";
-import type { AppContext } from "~/lib/ctx";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DbSchema, DbTransaction } from "@photon/db";
+import { role } from "@photon/db/schema";
+
+type DbCtx = { db: NodePgDatabase<DbSchema> };
 import { getUserHighestRolePosition } from "./hierarchy";
 import { getRoleById } from "./queries";
 
@@ -137,7 +139,7 @@ async function shiftRolesUpInRange(
  * // After: member(1), moderator(2), event-manager(4), admin(5)
  */
 export async function createRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     creatorUserId: string,
     roleData: {
         name: string;
@@ -184,7 +186,7 @@ export async function createRole(
  * Create a role for testing purposes (bypasses hierarchy checks).
  */
 export async function createTestingRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     roleData: {
         name: string;
         description?: string;
@@ -215,7 +217,7 @@ export async function createTestingRole(
  * User must be able to manage the role (have higher position number).
  */
 export async function deleteRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleId: number,
 ): Promise<void> {
@@ -253,7 +255,7 @@ export async function deleteRole(
  * - Can only move them to positions < your highest role
  */
 export async function reorderRole(
-    ctx: AppContext,
+    ctx: DbCtx,
     userId: string,
     roleId: number,
     newPosition: number,
