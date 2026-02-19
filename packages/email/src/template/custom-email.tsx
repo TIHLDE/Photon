@@ -10,7 +10,7 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import type { EmailContentBlock } from "../schema";
 import { emailStyles } from "./styles";
 

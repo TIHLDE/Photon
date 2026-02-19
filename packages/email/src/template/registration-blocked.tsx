@@ -1,6 +1,5 @@
 import {
     Body,
-    Button,
     Container,
     Head,
     Heading,
@@ -10,16 +9,18 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface ChangeEmailVerificationProps {
-    url: string;
+interface RegistrationBlockedEmailProps {
+    eventName: string;
+    reason?: string;
 }
 
-export const ChangeEmailVerificationEmail = ({
-    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-}: ChangeEmailVerificationProps) => {
+export const RegistrationBlockedEmail = ({
+    eventName = "Eksempel arrangement",
+    reason = "Du har for mange prikker og kan ikke melde deg på arrangementet enda.",
+}: RegistrationBlockedEmailProps) => {
     return (
         <Html>
             <Head />
@@ -32,19 +33,19 @@ export const ChangeEmailVerificationEmail = ({
                         alt="TIHLDE Logomark"
                         style={emailStyles.logo}
                     />
-                    <Heading style={emailStyles.secondary}>
-                        Trykk på knappen nedenfor for å bekrefte din nye
-                        e-postadresse
+                    <Heading style={emailStyles.heading}>
+                        Påmelding ble ikke godkjent
                     </Heading>
-                    <Button href={url} style={emailStyles.button}>
-                        Bekreft e-post
-                    </Button>
                     <Text style={emailStyles.paragraph}>
-                        Forventet du ikke denne e-posten?
+                        Din påmelding til <strong>{eventName}</strong> ble
+                        dessverre ikke godkjent.
                     </Text>
                     <Text style={emailStyles.paragraph}>
-                        Du kan trygt ignorere denne e-posten hvis du ikke prøvde
-                        å logge inn
+                        <strong>Årsak:</strong> {reason}
+                    </Text>
+                    <Text style={emailStyles.paragraph}>
+                        Ta kontakt med arrangementet hvis du mener dette er en
+                        feil.
                     </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
@@ -53,4 +54,4 @@ export const ChangeEmailVerificationEmail = ({
     );
 };
 
-export default ChangeEmailVerificationEmail;
+export default RegistrationBlockedEmail;

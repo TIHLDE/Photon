@@ -6,22 +6,25 @@ import {
     Heading,
     Html,
     Img,
+    Section,
     Text,
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface RegistrationConfirmedEmailProps {
+interface SwappedToWaitlistEmailProps {
     eventName: string;
     eventUrl: string;
+    position: number;
 }
 
-export const RegistrationConfirmedEmail = ({
+export const SwappedToWaitlistEmail = ({
     eventName = "Eksempel arrangement",
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
-}: RegistrationConfirmedEmailProps) => {
+    position = 3,
+}: SwappedToWaitlistEmailProps) => {
     return (
         <Html>
             <Head />
@@ -35,20 +38,29 @@ export const RegistrationConfirmedEmail = ({
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.heading}>
-                        Du er påmeldt {eventName}!
+                        Endring i din påmelding til {eventName}
                     </Heading>
                     <Text style={emailStyles.paragraph}>
-                        Gratulerer! Din påmelding til{" "}
-                        <strong>{eventName}</strong> er bekreftet.
+                        En bruker med prioritet har meldt seg på{" "}
+                        <strong>{eventName}</strong>, og du har derfor blitt
+                        flyttet til ventelisten.
                     </Text>
+                    <Section style={emailStyles.positionContainer}>
+                        <Text style={emailStyles.positionLabel}>
+                            Din plass på ventelisten:
+                        </Text>
+                        <Text style={emailStyles.positionNumber}>
+                            {position}
+                        </Text>
+                    </Section>
                     <Text style={emailStyles.paragraph}>
-                        Du har fått plass og kan glede deg til arrangementet.
+                        Du vil få beskjed på e-post hvis det blir ledig plass.
                     </Text>
                     <Button href={eventUrl} style={emailStyles.button}>
                         Se arrangement
                     </Button>
                     <Text style={emailStyles.paragraph}>
-                        Vi gleder oss til å se deg der!
+                        Vi beklager ulempen og håper du får plass!
                     </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
@@ -57,4 +69,4 @@ export const RegistrationConfirmedEmail = ({
     );
 };
 
-export default RegistrationConfirmedEmail;
+export default SwappedToWaitlistEmail;

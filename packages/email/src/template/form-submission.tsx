@@ -1,5 +1,6 @@
 import {
     Body,
+    Button,
     Container,
     Head,
     Heading,
@@ -9,18 +10,20 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface RegistrationBlockedEmailProps {
-    eventName: string;
-    reason?: string;
+interface FormSubmissionEmailProps {
+    formTitle: string;
+    submitterName: string;
+    groupSlug: string;
 }
 
-export const RegistrationBlockedEmail = ({
-    eventName = "Eksempel arrangement",
-    reason = "Du har for mange prikker og kan ikke melde deg på arrangementet enda.",
-}: RegistrationBlockedEmailProps) => {
+export const FormSubmissionEmail = ({
+    formTitle,
+    submitterName,
+    groupSlug,
+}: FormSubmissionEmailProps) => {
     return (
         <Html>
             <Head />
@@ -34,19 +37,18 @@ export const RegistrationBlockedEmail = ({
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.heading}>
-                        Påmelding ble ikke godkjent
+                        Nytt spørreskjema svar
                     </Heading>
                     <Text style={emailStyles.paragraph}>
-                        Din påmelding til <strong>{eventName}</strong> ble
-                        dessverre ikke godkjent.
+                        {submitterName} har besvart spørreskjemaet "{formTitle}
+                        ".
                     </Text>
-                    <Text style={emailStyles.paragraph}>
-                        <strong>Årsak:</strong> {reason}
-                    </Text>
-                    <Text style={emailStyles.paragraph}>
-                        Ta kontakt med arrangementet hvis du mener dette er en
-                        feil.
-                    </Text>
+                    <Button
+                        href={`${env.ROOT_URL}/grupper/${groupSlug}/`}
+                        style={emailStyles.button}
+                    >
+                        Se spørreskjema
+                    </Button>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
             </Body>
@@ -54,4 +56,4 @@ export const RegistrationBlockedEmail = ({
     );
 };
 
-export default RegistrationBlockedEmail;
+export default FormSubmissionEmail;

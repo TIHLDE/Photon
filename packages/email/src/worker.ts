@@ -1,13 +1,18 @@
 import type { Job, Worker } from "bullmq";
-import type { AppContext } from "../ctx";
-import { env } from "../env";
+import { env } from "@photon/core/env";
+import type { QueueManager } from "@photon/core/cache";
 import { EMAIL_QUEUE_NAME, EMAIL_SEND_RATE_MS } from "./config";
-import type { EmailJobData } from "./index";
+import type { EmailJobData, EmailTransporter } from "./index";
+
+interface EmailWorkerContext {
+    mailer: EmailTransporter;
+    queue: QueueManager;
+}
 
 /**
  * Create the email processor function with access to ctx
  */
-function createEmailProcessor(ctx: AppContext) {
+function createEmailProcessor(ctx: EmailWorkerContext) {
     return async (job: Job<EmailJobData>): Promise<void> => {
         const { to, subject, html } = job.data;
 
@@ -33,7 +38,9 @@ function createEmailProcessor(ctx: AppContext) {
  * Start the email worker with rate limiting
  * Processes emails at a rate of one every 3 seconds
  */
-export function startEmailWorker(ctx: AppContext): Worker<EmailJobData, void> {
+export function startEmailWorker(
+    ctx: EmailWorkerContext,
+): Worker<EmailJobData, void> {
     const worker = ctx.queue.createWorker<EmailJobData, void>(
         EMAIL_QUEUE_NAME,
         createEmailProcessor(ctx),

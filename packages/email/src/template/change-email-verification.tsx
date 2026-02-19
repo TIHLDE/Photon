@@ -10,14 +10,16 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface ResetPasswordEmailProps {
+interface ChangeEmailVerificationProps {
     url: string;
 }
 
-export const ResetPasswordEmail = ({ url }: ResetPasswordEmailProps) => {
+export const ChangeEmailVerificationEmail = ({
+    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+}: ChangeEmailVerificationProps) => {
     return (
         <Html>
             <Head />
@@ -31,18 +33,18 @@ export const ResetPasswordEmail = ({ url }: ResetPasswordEmailProps) => {
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.secondary}>
-                        Tilbakestill passordet ditt
+                        Trykk på knappen nedenfor for å bekrefte din nye
+                        e-postadresse
                     </Heading>
-                    <Text style={emailStyles.paragraph}>
-                        Klikk på knappen under for å tilbakestille passordet
-                        ditt.
-                    </Text>
                     <Button href={url} style={emailStyles.button}>
-                        Tilbakestill passord
+                        Bekreft e-post
                     </Button>
                     <Text style={emailStyles.paragraph}>
-                        Hvis du ikke ba om å tilbakestille passordet, kan du
-                        trygt ignorere denne e-posten.
+                        Forventet du ikke denne e-posten?
+                    </Text>
+                    <Text style={emailStyles.paragraph}>
+                        Du kan trygt ignorere denne e-posten hvis du ikke prøvde
+                        å logge inn
                     </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
@@ -51,4 +53,4 @@ export const ResetPasswordEmail = ({ url }: ResetPasswordEmailProps) => {
     );
 };
 
-export default ResetPasswordEmail;
+export default ChangeEmailVerificationEmail;

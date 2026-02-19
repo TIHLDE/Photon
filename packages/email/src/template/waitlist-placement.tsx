@@ -11,20 +11,20 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface SwappedToWaitlistEmailProps {
+interface WaitlistPlacementEmailProps {
     eventName: string;
     eventUrl: string;
     position: number;
 }
 
-export const SwappedToWaitlistEmail = ({
+export const WaitlistPlacementEmail = ({
     eventName = "Eksempel arrangement",
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
-    position = 3,
-}: SwappedToWaitlistEmailProps) => {
+    position = 5,
+}: WaitlistPlacementEmailProps) => {
     return (
         <Html>
             <Head />
@@ -38,12 +38,11 @@ export const SwappedToWaitlistEmail = ({
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.heading}>
-                        Endring i din påmelding til {eventName}
+                        Du er på venteliste for {eventName}
                     </Heading>
                     <Text style={emailStyles.paragraph}>
-                        En bruker med prioritet har meldt seg på{" "}
-                        <strong>{eventName}</strong>, og du har derfor blitt
-                        flyttet til ventelisten.
+                        Din påmelding til <strong>{eventName}</strong> er
+                        mottatt, men arrangementet er fullt.
                     </Text>
                     <Section style={emailStyles.positionContainer}>
                         <Text style={emailStyles.positionLabel}>
@@ -59,9 +58,6 @@ export const SwappedToWaitlistEmail = ({
                     <Button href={eventUrl} style={emailStyles.button}>
                         Se arrangement
                     </Button>
-                    <Text style={emailStyles.paragraph}>
-                        Vi beklager ulempen og håper du får plass!
-                    </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
             </Body>
@@ -69,4 +65,4 @@ export const SwappedToWaitlistEmail = ({
     );
 };
 
-export default SwappedToWaitlistEmail;
+export default WaitlistPlacementEmail;

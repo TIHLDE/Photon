@@ -1,8 +1,8 @@
 import { render } from "@react-email/render";
 import nodemailer, { type Transporter } from "nodemailer";
 import type { ReactElement } from "react";
-import type { AppContext } from "../ctx";
-import { env } from "../env";
+import { env } from "@photon/core/env";
+import type { QueueManager } from "@photon/core/cache";
 import { EMAIL_QUEUE_NAME } from "./config";
 
 export type EmailTransporter = Transporter | undefined;
@@ -51,12 +51,12 @@ export type EmailJobData = {
 /**
  * Send an email directly
  * @param options Email options (to, subject, component)
- * @param ctx Optional AppContext - if not provided, creates a temporary transporter
+ * @param ctx Object with optional mailer
  * @deprecated Use enqueueEmail instead for queued sending
  */
 export async function sendEmail(
     { to, subject, component }: SendEmailOptions,
-    ctx?: AppContext,
+    ctx?: { mailer?: EmailTransporter },
 ) {
     const html = await render(component);
 
@@ -87,7 +87,7 @@ export async function sendEmail(
  */
 export async function enqueueEmail(
     { to, subject, component }: SendEmailOptions,
-    ctx: Pick<AppContext, "queue">,
+    ctx: { queue: QueueManager },
 ) {
     // Pre-render the component to HTML before queuing
     const html = await render(component);

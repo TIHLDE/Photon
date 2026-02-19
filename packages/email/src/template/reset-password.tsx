@@ -1,23 +1,23 @@
 import {
     Body,
+    Button,
     Container,
     Head,
     Heading,
     Html,
     Img,
-    Section,
     Text,
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface OtpSignInProps {
-    otp: string;
+interface ResetPasswordEmailProps {
+    url: string;
 }
 
-export const OtpSignInEmail = ({ otp = "123456" }: OtpSignInProps) => {
+export const ResetPasswordEmail = ({ url }: ResetPasswordEmailProps) => {
     return (
         <Html>
             <Head />
@@ -31,18 +31,18 @@ export const OtpSignInEmail = ({ otp = "123456" }: OtpSignInProps) => {
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.secondary}>
-                        Skriv inn følgende kode
-                        <br /> for å logge inn på TIHLDE
+                        Tilbakestill passordet ditt
                     </Heading>
-                    <Section style={emailStyles.codeContainer}>
-                        <Text style={emailStyles.code}>{otp}</Text>
-                    </Section>
                     <Text style={emailStyles.paragraph}>
-                        Forventet du ikke denne e-posten?
+                        Klikk på knappen under for å tilbakestille passordet
+                        ditt.
                     </Text>
+                    <Button href={url} style={emailStyles.button}>
+                        Tilbakestill passord
+                    </Button>
                     <Text style={emailStyles.paragraph}>
-                        Du kan trygt ignorere denne e-posten hvis du ikke prøvde
-                        å logge inn
+                        Hvis du ikke ba om å tilbakestille passordet, kan du
+                        trygt ignorere denne e-posten.
                     </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
@@ -51,4 +51,4 @@ export const OtpSignInEmail = ({ otp = "123456" }: OtpSignInProps) => {
     );
 };
 
-export default OtpSignInEmail;
+export default ResetPasswordEmail;

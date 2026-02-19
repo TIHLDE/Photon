@@ -1,6 +1,5 @@
 import {
     Body,
-    Button,
     Container,
     Head,
     Heading,
@@ -10,20 +9,18 @@ import {
 } from "@react-email/components";
 // biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "../../env";
+import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface FormSubmissionEmailProps {
+interface FormSubmissionDeletedEmailProps {
     formTitle: string;
-    submitterName: string;
-    groupSlug: string;
+    reason: string;
 }
 
-export const FormSubmissionEmail = ({
+export const FormSubmissionDeletedEmail = ({
     formTitle,
-    submitterName,
-    groupSlug,
-}: FormSubmissionEmailProps) => {
+    reason,
+}: FormSubmissionDeletedEmailProps) => {
     return (
         <Html>
             <Head />
@@ -37,18 +34,15 @@ export const FormSubmissionEmail = ({
                         style={emailStyles.logo}
                     />
                     <Heading style={emailStyles.heading}>
-                        Nytt spørreskjema svar
+                        Ditt svar på spørreskjemaet har blitt slettet
                     </Heading>
                     <Text style={emailStyles.paragraph}>
-                        {submitterName} har besvart spørreskjemaet "{formTitle}
-                        ".
+                        Ditt svar på spørreskjemaet "{formTitle}" har blitt
+                        slettet av en administrator.
                     </Text>
-                    <Button
-                        href={`${env.ROOT_URL}/grupper/${groupSlug}/`}
-                        style={emailStyles.button}
-                    >
-                        Se spørreskjema
-                    </Button>
+                    <Text style={emailStyles.paragraph}>
+                        <strong>Grunnen er:</strong> {reason}
+                    </Text>
                 </Container>
                 <Text style={emailStyles.footer}>Levert av INDEX</Text>
             </Body>
@@ -56,4 +50,4 @@ export const FormSubmissionEmail = ({
     );
 };
 
-export default FormSubmissionEmail;
+export default FormSubmissionDeletedEmail;
