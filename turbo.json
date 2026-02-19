@@ -1,0 +1,43 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "globalDependencies": [".env"],
+    "ui": "tui",
+    "tasks": {
+        "dev": {
+            "dependsOn": ["@photon/docker#dev:up", "@photon/db#db:push"],
+            "persistent": true,
+            "cache": false
+        },
+        "dev:up": { "cache": false },
+        "dev:down": { "cache": false },
+        "dev:fresh": { "cache": false },
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["dist/**"]
+        },
+        "typecheck": { "dependsOn": ["^typecheck"] },
+        "lint": {},
+        "lint:fix": {},
+        "test": { "cache": false },
+        "db:push": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "cache": false,
+            "interactive": true
+        },
+        "db:generate": { "cache": false },
+        "db:migrate": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "cache": false
+        },
+        "db:studio": {
+            "dependsOn": ["@photon/docker#dev:up"],
+            "persistent": true,
+            "cache": false
+        },
+        "db:drop": { "cache": false },
+        "db:check": { "cache": false },
+        "email": { "persistent": true, "cache": false },
+        "prod:up": { "cache": false },
+        "prod:down": { "cache": false }
+    }
+}
