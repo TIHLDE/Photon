@@ -1,0 +1,25 @@
+{
+    "name": "@photon/auth",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts",
+        "./rbac": "./src/rbac/permissions/index.ts",
+        "./rbac/registry": "./src/rbac/permissions/registry.ts",
+        "./roles": "./src/rbac/roles/index.ts",
+        "./bearer": "./src/bearer.ts",
+        "./feide": "./src/feide.ts"
+    },
+    "dependencies": {
+        "@photon/core": "workspace:*",
+        "@photon/db": "workspace:*",
+        "@photon/email": "workspace:*",
+        "better-auth": "^1.4.18",
+        "drizzle-orm": "^0.44.5"
+    },
+    "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "typescript": "^5.9.2"
+    }
+}

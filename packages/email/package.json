@@ -1,0 +1,33 @@
+{
+    "name": "@photon/email",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts",
+        "./templates": "./src/template/index.ts",
+        "./schema": "./src/schema.ts",
+        "./worker": "./src/worker.ts",
+        "./config": "./src/config.ts"
+    },
+    "scripts": {
+        "email": "email dev --port 4001 --dir src/template"
+    },
+    "dependencies": {
+        "@photon/core": "workspace:*",
+        "@react-email/components": "^0.5.2",
+        "@react-email/render": "^1.2.2",
+        "nodemailer": "^7.0.11",
+        "react": "19.1.1",
+        "react-dom": "19.1.1",
+        "zod": "^4.1.5"
+    },
+    "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "@react-email/preview-server": "^4.2.8",
+        "@types/nodemailer": "^7.0.1",
+        "@types/react": "^19.1.12",
+        "react-email": "4.2.8",
+        "typescript": "^5.9.2"
+    }
+}

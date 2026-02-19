@@ -17,27 +17,35 @@ Photon is a complete backend solution featuring:
 
 ## Project Structure
 
-This is a **flattened project** (migrated from Turborepo monorepo to a single package).
+This is a **Turborepo monorepo** using **Bun** as the package manager and runtime.
 
 ```
 Photon/
-├── src/
-│   ├── db/                  # Database schemas and config
-│   │   └── schema/          # Drizzle schema definitions
-│   ├── lib/                 # Shared libraries
-│   │   ├── auth/            # Authentication & RBAC
-│   │   ├── cache/           # Redis & BullMQ queues
-│   │   ├── email/           # Email templates & sending
-│   │   ├── event/           # Event business logic
-│   │   └── group/           # Group middleware
-│   ├── routes/              # API route handlers
-│   │   ├── event/           # Event endpoints
-│   │   ├── email/           # Email endpoints
-│   │   └── groups/          # Group & fines endpoints
-│   ├── middleware/          # Hono middleware
-│   └── test/                # Test utilities & tests
-├── drizzle/                 # Database migrations
-└── docker-compose.*.yml     # Docker configs
+├── apps/
+│   └── api/                     # Hono API server (@photon/api)
+│       ├── src/
+│       │   ├── routes/          # API route handlers
+│       │   ├── middleware/      # Hono middleware (auth, pagination, etc.)
+│       │   ├── lib/             # Business logic & utilities
+│       │   ├── db/seed/         # Database seed scripts
+│       │   └── test/            # Integration & unit tests
+│       └── vitest.config.ts
+├── packages/
+│   ├── auth/                    # Authentication & RBAC (@photon/auth)
+│   │   └── src/rbac/           # Permission parser, checker, grants, roles
+│   ├── core/                    # Env config, Redis, BullMQ (@photon/core)
+│   ├── db/                      # Drizzle ORM schema & migrations (@photon/db)
+│   │   ├── src/schema/          # All Drizzle schema definitions
+│   │   └── drizzle/             # Generated migrations
+│   ├── email/                   # React Email templates & mailer (@photon/email)
+│   │   └── src/template/        # Email templates (.tsx)
+│   ├── lepton-migration/        # One-shot migration tool from Lepton
+│   └── tsconfig/                # Shared TypeScript configs
+├── infra/
+│   └── docker/                  # Docker Compose files & Dockerfile
+├── turbo.json                   # Turborepo pipeline config
+├── biome.json                   # Linting & formatting config
+└── bun.lock
 ```
 
 ## Tech Stack
@@ -50,73 +58,76 @@ Photon/
 - **BullMQ** - Job queue
 - **Better Auth** - Authentication
 - **Zod v4** - Runtime validation
+- **MinIO** - S3-compatible object storage
 
 ### Dev Tools
-- **TypeScript 5.9** - Type system
+- **Bun 1.2** - Package manager & runtime
+- **Turborepo** - Monorepo build orchestration
+- **TypeScript 5.9** - Type system (strict mode)
 - **Biome** - Linting and formatting
 - **Vitest** - Testing with Testcontainers
-- **tsup** - Bundler (esbuild-based)
-- **pnpm 8.15.6** - Package manager
-- **tsx** - TypeScript execution
 
 ## Common Commands
 
+All commands run through Turbo via the root `package.json`. Use `bun run` (or just `bun`).
+
 ### Development
 ```bash
-pnpm dev              # Start dev server with watch mode
-pnpm build            # Build for production
-pnpm start            # Start production server
-pnpm typecheck        # Type check
+bun dev               # Start dev server (spins up Docker + db:push automatically)
+bun run build         # Build for production
+bun start             # Start production server
+bun run typecheck     # Type check all packages
 ```
 
 ### Testing
 ```bash
-pnpm test             # Run all tests
-pnpm test:watch       # Run tests in watch mode
-pnpm coverage         # Generate coverage report
+bun run test              # Run all tests (requires Docker)
 ```
 
 ### Linting & Formatting
 ```bash
-pnpm lint             # Check code with Biome
-pnpm lint:fix         # Auto-fix issues
-pnpm format           # Format code
+bun run lint          # Check code with Biome
+bun run lint:fix      # Auto-fix issues
+bun run format        # Format code
 ```
 
 ### Database (Drizzle ORM)
 ```bash
-pnpm db:push          # Push schema to DB (dev)
-pnpm db:generate      # Generate migrations
-pnpm db:migrate       # Run migrations
-pnpm db:studio        # Open Drizzle Studio
-pnpm db:check         # Check migration status
-pnpm db:drop          # Drop migration
+bun run db:push       # Push schema to DB (dev)
+bun run db:generate   # Generate migrations
+bun run db:migrate    # Run migrations
+bun run db:studio     # Open Drizzle Studio
 ```
 
 ### Email Development
 ```bash
-pnpm email            # Start React Email preview (port 4001)
+bun run email         # Start React Email preview (port 4001)
 ```
 
 ### Docker
 ```bash
-pnpm docker:dev       # Start dev environment (PostgreSQL, Redis, Mailpit)
-pnpm docker:dev:down  # Stop dev environment
-pnpm docker:fresh     # Fresh start with clean volumes
-pnpm docker:prod      # Start production environment
-pnpm docker:prod:down # Stop production environment
+bun run docker:dev       # Start dev environment (PostgreSQL, Redis, Mailpit, MinIO)
+bun run docker:dev:down  # Stop dev environment
+bun run docker:fresh     # Fresh start with clean volumes
+bun run docker:prod      # Start production environment
+bun run docker:prod:down # Stop production environment
 ```
+
+## Turborepo Pipeline
+
+Key dependency chain in `turbo.json`:
+- `dev` depends on `@photon/docker#dev:up` then `@photon/db#db:push`
+- `build` depends on upstream `^build`
+- `db:push` depends on `@photon/docker#dev:up`
+- `typecheck` depends on upstream `^typecheck`
 
 ## Git & GitHub Workflow
 
-### Git Integration
 - Use **GitHub CLI (`gh`)** for all GitHub operations
 - Do NOT push directly to main/master
 - Create feature branches for all changes
 
 ### Commit Message Convention
-
-Follow the established commit style:
 
 - `feat: description` - New features
 - `fix: description` - Bug fixes
@@ -125,13 +136,6 @@ Follow the established commit style:
 - `docs: description` - Documentation changes
 - `test: description` - Test additions/changes
 - `perf: description` - Performance improvements
-- `style: description` - Code style changes (formatting, etc.)
-
-**Examples from this repo:**
-- `feat: email endpoint (#63)`
-- `fix: authentication bug in middleware`
-- `refactor: email templates to use shared styles`
-- `chore: bump hono from 4.10.2 to 4.10.3`
 
 ### Pull Requests
 - Use `gh pr create` to create pull requests
@@ -142,18 +146,19 @@ Follow the established commit style:
 
 ### General
 - **Module System**: ESM only (`type: "module"`)
-- **Formatting**: Biome (configured in `biome.json`)
-- **Imports**: Prefer named imports
+- **Formatting**: Biome — 4-space indent, double quotes, LF line endings
+- **Imports**: Prefer named imports. Use `@photon/*` for cross-package imports, `~/` path alias within `apps/api`
 - **File naming**: kebab-case for files, PascalCase for types/classes
 
 ### TypeScript
-- Enable strict mode (already configured)
+- Strict mode enabled across all packages
 - Use explicit return types for public APIs
 - Prefer `type` over `interface` for object shapes
 - Use Zod schemas for runtime validation
+- No `any` types
 
 ### API Development
-- **Routes**: Use Hono router patterns
+- **Routes**: Use Hono router patterns in `apps/api/src/routes/`
 - **Validation**: Zod schemas via `@hono/standard-validator`
 - **OpenAPI**: Document routes using `hono-openapi`
 - **Error handling**: Use appropriate HTTP status codes
@@ -161,123 +166,44 @@ Follow the established commit style:
 
 ### Database
 - **ORM**: Drizzle exclusively
-- **Schemas**: Define in `src/db/schema/`
-- **Migrations**: Generate with `pnpm db:generate`
+- **Schemas**: Define in `packages/db/src/schema/`
+- **Migrations**: Generate with `bun run db:generate` (outputs to `packages/db/drizzle/`)
+- **Config**: `packages/db/drizzle.config.ts`
 - **Queries**: Use Drizzle query builder, avoid raw SQL unless necessary
 
 ### Testing
-- **Framework**: Vitest
-- **Integration tests**: Use Testcontainers for PostgreSQL/Redis
-- **Test location**: Co-locate with feature or in `src/test/`
-- **Coverage**: Aim for meaningful coverage, not 100%
+- **Framework**: Vitest (config in `apps/api/vitest.config.ts`)
+- **Integration tests**: Use Testcontainers for PostgreSQL, Redis, MinIO
+- **Test location**: `apps/api/src/test/`
+- **Config**: `maxWorkers: 1` by default (configurable via `MAX_TEST_WORKERS` env)
 
 ### Authentication & Authorization
-- **Auth**: Better Auth library (`src/lib/auth/index.ts`)
-- **RBAC**: Defined in `src/lib/auth/rbac/`
+- **Auth**: Better Auth library (`packages/auth/src/index.ts`)
+- **RBAC**: Permission system in `packages/auth/src/rbac/`
 - **Middleware**: Use `requireAuth`, `requirePermission`, `requireOwnershipOrPermission`
 - **Feide OAuth**: Configured for Norwegian education sector
 
-## Environment Variables
-
-Required variables (see `.env.example`):
-
-```env
-# Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/photon_db
-
-# Auth (Better Auth)
-BETTER_AUTH_SECRET=<generate-random-secret>
-BETTER_AUTH_URL=http://localhost:4000
-
-# Feide OAuth (optional for dev)
-FEIDE_CLIENT_ID=<feide-client-id>
-FEIDE_CLIENT_SECRET=<feide-client-secret>
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Email
-SMTP_HOST=localhost
-SMTP_PORT=1025
-
-# Vipps (optional for dev)
-VIPPS_SUBSCRIPTION_KEY=<subscription-key>
-VIPPS_CLIENT_ID=<client-id>
-VIPPS_CLIENT_SECRET=<client-secret>
-VIPPS_MERCHANT_SERIAL_NUMBER=<msn>
-VIPPS_TEST_MODE=true
-```
-
 ## Architecture Patterns
-
-### Route Structure
-```typescript
-// src/routes/feature/index.ts
-import { Hono } from 'hono'
-import { createRoute } from '@/lib/route'
-
-const app = new Hono()
-  .route('/create', createRoute)
-  .route('/list', listRoute)
-
-export default app
-```
-
-### Middleware Usage
-```typescript
-import { authMiddleware } from '@/middleware/auth'
-import { requirePermission } from '@/middleware/permission'
-
-app.post(
-  '/create',
-  authMiddleware,
-  requirePermission('event.create'),
-  async (c) => {
-    // Handler
-  }
-)
-```
-
-### Zod Validation
-```typescript
-import { zValidator } from '@hono/standard-validator'
-import { z } from 'zod'
-
-const schema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-})
-
-app.post('/endpoint', zValidator('json', schema), async (c) => {
-  const data = c.req.valid('json')
-  // data is fully typed
-})
-```
 
 ### Database Queries
 
-**IMPORTANT**: Always use the database instance from Hono context (`c.get('ctx').db`), NOT the direct import. This is required for the testing setup with Testcontainers.
+**IMPORTANT**: Always use the database instance from Hono context (`c.get('ctx').db`), NOT a direct import. This is required for the testing setup with Testcontainers.
 
 ```typescript
-import { schema } from '@/db/schema'
+import { schema } from '@photon/db/schema'
 import { eq } from 'drizzle-orm'
 
 export default route().post('/', async (c) => {
-  // ✅ CORRECT: Get db from context
   const { db } = c.get('ctx')
 
-  // Select
   const event = await db.query.event.findFirst({
     where: eq(schema.event.id, eventId),
   })
 
-  // Insert
   const [newEvent] = await db.insert(schema.event).values({
     title: 'New Event',
-    // ...
   }).returning()
 
-  // Update
   await db.update(schema.event)
     .set({ title: 'Updated' })
     .where(eq(schema.event.id, eventId))
@@ -285,43 +211,49 @@ export default route().post('/', async (c) => {
 ```
 
 ```typescript
-// ❌ WRONG: Do NOT import db directly in routes
-import { db } from '@/db'  // DON'T DO THIS
-
-// ❌ WRONG: Do NOT use direct db import
-const event = await db.query.event.findFirst(...)  // DON'T DO THIS
+// WRONG: Do NOT import db directly in routes
+import { db } from '@photon/db'  // DON'T DO THIS
 ```
 
-### Background Jobs
+### Cross-Package Imports
 ```typescript
-import { emailQueue } from '@/lib/cache/queue'
+// Use workspace package names
+import { schema } from '@photon/db/schema'
+import { env } from '@photon/core/env'
+import { auth } from '@photon/auth'
 
-// Enqueue job
-await emailQueue.add('send-welcome-email', {
-  to: 'user@example.com',
-  userId: 123,
-})
+// Within apps/api, use path alias
+import { someUtil } from '~/lib/utils'
+```
 
-// Jobs are processed by worker in src/lib/email/worker.ts
+## Environment Variables
+
+All env vars are validated via Zod in `packages/core/src/env.ts`. See `.env.example` for required variables:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/photon_db
+BETTER_AUTH_SECRET=<generate-random-secret>
+BETTER_AUTH_URL=http://localhost:4000
+FEIDE_CLIENT_ID=<feide-client-id>
+FEIDE_CLIENT_SECRET=<feide-client-secret>
+REDIS_URL=redis://localhost:6379
+SMTP_HOST=localhost
+SMTP_PORT=1025
 ```
 
 ## Important Notes
 
 ### Migration from Lepton
 - This is a **port with improvements**, not a direct translation
-- Endpoints may differ from Lepton
-- Business logic is being refactored and improved
 - Use TypeScript best practices, not Python patterns
 
 ### Testing with Docker
 - Testcontainers requires Docker to be running
-- Tests automatically spin up PostgreSQL/Redis containers
-- Adjust `maxWorkers` in `vitest.config.ts` for parallel tests
+- Tests automatically spin up PostgreSQL/Redis/MinIO containers
 
 ### Email Development
-- Templates in `src/lib/email/template/`
-- Use React Email components
-- Preview at `http://localhost:4001` (run `pnpm email`)
+- Templates in `packages/email/src/template/`
+- Preview at `http://localhost:4001` (run `bun run email`)
 - In dev, emails are caught by Mailpit at `http://localhost:8025`
 
 ### API Documentation
@@ -333,18 +265,8 @@ When server is running:
 ### Security
 - Never commit secrets to git
 - Use environment variables
-- Follow OWASP guidelines
 - Validate all user input with Zod
 - Use parameterized queries (Drizzle handles this)
-
-## Helpful Resources
-
-- **Hono Docs**: https://hono.dev
-- **Drizzle ORM**: https://orm.drizzle.team
-- **Better Auth**: https://better-auth.com
-- **Zod**: https://zod.dev
-- **React Email**: https://react.email
-- **Vipps MobilePay**: https://developer.vippsmobilepay.com
 
 ## When Writing Code
 
@@ -357,18 +279,18 @@ When server is running:
 7. **Write meaningful tests** for new features
 8. **Use TypeScript strictly** - no `any` types
 9. **Follow existing patterns** in the codebase
-10. **Create migrations** for schema changes (`pnpm db:generate`)
+10. **Create migrations** for schema changes (`bun run db:generate`)
 11. **Use GitHub CLI (`gh`)** for GitHub operations
 
 ## Quick Start for Claude
 
-1. Check `src/routes/` to understand API structure
-2. Check `src/db/schema/` for database models
-3. Check `src/lib/` for business logic and utilities
-4. Run `pnpm typecheck` before making changes
-5. Run `pnpm test` to ensure nothing breaks
-6. Use `pnpm db:studio` to explore database
-7. Use `pnpm lint:fix` to auto-fix style issues
+1. Check `apps/api/src/routes/` to understand API structure
+2. Check `packages/db/src/schema/` for database models
+3. Check `packages/auth/src/rbac/` for permission system
+4. Check `apps/api/src/lib/` for business logic and utilities
+5. Run `bun run typecheck` before making changes
+6. Run `bun test` to ensure nothing breaks
+7. Use `bun run lint:fix` to auto-fix style issues
 8. Use `gh` CLI for GitHub operations
 9. Follow commit conventions: `feat:`, `fix:`, `refactor:`, etc.
 10. Never push directly to main - create PRs instead
