@@ -62,6 +62,7 @@ jobs:
           cd "$WORKING_DIRECTORY"
           git fetch
           git reset --hard origin/main
+          source ~/.bashrc
           bun run docker:prod
 
           ENDSSH
