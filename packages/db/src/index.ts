@@ -1,16 +1,13 @@
 import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
 import type { Pool } from "pg";
-import { env } from "~/lib/env";
 
 import * as schema from "./schema";
 
 /**
  * Factory function to create a database client.
- * Can specify `connectionString` or `pool`.
- *
- * Pool takes priority. If none are specified, uses a normal connection using `env.DATABASE_URL`
+ * Requires either `connectionString` or `pool`.
  */
-export function createDb(config?: {
+export function createDb(config: {
     connectionString?: string;
     pool?: Pool;
 }): NodePgDatabase<typeof schema> {
@@ -18,15 +15,6 @@ export function createDb(config?: {
         casing: "snake_case",
         schema,
     } as const;
-
-    if (!config || (!config.connectionString && !config.pool)) {
-        return drizzle({
-            connection: {
-                connectionString: env.DATABASE_URL,
-            },
-            ...defaultConfig,
-        });
-    }
 
     const { connectionString, pool } = config;
 
@@ -46,16 +34,12 @@ export function createDb(config?: {
         });
     }
 
-    throw new Error("THIS SHOULD NOT HAPPEN. Unsound logic above.");
+    throw new Error(
+        "createDb requires either a connectionString or pool parameter",
+    );
 }
 
-/**
- * Default database instance for backward compatibility.
- * Prefer using createDb() and dependency injection in new code.
- */
-const __db = createDb();
-
-export { __db, schema };
+export { schema };
 
 /**
  * Database schema type
@@ -66,5 +50,5 @@ export type DbSchema = typeof schema;
  * Type of a transaction
  */
 export type DbTransaction = Parameters<
-    Parameters<(typeof __db)["transaction"]>[0]
+    Parameters<NodePgDatabase<typeof schema>["transaction"]>[0]
 >[0];
