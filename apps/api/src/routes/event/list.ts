@@ -159,7 +159,7 @@ export const listRoute = route().get(
         return c.json({
             totalCount: eventCount,
             pages: totalPages,
-            nextPage: page + 1 > totalPages ? null : page + 1,
+            nextPage: page + 1 >= totalPages ? null : page + 1,
             items: returnEvents,
         } satisfies z.infer<typeof ResponseSchema>);
     },

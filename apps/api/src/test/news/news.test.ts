@@ -74,14 +74,14 @@ describe("News System", () => {
             // === LIST NEWS ===
 
             // 4. Anyone can list news (public endpoint)
-            const listResponse = await userClient.api.news.$get();
+            const listResponse = await userClient.api.news.$get({ query: {} });
             expect(listResponse.status).toBe(200);
             const newsList = await listResponse.json();
-            expect(newsList.length).toBeGreaterThanOrEqual(2);
+            expect(newsList.items.length).toBeGreaterThanOrEqual(2);
 
             // Verify newest first (ordered by -createdAt)
-            expect(newsList[0]?.title).toBe("News with Image");
-            expect(newsList[1]?.title).toBe("Breaking News");
+            expect(newsList.items[0]?.title).toBe("News with Image");
+            expect(newsList.items[1]?.title).toBe("Breaking News");
 
             // === GET SINGLE NEWS ===
 
