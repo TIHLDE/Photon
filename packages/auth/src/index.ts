@@ -35,7 +35,7 @@ export interface AuthCreateContext {
     redis: RedisClient;
     mailer: EmailTransporter;
     queue: QueueManager;
-    bucket: StorageClient | null;
+    bucket: StorageClient;
 }
 
 export const createAuth = (ctx: AuthCreateContext) =>

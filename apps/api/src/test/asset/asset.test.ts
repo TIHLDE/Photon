@@ -88,7 +88,7 @@ describe("Asset Upload/Download System", () => {
             );
             expect(metadataResponse.status).toBe(200);
 
-            const metadata = await metadataResponse.json();
+            const metadata = (await metadataResponse.json()) as any;
             expect(metadata).toMatchObject({
                 key: testKey,
                 originalFilename: "test-image.png",
@@ -114,7 +114,8 @@ describe("Asset Upload/Download System", () => {
             const promotedMetadataResponse = await app.request(
                 `/api/assets/metadata/${testKey}`,
             );
-            const promotedMetadata = await promotedMetadataResponse.json();
+            const promotedMetadata =
+                (await promotedMetadataResponse.json()) as any;
             expect(promotedMetadata.status).toBe("ready");
             expect(promotedMetadata.promotedAt).not.toBeNull();
 
@@ -154,7 +155,7 @@ describe("Asset Upload/Download System", () => {
             });
 
             expect(response.status).toBe(401);
-            const error = await response.json();
+            const error = (await response.json()) as any;
             expect(error.message).toBe("Authentication required");
         },
         300_000,
@@ -201,7 +202,7 @@ describe("Asset Upload/Download System", () => {
 
             expect(response.status).toBe(201);
 
-            const result = await response.json();
+            const result = (await response.json()) as any;
             expect(result.key).toMatch(
                 /^uploads\/\d{4}\/\d{2}\/.+_api-upload\.jpg$/,
             );
@@ -256,7 +257,7 @@ describe("Asset Upload/Download System", () => {
             });
 
             expect(invalidTypeResponse.status).toBe(400);
-            const invalidTypeError = await invalidTypeResponse.json();
+            const invalidTypeError = (await invalidTypeResponse.json()) as any;
             expect(invalidTypeError.message).toContain("not allowed");
 
             // ===== TEST 2: VALID FILE TYPES =====
@@ -295,7 +296,7 @@ describe("Asset Upload/Download System", () => {
             });
 
             expect(noFileResponse.status).toBe(400);
-            const noFileError = await noFileResponse.json();
+            const noFileError = (await noFileResponse.json()) as any;
             expect(noFileError.message).toContain("No file provided");
         },
         600_000,

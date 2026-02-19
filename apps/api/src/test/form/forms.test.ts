@@ -199,7 +199,7 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: survey.fields?.[0]?.id },
+                            field: { id: survey.fields?.[0]?.id! },
                             answer_text: "I expect to learn a lot!",
                         },
                     ],
@@ -246,7 +246,7 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: groupForm.fields?.[0]?.id },
+                            field: { id: groupForm.fields?.[0]?.id! },
                             answer_text: "This should fail",
                         },
                     ],
@@ -270,7 +270,7 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: groupForm.fields?.[0]?.id },
+                            field: { id: groupForm.fields?.[0]?.id! },
                             answer_text: "Great group!",
                         },
                     ],
@@ -287,7 +287,7 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: groupForm.fields?.[0]?.id },
+                            field: { id: groupForm.fields?.[0]?.id! },
                             answer_text: "Trying again",
                         },
                     ],
@@ -329,15 +329,15 @@ describe("Forms System", () => {
                     json: {
                         answers: [
                             {
-                                field: { id: statsForm.fields?.[0]?.id },
+                                field: { id: statsForm.fields?.[0]?.id! },
                                 selected_options: [
                                     {
                                         id: statsForm.fields?.[0]?.options?.[0]
-                                            ?.id,
+                                            ?.id!,
                                     }, // Red
                                     {
                                         id: statsForm.fields?.[0]?.options?.[1]
-                                            ?.id,
+                                            ?.id!,
                                     }, // Blue
                                 ],
                             },
@@ -370,7 +370,7 @@ describe("Forms System", () => {
                     title: "Updated Template",
                     fields: [
                         {
-                            id: template.fields?.[0]?.id,
+                            id: template.fields?.[0]?.id!,
                             title: "Updated question",
                             type: "text_answer",
                             required: true,
@@ -439,11 +439,14 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: statsForm.fields?.[0]?.id },
+                            field: { id: statsForm.fields?.[0]?.id! },
                             // Both answer_text and selected_options - should fail validation
                             answer_text: "text",
                             selected_options: [
-                                { id: statsForm.fields?.[0]?.options?.[0]?.id },
+                                {
+                                    id: statsForm.fields?.[0]?.options?.[0]
+                                        ?.id!,
+                                },
                             ],
                         },
                     ],
@@ -554,11 +557,11 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: evaluation.fields?.[0]?.id },
+                            field: { id: evaluation.fields?.[0]?.id! },
                             selected_options: [
                                 {
                                     id: evaluation.fields?.[0]?.options?.[0]
-                                        ?.id,
+                                        ?.id!,
                                 },
                             ],
                         },
@@ -576,11 +579,11 @@ describe("Forms System", () => {
                 json: {
                     answers: [
                         {
-                            field: { id: evaluation.fields?.[0]?.id },
+                            field: { id: evaluation.fields?.[0]?.id! },
                             selected_options: [
                                 {
                                     id: evaluation.fields?.[0]?.options?.[0]
-                                        ?.id,
+                                        ?.id!,
                                 },
                             ],
                         },
