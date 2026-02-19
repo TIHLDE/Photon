@@ -1,6 +1,6 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
 import { loadEnv } from "vite";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode ?? "test", path.resolve(__dirname, "../.."), "");
