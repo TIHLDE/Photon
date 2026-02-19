@@ -18,9 +18,13 @@ const newsSchema = z.object({
     body: z.string().meta({ description: "News body" }),
     imageUrl: z.string().nullable().meta({ description: "Image URL" }),
     imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-    emojisAllowed: z.boolean().meta({ description: "Whether reactions are allowed" }),
+    emojisAllowed: z
+        .boolean()
+        .meta({ description: "Whether reactions are allowed" }),
     createdAt: z.iso.date().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.iso.date().meta({ description: "Last update time (ISO 8601)" }),
+    updatedAt: z.iso
+        .date()
+        .meta({ description: "Last update time (ISO 8601)" }),
 });
 
 const ResponseSchema = PagniationResponseSchema.extend({

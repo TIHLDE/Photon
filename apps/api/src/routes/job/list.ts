@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, desc, gt, ilike, or, gte, lte, eq } from "drizzle-orm";
+import { and, desc, eq, gt, gte, ilike, lte, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -18,20 +18,33 @@ const jobPostSchema = z.object({
     body: z.string().meta({ description: "Full job description" }),
     company: z.string().meta({ description: "Company name" }),
     location: z.string().meta({ description: "Job location" }),
-    deadline: z.iso.date().nullable().meta({ description: "Application deadline (ISO 8601)" }),
-    isContinuouslyHiring: z.boolean().meta({ description: "Is continuously hiring" }),
+
+    deadline: z.iso
+        .date()
+        .nullable()
+        .meta({ description: "Application deadline (ISO 8601)" }),
+    isContinuouslyHiring: z
+        .boolean()
+        .meta({ description: "Is continuously hiring" }),
     jobType: z.enum(schema.jobTypeVariants).meta({ description: "Job type" }),
     email: z.string().nullable().meta({ description: "Contact email" }),
     link: z.string().nullable().meta({ description: "Application link" }),
-    classStart: z.enum(schema.userClassVariants).meta({ description: "Minimum year of study" }),
-    classEnd: z.enum(schema.userClassVariants).meta({ description: "Maximum year of study" }),
-    
+    classStart: z
+        .enum(schema.userClassVariants)
+        .meta({ description: "Minimum year of study" }),
+    classEnd: z
+        .enum(schema.userClassVariants)
+        .meta({ description: "Maximum year of study" }),
     imageUrl: z.string().nullable().meta({ description: "Image URL" }),
     imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-    
-    expired: z.boolean().meta({ description: "Whether the job posting has expired" }),
+
+    expired: z
+        .boolean()
+        .meta({ description: "Whether the job posting has expired" }),
     createdAt: z.iso.date().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.iso.date().meta({ description: "Last update time (ISO 8601)" }),
+    updatedAt: z.iso
+        .date()
+        .meta({ description: "Last update time (ISO 8601)" }),
 });
 
 const filterSchema = PaginationSchema.extend({
@@ -45,7 +58,8 @@ const filterSchema = PaginationSchema.extend({
         description: "Filter by job type",
     }),
     year: z.enum(schema.userClassVariants).optional().meta({
-        description: "Filter by year of study (returns jobs targeting that class)",
+        description:
+            "Filter by year of study (returns jobs targeting that class)",
     }),
 });
 
