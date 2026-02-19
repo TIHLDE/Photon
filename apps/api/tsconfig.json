@@ -1,0 +1,14 @@
+{
+    "extends": "@photon/tsconfig/node/bundler.json",
+    "compilerOptions": {
+        "jsx": "react",
+        "types": ["node", "bun"],
+        "paths": {
+            "~/*": ["./src/*"]
+        },
+        "outDir": "./dist",
+        "strict": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist"]
+}
