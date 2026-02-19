@@ -11,16 +11,18 @@
 /**
  * Parsed permission with optional scope.
  */
+export const GLOBAL_SCOPE = "*";
+
 export type ParsedPermission = {
     permission: string;
-    scope: string | null;
+    scope: string;
 };
 
 /**
  * Parse a permission string into permission + optional scope.
  *
  * @example
- * parsePermission("events:create") → { permission: "events:create", scope: null }
+ * parsePermission("events:create") → { permission: "events:create", scope: "*" }
  * parsePermission("events:create@group:fotball") → { permission: "events:create", scope: "group:fotball" }
  */
 export function parsePermission(raw: string): ParsedPermission {
@@ -32,7 +34,7 @@ export function parsePermission(raw: string): ParsedPermission {
         if (!perm) {
             throw new Error("Invalid permission format: empty string");
         }
-        return { permission: perm.trim(), scope: null };
+        return { permission: perm.trim(), scope: GLOBAL_SCOPE };
     }
 
     if (parts.length === 2) {
@@ -67,14 +69,11 @@ export function parsePermissions(raw: string[]): ParsedPermission[] {
  * Format a permission back to string format.
  *
  * @example
- * formatPermission("events:create", null) → "events:create"
+ * formatPermission("events:create", "*") → "events:create"
  * formatPermission("events:create", "group:fotball") → "events:create@group:fotball"
  */
-export function formatPermission(
-    permission: string,
-    scope: string | null,
-): string {
-    return scope ? `${permission}@${scope}` : permission;
+export function formatPermission(permission: string, scope: string): string {
+    return scope === GLOBAL_SCOPE ? permission : `${permission}@${scope}`;
 }
 
 /**
@@ -100,9 +99,9 @@ export function getPermissionName(raw: string): string {
  *
  * @example
  * getPermissionScope("events:create@group:fotball") → "group:fotball"
- * getPermissionScope("events:create") → null
+ * getPermissionScope("events:create") → "*"
  */
-export function getPermissionScope(raw: string): string | null {
+export function getPermissionScope(raw: string): string {
     return parsePermission(raw).scope;
 }
 
@@ -132,7 +131,7 @@ export function getPermissionScope(raw: string): string | null {
 export function matchesPermission(
     grantedRaw: string,
     requiredPermission: string,
-    requiredScope: string | null,
+    requiredScope: string,
 ): boolean {
     const granted = parsePermission(grantedRaw);
 
@@ -141,8 +140,8 @@ export function matchesPermission(
         return false;
     }
 
-    // If granted permission is global (no scope), it matches any required scope
-    if (granted.scope === null) {
+    // If granted permission is global (wildcard scope), it matches any required scope
+    if (granted.scope === GLOBAL_SCOPE) {
         return true;
     }
 

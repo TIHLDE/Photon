@@ -5,10 +5,11 @@
  * to users (not through roles).
  */
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { userPermission } from "@photon/db/schema";
 import type { DbSchema } from "@photon/db";
+import { GLOBAL_SCOPE } from "../permission-parser";
 
 type DbCtx = { db: NodePgDatabase<DbSchema> };
 
@@ -41,7 +42,7 @@ export async function grantUserPermission(
         .values({
             userId: targetUserId,
             permission,
-            scope: scope ?? null,
+            scope: scope ?? GLOBAL_SCOPE,
             grantedBy: grantedByUserId,
         })
         .onConflictDoNothing();
@@ -74,9 +75,7 @@ export async function revokeUserPermission(
             and(
                 eq(userPermission.userId, targetUserId),
                 eq(userPermission.permission, permission),
-                scope !== undefined
-                    ? eq(userPermission.scope, scope)
-                    : sql`${userPermission.scope} IS NULL`,
+                eq(userPermission.scope, scope ?? GLOBAL_SCOPE),
             ),
         );
 }

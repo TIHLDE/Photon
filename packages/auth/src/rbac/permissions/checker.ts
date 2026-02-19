@@ -10,6 +10,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role, userPermission, userRole } from "@photon/db/schema";
 import type { DbSchema } from "@photon/db";
 import {
+    GLOBAL_SCOPE,
     formatPermission,
     matchesPermission,
     parsePermission,
@@ -81,14 +82,14 @@ export async function getUserPermissions(
  * @example
  * const perms = await getUserPermissionsWithScope(ctx, userId);
  * // [
- * //   { permission: "events:create", scope: null },
+ * //   { permission: "events:create", scope: "*" },
  * //   { permission: "events:update", scope: "group:fotball" },
  * // ]
  */
 export async function getUserPermissionsWithScope(
     ctx: DbCtx,
     userId: string,
-): Promise<Array<{ permission: string; scope: string | null }>> {
+): Promise<Array<{ permission: string; scope: string }>> {
     const db = ctx.db;
     const rows = await db
         .select({
@@ -148,7 +149,7 @@ export async function hasPermission(
     return permissionNames.some((requiredPerm) =>
         permissions.some((p) => {
             const parsed = parsePermission(p);
-            return parsed.permission === requiredPerm && parsed.scope === null;
+            return parsed.permission === requiredPerm && parsed.scope === GLOBAL_SCOPE;
         }),
     );
 }

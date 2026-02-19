@@ -39,7 +39,7 @@ export const userRole = pgTable(
  * Supports optional scoping to specific resources (e.g., "group:fotball", "event:123").
  *
  * Examples:
- * - { userId: "123", permission: "events:create", scope: null } → Can create any event
+ * - { userId: "123", permission: "events:create", scope: "*" } → Can create any event (global)
  * - { userId: "123", permission: "events:update", scope: "group:fotball" } → Can only update events for football group
  * - { userId: "456", permission: "fines:manage", scope: "group:index" } → Can manage fines for Index group
  */
@@ -51,11 +51,11 @@ export const userPermission = pgTable(
             .references(() => user.id, { onDelete: "cascade" }),
         permission: varchar("permission", { length: 64 }).notNull(),
         /**
-         * Optional scope for the permission.
+         * Scope for the permission. "*" means global (no restriction).
          * Format: "resource_type:resource_id"
-         * Examples: "group:fotball", "event:123abc", null (global)
+         * Examples: "group:fotball", "event:123abc", "*" (global)
          */
-        scope: varchar("scope", { length: 128 }),
+        scope: varchar("scope", { length: 128 }).notNull().default("*"),
         /**
          * User who granted this permission (for audit trail)
          */
@@ -65,7 +65,7 @@ export const userPermission = pgTable(
         ...timestamps,
     },
     (t) => [
-        // Composite primary key: userId + permission + scope (treating null as distinct value)
+        // Composite primary key: userId + permission + scope ("*" means global)
         primaryKey({
             columns: [t.userId, t.permission, t.scope],
         }),
