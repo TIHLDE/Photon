@@ -1,12 +1,31 @@
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { config } from "@dotenvx/dotenvx";
 import { z } from "zod";
 
+/**
+ * Walk up from cwd to find the nearest .env file (repo root).
+ */
+function findEnvFile(): string | undefined {
+    let dir = resolve(".");
+    while (true) {
+        const candidate = join(dir, ".env");
+        if (existsSync(candidate)) return candidate;
+        const parent = dirname(dir);
+        if (parent === dir) return undefined;
+        dir = parent;
+    }
+}
+
 try {
-    config({
-        path: ".env",
-        ignore: ["MISSING_ENV_FILE"],
-        quiet: true,
-    });
+    const envPath = findEnvFile();
+    if (envPath) {
+        config({
+            path: envPath,
+            ignore: ["MISSING_ENV_FILE"],
+            quiet: true,
+        });
+    }
 } catch (e) {
     console.warn("⚠️ Could not load .env file, proceeding without it.");
 }
