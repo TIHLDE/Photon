@@ -1,9 +1,19 @@
 import * as mysql from "mysql2";
-import { createAppContext } from "photon/ctx";
+// TODO: createAppContext is now in apps/api — this migration script needs
+// to either import from @photon/api or create its own minimal context.
+// For now, import from @photon/db and @photon/auth directly.
+import { createDb } from "@photon/db";
+import { createAuth } from "@photon/auth";
+import { env } from "@photon/core/env";
+import { QueueManager, createRedisClient } from "@photon/core/cache";
+import { createEmailTransporter } from "@photon/email";
 
 const dump = async () => {
-    const ctx = await createAppContext();
-    const { auth } = ctx;
+    const db = createDb({ connectionString: env.DATABASE_URL });
+    const redis = await createRedisClient(env.REDIS_URL);
+    const queue = new QueueManager(env.REDIS_URL);
+    const mailer = createEmailTransporter();
+    const auth = createAuth({ db, redis, mailer, queue, bucket: null });
 
     // TODO use env vars
     const connection = mysql.createConnection({
