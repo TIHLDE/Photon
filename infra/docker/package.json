@@ -1,0 +1,12 @@
+{
+    "name": "@photon/docker",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev:up": "docker compose -f docker-compose.dev.yml --env-file ../../.env up -d --wait",
+        "dev:down": "docker compose -f docker-compose.dev.yml down",
+        "dev:fresh": "docker compose -f docker-compose.dev.yml down -v && docker compose -f docker-compose.dev.yml --env-file ../../.env up -d --wait",
+        "prod:up": "docker compose -f docker-compose.prod.yml --env-file ../../.env up -d --build --wait",
+        "prod:down": "docker compose -f docker-compose.prod.yml down"
+    }
+}
