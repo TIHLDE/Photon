@@ -8,12 +8,67 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-    release:
-        name: Release
+    regenerate:
+        name: Regenerate SDK
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Code
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@v2
+
+            - name: Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Regenerate SDK
+              run: bun run sdk:generate
+
+            - name: Build SDK
+              run: bun run build --filter=@tihlde/sdk
+
+            - name: Check for changes
+              id: diff
+              run: |
+                  if git diff --quiet packages/sdk/openapi.json packages/sdk/src/generated/; then
+                    echo "changed=false" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "changed=true" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Create auto changeset
+              if: steps.diff.outputs.changed == 'true'
+              run: |
+                  # Generate a unique filename
+                  HASH=$(git diff packages/sdk/ | shasum | cut -c1-8)
+                  cat > ".changeset/auto-sdk-${HASH}.md" << 'CHANGESET_EOF'
+                  ---
+                  "@tihlde/sdk": minor
+                  ---
+
+                  Update SDK from latest API changes
+                  CHANGESET_EOF
+
+            - name: Commit and push changes
+              if: steps.diff.outputs.changed == 'true'
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add packages/sdk/openapi.json packages/sdk/src/generated/ .changeset/
+                  git commit -m "chore: regenerate SDK from latest API changes"
+                  git push
+
+    release:
+        name: Release
+        runs-on: ubuntu-latest
+        needs: regenerate
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+              with:
+                  ref: main
 
             - name: Set up Bun
               uses: oven-sh/setup-bun@v2
