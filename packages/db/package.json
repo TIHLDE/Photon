@@ -17,8 +17,8 @@
         "db:check": "drizzle-kit check"
     },
     "dependencies": {
-        "drizzle-orm": "^0.44.5",
-        "drizzle-seed": "^0.3.1",
+        "drizzle-orm": "catalog:",
+        "drizzle-seed": "catalog:",
         "pg": "^8.16.3"
     },
     "devDependencies": {
@@ -26,6 +26,6 @@
         "@photon/tsconfig": "workspace:*",
         "drizzle-kit": "^0.31.4",
         "@types/pg": "^8.15.5",
-        "typescript": "^5.9.2"
+        "typescript": "catalog:"
     }
 }
