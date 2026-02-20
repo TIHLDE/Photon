@@ -21,11 +21,18 @@
         "docker:dev:down": "turbo dev:down --filter=@photon/docker",
         "docker:fresh": "turbo dev:fresh --filter=@photon/docker",
         "docker:prod": "turbo prod:up --filter=@photon/docker",
-        "docker:prod:down": "turbo prod:down --filter=@photon/docker"
+        "docker:prod:down": "turbo prod:down --filter=@photon/docker",
+        "sdk:generate": "turbo export-openapi --filter=@photon/api && turbo codegen --filter=@tihlde/sdk",
+        "sdk:update": "bun run sdk:generate && turbo build --filter=@tihlde/sdk && changeset",
+        "changeset": "changeset",
+        "version-packages": "changeset version",
+        "release": "turbo build --filter=@tihlde/sdk && changeset publish"
     },
     "packageManager": "bun@1.2.21",
     "devDependencies": {
         "@biomejs/biome": "^1.9.4",
+        "@changesets/changelog-github": "^0.5.2",
+        "@changesets/cli": "^2.29.8",
         "turbo": "^2.5.0",
         "typescript": "^5.9.2"
     }

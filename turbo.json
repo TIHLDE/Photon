@@ -43,6 +43,8 @@
         "db:check": { "cache": false },
         "email": { "persistent": true, "cache": false },
         "prod:up": { "cache": false },
-        "prod:down": { "cache": false }
+        "prod:down": { "cache": false },
+        "export-openapi": { "cache": false },
+        "codegen": { "cache": false }
     }
 }
