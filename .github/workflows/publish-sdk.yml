@@ -23,16 +23,13 @@ jobs:
             - name: Install dependencies
               run: bun install --frozen-lockfile
 
-            - name: Regenerate SDK
-              run: bun run sdk:generate
+            - name: Export OpenAPI spec
+              run: turbo export-openapi --filter=@photon/api
 
-            - name: Build SDK
-              run: bun run build --filter=@tihlde/sdk
-
-            - name: Check for changes
+            - name: Check for spec changes
               id: diff
               run: |
-                  if git diff --quiet packages/sdk/openapi.json packages/sdk/src/generated/; then
+                  if git diff --quiet packages/sdk/openapi.json; then
                     echo "changed=false" >> "$GITHUB_OUTPUT"
                   else
                     echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -41,22 +38,21 @@ jobs:
             - name: Create auto changeset
               if: steps.diff.outputs.changed == 'true'
               run: |
-                  # Generate a unique filename
-                  HASH=$(git diff packages/sdk/ | shasum | cut -c1-8)
-                  cat > ".changeset/auto-sdk-${HASH}.md" << 'CHANGESET_EOF'
+                  HASH=$(git diff packages/sdk/openapi.json | shasum | cut -c1-8)
+                  cat > ".changeset/auto-sdk-${HASH}.md" << 'EOF'
                   ---
                   "@tihlde/sdk": minor
                   ---
 
                   Update SDK from latest API changes
-                  CHANGESET_EOF
+                  EOF
 
-            - name: Commit and push changes
+            - name: Commit and push
               if: steps.diff.outputs.changed == 'true'
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add packages/sdk/openapi.json packages/sdk/src/generated/ .changeset/
+                  git add packages/sdk/openapi.json .changeset/
                   git commit -m "chore: regenerate SDK from latest API changes"
                   git push
 
