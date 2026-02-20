@@ -85,6 +85,33 @@ export async function sendEmail(
  * Enqueue an email to be sent via BullMQ
  * Emails are sent at a rate of one every 3 seconds
  */
+/**
+ * Send an email via the HTTP proxy (Cloudflare Worker)
+ */
+export async function sendViaProxy(
+    { to, subject, html }: EmailJobData,
+    proxyUrl: string,
+    proxyKey: string,
+): Promise<void> {
+    const response = await fetch(`${proxyUrl}/send`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${proxyKey}`,
+        },
+        body: JSON.stringify({ to, subject, html }),
+    });
+    if (!response.ok) {
+        throw new Error(
+            `Email proxy error (${response.status}): ${await response.text()}`,
+        );
+    }
+}
+
+/**
+ * Enqueue an email to be sent via BullMQ
+ * Emails are sent at a rate of one every 3 seconds
+ */
 export async function enqueueEmail(
     { to, subject, component }: SendEmailOptions,
     ctx: { queue: QueueManager },

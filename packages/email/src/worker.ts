@@ -2,7 +2,7 @@ import type { Job, Worker } from "bullmq";
 import { env } from "@photon/core/env";
 import type { QueueManager } from "@photon/core/cache";
 import { EMAIL_QUEUE_NAME, EMAIL_SEND_RATE_MS } from "./config";
-import type { EmailJobData, EmailTransporter } from "./index";
+import { sendViaProxy, type EmailJobData, type EmailTransporter } from "./index";
 
 interface EmailWorkerContext {
     mailer: EmailTransporter;
@@ -16,10 +16,27 @@ function createEmailProcessor(ctx: EmailWorkerContext) {
     return async (job: Job<EmailJobData>): Promise<void> => {
         const { to, subject, html } = job.data;
 
-        if (!ctx.mailer) {
+        // 1. No mailer AND no proxy → test mode, skip
+        if (!ctx.mailer && !env.EMAIL_PROXY_URL) {
             console.log("Test mode: skipping email send");
             console.log("To:", to);
             console.log("Subject:", subject);
+            return;
+        }
+
+        // 2. Proxy configured → send via HTTP proxy (production)
+        if (env.EMAIL_PROXY_URL) {
+            await sendViaProxy(
+                { to, subject, html },
+                env.EMAIL_PROXY_URL,
+                env.EMAIL_PROXY_KEY ?? "",
+            );
+            console.log(`📧 Email sent via proxy to ${to}: ${subject}`);
+            return;
+        }
+
+        // 3. Mailer available → direct SMTP (dev/Mailpit)
+        if (!ctx.mailer) {
             return;
         }
 

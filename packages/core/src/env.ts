@@ -160,6 +160,20 @@ const envSchema = z
                     "API key for external services to send emails via the API",
             })
             .optional(),
+        EMAIL_PROXY_URL: z
+            .string()
+            .meta({
+                description:
+                    "URL of the Cloudflare Worker email proxy (e.g. https://photon-email-proxy.*.workers.dev)",
+            })
+            .optional(),
+        EMAIL_PROXY_KEY: z
+            .string()
+            .meta({
+                description:
+                    "Shared secret for authenticating with the email proxy",
+            })
+            .optional(),
 
         // VIPPS
         VIPPS_SUBSCRIPTION_KEY: z
@@ -238,6 +252,8 @@ const testEnvVariables: Env = {
     MAIL_PASS: "",
     MAIL_USER: "",
     EMAIL_API_KEY: "test-email-api-key",
+    EMAIL_PROXY_URL: undefined,
+    EMAIL_PROXY_KEY: undefined,
     VIPPS_CLIENT_ID: "abc",
     VIPPS_CLIENT_SECRET: "abc",
     VIPPS_MERCHANT_SERIAL_NUMBER: "abc",
