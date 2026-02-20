@@ -23,36 +23,42 @@ jobs:
             - name: Install dependencies
               run: bun install --frozen-lockfile
 
-            - name: Export OpenAPI spec
+            - name: Generate OpenAPI spec
               run: bun run sdk:generate
 
             - name: Check for spec changes
               id: diff
               run: |
-                  if git diff --quiet packages/sdk/openapi.json; then
+                  NEW_HASH=$(shasum packages/sdk/openapi.json | cut -c1-40)
+                  OLD_HASH=""
+                  if [ -f packages/sdk/.spec-checksum ]; then
+                    OLD_HASH=$(cat packages/sdk/.spec-checksum)
+                  fi
+                  if [ "$NEW_HASH" = "$OLD_HASH" ]; then
                     echo "changed=false" >> "$GITHUB_OUTPUT"
                   else
+                    echo "$NEW_HASH" > packages/sdk/.spec-checksum
                     echo "changed=true" >> "$GITHUB_OUTPUT"
                   fi
 
             - name: Create auto changeset
               if: steps.diff.outputs.changed == 'true'
               run: |
-                  HASH=$(git diff packages/sdk/openapi.json | shasum | cut -c1-8)
-                  cat > ".changeset/auto-sdk-${HASH}.md" << 'EOF'
+                  HASH=$(cat packages/sdk/.spec-checksum | cut -c1-8)
+                  cat > ".changeset/auto-sdk-${HASH}.md" << 'CHANGESET_EOF'
                   ---
                   "@tihlde/sdk": minor
                   ---
 
                   Update SDK from latest API changes
-                  EOF
+                  CHANGESET_EOF
 
             - name: Commit and push
               if: steps.diff.outputs.changed == 'true'
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add packages/sdk/openapi.json .changeset/
+                  git add packages/sdk/.spec-checksum .changeset/
                   git commit -m "chore: regenerate SDK from latest API changes"
                   git push
 
