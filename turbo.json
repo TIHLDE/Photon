@@ -12,7 +12,7 @@
         "dev:down": { "cache": false },
         "dev:fresh": { "cache": false },
         "build": {
-            "dependsOn": ["^build", "codegen"],
+            "dependsOn": ["^build"],
             "outputs": ["dist/**"]
         },
         "start": {

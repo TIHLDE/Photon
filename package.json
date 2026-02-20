@@ -26,7 +26,7 @@
         "sdk:update": "bun run sdk:generate && turbo build --filter=@tihlde/sdk && changeset",
         "changeset": "changeset",
         "version-packages": "changeset version",
-        "release": "turbo build --filter=@tihlde/sdk && changeset publish"
+        "release": "bun run sdk:generate && turbo build --filter=@tihlde/sdk && changeset publish"
     },
     "packageManager": "bun@1.2.21",
     "devDependencies": {

@@ -26,7 +26,7 @@ jobs:
         run: bun run lint
 
       - name: Check building
-        run: bun run build
+        run: turbo build --filter=!@tihlde/sdk
 
       - name: Run tests
         run: bun run test -- --log-order=stream
