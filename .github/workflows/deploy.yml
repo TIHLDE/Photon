@@ -63,6 +63,8 @@ jobs:
           git fetch
           git reset --hard origin/main
           source ~/.bashrc
-          bun run docker:prod
+
+          docker build -t photon.tihlde.org:latest -f infra/docker/Dockerfile .
+          docker run -i photon.tihlde.org:latest
 
           ENDSSH
