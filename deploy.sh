@@ -3,7 +3,7 @@
 set -e
 
 DOMAIN="photon.tihlde.org"
-IP_ADDRESS=192.168.1.190
+IP_ADDRESS=127.0.0.1
 PORT=4000
 ENV_FILE_PATH=".env"
 
