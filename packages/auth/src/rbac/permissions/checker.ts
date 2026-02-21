@@ -149,7 +149,10 @@ export async function hasPermission(
     return permissionNames.some((requiredPerm) =>
         permissions.some((p) => {
             const parsed = parsePermission(p);
-            return parsed.permission === requiredPerm && parsed.scope === GLOBAL_SCOPE;
+            return (
+                parsed.permission === requiredPerm &&
+                parsed.scope === GLOBAL_SCOPE
+            );
         }),
     );
 }
