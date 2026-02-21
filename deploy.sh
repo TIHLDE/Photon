@@ -17,4 +17,4 @@ echo "-> Stopping and removing old container"
 docker rm -f $DOMAIN || true
 
 echo "-> Starting new container"
-docker run --env-file $ENV_FILE_PATH -p $IP_ADDRESS:$PORT:3000 --name $DOMAIN --restart unless-stopped -d $IMAGE_NAME
+docker run --env-file $ENV_FILE_PATH -p $IP_ADDRESS:$PORT:4000 --name $DOMAIN --restart unless-stopped -d $IMAGE_NAME
