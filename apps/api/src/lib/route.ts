@@ -1,6 +1,6 @@
 import { Hono } from "hono";
+import type { LoggerType } from "~/middleware/logger";
 import type { AppContext, AppServices } from "./ctx";
-import { LoggerType } from "~/middleware/logger";
 
 type Variables = {
     ctx: AppContext;

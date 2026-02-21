@@ -14,6 +14,7 @@ import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { setupWebhooks } from "./lib/vipps";
+import { type LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
 import { assetRoutes } from "./routes/asset";
 import { groupsRoutes } from "./routes/groups";
@@ -22,7 +23,6 @@ import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
 import { userRoutes } from "./routes/user";
 import { mcpRoute } from "./test/mcp";
-import { LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 
 /**
  * Hono context variables type definition.
@@ -56,16 +56,9 @@ export const createApp = async (variables?: Variables) => {
             const { auth } = c.get("ctx");
             return auth.handler(c.req.raw);
         })
-        .get(
-            "/",
-            async (c, next) => {
-                await next();
-            },
-            (c) => {
-                c.var.logger.info("Healthy!");
-                return c.text("Healthy!");
-            },
-        )
+        .get("/", (c) => {
+            return c.text("Healthy!");
+        })
         .route("/api-keys", apiKeyRoutes)
         .route("/assets", assetRoutes)
         .route("/email", emailRoutes)

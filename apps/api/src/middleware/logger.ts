@@ -1,10 +1,10 @@
-import { pino } from "pino";
 import { env } from "@photon/core/env";
-import type { PrettyOptions } from "pino-pretty";
+import type { Context } from "hono";
 import { every } from "hono/combine";
-import { requestId as requestIdMiddleware } from "hono/request-id";
-import { Context } from "hono";
 import { createMiddleware } from "hono/factory";
+import { requestId as requestIdMiddleware } from "hono/request-id";
+import { pino } from "pino";
+import type { PrettyOptions } from "pino-pretty";
 
 export type LoggerType = ReturnType<typeof createLogger>;
 

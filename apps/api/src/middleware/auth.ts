@@ -4,7 +4,7 @@ import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { AppContext } from "../lib/ctx";
 
 import { HTTPAppException } from "~/lib/errors";
-import { LoggerType } from "./logger";
+import type { LoggerType } from "./logger";
 
 type AuthVariables = {
     user: User;
@@ -17,23 +17,25 @@ type AuthVariables = {
  * `user` and `session` will be made available to the route handler
  */
 export const requireAuth = describeMiddleware(
-    createMiddleware<{ Variables: AuthVariables & { logger: LoggerType} }>(async (c, next) => {
-        const { auth } = c.get("ctx");
-        const session = await auth.api.getSession({
-            headers: c.req.raw.headers,
-        });
+    createMiddleware<{ Variables: AuthVariables & { logger: LoggerType } }>(
+        async (c, next) => {
+            const { auth } = c.get("ctx");
+            const session = await auth.api.getSession({
+                headers: c.req.raw.headers,
+            });
 
-        if (!session) {
-            throw HTTPAppException.Unauthorized();
-        }
-        
-        c.set("logger", c.get("logger").child({ userId: session.user.id }));
-        
-        c.set("user", session.user);
-        c.set("session", session.session);
+            if (!session) {
+                throw HTTPAppException.Unauthorized();
+            }
 
-        await next();
-    }),
+            c.set("logger", c.get("logger").child({ userId: session.user.id }));
+
+            c.set("user", session.user);
+            c.set("session", session.session);
+
+            await next();
+        },
+    ),
     describeMiddlewareRoute()
         .errorResponses([HTTPAppException.Unauthorized()])
         .getSpec(),
@@ -44,7 +46,9 @@ export const requireAuth = describeMiddleware(
  * `user` and `session` will be made available to the route handler
  */
 export const captureAuth = createMiddleware<{
-    Variables: Partial<AuthVariables> & { ctx: AppContext } & { logger: LoggerType };
+    Variables: Partial<AuthVariables> & { ctx: AppContext } & {
+        logger: LoggerType;
+    };
 }>(async (c, next) => {
     const { auth } = c.get("ctx");
     const session = await auth.api.getSession({
