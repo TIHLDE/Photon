@@ -3,7 +3,6 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import {
     type AppContext,
     type AppServices,
@@ -23,6 +22,7 @@ import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
 import { userRoutes } from "./routes/user";
 import { mcpRoute } from "./test/mcp";
+import { LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 
 /**
  * Hono context variables type definition.
@@ -31,6 +31,7 @@ import { mcpRoute } from "./test/mcp";
 type Variables = {
     ctx: AppContext;
     service: AppServices;
+    logger: LoggerType;
 };
 
 export const createApp = async (variables?: Variables) => {
@@ -55,9 +56,16 @@ export const createApp = async (variables?: Variables) => {
             const { auth } = c.get("ctx");
             return auth.handler(c.req.raw);
         })
-        .get("/", (c) => {
-            return c.text("Healthy!");
-        })
+        .get(
+            "/",
+            async (c, next) => {
+                await next();
+            },
+            (c) => {
+                c.var.logger.info("Healthy!");
+                return c.text("Healthy!");
+            },
+        )
         .route("/api-keys", apiKeyRoutes)
         .route("/assets", assetRoutes)
         .route("/email", emailRoutes)
@@ -71,7 +79,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
-        .use(logger())
+        .use(pinoLoggerMiddleware)
         .use("*", async (c, next) => {
             c.set("ctx", ctx);
             c.set("service", service);
