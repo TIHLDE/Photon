@@ -30,21 +30,21 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 - **BullMQ** - Robust jobbkøhåndtering
 - **Better Auth** - Moderne autentiseringsløsning
 - **Zod v4** - Type-sikker validering
+- **MinIO** - S3-kompatibel objektlagring
 
 ### Utviklingsverktøy
 - **TypeScript 5.9** - Statisk typing
+- **Bun 1.3** - Pakkebehandler og runtime
+- **Turborepo** - Monorepo byggeorkestrering
 - **Biome** - Rask linting og formatering
 - **Vitest** - Enhetstesting og integrasjonstesting
-- **tsup** - Rask bundling med esbuild
-- **pnpm** - Effektiv pakkebehandling
 - **Docker Compose** - Lokal utviklingsmiljø
 
 ## 🚀 Kom i gang
 
 ### Forutsetninger
 
-- **Node.js** ≥18
-- **pnpm** ≥8.15.6
+- **Bun** ≥1.3
 - **Docker** og **Docker Compose**
 
 ### Installasjon
@@ -57,7 +57,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 
 2. **Installer avhengigheter**
    ```bash
-   pnpm install
+   bun install
    ```
 
 3. **Konfigurer miljøvariabler**
@@ -70,138 +70,117 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
    Nødvendige miljøvariabler:
    ```env
    # Database
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=password
-   POSTGRES_DB=photon_db
    DATABASE_URL=postgresql://postgres:password@localhost:5432/photon_db
+
+   # Auth
+   BETTER_AUTH_SECRET=<generer-tilfeldig-hemmelighet>
+   BETTER_AUTH_URL=http://localhost:4000
 
    # Feide OAuth
    FEIDE_CLIENT_ID=<din-feide-client-id>
    FEIDE_CLIENT_SECRET=<din-feide-client-secret>
 
-   # Seeding (valgfritt)
-   SEED_DB=true
+   # Redis
+   REDIS_URL=redis://localhost:6379
+
+   # E-post
+   SMTP_HOST=localhost
+   SMTP_PORT=1025
 
    # Gjør at du ikke trenger VIPPS-nøkkler
    VIPPS_TEST_MODE=true
    ```
+
 4. **Start utviklingsmiljøet**
    ```bash
-   pnpm docker:dev
+   bun dev
    ```
 
-   Dette starter automatisk:
-   - PostgreSQL på port 5432
-   - Redis på port 6379
-   - Mailsink på port 1025
-
-5. **Migrer databasen**
-   ```bash
-   pnpm db:push
-   ```
-
-   Dette dytter det nåværende skjemaet til databasen
-  
-6. **Kjør serveren**
-   ```bash
-   pnpm dev
-   ```
-
-   Dette starter:
-   - API-server på `http://localhost:4000/api`
-   - Epost-klient på `http://localhost:8025`
+   Dette starter automatisk Docker-tjenestene, pusher databaseskjemaet og kjører serveren.
 
 ## 📦 Prosjektstruktur
 
 ```
 Photon/
-├── src/
-│   ├── db/                  # Database-skjemaer og konfigurering
-│   │   └── schema/          # Drizzle-skjemadefinisjoner
-│   ├── lib/                 # Delte biblioteker og hjelpere
-│   │   ├── auth/            # Autentiseringslogikk og RBAC
-│   │   ├── cache/           # Redis cache-funksjoner
-│   │   ├── email/           # E-postmaler og sending
-│   │   └── event/           # Hendelseslogikk
-│   ├── routes/              # API-ruter
-│   │   └── event/           # Hendelsesrelaterte endpoints
-│   ├── middleware/          # Hono-middleware
-│   ├── test/                # Test-utilities og konfigurering
-│   └── index.ts             # Hovedapplikasjonsfil
-├── docker-compose.dev.yml   # Utviklingsmiljø
-├── docker-compose.prod.yml  # Produksjonsmiljø
-├── Dockerfile               # Container-definisjon
-├── drizzle.config.ts        # Drizzle ORM-konfigurasjon
-├── tsup.config.ts           # Build-konfigurasjon
-└── vitest.config.ts         # Test-konfigurasjon
+├── apps/
+│   └── api/                     # Hono API-server (@photon/api)
+│       ├── src/
+│       │   ├── routes/          # API-rutebehandlere
+│       │   ├── middleware/      # Hono-middleware
+│       │   ├── lib/             # Forretningslogikk og hjelpere
+│       │   ├── db/seed/         # Database-seed-skript
+│       │   └── test/            # Integrasjons- og enhetstester
+│       └── vitest.config.ts
+├── packages/
+│   ├── auth/                    # Autentisering og RBAC (@photon/auth)
+│   │   └── src/rbac/           # Tillatelsesparser, sjekker, tilganger, roller
+│   ├── core/                    # Env-konfig, Redis, BullMQ (@photon/core)
+│   ├── db/                      # Drizzle ORM-skjema og migrasjoner (@photon/db)
+│   │   ├── src/schema/          # Alle Drizzle-skjemadefinisjoner
+│   │   └── drizzle/             # Genererte migrasjoner
+│   ├── email/                   # React Email-maler og mailer (@photon/email)
+│   │   └── src/template/        # E-postmaler (.tsx)
+│   └── tsconfig/                # Delte TypeScript-konfigurasjoner
+├── infra/
+│   └── docker/                  # Docker Compose-filer og Dockerfile
+├── turbo.json                   # Turborepo pipeline-konfig
+└── biome.json                   # Linting og formatering
 ```
 
 ## 🎯 Utviklingskommandoer
 
 ### Generelt
 ```bash
-# Start utviklingsserver (med watch-modus)
-pnpm dev
+# Start utviklingsserver (starter Docker + db:push automatisk)
+bun dev
 
 # Bygg for produksjon
-pnpm build
+bun run build
 
 # Start produksjonsserver
-pnpm start
+bun start
 
 # Typekontroll
-pnpm typecheck
+bun run typecheck
 ```
 
 ### Testing
 ```bash
-# Kjør alle tester
-pnpm test
-
-# Kjør tester i watch-modus
-pnpm test:watch
-
-# Generer dekningsrapport
-pnpm coverage
+# Kjør alle tester (krever Docker)
+bun run test
 ```
 
 ### Kodeformatering
 ```bash
 # Sjekk kode med Biome
-pnpm lint
+bun lint
 
 # Fiks automatiske problemer
-pnpm lint:fix
+bun lint:fix
 
 # Formater kode
-pnpm format
+bun format
 ```
 
 ### Database
 ```bash
 # Push skjema til database (utvikling)
-pnpm db:push
+bun db:push
 
 # Generer migrasjoner
-pnpm db:generate
+bun db:generate
 
 # Kjør migrasjoner
-pnpm db:migrate
+bun db:migrate
 
 # Åpne Drizzle Studio
-pnpm db:studio
-
-# Sjekk migrasjonsstatus
-pnpm db:check
-
-# Slett migrasjon
-pnpm db:drop
+bun db:studio
 ```
 
 ### E-post
 ```bash
 # Start React Email forhåndsvisning
-pnpm email
+bun email
 ```
 
 Åpner utviklingsserver på `http://localhost:4001` for å forhåndsvise e-postmaler.
@@ -209,23 +188,26 @@ pnpm email
 ### Docker
 ```bash
 # Start utviklingsmiljø
-pnpm docker:dev
+bun docker:dev
 
 # Stopp utviklingsmiljø
-pnpm docker:dev:down
+bun docker:dev:down
+
+# Frisk start med rene volumer
+bun docker:fresh
 
 # Start produksjonsmiljø
-pnpm docker:prod
+bun docker:prod
 
 # Stopp produksjonsmiljø
-pnpm docker:prod:down
+bun docker:prod:down
 ```
 
 ## 🔐 Autentisering
 
 Photon bruker Better Auth med Feide-integrasjon for autentisering.
 
-Normalt sett trengs ikke feide for å benytte APIet, da vi også tilbyr autentisering via epost. Dersom du trenger Feide-credentials for testing, kan du be om dev-nøkler av repo-ansvarlig.
+Normalt sett trengs ikke Feide for å benytte APIet, da vi også tilbyr autentisering via e-post. Dersom du trenger Feide-credentials for testing, kan du be om dev-nøkler av repo-ansvarlig.
 
 ### Oppsett av Feide
 
@@ -238,7 +220,7 @@ FEIDE_CLIENT_SECRET="client_secret ..."
 
 ### Rollehåndtering (RBAC)
 
-Photon inkluderer role-based access control (RBAC) i `src/lib/auth/rbac/` for finkornet tilgangskontroll.
+Photon inkluderer role-based access control (RBAC) i `packages/auth/src/rbac/` for finkornet tilgangskontroll.
 
 ## 💳 Vipps-integrasjon
 
@@ -261,10 +243,10 @@ E-postmaler utvikles med React Email og støtter full React-komponent-syntaks.
 
 ```bash
 # Start forhåndsvisning
-pnpm email
+bun email
 ```
 
-Forhåndsvisning kjører på port 4001.
+Forhåndsvisning kjører på port 4001. I utvikling fanges e-poster opp av Mailpit på `http://localhost:8025`.
 
 ## 📚 API-dokumentasjon
 
@@ -284,25 +266,14 @@ Photon bruker Vitest for testing med støtte for:
 - **Integrasjonstester** - Testing med ekte database via Testcontainers
 - **Dekningsrapporter** - Generert med @vitest/coverage-v8
 
-### Kjøre tester
-
 ```bash
 # Alle tester
-pnpm test
-
-# Watch-modus
-pnpm test:watch
-
-# Med dekning
-pnpm coverage
+bun run test
 ```
 
-Testcontainers starter automatisk PostgreSQL- og Redis-containere for integrasjonstester, så sørg for at Docker kjører når du skal kjøre testene.
+Testcontainers starter automatisk PostgreSQL-, Redis- og MinIO-containere for integrasjonstester, så sørg for at Docker kjører.
 
-Om du ønsker å kjøre flere tester parallellt (fordi du har en beefy PC), kan du justere følgende i `vitest.config.ts`:
-```ts
-maxWorkers: 1 // sett til hva du vil
-```
+Om du ønsker å kjøre flere tester parallellt, kan du justere `MAX_TEST_WORKERS` miljøvariabelen.
 
 ## 🐳 Docker
 
@@ -311,18 +282,19 @@ Prosjektet inkluderer Docker-oppsett for både utvikling og produksjon.
 ### Utviklingsmiljø
 
 ```bash
-pnpm docker:dev
+bun docker:dev
 ```
 
 Starter:
 - PostgreSQL 17
 - Redis 7.4
 - Mailpit
+- MinIO
 
 ### Produksjonsmiljø
 
 ```bash
-pnpm docker:prod
+bun docker:prod
 ```
 
 Bygger og starter API-serveren sammen med alle nødvendige tjenester.
@@ -331,7 +303,7 @@ Bygger og starter API-serveren sammen med alle nødvendige tjenester.
 
 1. Fork repositoryet
 2. Opprett en feature branch (`git checkout -b feature/ny-funksjon`)
-3. Commit endringene dine (`git commit -m 'Legg til ny funksjon'`)
+3. Commit endringene dine (`git commit -m 'feat: legg til ny funksjon'`)
 4. Push til branchen (`git push origin feature/ny-funksjon`)
 5. Åpne en Pull Request
 
@@ -341,4 +313,4 @@ Bygger og starter API-serveren sammen med alle nødvendige tjenester.
 - Skriv tester for ny funksjonalitet
 - Oppdater dokumentasjonen ved behov
 - Sørg for at alle tester passerer før du sender inn PR
-
+- Følg commit-konvensjonen: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`, `perf:`

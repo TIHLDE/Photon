@@ -58,13 +58,10 @@ jobs:
           # Change permissions of .env to be readable only by the owner
           chmod 0600 "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
 
-          # Navigate to the working directory, pull the latest code, and run the deployment command
+          # Navigate to the working directory, pull the latest code, and run the deployment script
           cd "$WORKING_DIRECTORY"
           git fetch
           git reset --hard origin/main
-          source ~/.bashrc
-
-          docker build -t photon.tihlde.org:latest -f infra/docker/Dockerfile .
-          docker run -i photon.tihlde.org:latest
+          ./deploy.sh
 
           ENDSSH
