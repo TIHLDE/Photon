@@ -9,11 +9,11 @@ import {
     createAppContext,
     createAppServices,
 } from "~/lib/ctx";
-import { type LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
+import { type LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
 import { assetRoutes } from "./routes/asset";
 import { groupsRoutes } from "./routes/groups";
