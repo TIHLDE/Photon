@@ -23,10 +23,10 @@
         "docker:prod": "turbo prod:up --filter=@photon/docker",
         "docker:prod:down": "turbo prod:down --filter=@photon/docker",
         "sdk:generate": "turbo codegen --filter=@tihlde/sdk",
-        "sdk:update": "turbo build --filter=@tihlde/sdk && changeset",
+        "sdk:update": "turbo codegen build --filter=@tihlde/sdk && changeset",
         "changeset": "changeset",
         "version-packages": "changeset version",
-        "release": "turbo build --filter=@tihlde/sdk && changeset publish"
+        "release": "turbo codegen build --filter=@tihlde/sdk && changeset publish"
     },
     "packageManager": "bun@1.2.21",
     "devDependencies": {
