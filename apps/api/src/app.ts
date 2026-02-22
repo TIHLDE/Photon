@@ -47,6 +47,11 @@ export const createApp = async (variables?: Variables) => {
         // Setup cron jobs and workers
         const { startBackgroundJobs } = await import("./lib/jobs");
         startBackgroundJobs(ctx);
+
+        // Seed DB with default values if necessary
+        if (env.SEED_DB) {
+            import("./db/seed").then(({ default: seed }) => seed(ctx));
+        }
     }
 
     const api = new Hono<{ Variables: Variables }>()
@@ -127,11 +132,6 @@ export const createApp = async (variables?: Variables) => {
         )
         .onError(globalErrorHandler)
         .notFound(notFoundHandler);
-
-    // Seed DB with default values if necessary
-    if (env.SEED_DB) {
-        import("./db/seed").then(({ default: seed }) => seed(ctx));
-    }
 
     return app;
 };
