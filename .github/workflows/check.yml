@@ -25,6 +25,9 @@ jobs:
       - name: Check linting
         run: bun run lint
 
+      - name: Check types
+        run: bun run typecheck
+
       - name: Check building
         run: bun run build
 
