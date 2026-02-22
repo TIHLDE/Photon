@@ -1,14 +1,8 @@
-import { env } from "@photon/core/env";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
-import {
-    type AppContext,
-    type AppServices,
-    createAppContext,
-    createAppServices,
-} from "~/lib/ctx";
+import type { AppContext, AppServices } from "~/lib/ctx";
 import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
@@ -41,12 +35,21 @@ export const createApp = async (variables?: Variables) => {
         ctx = variables.ctx;
         service = variables.service;
     } else {
+        const { env } = await import("@photon/core/env");
+        const { createAppContext, createAppServices } = await import(
+            "~/lib/ctx"
+        );
         ctx = await createAppContext();
         service = createAppServices(ctx);
 
         // Setup cron jobs and workers
         const { startBackgroundJobs } = await import("./lib/jobs");
         startBackgroundJobs(ctx);
+
+        // Seed DB with default values if necessary
+        if (env.SEED_DB) {
+            import("./db/seed").then(({ default: seed }) => seed(ctx));
+        }
     }
 
     const api = new Hono<{ Variables: Variables }>()
@@ -127,11 +130,6 @@ export const createApp = async (variables?: Variables) => {
         )
         .onError(globalErrorHandler)
         .notFound(notFoundHandler);
-
-    // Seed DB with default values if necessary
-    if (env.SEED_DB) {
-        import("./db/seed").then(({ default: seed }) => seed(ctx));
-    }
 
     return app;
 };

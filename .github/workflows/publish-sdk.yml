@@ -24,7 +24,7 @@ jobs:
               run: bun install --frozen-lockfile
 
             - name: Regenerate and build SDK
-              run: turbo codegen build --filter=@tihlde/sdk
+              run: bun run build --filter=@tihlde/sdk
 
             - name: Check for changes
               id: diff
