@@ -3,13 +3,13 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import {
     type AppContext,
     type AppServices,
     createAppContext,
     createAppServices,
 } from "~/lib/ctx";
+import { type LoggerType, pinoLoggerMiddleware } from "./middleware/logger";
 import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
@@ -30,6 +30,7 @@ import { mcpRoute } from "./test/mcp";
 type Variables = {
     ctx: AppContext;
     service: AppServices;
+    logger: LoggerType;
 };
 
 export const createApp = async (variables?: Variables) => {
@@ -70,7 +71,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/", mcpRoute);
 
     const app = new Hono<{ Variables: Variables }>()
-        .use(logger())
+        .use(pinoLoggerMiddleware)
         .use("*", async (c, next) => {
             c.set("ctx", ctx);
             c.set("service", service);
