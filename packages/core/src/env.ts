@@ -247,11 +247,25 @@ const testEnvVariables: Env = {
         : 1,
 };
 
+let _env: Env | undefined;
+
+function getEnv(): Env {
+    if (!_env) {
+        _env =
+            process.env.NODE_ENV === "test"
+                ? testEnvVariables
+                : envSchema.parse(process.env);
+    }
+    return _env;
+}
+
 /**
  * The application's environment variables.
  * Use this instead of `process.env` directly, to ensure type safety.
+ * Validation runs on first property access, not on import.
  */
-export const env =
-    process.env.NODE_ENV === "test"
-        ? testEnvVariables
-        : envSchema.parse(process.env);
+export const env: Env = new Proxy({} as Env, {
+    get(_, prop: string) {
+        return getEnv()[prop as keyof Env];
+    },
+});
