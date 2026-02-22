@@ -10,6 +10,11 @@ const app = await createApp({
 });
 
 const response = await app.request("/openapi");
+if (!response.ok) {
+    console.error(`Failed to fetch OpenAPI spec: ${response.status}`);
+    console.error(await response.text());
+    process.exit(1);
+}
 const spec = await response.json();
 
 const outPath = resolve(import.meta.dir, "../../../packages/sdk/openapi.json");

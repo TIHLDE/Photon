@@ -1,4 +1,3 @@
-import { env } from "@photon/core/env";
 import type { Context } from "hono";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
@@ -13,10 +12,11 @@ const debugTransportOptions: PrettyOptions = {
 };
 
 function createLogger() {
+    const isDev = process.env.NODE_ENV === "development";
     return pino({
-        level: env.NODE_ENV === "development" ? "debug" : "info",
+        level: isDev ? "debug" : "info",
         timestamp: pino.stdTimeFunctions.isoTime,
-        ...(env.NODE_ENV === "development"
+        ...(isDev
             ? {
                   transport: {
                       target: "pino-pretty",
