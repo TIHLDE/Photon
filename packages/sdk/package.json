@@ -1,8 +1,7 @@
 {
     "name": "@tihlde/sdk",
     "version": "0.0.1",
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
+    "main": "./dist/index.js",
     "devDependencies": {
         "@hey-api/openapi-ts": "0.87.5",
         "@photon/auth": "workspace:*",
@@ -16,24 +15,12 @@
     },
     "exports": {
         ".": {
-            "import": {
-                "types": "./dist/index.d.ts",
-                "default": "./dist/index.js"
-            },
-            "require": {
-                "types": "./dist/index.d.cts",
-                "default": "./dist/index.cjs"
-            }
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
         },
         "./auth": {
-            "import": {
-                "types": "./dist/auth.d.ts",
-                "default": "./dist/auth.js"
-            },
-            "require": {
-                "types": "./dist/auth.d.cts",
-                "default": "./dist/auth.cjs"
-            }
+            "types": "./dist/auth.d.ts",
+            "default": "./dist/auth.js"
         }
     },
     "description": "TypeScript SDK for the Photon API",

@@ -5,7 +5,7 @@ export default defineConfig({
         index: "src/index.ts",
         auth: "src/auth.ts",
     },
-    format: ["esm", "cjs"],
+    format: "esm",
     dts: true,
     splitting: true,
     clean: true,

@@ -16,5 +16,3 @@ export function createPhotonAuthClient(options: { baseURL: string }) {
         ],
     });
 }
-
-export type { AuthInstance };

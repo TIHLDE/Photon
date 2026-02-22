@@ -22,11 +22,11 @@
         "docker:fresh": "turbo dev:fresh --filter=@photon/docker",
         "docker:prod": "turbo prod:up --filter=@photon/docker",
         "docker:prod:down": "turbo prod:down --filter=@photon/docker",
-        "sdk:generate": "turbo export-openapi --filter=@photon/api && turbo codegen --filter=@tihlde/sdk",
-        "sdk:update": "bun run sdk:generate && turbo build --filter=@tihlde/sdk && changeset",
+        "sdk:generate": "turbo codegen --filter=@tihlde/sdk",
+        "sdk:update": "turbo build --filter=@tihlde/sdk && changeset",
         "changeset": "changeset",
         "version-packages": "changeset version",
-        "release": "bun run sdk:generate && turbo build --filter=@tihlde/sdk && changeset publish"
+        "release": "turbo build --filter=@tihlde/sdk && changeset publish"
     },
     "packageManager": "bun@1.2.21",
     "devDependencies": {
