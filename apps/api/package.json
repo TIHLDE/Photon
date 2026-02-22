@@ -30,8 +30,9 @@
         "hono": "^4.11.7",
         "hono-openapi": "^1.0.2",
         "node-cron": "^4.2.1",
-        "zod": "catalog:",
-        "pino": "^10.3.1"
+        "pino": "^10.3.1",
+        "react": "^19.2.4",
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
