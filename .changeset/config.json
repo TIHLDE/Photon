@@ -7,14 +7,5 @@
     "commit": true,
     "access": "public",
     "baseBranch": "main",
-    "ignore": [
-        "@photon/api",
-        "@photon/auth",
-        "@photon/core",
-        "@photon/db",
-        "@photon/email",
-        "@photon/docker",
-        "@photon/tsconfig",
-        "photon"
-    ]
+    "ignore": ["@photon/*"]
 }

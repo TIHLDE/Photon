@@ -13,7 +13,7 @@
         "typecheck": "tsc --noEmit",
         "lint": "biome check .",
         "lint:fix": "biome check --write --unsafe .",
-        "export-openapi": "bun scripts/export-openapi.ts"
+        "export-openapi": "SKIP_ENV_VALIDATION=1 bun scripts/export-openapi.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.927.0",
