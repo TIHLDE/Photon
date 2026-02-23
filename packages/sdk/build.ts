@@ -1,15 +1,11 @@
-// build.mts
-import { $ } from "bun"; 
+import { $ } from "bun";
 
 const outDir = "dist";
 
 await $`rm -rf ${outDir}`;
 
 await Bun.build({
-    entrypoints: [
-        "src/index.ts",
-        "src/auth.ts"
-    ],
+    entrypoints: ["src/index.ts", "src/auth.ts"],
     format: "esm",
     target: "node",
     splitting: true,
