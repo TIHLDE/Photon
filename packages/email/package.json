@@ -20,7 +20,7 @@
         "bullmq": "catalog:",
         "nodemailer": "^7.0.11",
         "react": "catalog:",
-        "react-dom": "19.1.1",
+        "react-dom": "catalog:",
         "zod": "catalog:"
     },
     "devDependencies": {
@@ -28,6 +28,7 @@
         "@react-email/preview-server": "^4.2.8",
         "@types/nodemailer": "^7.0.1",
         "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
         "react-email": "4.2.8",
         "typescript": "catalog:"
     }
