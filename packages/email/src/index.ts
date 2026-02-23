@@ -5,6 +5,8 @@ import { env } from "@photon/core/env";
 import type { QueueManager } from "@photon/core/cache";
 import { EMAIL_QUEUE_NAME } from "./config";
 
+export type { ReactElement as EmailComponent } from "react";
+
 export type EmailTransporter = Transporter | undefined;
 
 export const createEmailTransporter = (): EmailTransporter => {
@@ -47,39 +49,6 @@ export type EmailJobData = {
     subject: string;
     html: string;
 };
-
-/**
- * Send an email directly
- * @param options Email options (to, subject, component)
- * @param ctx Object with optional mailer
- * @deprecated Use enqueueEmail instead for queued sending
- */
-export async function sendEmail(
-    { to, subject, component }: SendEmailOptions,
-    ctx?: { mailer?: EmailTransporter },
-) {
-    const html = await render(component);
-
-    // Use mailer from context if available, otherwise create temporary one
-    const mailer = ctx?.mailer;
-
-    if (!mailer) {
-        console.log("-----");
-        console.log("📧 [Test Mode] Email not sent:");
-        console.log("To:", to);
-        console.log("Subject:", subject);
-        console.log("HTML:", html);
-        console.log("-----");
-        return;
-    }
-
-    await mailer.sendMail({
-        from: `<TIHLDE> ${env.MAIL_FROM}`,
-        to,
-        subject,
-        html,
-    });
-}
 
 /**
  * Enqueue an email to be sent via BullMQ

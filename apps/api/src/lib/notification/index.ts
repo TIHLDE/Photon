@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { enqueueEmail } from "@photon/email";
+import type { EmailComponent } from "@photon/email";
 import { NotificationMail } from "@photon/email/templates";
-import type { ReactElement } from "react";
 import type { AppContext } from "../ctx";
 
 export type SendNotificationOptions = {
@@ -13,7 +13,7 @@ export type SendNotificationOptions = {
         website?: boolean;
         email?: boolean;
     };
-    customEmailTemplate?: ReactElement;
+    customEmailTemplate?: EmailComponent;
 };
 
 /**
