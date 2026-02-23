@@ -5,8 +5,7 @@
     "tasks": {
         "dev": {
             "dependsOn": ["@photon/docker#dev:up", "@photon/db#db:push"],
-            "persistent": true,
-            "cache": false
+            "persistent": true
         },
         "dev:up": { "cache": false },
         "dev:down": { "cache": false },
@@ -17,8 +16,7 @@
         },
         "start": {
             "dependsOn": ["build"],
-            "persistent": true,
-            "cache": false
+            "persistent": true
         },
         "typecheck": { "dependsOn": ["^typecheck"] },
         "lint": {},
@@ -36,18 +34,13 @@
         },
         "db:studio": {
             "dependsOn": ["@photon/docker#dev:up"],
-            "persistent": true,
-            "cache": false
+            "persistent": true
         },
         "db:drop": { "cache": false },
         "db:check": { "cache": false },
-        "email": { "persistent": true, "cache": false },
+        "email": { "persistent": true },
         "prod:up": { "cache": false },
         "prod:down": { "cache": false },
-        "export-openapi": { "cache": false },
-        "codegen": {
-            "dependsOn": ["@photon/api#export-openapi"],
-            "cache": false
-        }
+        "export-openapi": { "cache": false }
     }
 }
