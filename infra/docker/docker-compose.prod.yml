@@ -1,4 +1,4 @@
-name: prod
+name: production
 
 services:
   photon.tihlde.org:
@@ -6,11 +6,15 @@ services:
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile
-      no_cache: true
     restart: unless-stopped
     ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:4000:4000"
+      - "${BINDING_IP_ADDRESS:-127.0.0.1}:4000:4000"
     env_file:
       - "../../.env"
-    extra_hosts: # Trengs for at docker containeren skal nå redis på host
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - photon.tihlde.org-redis
+  photon.tihlde.org-redis:
+    container_name: photon.tihlde.org-redis
+    image: redis:alpine
+    pull_policy: always
+    restart: unless-stopped

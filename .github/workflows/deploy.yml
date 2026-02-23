@@ -62,6 +62,7 @@ jobs:
           cd "$WORKING_DIRECTORY"
           git fetch
           git reset --hard origin/main
-          ./deploy.sh
+          docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d --build --force-recreate
+          rm -f .env
 
           ENDSSH
