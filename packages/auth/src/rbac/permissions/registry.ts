@@ -69,6 +69,11 @@ export const PERMISSION_REGISTRY = {
     jobs: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
+
+    // Master study permissions
+    master_study: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
 } as const;
 
 /**

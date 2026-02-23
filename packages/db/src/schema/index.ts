@@ -9,3 +9,4 @@ export * from "./job";
 export * from "./user";
 export * from "./api-key";
 export * from "./asset";
+export * from "./master-study";

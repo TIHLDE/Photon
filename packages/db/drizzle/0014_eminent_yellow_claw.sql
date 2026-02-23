@@ -1,0 +1,1 @@
+ALTER TABLE "master_study_entry" ADD COLUMN "has_financial_support" boolean DEFAULT false NOT NULL;

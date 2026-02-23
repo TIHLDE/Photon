@@ -18,6 +18,7 @@ const tags = [
     "assets",
     "emails",
     "events",
+    "master-study",
     "forms",
     "groups",
     "fines",

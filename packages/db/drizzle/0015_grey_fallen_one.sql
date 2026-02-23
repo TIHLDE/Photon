@@ -1,0 +1,1 @@
+ALTER TABLE "master_study_quote" DROP COLUMN "sort_order";

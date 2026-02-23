@@ -18,6 +18,7 @@ import { apiKeyRoutes } from "./routes/api-key";
 import { assetRoutes } from "./routes/asset";
 import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
+import { masterStudyRoutes } from "./routes/master-study";
 import { newsRoutes } from "./routes/news";
 import { notificationRoutes } from "./routes/notification";
 import { userRoutes } from "./routes/user";
@@ -71,6 +72,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/groups", groupsRoutes)
         .route("/news", newsRoutes)
         .route("/jobs", jobRoutes)
+        .route("/master-study", masterStudyRoutes)
         .route("/user", userRoutes)
         .route("/", mcpRoute);
 
