@@ -25,7 +25,7 @@ ENV NODE_ENV=production
 RUN bun run build --filter=@photon/api
 
 # Final image
-FROM oven/bun:1-alpine AS release
+FROM oven/bun:1-slim AS release
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/apps/api/dist ./dist
 
