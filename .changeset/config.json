@@ -4,7 +4,7 @@
         "@changesets/changelog-github",
         { "repo": "TIHLDE/Photon" }
     ],
-    "commit": true,
+    "commit": false,
     "access": "public",
     "baseBranch": "main",
     "ignore": ["@photon/*"]
