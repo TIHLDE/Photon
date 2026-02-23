@@ -5,7 +5,6 @@ import { CustomEmail } from "@photon/email/templates";
 import type { MiddlewareHandler } from "hono";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import React from "react";
 import { z } from "zod";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
@@ -75,7 +74,7 @@ export const sendEmailRoute = route().post(
             const recipients = Array.isArray(body.to) ? body.to : [body.to];
 
             // Create the email component
-            const emailComponent = React.createElement(CustomEmail, {
+            const emailComponent = CustomEmail({
                 content: body.content,
             });
 
