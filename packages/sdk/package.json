@@ -1,0 +1,48 @@
+{
+    "name": "@tihlde/sdk",
+    "version": "0.0.1",
+    "main": "./dist/index.js",
+    "devDependencies": {
+        "@hey-api/openapi-ts": "0.87.5",
+        "@photon/auth": "workspace:*",
+        "@photon/tsconfig": "workspace:*",
+        "@types/node": "^25.3.0",
+        "better-auth": "^1.4.18",
+        "typescript": "^5.9.2"
+    },
+    "peerDependencies": {
+        "better-auth": "^1.4.0"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./auth": {
+            "types": "./dist/auth.d.ts",
+            "default": "./dist/auth.js"
+        }
+    },
+    "description": "TypeScript SDK for the Photon API",
+    "files": ["dist", "scripts"],
+    "license": "MIT",
+    "peerDependenciesMeta": {
+        "better-auth": {
+            "optional": true
+        }
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build": "bun build.ts",
+        "codegen": "openapi-ts",
+        "typecheck": "tsc --noEmit",
+        "postinstall": "node scripts/postinstall.mjs"
+    },
+    "type": "module",
+    "types": "./dist/index.d.ts",
+    "dependencies": {
+        "@hey-api/client-fetch": "^0.13.1"
+    }
+}

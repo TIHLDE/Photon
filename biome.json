@@ -8,7 +8,7 @@
     },
     "files": {
         "ignoreUnknown": false,
-        "ignore": ["**/drizzle/**", "**/dist/**"]
+        "ignore": ["**/drizzle/**", "**/dist/**", "**/generated/**"]
     },
     "formatter": {
         "enabled": true,

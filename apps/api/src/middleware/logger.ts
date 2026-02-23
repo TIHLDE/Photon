@@ -13,10 +13,11 @@ const debugTransportOptions: PrettyOptions = {
 };
 
 function createLogger() {
+    const isDev = env.NODE_ENV === "development";
     return pino({
-        level: env.NODE_ENV === "development" ? "debug" : "info",
+        level: isDev ? "debug" : "info",
         timestamp: pino.stdTimeFunctions.isoTime,
-        ...(env.NODE_ENV === "development"
+        ...(isDev
             ? {
                   transport: {
                       target: "pino-pretty",

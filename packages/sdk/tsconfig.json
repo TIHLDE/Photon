@@ -1,0 +1,14 @@
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "extends": "@photon/tsconfig/node/library.json",
+    "compilerOptions": {
+        "noEmit": false,
+        "outDir": "./dist",
+        "declaration": true,
+        "declarationMap": true,
+        "lib": ["ES2022", "DOM"],
+        "jsx": "react-jsx",
+        "rootDir": "./src"
+    },
+    "include": ["src"]
+}

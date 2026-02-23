@@ -43,6 +43,11 @@
         "db:check": { "cache": false },
         "email": { "persistent": true, "cache": false },
         "prod:up": { "cache": false },
-        "prod:down": { "cache": false }
+        "prod:down": { "cache": false },
+        "export-openapi": { "cache": false },
+        "codegen": {
+            "dependsOn": ["@photon/api#export-openapi"],
+            "cache": false
+        }
     }
 }
