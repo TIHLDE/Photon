@@ -19,13 +19,13 @@
     "dependencies": {
         "drizzle-orm": "catalog:",
         "drizzle-seed": "catalog:",
-        "pg": "^8.16.3"
+        "pg": "catalog:"
     },
     "devDependencies": {
         "@photon/core": "workspace:*",
         "@photon/tsconfig": "workspace:*",
         "drizzle-kit": "^0.31.4",
-        "@types/pg": "^8.15.5",
+        "@types/pg": "catalog:",
         "typescript": "catalog:"
     }
 }

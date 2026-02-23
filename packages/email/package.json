@@ -17,9 +17,9 @@
         "@photon/core": "workspace:*",
         "@react-email/components": "^0.5.2",
         "@react-email/render": "^1.2.2",
-        "bullmq": "^5.70.1",
+        "bullmq": "catalog:",
         "nodemailer": "^7.0.11",
-        "react": "19.1.1",
+        "react": "catalog:",
         "react-dom": "19.1.1",
         "zod": "catalog:"
     },
@@ -27,7 +27,7 @@
         "@photon/tsconfig": "workspace:*",
         "@react-email/preview-server": "^4.2.8",
         "@types/nodemailer": "^7.0.1",
-        "@types/react": "^19.1.12",
+        "@types/react": "catalog:",
         "react-email": "4.2.8",
         "typescript": "catalog:"
     }
