@@ -7,15 +7,14 @@ on:
       - main
   push:
     branches:
-      - dev
       - main
 
 
 jobs:
   check:
     name: Check Code Quality
-    # Only run if PR targeting dev or main or if pushing to dev branch
-    if: (github.event_name == 'pull_request' && (github.base_ref == 'dev' || github.base_ref == 'main')) || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
+    # Only run if PR is opened or updated against dev or main branches
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
