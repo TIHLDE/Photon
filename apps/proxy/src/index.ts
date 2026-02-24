@@ -42,25 +42,33 @@ app.post("/send", async (c) => {
 
     const port = Number.parseInt(c.env.MAIL_PORT || "465");
 
-    await WorkerMailer.send(
-        {
-            host: c.env.MAIL_HOST,
-            port,
-            secure: port === 465,
-            startTls: port === 587,
-            credentials: {
-                username: c.env.MAIL_USER,
-                password: c.env.MAIL_PASS,
+    try {
+        await WorkerMailer.send(
+            {
+                host: c.env.MAIL_HOST,
+                port,
+                secure: port === 465,
+                startTls: port === 587,
+                credentials: {
+                    username: c.env.MAIL_USER,
+                    password: c.env.MAIL_PASS,
+                },
+                authType: "plain",
             },
-            authType: "plain",
-        },
-        {
-            from: { name: "TIHLDE", email: c.env.MAIL_FROM },
-            to: body.to,
-            subject: body.subject,
-            html: body.html,
-        },
-    );
+            {
+                from: { name: "TIHLDE", email: c.env.MAIL_FROM },
+                to: body.to,
+                subject: body.subject,
+                html: body.html,
+            },
+        );
+    } catch (err) {
+        console.error("SMTP send failed:", err);
+        return c.json(
+            { error: "Failed to send email", details: String(err) },
+            502,
+        );
+    }
 
     return c.json({ success: true });
 });

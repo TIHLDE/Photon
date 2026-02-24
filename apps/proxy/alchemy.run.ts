@@ -17,11 +17,12 @@ while (true) {
     dir = parent;
 }
 
-const app = await alchemy("photon-email-proxy", {
+const app = await alchemy("photon", {
     password: process.env.ALCHEMY_PASSWORD,
+    stage: "prod",
 });
 
-const worker = await Worker("photon-email-proxy", {
+const worker = await Worker("email-proxy", {
     entrypoint: "./src/index.ts",
     url: true,
     compatibilityFlags: ["nodejs_compat"],
