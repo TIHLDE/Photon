@@ -17,6 +17,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.927.0",
+        "@dotenvx/dotenvx": "^1.52.0",
         "@hono/mcp": "^0.1.4",
         "@hono/standard-validator": "^0.1.5",
         "@photon/auth": "workspace:*",
