@@ -1,16 +1,47 @@
-name: Deploy to Drift
+name: CI/CD
 
 on:
-  workflow_run:
-    workflows: ["Check Code Quality"]
-    types:
-      - completed
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
     branches:
       - main
 
+
 jobs:
+  check:
+    name: Check Code Quality
+    # Only run if PR is opened or updated against dev or main branches
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check linting
+        run: bun run lint
+
+      - name: Check types
+        run: bun run typecheck
+
+      - name: Check building
+        run: bun run build
+
+      - name: Run tests
+        run: bun run test -- --log-order=stream
+
   deploy:
     name: Deploy
+    # Only run if pushing to main branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: deployment_lock
@@ -62,6 +93,8 @@ jobs:
           cd "$WORKING_DIRECTORY"
           git fetch
           git reset --hard origin/main
-          bun run docker:prod
+          docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d --build --force-recreate
+          rm -f .env || true
 
           ENDSSH
+

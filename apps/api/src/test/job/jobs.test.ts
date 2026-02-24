@@ -125,14 +125,14 @@ describe("Job Postings System", () => {
             // === LIST JOB POSTINGS ===
 
             // 6. Anyone can list jobs (public endpoint)
-            const listResponse = await userClient.api.jobs.$get();
+            const listResponse = await userClient.api.jobs.$get({ query: {} });
             expect(listResponse.status).toBe(200);
             const jobsList = await listResponse.json();
 
             // Should only show active jobs by default (not expired)
-            expect(jobsList.length).toBe(2); // active job + continuously hiring
+            expect(jobsList.items.length).toBe(2); // active job + continuously hiring
             expect(
-                jobsList.find((j: any) => j.id === expiredJob.id),
+                jobsList.items.find((j) => j.id === expiredJob.id),
             ).toBeUndefined();
 
             // 7. List with expired jobs included
@@ -141,19 +141,19 @@ describe("Job Postings System", () => {
             });
 
             const allJobs = await listWithExpiredResponse.json();
-            expect(allJobs.length).toBe(3); // all jobs
+            expect(allJobs.items.length).toBe(3); // all jobs
             expect(
-                allJobs.find((j: any) => j.id === expiredJob.id),
+                allJobs.items.find((j) => j.id === expiredJob.id),
             ).toBeDefined();
 
             // 8. Verify expired field is computed correctly
-            const activeJobInList = allJobs.find(
-                (j: any) => j.id === activeJob.id,
+            const activeJobInList = allJobs.items.find(
+                (j) => j.id === activeJob.id,
             );
             expect(activeJobInList?.expired).toBe(false);
 
-            const expiredJobInList = allJobs.find(
-                (j: any) => j.id === expiredJob.id,
+            const expiredJobInList = allJobs.items.find(
+                (j) => j.id === expiredJob.id,
             );
             expect(expiredJobInList?.expired).toBe(true);
 
@@ -163,9 +163,9 @@ describe("Job Postings System", () => {
             });
 
             const searchTitleResults = await searchByTitleResponse.json();
-            expect(searchTitleResults.length).toBe(2); // Two jobs with "Developer" in title
+            expect(searchTitleResults.items.length).toBe(2); // Two jobs with "Developer" in title
             expect(
-                searchTitleResults.every((j: any) =>
+                searchTitleResults.items.every((j) =>
                     j.title.includes("Developer"),
                 ),
             ).toBe(true);
@@ -176,8 +176,8 @@ describe("Job Postings System", () => {
             });
 
             const searchCompanyResults = await searchByCompanyResponse.json();
-            expect(searchCompanyResults.length).toBe(1);
-            expect(searchCompanyResults[0]?.company).toBe("Tech Corp");
+            expect(searchCompanyResults.items.length).toBe(1);
+            expect(searchCompanyResults.items[0]?.company).toBe("Tech Corp");
 
             // === GET SINGLE JOB ===
 
@@ -416,9 +416,9 @@ describe("Job Postings System", () => {
             });
 
             const finalList = await finalListResponse.json();
-            expect(finalList.length).toBeGreaterThan(0);
+            expect(finalList.items.length).toBeGreaterThan(0);
             // First item should be the most recently created (minimalJob)
-            expect(finalList[0]?.id).toBe(minimalJob.id);
+            expect(finalList.items[0]?.id).toBe(minimalJob.id);
         },
         120_000,
     );

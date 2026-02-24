@@ -9,8 +9,8 @@
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
-        "@types/node": "^24.3.1",
-        "typescript": "^5.9.2"
+        "@types/node": "catalog:",
+        "typescript": "catalog:"
     },
     "dependencies": {
         "@photon/auth": "workspace:*",

@@ -1,0 +1,14 @@
+{
+    "$schema": "https://turbo.build/schema.json",
+    "extends": ["//"],
+    "tasks": {
+        "codegen": {
+            "dependsOn": ["@photon/api#export-openapi"],
+            "cache": false
+        },
+        "build": {
+            "dependsOn": ["codegen", "^build"],
+            "outputs": ["dist/**"]
+        }
+    }
+}
