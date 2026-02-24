@@ -3,15 +3,19 @@ name: CI/CD
 on:
   pull_request:
     branches:
+      - dev
       - main
-      - PRODUCTION
   push:
     branches:
-      - PRODUCTION
+      - dev
+      - main
+
 
 jobs:
   check:
     name: Check Code Quality
+    # Only run if PR targeting dev or main or if pushing to dev branch
+    if: (github.event_name == 'pull_request' && (github.base_ref == 'dev' || github.base_ref == 'main')) || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -37,8 +41,8 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/PRODUCTION'
+    # Only run if pushing to main branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: deployment_lock
@@ -86,12 +90,12 @@ jobs:
           # Change permissions of .env to be readable only by the owner
           chmod 0600 "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
 
-          # Navigate to the working directory, pull the latest code, and run the deployment script
+          # Navigate to the working directory, pull the latest code, and run the deployment command
           cd "$WORKING_DIRECTORY"
           git fetch
-          git reset --hard origin/PRODUCTION
+          git reset --hard origin/main
           docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d --build --force-recreate
-          rm -f .env
+          rm -f .env || true
 
           ENDSSH
 
