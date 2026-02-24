@@ -1,6 +1,6 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
 import { config } from "@dotenvx/dotenvx";
+import { defineConfig } from "vitest/config";
 config({ path: "../../.env" });
 
 export default defineConfig({
