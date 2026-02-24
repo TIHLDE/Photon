@@ -1,16 +1,18 @@
 name: Deploy to Drift
 
 on:
-  workflow_run:
-    workflows: ["Check Code Quality"]
-    types:
-      - completed
+  push:
     branches:
-      - main
+      - PRODUCTION
 
 jobs:
+  check:
+    name: Check Code Quality
+    uses: ./.github/workflows/check.yml
+
   deploy:
     name: Deploy
+    needs: check
     runs-on: ubuntu-latest
     concurrency:
       group: deployment_lock
@@ -61,8 +63,9 @@ jobs:
           # Navigate to the working directory, pull the latest code, and run the deployment script
           cd "$WORKING_DIRECTORY"
           git fetch
-          git reset --hard origin/main
+          git reset --hard origin/PRODUCTION
           docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d --build --force-recreate
           rm -f .env
 
           ENDSSH
+

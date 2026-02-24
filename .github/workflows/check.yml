@@ -4,9 +4,12 @@ on:
   pull_request:
     branches:
       - main
+      - PRODUCTION
   push:
     branches:
       - main
+      - PRODUCTION
+  workflow_call:
 
 jobs:
   check:
@@ -33,3 +36,4 @@ jobs:
 
       - name: Run tests
         run: bun run test -- --log-order=stream
+
