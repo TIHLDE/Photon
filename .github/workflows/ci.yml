@@ -1,18 +1,45 @@
-name: Deploy to Drift
+name: CI/CD
 
 on:
+  pull_request:
+    branches:
+      - main
+      - PRODUCTION
   push:
     branches:
+      - main
       - PRODUCTION
 
 jobs:
   check:
     name: Check Code Quality
-    uses: ./.github/workflows/check.yml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check linting
+        run: bun run lint
+
+      - name: Check types
+        run: bun run typecheck
+
+      - name: Check building
+        run: bun run build
+
+      - name: Run tests
+        run: bun run test -- --log-order=stream
 
   deploy:
     name: Deploy
     needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/PRODUCTION'
     runs-on: ubuntu-latest
     concurrency:
       group: deployment_lock
