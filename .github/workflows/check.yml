@@ -7,7 +7,6 @@ on:
       - PRODUCTION
   push:
     branches:
-      - main
       - PRODUCTION
   workflow_call:
 
