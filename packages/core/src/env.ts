@@ -95,6 +95,8 @@ const envSchema = z
         MAIL_PASS: z.string().optional(),
         MAIL_FROM: z.string().default("no-reply@tihlde.org"),
         EMAIL_API_KEY: z.string().default("test-email-api-key"),
+        EMAIL_PROXY_URL: z.string().optional(),
+        EMAIL_PROXY_KEY: z.string().optional(),
 
         // VIPPS
         VIPPS_SUBSCRIPTION_KEY: z.string().optional(),
