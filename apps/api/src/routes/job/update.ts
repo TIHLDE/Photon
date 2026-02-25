@@ -57,6 +57,36 @@ const updateJobSchema = z
         },
     );
 
+const updateJobResponseSchema = z.object({
+    id: z.uuid().meta({ description: "Job posting ID" }),
+    title: z.string().meta({ description: "Job title" }),
+    ingress: z.string().meta({ description: "Short description" }),
+    body: z.string().meta({ description: "Full job description" }),
+    company: z.string().meta({ description: "Company name" }),
+    location: z.string().meta({ description: "Job location" }),
+    deadline: z
+        .string()
+        .nullable()
+        .meta({ description: "Application deadline (ISO 8601)" }),
+    isContinuouslyHiring: z
+        .boolean()
+        .meta({ description: "Is continuously hiring" }),
+    jobType: z.enum(schema.jobTypeVariants).meta({ description: "Job type" }),
+    email: z.string().nullable().meta({ description: "Contact email" }),
+    link: z.string().nullable().meta({ description: "Application link" }),
+    classStart: z
+        .enum(schema.userClassVariants)
+        .meta({ description: "Minimum year of study" }),
+    classEnd: z
+        .enum(schema.userClassVariants)
+        .meta({ description: "Maximum year of study" }),
+    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
+    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
+    createdById: z.string().nullable().meta({ description: "Creator user ID" }),
+    createdAt: z.string().meta({ description: "Creation time (ISO 8601)" }),
+    updatedAt: z.string().meta({ description: "Last update time (ISO 8601)" }),
+});
+
 export const updateRoute = route().patch(
     "/:id",
     describeRoute({
@@ -66,8 +96,9 @@ export const updateRoute = route().patch(
         description:
             "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 200,
+            schema: updateJobResponseSchema,
             description: "Job posting updated successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

@@ -2,7 +2,11 @@ import type { Job, Worker } from "bullmq";
 import { env } from "@photon/core/env";
 import type { QueueManager } from "@photon/core/cache";
 import { EMAIL_QUEUE_NAME, EMAIL_SEND_RATE_MS } from "./config";
-import { sendViaProxy, type EmailJobData, type EmailTransporter } from "./index";
+import {
+    sendViaProxy,
+    type EmailJobData,
+    type EmailTransporter,
+} from "./index";
 
 interface EmailWorkerContext {
     mailer: EmailTransporter;

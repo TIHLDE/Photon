@@ -1,11 +1,16 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { isJobCreator } from "~/lib/job/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+
+const deleteJobResponseSchema = z.object({
+    message: z.string(),
+});
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -16,8 +21,9 @@ export const deleteRoute = route().delete(
         description:
             "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 200,
+            schema: deleteJobResponseSchema,
             description: "Job posting deleted successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

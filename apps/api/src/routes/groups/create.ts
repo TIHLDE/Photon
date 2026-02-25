@@ -7,6 +7,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { groupSchema } from "./get";
 
 const createGroupSchema = z.object({
     slug: z
@@ -61,8 +62,9 @@ export const createRoute = route().post(
         operationId: "createGroup",
         description: "Create a new group. Requires 'groups:create' permission.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 201,
+            schema: groupSchema,
             description: "Group created successfully",
         })
         .badRequest({ description: "Invalid input or slug already exists" })

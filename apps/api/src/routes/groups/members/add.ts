@@ -19,6 +19,16 @@ const addMemberSchema = z.object({
         .meta({ description: "Membership role" }),
 });
 
+const membershipSchema = z.object({
+    userId: z.string().meta({ description: "User ID" }),
+    groupSlug: z.string().meta({ description: "Group slug" }),
+    role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
+    createdAt: z
+        .string()
+        .meta({ description: "Membership creation timestamp" }),
+    updatedAt: z.string().meta({ description: "Membership update timestamp" }),
+});
+
 export const addMemberRoute = route().post(
     "/:groupSlug/members",
     describeRoute({
@@ -28,7 +38,11 @@ export const addMemberRoute = route().post(
         description:
             "Add a member to a group. Requires 'groups:manage' permission.",
     })
-        .response({ statusCode: 201, description: "Member added successfully" })
+        .schemaResponse({
+            statusCode: 201,
+            schema: membershipSchema,
+            description: "Member added successfully",
+        })
         .badRequest({ description: "User already a member or user not found" })
         .notFound({ description: "Group not found" })
         .build(),

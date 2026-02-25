@@ -2,10 +2,15 @@ import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
+
+const deleteFormResponseSchema = z.object({
+    detail: z.string(),
+});
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -16,7 +21,11 @@ export const deleteRoute = route().delete(
         description:
             "Delete a form and all associated data. Requires permission to manage the form.",
     })
-        .response({ statusCode: 200, description: "Success" })
+        .schemaResponse({
+            statusCode: 200,
+            schema: deleteFormResponseSchema,
+            description: "Success",
+        })
         .forbidden({ description: "Insufficient permissions" })
         .notFound({ description: "Form not found" })
         .build(),

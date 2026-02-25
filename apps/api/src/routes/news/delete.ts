@@ -1,11 +1,16 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+
+const deleteResponseSchema = z.object({
+    message: z.string(),
+});
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -15,18 +20,15 @@ export const deleteRoute = route().delete(
         operationId: "deleteNews",
         description:
             "Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.",
-        responses: {
-            200: {
-                description: "News article deleted successfully",
-            },
-            403: {
-                description: "Forbidden - Insufficient permissions",
-            },
-            404: {
-                description: "News article not found",
-            },
-        },
-    }).build(),
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: deleteResponseSchema,
+            description: "News article deleted successfully",
+        })
+        .forbidden({ description: "Insufficient permissions" })
+        .notFound({ description: "News article not found" })
+        .build(),
     requireAuth,
     requireAccess({
         permission: ["news:delete", "news:manage"],

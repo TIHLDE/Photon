@@ -51,6 +51,10 @@ const updateGroupSchema = z.object({
         .meta({ description: "User ID of the fines administrator" }),
 });
 
+const updateGroupResponseSchema = z.object({
+    message: z.string(),
+});
+
 export const updateRoute = route().patch(
     "/:slug",
     describeRoute({
@@ -60,8 +64,9 @@ export const updateRoute = route().patch(
         description:
             "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
     })
-        .response({
+        .schemaResponse({
             statusCode: 200,
+            schema: updateGroupResponseSchema,
             description: "Group updated successfully",
         })
         .badRequest({ description: "Invalid input" })

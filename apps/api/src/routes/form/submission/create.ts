@@ -4,11 +4,17 @@ import { FormSubmissionEmail } from "@photon/email/templates";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import z from "zod";
 import { validateAndCreateSubmission } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createSubmissionSchema } from "../../../lib/form/schema";
+
+const createSubmissionResponseSchema = z.object({
+    id: z.string(),
+    message: z.string(),
+});
 
 export const createSubmissionRoute = route().post(
     "/:formId/submissions",
@@ -18,7 +24,11 @@ export const createSubmissionRoute = route().post(
         operationId: "createFormSubmission",
         description: "Submit answers to a form",
     })
-        .response({ statusCode: 201, description: "Created" })
+        .schemaResponse({
+            statusCode: 201,
+            schema: createSubmissionResponseSchema,
+            description: "Created",
+        })
         .forbidden({ description: "Cannot submit to this form" })
         .notFound({ description: "Form not found" })
         .response({

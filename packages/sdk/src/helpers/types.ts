@@ -3,9 +3,8 @@ import type { Client, Config } from "@hey-api/client-fetch";
 /**
  * Extract the query parameters type from an SDK method's options.
  */
-export type QueryParams<
-    T extends (options: { query?: unknown }) => unknown,
-> = NonNullable<Parameters<T>[0]["query"]>;
+export type QueryParams<T extends (options: { query?: unknown }) => unknown> =
+    NonNullable<Parameters<T>[0]["query"]>;
 
 /**
  * Extract the path parameters type from an SDK method's options.
