@@ -7,14 +7,16 @@ on:
       - main
   push:
     branches:
+      - dev
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
     name: Check Code Quality
-    # Only run if PR is opened or updated against dev or main branches
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -37,64 +39,4 @@ jobs:
 
       - name: Run tests
         run: bun run test -- --log-order=stream
-
-  deploy:
-    name: Deploy
-    # Only run if pushing to main branch
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: deployment_lock
-      cancel-in-progress: false
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up SSH key
-        env:
-          PROXY_HOST: ${{ vars.PROXY_HOST }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/key
-          chmod 600 ~/.ssh/key
-          ssh-keyscan -H $PROXY_HOST >> ~/.ssh/known_hosts
-
-      - name: Deploy to OpenStack server
-        env:
-          PROXY_HOST: ${{ vars.PROXY_HOST }}
-          HOST: ${{ vars.HOST }}
-          USER: ${{ vars.USER }}
-          WORKING_DIRECTORY: ${{ vars.WORKING_DIRECTORY }}
-          VAULTWARDEN_MASTER_PASSWORD: ${{ secrets.VAULTWARDEN_MASTER_PASSWORD }}
-          VAULTWARDEN_ITEM_ID: ${{ secrets.VAULTWARDEN_ITEM_ID }}
-          ENV_RELATIVE_PATH: ${{ vars.ENV_RELATIVE_PATH }}
-        run: |
-          # Start ssh-agent and add the SSH key
-          eval $(ssh-agent -s)
-          ssh-add ~/.ssh/key
-
-          # SSH into the server via the proxy and run deployment commands
-          ssh -o StrictHostKeyChecking=no -J $USER@$PROXY_HOST $USER@$HOST << ENDSSH
-
-          # WE ARE NOW ON THE REMOTE SERVER
-
-          # If any command fails, the script will exit immediately with a non-zero status
-          set -euo pipefail
-
-          # Load environment variables from Vaultwarden
-          cd
-          ./get-env.sh "$VAULTWARDEN_MASTER_PASSWORD" "$VAULTWARDEN_ITEM_ID" "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
-
-          # Change permissions of .env to be readable only by the owner
-          chmod 0600 "$WORKING_DIRECTORY/$ENV_RELATIVE_PATH"
-
-          # Navigate to the working directory, pull the latest code, and run the deployment command
-          cd "$WORKING_DIRECTORY"
-          git fetch
-          git reset --hard origin/main
-          docker compose -f infra/docker/docker-compose.prod.yml --env-file .env up -d --build --force-recreate
-          rm -f .env || true
-
-          ENDSSH
 
