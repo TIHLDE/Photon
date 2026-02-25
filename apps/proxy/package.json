@@ -1,0 +1,25 @@
+{
+    "name": "@photon/proxy",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "alchemy dev",
+        "deploy": "alchemy deploy",
+        "destroy": "alchemy destroy",
+        "typecheck": "tsc --noEmit",
+        "lint": "biome check .",
+        "lint:fix": "biome check --write --unsafe ."
+    },
+    "dependencies": {
+        "hono": "^4.11.7",
+        "worker-mailer": "^1.0.0"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20250214.0",
+        "@dotenvx/dotenvx": "^1.44.2",
+        "@photon/tsconfig": "workspace:*",
+        "alchemy": "^0.85.1",
+        "typescript": "^5.9.2"
+    }
+}

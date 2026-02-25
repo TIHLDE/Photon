@@ -1,0 +1,7 @@
+{
+    "extends": "@photon/tsconfig/node/bundler.json",
+    "compilerOptions": {
+        "types": ["@cloudflare/workers-types"]
+    },
+    "include": ["src/**/*.ts", "alchemy.run.ts"]
+}

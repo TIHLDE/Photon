@@ -1,4 +1,4 @@
-import { createAuthClient } from "better-auth/react";
+import { BetterAuthClientOptions } from "better-auth/client";
 import {
     customSessionClient,
     genericOAuthClient,
@@ -6,13 +6,13 @@ import {
 } from "better-auth/client/plugins";
 import type { AuthInstance } from "@photon/auth";
 
-export function createPhotonAuthClient(options: { baseURL: string }) {
-    return createAuthClient({
+export function createPhotonClientAuthOptions(options: { baseURL: string }) {
+    return {
         baseURL: options.baseURL,
         plugins: [
             genericOAuthClient(),
             usernameClient(),
             customSessionClient<AuthInstance>(),
         ],
-    });
+    } satisfies BetterAuthClientOptions;
 }
