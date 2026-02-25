@@ -6,15 +6,15 @@ on:
             - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
-
+permissions:
+    contents: write
+    pull-requests: write
+    id-token: write
 jobs:
     release:
         name: Release
+        if: github.repository_owner == 'TIHLDE'
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
-            pull-requests: write
-            id-token: write
         steps:
             - uses: actions/checkout@v4
               with:
@@ -29,5 +29,7 @@ jobs:
               with:
                   version: bun run version-packages
                   publish: bun run release
+                  title: "ci: Version Packages"
+                  commit: "ci: Version Packages"
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
