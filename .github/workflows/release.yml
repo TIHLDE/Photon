@@ -20,6 +20,13 @@ jobs:
               with:
                   fetch-depth: 0
 
+            - name: Get GitHub App token
+              uses: tibdex/github-app-token@v2
+              id: app-token
+              with:
+                  app_id: ${{ secrets.APP_ID }}
+                  private_key: ${{ secrets.APP_PRIVATE_KEY }}
+
             - uses: actions/setup-node@v4
               with:
                 node-version: '24'
@@ -39,4 +46,4 @@ jobs:
                   title: "ci: Version Packages"
                   commit: "ci: Version Packages"
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
