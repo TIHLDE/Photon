@@ -18,6 +18,21 @@ const updateNewsSchema = z.object({
     emojisAllowed: z.boolean().optional(),
 });
 
+const updateNewsResponseSchema = z.object({
+    id: z.uuid().meta({ description: "News article ID" }),
+    title: z.string().meta({ description: "News article title" }),
+    header: z.string().meta({ description: "News article subtitle/ingress" }),
+    body: z.string().meta({ description: "Main content" }),
+    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
+    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
+    emojisAllowed: z
+        .boolean()
+        .meta({ description: "Whether reactions are enabled" }),
+    createdById: z.string().nullable().meta({ description: "Creator user ID" }),
+    createdAt: z.string().meta({ description: "Creation time (ISO 8601)" }),
+    updatedAt: z.string().meta({ description: "Last update time (ISO 8601)" }),
+});
+
 export const updateRoute = route().patch(
     "/:id",
     describeRoute({
@@ -27,8 +42,9 @@ export const updateRoute = route().patch(
         description:
             "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 200,
+            schema: updateNewsResponseSchema,
             description: "News article updated successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

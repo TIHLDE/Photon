@@ -1293,8 +1293,12 @@ export type DeleteEventResponses = {
     /**
      * Event successfully deleted
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type DeleteEventResponse = DeleteEventResponses[keyof DeleteEventResponses];
 
 export type GetEventData = {
     body?: never;
@@ -1511,8 +1515,12 @@ export type UpdateEventFavoriteResponses = {
     /**
      * Updated
      */
-    200: unknown;
+    200: {
+        success: boolean;
+    };
 };
+
+export type UpdateEventFavoriteResponse = UpdateEventFavoriteResponses[keyof UpdateEventFavoriteResponses];
 
 export type GetFavoriteEventsData = {
     body?: never;
@@ -1925,8 +1933,30 @@ export type CreateEventFormResponses = {
     /**
      * Created
      */
-    201: unknown;
+    201: {
+        id?: string;
+        title?: string;
+        description?: string | null;
+        type: 'survey' | 'evaluation';
+        resource_type: string;
+        created_at?: string;
+        updated_at?: string;
+        fields?: Array<{
+            id: string;
+            title: string;
+            type: 'text_answer' | 'multiple_select' | 'single_select';
+            required: boolean;
+            order: number;
+            options: Array<{
+                id: string;
+                title: string;
+                order: number;
+            }>;
+        }>;
+    };
 };
+
+export type CreateEventFormResponse = CreateEventFormResponses[keyof CreateEventFormResponses];
 
 export type GetEventFormData = {
     body?: never;
@@ -2148,8 +2178,12 @@ export type DeleteFormResponses = {
     /**
      * Success
      */
-    200: unknown;
+    200: {
+        detail: string;
+    };
 };
+
+export type DeleteFormResponse = DeleteFormResponses[keyof DeleteFormResponses];
 
 export type GetFormData = {
     body?: never;
@@ -2276,8 +2310,29 @@ export type UpdateFormResponses = {
     /**
      * Success
      */
-    200: unknown;
+    200: {
+        id?: string;
+        title?: string;
+        description?: string | null;
+        template?: boolean;
+        created_at?: string;
+        updated_at?: string;
+        fields?: Array<{
+            id: string;
+            title: string;
+            type: 'text_answer' | 'multiple_select' | 'single_select';
+            required: boolean;
+            order: number;
+            options: Array<{
+                id: string;
+                title: string;
+                order: number;
+            }>;
+        }>;
+    };
 };
+
+export type UpdateFormResponse = UpdateFormResponses[keyof UpdateFormResponses];
 
 export type GetFormStatisticsData = {
     body?: never;
@@ -2466,8 +2521,13 @@ export type CreateFormSubmissionResponses = {
     /**
      * Created
      */
-    201: unknown;
+    201: {
+        id: string;
+        message: string;
+    };
 };
+
+export type CreateFormSubmissionResponse = CreateFormSubmissionResponses[keyof CreateFormSubmissionResponses];
 
 export type GetFormSubmissionData = {
     body?: never;
@@ -2624,8 +2684,12 @@ export type DeleteFormSubmissionResponses = {
     /**
      * Success
      */
-    200: unknown;
+    200: {
+        detail: string;
+    };
 };
+
+export type DeleteFormSubmissionResponse = DeleteFormSubmissionResponses[keyof DeleteFormSubmissionResponses];
 
 export type ListNotificationsData = {
     body?: never;
@@ -2970,8 +3034,55 @@ export type CreateGroupResponses = {
     /**
      * Group created successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * Group slug
+         */
+        slug: string;
+        /**
+         * Group image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Group name
+         */
+        name: string;
+        /**
+         * Group description
+         */
+        description: string | null;
+        /**
+         * Group contact email
+         */
+        contactEmail: string | null;
+        /**
+         * Group type
+         */
+        type: string;
+        /**
+         * Group fines info
+         */
+        finesInfo: string;
+        /**
+         * Group fines activated
+         */
+        finesActivated: boolean;
+        /**
+         * Group fines admin ID
+         */
+        finesAdminId: string | null;
+        /**
+         * Creation timestamp
+         */
+        createdAt: string;
+        /**
+         * Last update timestamp
+         */
+        updatedAt: string;
+    };
 };
+
+export type CreateGroupResponse = CreateGroupResponses[keyof CreateGroupResponses];
 
 export type ListMyGroupsData = {
     body?: never;
@@ -3259,8 +3370,12 @@ export type UpdateGroupResponses = {
     /**
      * Group updated successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type UpdateGroupResponse = UpdateGroupResponses[keyof UpdateGroupResponses];
 
 export type ListFinesData = {
     body?: never;
@@ -3431,8 +3546,63 @@ export type CreateFineResponses = {
     /**
      * Fine created successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * Fine ID
+         */
+        id: string;
+        /**
+         * User ID who received the fine
+         */
+        userId: string;
+        /**
+         * Group slug that issued the fine
+         */
+        groupSlug: string;
+        /**
+         * Reason for the fine
+         */
+        reason: string;
+        /**
+         * Fine amount in NOK
+         */
+        amount: number;
+        /**
+         * User's defense text
+         */
+        defense: string | null;
+        /**
+         * Fine status (pending, approved, paid, rejected)
+         */
+        status: string;
+        /**
+         * User who created the fine
+         */
+        createdByUserId: string | null;
+        /**
+         * User who approved the fine
+         */
+        approvedByUserId: string | null;
+        /**
+         * Approval timestamp
+         */
+        approvedAt: string | null;
+        /**
+         * Payment timestamp
+         */
+        paidAt: string | null;
+        /**
+         * Creation timestamp
+         */
+        createdAt: string;
+        /**
+         * Last update timestamp
+         */
+        updatedAt: string;
+    };
 };
+
+export type CreateFineResponse = CreateFineResponses[keyof CreateFineResponses];
 
 export type DeleteFineData = {
     body?: never;
@@ -3646,8 +3816,12 @@ export type UpdateFineResponses = {
     /**
      * Fine updated successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type UpdateFineResponse = UpdateFineResponses[keyof UpdateFineResponses];
 
 export type ListGroupMembersData = {
     body?: never;
@@ -3747,8 +3921,31 @@ export type AddGroupMemberResponses = {
     /**
      * Member added successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * User ID
+         */
+        userId: string;
+        /**
+         * Group slug
+         */
+        groupSlug: string;
+        /**
+         * Membership role
+         */
+        role: 'member' | 'leader';
+        /**
+         * Membership creation timestamp
+         */
+        createdAt: string;
+        /**
+         * Membership update timestamp
+         */
+        updatedAt: string;
+    };
 };
+
+export type AddGroupMemberResponse = AddGroupMemberResponses[keyof AddGroupMemberResponses];
 
 export type RemoveGroupMemberData = {
     body?: never;
@@ -3840,8 +4037,12 @@ export type UpdateGroupMemberRoleResponses = {
     /**
      * Member role updated successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type UpdateGroupMemberRoleResponse = UpdateGroupMemberRoleResponses[keyof UpdateGroupMemberRoleResponses];
 
 export type ListGroupFormsData = {
     body?: never;
@@ -3962,8 +4163,34 @@ export type CreateGroupFormResponses = {
     /**
      * Created
      */
-    201: unknown;
+    201: {
+        id?: string;
+        title?: string;
+        description?: string | null;
+        group: string;
+        email_receiver_on_submit?: string | null;
+        can_submit_multiple?: boolean;
+        is_open_for_submissions?: boolean;
+        only_for_group_members?: boolean;
+        resource_type: string;
+        created_at?: string;
+        updated_at?: string;
+        fields?: Array<{
+            id: string;
+            title: string;
+            type: 'text_answer' | 'multiple_select' | 'single_select';
+            required: boolean;
+            order: number;
+            options: Array<{
+                id: string;
+                title: string;
+                order: number;
+            }>;
+        }>;
+    };
 };
+
+export type CreateGroupFormResponse = CreateGroupFormResponses[keyof CreateGroupFormResponses];
 
 export type ListNewsData = {
     body?: never;
@@ -4102,8 +4329,51 @@ export type CreateNewsResponses = {
     /**
      * News article created successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * News article ID
+         */
+        id: string;
+        /**
+         * News article title
+         */
+        title: string;
+        /**
+         * News article subtitle/ingress
+         */
+        header: string;
+        /**
+         * Main content
+         */
+        body: string;
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Whether reactions are enabled
+         */
+        emojisAllowed: boolean;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+    };
 };
+
+export type CreateNewsResponse = CreateNewsResponses[keyof CreateNewsResponses];
 
 export type DeleteNewsData = {
     body?: never;
@@ -4137,7 +4407,7 @@ export type DeleteNewsErrors = {
      */
     403: unknown;
     /**
-     * News article not found
+     * Not Found - News article not found
      */
     404: unknown;
 };
@@ -4148,8 +4418,12 @@ export type DeleteNewsResponses = {
     /**
      * News article deleted successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type DeleteNewsResponse = DeleteNewsResponses[keyof DeleteNewsResponses];
 
 export type GetNewsData = {
     body?: never;
@@ -4162,7 +4436,7 @@ export type GetNewsData = {
 
 export type GetNewsErrors = {
     /**
-     * News article not found
+     * Not Found - News article not found
      */
     404: unknown;
 };
@@ -4171,8 +4445,69 @@ export type GetNewsResponses = {
     /**
      * News article details
      */
-    200: unknown;
+    200: {
+        /**
+         * News article ID
+         */
+        id: string;
+        /**
+         * News article title
+         */
+        title: string;
+        /**
+         * News article subtitle/ingress
+         */
+        header: string;
+        /**
+         * Main content
+         */
+        body: string;
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Whether reactions are enabled
+         */
+        emojisAllowed: boolean;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+        /**
+         * Creator user info
+         */
+        creator: {
+            id: string;
+            name: string;
+            email: string;
+        } | null;
+        reactions: Array<{
+            userId: string;
+            newsId: string;
+            emoji: string;
+            createdAt: string;
+            user: {
+                id: string;
+                name: string;
+            };
+        }>;
+    };
 };
+
+export type GetNewsResponse = GetNewsResponses[keyof GetNewsResponses];
 
 export type UpdateNewsData = {
     body?: {
@@ -4224,8 +4559,51 @@ export type UpdateNewsResponses = {
     /**
      * News article updated successfully
      */
-    200: unknown;
+    200: {
+        /**
+         * News article ID
+         */
+        id: string;
+        /**
+         * News article title
+         */
+        title: string;
+        /**
+         * News article subtitle/ingress
+         */
+        header: string;
+        /**
+         * Main content
+         */
+        body: string;
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Whether reactions are enabled
+         */
+        emojisAllowed: boolean;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+    };
 };
+
+export type UpdateNewsResponse = UpdateNewsResponses[keyof UpdateNewsResponses];
 
 export type DeleteNewsReactionData = {
     body?: never;
@@ -4266,8 +4644,12 @@ export type DeleteNewsReactionResponses = {
     /**
      * Reaction removed successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type DeleteNewsReactionResponse = DeleteNewsReactionResponses[keyof DeleteNewsReactionResponses];
 
 export type CreateNewsReactionData = {
     body?: {
@@ -4317,8 +4699,27 @@ export type CreateNewsReactionResponses = {
     /**
      * Reaction added successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * User ID
+         */
+        userId: string;
+        /**
+         * News article ID
+         */
+        newsId: string;
+        /**
+         * Emoji reaction
+         */
+        emoji: string;
+        /**
+         * Reaction creation time (ISO 8601)
+         */
+        createdAt: string;
+    };
 };
+
+export type CreateNewsReactionResponse = CreateNewsReactionResponses[keyof CreateNewsReactionResponses];
 
 export type ListJobsData = {
     body?: never;
@@ -4545,8 +4946,83 @@ export type CreateJobResponses = {
     /**
      * Job posting created successfully
      */
-    201: unknown;
+    201: {
+        /**
+         * Job posting ID
+         */
+        id: string;
+        /**
+         * Job title
+         */
+        title: string;
+        /**
+         * Short description
+         */
+        ingress: string;
+        /**
+         * Full job description
+         */
+        body: string;
+        /**
+         * Company name
+         */
+        company: string;
+        /**
+         * Job location
+         */
+        location: string;
+        /**
+         * Application deadline (ISO 8601)
+         */
+        deadline: string | null;
+        /**
+         * Is continuously hiring
+         */
+        isContinuouslyHiring: boolean;
+        /**
+         * Job type
+         */
+        jobType: 'full_time' | 'part_time' | 'summer_job' | 'other';
+        /**
+         * Contact email
+         */
+        email: string | null;
+        /**
+         * Application link
+         */
+        link: string | null;
+        /**
+         * Minimum year of study
+         */
+        classStart: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Maximum year of study
+         */
+        classEnd: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+    };
 };
+
+export type CreateJobResponse = CreateJobResponses[keyof CreateJobResponses];
 
 export type DeleteJobData = {
     body?: never;
@@ -4591,8 +5067,12 @@ export type DeleteJobResponses = {
     /**
      * Job posting deleted successfully
      */
-    200: unknown;
+    200: {
+        message: string;
+    };
 };
+
+export type DeleteJobResponse = DeleteJobResponses[keyof DeleteJobResponses];
 
 export type GetJobData = {
     body?: never;
@@ -4614,8 +5094,95 @@ export type GetJobResponses = {
     /**
      * Job posting details
      */
-    200: unknown;
+    200: {
+        /**
+         * Job posting ID
+         */
+        id: string;
+        /**
+         * Job title
+         */
+        title: string;
+        /**
+         * Short description
+         */
+        ingress: string;
+        /**
+         * Full job description
+         */
+        body: string;
+        /**
+         * Company name
+         */
+        company: string;
+        /**
+         * Job location
+         */
+        location: string;
+        /**
+         * Application deadline (ISO 8601)
+         */
+        deadline: string | null;
+        /**
+         * Is continuously hiring
+         */
+        isContinuouslyHiring: boolean;
+        /**
+         * Job type
+         */
+        jobType: 'full_time' | 'part_time' | 'summer_job' | 'other';
+        /**
+         * Contact email
+         */
+        email: string | null;
+        /**
+         * Application link
+         */
+        link: string | null;
+        /**
+         * Minimum year of study
+         */
+        classStart: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Maximum year of study
+         */
+        classEnd: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+        /**
+         * Creator user info
+         */
+        creator: {
+            id: string;
+            name: string;
+            email: string;
+        } | null;
+        /**
+         * Whether the job posting has expired
+         */
+        expired: boolean;
+    };
 };
+
+export type GetJobResponse = GetJobResponses[keyof GetJobResponses];
 
 export type UpdateJobData = {
     body?: {
@@ -4675,8 +5242,83 @@ export type UpdateJobResponses = {
     /**
      * Job posting updated successfully
      */
-    200: unknown;
+    200: {
+        /**
+         * Job posting ID
+         */
+        id: string;
+        /**
+         * Job title
+         */
+        title: string;
+        /**
+         * Short description
+         */
+        ingress: string;
+        /**
+         * Full job description
+         */
+        body: string;
+        /**
+         * Company name
+         */
+        company: string;
+        /**
+         * Job location
+         */
+        location: string;
+        /**
+         * Application deadline (ISO 8601)
+         */
+        deadline: string | null;
+        /**
+         * Is continuously hiring
+         */
+        isContinuouslyHiring: boolean;
+        /**
+         * Job type
+         */
+        jobType: 'full_time' | 'part_time' | 'summer_job' | 'other';
+        /**
+         * Contact email
+         */
+        email: string | null;
+        /**
+         * Application link
+         */
+        link: string | null;
+        /**
+         * Minimum year of study
+         */
+        classStart: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Maximum year of study
+         */
+        classEnd: 'first' | 'second' | 'third' | 'fourth' | 'fifth' | 'alumni';
+        /**
+         * Image URL
+         */
+        imageUrl: string | null;
+        /**
+         * Image alt text
+         */
+        imageAlt: string | null;
+        /**
+         * Creator user ID
+         */
+        createdById: string | null;
+        /**
+         * Creation time (ISO 8601)
+         */
+        createdAt: string;
+        /**
+         * Last update time (ISO 8601)
+         */
+        updatedAt: string;
+    };
 };
+
+export type UpdateJobResponse = UpdateJobResponses[keyof UpdateJobResponses];
 
 export type GetUserSettingsData = {
     body?: never;

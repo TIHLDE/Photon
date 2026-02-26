@@ -3,11 +3,42 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
 import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { createGroupFormSchema } from "../../../lib/form/schema";
+
+const groupFormFieldSchema = z.object({
+    id: z.uuid(),
+    title: z.string(),
+    type: z.enum(["text_answer", "multiple_select", "single_select"]),
+    required: z.boolean(),
+    order: z.number(),
+    options: z.array(
+        z.object({
+            id: z.uuid(),
+            title: z.string(),
+            order: z.number(),
+        }),
+    ),
+});
+
+const createGroupFormResponseSchema = z.object({
+    id: z.uuid().optional(),
+    title: z.string().optional(),
+    description: z.string().nullable().optional(),
+    group: z.string(),
+    email_receiver_on_submit: z.string().nullable().optional(),
+    can_submit_multiple: z.boolean().optional(),
+    is_open_for_submissions: z.boolean().optional(),
+    only_for_group_members: z.boolean().optional(),
+    resource_type: z.string(),
+    created_at: z.string().optional(),
+    updated_at: z.string().optional(),
+    fields: z.array(groupFormFieldSchema).optional(),
+});
 
 export const createGroupFormRoute = route().post(
     "/:slug/forms",
@@ -18,7 +49,11 @@ export const createGroupFormRoute = route().post(
         description:
             "Create a form for a group. Requires group leader permission or forms:create permission.",
     })
-        .response({ statusCode: 201, description: "Created" })
+        .schemaResponse({
+            statusCode: 201,
+            schema: createGroupFormResponseSchema,
+            description: "Created",
+        })
         .forbidden({ description: "Insufficient permissions" })
         .notFound({ description: "Group not found" })
         .build(),

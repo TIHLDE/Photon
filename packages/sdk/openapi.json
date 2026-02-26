@@ -2239,7 +2239,22 @@
         "description": "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.",
         "responses": {
           "200": {
-            "description": "Event successfully deleted"
+            "description": "Event successfully deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -2652,7 +2667,22 @@
         "description": "Mark or unmark an event as a favorite for the authenticated user",
         "responses": {
           "200": {
-            "description": "Updated"
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -3204,7 +3234,116 @@
         "description": "Create a survey or evaluation form for an event. Requires event write permission.",
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "survey",
+                        "evaluation"
+                      ]
+                    },
+                    "resource_type": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text_answer",
+                              "multiple_select",
+                              "single_select"
+                            ]
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "order": {
+                            "type": "number"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "order": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title",
+                                "order"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "type",
+                          "required",
+                          "order",
+                          "options"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "resource_type"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Form already exists for this event type"
@@ -4109,7 +4248,105 @@
         "description": "Update a form. Requires permission to manage the form.",
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "template": {
+                      "type": "boolean"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text_answer",
+                              "multiple_select",
+                              "single_select"
+                            ]
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "order": {
+                            "type": "number"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "order": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title",
+                                "order"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "type",
+                          "required",
+                          "order",
+                          "options"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -4252,7 +4489,22 @@
         "description": "Delete a form and all associated data. Requires permission to manage the form.",
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -4457,7 +4709,26 @@
         "description": "Submit answers to a form",
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -4979,7 +5250,22 @@
         "description": "Delete a submission and notify the user with a reason. Admin only.",
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -5507,7 +5793,101 @@
         "description": "Create a new group. Requires 'groups:create' permission.",
         "responses": {
           "201": {
-            "description": "Group created successfully"
+            "description": "Group created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "description": "Group slug"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Group image URL"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Group name"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Group description"
+                    },
+                    "contactEmail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Group contact email"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Group type"
+                    },
+                    "finesInfo": {
+                      "type": "string",
+                      "description": "Group fines info"
+                    },
+                    "finesActivated": {
+                      "type": "boolean",
+                      "description": "Group fines activated"
+                    },
+                    "finesAdminId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Group fines admin ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "imageUrl",
+                    "name",
+                    "description",
+                    "contactEmail",
+                    "type",
+                    "finesInfo",
+                    "finesActivated",
+                    "finesAdminId",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Invalid input or slug already exists"
@@ -5783,7 +6163,22 @@
         "description": "Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).",
         "responses": {
           "200": {
-            "description": "Group updated successfully"
+            "description": "Group updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Invalid input"
@@ -6266,7 +6661,118 @@
         "description": "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
         "responses": {
           "201": {
-            "description": "Fine created successfully"
+            "description": "Fine created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Fine ID"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "User ID who received the fine"
+                    },
+                    "groupSlug": {
+                      "type": "string",
+                      "description": "Group slug that issued the fine"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "Reason for the fine"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "Fine amount in NOK"
+                    },
+                    "defense": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "User's defense text"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Fine status (pending, approved, paid, rejected)"
+                    },
+                    "createdByUserId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "User who created the fine"
+                    },
+                    "approvedByUserId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "User who approved the fine"
+                    },
+                    "approvedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Approval timestamp"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Payment timestamp"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation timestamp"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update timestamp"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "userId",
+                    "groupSlug",
+                    "reason",
+                    "amount",
+                    "defense",
+                    "status",
+                    "createdByUserId",
+                    "approvedByUserId",
+                    "approvedAt",
+                    "paidAt",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Invalid input or fines not activated for group"
@@ -6546,7 +7052,22 @@
         "description": "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
         "responses": {
           "200": {
-            "description": "Fine updated successfully"
+            "description": "Fine updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Invalid status transition"
@@ -6775,7 +7296,47 @@
         "description": "Add a member to a group. Requires 'groups:manage' permission.",
         "responses": {
           "201": {
-            "description": "Member added successfully"
+            "description": "Member added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string",
+                      "description": "User ID"
+                    },
+                    "groupSlug": {
+                      "type": "string",
+                      "description": "Group slug"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "member",
+                        "leader"
+                      ],
+                      "description": "Membership role"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Membership creation timestamp"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Membership update timestamp"
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "groupSlug",
+                    "role",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - User already a member or user not found"
@@ -6862,7 +7423,22 @@
         "description": "Update a member's role in a group. Requires 'groups:manage' permission.",
         "responses": {
           "200": {
-            "description": "Member role updated successfully"
+            "description": "Member role updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7011,7 +7587,131 @@
         "description": "Create a form for a group. Requires group leader permission or forms:create permission.",
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "group": {
+                      "type": "string"
+                    },
+                    "email_receiver_on_submit": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "can_submit_multiple": {
+                      "type": "boolean"
+                    },
+                    "is_open_for_submissions": {
+                      "type": "boolean"
+                    },
+                    "only_for_group_members": {
+                      "type": "boolean"
+                    },
+                    "resource_type": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text_answer",
+                              "multiple_select",
+                              "single_select"
+                            ]
+                          },
+                          "required": {
+                            "type": "boolean"
+                          },
+                          "order": {
+                            "type": "number"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "title": {
+                                  "type": "string"
+                                },
+                                "order": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "title",
+                                "order"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "type",
+                          "required",
+                          "order",
+                          "options"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "group",
+                    "resource_type"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7306,7 +8006,91 @@
         "description": "Create a new news article. Requires 'news:create' permission.",
         "responses": {
           "201": {
-            "description": "News article created successfully"
+            "description": "News article created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "News article ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "News article title"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "News article subtitle/ingress"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Main content"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "emojisAllowed": {
+                      "type": "boolean",
+                      "description": "Whether reactions are enabled"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "header",
+                    "body",
+                    "imageUrl",
+                    "imageAlt",
+                    "emojisAllowed",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7543,10 +8327,167 @@
         "description": "Get a single news article by ID. Public endpoint.",
         "responses": {
           "200": {
-            "description": "News article details"
+            "description": "News article details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "News article ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "News article title"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "News article subtitle/ingress"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Main content"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "emojisAllowed": {
+                      "type": "boolean",
+                      "description": "Whether reactions are enabled"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    },
+                    "creator": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "email"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user info"
+                    },
+                    "reactions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "userId": {
+                            "type": "string"
+                          },
+                          "newsId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "emoji": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "user": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "userId",
+                          "newsId",
+                          "emoji",
+                          "createdAt",
+                          "user"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "header",
+                    "body",
+                    "imageUrl",
+                    "imageAlt",
+                    "emojisAllowed",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt",
+                    "creator",
+                    "reactions"
+                  ]
+                }
+              }
+            }
           },
           "404": {
-            "description": "News article not found"
+            "description": "Not Found - News article not found"
           }
         },
         "parameters": [
@@ -7569,7 +8510,91 @@
         "description": "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
         "responses": {
           "200": {
-            "description": "News article updated successfully"
+            "description": "News article updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "News article ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "News article title"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "News article subtitle/ingress"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Main content"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "emojisAllowed": {
+                      "type": "boolean",
+                      "description": "Whether reactions are enabled"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "header",
+                    "body",
+                    "imageUrl",
+                    "imageAlt",
+                    "emojisAllowed",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7676,7 +8701,22 @@
         "description": "Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.",
         "responses": {
           "200": {
-            "description": "News article deleted successfully"
+            "description": "News article deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7710,7 +8750,7 @@
             "description": "Forbidden - Insufficient permissions"
           },
           "404": {
-            "description": "News article not found"
+            "description": "Not Found - News article not found"
           }
         },
         "parameters": [
@@ -7735,7 +8775,40 @@
         "description": "Add or update emoji reaction to a news article. Requires authentication.",
         "responses": {
           "201": {
-            "description": "Reaction added successfully"
+            "description": "Reaction added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string",
+                      "description": "User ID"
+                    },
+                    "newsId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "News article ID"
+                    },
+                    "emoji": {
+                      "type": "string",
+                      "description": "Emoji reaction"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Reaction creation time (ISO 8601)"
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "newsId",
+                    "emoji",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7812,7 +8885,22 @@
         "description": "Remove your emoji reaction from a news article.",
         "responses": {
           "200": {
-            "description": "Reaction removed successfully"
+            "description": "Reaction removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -7868,7 +8956,174 @@
         "description": "Create a new job posting. Requires 'jobs:create' permission.",
         "responses": {
           "201": {
-            "description": "Job posting created successfully"
+            "description": "Job posting created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Job posting ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Job title"
+                    },
+                    "ingress": {
+                      "type": "string",
+                      "description": "Short description"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Full job description"
+                    },
+                    "company": {
+                      "type": "string",
+                      "description": "Company name"
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "Job location"
+                    },
+                    "deadline": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application deadline (ISO 8601)"
+                    },
+                    "isContinuouslyHiring": {
+                      "type": "boolean",
+                      "description": "Is continuously hiring"
+                    },
+                    "jobType": {
+                      "type": "string",
+                      "enum": [
+                        "full_time",
+                        "part_time",
+                        "summer_job",
+                        "other"
+                      ],
+                      "description": "Job type"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Contact email"
+                    },
+                    "link": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application link"
+                    },
+                    "classStart": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Minimum year of study"
+                    },
+                    "classEnd": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Maximum year of study"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "ingress",
+                    "body",
+                    "company",
+                    "location",
+                    "deadline",
+                    "isContinuouslyHiring",
+                    "jobType",
+                    "email",
+                    "link",
+                    "classStart",
+                    "classEnd",
+                    "imageUrl",
+                    "imageAlt",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad Request - Invalid input"
@@ -8311,7 +9566,207 @@
         "description": "Get a single job posting by ID. Public endpoint.",
         "responses": {
           "200": {
-            "description": "Job posting details"
+            "description": "Job posting details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Job posting ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Job title"
+                    },
+                    "ingress": {
+                      "type": "string",
+                      "description": "Short description"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Full job description"
+                    },
+                    "company": {
+                      "type": "string",
+                      "description": "Company name"
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "Job location"
+                    },
+                    "deadline": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application deadline (ISO 8601)"
+                    },
+                    "isContinuouslyHiring": {
+                      "type": "boolean",
+                      "description": "Is continuously hiring"
+                    },
+                    "jobType": {
+                      "type": "string",
+                      "enum": [
+                        "full_time",
+                        "part_time",
+                        "summer_job",
+                        "other"
+                      ],
+                      "description": "Job type"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Contact email"
+                    },
+                    "link": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application link"
+                    },
+                    "classStart": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Minimum year of study"
+                    },
+                    "classEnd": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Maximum year of study"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    },
+                    "creator": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "email"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user info"
+                    },
+                    "expired": {
+                      "type": "boolean",
+                      "description": "Whether the job posting has expired"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "ingress",
+                    "body",
+                    "company",
+                    "location",
+                    "deadline",
+                    "isContinuouslyHiring",
+                    "jobType",
+                    "email",
+                    "link",
+                    "classStart",
+                    "classEnd",
+                    "imageUrl",
+                    "imageAlt",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt",
+                    "creator",
+                    "expired"
+                  ]
+                }
+              }
+            }
           },
           "404": {
             "description": "Not Found - Job posting not found"
@@ -8337,7 +9792,174 @@
         "description": "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
         "responses": {
           "200": {
-            "description": "Job posting updated successfully"
+            "description": "Job posting updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "description": "Job posting ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Job title"
+                    },
+                    "ingress": {
+                      "type": "string",
+                      "description": "Short description"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Full job description"
+                    },
+                    "company": {
+                      "type": "string",
+                      "description": "Company name"
+                    },
+                    "location": {
+                      "type": "string",
+                      "description": "Job location"
+                    },
+                    "deadline": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application deadline (ISO 8601)"
+                    },
+                    "isContinuouslyHiring": {
+                      "type": "boolean",
+                      "description": "Is continuously hiring"
+                    },
+                    "jobType": {
+                      "type": "string",
+                      "enum": [
+                        "full_time",
+                        "part_time",
+                        "summer_job",
+                        "other"
+                      ],
+                      "description": "Job type"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Contact email"
+                    },
+                    "link": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Application link"
+                    },
+                    "classStart": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Minimum year of study"
+                    },
+                    "classEnd": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni"
+                      ],
+                      "description": "Maximum year of study"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image URL"
+                    },
+                    "imageAlt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Image alt text"
+                    },
+                    "createdById": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Creator user ID"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "Creation time (ISO 8601)"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "Last update time (ISO 8601)"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "ingress",
+                    "body",
+                    "company",
+                    "location",
+                    "deadline",
+                    "isContinuouslyHiring",
+                    "jobType",
+                    "email",
+                    "link",
+                    "classStart",
+                    "classEnd",
+                    "imageUrl",
+                    "imageAlt",
+                    "createdById",
+                    "createdAt",
+                    "updatedAt"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",
@@ -8519,7 +10141,22 @@
         "description": "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
         "responses": {
           "200": {
-            "description": "Job posting deleted successfully"
+            "description": "Job posting deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
           },
           "401": {
             "description": "Authentication required",

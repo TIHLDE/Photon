@@ -15,6 +15,15 @@ const createReactionSchema = z.object({
         .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
 });
 
+const newsReactionSchema = z.object({
+    userId: z.string().meta({ description: "User ID" }),
+    newsId: z.uuid().meta({ description: "News article ID" }),
+    emoji: z.string().meta({ description: "Emoji reaction" }),
+    createdAt: z
+        .string()
+        .meta({ description: "Reaction creation time (ISO 8601)" }),
+});
+
 export const createReactionRoute = route().post(
     "/:id/reactions",
     describeRoute({
@@ -24,8 +33,9 @@ export const createReactionRoute = route().post(
         description:
             "Add or update emoji reaction to a news article. Requires authentication.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 201,
+            schema: newsReactionSchema,
             description: "Reaction added successfully",
         })
         .forbidden({

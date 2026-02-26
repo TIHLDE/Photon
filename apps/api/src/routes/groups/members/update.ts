@@ -8,6 +8,10 @@ import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
+const updateMemberRoleResponseSchema = z.object({
+    message: z.string(),
+});
+
 const updateMemberRoleSchema = z.object({
     role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
 });
@@ -21,8 +25,9 @@ export const updateMemberRoleRoute = route().patch(
         description:
             "Update a member's role in a group. Requires 'groups:manage' permission.",
     })
-        .response({
+        .schemaResponse({
             statusCode: 200,
+            schema: updateMemberRoleResponseSchema,
             description: "Member role updated successfully",
         })
         .notFound({ description: "Group, user, or membership not found" })

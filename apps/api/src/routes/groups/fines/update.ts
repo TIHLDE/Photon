@@ -10,6 +10,10 @@ import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
 
+const updateFineResponseSchema = z.object({
+    message: z.string(),
+});
+
 const updateFineSchema = z.object({
     defense: z.string().optional().meta({ description: "User's defense text" }),
     status: z
@@ -31,7 +35,11 @@ export const updateFineRoute = route().patch(
         description:
             "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
     })
-        .response({ statusCode: 200, description: "Fine updated successfully" })
+        .schemaResponse({
+            statusCode: 200,
+            schema: updateFineResponseSchema,
+            description: "Fine updated successfully",
+        })
         .badRequest({ description: "Invalid status transition" })
         .forbidden({ description: "Not authorized to update this fine" })
         .notFound({ description: "Fine or group not found" })

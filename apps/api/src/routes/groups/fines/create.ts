@@ -8,6 +8,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { fineSchema } from "./get";
 
 const createFineSchema = z.object({
     userId: z
@@ -36,7 +37,11 @@ export const createFineRoute = route().post(
         description:
             "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
     })
-        .response({ statusCode: 201, description: "Fine created successfully" })
+        .schemaResponse({
+            statusCode: 201,
+            schema: fineSchema,
+            description: "Fine created successfully",
+        })
         .badRequest({
             description: "Invalid input or fines not activated for group",
         })

@@ -11,6 +11,10 @@ const updateFavoriteSchema = z.object({
     isFavorite: z.boolean().meta({ description: "Is favorite" }),
 });
 
+const updateFavoriteResponseSchema = z.object({
+    success: z.boolean(),
+});
+
 export const updateFavoriteRoute = route().put(
     "/:id",
     describeRoute({
@@ -20,7 +24,11 @@ export const updateFavoriteRoute = route().put(
         description:
             "Mark or unmark an event as a favorite for the authenticated user",
     })
-        .response({ statusCode: 200, description: "Updated" })
+        .schemaResponse({
+            statusCode: 200,
+            schema: updateFavoriteResponseSchema,
+            description: "Updated",
+        })
         .notFound({ description: "Event not found" })
         .build(),
     requireAuth,
