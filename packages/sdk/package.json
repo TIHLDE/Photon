@@ -1,19 +1,11 @@
 {
     "name": "@tihlde/sdk",
     "version": "0.0.2",
+    "description": "TypeScript SDK for the Photon API",
+    "license": "MIT",
+    "type": "module",
     "main": "./dist/index.js",
-    "devDependencies": {
-        "@hey-api/openapi-ts": "0.87.5",
-        "@types/bun": "catalog:",
-        "@photon/auth": "workspace:*",
-        "@photon/tsconfig": "workspace:*",
-        "@types/node": "catalog:",
-        "better-auth": "catalog:",
-        "typescript": "catalog:"
-    },
-    "peerDependencies": {
-        "better-auth": "^1.4.0"
-    },
+    "types": "./dist/index.d.ts",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -24,12 +16,28 @@
             "default": "./dist/auth.js"
         }
     },
-    "description": "TypeScript SDK for the Photon API",
-    "files": [
-        "dist",
-        "scripts"
-    ],
-    "license": "MIT",
+    "files": ["dist", "scripts"],
+    "scripts": {
+        "build": "bun build.ts",
+        "codegen": "openapi-ts",
+        "typecheck": "tsc --noEmit",
+        "postinstall": "node scripts/postinstall.mjs"
+    },
+    "dependencies": {
+        "@hey-api/client-fetch": "^0.13.1"
+    },
+    "devDependencies": {
+        "@hey-api/openapi-ts": "0.87.5",
+        "@photon/auth": "workspace:*",
+        "@photon/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "@types/node": "catalog:",
+        "better-auth": "catalog:",
+        "typescript": "catalog:"
+    },
+    "peerDependencies": {
+        "better-auth": "^1.4.0"
+    },
     "peerDependenciesMeta": {
         "better-auth": {
             "optional": true
@@ -39,15 +47,8 @@
         "access": "public",
         "provenance": true
     },
-    "scripts": {
-        "build": "bun build.ts",
-        "codegen": "openapi-ts",
-        "typecheck": "tsc --noEmit",
-        "postinstall": "node scripts/postinstall.mjs"
-    },
-    "type": "module",
-    "types": "./dist/index.d.ts",
-    "dependencies": {
-        "@hey-api/client-fetch": "^0.13.1"
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TIHLDE/Photon"
     }
 }
