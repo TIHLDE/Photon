@@ -1,6 +1,6 @@
 {
     "name": "@tihlde/sdk",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "TypeScript SDK for the Photon API",
     "license": "MIT",
     "type": "module",
@@ -16,7 +16,10 @@
             "default": "./dist/auth.js"
         }
     },
-    "files": ["dist", "scripts"],
+    "files": [
+        "dist",
+        "scripts"
+    ],
     "scripts": {
         "build": "bun build.ts",
         "codegen": "openapi-ts",
