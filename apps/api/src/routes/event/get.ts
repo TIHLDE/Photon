@@ -1,10 +1,10 @@
 import { registrationStatusVariants } from "@photon/db/schema";
 import z from "zod";
-import { describeRoute } from "~/lib/openapi";
+import { describeRoute, Schema } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
 
-const eventSchema = z.object({
+const eventSchema = Schema("Event",z.object({
     id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
     slug: z.string().meta({ description: "Event slug" }),
     title: z.string().meta({ description: "Event title" }),
@@ -109,7 +109,7 @@ const eventSchema = z.object({
             description:
                 "The current user's registration information. This is null if not registered or if not logged in.",
         }),
-});
+}));
 
 export const getRoute = route().get(
     "/:eventId",

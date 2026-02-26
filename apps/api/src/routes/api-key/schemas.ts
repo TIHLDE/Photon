@@ -34,9 +34,14 @@ export const apiKeySchema = z.object({
         .meta({ description: "When the key was last updated" }),
 });
 
+
+
 export const createApiKeyResponseSchema = apiKeySchema.extend({
     key: z.string().meta({
         description:
             "The full API key - ONLY returned on creation and regeneration. Cannot be retrieved again.",
     }),
-});
+}).meta({ref: "CreateApiKeyResponse", title: "Create API key response"});
+
+
+
