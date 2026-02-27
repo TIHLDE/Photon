@@ -277,9 +277,11 @@ export function describeMiddleware<T extends MiddlewareHandler>(
 }
 
 
+declare const _schemaTag: unique symbol;
+
 export type SchemaTag = {
-    __SchemaTag__: "Schema";
-}
+    readonly [_schemaTag]: true;
+};
 
 export function Schema<T extends z.ZodType>(
     name: string,
