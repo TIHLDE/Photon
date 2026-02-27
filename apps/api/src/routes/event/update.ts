@@ -5,7 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
 import { isEventOwner } from "../../lib/event/middleware";
-import { updateEventSchema } from "../../lib/event/schema";
+import { updateEventSchema } from "./schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";

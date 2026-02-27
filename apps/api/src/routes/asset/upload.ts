@@ -4,7 +4,7 @@ import {
     generateAssetKey,
     isAllowedMimeType,
 } from "~/lib/asset";
-import { uploadResponseSchema } from "~/lib/asset/schema";
+import { uploadResponseSchema } from "./schema";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";

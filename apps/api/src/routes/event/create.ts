@@ -2,32 +2,12 @@ import { type DbSchema, schema } from "@photon/db";
 import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
-import { createEventSchema } from "../../lib/event/schema";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-
-const eventSchema = z.object({
-    id: z.uuid({ version: "v4" }),
-    slug: z.string(),
-    title: z.string(),
-    description: z.string().nullable(),
-    location: z.string().nullable(),
-    startTime: z.iso.datetime(),
-    endTime: z.iso.datetime(),
-    capacity: z.number(),
-    allowWaitlist: z.boolean(),
-    createdByUserId: z.string().nullable(),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
-});
-
-const createEventResponseSchema = z.object({
-    eventId: z.uuid(),
-});
+import { createEventResponseSchema, createEventSchema } from "./schema";
 
 export const createRoute = route().post(
     "/",

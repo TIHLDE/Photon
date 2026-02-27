@@ -4,27 +4,11 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
-
-const updateFineResponseSchema = z.object({
-    message: z.string(),
-});
-
-const updateFineSchema = z.object({
-    defense: z.string().optional().meta({ description: "User's defense text" }),
-    status: z
-        .enum(["pending", "approved", "paid", "rejected"])
-        .optional()
-        .meta({ description: "Fine status" }),
-    approvedByUserId: z
-        .string()
-        .optional()
-        .meta({ description: "User who approved the fine" }),
-});
+import { updateFineResponseSchema, updateFineSchema } from "./schema";
 
 export const updateFineRoute = route().patch(
     "/:groupSlug/fines/:fineId",

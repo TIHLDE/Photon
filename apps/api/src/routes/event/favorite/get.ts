@@ -2,17 +2,7 @@ import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const getFavoriteSchema = z.array(
-    z.object({
-        eventId: z.string().meta({ description: "Event ID" }),
-        title: z.string().meta({ description: "Event title" }),
-        slug: z.string().meta({ description: "Event slug" }),
-        createdAt: z.iso.datetime().meta({
-            description: "When you added this event to your favorites",
-        }),
-    }),
-);
+import { favoriteEventsSchema } from "../schema";
 
 export const getFavoriteEventsRoute = route().get(
     "/",
@@ -25,7 +15,7 @@ export const getFavoriteEventsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: getFavoriteSchema,
+            schema: favoriteEventsSchema,
             description: "List of favorite events",
         })
         .build(),
@@ -43,7 +33,7 @@ export const getFavoriteEventsRoute = route().get(
             },
         });
 
-        const returnFavorites: z.infer<typeof getFavoriteSchema> =
+        const returnFavorites: z.infer<typeof favoriteEventsSchema> =
             favorites.map((fav) => ({
                 eventId: fav.eventId,
                 slug: fav.event.slug,

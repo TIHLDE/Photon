@@ -1,11 +1,8 @@
 import { schema } from "@photon/db";
 import { asc, eq, ilike, or } from "drizzle-orm";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { groupSchema } from "./get";
-
-const groupListSchema = z.array(groupSchema);
+import { groupListSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",

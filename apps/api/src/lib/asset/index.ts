@@ -3,7 +3,23 @@ import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageClient } from "~/lib/storage";
 
-export { ALLOWED_MIME_TYPES, MAX_FILE_SIZE, isAllowedMimeType } from "./schema";
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+export const ALLOWED_MIME_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+] as const;
+
+export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
+export function isAllowedMimeType(
+    mimeType: string,
+): mimeType is AllowedMimeType {
+    return ALLOWED_MIME_TYPES.includes(mimeType as AllowedMimeType);
+}
 
 /**
  * Get staged assets older than the specified cutoff date

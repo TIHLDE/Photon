@@ -1,11 +1,8 @@
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { apiKeySchema } from "./schemas";
-
-export const listApiKeysResponseSchema = z.array(apiKeySchema);
+import { listApiKeysResponseSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",

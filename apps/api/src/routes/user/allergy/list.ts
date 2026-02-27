@@ -1,20 +1,6 @@
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-
-const allergySchema = z.object({
-    slug: z.string().meta({
-        description: "Unique identifier for the allergy",
-    }),
-    label: z.string().meta({
-        description: "Display name of the allergy",
-    }),
-    description: z.string().nullable().meta({
-        description: "Detailed description of the allergy",
-    }),
-});
-
-const responseSchema = z.array(allergySchema);
+import { allergiesListSchema } from "../schema";
 
 export const listAllergiesRoute = route().get(
     "/",
@@ -27,7 +13,7 @@ export const listAllergiesRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: responseSchema,
+            schema: allergiesListSchema,
             description: "List of allergies retrieved successfully",
         })
         .build(),

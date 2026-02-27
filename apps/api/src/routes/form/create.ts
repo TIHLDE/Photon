@@ -2,22 +2,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { createFormSchema } from "../../lib/form/schema";
-
-const formResponseSchema = z.object({
-    id: z.uuid(),
-    title: z.string(),
-    description: z.string().nullable(),
-    template: z.boolean(),
-    created_at: z.string(),
-    updated_at: z.string(),
-});
+import { createFormSchema, formResponseSchema } from "./schema";
 
 export const createRoute = route().post(
     "/",

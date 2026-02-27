@@ -2,90 +2,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isJobCreator } from "~/lib/job/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const updateJobSchema = z
-    .object({
-        title: z.string().min(1).max(200).optional(),
-        ingress: z.string().max(800).optional(),
-        body: z.string().optional(),
-        company: z.string().min(1).max(200).optional(),
-        location: z.string().min(1).max(200).optional(),
-        deadline: z.string().datetime().optional().nullable(),
-        isContinuouslyHiring: z.boolean().optional(),
-        jobType: z
-            .enum(["full_time", "part_time", "summer_job", "other"])
-            .optional(),
-        email: z.string().email().max(320).optional().nullable(),
-        link: z.url().optional().nullable(),
-        classStart: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .optional(),
-        classEnd: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .optional(),
-        imageUrl: z.url().optional().nullable(),
-        imageAlt: z.string().max(255).optional().nullable(),
-    })
-    .refine(
-        (data) => {
-            // If both are provided, validate that classStart <= classEnd
-            if (data.classStart && data.classEnd) {
-                const classOrder = [
-                    "first",
-                    "second",
-                    "third",
-                    "fourth",
-                    "fifth",
-                    "alumni",
-                ];
-                return (
-                    classOrder.indexOf(data.classStart) <=
-                    classOrder.indexOf(data.classEnd)
-                );
-            }
-            return true;
-        },
-        {
-            message: "classStart must be less than or equal to classEnd",
-            path: ["classStart"],
-        },
-    );
-
-const updateJobResponseSchema = z.object({
-    id: z.uuid().meta({ description: "Job posting ID" }),
-    title: z.string().meta({ description: "Job title" }),
-    ingress: z.string().meta({ description: "Short description" }),
-    body: z.string().meta({ description: "Full job description" }),
-    company: z.string().meta({ description: "Company name" }),
-    location: z.string().meta({ description: "Job location" }),
-    deadline: z
-        .string()
-        .nullable()
-        .meta({ description: "Application deadline (ISO 8601)" }),
-    isContinuouslyHiring: z
-        .boolean()
-        .meta({ description: "Is continuously hiring" }),
-    jobType: z.enum(schema.jobTypeVariants).meta({ description: "Job type" }),
-    email: z.string().nullable().meta({ description: "Contact email" }),
-    link: z.string().nullable().meta({ description: "Application link" }),
-    classStart: z
-        .enum(schema.userClassVariants)
-        .meta({ description: "Minimum year of study" }),
-    classEnd: z
-        .enum(schema.userClassVariants)
-        .meta({ description: "Maximum year of study" }),
-    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
-    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-    createdById: z.string().nullable().meta({ description: "Creator user ID" }),
-    createdAt: z.string().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.string().meta({ description: "Last update time (ISO 8601)" }),
-});
+import { jobDetailSchema, updateJobSchema } from "./schema";
 
 export const updateRoute = route().patch(
     "/:id",
@@ -98,7 +20,7 @@ export const updateRoute = route().patch(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: updateJobResponseSchema,
+            schema: jobDetailSchema,
             description: "Job posting updated successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

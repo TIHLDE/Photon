@@ -1,23 +1,10 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const formListResponseSchema = z.array(
-    z.object({
-        id: z.uuid(),
-        title: z.string(),
-        description: z.string().nullable(),
-        template: z.boolean(),
-        resource_type: z.string(),
-        viewer_has_answered: z.boolean(),
-        created_at: z.string(),
-        updated_at: z.string(),
-    }),
-);
+import { formListSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",
@@ -30,7 +17,7 @@ export const listRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: formListResponseSchema,
+            schema: formListSchema,
             description: "Success",
         })
         .build(),

@@ -4,16 +4,11 @@ import { FormSubmissionDeletedEmail } from "@photon/email/templates";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { deleteSubmissionWithReasonSchema } from "../../../lib/form/schema";
-
-const deleteSubmissionResponseSchema = z.object({
-    detail: z.string(),
-});
+import { deleteSubmissionResponseSchema, deleteSubmissionWithReasonSchema } from "../schema";
 
 export const deleteSubmissionWithReasonRoute = route().delete(
     "/:formId/submissions/:id/destroy_with_reason",

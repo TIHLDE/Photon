@@ -2,36 +2,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const updateNewsSchema = z.object({
-    title: z.string().min(1).max(200).optional(),
-    header: z.string().min(1).max(200).optional(),
-    body: z.string().min(1).optional(),
-    imageUrl: z.url().optional().nullable(),
-    imageAlt: z.string().max(255).optional().nullable(),
-    emojisAllowed: z.boolean().optional(),
-});
-
-const updateNewsResponseSchema = z.object({
-    id: z.uuid().meta({ description: "News article ID" }),
-    title: z.string().meta({ description: "News article title" }),
-    header: z.string().meta({ description: "News article subtitle/ingress" }),
-    body: z.string().meta({ description: "Main content" }),
-    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
-    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-    emojisAllowed: z
-        .boolean()
-        .meta({ description: "Whether reactions are enabled" }),
-    createdById: z.string().nullable().meta({ description: "Creator user ID" }),
-    createdAt: z.string().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.string().meta({ description: "Last update time (ISO 8601)" }),
-});
+import { newsArticleSchema, updateNewsSchema } from "./schema";
 
 export const updateRoute = route().patch(
     "/:id",
@@ -44,7 +20,7 @@ export const updateRoute = route().patch(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: updateNewsResponseSchema,
+            schema: newsArticleSchema,
             description: "News article updated successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

@@ -3,29 +3,11 @@ import { type DbSchema, schema } from "@photon/db";
 import type { InferInsertModel } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
-
-const createPaymentBodySchema = z.object({
-    returnUrl: z
-        .url()
-        .meta({ description: "URL to redirect user after payment" }),
-    userFlow: z
-        .enum(["WEB_REDIRECT", "NATIVE_REDIRECT"])
-        .default("WEB_REDIRECT")
-        .meta({ description: "User flow type for payment" }),
-});
-
-const createPaymentResponseSchema = z.object({
-    eventId: z.uuid(),
-    userId: z.string(),
-    checkoutUrl: z.url(),
-    amount: z.number(),
-    currency: z.string(),
-});
+import { createPaymentBodySchema, createPaymentResponseSchema } from "../schema";
 
 export const createPaymentRoute = route().post(
     "/:eventId/payment",

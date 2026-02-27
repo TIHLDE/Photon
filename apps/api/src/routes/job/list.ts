@@ -6,66 +6,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     PaginationSchema,
-    PagniationResponseSchema,
     getPageOffset,
     getTotalPages,
 } from "../../middleware/pagination";
-
-const jobPostSchema = z.object({
-    id: z.uuid({ version: "v4" }).meta({ description: "Job post ID" }),
-    title: z.string().meta({ description: "Job title" }),
-    ingress: z.string().meta({ description: "Short description" }),
-    body: z.string().meta({ description: "Full job description" }),
-    company: z.string().meta({ description: "Company name" }),
-    location: z.string().meta({ description: "Job location" }),
-
-    deadline: z.iso
-        .date()
-        .nullable()
-        .meta({ description: "Application deadline (ISO 8601)" }),
-    isContinuouslyHiring: z
-        .boolean()
-        .meta({ description: "Is continuously hiring" }),
-    jobType: z.enum(schema.jobTypeVariants).meta({ description: "Job type" }),
-    email: z.string().nullable().meta({ description: "Contact email" }),
-    link: z.string().nullable().meta({ description: "Application link" }),
-    classStart: z
-        .enum(schema.userClassVariants)
-        .meta({ description: "Minimum year of study" }),
-    classEnd: z
-        .enum(schema.userClassVariants)
-        .meta({ description: "Maximum year of study" }),
-    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
-    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-
-    expired: z
-        .boolean()
-        .meta({ description: "Whether the job posting has expired" }),
-    createdAt: z.iso.date().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.iso
-        .date()
-        .meta({ description: "Last update time (ISO 8601)" }),
-});
-
-const filterSchema = PaginationSchema.extend({
-    search: z.string().optional().meta({
-        description: "Search term to filter by title or company name",
-    }),
-    expired: z.coerce.boolean().optional().meta({
-        description: "Include expired job postings (default: false)",
-    }),
-    jobType: z.enum(schema.jobTypeVariants).optional().meta({
-        description: "Filter by job type",
-    }),
-    year: z.enum(schema.userClassVariants).optional().meta({
-        description:
-            "Filter by year of study (returns jobs targeting that class)",
-    }),
-});
-
-const ResponseSchema = PagniationResponseSchema.extend({
-    items: z.array(jobPostSchema).describe("List of job postings"),
-});
+import { jobListFilterSchema, jobListItemSchema, jobListResponseSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",
@@ -78,11 +22,11 @@ export const listRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: ResponseSchema,
+            schema: jobListResponseSchema,
             description: "OK",
         })
         .build(),
-    validator("query", filterSchema),
+    validator("query", jobListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
         const { page, pageSize, search, expired, jobType, year } =
@@ -155,16 +99,17 @@ export const listRoute = route().get(
             classEnd: job.classEnd,
             imageUrl: job.imageUrl ?? null,
             imageAlt: job.imageAlt ?? null,
+            createdById: job.createdById ?? null,
             expired: job.deadline ? job.deadline < now : false,
             createdAt: job.createdAt.toISOString(),
             updatedAt: job.updatedAt.toISOString(),
-        })) satisfies z.infer<typeof jobPostSchema>[];
+        })) satisfies z.infer<typeof jobListItemSchema>[];
 
         return c.json({
             totalCount: jobCount,
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
             items,
-        } satisfies z.infer<typeof ResponseSchema>);
+        } satisfies z.infer<typeof jobListResponseSchema>);
     },
 );

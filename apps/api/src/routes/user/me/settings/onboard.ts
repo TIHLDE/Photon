@@ -8,6 +8,7 @@ import {
     getUserSettings,
 } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
+import { userSettingsSchema } from "../../schema";
 
 export const onboardRoute = route().post(
     "/",
@@ -20,7 +21,7 @@ export const onboardRoute = route().post(
     })
         .schemaResponse({
             statusCode: 201,
-            schema: UserSettingsSchema,
+            schema: userSettingsSchema,
             description: "User onboarded successfully",
         })
         .badRequest({ description: "User has already completed onboarding" })

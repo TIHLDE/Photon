@@ -2,19 +2,11 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const updateMemberRoleResponseSchema = z.object({
-    message: z.string(),
-});
-
-const updateMemberRoleSchema = z.object({
-    role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
-});
+import { updateMemberRoleResponseSchema, updateMemberRoleSchema } from "../schema";
 
 export const updateMemberRoleRoute = route().patch(
     "/:groupSlug/members/:userId",

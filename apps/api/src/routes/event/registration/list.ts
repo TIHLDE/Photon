@@ -6,25 +6,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     PaginationSchema,
-    PagniationResponseSchema,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
-
-const registeredUserSchema = z.object({
-    id: z.string().meta({ description: "User id" }),
-    name: z.string().meta({ description: "User name" }),
-    image: z
-        .string()
-        .nullable()
-        .meta({ description: "User image url (if any)" }),
-});
-
-const ResponseSchema = PagniationResponseSchema.extend({
-    registeredUsers: z
-        .array(registeredUserSchema)
-        .describe("List of registered users (paginated)"),
-});
+import { eventRegistrationListResponseSchema, registeredUserSchema } from "../schema";
 
 export const getAllRegistrationsForEventsRoute = route().get(
     "/:eventId/registration",
@@ -37,7 +22,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: ResponseSchema,
+            schema: eventRegistrationListResponseSchema,
             description: "OK",
         })
         .build(),
@@ -94,6 +79,6 @@ export const getAllRegistrationsForEventsRoute = route().get(
             pages: totalPages,
             nextPage: page + 1 > totalPages ? null : page + 1,
             registeredUsers: returnRegistrations,
-        } satisfies z.infer<typeof ResponseSchema>);
+        } satisfies z.infer<typeof eventRegistrationListResponseSchema>);
     },
 );

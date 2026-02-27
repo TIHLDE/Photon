@@ -2,31 +2,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { fineSchema } from "./get";
-
-const createFineSchema = z.object({
-    userId: z
-        .string()
-        .max(255)
-        .meta({ description: "User ID who receives the fine" }),
-    groupSlug: z
-        .string()
-        .max(128)
-        .meta({ description: "Group slug that issues the fine" }),
-    reason: z.string().min(1).meta({ description: "Reason for the fine" }),
-    amount: z
-        .number()
-        .int()
-        .positive()
-        .meta({ description: "Fine amount in NOK" }),
-    defense: z.string().optional().meta({ description: "User's defense text" }),
-});
+import { createFineSchema, fineSchema } from "./schema";
 
 export const createFineRoute = route().post(
     "/:groupSlug/fines",

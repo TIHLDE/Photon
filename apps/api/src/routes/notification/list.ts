@@ -1,38 +1,16 @@
 import { schema } from "@photon/db";
 import { desc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
-import z from "zod";
+import { z } from "zod";
 import { describeRoute } from "~/lib/openapi";
 import {
     PaginationSchema,
-    PagniationResponseSchema,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-
-const notificationSchema = z.object({
-    id: z.string().meta({ description: "Notification ID" }),
-    userId: z.string().meta({ description: "User ID" }),
-    title: z.string().meta({ description: "Notification title" }),
-    description: z.string().meta({ description: "Notification description" }),
-    link: z
-        .string()
-        .nullable()
-        .meta({ description: "Optional link URL (nullable)" }),
-    isRead: z.boolean().meta({ description: "Whether notification is read" }),
-    createdAt: z.iso
-        .datetime()
-        .meta({ description: "Notification creation time (ISO 8601)" }),
-    updatedAt: z.iso
-        .datetime()
-        .meta({ description: "Notification update time (ISO 8601)" }),
-});
-
-const ResponseSchema = PagniationResponseSchema.extend({
-    items: z.array(notificationSchema).describe("List of notifications"),
-});
+import { notificationListResponseSchema } from "./schema";
 
 export const listNotificationsRoute = route().get(
     "/",
@@ -45,7 +23,7 @@ export const listNotificationsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: ResponseSchema,
+            schema: notificationListResponseSchema,
             description: "OK",
         })
         .build(),
@@ -89,6 +67,6 @@ export const listNotificationsRoute = route().get(
             pages: totalPages,
             nextPage: page + 1 > totalPages ? null : page + 1,
             items: returnNotifications,
-        } satisfies z.infer<typeof ResponseSchema>);
+        } satisfies z.infer<typeof notificationListResponseSchema>);
     },
 );

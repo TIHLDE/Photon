@@ -1,14 +1,9 @@
 import { validator } from "hono-openapi";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { idParamSchema } from "./schemas";
-
-const deleteApiKeyResponseSchema = z.object({
-    message: z.string().meta({ description: "Success message" }),
-});
+import { deleteApiKeyResponseSchema, idParamSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:id",

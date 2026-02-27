@@ -2,57 +2,11 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { groupSchema } from "./get";
-
-const createGroupSchema = z.object({
-    slug: z
-        .string()
-        .min(1)
-        .max(128)
-        .regex(
-            /^[a-z0-9-]+$/,
-            "Slug must contain only lowercase letters, numbers, and hyphens",
-        )
-        .meta({ description: "Unique group slug identifier" }),
-    imageUrl: z
-        .string()
-        .url()
-        .max(600)
-        .optional()
-        .meta({ description: "Group image URL" }),
-    name: z.string().min(1).max(128).meta({ description: "Group name" }),
-    description: z
-        .string()
-        .optional()
-        .meta({ description: "Group description" }),
-    contactEmail: z
-        .string()
-        .email()
-        .max(200)
-        .optional()
-        .meta({ description: "Group contact email" }),
-    type: z.string().max(50).meta({
-        description: "Group type (e.g., committee, study, interestgroup)",
-    }),
-    finesInfo: z
-        .string()
-        .default("")
-        .meta({ description: "Information about group fines policy" }),
-    finesActivated: z
-        .boolean()
-        .default(false)
-        .meta({ description: "Whether fines are activated for this group" }),
-    finesAdminId: z
-        .string()
-        .max(255)
-        .optional()
-        .meta({ description: "User ID of the fines administrator" }),
-});
+import { createGroupSchema, groupSchema } from "./schema";
 
 export const createRoute = route().post(
     "/",

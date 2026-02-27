@@ -1,15 +1,11 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
 import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-
-const deleteEventResponseSchema = z.object({
-    message: z.string(),
-});
+import { deleteEventResponseSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:eventId",

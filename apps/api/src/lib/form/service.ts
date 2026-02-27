@@ -14,7 +14,7 @@ import type {
     CreateAnswerInput,
     CreateFieldInput,
     UpdateFieldInput,
-} from "./schema";
+} from "~/routes/form/schema";
 
 type Database = NodePgDatabase<DbSchema>;
 

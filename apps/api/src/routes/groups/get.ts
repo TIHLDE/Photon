@@ -1,30 +1,7 @@
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-
-export const groupSchema = z.object({
-    slug: z.string().meta({ description: "Group slug" }),
-    imageUrl: z.string().nullable().meta({ description: "Group image URL" }),
-    name: z.string().meta({ description: "Group name" }),
-    description: z
-        .string()
-        .nullable()
-        .meta({ description: "Group description" }),
-    contactEmail: z
-        .string()
-        .nullable()
-        .meta({ description: "Group contact email" }),
-    type: z.string().meta({ description: "Group type" }),
-    finesInfo: z.string().meta({ description: "Group fines info" }),
-    finesActivated: z.boolean().meta({ description: "Group fines activated" }),
-    finesAdminId: z
-        .string()
-        .nullable()
-        .meta({ description: "Group fines admin ID" }),
-    createdAt: z.string().meta({ description: "Creation timestamp" }),
-    updatedAt: z.string().meta({ description: "Last update timestamp" }),
-});
+import { groupSchema } from "./schema";
 
 export const getRoute = route().get(
     "/:slug",

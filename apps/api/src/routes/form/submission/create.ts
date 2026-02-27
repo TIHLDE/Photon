@@ -4,17 +4,11 @@ import { FormSubmissionEmail } from "@photon/email/templates";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { validateAndCreateSubmission } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createSubmissionSchema } from "../../../lib/form/schema";
-
-const createSubmissionResponseSchema = z.object({
-    id: z.string(),
-    message: z.string(),
-});
+import { createSubmissionResponseSchema, createSubmissionSchema } from "../schema";
 
 export const createSubmissionRoute = route().post(
     "/:formId/submissions",

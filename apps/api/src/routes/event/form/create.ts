@@ -3,38 +3,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createEventFormSchema } from "../../../lib/form/schema";
-
-const eventFormFieldSchema = z.object({
-    id: z.uuid(),
-    title: z.string(),
-    type: z.enum(["text_answer", "multiple_select", "single_select"]),
-    required: z.boolean(),
-    order: z.number(),
-    options: z.array(
-        z.object({
-            id: z.uuid(),
-            title: z.string(),
-            order: z.number(),
-        }),
-    ),
-});
-
-const createEventFormResponseSchema = z.object({
-    id: z.uuid().optional(),
-    title: z.string().optional(),
-    description: z.string().nullable().optional(),
-    type: z.enum(["survey", "evaluation"]),
-    resource_type: z.string(),
-    created_at: z.string().optional(),
-    updated_at: z.string().optional(),
-    fields: z.array(eventFormFieldSchema).optional(),
-});
+import { createEventFormResponseSchema } from "./schema";
+import { createEventFormSchema } from "~/routes/form/schema";
 
 export const createEventFormRoute = route().post(
     "/:eventId/forms",

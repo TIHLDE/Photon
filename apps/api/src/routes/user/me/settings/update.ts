@@ -8,6 +8,7 @@ import {
     updateUserSettings,
 } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
+import { updateUserSettingsResponseSchema } from "../../schema";
 
 export const updateSettingsRoute = route().patch(
     "/",
@@ -20,7 +21,7 @@ export const updateSettingsRoute = route().patch(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: UpdateUserSettingsSchema,
+            schema: updateUserSettingsResponseSchema,
             description: "Settings updated successfully",
         })
         .badRequest({ description: "Invalid input" })

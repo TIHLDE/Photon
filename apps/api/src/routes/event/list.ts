@@ -6,66 +6,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import {
     PaginationSchema,
-    PagniationResponseSchema,
     getPageOffset,
     getTotalPages,
 } from "../../middleware/pagination";
-
-const eventSchema = z.object({
-    id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
-    slug: z.string().meta({ description: "Event slug" }),
-    title: z.string().meta({ description: "Event title" }),
-    location: z
-        .string()
-        .nullable()
-        .optional()
-        .meta({ description: "Event location (nullable)" }),
-    startTime: z.iso
-        .date()
-        .meta({ description: "Event start time (ISO 8601)" }),
-    endTime: z.iso.date().meta({ description: "Event end time (ISO 8601)" }),
-    organizer: z
-        .object({
-            name: z.string().meta({ description: "Organizer name" }),
-            slug: z.string().meta({ description: "Organizer slug" }),
-            type: z.string().meta({ description: "Organizer type" }),
-        })
-        .nullable()
-        .meta({ description: "Event organizer (nullable)" }),
-    closed: z.boolean().meta({ description: "Is registration closed" }),
-    image: z
-        .url()
-        .nullable()
-        .meta({ description: "Event image URL (nullable)" }),
-    createdAt: z.iso
-        .date()
-        .meta({ description: "Event creation time (ISO 8601)" }),
-    updatedAt: z.iso
-        .date()
-        .meta({ description: "Event update time (ISO 8601)" }),
-    category: z
-        .object({
-            slug: z.string().meta({ description: "Category slug" }),
-            label: z.string().meta({ description: "Category label" }),
-        })
-        .meta({ description: "Event category" }),
-});
-
-const filterSchema = PaginationSchema.extend({
-    search: z.string().optional().meta({
-        description: "Search term to filter events by title",
-    }),
-    expired: z.coerce.boolean().optional().meta({
-        description: "Whether to include expired events or not",
-    }),
-    openSignUp: z.coerce.boolean().optional().meta({
-        description: "Whether to include only events with open sign-ups",
-    }),
-});
-
-const ResponseSchema = PagniationResponseSchema.extend({
-    items: z.array(eventSchema).describe("List of events"),
-});
+import { eventListFilterSchema, eventListItemSchema, eventListResponseSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",
@@ -78,11 +22,11 @@ export const listRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: ResponseSchema,
+            schema: eventListResponseSchema,
             description: "OK",
         })
         .build(),
-    validator("query", filterSchema),
+    validator("query", eventListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
         const { page, pageSize, search, expired, openSignUp } =
@@ -153,7 +97,7 @@ export const listRoute = route().get(
                     slug: e.category.slug,
                     label: e.category.label,
                 },
-            } satisfies z.infer<typeof eventSchema>;
+            } satisfies z.infer<typeof eventListItemSchema>;
         });
 
         return c.json({
@@ -161,6 +105,6 @@ export const listRoute = route().get(
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
             items: returnEvents,
-        } satisfies z.infer<typeof ResponseSchema>);
+        } satisfies z.infer<typeof eventListResponseSchema>);
     },
 );

@@ -1,4 +1,4 @@
-import { metadataResponseSchema } from "~/lib/asset/schema";
+import { metadataResponseSchema } from "./schema";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";

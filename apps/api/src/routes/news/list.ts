@@ -6,30 +6,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     PaginationSchema,
-    PagniationResponseSchema,
     getPageOffset,
     getTotalPages,
 } from "../../middleware/pagination";
-
-const newsSchema = z.object({
-    id: z.uuid({ version: "v4" }).meta({ description: "News ID" }),
-    title: z.string().meta({ description: "News title" }),
-    header: z.string().meta({ description: "News header" }),
-    body: z.string().meta({ description: "News body" }),
-    imageUrl: z.string().nullable().meta({ description: "Image URL" }),
-    imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
-    emojisAllowed: z
-        .boolean()
-        .meta({ description: "Whether reactions are allowed" }),
-    createdAt: z.iso.date().meta({ description: "Creation time (ISO 8601)" }),
-    updatedAt: z.iso
-        .date()
-        .meta({ description: "Last update time (ISO 8601)" }),
-});
-
-const ResponseSchema = PagniationResponseSchema.extend({
-    items: z.array(newsSchema).describe("List of news articles"),
-});
+import { newsListItemSchema, newsListResponseSchema } from "./schema";
 
 export const listRoute = route().get(
     "/",
@@ -42,7 +22,7 @@ export const listRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: ResponseSchema,
+            schema: newsListResponseSchema,
             description: "OK",
         })
         .build(),
@@ -72,13 +52,13 @@ export const listRoute = route().get(
             emojisAllowed: n.emojisAllowed,
             createdAt: n.createdAt.toISOString(),
             updatedAt: n.updatedAt.toISOString(),
-        })) satisfies z.infer<typeof newsSchema>[];
+        })) satisfies z.infer<typeof newsListItemSchema>[];
 
         return c.json({
             totalCount: newsCount,
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
             items,
-        } satisfies z.infer<typeof ResponseSchema>);
+        } satisfies z.infer<typeof newsListResponseSchema>);
     },
 );

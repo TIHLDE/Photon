@@ -1,20 +1,7 @@
 import { validator } from "hono-openapi";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { apiKeySchema } from "./schemas";
-
-const validateApiKeySchema = z.object({
-    key: z.string().min(1).meta({ description: "The API key to validate" }),
-});
-
-const validateApiKeyResponseSchema = z.object({
-    valid: z.boolean().meta({ description: "Whether the API key is valid" }),
-    apiKey: apiKeySchema.optional().meta({
-        description:
-            "The API key details and permissions if valid. Undefined if invalid.",
-    }),
-});
+import { validateApiKeyInputSchema, validateApiKeyResponseSchema } from "./schema";
 
 export const validateRoute = route().post(
     "/validate",
@@ -32,7 +19,7 @@ export const validateRoute = route().post(
                 "Validation result. If valid=true, includes the API key details and permissions.",
         })
         .build(),
-    validator("json", validateApiKeySchema),
+    validator("json", validateApiKeyInputSchema),
     async (c) => {
         const { key } = c.req.valid("json");
         const { apiKey: service } = c.get("service");
