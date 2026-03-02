@@ -23,7 +23,7 @@ jobs:
     with:
       tag-prefix: ""
       push: ${{ github.event_name != 'pull_request' }}
-      context: .
+      context: ../..
       dockerfile: infra/docker/Dockerfile
 
 
