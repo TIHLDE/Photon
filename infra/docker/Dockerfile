@@ -16,7 +16,7 @@ WORKDIR /usr/src/app
 COPY --from=prune /usr/src/app/out/json/ .
 COPY --from=prune /usr/src/app/out/bun.lock ./bun.lock
 # Install the dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Build stage
 FROM base AS build
