@@ -22,20 +22,20 @@
     ],
     "scripts": {
         "build": "bun build.ts",
-        "codegen": "openapi-ts",
+        "codegen": "bun scripts/generate-openapi.ts",
         "typecheck": "tsc --noEmit",
         "postinstall": "node scripts/postinstall.mjs"
     },
     "dependencies": {
-        "@hey-api/client-fetch": "^0.13.1"
+        "openapi-fetch": "^0.17.0"
     },
     "devDependencies": {
-        "@hey-api/openapi-ts": "0.87.5",
         "@photon/auth": "workspace:*",
         "@photon/tsconfig": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "better-auth": "catalog:",
+        "openapi-typescript": "^7.13.0",
         "typescript": "catalog:"
     },
     "peerDependencies": {
