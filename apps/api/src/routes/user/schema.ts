@@ -1,8 +1,8 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 import {
-    UserSettingsSchema,
     UpdateUserSettingsSchema,
+    UserSettingsSchema,
 } from "~/lib/user/settings";
 
 // ===== RESPONSE SCHEMAS =====
@@ -36,7 +36,10 @@ export const userSettingsResponseSchema = Schema(
     }),
 );
 
-export const userSettingsSchema = Schema("UserSettingsBase", UserSettingsSchema);
+export const userSettingsSchema = Schema(
+    "UserSettingsBase",
+    UserSettingsSchema,
+);
 
 export const updateUserSettingsResponseSchema = Schema(
     "UpdateUserSettings",

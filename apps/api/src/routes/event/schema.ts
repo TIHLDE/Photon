@@ -1,5 +1,4 @@
 import { registrationStatusVariants } from "@photon/db/schema";
-import { schema } from "@photon/db";
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 import {
@@ -106,8 +105,7 @@ const eventMutationSchema = z.object({
         description: "User ID of the primary contact person for the event",
     }),
     reactionsAllowed: z.boolean().meta({
-        description:
-            "Should users be able to react to this event with emojis?",
+        description: "Should users be able to react to this event with emojis?",
     }),
 });
 
@@ -511,7 +509,9 @@ export const eventListItemSchema = Schema(
         startTime: z.iso
             .date()
             .meta({ description: "Event start time (ISO 8601)" }),
-        endTime: z.iso.date().meta({ description: "Event end time (ISO 8601)" }),
+        endTime: z.iso
+            .date()
+            .meta({ description: "Event end time (ISO 8601)" }),
         organizer: z
             .object({
                 name: z.string().meta({ description: "Organizer name" }),

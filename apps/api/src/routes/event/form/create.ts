@@ -7,8 +7,8 @@ import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createEventFormResponseSchema } from "./schema";
 import { createEventFormSchema } from "~/routes/form/schema";
+import { createEventFormResponseSchema } from "./schema";
 
 export const createEventFormRoute = route().post(
     "/:eventId/forms",

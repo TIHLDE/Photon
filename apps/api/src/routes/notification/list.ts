@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { desc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
-import { z } from "zod";
+import type { z } from "zod";
 import { describeRoute } from "~/lib/openapi";
 import {
     PaginationSchema,

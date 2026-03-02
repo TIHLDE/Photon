@@ -153,10 +153,7 @@ export const myGroupSchema = Schema(
     }),
 );
 
-export const myGroupsListSchema = Schema(
-    "MyGroupList",
-    z.array(myGroupSchema),
-);
+export const myGroupsListSchema = Schema("MyGroupList", z.array(myGroupSchema));
 
 export const memberSchema = Schema(
     "GroupMember",

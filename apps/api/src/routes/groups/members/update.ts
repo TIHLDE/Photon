@@ -6,7 +6,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { updateMemberRoleResponseSchema, updateMemberRoleSchema } from "../schema";
+import {
+    updateMemberRoleResponseSchema,
+    updateMemberRoleSchema,
+} from "../schema";
 
 export const updateMemberRoleRoute = route().patch(
     "/:groupSlug/members/:userId",

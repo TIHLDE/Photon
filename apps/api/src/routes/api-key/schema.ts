@@ -66,12 +66,9 @@ export const apiKeySchema = Schema(
         description: z
             .string()
             .meta({ description: "Description of the API key" }),
-        keyPrefix: z
-            .string()
-            .meta({
-                description:
-                    "First 12 characters of the key for display",
-            }),
+        keyPrefix: z.string().meta({
+            description: "First 12 characters of the key for display",
+        }),
         createdById: z
             .string()
             .nullable()
@@ -80,12 +77,9 @@ export const apiKeySchema = Schema(
             .datetime()
             .nullable()
             .meta({ description: "When the key was last used" }),
-        permissions: z
-            .array(z.string())
-            .meta({
-                description:
-                    "Array of permissions granted to this API key",
-            }),
+        permissions: z.array(z.string()).meta({
+            description: "Array of permissions granted to this API key",
+        }),
         metadata: z
             .record(z.string(), z.unknown())
             .nullable()

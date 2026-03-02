@@ -7,7 +7,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
-import { createPaymentBodySchema, createPaymentResponseSchema } from "../schema";
+import {
+    createPaymentBodySchema,
+    createPaymentResponseSchema,
+} from "../schema";
 
 export const createPaymentRoute = route().post(
     "/:eventId/payment",

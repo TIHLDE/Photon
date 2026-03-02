@@ -8,7 +8,10 @@ import { validateAndCreateSubmission } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createSubmissionResponseSchema, createSubmissionSchema } from "../schema";
+import {
+    createSubmissionResponseSchema,
+    createSubmissionSchema,
+} from "../schema";
 
 export const createSubmissionRoute = route().post(
     "/:formId/submissions",

@@ -7,8 +7,8 @@ import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createGroupFormResponseSchema } from "../schema";
 import { createGroupFormSchema } from "~/routes/form/schema";
+import { createGroupFormResponseSchema } from "../schema";
 
 export const createGroupFormRoute = route().post(
     "/:slug/forms",

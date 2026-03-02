@@ -1,4 +1,4 @@
-import z from "zod";
+import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
@@ -52,7 +52,8 @@ export const getRoute = route().get(
 
         const user = c.get("user");
 
-        let registration: z.infer<typeof eventDetailSchema>["registration"] = null;
+        let registration: z.infer<typeof eventDetailSchema>["registration"] =
+            null;
 
         if (user) {
             const dbRegistration = await db.query.eventRegistration.findFirst({

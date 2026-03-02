@@ -1,7 +1,7 @@
-import { metadataResponseSchema } from "./schema";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { metadataResponseSchema } from "./schema";
 
 export const getRoute = route().get(
     "/metadata/:key{.+}",

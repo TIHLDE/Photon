@@ -1,15 +1,15 @@
 import { schema } from "@photon/db";
 import { and, eq, gte, ilike, lte, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
-import z from "zod";
+import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
+import { getPageOffset, getTotalPages } from "../../middleware/pagination";
 import {
-    PaginationSchema,
-    getPageOffset,
-    getTotalPages,
-} from "../../middleware/pagination";
-import { eventListFilterSchema, eventListItemSchema, eventListResponseSchema } from "./schema";
+    eventListFilterSchema,
+    type eventListItemSchema,
+    eventListResponseSchema,
+} from "./schema";
 
 export const listRoute = route().get(
     "/",

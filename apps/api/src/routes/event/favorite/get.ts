@@ -1,4 +1,4 @@
-import z from "zod";
+import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";

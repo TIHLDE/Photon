@@ -56,7 +56,9 @@ export const newsArticleSchema = Schema(
     z.object({
         id: z.uuid().meta({ description: "News article ID" }),
         title: z.string().meta({ description: "News article title" }),
-        header: z.string().meta({ description: "News article subtitle/ingress" }),
+        header: z
+            .string()
+            .meta({ description: "News article subtitle/ingress" }),
         body: z.string().meta({ description: "Main content" }),
         imageUrl: z.string().nullable().meta({ description: "Image URL" }),
         imageAlt: z.string().nullable().meta({ description: "Image alt text" }),
@@ -106,7 +108,9 @@ export const newsListItemSchema = Schema(
         emojisAllowed: z
             .boolean()
             .meta({ description: "Whether reactions are allowed" }),
-        createdAt: z.iso.date().meta({ description: "Creation time (ISO 8601)" }),
+        createdAt: z.iso
+            .date()
+            .meta({ description: "Creation time (ISO 8601)" }),
         updatedAt: z.iso
             .date()
             .meta({ description: "Last update time (ISO 8601)" }),

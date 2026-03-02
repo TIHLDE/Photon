@@ -40,9 +40,7 @@ export const notificationSchema = Schema(
 export const notificationListResponseSchema = Schema(
     "NotificationList",
     PagniationResponseSchema.extend({
-        items: z
-            .array(notificationSchema)
-            .describe("List of notifications"),
+        items: z.array(notificationSchema).describe("List of notifications"),
     }),
 );
 

@@ -8,7 +8,10 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { deleteSubmissionResponseSchema, deleteSubmissionWithReasonSchema } from "../schema";
+import {
+    deleteSubmissionResponseSchema,
+    deleteSubmissionWithReasonSchema,
+} from "../schema";
 
 export const deleteSubmissionWithReasonRoute = route().delete(
     "/:formId/submissions/:id/destroy_with_reason",

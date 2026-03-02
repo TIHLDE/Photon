@@ -1,7 +1,10 @@
 import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { validateApiKeyInputSchema, validateApiKeyResponseSchema } from "./schema";
+import {
+    validateApiKeyInputSchema,
+    validateApiKeyResponseSchema,
+} from "./schema";
 
 export const validateRoute = route().post(
     "/validate",

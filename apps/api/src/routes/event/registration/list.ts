@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { and, desc, eq, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
-import z from "zod";
+import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
@@ -9,7 +9,7 @@ import {
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
-import { eventRegistrationListResponseSchema, registeredUserSchema } from "../schema";
+import { eventRegistrationListResponseSchema } from "../schema";
 
 export const getAllRegistrationsForEventsRoute = route().get(
     "/:eventId/registration",
