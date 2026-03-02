@@ -161,7 +161,7 @@
     },
     "packages/sdk": {
       "name": "@tihlde/sdk",
-      "version": "0.0.1",
+      "version": "0.0.3",
       "dependencies": {
         "@hey-api/client-fetch": "^0.13.1",
       },
