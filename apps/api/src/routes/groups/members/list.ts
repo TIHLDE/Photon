@@ -1,21 +1,9 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-
-const memberSchema = z.object({
-    userId: z.string().meta({ description: "User ID" }),
-    groupSlug: z.string().meta({ description: "Group slug" }),
-    role: z.string().meta({ description: "Membership role" }),
-    createdAt: z
-        .string()
-        .meta({ description: "Membership creation timestamp" }),
-    updatedAt: z.string().meta({ description: "Membership update timestamp" }),
-});
-
-const memberListSchema = z.array(memberSchema);
+import { memberListSchema } from "../schema";
 
 export const listMembersRoute = route().get(
     "/:groupSlug/members",

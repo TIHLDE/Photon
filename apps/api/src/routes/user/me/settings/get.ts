@@ -1,15 +1,9 @@
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { UserSettingsSchema, getUserSettings } from "~/lib/user/settings";
+import { getUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
-
-const responseSchema = UserSettingsSchema.extend({
-    isOnboarded: z.boolean().meta({
-        description: "Whether the user has completed onboarding",
-    }),
-});
+import { userSettingsResponseSchema } from "../../schema";
 
 export const getSettingsRoute = route().get(
     "/",
@@ -22,7 +16,7 @@ export const getSettingsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: responseSchema,
+            schema: userSettingsResponseSchema,
             description: "User settings retrieved successfully",
         })
         .notFound({

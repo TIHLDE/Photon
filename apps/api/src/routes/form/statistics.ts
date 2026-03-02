@@ -2,33 +2,11 @@ import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { calculateFormStatistics, canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const statisticsResponseSchema = z.object({
-    id: z.uuid(),
-    title: z.string(),
-    resource_type: z.string(),
-    statistics: z.array(
-        z.object({
-            id: z.uuid(),
-            title: z.string(),
-            type: z.enum(["multiple_select", "single_select"]),
-            required: z.boolean(),
-            options: z.array(
-                z.object({
-                    id: z.uuid(),
-                    title: z.string(),
-                    answer_amount: z.number(),
-                    answer_percentage: z.number(),
-                }),
-            ),
-        }),
-    ),
-});
+import { formStatisticsSchema } from "./schema";
 
 export const statisticsRoute = route().get(
     "/:id/statistics",
@@ -41,7 +19,7 @@ export const statisticsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: statisticsResponseSchema,
+            schema: formStatisticsSchema,
             description: "Success",
         })
         .forbidden()

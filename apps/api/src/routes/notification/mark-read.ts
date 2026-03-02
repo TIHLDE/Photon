@@ -2,24 +2,10 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-
-const markReadSchema = z.object({
-    isRead: z
-        .boolean()
-        .meta({ description: "Whether notification should be marked as read" }),
-});
-
-const markReadResponseSchema = z.object({
-    id: z.string().meta({ description: "Notification ID" }),
-    isRead: z.boolean().meta({ description: "Updated read status" }),
-    updatedAt: z.iso
-        .datetime()
-        .meta({ description: "Notification update time (ISO 8601)" }),
-});
+import { markReadResponseSchema, markReadSchema } from "./schema";
 
 export const markReadNotificationRoute = route().patch(
     "/:id/read",

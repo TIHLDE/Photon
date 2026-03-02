@@ -3,7 +3,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { createApiKeyResponseSchema, idParamSchema } from "./schemas";
+import { createApiKeyResponseSchema, idParamSchema } from "./schema";
 
 export const regenerateRoute = route().post(
     "/:id/regenerate",

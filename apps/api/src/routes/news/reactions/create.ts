@@ -2,27 +2,10 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const createReactionSchema = z.object({
-    emoji: z
-        .string()
-        .min(1)
-        .max(32)
-        .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
-});
-
-const newsReactionSchema = z.object({
-    userId: z.string().meta({ description: "User ID" }),
-    newsId: z.uuid().meta({ description: "News article ID" }),
-    emoji: z.string().meta({ description: "Emoji reaction" }),
-    createdAt: z
-        .string()
-        .meta({ description: "Reaction creation time (ISO 8601)" }),
-});
+import { createReactionSchema, newsReactionSchema } from "../schema";
 
 export const createReactionRoute = route().post(
     "/:id/reactions",

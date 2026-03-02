@@ -2,58 +2,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const updateGroupSchema = z.object({
-    imageUrl: z
-        .string()
-        .url()
-        .max(600)
-        .optional()
-        .meta({ description: "Group image URL" }),
-    name: z
-        .string()
-        .min(1)
-        .max(128)
-        .optional()
-        .meta({ description: "Group name" }),
-    description: z
-        .string()
-        .optional()
-        .nullable()
-        .meta({ description: "Group description" }),
-    contactEmail: z
-        .string()
-        .email()
-        .max(200)
-        .optional()
-        .nullable()
-        .meta({ description: "Group contact email" }),
-    type: z.string().max(50).optional().meta({ description: "Group type" }),
-    finesInfo: z
-        .string()
-        .optional()
-        .meta({ description: "Information about group fines policy" }),
-    finesActivated: z
-        .boolean()
-        .optional()
-        .meta({ description: "Whether fines are activated for this group" }),
-    finesAdminId: z
-        .string()
-        .max(255)
-        .optional()
-        .nullable()
-        .meta({ description: "User ID of the fines administrator" }),
-});
-
-const updateGroupResponseSchema = z.object({
-    message: z.string(),
-});
+import { updateGroupResponseSchema, updateGroupSchema } from "./schema";
 
 export const updateRoute = route().patch(
     "/:slug",

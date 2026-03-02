@@ -2,18 +2,10 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const updateFavoriteSchema = z.object({
-    isFavorite: z.boolean().meta({ description: "Is favorite" }),
-});
-
-const updateFavoriteResponseSchema = z.object({
-    success: z.boolean(),
-});
+import { updateFavoriteResponseSchema, updateFavoriteSchema } from "../schema";
 
 export const updateFavoriteRoute = route().put(
     "/:id",

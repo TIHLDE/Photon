@@ -1,22 +1,9 @@
 import { schema } from "@photon/db";
 import { asc, eq } from "drizzle-orm";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { groupSchema } from "./get";
-
-const membershipSchema = z.object({
-    role: z.enum(["member", "leader"]),
-    joinedAt: z.string(),
-    updatedAt: z.string(),
-});
-
-const myGroupSchema = groupSchema.extend({
-    membership: membershipSchema,
-});
-
-const myGroupsListSchema = z.array(myGroupSchema);
+import { myGroupsListSchema } from "./schema";
 
 export const mineRoute = route().get(
     "/mine",

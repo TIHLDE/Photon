@@ -90,7 +90,7 @@ export class RouteDescriptorBuilder {
         options = {},
     }: {
         statusCode: StatusCode;
-        schema: ZodType;
+        schema: ZodType & SchemaTag;
         description: string;
         options?: AdditionalDescribeRouteOptions & {
             mediaType?: string;
@@ -209,7 +209,7 @@ export class RouteDescriptorBuilder {
             if (error instanceof HTTPAppException) {
                 this.schemaResponse({
                     statusCode: error.status as StatusCode,
-                    schema: httpAppExceptionSchema,
+                    schema: Schema("HTTPAppException", httpAppExceptionSchema),
                     description: error.providedMessage,
                 });
                 continue;
@@ -274,4 +274,14 @@ export function describeMiddleware<T extends MiddlewareHandler>(
             spec,
         },
     });
+}
+
+declare const _schemaTag: unique symbol;
+
+export type SchemaTag = {
+    readonly [_schemaTag]: true;
+};
+
+export function Schema<T extends z.ZodType>(name: string, schema: T) {
+    return schema.meta({ ref: name }) as T & SchemaTag;
 }

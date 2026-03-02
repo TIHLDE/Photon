@@ -1,28 +1,11 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const groupFormListResponseSchema = z.array(
-    z.object({
-        id: z.uuid(),
-        title: z.string(),
-        description: z.string().nullable(),
-        group: z.string(),
-        email_receiver_on_submit: z.string().nullable(),
-        can_submit_multiple: z.boolean(),
-        is_open_for_submissions: z.boolean(),
-        only_for_group_members: z.boolean(),
-        resource_type: z.string(),
-        viewer_has_answered: z.boolean(),
-        created_at: z.string(),
-        updated_at: z.string(),
-    }),
-);
+import { groupFormListSchema } from "../schema";
 
 export const listGroupFormsRoute = route().get(
     "/:slug/forms",
@@ -34,7 +17,7 @@ export const listGroupFormsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: groupFormListResponseSchema,
+            schema: groupFormListSchema,
             description: "Success",
         })
         .notFound({ description: "Group not found" })

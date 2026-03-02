@@ -1,14 +1,10 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const deleteReactionResponseSchema = z.object({
-    message: z.string(),
-});
+import { deleteReactionResponseSchema } from "../schema";
 
 export const deleteReactionRoute = route().delete(
     "/:id/reactions",

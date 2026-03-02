@@ -3,6 +3,11 @@ import { schema } from "@photon/db";
 import { and, count, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
+import type {
+    CreateAnswerInput,
+    CreateFieldInput,
+    UpdateFieldInput,
+} from "~/routes/form/schema";
 import {
     DuplicateSubmissionException,
     EventFormAttendanceRequiredException,
@@ -10,11 +15,6 @@ import {
     FormNotOpenForSubmissionException,
     GroupFormOnlyForMembersException,
 } from "./exceptions";
-import type {
-    CreateAnswerInput,
-    CreateFieldInput,
-    UpdateFieldInput,
-} from "./schema";
 
 type Database = NodePgDatabase<DbSchema>;
 

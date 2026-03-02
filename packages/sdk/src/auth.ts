@@ -1,4 +1,4 @@
-import { BetterAuthClientOptions } from "better-auth/client";
+import type { BetterAuthClientOptions } from "better-auth/client";
 import {
     customSessionClient,
     genericOAuthClient,

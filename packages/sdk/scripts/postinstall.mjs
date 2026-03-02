@@ -14,18 +14,26 @@ async function checkVersion() {
     const timeout = setTimeout(() => controller.abort(), 5000);
 
     try {
+        const packageName = encodeURIComponent(pkg.name);
         const res = await fetch(
-            `https://registry.npmjs.org/${pkg.name}/latest`,
+            `https://registry.npmjs.org/${packageName}/latest`,
             { signal: controller.signal },
         );
+        if (!res.ok) {
+            return;
+        }
+
         const latest = (await res.json()).version;
+        if (!latest) {
+            return;
+        }
 
         if (installed !== latest) {
             console.warn(
                 `\x1b[33m[@tihlde/sdk] Update available: ${installed} → ${latest}\x1b[0m`,
             );
             console.warn(
-                `\x1b[33mRun \`bun add @tihlde/sdk@latest\` to update.\x1b[0m`,
+                "\x1b[33mRun `bun add @tihlde/sdk@latest` to update.\x1b[0m",
             );
         }
     } catch {

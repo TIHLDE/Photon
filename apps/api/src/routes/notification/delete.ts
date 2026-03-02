@@ -1,16 +1,10 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-
-const deleteNotificationResponseSchema = z.object({
-    success: z
-        .boolean()
-        .meta({ description: "Whether deletion was successful" }),
-});
+import { deleteNotificationResponseSchema } from "./schema";
 
 export const deleteNotificationRoute = route().delete(
     "/:id",

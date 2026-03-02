@@ -1,16 +1,9 @@
 import { schema } from "@photon/db";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
-
-const registerSchema = z.object({
-    eventId: z.uuid(),
-    userId: z.string(),
-    status: z.literal("pending"),
-    createdAt: z.string(),
-});
+import { eventRegistrationResponseSchema } from "../schema";
 
 export const registerToEventRoute = route().post(
     "/:eventId/registration",
@@ -23,7 +16,7 @@ export const registerToEventRoute = route().post(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: registerSchema,
+            schema: eventRegistrationResponseSchema,
             description: "OK",
         })
         .notFound({ description: "Event not found" })

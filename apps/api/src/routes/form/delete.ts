@@ -2,15 +2,11 @@ import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const deleteFormResponseSchema = z.object({
-    detail: z.string(),
-});
+import { deleteFormResponseSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:id",

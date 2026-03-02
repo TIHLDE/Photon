@@ -4,7 +4,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { apiKeySchema, idParamSchema } from "./schemas";
+import { apiKeySchema, idParamSchema } from "./schema";
 
 export const getRoute = route().get(
     "/:id",

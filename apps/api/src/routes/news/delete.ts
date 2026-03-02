@@ -1,16 +1,12 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const deleteResponseSchema = z.object({
-    message: z.string(),
-});
+import { deleteNewsResponseSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -23,7 +19,7 @@ export const deleteRoute = route().delete(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: deleteResponseSchema,
+            schema: deleteNewsResponseSchema,
             description: "News article deleted successfully",
         })
         .forbidden({ description: "Insufficient permissions" })

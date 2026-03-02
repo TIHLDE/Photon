@@ -3,11 +3,10 @@
     "extends": ["//"],
     "tasks": {
         "codegen": {
-            "dependsOn": ["@photon/api#export-openapi"],
             "cache": false
         },
         "build": {
-            "dependsOn": ["codegen", "^build"],
+            "dependsOn": ["codegen"],
             "outputs": ["dist/**"]
         }
     }

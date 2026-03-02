@@ -3,40 +3,11 @@ import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
-
-export const fineSchema = z.object({
-    id: z.string().meta({ description: "Fine ID" }),
-    userId: z.string().meta({ description: "User ID who received the fine" }),
-    groupSlug: z
-        .string()
-        .meta({ description: "Group slug that issued the fine" }),
-    reason: z.string().meta({ description: "Reason for the fine" }),
-    amount: z.number().meta({ description: "Fine amount in NOK" }),
-    defense: z.string().nullable().meta({ description: "User's defense text" }),
-    status: z.string().meta({
-        description: "Fine status (pending, approved, paid, rejected)",
-    }),
-    createdByUserId: z
-        .string()
-        .nullable()
-        .meta({ description: "User who created the fine" }),
-    approvedByUserId: z
-        .string()
-        .nullable()
-        .meta({ description: "User who approved the fine" }),
-    approvedAt: z
-        .string()
-        .nullable()
-        .meta({ description: "Approval timestamp" }),
-    paidAt: z.string().nullable().meta({ description: "Payment timestamp" }),
-    createdAt: z.string().meta({ description: "Creation timestamp" }),
-    updatedAt: z.string().meta({ description: "Last update timestamp" }),
-});
+import { fineSchema } from "./schema";
 
 export const getFineRoute = route().get(
     "/:groupSlug/fines/:fineId",

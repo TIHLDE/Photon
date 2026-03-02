@@ -2,37 +2,11 @@ import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const submissionListResponseSchema = z.array(
-    z.object({
-        id: z.uuid(),
-        user: z.object({
-            id: z.string(),
-            name: z.string(),
-            email: z.string(),
-        }),
-        created_at: z.string(),
-        updated_at: z.string(),
-        answers: z.array(
-            z.object({
-                id: z.uuid(),
-                field_id: z.uuid().nullable(),
-                answer_text: z.string().nullable(),
-                selected_options: z.array(
-                    z.object({
-                        id: z.uuid(),
-                        title: z.string(),
-                    }),
-                ),
-            }),
-        ),
-    }),
-);
+import { submissionListSchema } from "../schema";
 
 export const listSubmissionsRoute = route().get(
     "/:formId/submissions",
@@ -45,7 +19,7 @@ export const listSubmissionsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: submissionListResponseSchema,
+            schema: submissionListSchema,
             description: "Success",
         })
         .forbidden({ description: "Insufficient permissions" })

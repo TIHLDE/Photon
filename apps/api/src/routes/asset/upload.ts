@@ -4,11 +4,11 @@ import {
     generateAssetKey,
     isAllowedMimeType,
 } from "~/lib/asset";
-import { uploadResponseSchema } from "~/lib/asset/schema";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuthOrApiKey } from "~/middleware/auth-or-api-key";
+import { uploadResponseSchema } from "./schema";
 
 export const uploadRoute = route().post(
     "/",

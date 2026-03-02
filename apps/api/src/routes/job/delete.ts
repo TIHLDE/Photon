@@ -1,16 +1,12 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { isJobCreator } from "~/lib/job/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const deleteJobResponseSchema = z.object({
-    message: z.string(),
-});
+import { deleteJobResponseSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:id",

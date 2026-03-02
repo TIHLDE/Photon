@@ -3,13 +3,10 @@ import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, desc, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { fineSchema } from "./get";
-
-const fineListSchema = z.array(fineSchema);
+import { fineListSchema } from "./schema";
 
 export const listFinesRoute = route().get(
     "/:groupSlug/fines",

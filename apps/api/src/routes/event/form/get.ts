@@ -1,46 +1,11 @@
 import { hasPermission } from "@photon/auth/rbac";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { getEventFormWithDetails, userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const eventTypeSchema = z.enum(["survey", "evaluation"]);
-
-const eventFormParamsSchema = z.object({
-    eventId: z.uuid(),
-    type: eventTypeSchema,
-});
-
-const eventFormDetailResponseSchema = z.object({
-    id: z.uuid(),
-    title: z.string(),
-    description: z.string().nullable(),
-    type: eventTypeSchema,
-    resource_type: z.string(),
-    viewer_has_answered: z.boolean(),
-    website_url: z.string(),
-    created_at: z.string(),
-    updated_at: z.string(),
-    fields: z.array(
-        z.object({
-            id: z.uuid(),
-            title: z.string(),
-            type: z.enum(["text_answer", "multiple_select", "single_select"]),
-            required: z.boolean(),
-            order: z.number(),
-            options: z.array(
-                z.object({
-                    id: z.uuid(),
-                    title: z.string(),
-                    order: z.number(),
-                }),
-            ),
-        }),
-    ),
-});
+import { eventFormDetailSchema, eventFormParamsSchema } from "./schema";
 
 export const getEventFormRoute = route().get(
     "/:eventId/forms/:type",
@@ -53,7 +18,7 @@ export const getEventFormRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: eventFormDetailResponseSchema,
+            schema: eventFormDetailSchema,
             description: "Success",
         })
         .forbidden({ description: "Evaluation forms require attendance" })

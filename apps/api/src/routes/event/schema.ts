@@ -1,6 +1,13 @@
+import { registrationStatusVariants } from "@photon/db/schema";
 import z from "zod";
+import { Schema } from "~/lib/openapi";
+import {
+    PaginationSchema,
+    PagniationResponseSchema,
+} from "~/middleware/pagination";
 
-// Shared schema for creating and updating events, with all required fields
+// ===== INPUT SCHEMAS (from lib/event/schema.ts) =====
+
 const eventMutationSchema = z.object({
     // Core event info
     title: z
@@ -102,9 +109,7 @@ const eventMutationSchema = z.object({
     }),
 });
 
-// Schema for creating a new event, that checks all invariants
 export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
-    // Require priority pools for onlyAllowPrioritized
     if (
         val.onlyAllowPrioritized &&
         (!val.priorityPools || val.priorityPools.length === 0)
@@ -117,7 +122,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         });
     }
 
-    // Require price and paymentGracePeriod for isPaidEvent
     if (val.isPaidEvent) {
         if (val.price === undefined) {
             ctx.addIssue({
@@ -145,7 +149,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         }
     }
 
-    // Require end after start
     if (new Date(val.end) <= new Date(val.start)) {
         ctx.addIssue({
             code: "custom",
@@ -154,7 +157,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         });
     }
 
-    // Cannot define registration/canellation if no signup needed
     if (!val.requiresSigningUp) {
         if (val.registrationStart) {
             ctx.addIssue({
@@ -190,7 +192,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         }
     }
 
-    // Cancellation deadline must be before event start
     if (
         val.cancellationDeadline &&
         new Date(val.cancellationDeadline) >= new Date(val.start)
@@ -202,7 +203,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         });
     }
 
-    // Capacity cannot be set if no signup needed
     if (!val.requiresSigningUp && val.capacity !== undefined) {
         ctx.addIssue({
             code: "custom",
@@ -211,7 +211,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
         });
     }
 
-    // Payment grace period must be between 5 minutes and 6 hours
     if (val.paymentGracePeriodMinutes) {
         if (
             val.paymentGracePeriodMinutes < 5 ||
@@ -230,7 +229,6 @@ export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
 export const updateEventSchema = eventMutationSchema
     .partial()
     .superRefine((val, ctx) => {
-        // Keep all invariants from createBodySchema, but only check if relevant fields are present
         if (
             val.onlyAllowPrioritized !== undefined &&
             val.onlyAllowPrioritized
@@ -344,3 +342,284 @@ export const updateEventSchema = eventMutationSchema
             }
         }
     });
+
+export const updateFavoriteSchema = z.object({
+    isFavorite: z.boolean().meta({ description: "Is favorite" }),
+});
+
+export const registerSchema = z.object({
+    eventId: z.uuid(),
+    userId: z.string(),
+    status: z.literal("pending"),
+    createdAt: z.string(),
+});
+
+export const createPaymentBodySchema = z.object({
+    returnUrl: z
+        .url()
+        .meta({ description: "URL to redirect user after payment" }),
+    userFlow: z
+        .enum(["WEB_REDIRECT", "NATIVE_REDIRECT"])
+        .default("WEB_REDIRECT")
+        .meta({ description: "User flow type for payment" }),
+});
+
+export const eventListFilterSchema = PaginationSchema.extend({
+    search: z.string().optional().meta({
+        description: "Search term to filter events by title",
+    }),
+    expired: z.coerce.boolean().optional().meta({
+        description: "Whether to include expired events or not",
+    }),
+    openSignUp: z.coerce.boolean().optional().meta({
+        description: "Whether to include only events with open sign-ups",
+    }),
+});
+
+// ===== RESPONSE SCHEMAS =====
+
+export const eventDetailSchema = Schema(
+    "Event",
+    z.object({
+        id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
+        slug: z.string().meta({ description: "Event slug" }),
+        title: z.string().meta({ description: "Event title" }),
+        location: z
+            .string()
+            .nullable()
+            .optional()
+            .meta({ description: "Event location (nullable)" }),
+        startTime: z.iso
+            .datetime()
+            .meta({ description: "Event start time (ISO 8601)" }),
+        endTime: z.iso
+            .datetime()
+            .meta({ description: "Event end time (ISO 8601)" }),
+        organizer: z
+            .object({
+                name: z.string().meta({ description: "Organizer name" }),
+                slug: z.string().meta({ description: "Organizer slug" }),
+                type: z.string().meta({ description: "Organizer type" }),
+                image: z
+                    .url()
+                    .nullable()
+                    .meta({ description: "Organizer image URL" }),
+            })
+            .nullable()
+            .meta({ description: "Event organizer (nullable)" }),
+        closed: z.boolean().meta({ description: "Is registration closed" }),
+        image: z
+            .url()
+            .nullable()
+            .meta({ description: "Event image URL (nullable)" }),
+        createdAt: z.iso
+            .datetime()
+            .meta({ description: "Event creation time (ISO 8601)" }),
+        updatedAt: z.iso
+            .datetime()
+            .meta({ description: "Event update time (ISO 8601)" }),
+        category: z
+            .object({
+                slug: z.string().meta({ description: "Category slug" }),
+                label: z.string().meta({ description: "Category label" }),
+            })
+            .meta({ description: "Event category" }),
+        reactions: z.array(
+            z.object({
+                user: z.object({
+                    id: z.string().meta({ description: "User ID" }),
+                    name: z.string().meta({ description: "User name" }),
+                }),
+                emoji: z.string().meta({ description: "Reaction emoji" }),
+            }),
+        ),
+        isPaidEvent: z.boolean().meta({ description: "Is this a paid event" }),
+        payInfo: z
+            .object({
+                price: z
+                    .number()
+                    .meta({ description: "Event price in whole KR" }),
+                paymentGracePeriodMinutes: z
+                    .number()
+                    .meta({ description: "Payment grace period in minutes" }),
+            })
+            .nullable()
+            .meta({ description: "Payment info" }),
+        priorityPools: z
+            .array(
+                z.object({
+                    groups: z.array(
+                        z.object({
+                            name: z
+                                .string()
+                                .meta({ description: "Group name" }),
+                            slug: z
+                                .string()
+                                .meta({ description: "Group slug" }),
+                            imageUrl: z.string().nullable().meta({
+                                description: "Group image URL (nullable)",
+                            }),
+                        }),
+                    ),
+                }),
+            )
+            .meta({ description: "Priority registration pools" }),
+        enforcesPreviousStrikes: z.boolean().meta({
+            description:
+                "Does the event enforce previous strikes for registration",
+        }),
+        registration: z
+            .object({
+                createdAt: z.iso
+                    .datetime()
+                    .meta({ description: "When the user signed up" }),
+                updatedAt: z.iso.datetime().meta({
+                    description:
+                        "When the registration was last updated by the system (moving waitlist position etc.)",
+                }),
+                status: z.enum(registrationStatusVariants),
+                waitlistPosition: z.number().nullable().meta({
+                    description:
+                        "The user's position in the waitlist. Is null if not on the waitlist",
+                }),
+                attendedAt: z.iso.datetime().nullable().meta({
+                    description:
+                        "When the user was registered as an attendee by TIHLDE for this event. Is null if not attended.",
+                }),
+            })
+            .nullable()
+            .meta({
+                description:
+                    "The current user's registration information. This is null if not registered or if not logged in.",
+            }),
+    }),
+);
+
+export const eventListItemSchema = Schema(
+    "EventListItem",
+    z.object({
+        id: z.uuid({ version: "v4" }).meta({ description: "Event ID" }),
+        slug: z.string().meta({ description: "Event slug" }),
+        title: z.string().meta({ description: "Event title" }),
+        location: z
+            .string()
+            .nullable()
+            .optional()
+            .meta({ description: "Event location (nullable)" }),
+        startTime: z.iso
+            .date()
+            .meta({ description: "Event start time (ISO 8601)" }),
+        endTime: z.iso
+            .date()
+            .meta({ description: "Event end time (ISO 8601)" }),
+        organizer: z
+            .object({
+                name: z.string().meta({ description: "Organizer name" }),
+                slug: z.string().meta({ description: "Organizer slug" }),
+                type: z.string().meta({ description: "Organizer type" }),
+            })
+            .nullable()
+            .meta({ description: "Event organizer (nullable)" }),
+        closed: z.boolean().meta({ description: "Is registration closed" }),
+        image: z
+            .url()
+            .nullable()
+            .meta({ description: "Event image URL (nullable)" }),
+        createdAt: z.iso
+            .date()
+            .meta({ description: "Event creation time (ISO 8601)" }),
+        updatedAt: z.iso
+            .date()
+            .meta({ description: "Event update time (ISO 8601)" }),
+        category: z
+            .object({
+                slug: z.string().meta({ description: "Category slug" }),
+                label: z.string().meta({ description: "Category label" }),
+            })
+            .meta({ description: "Event category" }),
+    }),
+);
+
+export const eventListResponseSchema = Schema(
+    "EventList",
+    PagniationResponseSchema.extend({
+        items: z.array(eventListItemSchema).describe("List of events"),
+    }),
+);
+
+export const createEventResponseSchema = Schema(
+    "CreateEventResponse",
+    z.object({
+        eventId: z.uuid(),
+    }),
+);
+
+export const deleteEventResponseSchema = Schema(
+    "DeleteEventResponse",
+    z.object({
+        message: z.string(),
+    }),
+);
+
+export const favoriteEventsSchema = Schema(
+    "FavoriteEvents",
+    z.array(
+        z.object({
+            eventId: z.string().meta({ description: "Event ID" }),
+            title: z.string().meta({ description: "Event title" }),
+            slug: z.string().meta({ description: "Event slug" }),
+            createdAt: z.iso.datetime().meta({
+                description: "When you added this event to your favorites",
+            }),
+        }),
+    ),
+);
+
+export const updateFavoriteResponseSchema = Schema(
+    "UpdateFavoriteResponse",
+    z.object({
+        success: z.boolean(),
+    }),
+);
+
+export const eventRegistrationResponseSchema = Schema(
+    "EventRegistration",
+    z.object({
+        eventId: z.uuid(),
+        userId: z.string(),
+        status: z.literal("pending"),
+        createdAt: z.string(),
+    }),
+);
+
+export const registeredUserSchema = Schema(
+    "EventRegisteredUser",
+    z.object({
+        id: z.string().meta({ description: "User id" }),
+        name: z.string().meta({ description: "User name" }),
+        image: z
+            .string()
+            .nullable()
+            .meta({ description: "User image url (if any)" }),
+    }),
+);
+
+export const eventRegistrationListResponseSchema = Schema(
+    "EventRegistrationList",
+    PagniationResponseSchema.extend({
+        registeredUsers: z
+            .array(registeredUserSchema)
+            .describe("List of registered users (paginated)"),
+    }),
+);
+
+export const createPaymentResponseSchema = Schema(
+    "CreatePaymentResponse",
+    z.object({
+        eventId: z.uuid(),
+        userId: z.string(),
+        checkoutUrl: z.url(),
+        amount: z.number(),
+        currency: z.string(),
+    }),
+);

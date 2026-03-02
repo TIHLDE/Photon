@@ -1,39 +1,11 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const formDetailResponseSchema = z.object({
-    id: z.uuid(),
-    title: z.string(),
-    description: z.string().nullable(),
-    template: z.boolean(),
-    resource_type: z.string(),
-    viewer_has_answered: z.boolean(),
-    website_url: z.string(),
-    created_at: z.string(),
-    updated_at: z.string(),
-    fields: z.array(
-        z.object({
-            id: z.uuid(),
-            title: z.string(),
-            type: z.enum(["text_answer", "multiple_select", "single_select"]),
-            required: z.boolean(),
-            order: z.number(),
-            options: z.array(
-                z.object({
-                    id: z.uuid(),
-                    title: z.string(),
-                    order: z.number(),
-                }),
-            ),
-        }),
-    ),
-});
+import { formDetailSchema } from "./schema";
 
 export const getRoute = route().get(
     "/:id",
@@ -45,7 +17,7 @@ export const getRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: formDetailResponseSchema,
+            schema: formDetailSchema,
             description: "Success",
         })
         .notFound({ description: "Form not found" })

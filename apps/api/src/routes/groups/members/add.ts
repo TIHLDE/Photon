@@ -2,32 +2,11 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-
-const addMemberSchema = z.object({
-    userId: z
-        .string()
-        .max(255)
-        .meta({ description: "User ID to add as member" }),
-    role: z
-        .enum(["member", "leader"])
-        .default("member")
-        .meta({ description: "Membership role" }),
-});
-
-const membershipSchema = z.object({
-    userId: z.string().meta({ description: "User ID" }),
-    groupSlug: z.string().meta({ description: "Group slug" }),
-    role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
-    createdAt: z
-        .string()
-        .meta({ description: "Membership creation timestamp" }),
-    updatedAt: z.string().meta({ description: "Membership update timestamp" }),
-});
+import { addMemberSchema, membershipResponseSchema } from "../schema";
 
 export const addMemberRoute = route().post(
     "/:groupSlug/members",
@@ -40,7 +19,7 @@ export const addMemberRoute = route().post(
     })
         .schemaResponse({
             statusCode: 201,
-            schema: membershipSchema,
+            schema: membershipResponseSchema,
             description: "Member added successfully",
         })
         .badRequest({ description: "User already a member or user not found" })

@@ -1,24 +1,11 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import { userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-
-const eventFormListResponseSchema = z.array(
-    z.object({
-        id: z.uuid(),
-        title: z.string(),
-        description: z.string().nullable(),
-        type: z.enum(["survey", "evaluation"]),
-        resource_type: z.string(),
-        viewer_has_answered: z.boolean(),
-        created_at: z.string(),
-        updated_at: z.string(),
-    }),
-);
+import { eventFormListSchema } from "./schema";
 
 export const listEventFormsRoute = route().get(
     "/:eventId/forms",
@@ -30,7 +17,7 @@ export const listEventFormsRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: eventFormListResponseSchema,
+            schema: eventFormListSchema,
             description: "Success",
         })
         .notFound({ description: "Event not found" })
