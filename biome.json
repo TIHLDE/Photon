@@ -8,7 +8,7 @@
     },
     "files": {
         "ignoreUnknown": false,
-        "ignore": ["**/drizzle/**", "**/dist/**", "**/generated/**"]
+        "ignore": ["**/drizzle/**", "**/dist/**", "**/generated/**", "**/routeTree.gen.ts"]
     },
     "formatter": {
         "enabled": true,

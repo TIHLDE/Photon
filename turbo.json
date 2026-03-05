@@ -12,7 +12,7 @@
         "dev:fresh": { "cache": false },
         "build": {
             "dependsOn": ["^build"],
-            "outputs": ["dist/**"]
+            "outputs": ["dist/**", ".output/**"]
         },
         "start": {
             "dependsOn": ["build"],

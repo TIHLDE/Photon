@@ -24,6 +24,8 @@ coverage
 
 # Build Outputs
 .next/
+.output/
+.tanstack/
 out/
 build
 dist

@@ -1,0 +1,40 @@
+{
+    "name": "@photon/web",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite dev",
+        "build": "vite build && tsc --noEmit",
+        "start": "node .output/server/index.mjs",
+        "typecheck": "tsc --noEmit",
+        "lint": "biome check .",
+        "lint:fix": "biome check --write --unsafe ."
+    },
+    "dependencies": {
+        "@tanstack/react-devtools": "^0.9.9",
+        "@tanstack/react-query": "^5.90.21",
+        "@tanstack/react-query-devtools": "^5.91.3",
+        "@tanstack/react-router": "^1.166.2",
+        "@tanstack/react-router-ssr-query": "^1.166.2",
+        "@tanstack/react-start": "^1.166.2",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "zod": "catalog:"
+    },
+    "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "@tailwindcss/vite": "^4.1.18",
+        "@tanstack/devtools-vite": "^0.5.3",
+        "@tanstack/react-router-devtools": "^1.166.2",
+        "@types/node": "catalog:",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "@vitejs/plugin-react": "^4.6.0",
+        "nitro": "3.0.1-alpha.2",
+        "tailwindcss": "^4.1.18",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vite-tsconfig-paths": "^5.1.4"
+    }
+}
