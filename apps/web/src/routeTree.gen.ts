@@ -9,50 +9,436 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as InteresseRouteImport } from './routes/interesse'
+import { Route as MainRouteImport } from './routes/_main'
+import { Route as MainIndexRouteImport } from './routes/_main/index'
+import { Route as MainToddelRouteImport } from './routes/_main/toddel'
+import { Route as MainTilbakemeldingRouteImport } from './routes/_main/tilbakemelding'
+import { Route as MainNyStudentRouteImport } from './routes/_main/ny-student'
+import { Route as MainLoggInnRouteImport } from './routes/_main/logg-inn'
+import { Route as MainEndringsloggRouteImport } from './routes/_main/endringslogg'
+import { Route as MainBedrifterRouteImport } from './routes/_main/bedrifter'
+import { Route as MainStillingsannonserIndexRouteImport } from './routes/_main/stillingsannonser/index'
+import { Route as MainNyheterIndexRouteImport } from './routes/_main/nyheter/index'
+import { Route as MainGrupperIndexRouteImport } from './routes/_main/grupper/index'
+import { Route as MainArrangementerIndexRouteImport } from './routes/_main/arrangementer/index'
+import { Route as MainStillingsannonserIdRouteImport } from './routes/_main/stillingsannonser/$id'
+import { Route as MainSporreskjemaIdRouteImport } from './routes/_main/sporreskjema/$id'
+import { Route as MainProfilUserIdRouteImport } from './routes/_main/profil/$userId'
+import { Route as MainNyheterIdRouteImport } from './routes/_main/nyheter/$id'
+import { Route as MainGrupperSlugRouteImport } from './routes/_main/grupper/$slug'
+import { Route as MainArrangementerIdRouteImport } from './routes/_main/arrangementer/$id'
 
-const IndexRoute = IndexRouteImport.update({
+const InteresseRoute = InteresseRouteImport.update({
+  id: '/interesse',
+  path: '/interesse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MainRoute = MainRouteImport.update({
+  id: '/_main',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MainIndexRoute = MainIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MainRoute,
+} as any)
+const MainToddelRoute = MainToddelRouteImport.update({
+  id: '/toddel',
+  path: '/toddel',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainTilbakemeldingRoute = MainTilbakemeldingRouteImport.update({
+  id: '/tilbakemelding',
+  path: '/tilbakemelding',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainNyStudentRoute = MainNyStudentRouteImport.update({
+  id: '/ny-student',
+  path: '/ny-student',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainLoggInnRoute = MainLoggInnRouteImport.update({
+  id: '/logg-inn',
+  path: '/logg-inn',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainEndringsloggRoute = MainEndringsloggRouteImport.update({
+  id: '/endringslogg',
+  path: '/endringslogg',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainBedrifterRoute = MainBedrifterRouteImport.update({
+  id: '/bedrifter',
+  path: '/bedrifter',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainStillingsannonserIndexRoute =
+  MainStillingsannonserIndexRouteImport.update({
+    id: '/stillingsannonser/',
+    path: '/stillingsannonser/',
+    getParentRoute: () => MainRoute,
+  } as any)
+const MainNyheterIndexRoute = MainNyheterIndexRouteImport.update({
+  id: '/nyheter/',
+  path: '/nyheter/',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainGrupperIndexRoute = MainGrupperIndexRouteImport.update({
+  id: '/grupper/',
+  path: '/grupper/',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainArrangementerIndexRoute = MainArrangementerIndexRouteImport.update({
+  id: '/arrangementer/',
+  path: '/arrangementer/',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainStillingsannonserIdRoute = MainStillingsannonserIdRouteImport.update({
+  id: '/stillingsannonser/$id',
+  path: '/stillingsannonser/$id',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainSporreskjemaIdRoute = MainSporreskjemaIdRouteImport.update({
+  id: '/sporreskjema/$id',
+  path: '/sporreskjema/$id',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainProfilUserIdRoute = MainProfilUserIdRouteImport.update({
+  id: '/profil/$userId',
+  path: '/profil/$userId',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainNyheterIdRoute = MainNyheterIdRouteImport.update({
+  id: '/nyheter/$id',
+  path: '/nyheter/$id',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainGrupperSlugRoute = MainGrupperSlugRouteImport.update({
+  id: '/grupper/$slug',
+  path: '/grupper/$slug',
+  getParentRoute: () => MainRoute,
+} as any)
+const MainArrangementerIdRoute = MainArrangementerIdRouteImport.update({
+  id: '/arrangementer/$id',
+  path: '/arrangementer/$id',
+  getParentRoute: () => MainRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof MainIndexRoute
+  '/interesse': typeof InteresseRoute
+  '/bedrifter': typeof MainBedrifterRoute
+  '/endringslogg': typeof MainEndringsloggRoute
+  '/logg-inn': typeof MainLoggInnRoute
+  '/ny-student': typeof MainNyStudentRoute
+  '/tilbakemelding': typeof MainTilbakemeldingRoute
+  '/toddel': typeof MainToddelRoute
+  '/arrangementer/$id': typeof MainArrangementerIdRoute
+  '/grupper/$slug': typeof MainGrupperSlugRoute
+  '/nyheter/$id': typeof MainNyheterIdRoute
+  '/profil/$userId': typeof MainProfilUserIdRoute
+  '/sporreskjema/$id': typeof MainSporreskjemaIdRoute
+  '/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/arrangementer/': typeof MainArrangementerIndexRoute
+  '/grupper/': typeof MainGrupperIndexRoute
+  '/nyheter/': typeof MainNyheterIndexRoute
+  '/stillingsannonser/': typeof MainStillingsannonserIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/interesse': typeof InteresseRoute
+  '/bedrifter': typeof MainBedrifterRoute
+  '/endringslogg': typeof MainEndringsloggRoute
+  '/logg-inn': typeof MainLoggInnRoute
+  '/ny-student': typeof MainNyStudentRoute
+  '/tilbakemelding': typeof MainTilbakemeldingRoute
+  '/toddel': typeof MainToddelRoute
+  '/': typeof MainIndexRoute
+  '/arrangementer/$id': typeof MainArrangementerIdRoute
+  '/grupper/$slug': typeof MainGrupperSlugRoute
+  '/nyheter/$id': typeof MainNyheterIdRoute
+  '/profil/$userId': typeof MainProfilUserIdRoute
+  '/sporreskjema/$id': typeof MainSporreskjemaIdRoute
+  '/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/arrangementer': typeof MainArrangementerIndexRoute
+  '/grupper': typeof MainGrupperIndexRoute
+  '/nyheter': typeof MainNyheterIndexRoute
+  '/stillingsannonser': typeof MainStillingsannonserIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_main': typeof MainRouteWithChildren
+  '/interesse': typeof InteresseRoute
+  '/_main/bedrifter': typeof MainBedrifterRoute
+  '/_main/endringslogg': typeof MainEndringsloggRoute
+  '/_main/logg-inn': typeof MainLoggInnRoute
+  '/_main/ny-student': typeof MainNyStudentRoute
+  '/_main/tilbakemelding': typeof MainTilbakemeldingRoute
+  '/_main/toddel': typeof MainToddelRoute
+  '/_main/': typeof MainIndexRoute
+  '/_main/arrangementer/$id': typeof MainArrangementerIdRoute
+  '/_main/grupper/$slug': typeof MainGrupperSlugRoute
+  '/_main/nyheter/$id': typeof MainNyheterIdRoute
+  '/_main/profil/$userId': typeof MainProfilUserIdRoute
+  '/_main/sporreskjema/$id': typeof MainSporreskjemaIdRoute
+  '/_main/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/_main/arrangementer/': typeof MainArrangementerIndexRoute
+  '/_main/grupper/': typeof MainGrupperIndexRoute
+  '/_main/nyheter/': typeof MainNyheterIndexRoute
+  '/_main/stillingsannonser/': typeof MainStillingsannonserIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/interesse'
+    | '/bedrifter'
+    | '/endringslogg'
+    | '/logg-inn'
+    | '/ny-student'
+    | '/tilbakemelding'
+    | '/toddel'
+    | '/arrangementer/$id'
+    | '/grupper/$slug'
+    | '/nyheter/$id'
+    | '/profil/$userId'
+    | '/sporreskjema/$id'
+    | '/stillingsannonser/$id'
+    | '/arrangementer/'
+    | '/grupper/'
+    | '/nyheter/'
+    | '/stillingsannonser/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/interesse'
+    | '/bedrifter'
+    | '/endringslogg'
+    | '/logg-inn'
+    | '/ny-student'
+    | '/tilbakemelding'
+    | '/toddel'
+    | '/'
+    | '/arrangementer/$id'
+    | '/grupper/$slug'
+    | '/nyheter/$id'
+    | '/profil/$userId'
+    | '/sporreskjema/$id'
+    | '/stillingsannonser/$id'
+    | '/arrangementer'
+    | '/grupper'
+    | '/nyheter'
+    | '/stillingsannonser'
+  id:
+    | '__root__'
+    | '/_main'
+    | '/interesse'
+    | '/_main/bedrifter'
+    | '/_main/endringslogg'
+    | '/_main/logg-inn'
+    | '/_main/ny-student'
+    | '/_main/tilbakemelding'
+    | '/_main/toddel'
+    | '/_main/'
+    | '/_main/arrangementer/$id'
+    | '/_main/grupper/$slug'
+    | '/_main/nyheter/$id'
+    | '/_main/profil/$userId'
+    | '/_main/sporreskjema/$id'
+    | '/_main/stillingsannonser/$id'
+    | '/_main/arrangementer/'
+    | '/_main/grupper/'
+    | '/_main/nyheter/'
+    | '/_main/stillingsannonser/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  MainRoute: typeof MainRouteWithChildren
+  InteresseRoute: typeof InteresseRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/interesse': {
+      id: '/interesse'
+      path: '/interesse'
+      fullPath: '/interesse'
+      preLoaderRoute: typeof InteresseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_main': {
+      id: '/_main'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof MainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_main/': {
+      id: '/_main/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof MainIndexRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/toddel': {
+      id: '/_main/toddel'
+      path: '/toddel'
+      fullPath: '/toddel'
+      preLoaderRoute: typeof MainToddelRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/tilbakemelding': {
+      id: '/_main/tilbakemelding'
+      path: '/tilbakemelding'
+      fullPath: '/tilbakemelding'
+      preLoaderRoute: typeof MainTilbakemeldingRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/ny-student': {
+      id: '/_main/ny-student'
+      path: '/ny-student'
+      fullPath: '/ny-student'
+      preLoaderRoute: typeof MainNyStudentRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/logg-inn': {
+      id: '/_main/logg-inn'
+      path: '/logg-inn'
+      fullPath: '/logg-inn'
+      preLoaderRoute: typeof MainLoggInnRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/endringslogg': {
+      id: '/_main/endringslogg'
+      path: '/endringslogg'
+      fullPath: '/endringslogg'
+      preLoaderRoute: typeof MainEndringsloggRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/bedrifter': {
+      id: '/_main/bedrifter'
+      path: '/bedrifter'
+      fullPath: '/bedrifter'
+      preLoaderRoute: typeof MainBedrifterRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/stillingsannonser/': {
+      id: '/_main/stillingsannonser/'
+      path: '/stillingsannonser'
+      fullPath: '/stillingsannonser/'
+      preLoaderRoute: typeof MainStillingsannonserIndexRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/nyheter/': {
+      id: '/_main/nyheter/'
+      path: '/nyheter'
+      fullPath: '/nyheter/'
+      preLoaderRoute: typeof MainNyheterIndexRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/grupper/': {
+      id: '/_main/grupper/'
+      path: '/grupper'
+      fullPath: '/grupper/'
+      preLoaderRoute: typeof MainGrupperIndexRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/arrangementer/': {
+      id: '/_main/arrangementer/'
+      path: '/arrangementer'
+      fullPath: '/arrangementer/'
+      preLoaderRoute: typeof MainArrangementerIndexRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/stillingsannonser/$id': {
+      id: '/_main/stillingsannonser/$id'
+      path: '/stillingsannonser/$id'
+      fullPath: '/stillingsannonser/$id'
+      preLoaderRoute: typeof MainStillingsannonserIdRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/sporreskjema/$id': {
+      id: '/_main/sporreskjema/$id'
+      path: '/sporreskjema/$id'
+      fullPath: '/sporreskjema/$id'
+      preLoaderRoute: typeof MainSporreskjemaIdRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/profil/$userId': {
+      id: '/_main/profil/$userId'
+      path: '/profil/$userId'
+      fullPath: '/profil/$userId'
+      preLoaderRoute: typeof MainProfilUserIdRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/nyheter/$id': {
+      id: '/_main/nyheter/$id'
+      path: '/nyheter/$id'
+      fullPath: '/nyheter/$id'
+      preLoaderRoute: typeof MainNyheterIdRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/grupper/$slug': {
+      id: '/_main/grupper/$slug'
+      path: '/grupper/$slug'
+      fullPath: '/grupper/$slug'
+      preLoaderRoute: typeof MainGrupperSlugRouteImport
+      parentRoute: typeof MainRoute
+    }
+    '/_main/arrangementer/$id': {
+      id: '/_main/arrangementer/$id'
+      path: '/arrangementer/$id'
+      fullPath: '/arrangementer/$id'
+      preLoaderRoute: typeof MainArrangementerIdRouteImport
+      parentRoute: typeof MainRoute
     }
   }
 }
 
+interface MainRouteChildren {
+  MainBedrifterRoute: typeof MainBedrifterRoute
+  MainEndringsloggRoute: typeof MainEndringsloggRoute
+  MainLoggInnRoute: typeof MainLoggInnRoute
+  MainNyStudentRoute: typeof MainNyStudentRoute
+  MainTilbakemeldingRoute: typeof MainTilbakemeldingRoute
+  MainToddelRoute: typeof MainToddelRoute
+  MainIndexRoute: typeof MainIndexRoute
+  MainArrangementerIdRoute: typeof MainArrangementerIdRoute
+  MainGrupperSlugRoute: typeof MainGrupperSlugRoute
+  MainNyheterIdRoute: typeof MainNyheterIdRoute
+  MainProfilUserIdRoute: typeof MainProfilUserIdRoute
+  MainSporreskjemaIdRoute: typeof MainSporreskjemaIdRoute
+  MainStillingsannonserIdRoute: typeof MainStillingsannonserIdRoute
+  MainArrangementerIndexRoute: typeof MainArrangementerIndexRoute
+  MainGrupperIndexRoute: typeof MainGrupperIndexRoute
+  MainNyheterIndexRoute: typeof MainNyheterIndexRoute
+  MainStillingsannonserIndexRoute: typeof MainStillingsannonserIndexRoute
+}
+
+const MainRouteChildren: MainRouteChildren = {
+  MainBedrifterRoute: MainBedrifterRoute,
+  MainEndringsloggRoute: MainEndringsloggRoute,
+  MainLoggInnRoute: MainLoggInnRoute,
+  MainNyStudentRoute: MainNyStudentRoute,
+  MainTilbakemeldingRoute: MainTilbakemeldingRoute,
+  MainToddelRoute: MainToddelRoute,
+  MainIndexRoute: MainIndexRoute,
+  MainArrangementerIdRoute: MainArrangementerIdRoute,
+  MainGrupperSlugRoute: MainGrupperSlugRoute,
+  MainNyheterIdRoute: MainNyheterIdRoute,
+  MainProfilUserIdRoute: MainProfilUserIdRoute,
+  MainSporreskjemaIdRoute: MainSporreskjemaIdRoute,
+  MainStillingsannonserIdRoute: MainStillingsannonserIdRoute,
+  MainArrangementerIndexRoute: MainArrangementerIndexRoute,
+  MainGrupperIndexRoute: MainGrupperIndexRoute,
+  MainNyheterIndexRoute: MainNyheterIndexRoute,
+  MainStillingsannonserIndexRoute: MainStillingsannonserIndexRoute,
+}
+
+const MainRouteWithChildren = MainRoute._addFileChildren(MainRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  MainRoute: MainRouteWithChildren,
+  InteresseRoute: InteresseRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
