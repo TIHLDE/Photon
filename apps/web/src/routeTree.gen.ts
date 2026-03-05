@@ -18,16 +18,30 @@ import { Route as MainNyStudentRouteImport } from './routes/_main/ny-student'
 import { Route as MainLoggInnRouteImport } from './routes/_main/logg-inn'
 import { Route as MainEndringsloggRouteImport } from './routes/_main/endringslogg'
 import { Route as MainBedrifterRouteImport } from './routes/_main/bedrifter'
+import { Route as MainAdminRouteImport } from './routes/_main/admin'
 import { Route as MainStillingsannonserIndexRouteImport } from './routes/_main/stillingsannonser/index'
 import { Route as MainNyheterIndexRouteImport } from './routes/_main/nyheter/index'
 import { Route as MainGrupperIndexRouteImport } from './routes/_main/grupper/index'
 import { Route as MainArrangementerIndexRouteImport } from './routes/_main/arrangementer/index'
+import { Route as MainAdminIndexRouteImport } from './routes/_main/admin/index'
 import { Route as MainStillingsannonserIdRouteImport } from './routes/_main/stillingsannonser/$id'
 import { Route as MainSporreskjemaIdRouteImport } from './routes/_main/sporreskjema/$id'
 import { Route as MainProfilUserIdRouteImport } from './routes/_main/profil/$userId'
 import { Route as MainNyheterIdRouteImport } from './routes/_main/nyheter/$id'
 import { Route as MainGrupperSlugRouteImport } from './routes/_main/grupper/$slug'
 import { Route as MainArrangementerIdRouteImport } from './routes/_main/arrangementer/$id'
+import { Route as MainAdminStillingsannonserIndexRouteImport } from './routes/_main/admin/stillingsannonser/index'
+import { Route as MainAdminSkjemaerIndexRouteImport } from './routes/_main/admin/skjemaer/index'
+import { Route as MainAdminNyheterIndexRouteImport } from './routes/_main/admin/nyheter/index'
+import { Route as MainAdminArrangementerIndexRouteImport } from './routes/_main/admin/arrangementer/index'
+import { Route as MainAdminStillingsannonserNyRouteImport } from './routes/_main/admin/stillingsannonser/ny'
+import { Route as MainAdminStillingsannonserJobPostIdRouteImport } from './routes/_main/admin/stillingsannonser/$jobPostId'
+import { Route as MainAdminSkjemaerNyRouteImport } from './routes/_main/admin/skjemaer/ny'
+import { Route as MainAdminSkjemaerFormIdRouteImport } from './routes/_main/admin/skjemaer/$formId'
+import { Route as MainAdminNyheterNyRouteImport } from './routes/_main/admin/nyheter/ny'
+import { Route as MainAdminNyheterNewsIdRouteImport } from './routes/_main/admin/nyheter/$newsId'
+import { Route as MainAdminArrangementerNyRouteImport } from './routes/_main/admin/arrangementer/ny'
+import { Route as MainAdminArrangementerEventIdRouteImport } from './routes/_main/admin/arrangementer/$eventId'
 
 const InteresseRoute = InteresseRouteImport.update({
   id: '/interesse',
@@ -73,6 +87,11 @@ const MainBedrifterRoute = MainBedrifterRouteImport.update({
   path: '/bedrifter',
   getParentRoute: () => MainRoute,
 } as any)
+const MainAdminRoute = MainAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => MainRoute,
+} as any)
 const MainStillingsannonserIndexRoute =
   MainStillingsannonserIndexRouteImport.update({
     id: '/stillingsannonser/',
@@ -93,6 +112,11 @@ const MainArrangementerIndexRoute = MainArrangementerIndexRouteImport.update({
   id: '/arrangementer/',
   path: '/arrangementer/',
   getParentRoute: () => MainRoute,
+} as any)
+const MainAdminIndexRoute = MainAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MainAdminRoute,
 } as any)
 const MainStillingsannonserIdRoute = MainStillingsannonserIdRouteImport.update({
   id: '/stillingsannonser/$id',
@@ -124,10 +148,77 @@ const MainArrangementerIdRoute = MainArrangementerIdRouteImport.update({
   path: '/arrangementer/$id',
   getParentRoute: () => MainRoute,
 } as any)
+const MainAdminStillingsannonserIndexRoute =
+  MainAdminStillingsannonserIndexRouteImport.update({
+    id: '/stillingsannonser/',
+    path: '/stillingsannonser/',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminSkjemaerIndexRoute = MainAdminSkjemaerIndexRouteImport.update({
+  id: '/skjemaer/',
+  path: '/skjemaer/',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminNyheterIndexRoute = MainAdminNyheterIndexRouteImport.update({
+  id: '/nyheter/',
+  path: '/nyheter/',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminArrangementerIndexRoute =
+  MainAdminArrangementerIndexRouteImport.update({
+    id: '/arrangementer/',
+    path: '/arrangementer/',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminStillingsannonserNyRoute =
+  MainAdminStillingsannonserNyRouteImport.update({
+    id: '/stillingsannonser/ny',
+    path: '/stillingsannonser/ny',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminStillingsannonserJobPostIdRoute =
+  MainAdminStillingsannonserJobPostIdRouteImport.update({
+    id: '/stillingsannonser/$jobPostId',
+    path: '/stillingsannonser/$jobPostId',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminSkjemaerNyRoute = MainAdminSkjemaerNyRouteImport.update({
+  id: '/skjemaer/ny',
+  path: '/skjemaer/ny',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminSkjemaerFormIdRoute = MainAdminSkjemaerFormIdRouteImport.update({
+  id: '/skjemaer/$formId',
+  path: '/skjemaer/$formId',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminNyheterNyRoute = MainAdminNyheterNyRouteImport.update({
+  id: '/nyheter/ny',
+  path: '/nyheter/ny',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminNyheterNewsIdRoute = MainAdminNyheterNewsIdRouteImport.update({
+  id: '/nyheter/$newsId',
+  path: '/nyheter/$newsId',
+  getParentRoute: () => MainAdminRoute,
+} as any)
+const MainAdminArrangementerNyRoute =
+  MainAdminArrangementerNyRouteImport.update({
+    id: '/arrangementer/ny',
+    path: '/arrangementer/ny',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
+const MainAdminArrangementerEventIdRoute =
+  MainAdminArrangementerEventIdRouteImport.update({
+    id: '/arrangementer/$eventId',
+    path: '/arrangementer/$eventId',
+    getParentRoute: () => MainAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
   '/interesse': typeof InteresseRoute
+  '/admin': typeof MainAdminRouteWithChildren
   '/bedrifter': typeof MainBedrifterRoute
   '/endringslogg': typeof MainEndringsloggRoute
   '/logg-inn': typeof MainLoggInnRoute
@@ -140,10 +231,23 @@ export interface FileRoutesByFullPath {
   '/profil/$userId': typeof MainProfilUserIdRoute
   '/sporreskjema/$id': typeof MainSporreskjemaIdRoute
   '/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/admin/': typeof MainAdminIndexRoute
   '/arrangementer/': typeof MainArrangementerIndexRoute
   '/grupper/': typeof MainGrupperIndexRoute
   '/nyheter/': typeof MainNyheterIndexRoute
   '/stillingsannonser/': typeof MainStillingsannonserIndexRoute
+  '/admin/arrangementer/$eventId': typeof MainAdminArrangementerEventIdRoute
+  '/admin/arrangementer/ny': typeof MainAdminArrangementerNyRoute
+  '/admin/nyheter/$newsId': typeof MainAdminNyheterNewsIdRoute
+  '/admin/nyheter/ny': typeof MainAdminNyheterNyRoute
+  '/admin/skjemaer/$formId': typeof MainAdminSkjemaerFormIdRoute
+  '/admin/skjemaer/ny': typeof MainAdminSkjemaerNyRoute
+  '/admin/stillingsannonser/$jobPostId': typeof MainAdminStillingsannonserJobPostIdRoute
+  '/admin/stillingsannonser/ny': typeof MainAdminStillingsannonserNyRoute
+  '/admin/arrangementer/': typeof MainAdminArrangementerIndexRoute
+  '/admin/nyheter/': typeof MainAdminNyheterIndexRoute
+  '/admin/skjemaer/': typeof MainAdminSkjemaerIndexRoute
+  '/admin/stillingsannonser/': typeof MainAdminStillingsannonserIndexRoute
 }
 export interface FileRoutesByTo {
   '/interesse': typeof InteresseRoute
@@ -160,15 +264,29 @@ export interface FileRoutesByTo {
   '/profil/$userId': typeof MainProfilUserIdRoute
   '/sporreskjema/$id': typeof MainSporreskjemaIdRoute
   '/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/admin': typeof MainAdminIndexRoute
   '/arrangementer': typeof MainArrangementerIndexRoute
   '/grupper': typeof MainGrupperIndexRoute
   '/nyheter': typeof MainNyheterIndexRoute
   '/stillingsannonser': typeof MainStillingsannonserIndexRoute
+  '/admin/arrangementer/$eventId': typeof MainAdminArrangementerEventIdRoute
+  '/admin/arrangementer/ny': typeof MainAdminArrangementerNyRoute
+  '/admin/nyheter/$newsId': typeof MainAdminNyheterNewsIdRoute
+  '/admin/nyheter/ny': typeof MainAdminNyheterNyRoute
+  '/admin/skjemaer/$formId': typeof MainAdminSkjemaerFormIdRoute
+  '/admin/skjemaer/ny': typeof MainAdminSkjemaerNyRoute
+  '/admin/stillingsannonser/$jobPostId': typeof MainAdminStillingsannonserJobPostIdRoute
+  '/admin/stillingsannonser/ny': typeof MainAdminStillingsannonserNyRoute
+  '/admin/arrangementer': typeof MainAdminArrangementerIndexRoute
+  '/admin/nyheter': typeof MainAdminNyheterIndexRoute
+  '/admin/skjemaer': typeof MainAdminSkjemaerIndexRoute
+  '/admin/stillingsannonser': typeof MainAdminStillingsannonserIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteWithChildren
   '/interesse': typeof InteresseRoute
+  '/_main/admin': typeof MainAdminRouteWithChildren
   '/_main/bedrifter': typeof MainBedrifterRoute
   '/_main/endringslogg': typeof MainEndringsloggRoute
   '/_main/logg-inn': typeof MainLoggInnRoute
@@ -182,16 +300,30 @@ export interface FileRoutesById {
   '/_main/profil/$userId': typeof MainProfilUserIdRoute
   '/_main/sporreskjema/$id': typeof MainSporreskjemaIdRoute
   '/_main/stillingsannonser/$id': typeof MainStillingsannonserIdRoute
+  '/_main/admin/': typeof MainAdminIndexRoute
   '/_main/arrangementer/': typeof MainArrangementerIndexRoute
   '/_main/grupper/': typeof MainGrupperIndexRoute
   '/_main/nyheter/': typeof MainNyheterIndexRoute
   '/_main/stillingsannonser/': typeof MainStillingsannonserIndexRoute
+  '/_main/admin/arrangementer/$eventId': typeof MainAdminArrangementerEventIdRoute
+  '/_main/admin/arrangementer/ny': typeof MainAdminArrangementerNyRoute
+  '/_main/admin/nyheter/$newsId': typeof MainAdminNyheterNewsIdRoute
+  '/_main/admin/nyheter/ny': typeof MainAdminNyheterNyRoute
+  '/_main/admin/skjemaer/$formId': typeof MainAdminSkjemaerFormIdRoute
+  '/_main/admin/skjemaer/ny': typeof MainAdminSkjemaerNyRoute
+  '/_main/admin/stillingsannonser/$jobPostId': typeof MainAdminStillingsannonserJobPostIdRoute
+  '/_main/admin/stillingsannonser/ny': typeof MainAdminStillingsannonserNyRoute
+  '/_main/admin/arrangementer/': typeof MainAdminArrangementerIndexRoute
+  '/_main/admin/nyheter/': typeof MainAdminNyheterIndexRoute
+  '/_main/admin/skjemaer/': typeof MainAdminSkjemaerIndexRoute
+  '/_main/admin/stillingsannonser/': typeof MainAdminStillingsannonserIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/interesse'
+    | '/admin'
     | '/bedrifter'
     | '/endringslogg'
     | '/logg-inn'
@@ -204,10 +336,23 @@ export interface FileRouteTypes {
     | '/profil/$userId'
     | '/sporreskjema/$id'
     | '/stillingsannonser/$id'
+    | '/admin/'
     | '/arrangementer/'
     | '/grupper/'
     | '/nyheter/'
     | '/stillingsannonser/'
+    | '/admin/arrangementer/$eventId'
+    | '/admin/arrangementer/ny'
+    | '/admin/nyheter/$newsId'
+    | '/admin/nyheter/ny'
+    | '/admin/skjemaer/$formId'
+    | '/admin/skjemaer/ny'
+    | '/admin/stillingsannonser/$jobPostId'
+    | '/admin/stillingsannonser/ny'
+    | '/admin/arrangementer/'
+    | '/admin/nyheter/'
+    | '/admin/skjemaer/'
+    | '/admin/stillingsannonser/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/interesse'
@@ -224,14 +369,28 @@ export interface FileRouteTypes {
     | '/profil/$userId'
     | '/sporreskjema/$id'
     | '/stillingsannonser/$id'
+    | '/admin'
     | '/arrangementer'
     | '/grupper'
     | '/nyheter'
     | '/stillingsannonser'
+    | '/admin/arrangementer/$eventId'
+    | '/admin/arrangementer/ny'
+    | '/admin/nyheter/$newsId'
+    | '/admin/nyheter/ny'
+    | '/admin/skjemaer/$formId'
+    | '/admin/skjemaer/ny'
+    | '/admin/stillingsannonser/$jobPostId'
+    | '/admin/stillingsannonser/ny'
+    | '/admin/arrangementer'
+    | '/admin/nyheter'
+    | '/admin/skjemaer'
+    | '/admin/stillingsannonser'
   id:
     | '__root__'
     | '/_main'
     | '/interesse'
+    | '/_main/admin'
     | '/_main/bedrifter'
     | '/_main/endringslogg'
     | '/_main/logg-inn'
@@ -245,10 +404,23 @@ export interface FileRouteTypes {
     | '/_main/profil/$userId'
     | '/_main/sporreskjema/$id'
     | '/_main/stillingsannonser/$id'
+    | '/_main/admin/'
     | '/_main/arrangementer/'
     | '/_main/grupper/'
     | '/_main/nyheter/'
     | '/_main/stillingsannonser/'
+    | '/_main/admin/arrangementer/$eventId'
+    | '/_main/admin/arrangementer/ny'
+    | '/_main/admin/nyheter/$newsId'
+    | '/_main/admin/nyheter/ny'
+    | '/_main/admin/skjemaer/$formId'
+    | '/_main/admin/skjemaer/ny'
+    | '/_main/admin/stillingsannonser/$jobPostId'
+    | '/_main/admin/stillingsannonser/ny'
+    | '/_main/admin/arrangementer/'
+    | '/_main/admin/nyheter/'
+    | '/_main/admin/skjemaer/'
+    | '/_main/admin/stillingsannonser/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -321,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainBedrifterRouteImport
       parentRoute: typeof MainRoute
     }
+    '/_main/admin': {
+      id: '/_main/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof MainAdminRouteImport
+      parentRoute: typeof MainRoute
+    }
     '/_main/stillingsannonser/': {
       id: '/_main/stillingsannonser/'
       path: '/stillingsannonser'
@@ -348,6 +527,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/arrangementer/'
       preLoaderRoute: typeof MainArrangementerIndexRouteImport
       parentRoute: typeof MainRoute
+    }
+    '/_main/admin/': {
+      id: '/_main/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof MainAdminIndexRouteImport
+      parentRoute: typeof MainAdminRoute
     }
     '/_main/stillingsannonser/$id': {
       id: '/_main/stillingsannonser/$id'
@@ -391,10 +577,132 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainArrangementerIdRouteImport
       parentRoute: typeof MainRoute
     }
+    '/_main/admin/stillingsannonser/': {
+      id: '/_main/admin/stillingsannonser/'
+      path: '/stillingsannonser'
+      fullPath: '/admin/stillingsannonser/'
+      preLoaderRoute: typeof MainAdminStillingsannonserIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/skjemaer/': {
+      id: '/_main/admin/skjemaer/'
+      path: '/skjemaer'
+      fullPath: '/admin/skjemaer/'
+      preLoaderRoute: typeof MainAdminSkjemaerIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/nyheter/': {
+      id: '/_main/admin/nyheter/'
+      path: '/nyheter'
+      fullPath: '/admin/nyheter/'
+      preLoaderRoute: typeof MainAdminNyheterIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/arrangementer/': {
+      id: '/_main/admin/arrangementer/'
+      path: '/arrangementer'
+      fullPath: '/admin/arrangementer/'
+      preLoaderRoute: typeof MainAdminArrangementerIndexRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/stillingsannonser/ny': {
+      id: '/_main/admin/stillingsannonser/ny'
+      path: '/stillingsannonser/ny'
+      fullPath: '/admin/stillingsannonser/ny'
+      preLoaderRoute: typeof MainAdminStillingsannonserNyRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/stillingsannonser/$jobPostId': {
+      id: '/_main/admin/stillingsannonser/$jobPostId'
+      path: '/stillingsannonser/$jobPostId'
+      fullPath: '/admin/stillingsannonser/$jobPostId'
+      preLoaderRoute: typeof MainAdminStillingsannonserJobPostIdRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/skjemaer/ny': {
+      id: '/_main/admin/skjemaer/ny'
+      path: '/skjemaer/ny'
+      fullPath: '/admin/skjemaer/ny'
+      preLoaderRoute: typeof MainAdminSkjemaerNyRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/skjemaer/$formId': {
+      id: '/_main/admin/skjemaer/$formId'
+      path: '/skjemaer/$formId'
+      fullPath: '/admin/skjemaer/$formId'
+      preLoaderRoute: typeof MainAdminSkjemaerFormIdRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/nyheter/ny': {
+      id: '/_main/admin/nyheter/ny'
+      path: '/nyheter/ny'
+      fullPath: '/admin/nyheter/ny'
+      preLoaderRoute: typeof MainAdminNyheterNyRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/nyheter/$newsId': {
+      id: '/_main/admin/nyheter/$newsId'
+      path: '/nyheter/$newsId'
+      fullPath: '/admin/nyheter/$newsId'
+      preLoaderRoute: typeof MainAdminNyheterNewsIdRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/arrangementer/ny': {
+      id: '/_main/admin/arrangementer/ny'
+      path: '/arrangementer/ny'
+      fullPath: '/admin/arrangementer/ny'
+      preLoaderRoute: typeof MainAdminArrangementerNyRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
+    '/_main/admin/arrangementer/$eventId': {
+      id: '/_main/admin/arrangementer/$eventId'
+      path: '/arrangementer/$eventId'
+      fullPath: '/admin/arrangementer/$eventId'
+      preLoaderRoute: typeof MainAdminArrangementerEventIdRouteImport
+      parentRoute: typeof MainAdminRoute
+    }
   }
 }
 
+interface MainAdminRouteChildren {
+  MainAdminIndexRoute: typeof MainAdminIndexRoute
+  MainAdminArrangementerEventIdRoute: typeof MainAdminArrangementerEventIdRoute
+  MainAdminArrangementerNyRoute: typeof MainAdminArrangementerNyRoute
+  MainAdminNyheterNewsIdRoute: typeof MainAdminNyheterNewsIdRoute
+  MainAdminNyheterNyRoute: typeof MainAdminNyheterNyRoute
+  MainAdminSkjemaerFormIdRoute: typeof MainAdminSkjemaerFormIdRoute
+  MainAdminSkjemaerNyRoute: typeof MainAdminSkjemaerNyRoute
+  MainAdminStillingsannonserJobPostIdRoute: typeof MainAdminStillingsannonserJobPostIdRoute
+  MainAdminStillingsannonserNyRoute: typeof MainAdminStillingsannonserNyRoute
+  MainAdminArrangementerIndexRoute: typeof MainAdminArrangementerIndexRoute
+  MainAdminNyheterIndexRoute: typeof MainAdminNyheterIndexRoute
+  MainAdminSkjemaerIndexRoute: typeof MainAdminSkjemaerIndexRoute
+  MainAdminStillingsannonserIndexRoute: typeof MainAdminStillingsannonserIndexRoute
+}
+
+const MainAdminRouteChildren: MainAdminRouteChildren = {
+  MainAdminIndexRoute: MainAdminIndexRoute,
+  MainAdminArrangementerEventIdRoute: MainAdminArrangementerEventIdRoute,
+  MainAdminArrangementerNyRoute: MainAdminArrangementerNyRoute,
+  MainAdminNyheterNewsIdRoute: MainAdminNyheterNewsIdRoute,
+  MainAdminNyheterNyRoute: MainAdminNyheterNyRoute,
+  MainAdminSkjemaerFormIdRoute: MainAdminSkjemaerFormIdRoute,
+  MainAdminSkjemaerNyRoute: MainAdminSkjemaerNyRoute,
+  MainAdminStillingsannonserJobPostIdRoute:
+    MainAdminStillingsannonserJobPostIdRoute,
+  MainAdminStillingsannonserNyRoute: MainAdminStillingsannonserNyRoute,
+  MainAdminArrangementerIndexRoute: MainAdminArrangementerIndexRoute,
+  MainAdminNyheterIndexRoute: MainAdminNyheterIndexRoute,
+  MainAdminSkjemaerIndexRoute: MainAdminSkjemaerIndexRoute,
+  MainAdminStillingsannonserIndexRoute: MainAdminStillingsannonserIndexRoute,
+}
+
+const MainAdminRouteWithChildren = MainAdminRoute._addFileChildren(
+  MainAdminRouteChildren,
+)
+
 interface MainRouteChildren {
+  MainAdminRoute: typeof MainAdminRouteWithChildren
   MainBedrifterRoute: typeof MainBedrifterRoute
   MainEndringsloggRoute: typeof MainEndringsloggRoute
   MainLoggInnRoute: typeof MainLoggInnRoute
@@ -415,6 +723,7 @@ interface MainRouteChildren {
 }
 
 const MainRouteChildren: MainRouteChildren = {
+  MainAdminRoute: MainAdminRouteWithChildren,
   MainBedrifterRoute: MainBedrifterRoute,
   MainEndringsloggRoute: MainEndringsloggRoute,
   MainLoggInnRoute: MainLoggInnRoute,
