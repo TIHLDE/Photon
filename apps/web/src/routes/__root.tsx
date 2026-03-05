@@ -1,11 +1,16 @@
 /// <reference types="vite/client" />
-import type { QueryClient } from "@tanstack/react-query";
-import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import * as React from "react";
-import TanStackQueryProvider from "~/integrations/tanstack-query/root-provider";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+    HeadContent,
+    Outlet,
+    Scripts,
+    createRootRouteWithContext,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import type * as React from "react";
 import TanStackQueryDevtools from "~/integrations/tanstack-query/devtools";
+import TanStackQueryProvider from "~/integrations/tanstack-query/root-provider";
 import appCss from "~/styles/app.css?url";
 
 interface MyRouterContext {

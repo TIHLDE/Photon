@@ -12,6 +12,7 @@
         "./feide": "./src/feide.ts"
     },
     "dependencies": {
+        "@better-auth/drizzle-adapter": "1.5.3",
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
