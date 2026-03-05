@@ -1,5 +1,11 @@
 # @tihlde/sdk
 
+## 0.0.5
+
+### Patch Changes
+
+- [`73b6fda`](https://github.com/TIHLDE/Photon/commit/73b6fdadb65e50ece773e52942703b184b656a97) Thanks [@AleksanderEvensen](https://github.com/AleksanderEvensen)! - NPM doesnt work so, we have to bump the dependency version
+
 ## 0.0.4
 
 ### Patch Changes
