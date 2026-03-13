@@ -35,8 +35,7 @@
     "postinstall": "node scripts/postinstall.mjs"
   },
   "dependencies": {
-    "@photon/api": "workspace:*",
-    "openapi-fetch": "^0.17.0"
+    "@photon/api": "workspace:*"
   },
   "devDependencies": {
     "@photon/auth": "workspace:*",

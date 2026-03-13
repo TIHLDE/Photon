@@ -1,7 +1,5 @@
 import { paths } from "./generated/openapi";
 
-export * from "./generated";
-
 type HTTPMethods = "get" | "post" | "put" | "patch" | "delete" | "options" | "head";
 
 export type QueryParamsHelper<TMethod extends HTTPMethods, TPath extends keyof paths> = NonNullable<

@@ -8,7 +8,7 @@
     "declarationMap": true,
     "lib": ["ES2022", "DOM"],
     "jsx": "react-jsx",
-    "rootDir": ".",
+    "rootDir": "."
   },
-  "include": ["src", "tsdown.config.ts"],
+  "include": ["src", "tsdown.config.ts"]
 }
