@@ -2,6 +2,7 @@ import { infiniteQueryOptions, mutationOptions, queryOptions } from "@tanstack/r
 
 import { photonClient } from "../apiClient";
 import { QueryParamsHelper } from "@tihlde/sdk/types";
+import { CreateEventSchema, EventRegistration, UpdateEventSchema, UpdateFavoriteEvent } from "@tihlde/sdk";
 
 export type {
   CreateEventResponse,
@@ -16,6 +17,9 @@ export type {
   CreateEventFormResponse,
   DeleteEventResponse,
   FavoriteEvents,
+  CreateEventSchema,
+  UpdateEventSchema,
+  UpdateFavoriteEvent
 } from "@tihlde/sdk";
 
 export type { EventListItem as EventListEntry } from "@tihlde/sdk";
@@ -35,9 +39,9 @@ export const eventKeys = {
 
 const DEFAULT_PAGE_SIZE = 20;
 
-export const listEventInfiniteQuery = (filters?: EventFilters) =>
+export const listEventInfiniteQuery = (filters: EventFilters = {}) =>
   infiniteQueryOptions({
-    queryKey: [...eventKeys.infinite, filters].filter(Boolean),
+    queryKey: [...eventKeys.infinite, filters],
     queryFn: async ({ pageParam }) =>
       await photonClient
         .get("/api/event", {
@@ -85,14 +89,14 @@ export const getFavoriteEventsQuery = () =>
     queryFn: () => photonClient.get("/api/event/favorite").then((r) => r.unwrap().data),
   });
 
-export const listEventRegistrationsQuery = (eventId: string, filters?: EventRegistrationFilters) =>
+export const listEventRegistrationsQuery = (eventId: string, filters: EventRegistrationFilters = {}) =>
   queryOptions({
-    queryKey: [...eventKeys.registrations, eventId, filters].filter(Boolean),
+    queryKey: [...eventKeys.registrations, eventId, filters],
     queryFn: () =>
       photonClient
         .get("/api/event/{eventId}/registration", {
           pathParams: { eventId },
-          queryParams: filters,
+          queryParams: filters ?? {},
         })
         .then((r) => r.unwrap().data),
   });
@@ -120,7 +124,7 @@ export const getEventFormQuery = (eventId: string, type: "survey" | "evaluation"
   });
 
 export const createEventMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/event">>[1]) => photonClient.post("/api/event", body).then((r) => r.unwrap().data),
+  mutationFn: (body: CreateEventSchema) => photonClient.post("/api/event", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: eventKeys.lists });
   },
@@ -131,7 +135,7 @@ export const createEventMutation = mutationOptions({
 
 export const updateEventMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.put<"/api/event/{id}">>[1]) =>
+    mutationFn: (body: UpdateEventSchema) =>
       photonClient
         .put("/api/event/{id}", body, {
           pathParams: { id },
@@ -160,7 +164,7 @@ export const deleteEventMutation = (eventId: string) =>
 
 export const updateEventFavoriteMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.put<"/api/event/favorite/{id}">>[1]) =>
+    mutationFn: (body: UpdateFavoriteEvent) =>
       photonClient
         .put("/api/event/favorite/{id}", body, {
           pathParams: { id },
@@ -176,9 +180,9 @@ export const updateEventFavoriteMutation = (id: string) =>
 
 export const createEventRegistrationMutation = (eventId: string) =>
   mutationOptions({
-    mutationFn: () =>
+    mutationFn: (body: EventRegistration) =>
       photonClient
-        .post("/api/event/{eventId}/registration", null, {
+        .post("/api/event/{eventId}/registration", body, {
           pathParams: { eventId },
         })
         .then((r) => r.unwrap().data),
@@ -205,7 +209,7 @@ export const deleteEventRegistrationMutation = (eventId: string) =>
 
 export const createEventPaymentMutation = (eventId: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/event/{eventId}/payment">>[1]) =>
+    mutationFn: (body: ) =>
       photonClient
         .post("/api/event/{eventId}/payment", body, {
           pathParams: { eventId },
@@ -218,7 +222,7 @@ export const createEventPaymentMutation = (eventId: string) =>
 
 export const createEventFormMutation = (eventId: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/event/{eventId}/forms">>[1]) =>
+    mutationFn: (body: ) =>
       photonClient
         .post("/api/event/{eventId}/forms", body, {
           pathParams: { eventId },

@@ -1,5 +1,8 @@
+import { sendCustomEmailSchema } from "@photon/email/schema";
 import { z } from "zod";
 import { Schema } from "~/lib/openapi";
+
+export const sendCustomEmailInputSchema = Schema("SendCustomEmail", sendCustomEmailSchema);
 
 // ===== RESPONSE SCHEMAS =====
 

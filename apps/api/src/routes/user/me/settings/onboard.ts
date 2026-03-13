@@ -2,9 +2,9 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { UserSettingsSchema, createUserSettings, getUserSettings } from "~/lib/user/settings";
+import { createUserSettings, getUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
-import { userSettingsSchema } from "../../schema";
+import { onboardUserInputSchema, userSettingsSchema } from "../../schema";
 
 export const onboardRoute = route().post(
   "/",
@@ -22,7 +22,7 @@ export const onboardRoute = route().post(
     .badRequest({ description: "User has already completed onboarding" })
     .build(),
   requireAuth,
-  validator("json", UserSettingsSchema),
+  validator("json", onboardUserInputSchema),
   async (c) => {
     const userId = c.get("user").id;
     const body = c.req.valid("json");

@@ -11,3 +11,13 @@ export type QueryParamsHelper<TMethod extends HTTPMethods, TPath extends keyof p
       : never
     : never
 >;
+
+export type RequestBodyHelper<TMehtod extends HTTPMethods, TPath extends keyof paths> = NonNullable<
+  TMehtod extends keyof paths[TPath]
+    ? "parameters" extends keyof paths[TPath][TMehtod]
+      ? "body" extends keyof paths[TPath][TMehtod]["parameters"]
+        ? paths[TPath][TMehtod]["parameters"]["body"]
+        : never
+      : never
+    : never
+>;

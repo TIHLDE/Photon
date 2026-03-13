@@ -3,44 +3,56 @@ import { Schema } from "~/lib/openapi";
 
 // ===== INPUT SCHEMAS =====
 
-export const createGroupSchema = z.object({
-  slug: z
-    .string()
-    .min(1)
-    .max(128)
-    .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens")
-    .meta({ description: "Unique group slug identifier" }),
-  imageUrl: z.string().url().max(600).optional().meta({ description: "Group image URL" }),
-  name: z.string().min(1).max(128).meta({ description: "Group name" }),
-  description: z.string().optional().meta({ description: "Group description" }),
-  contactEmail: z.string().email().max(200).optional().meta({ description: "Group contact email" }),
-  type: z.string().max(50).meta({
-    description: "Group type (e.g., committee, study, interestgroup)",
+export const createGroupSchema = Schema(
+  "CreateGroup",
+  z.object({
+    slug: z
+      .string()
+      .min(1)
+      .max(128)
+      .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens")
+      .meta({ description: "Unique group slug identifier" }),
+    imageUrl: z.string().url().max(600).optional().meta({ description: "Group image URL" }),
+    name: z.string().min(1).max(128).meta({ description: "Group name" }),
+    description: z.string().optional().meta({ description: "Group description" }),
+    contactEmail: z.string().email().max(200).optional().meta({ description: "Group contact email" }),
+    type: z.string().max(50).meta({
+      description: "Group type (e.g., committee, study, interestgroup)",
+    }),
+    finesInfo: z.string().default("").meta({ description: "Information about group fines policy" }),
+    finesActivated: z.boolean().default(false).meta({ description: "Whether fines are activated for this group" }),
+    finesAdminId: z.string().max(255).optional().meta({ description: "User ID of the fines administrator" }),
   }),
-  finesInfo: z.string().default("").meta({ description: "Information about group fines policy" }),
-  finesActivated: z.boolean().default(false).meta({ description: "Whether fines are activated for this group" }),
-  finesAdminId: z.string().max(255).optional().meta({ description: "User ID of the fines administrator" }),
-});
+);
 
-export const updateGroupSchema = z.object({
-  imageUrl: z.string().url().max(600).optional().meta({ description: "Group image URL" }),
-  name: z.string().min(1).max(128).optional().meta({ description: "Group name" }),
-  description: z.string().optional().nullable().meta({ description: "Group description" }),
-  contactEmail: z.string().email().max(200).optional().nullable().meta({ description: "Group contact email" }),
-  type: z.string().max(50).optional().meta({ description: "Group type" }),
-  finesInfo: z.string().optional().meta({ description: "Information about group fines policy" }),
-  finesActivated: z.boolean().optional().meta({ description: "Whether fines are activated for this group" }),
-  finesAdminId: z.string().max(255).optional().nullable().meta({ description: "User ID of the fines administrator" }),
-});
+export const updateGroupSchema = Schema(
+  "UpdateGroup",
+  z.object({
+    imageUrl: z.string().url().max(600).optional().meta({ description: "Group image URL" }),
+    name: z.string().min(1).max(128).optional().meta({ description: "Group name" }),
+    description: z.string().optional().nullable().meta({ description: "Group description" }),
+    contactEmail: z.string().email().max(200).optional().nullable().meta({ description: "Group contact email" }),
+    type: z.string().max(50).optional().meta({ description: "Group type" }),
+    finesInfo: z.string().optional().meta({ description: "Information about group fines policy" }),
+    finesActivated: z.boolean().optional().meta({ description: "Whether fines are activated for this group" }),
+    finesAdminId: z.string().max(255).optional().nullable().meta({ description: "User ID of the fines administrator" }),
+  }),
+);
 
-export const addMemberSchema = z.object({
-  userId: z.string().max(255).meta({ description: "User ID to add as member" }),
-  role: z.enum(["member", "leader"]).default("member").meta({ description: "Membership role" }),
-});
+export const addMemberSchema = Schema(
+  "AddGroupMember",
+  z.object({
+    userId: z.string().max(255).meta({ description: "User ID to add as member" }),
+    role: z.enum(["member", "leader"]).default("member").meta({ description: "Membership role" }),
+  }),
+);
 
-export const updateMemberRoleSchema = z.object({
-  role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
-});
+export const updateMemberRoleSchema = Schema(
+  "UpdateGroupMemberRole",
+  z.object({
+    role: z.enum(["member", "leader"]).meta({ description: "Membership role" }),
+  }),
+);
 
 // ===== RESPONSE SCHEMAS =====
 

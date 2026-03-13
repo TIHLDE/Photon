@@ -86,219 +86,234 @@ const eventMutationSchema = z.object({
   }),
 });
 
-export const createEventSchema = eventMutationSchema.superRefine((val, ctx) => {
-  if (val.onlyAllowPrioritized && (!val.priorityPools || val.priorityPools.length === 0)) {
-    ctx.addIssue({
-      code: "custom",
-      message: "onlyAllowPrioritized cannot be true if priorityPools is empty",
-      path: ["onlyAllowPrioritized"],
-    });
-  }
-
-  if (val.isPaidEvent) {
-    if (val.price === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        message: "price must be set if isPaidEvent is true",
-        path: ["price"],
-      });
-    }
-    if (!!val.price && val.price <= 0) {
-      ctx.addIssue({
-        code: "too_small",
-        message: "price must be greater than 0",
-        minimum: 1,
-        origin: "number",
-        path: ["price"],
-      });
-    }
-    if (val.paymentGracePeriodMinutes === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        message: "paymentGracePeriodMinutes must be set if isPaidEvent is true",
-        path: ["paymentGracePeriod"],
-      });
-    }
-  }
-
-  if (new Date(val.end) <= new Date(val.start)) {
-    ctx.addIssue({
-      code: "custom",
-      message: "end must be after start",
-      path: ["end", "start"],
-    });
-  }
-
-  if (!val.requiresSigningUp) {
-    if (val.registrationStart) {
-      ctx.addIssue({
-        code: "custom",
-        message: "registrationStart cannot be set if requiresSigningUp is false",
-        path: ["registrationStart"],
-      });
-    }
-    if (val.registrationEnd) {
-      ctx.addIssue({
-        code: "custom",
-        message: "endRegistrationAt cannot be set if requiresSigningUp is false",
-        path: ["endRegistrationAt"],
-      });
-    }
-    if (val.cancellationDeadline) {
-      ctx.addIssue({
-        code: "custom",
-        message: "cancellationDeadline cannot be set if requiresSigningUp is false",
-        path: ["cancellationDeadline"],
-      });
-    }
-    if (val.allowWaitlist) {
-      ctx.addIssue({
-        code: "custom",
-        message: "allowWaitlist cannot be true if requiresSigningUp is false",
-        path: ["allowWaitlist"],
-      });
-    }
-  }
-
-  if (val.cancellationDeadline && new Date(val.cancellationDeadline) >= new Date(val.start)) {
-    ctx.addIssue({
-      code: "custom",
-      message: "cancellationDeadline must be before event start time",
-      path: ["cancellationDeadline"],
-    });
-  }
-
-  if (!val.requiresSigningUp && val.capacity !== undefined) {
-    ctx.addIssue({
-      code: "custom",
-      message: "capacity cannot be set if requiresSigningUp is false",
-      path: ["capacity"],
-    });
-  }
-
-  if (val.paymentGracePeriodMinutes) {
-    if (val.paymentGracePeriodMinutes < 5 || val.paymentGracePeriodMinutes > 60 * 6) {
-      ctx.addIssue({
-        code: "custom",
-        message: "paymentGracePeriod must be between PT5M and PT6H (5 minutes to 6 hours)",
-        path: ["paymentGracePeriod"],
-      });
-    }
-  }
-});
-
-export const updateEventSchema = eventMutationSchema.partial().superRefine((val, ctx) => {
-  if (val.onlyAllowPrioritized !== undefined && val.onlyAllowPrioritized) {
-    if (!val.priorityPools || val.priorityPools.length === 0) {
+export const createEventSchema = Schema(
+  "CreateEventSchema",
+  eventMutationSchema.superRefine((val, ctx) => {
+    if (val.onlyAllowPrioritized && (!val.priorityPools || val.priorityPools.length === 0)) {
       ctx.addIssue({
         code: "custom",
         message: "onlyAllowPrioritized cannot be true if priorityPools is empty",
         path: ["onlyAllowPrioritized"],
       });
     }
-  }
-  if (val.isPaidEvent !== undefined && val.isPaidEvent) {
-    if (val.price === undefined) {
+
+    if (val.isPaidEvent) {
+      if (val.price === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "price must be set if isPaidEvent is true",
+          path: ["price"],
+        });
+      }
+      if (!!val.price && val.price <= 0) {
+        ctx.addIssue({
+          code: "too_small",
+          message: "price must be greater than 0",
+          minimum: 1,
+          origin: "number",
+          path: ["price"],
+        });
+      }
+      if (val.paymentGracePeriodMinutes === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "paymentGracePeriodMinutes must be set if isPaidEvent is true",
+          path: ["paymentGracePeriod"],
+        });
+      }
+    }
+
+    if (new Date(val.end) <= new Date(val.start)) {
       ctx.addIssue({
         code: "custom",
-        message: "price must be set if isPaidEvent is true",
-        path: ["price"],
+        message: "end must be after start",
+        path: ["end", "start"],
       });
     }
-    if (!!val.price && val.price <= 0) {
-      ctx.addIssue({
-        code: "too_small",
-        message: "price must be greater than 0",
-        minimum: 1,
-        origin: "number",
-        path: ["price"],
-      });
+
+    if (!val.requiresSigningUp) {
+      if (val.registrationStart) {
+        ctx.addIssue({
+          code: "custom",
+          message: "registrationStart cannot be set if requiresSigningUp is false",
+          path: ["registrationStart"],
+        });
+      }
+      if (val.registrationEnd) {
+        ctx.addIssue({
+          code: "custom",
+          message: "endRegistrationAt cannot be set if requiresSigningUp is false",
+          path: ["endRegistrationAt"],
+        });
+      }
+      if (val.cancellationDeadline) {
+        ctx.addIssue({
+          code: "custom",
+          message: "cancellationDeadline cannot be set if requiresSigningUp is false",
+          path: ["cancellationDeadline"],
+        });
+      }
+      if (val.allowWaitlist) {
+        ctx.addIssue({
+          code: "custom",
+          message: "allowWaitlist cannot be true if requiresSigningUp is false",
+          path: ["allowWaitlist"],
+        });
+      }
     }
-    if (val.paymentGracePeriodMinutes === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        message: "paymentGracePeriodMinutes must be set if isPaidEvent is true",
-        path: ["paymentGracePeriod"],
-      });
-    }
-  }
-  if (val.start && val.end && new Date(val.end) <= new Date(val.start)) {
-    ctx.addIssue({
-      code: "custom",
-      message: "end must be after start",
-      path: ["end", "start"],
-    });
-  }
-  if (val.requiresSigningUp === false) {
-    if (val.registrationStart) {
-      ctx.addIssue({
-        code: "custom",
-        message: "registrationStart cannot be set if requiresSigningUp is false",
-        path: ["registrationStart"],
-      });
-    }
-    if (val.registrationEnd) {
-      ctx.addIssue({
-        code: "custom",
-        message: "endRegistrationAt cannot be set if requiresSigningUp is false",
-        path: ["endRegistrationAt"],
-      });
-    }
-    if (val.cancellationDeadline) {
+
+    if (val.cancellationDeadline && new Date(val.cancellationDeadline) >= new Date(val.start)) {
       ctx.addIssue({
         code: "custom",
-        message: "cancellationDeadline cannot be set if requiresSigningUp is false",
+        message: "cancellationDeadline must be before event start time",
         path: ["cancellationDeadline"],
       });
     }
-    if (val.allowWaitlist) {
-      ctx.addIssue({
-        code: "custom",
-        message: "allowWaitlist cannot be true if requiresSigningUp is false",
-        path: ["allowWaitlist"],
-      });
-    }
-    if (val.capacity !== undefined) {
+
+    if (!val.requiresSigningUp && val.capacity !== undefined) {
       ctx.addIssue({
         code: "custom",
         message: "capacity cannot be set if requiresSigningUp is false",
         path: ["capacity"],
       });
     }
-  }
-  if (val.cancellationDeadline && val.start && new Date(val.cancellationDeadline) >= new Date(val.start)) {
-    ctx.addIssue({
-      code: "custom",
-      message: "cancellationDeadline must be before event start time",
-      path: ["cancellationDeadline"],
-    });
-  }
-  if (val.paymentGracePeriodMinutes) {
-    if (val.paymentGracePeriodMinutes < 5 || val.paymentGracePeriodMinutes > 60 * 6) {
+
+    if (val.paymentGracePeriodMinutes) {
+      if (val.paymentGracePeriodMinutes < 5 || val.paymentGracePeriodMinutes > 60 * 6) {
+        ctx.addIssue({
+          code: "custom",
+          message: "paymentGracePeriod must be between PT5M and PT6H (5 minutes to 6 hours)",
+          path: ["paymentGracePeriod"],
+        });
+      }
+    }
+  }),
+);
+
+export const updateEventSchema = Schema(
+  "UpdateEventSchema",
+  eventMutationSchema.partial().superRefine((val, ctx) => {
+    if (val.onlyAllowPrioritized !== undefined && val.onlyAllowPrioritized) {
+      if (!val.priorityPools || val.priorityPools.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: "onlyAllowPrioritized cannot be true if priorityPools is empty",
+          path: ["onlyAllowPrioritized"],
+        });
+      }
+    }
+    if (val.isPaidEvent !== undefined && val.isPaidEvent) {
+      if (val.price === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "price must be set if isPaidEvent is true",
+          path: ["price"],
+        });
+      }
+      if (!!val.price && val.price <= 0) {
+        ctx.addIssue({
+          code: "too_small",
+          message: "price must be greater than 0",
+          minimum: 1,
+          origin: "number",
+          path: ["price"],
+        });
+      }
+      if (val.paymentGracePeriodMinutes === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "paymentGracePeriodMinutes must be set if isPaidEvent is true",
+          path: ["paymentGracePeriod"],
+        });
+      }
+    }
+    if (val.start && val.end && new Date(val.end) <= new Date(val.start)) {
       ctx.addIssue({
         code: "custom",
-        message: "paymentGracePeriodMinutes must be between 5 minutes and 6 hours",
-        path: ["paymentGracePeriodMinutes"],
+        message: "end must be after start",
+        path: ["end", "start"],
       });
     }
-  }
-});
+    if (val.requiresSigningUp === false) {
+      if (val.registrationStart) {
+        ctx.addIssue({
+          code: "custom",
+          message: "registrationStart cannot be set if requiresSigningUp is false",
+          path: ["registrationStart"],
+        });
+      }
+      if (val.registrationEnd) {
+        ctx.addIssue({
+          code: "custom",
+          message: "endRegistrationAt cannot be set if requiresSigningUp is false",
+          path: ["endRegistrationAt"],
+        });
+      }
+      if (val.cancellationDeadline) {
+        ctx.addIssue({
+          code: "custom",
+          message: "cancellationDeadline cannot be set if requiresSigningUp is false",
+          path: ["cancellationDeadline"],
+        });
+      }
+      if (val.allowWaitlist) {
+        ctx.addIssue({
+          code: "custom",
+          message: "allowWaitlist cannot be true if requiresSigningUp is false",
+          path: ["allowWaitlist"],
+        });
+      }
+      if (val.capacity !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          message: "capacity cannot be set if requiresSigningUp is false",
+          path: ["capacity"],
+        });
+      }
+    }
+    if (val.cancellationDeadline && val.start && new Date(val.cancellationDeadline) >= new Date(val.start)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "cancellationDeadline must be before event start time",
+        path: ["cancellationDeadline"],
+      });
+    }
+    if (val.paymentGracePeriodMinutes) {
+      if (val.paymentGracePeriodMinutes < 5 || val.paymentGracePeriodMinutes > 60 * 6) {
+        ctx.addIssue({
+          code: "custom",
+          message: "paymentGracePeriodMinutes must be between 5 minutes and 6 hours",
+          path: ["paymentGracePeriodMinutes"],
+        });
+      }
+    }
+  }),
+);
 
-export const updateFavoriteSchema = z.object({
-  isFavorite: z.boolean().meta({ description: "Is favorite" }),
-});
+export const updateFavoriteSchema = Schema(
+  "UpdateFavoriteEvent",
+  z.object({
+    isFavorite: z.boolean().meta({ description: "Is favorite" }),
+  }),
+);
 
-export const registerSchema = z.object({
-  eventId: z.uuid(),
-  userId: z.string(),
-  status: z.literal("pending"),
-  createdAt: z.string(),
-});
+export const registerSchema = Schema(
+  "RegsterForEvent",
+  z.object({
+    eventId: z.uuid(),
+    userId: z.string(),
+    status: z.literal("pending"),
+    createdAt: z.string(),
+  }),
+);
 
-export const createPaymentBodySchema = z.object({
-  returnUrl: z.url().meta({ description: "URL to redirect user after payment" }),
-  userFlow: z.enum(["WEB_REDIRECT", "NATIVE_REDIRECT"]).default("WEB_REDIRECT").meta({ description: "User flow type for payment" }),
-});
+export const createPaymentBodySchema = Schema(
+  "CreatePaymentBody",
+  z.object({
+    returnUrl: z.url().meta({ description: "URL to redirect user after payment" }),
+    userFlow: z.enum(["WEB_REDIRECT", "NATIVE_REDIRECT"]).default("WEB_REDIRECT").meta({ description: "User flow type for payment" }),
+  }),
+);
 
 export const eventListFilterSchema = PaginationSchema.extend({
   search: z.string().optional().meta({

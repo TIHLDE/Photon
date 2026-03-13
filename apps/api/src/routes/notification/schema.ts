@@ -4,9 +4,12 @@ import { PagniationResponseSchema } from "~/middleware/pagination";
 
 // ===== INPUT SCHEMAS =====
 
-export const markReadSchema = z.object({
-  isRead: z.boolean().meta({ description: "Whether notification should be marked as read" }),
-});
+export const markReadSchema = Schema(
+  "MarkNotificationRead",
+  z.object({
+    isRead: z.boolean().meta({ description: "Whether notification should be marked as read" }),
+  }),
+);
 
 // ===== RESPONSE SCHEMAS =====
 
