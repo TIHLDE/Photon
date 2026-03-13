@@ -1047,6 +1047,18 @@ export interface components {
             /** @description Additional metadata about the error */
             meta?: unknown;
         };
+        CreateApiKey: {
+            /** @description Name for the API key */
+            name: string;
+            /** @description Detailed description of the API key's purpose */
+            description: string;
+            /** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
+            permissions: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         /** @description The API key details and permissions if valid. Undefined if invalid. */
         ApiKey: {
             /**
@@ -1082,6 +1094,18 @@ export interface components {
             updatedAt: string;
         };
         ApiKeyList: components["schemas"]["ApiKey"][];
+        UpdateApiKey: {
+            /** @description Name for the API key */
+            name?: string;
+            /** @description Detailed description of the API key's purpose */
+            description?: string;
+            /** @description Array of permissions granted to this API key */
+            permissions?: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         DeleteApiKeyResponse: {
             /** @description Success message */
             message: string;
@@ -1090,6 +1114,10 @@ export interface components {
             /** @description Whether the API key is valid */
             valid: boolean;
             apiKey?: components["schemas"]["ApiKey"];
+        };
+        ValidateApiKeyInput: {
+            /** @description The API key to validate */
+            key: string;
         };
         UploadResponse: {
             /** @description The unique key to reference this asset */
@@ -2120,20 +2148,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Name for the API key */
-                    name: string;
-                    /** @description Detailed description of the API key's purpose */
-                    description: string;
-                    /** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
-                    permissions: string[];
-                    /** @description Optional metadata as key-value pairs */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
+                "application/json": components["schemas"]["CreateApiKey"];
             };
         };
         responses: {
@@ -2245,20 +2262,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Name for the API key */
-                    name?: string;
-                    /** @description Detailed description of the API key's purpose */
-                    description?: string;
-                    /** @description Array of permissions granted to this API key */
-                    permissions?: string[];
-                    /** @description Optional metadata as key-value pairs */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
+                "application/json": components["schemas"]["UpdateApiKey"];
             };
         };
         responses: {
@@ -2335,12 +2341,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description The API key to validate */
-                    key: string;
-                };
+                "application/json": components["schemas"]["ValidateApiKeyInput"];
             };
         };
         responses: {
@@ -2454,7 +2457,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Recipient email address (string) or list of recipient email addresses (array) */
@@ -2566,7 +2569,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Short title of the event */
@@ -2669,7 +2672,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Short title of the event */
@@ -2844,7 +2847,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Is favorite */
@@ -3019,7 +3022,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /**
@@ -3157,7 +3160,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title: string;
@@ -3310,7 +3313,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title: string;
@@ -3448,7 +3451,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title?: string;
@@ -3609,7 +3612,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     answers: {
@@ -3769,7 +3772,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     reason: string;
@@ -3885,7 +3888,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Whether notification should be marked as read */
@@ -3948,7 +3951,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Unique group slug identifier */
@@ -4122,7 +4125,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /**
@@ -4243,7 +4246,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description User ID who receives the fine */
@@ -4401,7 +4404,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description User's defense text */
@@ -4496,7 +4499,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description User ID to add as member */
@@ -4592,7 +4595,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /**
@@ -4678,7 +4681,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title: string;
@@ -4779,7 +4782,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description News article title */
@@ -4907,7 +4910,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title?: string;
@@ -4963,7 +4966,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
@@ -5084,7 +5087,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @description Job posting title */
@@ -5262,7 +5265,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     title?: string;
@@ -5363,7 +5366,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @enum {string} */
@@ -5418,7 +5421,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
                     /** @enum {string} */
