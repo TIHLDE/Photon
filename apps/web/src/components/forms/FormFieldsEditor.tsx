@@ -1,0 +1,235 @@
+import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import FieldEditor from "~/components/forms/FieldEditor";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { Separator } from "~/components/ui/separator";
+import { useFormSubmissions, useUpdateForm } from "~/hooks/Form";
+import { cn } from "~/lib/utils";
+import type { Form, SelectFormField, TextFormField } from "~/types";
+import { FormFieldType } from "~/types/Enums";
+import { uuidv4 } from "~/utils";
+import { GripHorizontal } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+export type FormFieldsEditorProps = {
+  form: Form;
+  onSave?: () => void;
+  canEditTitle?: boolean;
+};
+
+function SortableFieldEditor({
+  field,
+  removeField,
+  updateField,
+  disabled,
+}: {
+  field: TextFormField | SelectFormField;
+  removeField: () => void;
+  updateField: (newField: TextFormField | SelectFormField) => void;
+  disabled: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: field.id ?? "",
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(
+      transform
+        ? {
+            x: transform.x,
+            y: transform.y,
+            scaleX: 1,
+            scaleY: 1,
+          }
+        : null,
+    ),
+    transition,
+  };
+
+  return (
+    <div style={style} ref={setNodeRef} className={cn("w-full flex items-center gap-2 p-4 border rounded-md bg-card", isDragging && "shadow-lg")}>
+      <div className={cn("cursor-pointer h-fit w-fit self-start", disabled && "cursor-not-allowed opacity-30")} {...attributes} {...listeners}>
+        <GripHorizontal className="size-5" />
+      </div>
+      <FieldEditor field={field} updateField={updateField} removeField={removeField} disabled={disabled} />
+    </div>
+  );
+}
+
+const FormFieldsEditor = ({ form, onSave, canEditTitle }: FormFieldsEditorProps) => {
+  const { data: submissions, isLoading: isSubmissionsLoading } = useFormSubmissions(form.id, 1);
+  const updateForm = useUpdateForm(form.id);
+  const disabledFromSubmissions = (submissions ? Boolean(submissions.count) : true) && !isSubmissionsLoading;
+  const disabled = updateForm.isPending || isSubmissionsLoading || disabledFromSubmissions;
+  const [fields, setFields] = useState<Array<TextFormField | SelectFormField>>(form.fields);
+  const [addButtonOpen, setAddButtonOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState(form.title);
+
+  const items = useMemo(
+    () =>
+      fields.map((field) => ({
+        ...field,
+        id: field.id ?? "",
+      })),
+    [fields],
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    if (over && active.id !== over?.id) {
+      const activeIndex = items.findIndex(({ id }) => id === active.id);
+      const overIndex = items.findIndex(({ id }) => id === over.id);
+
+      setFields(arrayMove(items, activeIndex, overIndex));
+    }
+  }
+
+  const addField = (type: FormFieldType) => {
+    if (disabled) {
+      return;
+    }
+
+    setFields((prev) => [
+      ...prev,
+      {
+        id: "temp-" + uuidv4(),
+        title: "",
+        required: false,
+        order: fields.length,
+        type: type,
+        options: type === FormFieldType.SINGLE_SELECT ? [{ title: "" }] : [],
+      },
+    ]);
+    setAddButtonOpen(false);
+  };
+
+  const updateField = (newField: TextFormField | SelectFormField, index: number) => {
+    if (disabled) {
+      return;
+    }
+    setFields((prev) => prev.map((field, i) => (i === index ? newField : field)));
+  };
+
+  const removeField = (index: number) => {
+    if (disabled) {
+      return;
+    }
+    setFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const save = () => {
+    if (disabled) {
+      return;
+    }
+    const fieldsToSave = fields.map((field) => ({
+      ...field,
+      id: field.id?.startsWith("temp-") ? undefined : field.id,
+    }));
+
+    updateForm.mutate(
+      {
+        title: formTitle,
+        fields: fieldsToSave,
+        resource_type: form.resource_type,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Spørsmålene ble oppdatert");
+          if (onSave) {
+            onSave();
+          }
+        },
+        onError: (e) => {
+          toast.error(e.detail);
+        },
+      },
+    );
+  };
+
+  return (
+    <>
+      <div className="space-y-2">
+        {canEditTitle && (
+          <div className="space-y-1">
+            <Label>Malen sitt navn</Label>
+            <Input onChange={(e) => setFormTitle(e.target.value)} value={formTitle} />
+          </div>
+        )}
+        {disabledFromSubmissions && <h1 className="text-center">Du kan ikke endre spørsmålene etter at noen har svart på dem</h1>}
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext disabled={disabledFromSubmissions} items={items} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+              {items.map((field, index) => (
+                <SortableFieldEditor
+                  key={field.id}
+                  field={field}
+                  disabled={disabledFromSubmissions}
+                  updateField={(newField) => updateField(newField, index)}
+                  removeField={() => {
+                    removeField(index);
+                  }}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+        <div className="flex items-center space-x-2">
+          <Popover onOpenChange={setAddButtonOpen} open={addButtonOpen}>
+            <PopoverTrigger asChild>
+              <Button className="w-full" disabled={disabled} variant="outline">
+                Nytt spørsmål
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="space-y-2">
+              <h1>Legg til spørsmål</h1>
+              <Separator />
+              <p
+                className="px-2 py-1 rounded-md cursor-pointer hover:bg-border transition-all duration-150"
+                onClick={() => {
+                  addField(FormFieldType.TEXT_ANSWER);
+                  setAddButtonOpen(false);
+                }}
+              >
+                Tekstspørsmål
+              </p>
+              <p
+                className="px-2 py-1 rounded-md cursor-pointer hover:bg-border transition-all duration-150"
+                onClick={() => {
+                  addField(FormFieldType.SINGLE_SELECT);
+                  setAddButtonOpen(false);
+                }}
+              >
+                Flervalgsspørsmål
+              </p>
+              <p
+                className="px-2 py-1 rounded-md cursor-pointer hover:bg-border transition-all duration-150"
+                onClick={() => {
+                  addField(FormFieldType.MULTIPLE_SELECT);
+                  setAddButtonOpen(false);
+                }}
+              >
+                Avkrysningsspørsmål
+              </p>
+            </PopoverContent>
+          </Popover>
+          <Button className="w-full" disabled={disabled} onClick={save}>
+            Lagre
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default FormFieldsEditor;

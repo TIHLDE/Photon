@@ -15,29 +15,27 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": "./src/index.ts",
-    "./auth": "./src/auth.ts",
-    "./types": "./src/types/index.ts",
-    "./types/auth": "./src/types/auth.ts",
+    "./types": "./src/types.ts",
     "./*": "./*"
   },
   "publishConfig": {
     "access": "public",
     "exports": {
       ".": "./dist/index.mjs",
-      "./auth": "./dist/auth.mjs",
-      "./types": "./dist/types/index.mjs",
-      "./types/auth": "./dist/types/auth.mjs",
+      "./types": "./dist/types.mjs",
       "./*": "./*"
     },
     "provenance": true
   },
   "scripts": {
     "build": "tsdown",
+    "dev": "tsdown --watch",
     "codegen": "bun scripts/generate-openapi.ts",
     "typecheck": "tsc --noEmit",
     "postinstall": "node scripts/postinstall.mjs"
   },
   "dependencies": {
+    "@photon/api": "workspace:*",
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
@@ -45,20 +43,8 @@
     "@photon/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "better-auth": "catalog:",
     "openapi-typescript": "^7.13.0",
     "tsdown": "^0.21.2",
     "typescript": "catalog:"
-  },
-  "peerDependencies": {
-    "better-auth": "^1.x.x"
-  },
-  "peerDependenciesMeta": {
-    "better-auth": {
-      "optional": true
-    }
-  },
-  "inlinedDependencies": {
-    "drizzle-orm": "0.44.7"
   }
 }

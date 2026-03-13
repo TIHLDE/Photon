@@ -1,17 +1,26 @@
+import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/types/index.ts", "src/types/auth.ts", "src/auth.ts"],
+  entry: ["src/index.ts", "src/types.ts"],
   outDir: "dist",
   dts: {
     enabled: true,
-  },
-  deps: {
-    alwaysBundle: ["@photon/auth"],
-    neverBundle: ["zod"],
   },
   exports: {
     all: true,
     devExports: true,
   },
+  plugins: [
+    {
+      name: "openapi-spec-plugin",
+      buildStart() {
+        const scriptPath = resolve("scripts/generate-openapi.ts");
+        execFileSync("bun", ["--bun", "run", scriptPath], {
+          stdio: "inherit",
+        });
+      },
+    },
+  ],
 });

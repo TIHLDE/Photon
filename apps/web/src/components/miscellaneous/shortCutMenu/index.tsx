@@ -1,0 +1,241 @@
+import { linkOptions, useNavigate } from "@tanstack/react-router";
+import { authClient, useInvalidateAuth } from "~/api/auth";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "~/components/ui/command";
+import { useOptionalAuth } from "~/hooks/auth";
+import { PermissionApp } from "~/types/Enums";
+import URLS from "~/URLS";
+import { LogOutIcon } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+
+const navigationLinks = [
+  { name: "Hjem", path: linkOptions({ to: "/" }) },
+  { name: "Profil", path: linkOptions({ to: "/profil/{-$userId}" }) },
+  { name: "Arrangementer", path: linkOptions({ to: "/arrangementer" }) },
+  { name: "Nyheter", path: linkOptions({ to: "/nyheter" }) },
+  {
+    name: "Stillingsannonser",
+    path: linkOptions({ to: "/stillingsannonser" }),
+  },
+  { name: "Grupper", path: linkOptions({ to: "/grupper" }) },
+  { name: "Galleri", path: linkOptions({ to: "/galleri" }) },
+  { name: "Bugs", path: linkOptions({ to: "/tilbakemelding" }) },
+  { name: "Personvern", path: linkOptions({ to: "/personvern" }) },
+];
+
+const externalLinks = [
+  { name: "Wiki", path: URLS.external.wiki.wiki },
+  { name: "GitHub", path: URLS.external.github },
+  { name: "Fondet", path: URLS.external.fondet },
+  { name: "Kontres", path: URLS.external.kontRes },
+  { name: "Pythons Herrer", path: URLS.external.pythons },
+  { name: "Pythons Damer", path: URLS.external.pythonsLadies },
+];
+
+export default function ShortCutMenu() {
+  const [isOpen, setOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
+
+  const invalidateAuth = useInvalidateAuth();
+
+  async function logout() {
+    await authClient.signOut();
+    await invalidateAuth();
+  }
+
+  useEffect(() => {
+    const abc = new AbortController();
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          setOpen((prev) => !prev);
+        }
+      },
+      { signal: abc.signal },
+    );
+    return () => abc.abort();
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  return (
+    <CommandDialog open={isOpen} onOpenChange={setOpen}>
+      <CommandInput placeholder="Søk eller velg et alternativ..." />
+      <CommandList className="[&>div]:space-y-4">
+        <CommandEmpty>Ingen resultater funnet</CommandEmpty>
+
+        {/* These load user data */}
+        <Suspense fallback={<div>Laster bruker data...</div>}>
+          <MembershipOptions closeMenu={closeMenu} />
+          <AdminOptions closeMenu={closeMenu} />
+          <ToolOptions closeMenu={closeMenu} />
+        </Suspense>
+
+        <CommandGroup heading="Navigering">
+          {navigationLinks.map((link) => (
+            <CommandItem
+              key={link.name}
+              value={"nav-" + link.name}
+              keywords={[link.name]}
+              onSelect={() => {
+                navigate(link.path);
+                closeMenu();
+              }}
+            >
+              {link.name}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
+        <CommandGroup heading="Eksterne lenker">
+          {externalLinks.map((link) => (
+            <CommandItem
+              key={link.name}
+              value={"external-" + link.name}
+              keywords={[link.name]}
+              onSelect={() => {
+                window.open(link.path, "_blank");
+                closeMenu();
+              }}
+            >
+              {link.name}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandGroup heading="Bruker">
+          <CommandItem
+            onSelect={() => {
+              closeMenu();
+              logout();
+            }}
+            value="logg ut"
+            className="text-red-600 data-[selected=true]:text-red-600 flex gap-2"
+          >
+            <LogOutIcon /> Logg ut
+          </CommandItem>
+        </CommandGroup>
+      </CommandList>
+    </CommandDialog>
+  );
+}
+
+function MembershipOptions({ closeMenu }: { closeMenu: () => void }) {
+  const { auth } = useOptionalAuth();
+  const navigate = useNavigate();
+
+  if (!auth) return null;
+  if (auth.groups.length === 0) return null;
+
+  return (
+    <>
+      <CommandGroup heading="Mine medlemskap">
+        {auth.groups.map((group) => (
+          <CommandItem
+            key={group.slug}
+            value={"group-" + group.name}
+            keywords={[group.name, "gruppe", "groups"]}
+            onSelect={() => {
+              navigate(
+                linkOptions({
+                  to: "/grupper/$slug",
+                  params: { slug: group.slug },
+                }),
+              );
+              closeMenu();
+            }}
+          >
+            {group.name}
+          </CommandItem>
+        ))}
+      </CommandGroup>
+    </>
+  );
+}
+
+function AdminOptions({ closeMenu }: { closeMenu: () => void }) {
+  const { auth } = useOptionalAuth();
+  const navigate = useNavigate();
+  const apps = useMemo(() => {
+    if (!auth) return [];
+
+    return [
+      {
+        apps: [PermissionApp.EVENT],
+        title: "Arrangementer",
+        path: linkOptions({ to: "/admin/arrangementer/{-$eventId}" }),
+      },
+      {
+        apps: [PermissionApp.GROUP],
+        title: "Grupper",
+        path: linkOptions({ to: "/grupper" }),
+      },
+      {
+        apps: [PermissionApp.JOBPOST],
+        title: "Stillingsannonser",
+        path: linkOptions({ to: "/admin/stillingsannonser/{-$jobPostId}" }),
+      },
+      {
+        apps: [PermissionApp.USER],
+        title: "Medlemmer",
+        path: linkOptions({ to: "/admin/brukere" }),
+      },
+      {
+        apps: [PermissionApp.NEWS],
+        title: "Nyheter",
+        path: linkOptions({ to: "/admin/nyheter/{-$newsId}" }),
+      },
+      {
+        apps: [PermissionApp.STRIKE],
+        title: "Prikker",
+        path: linkOptions({ to: "/admin/prikker" }),
+      },
+      {
+        apps: [PermissionApp.BANNERS],
+        title: "Bannere",
+        path: linkOptions({ to: "/admin/bannere" }),
+      },
+      // TODO: Validate that this permission check actually works as intended
+    ].filter(({ apps: requiredApps }) => requiredApps.every((app) => auth.permissions.includes(app)));
+  }, [auth]);
+
+  if (!auth || apps.length === 0) return null;
+  return (
+    <CommandGroup heading="Admin">
+      {apps.map((app) => (
+        <CommandItem
+          key={app.title}
+          value={app.title + "-admin"}
+          keywords={[app.title, "admin", "administrasjon", "administrer"]}
+          onSelect={() => {
+            navigate(app.path);
+            closeMenu();
+          }}
+        >
+          {app.title}
+        </CommandItem>
+      ))}
+    </CommandGroup>
+  );
+}
+
+function ToolOptions({ closeMenu }: { closeMenu: () => void }) {
+  const { auth } = useOptionalAuth();
+  const navigate = useNavigate();
+  if (!auth) return null;
+
+  return (
+    <CommandGroup heading="Verktøy">
+      <CommandItem
+        onSelect={() => {
+          navigate(linkOptions({ to: "/kokebok/{-$studyId}/{-$classId}" }));
+          closeMenu();
+        }}
+      >
+        Kokebok
+      </CommandItem>
+    </CommandGroup>
+  );
+}

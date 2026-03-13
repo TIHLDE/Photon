@@ -1,0 +1,96 @@
+<br/>
+<p align="center">
+    <a href="https://tihlde.org" target="_blank">
+        <img width="50%" src="https://i.ibb.co/6YpLt8m/TIHLDE-LOGO-BL.png" alt="TIHLDE logo">
+    </a>
+</p>
+
+<h1 align="center">KVARK</h1>
+
+<h4 align="center">
+    TIHLDEs open source frontend for <a href="https://tihlde.org">tihlde.org</a> - the organizations main web site. 
+</h4>
+
+<br/>
+
+<p align="CENTER">
+<a href="https://github.com/tihlde/Kvark/actions"><img alt="Actions Status" src="https://github.com/tihlde/Kvark/workflows/Lint,%20test%20and%20build/badge.svg?label=github-actions"></a>
+<a href="https://github.com/psf/black/blob/master/LICENSE"><img alt="License: MIT" src="https://black.readthedocs.io/en/stable/_static/license.svg"></a>
+<a href="https://github.com/tihlde/Kvark/commits/master" target="_blank">
+    <img src="https://img.shields.io/github/commit-activity/y/tihlde/kvark.svg" alt="GitHub commit activity">
+</a>
+<a href="https://github.com/tihlde/Kvark/graphs/contributors" target="_blank">
+    <img src="https://img.shields.io/github/contributors-anon/tihlde/kvark.svg" alt="GitHub contributors">
+</a>
+</p>
+
+<br />
+
+<p align="CENTER">
+  <a href="https://vercel.com/?utm_source=kvark&utm_campaign=oss"><img alt="Vercel" src="./src/assets/icons/vercel_background.svg"></a>
+</p>
+
+<br/>
+<p align="center">
+    <img width="80%" src="https://s.tihlde.org/tihlde_forsidepng" alt="TIHLDEs nettside">   
+</p>
+<br/>
+
+## 🚀 Getting started
+
+Kvark requires Node 22.x or higher and pnpm.
+
+```sh
+# Setup a local repository
+git clone https://github.com/tihlde/Kvark.git
+cd Kvark
+
+# If this is your first time running the application
+pnpm install
+
+# Thats it!
+```
+
+From now on it's enough to run `pnpm dev` to run the application in development mode.
+
+#### ⚙ Configuration
+
+The application requires configuration of some environment variables in order to run.
+These should be put in a `.env` file in the repository root. The `.env.example` file
+contains all required variables with default values.
+
+```env
+# The backend API endpoint to use
+VITE_API_URL=https://api-dev.tihlde.org/
+```
+
+## ❤ Contributing
+
+The Kvark frontend is an open source project built on voluntary work.
+We are committed to a fully transparent development process
+and highly appreciate any contributions.
+Whether you are helping us fixing bugs, proposing new features, improving our documentation
+or spreading the word - **we would love to have you as part of the community**.
+
+<p align="center">
+  <a href="https://github.com/TIHLDE/Kvark/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=TIHLDE/Kvark" />
+  </a>
+</p>
+
+## 🤝 Found a bug? Missing a specific feature?
+
+Feel free to file a new issue with a respective title and description
+on the the [tihlde/Kvark](https://github.com/tihlde/Kvark/issues) repository.
+If you already found a solution to your problem, we would love to review your pull request!
+Please format your code with prettier, you can use `pnpm format` to fix fixable problems.
+If you open the workspace-file in VSCode, the code will be formatted automatically on save.
+
+## 📫 Contact
+
+Feel free to send us a message on our official [discord server](https://discord.gg/HNt5XQdyxy).
+Of course you can always reach out to us directly at index@tihlde.org.
+
+## 📘 Licence
+
+The code in this project is licensed under MIT license.

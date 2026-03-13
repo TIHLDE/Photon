@@ -4,5534 +4,5496 @@
  */
 
 export interface paths {
-	"/api/api-keys": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List API keys
-		 * @description Get a list of all API keys. Does not include the full key values. Requires 'api-keys:view' permission.
-		 */
-		get: operations["listApiKeys"];
-		put?: never;
-		/**
-		 * Create API key
-		 * @description Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission.
-		 */
-		post: operations["createApiKey"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/api-keys/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get API key
-		 * @description Get a single API key by ID. Does not include the full key value. Requires 'api-keys:view' permission.
-		 */
-		get: operations["getApiKey"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete API key
-		 * @description Delete an API key. This action is irreversible. Requires 'api-keys:delete' permission.
-		 */
-		delete: operations["deleteApiKey"];
-		options?: never;
-		head?: never;
-		/**
-		 * Update API key
-		 * @description Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.
-		 */
-		patch: operations["updateApiKey"];
-		trace?: never;
-	};
-	"/api/api-keys/{id}/regenerate": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Regenerate API key
-		 * @description Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.
-		 */
-		post: operations["regenerateApiKey"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/api-keys/validate": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Validate API key
-		 * @description Check if an API key is valid and return its details. This is a public endpoint that does not require authentication. Updates the lastUsedAt timestamp if the key is valid.
-		 */
-		post: operations["validateApiKey"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/assets": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Upload a file
-		 * @description Upload a file to staging. The file will be automatically cleaned up after 2 days if not promoted.
-		 *
-		 *     Requires either session authentication or a valid API key.
-		 *
-		 *     **Constraints:**
-		 *     - Maximum file size: 10MB
-		 *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
-		 *
-		 *     **Usage:**
-		 *     Send the file as multipart/form-data with a field named "file".
-		 */
-		post: operations["uploadAsset"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/assets/metadata/{key}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get asset metadata
-		 * @description Get metadata for an asset by its key. No authentication required.
-		 *
-		 *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
-		 */
-		get: operations["getAssetMetadata"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/assets/{key}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Download a file
-		 * @description Download a file by its key. No authentication required.
-		 *
-		 *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
-		 */
-		get: operations["downloadAsset"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/email/send": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Send custom email
-		 * @description Send a custom email with structured content blocks. Requires API key authentication via Bearer token.
-		 */
-		post: operations["sendCustomEmail"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List events
-		 * @description Retrieve a paginated list of all events with basic information including organizer and category details
-		 */
-		get: operations["listEvents"];
-		put?: never;
-		/**
-		 * Create event
-		 * @description Create a new event. Requires 'events:create' permission.
-		 */
-		post: operations["createEvent"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		/**
-		 * Update event
-		 * @description Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.
-		 */
-		put: operations["updateEvent"];
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{eventId}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get event by ID
-		 * @description Retrieve detailed information about a specific event, including registration status for the authenticated user if available
-		 */
-		get: operations["getEvent"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete an event
-		 * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.
-		 */
-		delete: operations["deleteEvent"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/favorite/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		/**
-		 * Update event favorite
-		 * @description Mark or unmark an event as a favorite for the authenticated user
-		 */
-		put: operations["updateEventFavorite"];
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/favorite": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get all my favorite events
-		 * @description Retrieve a list of all events you have marked as favorite.
-		 */
-		get: operations["getFavoriteEvents"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{eventId}/registration": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get event registrations
-		 * @description Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts
-		 */
-		get: operations["listEventRegistrations"];
-		put?: never;
-		/**
-		 * Register to an event
-		 * @description Create a new registration for the authenticated user to attend an event, initially with pending status
-		 */
-		post: operations["createEventRegistration"];
-		/**
-		 * Unregister from event
-		 * @description Remove the authenticated user's registration from an event
-		 */
-		delete: operations["deleteEventRegistration"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{eventId}/payment": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Create payment for event
-		 * @description Initiates a Vipps payment for an event registration. User must have a registered status for the event.
-		 */
-		post: operations["createEventPayment"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/payment/webhook": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Vipps payment webhook
-		 * @description Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.
-		 */
-		post: operations["handlePaymentWebhook"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{eventId}/forms": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List event forms
-		 * @description Get all forms (survey and evaluation) for an event
-		 */
-		get: operations["listEventForms"];
-		put?: never;
-		/**
-		 * Create event form
-		 * @description Create a survey or evaluation form for an event. Requires event write permission.
-		 */
-		post: operations["createEventForm"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/event/{eventId}/forms/{type}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get event form
-		 * @description Get a specific form (survey or evaluation) for an event with all fields and options
-		 */
-		get: operations["getEventForm"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List forms
-		 * @description List all form templates by default. Use ?all=true to include all forms. Returns template forms by default.
-		 */
-		get: operations["listForms"];
-		put?: never;
-		/**
-		 * Create form
-		 * @description Create a new base form template. Requires 'forms:create' permission.
-		 */
-		post: operations["createForm"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get form
-		 * @description Get a form by ID with all fields and options
-		 */
-		get: operations["getForm"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete form
-		 * @description Delete a form and all associated data. Requires permission to manage the form.
-		 */
-		delete: operations["deleteForm"];
-		options?: never;
-		head?: never;
-		/**
-		 * Update form
-		 * @description Update a form. Requires permission to manage the form.
-		 */
-		patch: operations["updateForm"];
-		trace?: never;
-	};
-	"/api/forms/{id}/statistics": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get form statistics
-		 * @description Get aggregated statistics for a form. Requires permission to manage the form.
-		 */
-		get: operations["getFormStatistics"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms/{formId}/submissions": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List submissions
-		 * @description List all submissions for a form. Requires permission to manage the form.
-		 */
-		get: operations["listFormSubmissions"];
-		put?: never;
-		/**
-		 * Create submission
-		 * @description Submit answers to a form
-		 */
-		post: operations["createFormSubmission"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms/{formId}/submissions/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get submission
-		 * @description Get a specific submission. Can view own submission or requires permission to manage the form.
-		 */
-		get: operations["getFormSubmission"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms/{formId}/submissions/download": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Download submissions as CSV
-		 * @description Download all submissions for a form as CSV. Requires permission to manage the form.
-		 */
-		get: operations["downloadFormSubmissions"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/forms/{formId}/submissions/{id}/destroy_with_reason": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		post?: never;
-		/**
-		 * Delete submission with reason
-		 * @description Delete a submission and notify the user with a reason. Admin only.
-		 */
-		delete: operations["deleteFormSubmission"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/notification": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List notifications for authenticated user
-		 * @description Returns paginated list of notifications for the authenticated user, ordered by most recent first
-		 */
-		get: operations["listNotifications"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/notification/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		post?: never;
-		/**
-		 * Delete notification
-		 * @description Delete a notification by ID. User must be authenticated and own the notification.
-		 */
-		delete: operations["deleteNotification"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/notification/{id}/read": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		/**
-		 * Mark notification as read or unread
-		 * @description Update the read status of a notification. User must be authenticated and own the notification.
-		 */
-		patch: operations["markNotificationRead"];
-		trace?: never;
-	};
-	"/api/groups": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List groups
-		 * @description Retrieve a list of all groups. Supports optional filtering by type and search query.
-		 */
-		get: operations["listGroups"];
-		put?: never;
-		/**
-		 * Create group
-		 * @description Create a new group. Requires 'groups:create' permission.
-		 */
-		post: operations["createGroup"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/groups/mine": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List current user's groups
-		 * @description Retrieve all groups the authenticated user is a member of, including membership info.
-		 */
-		get: operations["listMyGroups"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/groups/{slug}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get group by slug
-		 * @description Retrieve detailed information about a specific group by its slug identifier.
-		 */
-		get: operations["getGroup"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete a group
-		 * @description Delete a group by its slug. Requires being a group leader OR having 'groups:delete' permission (globally or scoped to this group). This action is irreversible and will remove all associated data, including memberships and fines.
-		 */
-		delete: operations["deleteGroup"];
-		options?: never;
-		head?: never;
-		/**
-		 * Partially update group
-		 * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).
-		 */
-		patch: operations["updateGroup"];
-		trace?: never;
-	};
-	"/api/groups/{groupSlug}/fines": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List fines for a group
-		 * @description Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.
-		 */
-		get: operations["listFines"];
-		put?: never;
-		/**
-		 * Create fine
-		 * @description Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).
-		 */
-		post: operations["createFine"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/groups/{groupSlug}/fines/{fineId}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get fine by ID
-		 * @description Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.
-		 */
-		get: operations["getFine"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete a fine
-		 * @description Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.
-		 */
-		delete: operations["deleteFine"];
-		options?: never;
-		head?: never;
-		/**
-		 * Partially update fine
-		 * @description Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.
-		 */
-		patch: operations["updateFine"];
-		trace?: never;
-	};
-	"/api/groups/{groupSlug}/members": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List group members
-		 * @description Retrieve a list of all members in a group.
-		 */
-		get: operations["listGroupMembers"];
-		put?: never;
-		/**
-		 * Add member to group
-		 * @description Add a member to a group. Requires 'groups:manage' permission.
-		 */
-		post: operations["addGroupMember"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/groups/{groupSlug}/members/{userId}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		post?: never;
-		/**
-		 * Remove member from group
-		 * @description Remove a member from a group. Requires 'groups:manage' permission.
-		 */
-		delete: operations["removeGroupMember"];
-		options?: never;
-		head?: never;
-		/**
-		 * Update member role
-		 * @description Update a member's role in a group. Requires 'groups:manage' permission.
-		 */
-		patch: operations["updateGroupMemberRole"];
-		trace?: never;
-	};
-	"/api/groups/{slug}/forms": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List group forms
-		 * @description Get all forms for a group, filtered by user permissions
-		 */
-		get: operations["listGroupForms"];
-		put?: never;
-		/**
-		 * Create group form
-		 * @description Create a form for a group. Requires group leader permission or forms:create permission.
-		 */
-		post: operations["createGroupForm"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/news": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List news articles
-		 * @description Get a paginated list of all news articles. Public endpoint.
-		 */
-		get: operations["listNews"];
-		put?: never;
-		/**
-		 * Create news article
-		 * @description Create a new news article. Requires 'news:create' permission.
-		 */
-		post: operations["createNews"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/news/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get news article
-		 * @description Get a single news article by ID. Public endpoint.
-		 */
-		get: operations["getNews"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete news article
-		 * @description Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.
-		 */
-		delete: operations["deleteNews"];
-		options?: never;
-		head?: never;
-		/**
-		 * Update news article
-		 * @description Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.
-		 */
-		patch: operations["updateNews"];
-		trace?: never;
-	};
-	"/api/news/{id}/reactions": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		get?: never;
-		put?: never;
-		/**
-		 * Add reaction to news
-		 * @description Add or update emoji reaction to a news article. Requires authentication.
-		 */
-		post: operations["createNewsReaction"];
-		/**
-		 * Remove reaction from news
-		 * @description Remove your emoji reaction from a news article.
-		 */
-		delete: operations["deleteNewsReaction"];
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/jobs": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List job postings
-		 * @description Get a paginated list of job postings. Supports search, job type, year of study, and expired filtering. Public endpoint.
-		 */
-		get: operations["listJobs"];
-		put?: never;
-		/**
-		 * Create job posting
-		 * @description Create a new job posting. Requires 'jobs:create' permission.
-		 */
-		post: operations["createJob"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	"/api/jobs/{id}": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get job posting
-		 * @description Get a single job posting by ID. Public endpoint.
-		 */
-		get: operations["getJob"];
-		put?: never;
-		post?: never;
-		/**
-		 * Delete job posting
-		 * @description Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.
-		 */
-		delete: operations["deleteJob"];
-		options?: never;
-		head?: never;
-		/**
-		 * Update job posting
-		 * @description Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.
-		 */
-		patch: operations["updateJob"];
-		trace?: never;
-	};
-	"/api/user/me/settings": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Get current user settings
-		 * @description Retrieve the authenticated user's settings including preferences and allergies.
-		 */
-		get: operations["getUserSettings"];
-		put?: never;
-		/**
-		 * Complete user onboarding
-		 * @description Create initial user settings and mark the user as onboarded. Can only be called once per user.
-		 */
-		post: operations["onboardUser"];
-		delete?: never;
-		options?: never;
-		head?: never;
-		/**
-		 * Update user settings
-		 * @description Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.
-		 */
-		patch: operations["updateUserSettings"];
-		trace?: never;
-	};
-	"/api/user/allergy": {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * List all allergies
-		 * @description Retrieve a list of all possible allergies that users can have.
-		 */
-		get: operations["listAllergies"];
-		put?: never;
-		post?: never;
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
+    "/api/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List API keys
+         * @description Get a list of all API keys. Does not include the full key values. Requires 'api-keys:view' permission.
+         */
+        get: operations["listApiKeys"];
+        put?: never;
+        /**
+         * Create API key
+         * @description Create a new API key. The full key is returned only once and cannot be retrieved again. Requires 'api-keys:create' permission.
+         */
+        post: operations["createApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get API key
+         * @description Get a single API key by ID. Does not include the full key value. Requires 'api-keys:view' permission.
+         */
+        get: operations["getApiKey"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete API key
+         * @description Delete an API key. This action is irreversible. Requires 'api-keys:delete' permission.
+         */
+        delete: operations["deleteApiKey"];
+        options?: never;
+        head?: never;
+        /**
+         * Update API key
+         * @description Update an API key's metadata (name, description, permissions, metadata). Cannot update the key itself - use regenerate for that. Requires 'api-keys:update' permission.
+         */
+        patch: operations["updateApiKey"];
+        trace?: never;
+    };
+    "/api/api-keys/{id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate API key
+         * @description Generate a new key value for an existing API key. The old key will be invalidated. The new full key is returned only once and cannot be retrieved again. Requires 'api-keys:update' permission.
+         */
+        post: operations["regenerateApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/api-keys/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate API key
+         * @description Check if an API key is valid and return its details. This is a public endpoint that does not require authentication. Updates the lastUsedAt timestamp if the key is valid.
+         */
+        post: operations["validateApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a file
+         * @description Upload a file to staging. The file will be automatically cleaned up after 2 days if not promoted.
+         *
+         *     Requires either session authentication or a valid API key.
+         *
+         *     **Constraints:**
+         *     - Maximum file size: 10MB
+         *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
+         *
+         *     **Usage:**
+         *     Send the file as multipart/form-data with a field named "file".
+         */
+        post: operations["uploadAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assets/metadata/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get asset metadata
+         * @description Get metadata for an asset by its key. No authentication required.
+         *
+         *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
+         */
+        get: operations["getAssetMetadata"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assets/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a file
+         * @description Download a file by its key. No authentication required.
+         *
+         *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
+         */
+        get: operations["downloadAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/email/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send custom email
+         * @description Send a custom email with structured content blocks. Requires API key authentication via Bearer token.
+         */
+        post: operations["sendCustomEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List events
+         * @description Retrieve a paginated list of all events with basic information including organizer and category details
+         */
+        get: operations["listEvents"];
+        put?: never;
+        /**
+         * Create event
+         * @description Create a new event. Requires 'events:create' permission.
+         */
+        post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update event
+         * @description Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.
+         */
+        put: operations["updateEvent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get event by ID
+         * @description Retrieve detailed information about a specific event, including registration status for the authenticated user if available
+         */
+        get: operations["getEvent"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an event
+         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.
+         */
+        delete: operations["deleteEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/favorite/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update event favorite
+         * @description Mark or unmark an event as a favorite for the authenticated user
+         */
+        put: operations["updateEventFavorite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all my favorite events
+         * @description Retrieve a list of all events you have marked as favorite.
+         */
+        get: operations["getFavoriteEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get event registrations
+         * @description Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts
+         */
+        get: operations["listEventRegistrations"];
+        put?: never;
+        /**
+         * Register to an event
+         * @description Create a new registration for the authenticated user to attend an event, initially with pending status
+         */
+        post: operations["createEventRegistration"];
+        /**
+         * Unregister from event
+         * @description Remove the authenticated user's registration from an event
+         */
+        delete: operations["deleteEventRegistration"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create payment for event
+         * @description Initiates a Vipps payment for an event registration. User must have a registered status for the event.
+         */
+        post: operations["createEventPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/payment/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vipps payment webhook
+         * @description Webhook endpoint for Vipps to notify about payment status changes. Updates payment record based on Vipps payment state.
+         */
+        post: operations["handlePaymentWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List event forms
+         * @description Get all forms (survey and evaluation) for an event
+         */
+        get: operations["listEventForms"];
+        put?: never;
+        /**
+         * Create event form
+         * @description Create a survey or evaluation form for an event. Requires event write permission.
+         */
+        post: operations["createEventForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/forms/{type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get event form
+         * @description Get a specific form (survey or evaluation) for an event with all fields and options
+         */
+        get: operations["getEventForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List forms
+         * @description List all form templates by default. Use ?all=true to include all forms. Returns template forms by default.
+         */
+        get: operations["listForms"];
+        put?: never;
+        /**
+         * Create form
+         * @description Create a new base form template. Requires 'forms:create' permission.
+         */
+        post: operations["createForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get form
+         * @description Get a form by ID with all fields and options
+         */
+        get: operations["getForm"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete form
+         * @description Delete a form and all associated data. Requires permission to manage the form.
+         */
+        delete: operations["deleteForm"];
+        options?: never;
+        head?: never;
+        /**
+         * Update form
+         * @description Update a form. Requires permission to manage the form.
+         */
+        patch: operations["updateForm"];
+        trace?: never;
+    };
+    "/api/forms/{id}/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get form statistics
+         * @description Get aggregated statistics for a form. Requires permission to manage the form.
+         */
+        get: operations["getFormStatistics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List submissions
+         * @description List all submissions for a form. Requires permission to manage the form.
+         */
+        get: operations["listFormSubmissions"];
+        put?: never;
+        /**
+         * Create submission
+         * @description Submit answers to a form
+         */
+        post: operations["createFormSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get submission
+         * @description Get a specific submission. Can view own submission or requires permission to manage the form.
+         */
+        get: operations["getFormSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download submissions as CSV
+         * @description Download all submissions for a form as CSV. Requires permission to manage the form.
+         */
+        get: operations["downloadFormSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions/{id}/destroy_with_reason": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete submission with reason
+         * @description Delete a submission and notify the user with a reason. Admin only.
+         */
+        delete: operations["deleteFormSubmission"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List notifications for authenticated user
+         * @description Returns paginated list of notifications for the authenticated user, ordered by most recent first
+         */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete notification
+         * @description Delete a notification by ID. User must be authenticated and own the notification.
+         */
+        delete: operations["deleteNotification"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Mark notification as read or unread
+         * @description Update the read status of a notification. User must be authenticated and own the notification.
+         */
+        patch: operations["markNotificationRead"];
+        trace?: never;
+    };
+    "/api/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List groups
+         * @description Retrieve a list of all groups. Supports optional filtering by type and search query.
+         */
+        get: operations["listGroups"];
+        put?: never;
+        /**
+         * Create group
+         * @description Create a new group. Requires 'groups:create' permission.
+         */
+        post: operations["createGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List current user's groups
+         * @description Retrieve all groups the authenticated user is a member of, including membership info.
+         */
+        get: operations["listMyGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get group by slug
+         * @description Retrieve detailed information about a specific group by its slug identifier.
+         */
+        get: operations["getGroup"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a group
+         * @description Delete a group by its slug. Requires being a group leader OR having 'groups:delete' permission (globally or scoped to this group). This action is irreversible and will remove all associated data, including memberships and fines.
+         */
+        delete: operations["deleteGroup"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update group
+         * @description Partially update an existing group by its slug. Only provided fields will be updated. Requires being a group leader OR having 'groups:update' permission (globally or scoped to this group).
+         */
+        patch: operations["updateGroup"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List fines for a group
+         * @description Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.
+         */
+        get: operations["listFines"];
+        put?: never;
+        /**
+         * Create fine
+         * @description Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).
+         */
+        post: operations["createFine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/{fineId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get fine by ID
+         * @description Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.
+         */
+        get: operations["getFine"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a fine
+         * @description Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.
+         */
+        delete: operations["deleteFine"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update fine
+         * @description Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.
+         */
+        patch: operations["updateFine"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List group members
+         * @description Retrieve a list of all members in a group.
+         */
+        get: operations["listGroupMembers"];
+        put?: never;
+        /**
+         * Add member to group
+         * @description Add a member to a group. Requires 'groups:manage' permission.
+         */
+        post: operations["addGroupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove member from group
+         * @description Remove a member from a group. Requires 'groups:manage' permission.
+         */
+        delete: operations["removeGroupMember"];
+        options?: never;
+        head?: never;
+        /**
+         * Update member role
+         * @description Update a member's role in a group. Requires 'groups:manage' permission.
+         */
+        patch: operations["updateGroupMemberRole"];
+        trace?: never;
+    };
+    "/api/groups/{slug}/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List group forms
+         * @description Get all forms for a group, filtered by user permissions
+         */
+        get: operations["listGroupForms"];
+        put?: never;
+        /**
+         * Create group form
+         * @description Create a form for a group. Requires group leader permission or forms:create permission.
+         */
+        post: operations["createGroupForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List news articles
+         * @description Get a paginated list of all news articles. Public endpoint.
+         */
+        get: operations["listNews"];
+        put?: never;
+        /**
+         * Create news article
+         * @description Create a new news article. Requires 'news:create' permission.
+         */
+        post: operations["createNews"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/news/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get news article
+         * @description Get a single news article by ID. Public endpoint.
+         */
+        get: operations["getNews"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete news article
+         * @description Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.
+         */
+        delete: operations["deleteNews"];
+        options?: never;
+        head?: never;
+        /**
+         * Update news article
+         * @description Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.
+         */
+        patch: operations["updateNews"];
+        trace?: never;
+    };
+    "/api/news/{id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add reaction to news
+         * @description Add or update emoji reaction to a news article. Requires authentication.
+         */
+        post: operations["createNewsReaction"];
+        /**
+         * Remove reaction from news
+         * @description Remove your emoji reaction from a news article.
+         */
+        delete: operations["deleteNewsReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List job postings
+         * @description Get a paginated list of job postings. Supports search, job type, year of study, and expired filtering. Public endpoint.
+         */
+        get: operations["listJobs"];
+        put?: never;
+        /**
+         * Create job posting
+         * @description Create a new job posting. Requires 'jobs:create' permission.
+         */
+        post: operations["createJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get job posting
+         * @description Get a single job posting by ID. Public endpoint.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete job posting
+         * @description Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.
+         */
+        delete: operations["deleteJob"];
+        options?: never;
+        head?: never;
+        /**
+         * Update job posting
+         * @description Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.
+         */
+        patch: operations["updateJob"];
+        trace?: never;
+    };
+    "/api/user/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get current user settings
+         * @description Retrieve the authenticated user's settings including preferences and allergies.
+         */
+        get: operations["getUserSettings"];
+        put?: never;
+        /**
+         * Complete user onboarding
+         * @description Create initial user settings and mark the user as onboarded. Can only be called once per user.
+         */
+        post: operations["onboardUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update user settings
+         * @description Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.
+         */
+        patch: operations["updateUserSettings"];
+        trace?: never;
+    };
+    "/api/user/allergy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all allergies
+         * @description Retrieve a list of all possible allergies that users can have.
+         */
+        get: operations["listAllergies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-	schemas: {
-		CreateApiKeyResponse: {
-			/**
-			 * Format: uuid
-			 * @description API key ID
-			 */
-			id: string;
-			/** @description Name of the API key */
-			name: string;
-			/** @description Description of the API key */
-			description: string;
-			/** @description First 12 characters of the key for display */
-			keyPrefix: string;
-			/** @description User ID who created this key */
-			createdById: string | null;
-			/** @description When the key was last used */
-			lastUsedAt: string | null;
-			/** @description Array of permissions granted to this API key */
-			permissions: string[];
-			/** @description Optional metadata as key-value pairs */
-			metadata: {
-				[key: string]: unknown;
-			} | null;
-			/**
-			 * Format: date-time
-			 * @description When the key was created
-			 */
-			createdAt: string;
-			/**
-			 * Format: date-time
-			 * @description When the key was last updated
-			 */
-			updatedAt: string;
-			/** @description The full API key - ONLY returned on creation and regeneration. Cannot be retrieved again. */
-			key: string;
-		};
-		HTTPAppException: {
-			/**
-			 * @description The HTTP status code
-			 * @example 401
-			 */
-			status: number;
-			/** @description The error message */
-			message: string;
-			/** @description Additional metadata about the error */
-			meta?: unknown;
-		};
-		CreateApiKey: {
-			/** @description Name for the API key */
-			name: string;
-			/** @description Detailed description of the API key's purpose */
-			description: string;
-			/** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
-			permissions: string[];
-			/** @description Optional metadata as key-value pairs */
-			metadata?: {
-				[key: string]: unknown;
-			};
-		};
-		/** @description The API key details and permissions if valid. Undefined if invalid. */
-		ApiKey: {
-			/**
-			 * Format: uuid
-			 * @description API key ID
-			 */
-			id: string;
-			/** @description Name of the API key */
-			name: string;
-			/** @description Description of the API key */
-			description: string;
-			/** @description First 12 characters of the key for display */
-			keyPrefix: string;
-			/** @description User ID who created this key */
-			createdById: string | null;
-			/** @description When the key was last used */
-			lastUsedAt: string | null;
-			/** @description Array of permissions granted to this API key */
-			permissions: string[];
-			/** @description Optional metadata as key-value pairs */
-			metadata: {
-				[key: string]: unknown;
-			} | null;
-			/**
-			 * Format: date-time
-			 * @description When the key was created
-			 */
-			createdAt: string;
-			/**
-			 * Format: date-time
-			 * @description When the key was last updated
-			 */
-			updatedAt: string;
-		};
-		ApiKeyList: components["schemas"]["ApiKey"][];
-		UpdateApiKey: {
-			/** @description Name for the API key */
-			name?: string;
-			/** @description Detailed description of the API key's purpose */
-			description?: string;
-			/** @description Array of permissions granted to this API key */
-			permissions?: string[];
-			/** @description Optional metadata as key-value pairs */
-			metadata?: {
-				[key: string]: unknown;
-			};
-		};
-		DeleteApiKeyResponse: {
-			/** @description Success message */
-			message: string;
-		};
-		ValidateApiKeyResponse: {
-			/** @description Whether the API key is valid */
-			valid: boolean;
-			apiKey?: components["schemas"]["ApiKey"];
-		};
-		ValidateApiKeyInput: {
-			/** @description The API key to validate */
-			key: string;
-		};
-		UploadResponse: {
-			/** @description The unique key to reference this asset */
-			key: string;
-			/** @description The original filename */
-			originalFilename: string;
-			/** @description The MIME type of the file */
-			contentType: string | null;
-			/** @description File size in bytes */
-			size: number;
-			/**
-			 * @description Asset status
-			 * @enum {string}
-			 */
-			status: "staged" | "ready";
-		};
-		AssetMetadata: {
-			/**
-			 * Format: uuid
-			 * @description Asset ID
-			 */
-			id: string;
-			/** @description The unique key to reference this asset */
-			key: string;
-			/** @description The original filename */
-			originalFilename: string;
-			/** @description The MIME type of the file */
-			contentType: string | null;
-			/** @description File size in bytes */
-			size: number;
-			/**
-			 * @description Asset status
-			 * @enum {string}
-			 */
-			status: "staged" | "ready";
-			/** @description When the asset was promoted */
-			promotedAt: string | null;
-			/**
-			 * Format: date-time
-			 * @description When the asset was created
-			 */
-			createdAt: string;
-		};
-		SendEmailResponse: {
-			success: boolean;
-			message: string;
-			jobIds: string[];
-			recipientCount: number;
-		};
-		CreateEventResponse: {
-			/** Format: uuid */
-			eventId: string;
-		};
-		EventListItem: {
-			/**
-			 * Format: uuid
-			 * @description Event ID
-			 */
-			id: string;
-			/** @description Event slug */
-			slug: string;
-			/** @description Event title */
-			title: string;
-			/** @description Event location (nullable) */
-			location?: string | null;
-			/**
-			 * Format: date
-			 * @description Event start time (ISO 8601)
-			 */
-			startTime: string;
-			/**
-			 * Format: date
-			 * @description Event end time (ISO 8601)
-			 */
-			endTime: string;
-			/** @description Event organizer (nullable) */
-			organizer: {
-				/** @description Organizer name */
-				name: string;
-				/** @description Organizer slug */
-				slug: string;
-				/** @description Organizer type */
-				type: string;
-			} | null;
-			/** @description Is registration closed */
-			closed: boolean;
-			/** @description Event image URL (nullable) */
-			image: string | null;
-			/**
-			 * Format: date
-			 * @description Event creation time (ISO 8601)
-			 */
-			createdAt: string;
-			/**
-			 * Format: date
-			 * @description Event update time (ISO 8601)
-			 */
-			updatedAt: string;
-			/** @description Event category */
-			category: {
-				/** @description Category slug */
-				slug: string;
-				/** @description Category label */
-				label: string;
-			};
-		};
-		EventList: {
-			/** @description Total number of items available */
-			totalCount: number;
-			/** @description Total number of pages available */
-			pages: number;
-			/** @description The next page number that can be fetched */
-			nextPage: number | null;
-			/** @description List of events */
-			items: components["schemas"]["EventListItem"][];
-		};
-		DeleteEventResponse: {
-			message: string;
-		};
-		Event: {
-			/**
-			 * Format: uuid
-			 * @description Event ID
-			 */
-			id: string;
-			/** @description Event slug */
-			slug: string;
-			/** @description Event title */
-			title: string;
-			/** @description Event location (nullable) */
-			location?: string | null;
-			/**
-			 * Format: date-time
-			 * @description Event start time (ISO 8601)
-			 */
-			startTime: string;
-			/**
-			 * Format: date-time
-			 * @description Event end time (ISO 8601)
-			 */
-			endTime: string;
-			/** @description Event organizer (nullable) */
-			organizer: {
-				/** @description Organizer name */
-				name: string;
-				/** @description Organizer slug */
-				slug: string;
-				/** @description Organizer type */
-				type: string;
-				/** @description Organizer image URL */
-				image: string | null;
-			} | null;
-			/** @description Is registration closed */
-			closed: boolean;
-			/** @description Event image URL (nullable) */
-			image: string | null;
-			/**
-			 * Format: date-time
-			 * @description Event creation time (ISO 8601)
-			 */
-			createdAt: string;
-			/**
-			 * Format: date-time
-			 * @description Event update time (ISO 8601)
-			 */
-			updatedAt: string;
-			/** @description Event category */
-			category: {
-				/** @description Category slug */
-				slug: string;
-				/** @description Category label */
-				label: string;
-			};
-			reactions: {
-				user: {
-					/** @description User ID */
-					id: string;
-					/** @description User name */
-					name: string;
-				};
-				/** @description Reaction emoji */
-				emoji: string;
-			}[];
-			/** @description Is this a paid event */
-			isPaidEvent: boolean;
-			/** @description Payment info */
-			payInfo: {
-				/** @description Event price in whole KR */
-				price: number;
-				/** @description Payment grace period in minutes */
-				paymentGracePeriodMinutes: number;
-			} | null;
-			/** @description Priority registration pools */
-			priorityPools: {
-				groups: {
-					/** @description Group name */
-					name: string;
-					/** @description Group slug */
-					slug: string;
-					/** @description Group image URL (nullable) */
-					imageUrl: string | null;
-				}[];
-			}[];
-			/** @description Does the event enforce previous strikes for registration */
-			enforcesPreviousStrikes: boolean;
-			/** @description The current user's registration information. This is null if not registered or if not logged in. */
-			registration: {
-				/**
-				 * Format: date-time
-				 * @description When the user signed up
-				 */
-				createdAt: string;
-				/**
-				 * Format: date-time
-				 * @description When the registration was last updated by the system (moving waitlist position etc.)
-				 */
-				updatedAt: string;
-				/** @enum {string} */
-				status:
-					| "registered"
-					| "waitlisted"
-					| "cancelled"
-					| "attended"
-					| "no_show"
-					| "pending";
-				/** @description The user's position in the waitlist. Is null if not on the waitlist */
-				waitlistPosition: number | null;
-				/** @description When the user was registered as an attendee by TIHLDE for this event. Is null if not attended. */
-				attendedAt: string | null;
-			} | null;
-		};
-		UpdateFavoriteResponse: {
-			success: boolean;
-		};
-		FavoriteEvents: {
-			/** @description Event ID */
-			eventId: string;
-			/** @description Event title */
-			title: string;
-			/** @description Event slug */
-			slug: string;
-			/**
-			 * Format: date-time
-			 * @description When you added this event to your favorites
-			 */
-			createdAt: string;
-		}[];
-		EventRegistration: {
-			/** Format: uuid */
-			eventId: string;
-			userId: string;
-			/** @constant */
-			status: "pending";
-			createdAt: string;
-		};
-		EventRegisteredUser: {
-			/** @description User id */
-			id: string;
-			/** @description User name */
-			name: string;
-			/** @description User image url (if any) */
-			image: string | null;
-		};
-		EventRegistrationList: {
-			/** @description Total number of items available */
-			totalCount: number;
-			/** @description Total number of pages available */
-			pages: number;
-			/** @description The next page number that can be fetched */
-			nextPage: number | null;
-			/** @description List of registered users (paginated) */
-			registeredUsers: components["schemas"]["EventRegisteredUser"][];
-		};
-		CreatePaymentResponse: {
-			/** Format: uuid */
-			eventId: string;
-			userId: string;
-			/** Format: uri */
-			checkoutUrl: string;
-			amount: number;
-			currency: string;
-		};
-		CreateEventFormResponse: {
-			/** Format: uuid */
-			id?: string;
-			title?: string;
-			description?: string | null;
-			/** @enum {string} */
-			type: "survey" | "evaluation";
-			resource_type: string;
-			created_at?: string;
-			updated_at?: string;
-			fields?: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "text_answer" | "multiple_select" | "single_select";
-				required: boolean;
-				order: number;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					order: number;
-				}[];
-			}[];
-		};
-		EventFormList: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			/** @enum {string} */
-			type: "survey" | "evaluation";
-			resource_type: string;
-			viewer_has_answered: boolean;
-			created_at: string;
-			updated_at: string;
-		}[];
-		EventFormDetail: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			/** @enum {string} */
-			type: "survey" | "evaluation";
-			resource_type: string;
-			viewer_has_answered: boolean;
-			website_url: string;
-			created_at: string;
-			updated_at: string;
-			fields: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "text_answer" | "multiple_select" | "single_select";
-				required: boolean;
-				order: number;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					order: number;
-				}[];
-			}[];
-		};
-		FormResponse: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			template: boolean;
-			created_at: string;
-			updated_at: string;
-		};
-		FormList: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			template: boolean;
-			resource_type: string;
-			viewer_has_answered: boolean;
-			created_at: string;
-			updated_at: string;
-		}[];
-		FormDetail: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			template: boolean;
-			resource_type: string;
-			viewer_has_answered: boolean;
-			website_url: string;
-			created_at: string;
-			updated_at: string;
-			fields: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "text_answer" | "multiple_select" | "single_select";
-				required: boolean;
-				order: number;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					order: number;
-				}[];
-			}[];
-		};
-		UpdateFormResponse: {
-			/** Format: uuid */
-			id?: string;
-			title?: string;
-			description?: string | null;
-			template?: boolean;
-			created_at?: string;
-			updated_at?: string;
-			fields?: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "text_answer" | "multiple_select" | "single_select";
-				required: boolean;
-				order: number;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					order: number;
-				}[];
-			}[];
-		};
-		DeleteFormResponse: {
-			detail: string;
-		};
-		FormStatistics: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			resource_type: string;
-			statistics: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "multiple_select" | "single_select";
-				required: boolean;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					answer_amount: number;
-					answer_percentage: number;
-				}[];
-			}[];
-		};
-		CreateSubmissionResponse: {
-			id: string;
-			message: string;
-		};
-		SubmissionList: {
-			/** Format: uuid */
-			id: string;
-			user: {
-				id: string;
-				name: string;
-				email: string;
-			};
-			created_at: string;
-			updated_at: string;
-			answers: {
-				/** Format: uuid */
-				id: string;
-				field_id: string | null;
-				answer_text: string | null;
-				selected_options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-				}[];
-			}[];
-		}[];
-		SubmissionDetail: {
-			/** Format: uuid */
-			id: string;
-			user: {
-				id: string;
-				name: string;
-				email: string;
-			};
-			created_at: string;
-			updated_at: string;
-			answers: {
-				/** Format: uuid */
-				id: string;
-				field_id: string | null;
-				answer_text: string | null;
-				selected_options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-				}[];
-			}[];
-		};
-		DeleteSubmissionResponse: {
-			detail: string;
-		};
-		Notification: {
-			/** @description Notification ID */
-			id: string;
-			/** @description User ID */
-			userId: string;
-			/** @description Notification title */
-			title: string;
-			/** @description Notification description */
-			description: string;
-			/** @description Optional link URL (nullable) */
-			link: string | null;
-			/** @description Whether notification is read */
-			isRead: boolean;
-			/**
-			 * Format: date-time
-			 * @description Notification creation time (ISO 8601)
-			 */
-			createdAt: string;
-			/**
-			 * Format: date-time
-			 * @description Notification update time (ISO 8601)
-			 */
-			updatedAt: string;
-		};
-		NotificationList: {
-			/** @description Total number of items available */
-			totalCount: number;
-			/** @description Total number of pages available */
-			pages: number;
-			/** @description The next page number that can be fetched */
-			nextPage: number | null;
-			/** @description List of notifications */
-			items: components["schemas"]["Notification"][];
-		};
-		DeleteNotificationResponse: {
-			/** @description Whether deletion was successful */
-			success: boolean;
-		};
-		MarkReadResponse: {
-			/** @description Notification ID */
-			id: string;
-			/** @description Updated read status */
-			isRead: boolean;
-			/**
-			 * Format: date-time
-			 * @description Notification update time (ISO 8601)
-			 */
-			updatedAt: string;
-		};
-		Group: {
-			/** @description Group slug */
-			slug: string;
-			/** @description Group image URL */
-			imageUrl: string | null;
-			/** @description Group name */
-			name: string;
-			/** @description Group description */
-			description: string | null;
-			/** @description Group contact email */
-			contactEmail: string | null;
-			/** @description Group type */
-			type: string;
-			/** @description Group fines info */
-			finesInfo: string;
-			/** @description Group fines activated */
-			finesActivated: boolean;
-			/** @description Group fines admin ID */
-			finesAdminId: string | null;
-			/** @description Creation timestamp */
-			createdAt: string;
-			/** @description Last update timestamp */
-			updatedAt: string;
-		};
-		GroupList: components["schemas"]["Group"][];
-		MyGroup: {
-			/** @description Group slug */
-			slug: string;
-			/** @description Group image URL */
-			imageUrl: string | null;
-			/** @description Group name */
-			name: string;
-			/** @description Group description */
-			description: string | null;
-			/** @description Group contact email */
-			contactEmail: string | null;
-			/** @description Group type */
-			type: string;
-			/** @description Group fines info */
-			finesInfo: string;
-			/** @description Group fines activated */
-			finesActivated: boolean;
-			/** @description Group fines admin ID */
-			finesAdminId: string | null;
-			/** @description Creation timestamp */
-			createdAt: string;
-			/** @description Last update timestamp */
-			updatedAt: string;
-			membership: {
-				/** @enum {string} */
-				role: "member" | "leader";
-				joinedAt: string;
-				updatedAt: string;
-			};
-		};
-		MyGroupList: components["schemas"]["MyGroup"][];
-		UpdateGroupResponse: {
-			message: string;
-		};
-		Fine: {
-			/** @description Fine ID */
-			id: string;
-			/** @description User ID who received the fine */
-			userId: string;
-			/** @description Group slug that issued the fine */
-			groupSlug: string;
-			/** @description Reason for the fine */
-			reason: string;
-			/** @description Fine amount in NOK */
-			amount: number;
-			/** @description User's defense text */
-			defense: string | null;
-			/** @description Fine status (pending, approved, paid, rejected) */
-			status: string;
-			/** @description User who created the fine */
-			createdByUserId: string | null;
-			/** @description User who approved the fine */
-			approvedByUserId: string | null;
-			/** @description Approval timestamp */
-			approvedAt: string | null;
-			/** @description Payment timestamp */
-			paidAt: string | null;
-			/** @description Creation timestamp */
-			createdAt: string;
-			/** @description Last update timestamp */
-			updatedAt: string;
-		};
-		FineList: components["schemas"]["Fine"][];
-		UpdateFineResponse: {
-			message: string;
-		};
-		GroupMember: {
-			/** @description User ID */
-			userId: string;
-			/** @description Group slug */
-			groupSlug: string;
-			/** @description Membership role */
-			role: string;
-			/** @description Membership creation timestamp */
-			createdAt: string;
-			/** @description Membership update timestamp */
-			updatedAt: string;
-		};
-		GroupMemberList: components["schemas"]["GroupMember"][];
-		GroupMembership: {
-			/** @description User ID */
-			userId: string;
-			/** @description Group slug */
-			groupSlug: string;
-			/**
-			 * @description Membership role
-			 * @enum {string}
-			 */
-			role: "member" | "leader";
-			/** @description Membership creation timestamp */
-			createdAt: string;
-			/** @description Membership update timestamp */
-			updatedAt: string;
-		};
-		UpdateMemberRoleResponse: {
-			message: string;
-		};
-		CreateGroupFormResponse: {
-			/** Format: uuid */
-			id?: string;
-			title?: string;
-			description?: string | null;
-			group: string;
-			email_receiver_on_submit?: string | null;
-			can_submit_multiple?: boolean;
-			is_open_for_submissions?: boolean;
-			only_for_group_members?: boolean;
-			resource_type: string;
-			created_at?: string;
-			updated_at?: string;
-			fields?: {
-				/** Format: uuid */
-				id: string;
-				title: string;
-				/** @enum {string} */
-				type: "text_answer" | "multiple_select" | "single_select";
-				required: boolean;
-				order: number;
-				options: {
-					/** Format: uuid */
-					id: string;
-					title: string;
-					order: number;
-				}[];
-			}[];
-		};
-		GroupFormList: {
-			/** Format: uuid */
-			id: string;
-			title: string;
-			description: string | null;
-			group: string;
-			email_receiver_on_submit: string | null;
-			can_submit_multiple: boolean;
-			is_open_for_submissions: boolean;
-			only_for_group_members: boolean;
-			resource_type: string;
-			viewer_has_answered: boolean;
-			created_at: string;
-			updated_at: string;
-		}[];
-		NewsArticle: {
-			/**
-			 * Format: uuid
-			 * @description News article ID
-			 */
-			id: string;
-			/** @description News article title */
-			title: string;
-			/** @description News article subtitle/ingress */
-			header: string;
-			/** @description Main content */
-			body: string;
-			/** @description Image URL */
-			imageUrl: string | null;
-			/** @description Image alt text */
-			imageAlt: string | null;
-			/** @description Whether reactions are enabled */
-			emojisAllowed: boolean;
-			/** @description Creator user ID */
-			createdById: string | null;
-			/** @description Creation time (ISO 8601) */
-			createdAt: string;
-			/** @description Last update time (ISO 8601) */
-			updatedAt: string;
-			/** @description Creator user info */
-			creator: {
-				id: string;
-				name: string;
-				email: string;
-			} | null;
-			reactions: {
-				userId: string;
-				/** Format: uuid */
-				newsId: string;
-				emoji: string;
-				createdAt: string;
-				user: {
-					id: string;
-					name: string;
-				};
-			}[];
-		};
-		NewsListItem: {
-			/**
-			 * Format: uuid
-			 * @description News ID
-			 */
-			id: string;
-			/** @description News title */
-			title: string;
-			/** @description News header */
-			header: string;
-			/** @description News body */
-			body: string;
-			/** @description Image URL */
-			imageUrl: string | null;
-			/** @description Image alt text */
-			imageAlt: string | null;
-			/** @description Whether reactions are allowed */
-			emojisAllowed: boolean;
-			/**
-			 * Format: date
-			 * @description Creation time (ISO 8601)
-			 */
-			createdAt: string;
-			/**
-			 * Format: date
-			 * @description Last update time (ISO 8601)
-			 */
-			updatedAt: string;
-		};
-		NewsList: {
-			/** @description Total number of items available */
-			totalCount: number;
-			/** @description Total number of pages available */
-			pages: number;
-			/** @description The next page number that can be fetched */
-			nextPage: number | null;
-			/** @description List of news articles */
-			items: components["schemas"]["NewsListItem"][];
-		};
-		DeleteNewsResponse: {
-			message: string;
-		};
-		NewsReaction: {
-			/** @description User ID */
-			userId: string;
-			/**
-			 * Format: uuid
-			 * @description News article ID
-			 */
-			newsId: string;
-			/** @description Emoji reaction */
-			emoji: string;
-			/** @description Reaction creation time (ISO 8601) */
-			createdAt: string;
-		};
-		DeleteNewsReactionResponse: {
-			message: string;
-		};
-		JobDetail: {
-			/**
-			 * Format: uuid
-			 * @description Job posting ID
-			 */
-			id: string;
-			/** @description Job title */
-			title: string;
-			/** @description Short description */
-			ingress: string;
-			/** @description Full job description */
-			body: string;
-			/** @description Company name */
-			company: string;
-			/** @description Job location */
-			location: string;
-			/** @description Application deadline (ISO 8601) */
-			deadline: string | null;
-			/** @description Is continuously hiring */
-			isContinuouslyHiring: boolean;
-			/**
-			 * @description Job type
-			 * @enum {string}
-			 */
-			jobType: "full_time" | "part_time" | "summer_job" | "other";
-			/** @description Contact email */
-			email: string | null;
-			/** @description Application link */
-			link: string | null;
-			/**
-			 * @description Minimum year of study
-			 * @enum {string}
-			 */
-			classStart: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-			/**
-			 * @description Maximum year of study
-			 * @enum {string}
-			 */
-			classEnd: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-			/** @description Image URL */
-			imageUrl: string | null;
-			/** @description Image alt text */
-			imageAlt: string | null;
-			/** @description Creator user ID */
-			createdById: string | null;
-			/** @description Creation time (ISO 8601) */
-			createdAt: string;
-			/** @description Last update time (ISO 8601) */
-			updatedAt: string;
-			/** @description Creator user info */
-			creator: {
-				id: string;
-				name: string;
-				email: string;
-			} | null;
-			/** @description Whether the job posting has expired */
-			expired: boolean;
-		};
-		JobListItem: {
-			/**
-			 * Format: uuid
-			 * @description Job posting ID
-			 */
-			id: string;
-			/** @description Job title */
-			title: string;
-			/** @description Short description */
-			ingress: string;
-			/** @description Full job description */
-			body: string;
-			/** @description Company name */
-			company: string;
-			/** @description Job location */
-			location: string;
-			/** @description Application deadline (ISO 8601) */
-			deadline: string | null;
-			/** @description Is continuously hiring */
-			isContinuouslyHiring: boolean;
-			/**
-			 * @description Job type
-			 * @enum {string}
-			 */
-			jobType: "full_time" | "part_time" | "summer_job" | "other";
-			/** @description Contact email */
-			email: string | null;
-			/** @description Application link */
-			link: string | null;
-			/**
-			 * @description Minimum year of study
-			 * @enum {string}
-			 */
-			classStart: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-			/**
-			 * @description Maximum year of study
-			 * @enum {string}
-			 */
-			classEnd: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-			/** @description Image URL */
-			imageUrl: string | null;
-			/** @description Image alt text */
-			imageAlt: string | null;
-			/** @description Creator user ID */
-			createdById: string | null;
-			/** @description Creation time (ISO 8601) */
-			createdAt: string;
-			/** @description Last update time (ISO 8601) */
-			updatedAt: string;
-			/** @description Whether the job posting has expired */
-			expired: boolean;
-		};
-		JobList: {
-			/** @description Total number of items available */
-			totalCount: number;
-			/** @description Total number of pages available */
-			pages: number;
-			/** @description The next page number that can be fetched */
-			nextPage: number | null;
-			/** @description List of job postings */
-			items: components["schemas"]["JobListItem"][];
-		};
-		DeleteJobResponse: {
-			message: string;
-		};
-		UserSettings: {
-			/** @enum {string} */
-			gender: "male" | "female" | "other";
-			allowsPhotosByDefault: boolean;
-			acceptsEventRules: boolean;
-			/** Format: uri */
-			imageUrl?: string;
-			bioDescription?: string;
-			/** Format: uri */
-			githubUrl?: string;
-			/** Format: uri */
-			linkedinUrl?: string;
-			receiveMailCommunication: boolean;
-			/** @default [] */
-			allergies: string[];
-			/** @description Whether the user has completed onboarding */
-			isOnboarded: boolean;
-		};
-		UserSettingsBase: {
-			/** @enum {string} */
-			gender: "male" | "female" | "other";
-			allowsPhotosByDefault: boolean;
-			acceptsEventRules: boolean;
-			/** Format: uri */
-			imageUrl?: string;
-			bioDescription?: string;
-			/** Format: uri */
-			githubUrl?: string;
-			/** Format: uri */
-			linkedinUrl?: string;
-			receiveMailCommunication: boolean;
-			/** @default [] */
-			allergies: string[];
-		};
-		UpdateUserSettings: {
-			/** @enum {string} */
-			gender?: "male" | "female" | "other";
-			allowsPhotosByDefault?: boolean;
-			acceptsEventRules?: boolean;
-			/** Format: uri */
-			imageUrl?: string;
-			bioDescription?: string;
-			/** Format: uri */
-			githubUrl?: string;
-			/** Format: uri */
-			linkedinUrl?: string;
-			receiveMailCommunication?: boolean;
-			/** @default [] */
-			allergies: string[];
-		};
-		Allergy: {
-			/** @description Unique identifier for the allergy */
-			slug: string;
-			/** @description Display name of the allergy */
-			label: string;
-			/** @description Detailed description of the allergy */
-			description: string | null;
-		};
-		AllergyList: components["schemas"]["Allergy"][];
-	};
-	responses: never;
-	parameters: never;
-	requestBodies: never;
-	headers: never;
-	pathItems: never;
+    schemas: {
+        CreateApiKeyResponse: {
+            /**
+             * Format: uuid
+             * @description API key ID
+             */
+            id: string;
+            /** @description Name of the API key */
+            name: string;
+            /** @description Description of the API key */
+            description: string;
+            /** @description First 12 characters of the key for display */
+            keyPrefix: string;
+            /** @description User ID who created this key */
+            createdById: string | null;
+            /** @description When the key was last used */
+            lastUsedAt: string | null;
+            /** @description Array of permissions granted to this API key */
+            permissions: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Format: date-time
+             * @description When the key was created
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the key was last updated
+             */
+            updatedAt: string;
+            /** @description The full API key - ONLY returned on creation and regeneration. Cannot be retrieved again. */
+            key: string;
+        };
+        HTTPAppException: {
+            /**
+             * @description The HTTP status code
+             * @example 401
+             */
+            status: number;
+            /** @description The error message */
+            message: string;
+            /** @description Additional metadata about the error */
+            meta?: unknown;
+        };
+        CreateApiKey: {
+            /** @description Name for the API key */
+            name: string;
+            /** @description Detailed description of the API key's purpose */
+            description: string;
+            /** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
+            permissions: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description The API key details and permissions if valid. Undefined if invalid. */
+        ApiKey: {
+            /**
+             * Format: uuid
+             * @description API key ID
+             */
+            id: string;
+            /** @description Name of the API key */
+            name: string;
+            /** @description Description of the API key */
+            description: string;
+            /** @description First 12 characters of the key for display */
+            keyPrefix: string;
+            /** @description User ID who created this key */
+            createdById: string | null;
+            /** @description When the key was last used */
+            lastUsedAt: string | null;
+            /** @description Array of permissions granted to this API key */
+            permissions: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Format: date-time
+             * @description When the key was created
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the key was last updated
+             */
+            updatedAt: string;
+        };
+        ApiKeyList: components["schemas"]["ApiKey"][];
+        UpdateApiKey: {
+            /** @description Name for the API key */
+            name?: string;
+            /** @description Detailed description of the API key's purpose */
+            description?: string;
+            /** @description Array of permissions granted to this API key */
+            permissions?: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        DeleteApiKeyResponse: {
+            /** @description Success message */
+            message: string;
+        };
+        ValidateApiKeyResponse: {
+            /** @description Whether the API key is valid */
+            valid: boolean;
+            apiKey?: components["schemas"]["ApiKey"];
+        };
+        ValidateApiKeyInput: {
+            /** @description The API key to validate */
+            key: string;
+        };
+        UploadResponse: {
+            /** @description The unique key to reference this asset */
+            key: string;
+            /** @description The original filename */
+            originalFilename: string;
+            /** @description The MIME type of the file */
+            contentType: string | null;
+            /** @description File size in bytes */
+            size: number;
+            /**
+             * @description Asset status
+             * @enum {string}
+             */
+            status: "staged" | "ready";
+        };
+        AssetMetadata: {
+            /**
+             * Format: uuid
+             * @description Asset ID
+             */
+            id: string;
+            /** @description The unique key to reference this asset */
+            key: string;
+            /** @description The original filename */
+            originalFilename: string;
+            /** @description The MIME type of the file */
+            contentType: string | null;
+            /** @description File size in bytes */
+            size: number;
+            /**
+             * @description Asset status
+             * @enum {string}
+             */
+            status: "staged" | "ready";
+            /** @description When the asset was promoted */
+            promotedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the asset was created
+             */
+            createdAt: string;
+        };
+        SendEmailResponse: {
+            success: boolean;
+            message: string;
+            jobIds: string[];
+            recipientCount: number;
+        };
+        CreateEventResponse: {
+            /** Format: uuid */
+            eventId: string;
+        };
+        EventListItem: {
+            /**
+             * Format: uuid
+             * @description Event ID
+             */
+            id: string;
+            /** @description Event slug */
+            slug: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event location (nullable) */
+            location?: string | null;
+            /**
+             * Format: date
+             * @description Event start time (ISO 8601)
+             */
+            startTime: string;
+            /**
+             * Format: date
+             * @description Event end time (ISO 8601)
+             */
+            endTime: string;
+            /** @description Event organizer (nullable) */
+            organizer: {
+                /** @description Organizer name */
+                name: string;
+                /** @description Organizer slug */
+                slug: string;
+                /** @description Organizer type */
+                type: string;
+            } | null;
+            /** @description Is registration closed */
+            closed: boolean;
+            /** @description Event image URL (nullable) */
+            image: string | null;
+            /**
+             * Format: date
+             * @description Event creation time (ISO 8601)
+             */
+            createdAt: string;
+            /**
+             * Format: date
+             * @description Event update time (ISO 8601)
+             */
+            updatedAt: string;
+            /** @description Event category */
+            category: {
+                /** @description Category slug */
+                slug: string;
+                /** @description Category label */
+                label: string;
+            };
+        };
+        EventList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of events */
+            items: components["schemas"]["EventListItem"][];
+        };
+        DeleteEventResponse: {
+            message: string;
+        };
+        Event: {
+            /**
+             * Format: uuid
+             * @description Event ID
+             */
+            id: string;
+            /** @description Event slug */
+            slug: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event location (nullable) */
+            location?: string | null;
+            /**
+             * Format: date-time
+             * @description Event start time (ISO 8601)
+             */
+            startTime: string;
+            /**
+             * Format: date-time
+             * @description Event end time (ISO 8601)
+             */
+            endTime: string;
+            /** @description Event organizer (nullable) */
+            organizer: {
+                /** @description Organizer name */
+                name: string;
+                /** @description Organizer slug */
+                slug: string;
+                /** @description Organizer type */
+                type: string;
+                /** @description Organizer image URL */
+                image: string | null;
+            } | null;
+            /** @description Is registration closed */
+            closed: boolean;
+            /** @description Event image URL (nullable) */
+            image: string | null;
+            /**
+             * Format: date-time
+             * @description Event creation time (ISO 8601)
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Event update time (ISO 8601)
+             */
+            updatedAt: string;
+            /** @description Event category */
+            category: {
+                /** @description Category slug */
+                slug: string;
+                /** @description Category label */
+                label: string;
+            };
+            reactions: {
+                user: {
+                    /** @description User ID */
+                    id: string;
+                    /** @description User name */
+                    name: string;
+                };
+                /** @description Reaction emoji */
+                emoji: string;
+            }[];
+            /** @description Is this a paid event */
+            isPaidEvent: boolean;
+            /** @description Payment info */
+            payInfo: {
+                /** @description Event price in whole KR */
+                price: number;
+                /** @description Payment grace period in minutes */
+                paymentGracePeriodMinutes: number;
+            } | null;
+            /** @description Priority registration pools */
+            priorityPools: {
+                groups: {
+                    /** @description Group name */
+                    name: string;
+                    /** @description Group slug */
+                    slug: string;
+                    /** @description Group image URL (nullable) */
+                    imageUrl: string | null;
+                }[];
+            }[];
+            /** @description Does the event enforce previous strikes for registration */
+            enforcesPreviousStrikes: boolean;
+            /** @description The current user's registration information. This is null if not registered or if not logged in. */
+            registration: {
+                /**
+                 * Format: date-time
+                 * @description When the user signed up
+                 */
+                createdAt: string;
+                /**
+                 * Format: date-time
+                 * @description When the registration was last updated by the system (moving waitlist position etc.)
+                 */
+                updatedAt: string;
+                /** @enum {string} */
+                status: "registered" | "waitlisted" | "cancelled" | "attended" | "no_show" | "pending";
+                /** @description The user's position in the waitlist. Is null if not on the waitlist */
+                waitlistPosition: number | null;
+                /** @description When the user was registered as an attendee by TIHLDE for this event. Is null if not attended. */
+                attendedAt: string | null;
+            } | null;
+        };
+        UpdateFavoriteResponse: {
+            success: boolean;
+        };
+        FavoriteEvents: {
+            /** @description Event ID */
+            eventId: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event slug */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description When you added this event to your favorites
+             */
+            createdAt: string;
+        }[];
+        EventRegistration: {
+            /** Format: uuid */
+            eventId: string;
+            userId: string;
+            /** @constant */
+            status: "pending";
+            createdAt: string;
+        };
+        EventRegisteredUser: {
+            /** @description User id */
+            id: string;
+            /** @description User name */
+            name: string;
+            /** @description User image url (if any) */
+            image: string | null;
+        };
+        EventRegistrationList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of registered users (paginated) */
+            registeredUsers: components["schemas"]["EventRegisteredUser"][];
+        };
+        CreatePaymentResponse: {
+            /** Format: uuid */
+            eventId: string;
+            userId: string;
+            /** Format: uri */
+            checkoutUrl: string;
+            amount: number;
+            currency: string;
+        };
+        CreateEventFormResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            description?: string | null;
+            /** @enum {string} */
+            type: "survey" | "evaluation";
+            resource_type: string;
+            created_at?: string;
+            updated_at?: string;
+            fields?: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                required: boolean;
+                order: number;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    order: number;
+                }[];
+            }[];
+        };
+        EventFormList: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            /** @enum {string} */
+            type: "survey" | "evaluation";
+            resource_type: string;
+            viewer_has_answered: boolean;
+            created_at: string;
+            updated_at: string;
+        }[];
+        EventFormDetail: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            /** @enum {string} */
+            type: "survey" | "evaluation";
+            resource_type: string;
+            viewer_has_answered: boolean;
+            website_url: string;
+            created_at: string;
+            updated_at: string;
+            fields: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                required: boolean;
+                order: number;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    order: number;
+                }[];
+            }[];
+        };
+        FormResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            template: boolean;
+            created_at: string;
+            updated_at: string;
+        };
+        FormList: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            template: boolean;
+            resource_type: string;
+            viewer_has_answered: boolean;
+            created_at: string;
+            updated_at: string;
+        }[];
+        FormDetail: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            template: boolean;
+            resource_type: string;
+            viewer_has_answered: boolean;
+            website_url: string;
+            created_at: string;
+            updated_at: string;
+            fields: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                required: boolean;
+                order: number;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    order: number;
+                }[];
+            }[];
+        };
+        UpdateFormResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            description?: string | null;
+            template?: boolean;
+            created_at?: string;
+            updated_at?: string;
+            fields?: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                required: boolean;
+                order: number;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    order: number;
+                }[];
+            }[];
+        };
+        DeleteFormResponse: {
+            detail: string;
+        };
+        FormStatistics: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            resource_type: string;
+            statistics: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "multiple_select" | "single_select";
+                required: boolean;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    answer_amount: number;
+                    answer_percentage: number;
+                }[];
+            }[];
+        };
+        CreateSubmissionResponse: {
+            id: string;
+            message: string;
+        };
+        SubmissionList: {
+            /** Format: uuid */
+            id: string;
+            user: {
+                id: string;
+                name: string;
+                email: string;
+            };
+            created_at: string;
+            updated_at: string;
+            answers: {
+                /** Format: uuid */
+                id: string;
+                field_id: string | null;
+                answer_text: string | null;
+                selected_options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                }[];
+            }[];
+        }[];
+        SubmissionDetail: {
+            /** Format: uuid */
+            id: string;
+            user: {
+                id: string;
+                name: string;
+                email: string;
+            };
+            created_at: string;
+            updated_at: string;
+            answers: {
+                /** Format: uuid */
+                id: string;
+                field_id: string | null;
+                answer_text: string | null;
+                selected_options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                }[];
+            }[];
+        };
+        DeleteSubmissionResponse: {
+            detail: string;
+        };
+        Notification: {
+            /** @description Notification ID */
+            id: string;
+            /** @description User ID */
+            userId: string;
+            /** @description Notification title */
+            title: string;
+            /** @description Notification description */
+            description: string;
+            /** @description Optional link URL (nullable) */
+            link: string | null;
+            /** @description Whether notification is read */
+            isRead: boolean;
+            /**
+             * Format: date-time
+             * @description Notification creation time (ISO 8601)
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Notification update time (ISO 8601)
+             */
+            updatedAt: string;
+        };
+        NotificationList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of notifications */
+            items: components["schemas"]["Notification"][];
+        };
+        DeleteNotificationResponse: {
+            /** @description Whether deletion was successful */
+            success: boolean;
+        };
+        MarkReadResponse: {
+            /** @description Notification ID */
+            id: string;
+            /** @description Updated read status */
+            isRead: boolean;
+            /**
+             * Format: date-time
+             * @description Notification update time (ISO 8601)
+             */
+            updatedAt: string;
+        };
+        Group: {
+            /** @description Group slug */
+            slug: string;
+            /** @description Group image URL */
+            imageUrl: string | null;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description: string | null;
+            /** @description Group contact email */
+            contactEmail: string | null;
+            /** @description Group type */
+            type: string;
+            /** @description Group fines info */
+            finesInfo: string;
+            /** @description Group fines activated */
+            finesActivated: boolean;
+            /** @description Group fines admin ID */
+            finesAdminId: string | null;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+        };
+        GroupList: components["schemas"]["Group"][];
+        MyGroup: {
+            /** @description Group slug */
+            slug: string;
+            /** @description Group image URL */
+            imageUrl: string | null;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description: string | null;
+            /** @description Group contact email */
+            contactEmail: string | null;
+            /** @description Group type */
+            type: string;
+            /** @description Group fines info */
+            finesInfo: string;
+            /** @description Group fines activated */
+            finesActivated: boolean;
+            /** @description Group fines admin ID */
+            finesAdminId: string | null;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+            membership: {
+                /** @enum {string} */
+                role: "member" | "leader";
+                joinedAt: string;
+                updatedAt: string;
+            };
+        };
+        MyGroupList: components["schemas"]["MyGroup"][];
+        UpdateGroupResponse: {
+            message: string;
+        };
+        Fine: {
+            /** @description Fine ID */
+            id: string;
+            /** @description User ID who received the fine */
+            userId: string;
+            /** @description Group slug that issued the fine */
+            groupSlug: string;
+            /** @description Reason for the fine */
+            reason: string;
+            /** @description Fine amount in NOK */
+            amount: number;
+            /** @description User's defense text */
+            defense: string | null;
+            /** @description Fine status (pending, approved, paid, rejected) */
+            status: string;
+            /** @description User who created the fine */
+            createdByUserId: string | null;
+            /** @description User who approved the fine */
+            approvedByUserId: string | null;
+            /** @description Approval timestamp */
+            approvedAt: string | null;
+            /** @description Payment timestamp */
+            paidAt: string | null;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+        };
+        FineList: components["schemas"]["Fine"][];
+        UpdateFineResponse: {
+            message: string;
+        };
+        GroupMember: {
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description Membership role */
+            role: string;
+            /** @description Membership creation timestamp */
+            createdAt: string;
+            /** @description Membership update timestamp */
+            updatedAt: string;
+        };
+        GroupMemberList: components["schemas"]["GroupMember"][];
+        GroupMembership: {
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /**
+             * @description Membership role
+             * @enum {string}
+             */
+            role: "member" | "leader";
+            /** @description Membership creation timestamp */
+            createdAt: string;
+            /** @description Membership update timestamp */
+            updatedAt: string;
+        };
+        UpdateMemberRoleResponse: {
+            message: string;
+        };
+        CreateGroupFormResponse: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
+            description?: string | null;
+            group: string;
+            email_receiver_on_submit?: string | null;
+            can_submit_multiple?: boolean;
+            is_open_for_submissions?: boolean;
+            only_for_group_members?: boolean;
+            resource_type: string;
+            created_at?: string;
+            updated_at?: string;
+            fields?: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                required: boolean;
+                order: number;
+                options: {
+                    /** Format: uuid */
+                    id: string;
+                    title: string;
+                    order: number;
+                }[];
+            }[];
+        };
+        GroupFormList: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string | null;
+            group: string;
+            email_receiver_on_submit: string | null;
+            can_submit_multiple: boolean;
+            is_open_for_submissions: boolean;
+            only_for_group_members: boolean;
+            resource_type: string;
+            viewer_has_answered: boolean;
+            created_at: string;
+            updated_at: string;
+        }[];
+        NewsArticle: {
+            /**
+             * Format: uuid
+             * @description News article ID
+             */
+            id: string;
+            /** @description News article title */
+            title: string;
+            /** @description News article subtitle/ingress */
+            header: string;
+            /** @description Main content */
+            body: string;
+            /** @description Image URL */
+            imageUrl: string | null;
+            /** @description Image alt text */
+            imageAlt: string | null;
+            /** @description Whether reactions are enabled */
+            emojisAllowed: boolean;
+            /** @description Creator user ID */
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+            /** @description Creator user info */
+            creator: {
+                id: string;
+                name: string;
+                email: string;
+            } | null;
+            reactions: {
+                userId: string;
+                /** Format: uuid */
+                newsId: string;
+                emoji: string;
+                createdAt: string;
+                user: {
+                    id: string;
+                    name: string;
+                };
+            }[];
+        };
+        NewsListItem: {
+            /**
+             * Format: uuid
+             * @description News ID
+             */
+            id: string;
+            /** @description News title */
+            title: string;
+            /** @description News header */
+            header: string;
+            /** @description News body */
+            body: string;
+            /** @description Image URL */
+            imageUrl: string | null;
+            /** @description Image alt text */
+            imageAlt: string | null;
+            /** @description Whether reactions are allowed */
+            emojisAllowed: boolean;
+            /**
+             * Format: date
+             * @description Creation time (ISO 8601)
+             */
+            createdAt: string;
+            /**
+             * Format: date
+             * @description Last update time (ISO 8601)
+             */
+            updatedAt: string;
+        };
+        NewsList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of news articles */
+            items: components["schemas"]["NewsListItem"][];
+        };
+        DeleteNewsResponse: {
+            message: string;
+        };
+        NewsReaction: {
+            /** @description User ID */
+            userId: string;
+            /**
+             * Format: uuid
+             * @description News article ID
+             */
+            newsId: string;
+            /** @description Emoji reaction */
+            emoji: string;
+            /** @description Reaction creation time (ISO 8601) */
+            createdAt: string;
+        };
+        DeleteNewsReactionResponse: {
+            message: string;
+        };
+        JobDetail: {
+            /**
+             * Format: uuid
+             * @description Job posting ID
+             */
+            id: string;
+            /** @description Job title */
+            title: string;
+            /** @description Short description */
+            ingress: string;
+            /** @description Full job description */
+            body: string;
+            /** @description Company name */
+            company: string;
+            /** @description Job location */
+            location: string;
+            /** @description Application deadline (ISO 8601) */
+            deadline: string | null;
+            /** @description Is continuously hiring */
+            isContinuouslyHiring: boolean;
+            /**
+             * @description Job type
+             * @enum {string}
+             */
+            jobType: "full_time" | "part_time" | "summer_job" | "other";
+            /** @description Contact email */
+            email: string | null;
+            /** @description Application link */
+            link: string | null;
+            /**
+             * @description Minimum year of study
+             * @enum {string}
+             */
+            classStart: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /**
+             * @description Maximum year of study
+             * @enum {string}
+             */
+            classEnd: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /** @description Image URL */
+            imageUrl: string | null;
+            /** @description Image alt text */
+            imageAlt: string | null;
+            /** @description Creator user ID */
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+            /** @description Creator user info */
+            creator: {
+                id: string;
+                name: string;
+                email: string;
+            } | null;
+            /** @description Whether the job posting has expired */
+            expired: boolean;
+        };
+        JobListItem: {
+            /**
+             * Format: uuid
+             * @description Job posting ID
+             */
+            id: string;
+            /** @description Job title */
+            title: string;
+            /** @description Short description */
+            ingress: string;
+            /** @description Full job description */
+            body: string;
+            /** @description Company name */
+            company: string;
+            /** @description Job location */
+            location: string;
+            /** @description Application deadline (ISO 8601) */
+            deadline: string | null;
+            /** @description Is continuously hiring */
+            isContinuouslyHiring: boolean;
+            /**
+             * @description Job type
+             * @enum {string}
+             */
+            jobType: "full_time" | "part_time" | "summer_job" | "other";
+            /** @description Contact email */
+            email: string | null;
+            /** @description Application link */
+            link: string | null;
+            /**
+             * @description Minimum year of study
+             * @enum {string}
+             */
+            classStart: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /**
+             * @description Maximum year of study
+             * @enum {string}
+             */
+            classEnd: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /** @description Image URL */
+            imageUrl: string | null;
+            /** @description Image alt text */
+            imageAlt: string | null;
+            /** @description Creator user ID */
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+            /** @description Whether the job posting has expired */
+            expired: boolean;
+        };
+        JobList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of job postings */
+            items: components["schemas"]["JobListItem"][];
+        };
+        DeleteJobResponse: {
+            message: string;
+        };
+        UserSettings: {
+            /** @enum {string} */
+            gender: "male" | "female" | "other";
+            allowsPhotosByDefault: boolean;
+            acceptsEventRules: boolean;
+            /** Format: uri */
+            imageUrl?: string;
+            bioDescription?: string;
+            /** Format: uri */
+            githubUrl?: string;
+            /** Format: uri */
+            linkedinUrl?: string;
+            receiveMailCommunication: boolean;
+            /** @default [] */
+            allergies: string[];
+            /** @description Whether the user has completed onboarding */
+            isOnboarded: boolean;
+        };
+        UserSettingsBase: {
+            /** @enum {string} */
+            gender: "male" | "female" | "other";
+            allowsPhotosByDefault: boolean;
+            acceptsEventRules: boolean;
+            /** Format: uri */
+            imageUrl?: string;
+            bioDescription?: string;
+            /** Format: uri */
+            githubUrl?: string;
+            /** Format: uri */
+            linkedinUrl?: string;
+            receiveMailCommunication: boolean;
+            /** @default [] */
+            allergies: string[];
+        };
+        UpdateUserSettings: {
+            /** @enum {string} */
+            gender?: "male" | "female" | "other";
+            allowsPhotosByDefault?: boolean;
+            acceptsEventRules?: boolean;
+            /** Format: uri */
+            imageUrl?: string;
+            bioDescription?: string;
+            /** Format: uri */
+            githubUrl?: string;
+            /** Format: uri */
+            linkedinUrl?: string;
+            receiveMailCommunication?: boolean;
+            /** @default [] */
+            allergies: string[];
+        };
+        Allergy: {
+            /** @description Unique identifier for the allergy */
+            slug: string;
+            /** @description Display name of the allergy */
+            label: string;
+            /** @description Detailed description of the allergy */
+            description: string | null;
+        };
+        AllergyList: components["schemas"]["Allergy"][];
+    };
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-	listApiKeys: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of API keys */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiKeyList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	createApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["CreateApiKey"];
-			};
-		};
-		responses: {
-			/** @description API key created successfully. The 'key' field contains the full API key and will not be shown again. */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateApiKeyResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description API key ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description API key details */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiKey"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - API key not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description API key ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description API key deleted successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteApiKeyResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - API key not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description API key ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["UpdateApiKey"];
-			};
-		};
-		responses: {
-			/** @description API key updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ApiKey"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - API key not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	regenerateApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/** @description API key ID */
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description API key regenerated successfully. The 'key' field contains the new API key and will not be shown again. */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateApiKeyResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - API key not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	validateApiKey: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": components["schemas"]["ValidateApiKeyInput"];
-			};
-		};
-		responses: {
-			/** @description Validation result. If valid=true, includes the API key details and permissions. */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["ValidateApiKeyResponse"];
-				};
-			};
-		};
-	};
-	uploadAsset: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description File uploaded successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UploadResponse"];
-				};
-			};
-			/** @description Bad Request - Invalid file type or size exceeded */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getAssetMetadata: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				key: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Asset metadata */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["AssetMetadata"];
-				};
-			};
-			/** @description Not Found - Asset not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	downloadAsset: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				key: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description File content with appropriate Content-Type header */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Asset not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	sendCustomEmail: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Recipient email address (string) or list of recipient email addresses (array) */
-					to: string | string[];
-					/** @description Email subject line */
-					subject: string;
-					/** @description Array of content blocks (title, text, or button) to render in the email */
-					content: (
-						| {
-								/**
-								 * @description Content block type
-								 * @constant
-								 */
-								type: "title";
-								/** @description The title text to display */
-								content: string;
-						  }
-						| {
-								/**
-								 * @description Content block type
-								 * @constant
-								 */
-								type: "text";
-								/** @description The paragraph text to display */
-								content: string;
-						  }
-						| {
-								/**
-								 * @description Content block type
-								 * @constant
-								 */
-								type: "button";
-								/** @description The button label text */
-								text: string;
-								/**
-								 * Format: uri
-								 * @description The URL the button links to
-								 */
-								url: string;
-						  }
-					)[];
-				};
-			};
-		};
-		responses: {
-			/** @description Email queued successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["SendEmailResponse"];
-				};
-			};
-			/** @description Unauthorized - Missing or invalid Authorization header */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Forbidden - Invalid API key */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Email API not configured */
-			503: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listEvents: {
-		parameters: {
-			query?: {
-				/** @description Number of items to return */
-				pageSize?: number;
-				/** @description Number of items to skip */
-				page?: number;
-				/** @description Search term to filter events by title */
-				search?: string;
-				/** @description Whether to include expired events or not */
-				expired?: boolean;
-				/** @description Whether to include only events with open sign-ups */
-				openSignUp?: boolean;
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["EventList"];
-				};
-			};
-		};
-	};
-	createEvent: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Short title of the event */
-					title: string;
-					/** @description Description of the event */
-					description: string;
-					/** @description Category slug for the event */
-					categorySlug: string;
-					/** @description Slug of the group organizing the event */
-					organizerGroupSlug: string;
-					/** @description Location of the event (physical or online) */
-					location: string;
-					/** @description Main image to display for the event */
-					imageUrl: string | null;
-					/**
-					 * Format: date-time
-					 * @description When the event starts
-					 */
-					start: string;
-					/**
-					 * Format: date-time
-					 * @description When the event ends
-					 */
-					end: string;
-					/** @description Timestamp for when registrations open. If null, open immediately. */
-					registrationStart: string | null;
-					/**
-					 * Format: date-time
-					 * @description When the registration for the event ends. After this time, users cannot sign up.
-					 */
-					registrationEnd: string;
-					/** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
-					cancellationDeadline: string | null;
-					/** @description Maximum number of participants allowed. If null, no capacity limit. */
-					capacity: number | null;
-					/** @description Is the event closed for new registrations? This overrides registrationStart/End */
-					isRegistrationClosed: boolean;
-					/** @description Do users need to sign up to attend the event? */
-					requiresSigningUp: boolean;
-					/** @description Should users be allowed to join a waitlist if the event is full? */
-					allowWaitlist: boolean;
-					/** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
-					priorityPools:
-						| {
-								/** @description Group slugs in this pool */
-								groups: string[];
-						  }[]
-						| null;
-					/** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
-					onlyAllowPrioritized: boolean;
-					/** @description Can this event give strike penalties to users? */
-					canCauseStrikes: boolean;
-					/** @description Should the system enforce strike rules for this event? */
-					enforcesPreviousStrikes: boolean;
-					/** @description Is this a paid event? */
-					isPaidEvent: boolean;
-					/** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
-					price: number | null;
-					/** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-					paymentGracePeriodMinutes: number | null;
-					/** @description User ID of the primary contact person for the event */
-					contactPersonUserId: string | null;
-					/** @description Should users be able to react to this event with emojis? */
-					reactionsAllowed: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description Created */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateEventResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Missing events:create permission */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateEvent: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Short title of the event */
-					title?: string;
-					/** @description Description of the event */
-					description?: string;
-					/** @description Category slug for the event */
-					categorySlug?: string;
-					/** @description Slug of the group organizing the event */
-					organizerGroupSlug?: string;
-					/** @description Location of the event (physical or online) */
-					location?: string;
-					/** @description Main image to display for the event */
-					imageUrl?: string | null;
-					/**
-					 * Format: date-time
-					 * @description When the event starts
-					 */
-					start?: string;
-					/**
-					 * Format: date-time
-					 * @description When the event ends
-					 */
-					end?: string;
-					/** @description Timestamp for when registrations open. If null, open immediately. */
-					registrationStart?: string | null;
-					/**
-					 * Format: date-time
-					 * @description When the registration for the event ends. After this time, users cannot sign up.
-					 */
-					registrationEnd?: string;
-					/** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
-					cancellationDeadline?: string | null;
-					/** @description Maximum number of participants allowed. If null, no capacity limit. */
-					capacity?: number | null;
-					/** @description Is the event closed for new registrations? This overrides registrationStart/End */
-					isRegistrationClosed?: boolean;
-					/** @description Do users need to sign up to attend the event? */
-					requiresSigningUp?: boolean;
-					/** @description Should users be allowed to join a waitlist if the event is full? */
-					allowWaitlist?: boolean;
-					/** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
-					priorityPools?:
-						| {
-								/** @description Group slugs in this pool */
-								groups: string[];
-						  }[]
-						| null;
-					/** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
-					onlyAllowPrioritized?: boolean;
-					/** @description Can this event give strike penalties to users? */
-					canCauseStrikes?: boolean;
-					/** @description Should the system enforce strike rules for this event? */
-					enforcesPreviousStrikes?: boolean;
-					/** @description Is this a paid event? */
-					isPaidEvent?: boolean;
-					/** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
-					price?: number | null;
-					/** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-					paymentGracePeriodMinutes?: number | null;
-					/** @description User ID of the primary contact person for the event */
-					contactPersonUserId?: string | null;
-					/** @description Should users be able to react to this event with emojis? */
-					reactionsAllowed?: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description Updated */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - You must be the event creator or have events:update/events:manage permission */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getEvent: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description The event was found */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["Event"];
-				};
-			};
-		};
-	};
-	deleteEvent: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Event successfully deleted */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteEventResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - You must be the event creator or have events:delete permission */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Event with the specified ID does not exist */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateEventFavorite: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Is favorite */
-					isFavorite: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description Updated */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateFavoriteResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Event not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getFavoriteEvents: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of favorite events */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FavoriteEvents"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	listEventRegistrations: {
-		parameters: {
-			query?: {
-				/** @description Number of items to return */
-				pageSize?: number;
-				/** @description Number of items to skip */
-				page?: number;
-			};
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["EventRegistrationList"];
-				};
-			};
-		};
-	};
-	createEventRegistration: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["EventRegistration"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Event not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Event is not open for registration or user already registered */
-			409: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteEventRegistration: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	createEventPayment: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/**
-					 * Format: uri
-					 * @description URL to redirect user after payment
-					 */
-					returnUrl: string;
-					/**
-					 * @description User flow type for payment
-					 * @default WEB_REDIRECT
-					 * @enum {string}
-					 */
-					userFlow?: "WEB_REDIRECT" | "NATIVE_REDIRECT";
-				};
-			};
-		};
-		responses: {
-			/** @description Payment created successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreatePaymentResponse"];
-				};
-			};
-			/** @description Bad Request - event not found or not a paid event */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Event or registration not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Payment already exists for this user and event */
-			409: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	handlePaymentWebhook: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Webhook processed successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Bad Request - Invalid webhook payload */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Payment not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listEventForms: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["EventFormList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Event not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	createEventForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title: string;
-					description?: string;
-					/** @default false */
-					template?: boolean;
-					/** @default [] */
-					fields?: {
-						title: string;
-						/** @enum {string} */
-						type: "text_answer" | "multiple_select" | "single_select";
-						/** @default false */
-						required?: boolean;
-						/** @default 0 */
-						order?: number;
-						options?: {
-							title: string;
-							/** @default 0 */
-							order?: number;
-						}[];
-					}[];
-					/** Format: uuid */
-					event: string;
-					/** @enum {string} */
-					type: "survey" | "evaluation";
-				};
-			};
-		};
-		responses: {
-			/** @description Created */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateEventFormResponse"];
-				};
-			};
-			/** @description Bad Request - Form already exists for this event type */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Cant create form for specified event */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Event not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getEventForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				eventId: string;
-				type: "survey" | "evaluation";
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["EventFormDetail"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Evaluation forms require attendance */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listForms: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FormList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	createForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title: string;
-					description?: string;
-					/** @default false */
-					template?: boolean;
-					/** @default [] */
-					fields?: {
-						title: string;
-						/** @enum {string} */
-						type: "text_answer" | "multiple_select" | "single_select";
-						/** @default false */
-						required?: boolean;
-						/** @default 0 */
-						order?: number;
-						options?: {
-							title: string;
-							/** @default 0 */
-							order?: number;
-						}[];
-					}[];
-				};
-			};
-		};
-		responses: {
-			/** @description Created */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FormResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FormDetail"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteFormResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title?: string;
-					description?: string;
-					template?: boolean;
-					fields?: {
-						/** Format: uuid */
-						id?: string;
-						title: string;
-						/** @enum {string} */
-						type: "text_answer" | "multiple_select" | "single_select";
-						/** @default false */
-						required?: boolean;
-						/** @default 0 */
-						order?: number;
-						options?: {
-							/** Format: uuid */
-							id?: string;
-							title: string;
-							/** @default 0 */
-							order?: number;
-						}[];
-					}[];
-				};
-			};
-		};
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateFormResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getFormStatistics: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FormStatistics"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listFormSubmissions: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				formId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["SubmissionList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	createFormSubmission: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				formId: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					answers: {
-						field: {
-							/** Format: uuid */
-							id: string;
-						};
-						answer_text?: string;
-						selected_options?: {
-							/** Format: uuid */
-							id: string;
-						}[];
-					}[];
-				};
-			};
-		};
-		responses: {
-			/** @description Created */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateSubmissionResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Cannot submit to this form */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Conflict - Duplicate submission not allowed */
-			409: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getFormSubmission: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				formId: string;
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["SubmissionDetail"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Submission not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	downloadFormSubmissions: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				formId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success - Returns CSV file */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"text/csv": unknown;
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Form not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteFormSubmission: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				formId: string;
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					reason: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteSubmissionResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Submission not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listNotifications: {
-		parameters: {
-			query?: {
-				/** @description Number of items to return */
-				pageSize?: number;
-				/** @description Number of items to skip */
-				page?: number;
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NotificationList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	deleteNotification: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Notification deleted successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteNotificationResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Notification not found or not owned by user */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	markNotificationRead: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Whether notification should be marked as read */
-					isRead: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description Notification updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["MarkReadResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Notification not found or not owned by user */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listGroups: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of groups retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["GroupList"];
-				};
-			};
-		};
-	};
-	createGroup: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Unique group slug identifier */
-					slug: string;
-					/**
-					 * Format: uri
-					 * @description Group image URL
-					 */
-					imageUrl?: string;
-					/** @description Group name */
-					name: string;
-					/** @description Group description */
-					description?: string;
-					/**
-					 * Format: email
-					 * @description Group contact email
-					 */
-					contactEmail?: string;
-					/** @description Group type (e.g., committee, study, interestgroup) */
-					type: string;
-					/**
-					 * @description Information about group fines policy
-					 * @default
-					 */
-					finesInfo?: string;
-					/**
-					 * @description Whether fines are activated for this group
-					 * @default false
-					 */
-					finesActivated?: boolean;
-					/** @description User ID of the fines administrator */
-					finesAdminId?: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Group created successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["Group"];
-				};
-			};
-			/** @description Bad Request - Invalid input or slug already exists */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	listMyGroups: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of groups the user is a member of */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["MyGroupList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getGroup: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				slug: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Group details retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["Group"];
-				};
-			};
-			/** @description Not Found - Group with the specified slug does not exist */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteGroup: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				slug: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Group successfully deleted */
-			204: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not a group leader or missing groups:delete permission */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Group with the specified slug does not exist */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateGroup: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				slug: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/**
-					 * Format: uri
-					 * @description Group image URL
-					 */
-					imageUrl?: string;
-					/** @description Group name */
-					name?: string;
-					/** @description Group description */
-					description?: string | null;
-					/** @description Group contact email */
-					contactEmail?: string | null;
-					/** @description Group type */
-					type?: string;
-					/** @description Information about group fines policy */
-					finesInfo?: string;
-					/** @description Whether fines are activated for this group */
-					finesActivated?: boolean;
-					/** @description User ID of the fines administrator */
-					finesAdminId?: string | null;
-				};
-			};
-		};
-		responses: {
-			/** @description Group updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateGroupResponse"];
-				};
-			};
-			/** @description Bad Request - Invalid input */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not a group leader or missing groups:update permission */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Group with the specified slug does not exist */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listFines: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of fines retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["FineList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not authorized to view fines for this group */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	createFine: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description User ID who receives the fine */
-					userId: string;
-					/** @description Group slug that issues the fine */
-					groupSlug: string;
-					/** @description Reason for the fine */
-					reason: string;
-					/** @description Fine amount in NOK */
-					amount: number;
-					/** @description User's defense text */
-					defense?: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Fine created successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["Fine"];
-				};
-			};
-			/** @description Bad Request - Invalid input or fines not activated for group */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not authorized to create fines for this group */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Group or user not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getFine: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-				fineId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Fine details retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["Fine"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not authorized to view this fine */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Fine or group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteFine: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-				fineId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Fine successfully deleted */
-			204: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not authorized to delete this fine */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Fine or group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateFine: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-				fineId: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description User's defense text */
-					defense?: string;
-					/**
-					 * @description Fine status
-					 * @enum {string}
-					 */
-					status?: "pending" | "approved" | "paid" | "rejected";
-					/** @description User who approved the fine */
-					approvedByUserId?: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Fine updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateFineResponse"];
-				};
-			};
-			/** @description Bad Request - Invalid status transition */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Not authorized to update this fine */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Fine or group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listGroupMembers: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of members retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["GroupMemberList"];
-				};
-			};
-			/** @description Not Found - Group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	addGroupMember: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description User ID to add as member */
-					userId: string;
-					/**
-					 * @description Membership role
-					 * @default member
-					 * @enum {string}
-					 */
-					role?: "member" | "leader";
-				};
-			};
-		};
-		responses: {
-			/** @description Member added successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["GroupMembership"];
-				};
-			};
-			/** @description Bad Request - User already a member or user not found */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	removeGroupMember: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-				userId: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Member removed successfully */
-			204: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Group, user, or membership not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateGroupMemberRole: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				groupSlug: string;
-				userId: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/**
-					 * @description Membership role
-					 * @enum {string}
-					 */
-					role: "member" | "leader";
-				};
-			};
-		};
-		responses: {
-			/** @description Member role updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateMemberRoleResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Group, user, or membership not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listGroupForms: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				slug: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Success */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["GroupFormList"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - Group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	createGroupForm: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				slug: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title: string;
-					description?: string;
-					/** @default false */
-					template?: boolean;
-					/** @default [] */
-					fields?: {
-						title: string;
-						/** @enum {string} */
-						type: "text_answer" | "multiple_select" | "single_select";
-						/** @default false */
-						required?: boolean;
-						/** @default 0 */
-						order?: number;
-						options?: {
-							title: string;
-							/** @default 0 */
-							order?: number;
-						}[];
-					}[];
-					group: string;
-					/** Format: email */
-					email_receiver_on_submit?: string;
-					/** @default true */
-					can_submit_multiple?: boolean;
-					/** @default false */
-					is_open_for_submissions?: boolean;
-					/** @default false */
-					only_for_group_members?: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description Created */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["CreateGroupFormResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Group not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listNews: {
-		parameters: {
-			query?: {
-				/** @description Number of items to return */
-				pageSize?: number;
-				/** @description Number of items to skip */
-				page?: number;
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NewsList"];
-				};
-			};
-		};
-	};
-	createNews: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description News article title */
-					title: string;
-					/** @description News article subtitle/ingress */
-					header: string;
-					/** @description Main content of the news */
-					body: string;
-					/**
-					 * Format: uri
-					 * @description Optional image URL
-					 */
-					imageUrl?: string;
-					/** @description Alt text for the image */
-					imageAlt?: string;
-					/**
-					 * @description Whether reactions are enabled
-					 * @default false
-					 */
-					emojisAllowed?: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description News article created successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NewsArticle"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getNews: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description News article details */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NewsArticle"];
-				};
-			};
-			/** @description Not Found - News article not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteNews: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description News article deleted successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteNewsResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - News article not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateNews: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title?: string;
-					header?: string;
-					body?: string;
-					imageUrl?: string | null;
-					imageAlt?: string | null;
-					emojisAllowed?: boolean;
-				};
-			};
-		};
-		responses: {
-			/** @description News article updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NewsArticle"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - News article not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	createNewsReaction: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
-					emoji: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Reaction added successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["NewsReaction"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Reactions not allowed on this news article */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - News article not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteNewsReaction: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Reaction removed successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteNewsReactionResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - News article or reaction not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listJobs: {
-		parameters: {
-			query?: {
-				/** @description Number of items to return */
-				pageSize?: number;
-				/** @description Number of items to skip */
-				page?: number;
-				/** @description Search term to filter by title or company name */
-				search?: string;
-				/** @description Include expired job postings (default: false) */
-				expired?: boolean;
-				/** @description Filter by job type */
-				jobType?: "full_time" | "part_time" | "summer_job" | "other";
-				/** @description Filter by year of study (returns jobs targeting that class) */
-				year?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-			};
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description OK */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["JobList"];
-				};
-			};
-		};
-	};
-	createJob: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @description Job posting title */
-					title: string;
-					/**
-					 * @description Short description/summary
-					 * @default
-					 */
-					ingress?: string;
-					/**
-					 * @description Full job description
-					 * @default
-					 */
-					body?: string;
-					/** @description Company name */
-					company: string;
-					/** @description Job location */
-					location: string;
-					/**
-					 * Format: date-time
-					 * @description Application deadline
-					 */
-					deadline?: string;
-					/**
-					 * @description Whether hiring is ongoing
-					 * @default false
-					 */
-					isContinuouslyHiring?: boolean;
-					/**
-					 * @description Type of employment
-					 * @default other
-					 * @enum {string}
-					 */
-					jobType?: "full_time" | "part_time" | "summer_job" | "other";
-					/**
-					 * Format: email
-					 * @description Contact email
-					 */
-					email?: string;
-					/**
-					 * Format: uri
-					 * @description Application or company URL
-					 */
-					link?: string;
-					/**
-					 * @description Target class start
-					 * @default first
-					 * @enum {string}
-					 */
-					classStart?:
-						| "first"
-						| "second"
-						| "third"
-						| "fourth"
-						| "fifth"
-						| "alumni";
-					/**
-					 * @description Target class end
-					 * @default fifth
-					 * @enum {string}
-					 */
-					classEnd?:
-						| "first"
-						| "second"
-						| "third"
-						| "fourth"
-						| "fifth"
-						| "alumni";
-					/**
-					 * Format: uri
-					 * @description Company logo
-					 */
-					imageUrl?: string;
-					/** @description Logo alt text */
-					imageAlt?: string;
-				};
-			};
-		};
-		responses: {
-			/** @description Job posting created successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["JobDetail"];
-				};
-			};
-			/** @description Bad Request - Invalid input */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	getJob: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Job posting details */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["JobDetail"];
-				};
-			};
-			/** @description Not Found - Job posting not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	deleteJob: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Job posting deleted successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["DeleteJobResponse"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Job posting not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	updateJob: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				id: string;
-			};
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					title?: string;
-					ingress?: string;
-					body?: string;
-					company?: string;
-					location?: string;
-					deadline?: string | null;
-					isContinuouslyHiring?: boolean;
-					/** @enum {string} */
-					jobType?: "full_time" | "part_time" | "summer_job" | "other";
-					email?: string | null;
-					link?: string | null;
-					/** @enum {string} */
-					classStart?:
-						| "first"
-						| "second"
-						| "third"
-						| "fourth"
-						| "fifth"
-						| "alumni";
-					/** @enum {string} */
-					classEnd?:
-						| "first"
-						| "second"
-						| "third"
-						| "fourth"
-						| "fifth"
-						| "alumni";
-					imageUrl?: string | null;
-					imageAlt?: string | null;
-				};
-			};
-		};
-		responses: {
-			/** @description Job posting updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["JobDetail"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Forbidden - Insufficient permissions */
-			403: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Not Found - Job posting not found */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	getUserSettings: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description User settings retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UserSettings"];
-				};
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - User settings do not exist (user needs to complete onboarding) */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	onboardUser: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @enum {string} */
-					gender: "male" | "female" | "other";
-					allowsPhotosByDefault: boolean;
-					acceptsEventRules: boolean;
-					/** Format: uri */
-					imageUrl?: string;
-					bioDescription?: string;
-					/** Format: uri */
-					githubUrl?: string;
-					/** Format: uri */
-					linkedinUrl?: string;
-					receiveMailCommunication: boolean;
-					/** @default [] */
-					allergies?: string[];
-				};
-			};
-		};
-		responses: {
-			/** @description User onboarded successfully */
-			201: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UserSettingsBase"];
-				};
-			};
-			/** @description Bad Request - User has already completed onboarding */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-		};
-	};
-	updateUserSettings: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody: {
-			content: {
-				"application/json": {
-					/** @enum {string} */
-					gender?: "male" | "female" | "other";
-					allowsPhotosByDefault?: boolean;
-					acceptsEventRules?: boolean;
-					/** Format: uri */
-					imageUrl?: string;
-					bioDescription?: string;
-					/** Format: uri */
-					githubUrl?: string;
-					/** Format: uri */
-					linkedinUrl?: string;
-					receiveMailCommunication?: boolean;
-					/** @default [] */
-					allergies?: string[];
-				};
-			};
-		};
-		responses: {
-			/** @description Settings updated successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["UpdateUserSettings"];
-				};
-			};
-			/** @description Bad Request - Invalid input */
-			400: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-			/** @description Authentication required */
-			401: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["HTTPAppException"];
-				};
-			};
-			/** @description Not Found - User settings do not exist (user needs to complete onboarding first) */
-			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content?: never;
-			};
-		};
-	};
-	listAllergies: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description List of allergies retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					"application/json": components["schemas"]["AllergyList"];
-				};
-			};
-		};
-	};
+    listApiKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of API keys */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApiKey"];
+            };
+        };
+        responses: {
+            /** @description API key created successfully. The 'key' field contains the full API key and will not be shown again. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApiKeyResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description API key ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API key details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKey"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - API key not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description API key ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API key deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteApiKeyResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - API key not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description API key ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateApiKey"];
+            };
+        };
+        responses: {
+            /** @description API key updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKey"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - API key not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    regenerateApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description API key ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description API key regenerated successfully. The 'key' field contains the new API key and will not be shown again. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApiKeyResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - API key not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    validateApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateApiKeyInput"];
+            };
+        };
+        responses: {
+            /** @description Validation result. If valid=true, includes the API key details and permissions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidateApiKeyResponse"];
+                };
+            };
+        };
+    };
+    uploadAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File uploaded successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid file type or size exceeded */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getAssetMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset metadata */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetMetadata"];
+                };
+            };
+            /** @description Not Found - Asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    downloadAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File content with appropriate Content-Type header */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sendCustomEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Recipient email address (string) or list of recipient email addresses (array) */
+                    to: string | string[];
+                    /** @description Email subject line */
+                    subject: string;
+                    /** @description Array of content blocks (title, text, or button) to render in the email */
+                    content: ({
+                        /**
+                         * @description Content block type
+                         * @constant
+                         */
+                        type: "title";
+                        /** @description The title text to display */
+                        content: string;
+                    } | {
+                        /**
+                         * @description Content block type
+                         * @constant
+                         */
+                        type: "text";
+                        /** @description The paragraph text to display */
+                        content: string;
+                    } | {
+                        /**
+                         * @description Content block type
+                         * @constant
+                         */
+                        type: "button";
+                        /** @description The button label text */
+                        text: string;
+                        /**
+                         * Format: uri
+                         * @description The URL the button links to
+                         */
+                        url: string;
+                    })[];
+                };
+            };
+        };
+        responses: {
+            /** @description Email queued successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendEmailResponse"];
+                };
+            };
+            /** @description Unauthorized - Missing or invalid Authorization header */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Invalid API key */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Email API not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listEvents: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Search term to filter events by title */
+                search?: string;
+                /** @description Whether to include expired events or not */
+                expired?: boolean;
+                /** @description Whether to include only events with open sign-ups */
+                openSignUp?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventList"];
+                };
+            };
+        };
+    };
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Short title of the event */
+                    title: string;
+                    /** @description Description of the event */
+                    description: string;
+                    /** @description Category slug for the event */
+                    categorySlug: string;
+                    /** @description Slug of the group organizing the event */
+                    organizerGroupSlug: string;
+                    /** @description Location of the event (physical or online) */
+                    location: string;
+                    /** @description Main image to display for the event */
+                    imageUrl: string | null;
+                    /**
+                     * Format: date-time
+                     * @description When the event starts
+                     */
+                    start: string;
+                    /**
+                     * Format: date-time
+                     * @description When the event ends
+                     */
+                    end: string;
+                    /** @description Timestamp for when registrations open. If null, open immediately. */
+                    registrationStart: string | null;
+                    /**
+                     * Format: date-time
+                     * @description When the registration for the event ends. After this time, users cannot sign up.
+                     */
+                    registrationEnd: string;
+                    /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
+                    cancellationDeadline: string | null;
+                    /** @description Maximum number of participants allowed. If null, no capacity limit. */
+                    capacity: number | null;
+                    /** @description Is the event closed for new registrations? This overrides registrationStart/End */
+                    isRegistrationClosed: boolean;
+                    /** @description Do users need to sign up to attend the event? */
+                    requiresSigningUp: boolean;
+                    /** @description Should users be allowed to join a waitlist if the event is full? */
+                    allowWaitlist: boolean;
+                    /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+                    priorityPools: {
+                        /** @description Group slugs in this pool */
+                        groups: string[];
+                    }[] | null;
+                    /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+                    onlyAllowPrioritized: boolean;
+                    /** @description Can this event give strike penalties to users? */
+                    canCauseStrikes: boolean;
+                    /** @description Should the system enforce strike rules for this event? */
+                    enforcesPreviousStrikes: boolean;
+                    /** @description Is this a paid event? */
+                    isPaidEvent: boolean;
+                    /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
+                    price: number | null;
+                    /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
+                    paymentGracePeriodMinutes: number | null;
+                    /** @description User ID of the primary contact person for the event */
+                    contactPersonUserId: string | null;
+                    /** @description Should users be able to react to this event with emojis? */
+                    reactionsAllowed: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateEventResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Missing events:create permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Short title of the event */
+                    title?: string;
+                    /** @description Description of the event */
+                    description?: string;
+                    /** @description Category slug for the event */
+                    categorySlug?: string;
+                    /** @description Slug of the group organizing the event */
+                    organizerGroupSlug?: string;
+                    /** @description Location of the event (physical or online) */
+                    location?: string;
+                    /** @description Main image to display for the event */
+                    imageUrl?: string | null;
+                    /**
+                     * Format: date-time
+                     * @description When the event starts
+                     */
+                    start?: string;
+                    /**
+                     * Format: date-time
+                     * @description When the event ends
+                     */
+                    end?: string;
+                    /** @description Timestamp for when registrations open. If null, open immediately. */
+                    registrationStart?: string | null;
+                    /**
+                     * Format: date-time
+                     * @description When the registration for the event ends. After this time, users cannot sign up.
+                     */
+                    registrationEnd?: string;
+                    /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
+                    cancellationDeadline?: string | null;
+                    /** @description Maximum number of participants allowed. If null, no capacity limit. */
+                    capacity?: number | null;
+                    /** @description Is the event closed for new registrations? This overrides registrationStart/End */
+                    isRegistrationClosed?: boolean;
+                    /** @description Do users need to sign up to attend the event? */
+                    requiresSigningUp?: boolean;
+                    /** @description Should users be allowed to join a waitlist if the event is full? */
+                    allowWaitlist?: boolean;
+                    /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+                    priorityPools?: {
+                        /** @description Group slugs in this pool */
+                        groups: string[];
+                    }[] | null;
+                    /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+                    onlyAllowPrioritized?: boolean;
+                    /** @description Can this event give strike penalties to users? */
+                    canCauseStrikes?: boolean;
+                    /** @description Should the system enforce strike rules for this event? */
+                    enforcesPreviousStrikes?: boolean;
+                    /** @description Is this a paid event? */
+                    isPaidEvent?: boolean;
+                    /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
+                    price?: number | null;
+                    /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
+                    paymentGracePeriodMinutes?: number | null;
+                    /** @description User ID of the primary contact person for the event */
+                    contactPersonUserId?: string | null;
+                    /** @description Should users be able to react to this event with emojis? */
+                    reactionsAllowed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - You must be the event creator or have events:update/events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The event was found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+        };
+    };
+    deleteEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event successfully deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteEventResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - You must be the event creator or have events:delete permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Event with the specified ID does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateEventFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Is favorite */
+                    isFavorite: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateFavoriteResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFavoriteEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of favorite events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteEvents"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listEventRegistrations: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventRegistrationList"];
+                };
+            };
+        };
+    };
+    createEventRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventRegistration"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Event is not open for registration or user already registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteEventRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createEventPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uri
+                     * @description URL to redirect user after payment
+                     */
+                    returnUrl: string;
+                    /**
+                     * @description User flow type for payment
+                     * @default WEB_REDIRECT
+                     * @enum {string}
+                     */
+                    userFlow?: "WEB_REDIRECT" | "NATIVE_REDIRECT";
+                };
+            };
+        };
+        responses: {
+            /** @description Payment created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePaymentResponse"];
+                };
+            };
+            /** @description Bad Request - event not found or not a paid event */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event or registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment already exists for this user and event */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    handlePaymentWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook processed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - Invalid webhook payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Payment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listEventForms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventFormList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createEventForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    /** @default false */
+                    template?: boolean;
+                    /** @default [] */
+                    fields?: {
+                        title: string;
+                        /** @enum {string} */
+                        type: "text_answer" | "multiple_select" | "single_select";
+                        /** @default false */
+                        required?: boolean;
+                        /** @default 0 */
+                        order?: number;
+                        options?: {
+                            title: string;
+                            /** @default 0 */
+                            order?: number;
+                        }[];
+                    }[];
+                    /** Format: uuid */
+                    event: string;
+                    /** @enum {string} */
+                    type: "survey" | "evaluation";
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateEventFormResponse"];
+                };
+            };
+            /** @description Bad Request - Form already exists for this event type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Cant create form for specified event */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getEventForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                type: "survey" | "evaluation";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventFormDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Evaluation forms require attendance */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listForms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    /** @default false */
+                    template?: boolean;
+                    /** @default [] */
+                    fields?: {
+                        title: string;
+                        /** @enum {string} */
+                        type: "text_answer" | "multiple_select" | "single_select";
+                        /** @default false */
+                        required?: boolean;
+                        /** @default 0 */
+                        order?: number;
+                        options?: {
+                            title: string;
+                            /** @default 0 */
+                            order?: number;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteFormResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    description?: string;
+                    template?: boolean;
+                    fields?: {
+                        /** Format: uuid */
+                        id?: string;
+                        title: string;
+                        /** @enum {string} */
+                        type: "text_answer" | "multiple_select" | "single_select";
+                        /** @default false */
+                        required?: boolean;
+                        /** @default 0 */
+                        order?: number;
+                        options?: {
+                            /** Format: uuid */
+                            id?: string;
+                            title: string;
+                            /** @default 0 */
+                            order?: number;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateFormResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFormStatistics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormStatistics"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createFormSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: {
+                        field: {
+                            /** Format: uuid */
+                            id: string;
+                        };
+                        answer_text?: string;
+                        selected_options?: {
+                            /** Format: uuid */
+                            id: string;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSubmissionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Cannot submit to this form */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - Duplicate submission not allowed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFormSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Submission not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    downloadFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success - Returns CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteFormSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteSubmissionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Submission not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    deleteNotification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notification deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteNotificationResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Notification not found or not owned by user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    markNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Whether notification should be marked as read */
+                    isRead: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Notification updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkReadResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Notification not found or not owned by user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of groups retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupList"];
+                };
+            };
+        };
+    };
+    createGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Unique group slug identifier */
+                    slug: string;
+                    /**
+                     * Format: uri
+                     * @description Group image URL
+                     */
+                    imageUrl?: string;
+                    /** @description Group name */
+                    name: string;
+                    /** @description Group description */
+                    description?: string;
+                    /**
+                     * Format: email
+                     * @description Group contact email
+                     */
+                    contactEmail?: string;
+                    /** @description Group type (e.g., committee, study, interestgroup) */
+                    type: string;
+                    /**
+                     * @description Information about group fines policy
+                     * @default
+                     */
+                    finesInfo?: string;
+                    /**
+                     * @description Whether fines are activated for this group
+                     * @default false
+                     */
+                    finesActivated?: boolean;
+                    /** @description User ID of the fines administrator */
+                    finesAdminId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Group created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Bad Request - Invalid input or slug already exists */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listMyGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of groups the user is a member of */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGroupList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group details retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Group successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not a group leader or missing groups:delete permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uri
+                     * @description Group image URL
+                     */
+                    imageUrl?: string;
+                    /** @description Group name */
+                    name?: string;
+                    /** @description Group description */
+                    description?: string | null;
+                    /** @description Group contact email */
+                    contactEmail?: string | null;
+                    /** @description Group type */
+                    type?: string;
+                    /** @description Information about group fines policy */
+                    finesInfo?: string;
+                    /** @description Whether fines are activated for this group */
+                    finesActivated?: boolean;
+                    /** @description User ID of the fines administrator */
+                    finesAdminId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Group updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateGroupResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not a group leader or missing groups:update permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group with the specified slug does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of fines retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FineList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to view fines for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createFine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description User ID who receives the fine */
+                    userId: string;
+                    /** @description Group slug that issues the fine */
+                    groupSlug: string;
+                    /** @description Reason for the fine */
+                    reason: string;
+                    /** @description Fine amount in NOK */
+                    amount: number;
+                    /** @description User's defense text */
+                    defense?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Fine created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fine"];
+                };
+            };
+            /** @description Bad Request - Invalid input or fines not activated for group */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to create fines for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group or user not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                fineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fine details retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Fine"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to view this fine */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Fine or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteFine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                fineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fine successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to delete this fine */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Fine or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateFine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                fineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description User's defense text */
+                    defense?: string;
+                    /**
+                     * @description Fine status
+                     * @enum {string}
+                     */
+                    status?: "pending" | "approved" | "paid" | "rejected";
+                    /** @description User who approved the fine */
+                    approvedByUserId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Fine updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateFineResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid status transition */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to update this fine */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Fine or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroupMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of members retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMemberList"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    addGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description User ID to add as member */
+                    userId: string;
+                    /**
+                     * @description Membership role
+                     * @default member
+                     * @enum {string}
+                     */
+                    role?: "member" | "leader";
+                };
+            };
+        };
+        responses: {
+            /** @description Member added successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMembership"];
+                };
+            };
+            /** @description Bad Request - User already a member or user not found */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removeGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member removed successfully */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group, user, or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGroupMemberRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Membership role
+                     * @enum {string}
+                     */
+                    role: "member" | "leader";
+                };
+            };
+        };
+        responses: {
+            /** @description Member role updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateMemberRoleResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group, user, or membership not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroupForms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupFormList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createGroupForm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title: string;
+                    description?: string;
+                    /** @default false */
+                    template?: boolean;
+                    /** @default [] */
+                    fields?: {
+                        title: string;
+                        /** @enum {string} */
+                        type: "text_answer" | "multiple_select" | "single_select";
+                        /** @default false */
+                        required?: boolean;
+                        /** @default 0 */
+                        order?: number;
+                        options?: {
+                            title: string;
+                            /** @default 0 */
+                            order?: number;
+                        }[];
+                    }[];
+                    group: string;
+                    /** Format: email */
+                    email_receiver_on_submit?: string;
+                    /** @default true */
+                    can_submit_multiple?: boolean;
+                    /** @default false */
+                    is_open_for_submissions?: boolean;
+                    /** @default false */
+                    only_for_group_members?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateGroupFormResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listNews: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsList"];
+                };
+            };
+        };
+    };
+    createNews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description News article title */
+                    title: string;
+                    /** @description News article subtitle/ingress */
+                    header: string;
+                    /** @description Main content of the news */
+                    body: string;
+                    /**
+                     * Format: uri
+                     * @description Optional image URL
+                     */
+                    imageUrl?: string;
+                    /** @description Alt text for the image */
+                    imageAlt?: string;
+                    /**
+                     * @description Whether reactions are enabled
+                     * @default false
+                     */
+                    emojisAllowed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description News article created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsArticle"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getNews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description News article details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsArticle"];
+                };
+            };
+            /** @description Not Found - News article not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteNews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description News article deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteNewsResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - News article not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateNews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    header?: string;
+                    body?: string;
+                    imageUrl?: string | null;
+                    imageAlt?: string | null;
+                    emojisAllowed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description News article updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsArticle"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - News article not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createNewsReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
+                    emoji: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Reaction added successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsReaction"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Reactions not allowed on this news article */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - News article not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteNewsReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction removed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteNewsReactionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - News article or reaction not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listJobs: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Search term to filter by title or company name */
+                search?: string;
+                /** @description Include expired job postings (default: false) */
+                expired?: boolean;
+                /** @description Filter by job type */
+                jobType?: "full_time" | "part_time" | "summer_job" | "other";
+                /** @description Filter by year of study (returns jobs targeting that class) */
+                year?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobList"];
+                };
+            };
+        };
+    };
+    createJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Job posting title */
+                    title: string;
+                    /**
+                     * @description Short description/summary
+                     * @default
+                     */
+                    ingress?: string;
+                    /**
+                     * @description Full job description
+                     * @default
+                     */
+                    body?: string;
+                    /** @description Company name */
+                    company: string;
+                    /** @description Job location */
+                    location: string;
+                    /**
+                     * Format: date-time
+                     * @description Application deadline
+                     */
+                    deadline?: string;
+                    /**
+                     * @description Whether hiring is ongoing
+                     * @default false
+                     */
+                    isContinuouslyHiring?: boolean;
+                    /**
+                     * @description Type of employment
+                     * @default other
+                     * @enum {string}
+                     */
+                    jobType?: "full_time" | "part_time" | "summer_job" | "other";
+                    /**
+                     * Format: email
+                     * @description Contact email
+                     */
+                    email?: string;
+                    /**
+                     * Format: uri
+                     * @description Application or company URL
+                     */
+                    link?: string;
+                    /**
+                     * @description Target class start
+                     * @default first
+                     * @enum {string}
+                     */
+                    classStart?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+                    /**
+                     * @description Target class end
+                     * @default fifth
+                     * @enum {string}
+                     */
+                    classEnd?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+                    /**
+                     * Format: uri
+                     * @description Company logo
+                     */
+                    imageUrl?: string;
+                    /** @description Logo alt text */
+                    imageAlt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Job posting created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDetail"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job posting details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDetail"];
+                };
+            };
+            /** @description Not Found - Job posting not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job posting deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteJobResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Job posting not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    title?: string;
+                    ingress?: string;
+                    body?: string;
+                    company?: string;
+                    location?: string;
+                    deadline?: string | null;
+                    isContinuouslyHiring?: boolean;
+                    /** @enum {string} */
+                    jobType?: "full_time" | "part_time" | "summer_job" | "other";
+                    email?: string | null;
+                    link?: string | null;
+                    /** @enum {string} */
+                    classStart?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+                    /** @enum {string} */
+                    classEnd?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+                    imageUrl?: string | null;
+                    imageAlt?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Job posting updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Job posting not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User settings retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSettings"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User settings do not exist (user needs to complete onboarding) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    onboardUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    gender: "male" | "female" | "other";
+                    allowsPhotosByDefault: boolean;
+                    acceptsEventRules: boolean;
+                    /** Format: uri */
+                    imageUrl?: string;
+                    bioDescription?: string;
+                    /** Format: uri */
+                    githubUrl?: string;
+                    /** Format: uri */
+                    linkedinUrl?: string;
+                    receiveMailCommunication: boolean;
+                    /** @default [] */
+                    allergies?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description User onboarded successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSettingsBase"];
+                };
+            };
+            /** @description Bad Request - User has already completed onboarding */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    updateUserSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    gender?: "male" | "female" | "other";
+                    allowsPhotosByDefault?: boolean;
+                    acceptsEventRules?: boolean;
+                    /** Format: uri */
+                    imageUrl?: string;
+                    bioDescription?: string;
+                    /** Format: uri */
+                    githubUrl?: string;
+                    /** Format: uri */
+                    linkedinUrl?: string;
+                    receiveMailCommunication?: boolean;
+                    /** @default [] */
+                    allergies?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Settings updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateUserSettings"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User settings do not exist (user needs to complete onboarding first) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listAllergies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of allergies retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AllergyList"];
+                };
+            };
+        };
+    };
 }
