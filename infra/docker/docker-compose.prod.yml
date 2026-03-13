@@ -1,20 +1,20 @@
 name: production
 
 services:
-  photon.tihlde.org:
-    container_name: photon.tihlde.org
-    build:
-      context: ../..
-      dockerfile: infra/docker/Dockerfile
-    restart: unless-stopped
-    ports:
-      - "${BINDING_IP_ADDRESS:-127.0.0.1}:4000:4000"
-    env_file:
-      - "../../.env"
-    depends_on:
-      - photon.tihlde.org-redis
-  photon.tihlde.org-redis:
-    container_name: photon.tihlde.org-redis
-    image: redis:alpine
-    pull_policy: always
-    restart: unless-stopped
+    photon.tihlde.org:
+        container_name: photon.tihlde.org
+        build:
+            context: ../..
+            dockerfile: infra/docker/Dockerfile
+        restart: unless-stopped
+        ports:
+            - "${BINDING_IP_ADDRESS:-127.0.0.1}:4000:4000"
+        env_file:
+            - "../../.env"
+        depends_on:
+            - photon.tihlde.org-redis
+    photon.tihlde.org-redis:
+        container_name: photon.tihlde.org-redis
+        image: redis:alpine
+        pull_policy: always
+        restart: unless-stopped

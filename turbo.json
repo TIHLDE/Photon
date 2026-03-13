@@ -7,6 +7,10 @@
             "dependsOn": ["@photon/docker#dev:up", "@photon/db#db:push"],
             "persistent": true
         },
+        "@photon/web#dev": {
+            "dependsOn": [],
+            "persistent": true
+        },
         "dev:up": { "cache": false },
         "dev:down": { "cache": false },
         "dev:fresh": { "cache": false },
@@ -19,8 +23,21 @@
             "persistent": true
         },
         "typecheck": { "dependsOn": ["^typecheck"] },
-        "lint": {},
-        "lint:fix": {},
+        "//#quality": {
+            "dependsOn": ["//#lint", "//#format"]
+        },
+        "//#quality:fix": {
+            "dependsOn": ["//#lint:fix", "//#format:fix"]
+        },
+        "//#lint": {},
+        "//#lint:fix": {
+            "cache": false
+        },
+        "//#format": {},
+        "//#format:fix": {
+            "dependsOn": ["//#lint:fix"],
+            "cache": false
+        },
         "test": { "cache": false },
         "db:push": {
             "dependsOn": ["@photon/docker#dev:up"],

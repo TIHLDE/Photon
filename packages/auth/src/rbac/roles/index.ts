@@ -33,9 +33,4 @@ export { getUserHighestRolePosition, userCanManageUser } from "./hierarchy";
 export { assignRolePermissions, setRolePermissions } from "./role-permissions";
 
 // Role CRUD
-export {
-    createRole,
-    createTestingRole,
-    deleteRole,
-    reorderRole,
-} from "./crud";
+export { createRole, createTestingRole, deleteRole, reorderRole } from "./crud";

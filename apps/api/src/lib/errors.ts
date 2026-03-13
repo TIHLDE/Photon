@@ -45,7 +45,10 @@ export class HTTPAppException extends HTTPException {
         super(status as ContentfulStatusCode, {
             res: new Response(
                 JSON.stringify(httpAppExceptionSchema.parse(data)),
-                { status, headers: { "Content-Type": "application/json" } },
+                {
+                    status,
+                    headers: { "Content-Type": "application/json" },
+                },
             ),
         });
 

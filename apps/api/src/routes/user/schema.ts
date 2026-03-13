@@ -41,6 +41,16 @@ export const userSettingsSchema = Schema(
     UserSettingsSchema,
 );
 
+export const onboardUserInputSchema = Schema(
+    "OnboardUserInput",
+    UserSettingsSchema,
+);
+
+export const updateUserSettingsInputSchema = Schema(
+    "UpdateUserSettingsInput",
+    UpdateUserSettingsSchema,
+);
+
 export const updateUserSettingsResponseSchema = Schema(
     "UpdateUserSettings",
     UpdateUserSettingsSchema,

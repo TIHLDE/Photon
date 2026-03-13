@@ -1,0 +1,40 @@
+import { execFileSync } from "node:child_process";
+import { resolve } from "node:path";
+import { defineConfig } from "tsdown";
+
+export default defineConfig({
+    entry: ["src/index.ts", "src/types.ts", "src/auth.ts"],
+    outDir: "dist",
+    dts: {
+        enabled: true,
+    },
+    exports: {
+        all: true,
+        devExports: true,
+    },
+    plugins: [
+        {
+            name: "codegen-plugin",
+            buildStart() {
+                execFileSync(
+                    "bun",
+                    [
+                        "--bun",
+                        "run",
+                        resolve("scripts/generate-session-types.ts"),
+                    ],
+                    {
+                        stdio: "inherit",
+                    },
+                );
+                execFileSync(
+                    "bun",
+                    ["--bun", "run", resolve("scripts/generate-openapi.ts")],
+                    {
+                        stdio: "inherit",
+                    },
+                );
+            },
+        },
+    ],
+});

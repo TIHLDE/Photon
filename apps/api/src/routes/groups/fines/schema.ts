@@ -3,35 +3,47 @@ import { Schema } from "~/lib/openapi";
 
 // ===== INPUT SCHEMAS =====
 
-export const createFineSchema = z.object({
-    userId: z
-        .string()
-        .max(255)
-        .meta({ description: "User ID who receives the fine" }),
-    groupSlug: z
-        .string()
-        .max(128)
-        .meta({ description: "Group slug that issues the fine" }),
-    reason: z.string().min(1).meta({ description: "Reason for the fine" }),
-    amount: z
-        .number()
-        .int()
-        .positive()
-        .meta({ description: "Fine amount in NOK" }),
-    defense: z.string().optional().meta({ description: "User's defense text" }),
-});
+export const createFineSchema = Schema(
+    "CreateFine",
+    z.object({
+        userId: z
+            .string()
+            .max(255)
+            .meta({ description: "User ID who receives the fine" }),
+        groupSlug: z
+            .string()
+            .max(128)
+            .meta({ description: "Group slug that issues the fine" }),
+        reason: z.string().min(1).meta({ description: "Reason for the fine" }),
+        amount: z
+            .number()
+            .int()
+            .positive()
+            .meta({ description: "Fine amount in NOK" }),
+        defense: z
+            .string()
+            .optional()
+            .meta({ description: "User's defense text" }),
+    }),
+);
 
-export const updateFineSchema = z.object({
-    defense: z.string().optional().meta({ description: "User's defense text" }),
-    status: z
-        .enum(["pending", "approved", "paid", "rejected"])
-        .optional()
-        .meta({ description: "Fine status" }),
-    approvedByUserId: z
-        .string()
-        .optional()
-        .meta({ description: "User who approved the fine" }),
-});
+export const updateFineSchema = Schema(
+    "UpdateFine",
+    z.object({
+        defense: z
+            .string()
+            .optional()
+            .meta({ description: "User's defense text" }),
+        status: z
+            .enum(["pending", "approved", "paid", "rejected"])
+            .optional()
+            .meta({ description: "Fine status" }),
+        approvedByUserId: z
+            .string()
+            .optional()
+            .meta({ description: "User who approved the fine" }),
+    }),
+);
 
 // ===== RESPONSE SCHEMAS =====
 

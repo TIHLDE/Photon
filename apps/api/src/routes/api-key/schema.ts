@@ -7,54 +7,56 @@ export const idParamSchema = z.object({
     id: z.uuid().meta({ description: "API key ID" }),
 });
 
-export const createApiKeySchema = z.object({
-    name: z
-        .string()
-        .min(1)
-        .max(100)
-        .meta({ description: "Name for the API key" }),
-    description: z
-        .string()
-        .min(1)
-        .max(500)
-        .meta({ description: "Detailed description of the API key's purpose" }),
-    permissions: z.array(z.string()).min(1).meta({
-        description:
-            "Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions.",
+export const createApiKeySchema = Schema(
+    "CreateApiKey",
+    z.object({
+        name: z
+            .string()
+            .min(1)
+            .max(100)
+            .meta({ description: "Name for the API key" }),
+        description: z.string().min(1).max(500).meta({
+            description: "Detailed description of the API key's purpose",
+        }),
+        permissions: z.array(z.string()).min(1).meta({
+            description:
+                "Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions.",
+        }),
+        metadata: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .meta({ description: "Optional metadata as key-value pairs" }),
     }),
-    metadata: z
-        .record(z.string(), z.unknown())
-        .optional()
-        .meta({ description: "Optional metadata as key-value pairs" }),
-});
+);
 
-export const updateApiKeySchema = z.object({
-    name: z
-        .string()
-        .min(1)
-        .max(100)
-        .optional()
-        .meta({ description: "Name for the API key" }),
-    description: z
-        .string()
-        .min(1)
-        .max(500)
-        .optional()
-        .meta({ description: "Detailed description of the API key's purpose" }),
-    permissions: z
-        .array(z.string())
-        .min(1)
-        .optional()
-        .meta({ description: "Array of permissions granted to this API key" }),
-    metadata: z
-        .record(z.string(), z.unknown())
-        .optional()
-        .meta({ description: "Optional metadata as key-value pairs" }),
-});
+export const updateApiKeySchema = Schema(
+    "UpdateApiKey",
+    z.object({
+        name: z
+            .string()
+            .min(1)
+            .max(100)
+            .optional()
+            .meta({ description: "Name for the API key" }),
+        description: z.string().min(1).max(500).optional().meta({
+            description: "Detailed description of the API key's purpose",
+        }),
+        permissions: z.array(z.string()).min(1).optional().meta({
+            description: "Array of permissions granted to this API key",
+        }),
+        metadata: z
+            .record(z.string(), z.unknown())
+            .optional()
+            .meta({ description: "Optional metadata as key-value pairs" }),
+    }),
+);
 
-export const validateApiKeyInputSchema = z.object({
-    key: z.string().min(1).meta({ description: "The API key to validate" }),
-});
+export const validateApiKeyInputSchema = Schema(
+    "ValidateApiKeyInput",
+    z.object({
+        key: z.string().min(1).meta({ description: "The API key to validate" }),
+    }),
+);
 
 // ===== RESPONSE SCHEMAS =====
 
