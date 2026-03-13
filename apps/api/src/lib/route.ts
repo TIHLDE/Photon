@@ -3,9 +3,9 @@ import type { LoggerType } from "~/middleware/logger";
 import type { AppContext, AppServices } from "./ctx";
 
 type Variables = {
-    ctx: AppContext;
-    service: AppServices;
-    logger: LoggerType;
+  ctx: AppContext;
+  service: AppServices;
+  logger: LoggerType;
 };
 
 /**
@@ -15,5 +15,5 @@ type Variables = {
  * Use `c.get("ctx")` to access them
  */
 export const route = () => {
-    return new Hono<{ Variables: Variables }>();
+  return new Hono<{ Variables: Variables }>();
 };

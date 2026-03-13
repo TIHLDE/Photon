@@ -1,20 +1,15 @@
 {
-    "editor.tabSize": 4,
-    "editor.insertSpaces": true,
-    "editor.detectIndentation": true,
-    "editor.formatOnSave": true,
-    "prettier.enable": false,
-    "files.eol": "\n",
-    "[javascript]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
-    "[json]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    },
-    "[css]": {
-        "editor.defaultFormatter": "biomejs.biome"
-    }
+  "prettier.enable": false,
+  "eslint.enable": false,
+  "biome.enabled": "false",
+
+  "oxc.enable": true,
+
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "[typescript][typescriptreact][json][jsonc][css]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode",
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit",
+  },
 }

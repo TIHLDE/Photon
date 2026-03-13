@@ -8,10 +8,10 @@ import { deleteReactionRoute } from "./reactions/delete";
 import { updateRoute } from "./update";
 
 export const newsRoutes = route()
-    .route("/", createRoute)
-    .route("/", listRoute)
-    .route("/", getRoute)
-    .route("/", updateRoute)
-    .route("/", deleteRoute)
-    .route("/", createReactionRoute)
-    .route("/", deleteReactionRoute);
+  .route("/", createRoute)
+  .route("/", listRoute)
+  .route("/", getRoute)
+  .route("/", updateRoute)
+  .route("/", deleteRoute)
+  .route("/", createReactionRoute)
+  .route("/", deleteReactionRoute);

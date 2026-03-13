@@ -4,8 +4,4 @@ import { listMembersRoute } from "./list";
 import { removeMemberRoute } from "./remove";
 import { updateMemberRoleRoute } from "./update";
 
-export const membersRoutes = route()
-    .route("/", listMembersRoute)
-    .route("/", addMemberRoute)
-    .route("/", updateMemberRoleRoute)
-    .route("/", removeMemberRoute);
+export const membersRoutes = route().route("/", listMembersRoute).route("/", addMemberRoute).route("/", updateMemberRoleRoute).route("/", removeMemberRoute);

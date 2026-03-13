@@ -7,145 +7,136 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
-import {
-    createPaymentBodySchema,
-    createPaymentResponseSchema,
-} from "../schema";
+import { createPaymentBodySchema, createPaymentResponseSchema } from "../schema";
 
 export const createPaymentRoute = route().post(
-    "/:eventId/payment",
-    describeRoute({
-        tags: ["events", "payments"],
-        summary: "Create payment for event",
-        operationId: "createEventPayment",
-        description:
-            "Initiates a Vipps payment for an event registration. User must have a registered status for the event.",
+  "/:eventId/payment",
+  describeRoute({
+    tags: ["events", "payments"],
+    summary: "Create payment for event",
+    operationId: "createEventPayment",
+    description: "Initiates a Vipps payment for an event registration. User must have a registered status for the event.",
+  })
+    .schemaResponse({
+      statusCode: 201,
+      schema: createPaymentResponseSchema,
+      description: "Payment created successfully",
     })
-        .schemaResponse({
-            statusCode: 201,
-            schema: createPaymentResponseSchema,
-            description: "Payment created successfully",
-        })
-        .badRequest({ description: "event not found or not a paid event" })
-        .notFound({ description: "Event or registration not found" })
-        .response({
-            statusCode: 409,
-            description: "Payment already exists for this user and event",
-        })
-        .build(),
-    requireAuth,
-    validator("json", createPaymentBodySchema),
-    async (c) => {
-        const eventId = c.req.param("eventId");
-        const userId = c.get("user").id;
-        const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+    .badRequest({ description: "event not found or not a paid event" })
+    .notFound({ description: "Event or registration not found" })
+    .response({
+      statusCode: 409,
+      description: "Payment already exists for this user and event",
+    })
+    .build(),
+  requireAuth,
+  validator("json", createPaymentBodySchema),
+  async (c) => {
+    const eventId = c.req.param("eventId");
+    const userId = c.get("user").id;
+    const body = c.req.valid("json");
+    const { db } = c.get("ctx");
 
-        // Get event details
-        const event = await db.query.event.findFirst({
-            where: (event, { eq }) => eq(event.id, eventId),
+    // Get event details
+    const event = await db.query.event.findFirst({
+      where: (event, { eq }) => eq(event.id, eventId),
+    });
+
+    if (!event) {
+      throw new HTTPException(404, { message: "Event not found" });
+    }
+
+    if (!event.isPaidEvent || !event.priceMinor) {
+      throw new HTTPException(400, {
+        message: "This event does not require payment",
+      });
+    }
+
+    // Check that user has a registration with "registered" status
+    const registration = await db.query.eventRegistration.findFirst({
+      where: (reg, { eq, and }) => and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+    });
+
+    if (!registration) {
+      throw new HTTPException(404, {
+        message: "You must register for the event before paying",
+      });
+    }
+
+    if (registration.status !== "registered") {
+      throw new HTTPException(400, {
+        message: `Cannot create payment. Registration status is: ${registration.status}`,
+      });
+    }
+
+    // Check for existing pending payment
+    const existingPayments = await db.query.eventPayment.findMany({
+      where: (payment, { eq, and }) => and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
+    });
+
+    // Check if there is already a pending payment
+    if (existingPayments.some((p) => p.status === "pending")) {
+      throw new HTTPException(409, {
+        message: "A pending payment already exists for this event",
+      });
+    }
+
+    // Check if already paid
+    if (existingPayments.some((p) => p.status === "paid")) {
+      throw new HTTPException(409, {
+        message: "The user has already paid for the event",
+      });
+    }
+
+    // Remaining states are either aborted or refunded. In that case they can create a new payment
+
+    // Generate unique reference for Vipps
+    const vippsReference = randomUUID();
+
+    try {
+      // Initiate Vipps payment first
+      const checkoutUrl = await createPayment({
+        amount: event.priceMinor,
+        currency: "NOK",
+        reference: vippsReference,
+        userFlow: body.userFlow,
+        returnUrl: body.returnUrl,
+        description: `Payment for ${event.title}`,
+      });
+
+      const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
+        eventId,
+        userId,
+        amountMinor: event.priceMinor,
+        currency: "NOK",
+        provider: "vipps",
+        providerPaymentId: vippsReference,
+        status: "pending",
+      };
+
+      // Create payment record after Vipps payment is created
+      const [payment] = await db.insert(schema.eventPayment).values(newPayment).returning();
+
+      if (!payment) {
+        throw new HTTPException(500, {
+          message: "Failed to create payment record",
         });
+      }
 
-        if (!event) {
-            throw new HTTPException(404, { message: "Event not found" });
-        }
-
-        if (!event.isPaidEvent || !event.priceMinor) {
-            throw new HTTPException(400, {
-                message: "This event does not require payment",
-            });
-        }
-
-        // Check that user has a registration with "registered" status
-        const registration = await db.query.eventRegistration.findFirst({
-            where: (reg, { eq, and }) =>
-                and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
-        });
-
-        if (!registration) {
-            throw new HTTPException(404, {
-                message: "You must register for the event before paying",
-            });
-        }
-
-        if (registration.status !== "registered") {
-            throw new HTTPException(400, {
-                message: `Cannot create payment. Registration status is: ${registration.status}`,
-            });
-        }
-
-        // Check for existing pending payment
-        const existingPayments = await db.query.eventPayment.findMany({
-            where: (payment, { eq, and }) =>
-                and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
-        });
-
-        // Check if there is already a pending payment
-        if (existingPayments.some((p) => p.status === "pending")) {
-            throw new HTTPException(409, {
-                message: "A pending payment already exists for this event",
-            });
-        }
-
-        // Check if already paid
-        if (existingPayments.some((p) => p.status === "paid")) {
-            throw new HTTPException(409, {
-                message: "The user has already paid for the event",
-            });
-        }
-
-        // Remaining states are either aborted or refunded. In that case they can create a new payment
-
-        // Generate unique reference for Vipps
-        const vippsReference = randomUUID();
-
-        try {
-            // Initiate Vipps payment first
-            const checkoutUrl = await createPayment({
-                amount: event.priceMinor,
-                currency: "NOK",
-                reference: vippsReference,
-                userFlow: body.userFlow,
-                returnUrl: body.returnUrl,
-                description: `Payment for ${event.title}`,
-            });
-
-            const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
-                eventId,
-                userId,
-                amountMinor: event.priceMinor,
-                currency: "NOK",
-                provider: "vipps",
-                providerPaymentId: vippsReference,
-                status: "pending",
-            };
-
-            // Create payment record after Vipps payment is created
-            const [payment] = await db
-                .insert(schema.eventPayment)
-                .values(newPayment)
-                .returning();
-
-            if (!payment) {
-                throw new HTTPException(500, {
-                    message: "Failed to create payment record",
-                });
-            }
-
-            return c.json(
-                {
-                    eventId: payment.eventId,
-                    userId: payment.userId,
-                    checkoutUrl,
-                    amount: event.priceMinor,
-                    currency: "NOK",
-                },
-                201,
-            );
-        } catch (error) {
-            throw new HTTPException(500, {
-                message: `Failed to initiate Vipps payment: ${error instanceof Error ? error.message : "Unknown error"}`,
-            });
-        }
-    },
+      return c.json(
+        {
+          eventId: payment.eventId,
+          userId: payment.userId,
+          checkoutUrl,
+          amount: event.priceMinor,
+          currency: "NOK",
+        },
+        201,
+      );
+    } catch (error) {
+      throw new HTTPException(500, {
+        message: `Failed to initiate Vipps payment: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
+    }
+  },
 );

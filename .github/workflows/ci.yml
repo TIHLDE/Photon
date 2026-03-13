@@ -37,4 +37,3 @@ jobs:
 
       - name: Run tests
         run: bun run test -- --log-order=stream
-

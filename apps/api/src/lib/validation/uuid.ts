@@ -6,8 +6,7 @@
  * Regular expression for validating UUID v4 format.
  * Matches: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (case-insensitive)
  */
-export const UUID_REGEX =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Check if a string is a valid UUID.
@@ -21,5 +20,5 @@ export const UUID_REGEX =
  * isValidUUID("group-slug") // false
  */
 export function isValidUUID(value: string): boolean {
-    return UUID_REGEX.test(value);
+  return UUID_REGEX.test(value);
 }

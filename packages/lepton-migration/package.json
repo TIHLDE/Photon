@@ -1,22 +1,22 @@
 {
-    "name": "@photon/lepton-migration",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "license": "MIT",
-    "scripts": {
-        "execute": "bun src/index.ts"
-    },
-    "devDependencies": {
-        "@photon/tsconfig": "workspace:*",
-        "@types/node": "catalog:",
-        "typescript": "catalog:"
-    },
-    "dependencies": {
-        "@photon/auth": "workspace:*",
-        "@photon/core": "workspace:*",
-        "@photon/db": "workspace:*",
-        "@photon/email": "workspace:*",
-        "mysql2": "^3.14.4"
-    }
+  "name": "@photon/lepton-migration",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "execute": "bun src/index.ts"
+  },
+  "dependencies": {
+    "@photon/auth": "workspace:*",
+    "@photon/core": "workspace:*",
+    "@photon/db": "workspace:*",
+    "@photon/email": "workspace:*",
+    "mysql2": "^3.14.4"
+  },
+  "devDependencies": {
+    "@photon/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
 }

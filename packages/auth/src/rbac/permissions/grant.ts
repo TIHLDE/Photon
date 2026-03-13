@@ -29,23 +29,17 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
  * // Grant scoped permission
  * await grantUserPermission(ctx, adminId, userId, "events:update", "group:fotball");
  */
-export async function grantUserPermission(
-    ctx: DbCtx,
-    grantedByUserId: string,
-    targetUserId: string,
-    permission: string,
-    scope?: string,
-): Promise<void> {
-    const db = ctx.db;
-    await db
-        .insert(userPermission)
-        .values({
-            userId: targetUserId,
-            permission,
-            scope: scope ?? GLOBAL_SCOPE,
-            grantedBy: grantedByUserId,
-        })
-        .onConflictDoNothing();
+export async function grantUserPermission(ctx: DbCtx, grantedByUserId: string, targetUserId: string, permission: string, scope?: string): Promise<void> {
+  const db = ctx.db;
+  await db
+    .insert(userPermission)
+    .values({
+      userId: targetUserId,
+      permission,
+      scope: scope ?? GLOBAL_SCOPE,
+      grantedBy: grantedByUserId,
+    })
+    .onConflictDoNothing();
 }
 
 /**
@@ -62,20 +56,9 @@ export async function grantUserPermission(
  * // Revoke scoped permission
  * await revokeUserPermission(ctx, userId, "events:update", "group:fotball");
  */
-export async function revokeUserPermission(
-    ctx: DbCtx,
-    targetUserId: string,
-    permission: string,
-    scope?: string,
-): Promise<void> {
-    const db = ctx.db;
-    await db
-        .delete(userPermission)
-        .where(
-            and(
-                eq(userPermission.userId, targetUserId),
-                eq(userPermission.permission, permission),
-                eq(userPermission.scope, scope ?? GLOBAL_SCOPE),
-            ),
-        );
+export async function revokeUserPermission(ctx: DbCtx, targetUserId: string, permission: string, scope?: string): Promise<void> {
+  const db = ctx.db;
+  await db
+    .delete(userPermission)
+    .where(and(eq(userPermission.userId, targetUserId), eq(userPermission.permission, permission), eq(userPermission.scope, scope ?? GLOBAL_SCOPE)));
 }

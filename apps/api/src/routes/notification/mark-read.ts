@@ -8,52 +8,46 @@ import { requireAuth } from "../../middleware/auth";
 import { markReadResponseSchema, markReadSchema } from "./schema";
 
 export const markReadNotificationRoute = route().patch(
-    "/:id/read",
-    describeRoute({
-        tags: ["notifications"],
-        summary: "Mark notification as read or unread",
-        operationId: "markNotificationRead",
-        description:
-            "Update the read status of a notification. User must be authenticated and own the notification.",
+  "/:id/read",
+  describeRoute({
+    tags: ["notifications"],
+    summary: "Mark notification as read or unread",
+    operationId: "markNotificationRead",
+    description: "Update the read status of a notification. User must be authenticated and own the notification.",
+  })
+    .schemaResponse({
+      statusCode: 200,
+      schema: markReadResponseSchema,
+      description: "Notification updated successfully",
     })
-        .schemaResponse({
-            statusCode: 200,
-            schema: markReadResponseSchema,
-            description: "Notification updated successfully",
-        })
-        .notFound({
-            description: "Notification not found or not owned by user",
-        })
-        .build(),
-    requireAuth,
-    validator("json", markReadSchema),
-    async (c) => {
-        const { db } = c.get("ctx");
-        const notificationId = c.req.param("id");
-        const userId = c.get("user").id;
-        const { isRead } = c.req.valid("json");
+    .notFound({
+      description: "Notification not found or not owned by user",
+    })
+    .build(),
+  requireAuth,
+  validator("json", markReadSchema),
+  async (c) => {
+    const { db } = c.get("ctx");
+    const notificationId = c.req.param("id");
+    const userId = c.get("user").id;
+    const { isRead } = c.req.valid("json");
 
-        const [updated] = await db
-            .update(schema.notification)
-            .set({ isRead })
-            .where(
-                and(
-                    eq(schema.notification.id, notificationId),
-                    eq(schema.notification.userId, userId),
-                ),
-            )
-            .returning();
+    const [updated] = await db
+      .update(schema.notification)
+      .set({ isRead })
+      .where(and(eq(schema.notification.id, notificationId), eq(schema.notification.userId, userId)))
+      .returning();
 
-        if (!updated) {
-            throw new HTTPException(404, {
-                message: "Notification not found or not owned by user",
-            });
-        }
+    if (!updated) {
+      throw new HTTPException(404, {
+        message: "Notification not found or not owned by user",
+      });
+    }
 
-        return c.json({
-            id: updated.id,
-            isRead: updated.isRead,
-            updatedAt: updated.updatedAt.toISOString(),
-        });
-    },
+    return c.json({
+      id: updated.id,
+      isRead: updated.isRead,
+      updatedAt: updated.updatedAt.toISOString(),
+    });
+  },
 );

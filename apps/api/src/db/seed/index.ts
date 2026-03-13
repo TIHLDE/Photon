@@ -13,37 +13,37 @@ import seedUser from "./user";
  * Runs all seed modules in the correct order
  */
 export default async (ctx: AppContext) => {
-    const { db } = ctx;
+  const { db } = ctx;
 
-    // Check if this is the first run
-    const studyGroupCount = await db
-        .select()
-        .from(schema.studyProgram)
-        .limit(1)
-        .then((rows) => rows.length);
+  // Check if this is the first run
+  const studyGroupCount = await db
+    .select()
+    .from(schema.studyProgram)
+    .limit(1)
+    .then((rows) => rows.length);
 
-    const firstRun = studyGroupCount === 0;
+  const firstRun = studyGroupCount === 0;
 
-    if (!firstRun) {
-        console.log("🌱 Database already seeded, skipping seeding process.");
-        return;
-    }
+  if (!firstRun) {
+    console.log("🌱 Database already seeded, skipping seeding process.");
+    return;
+  }
 
-    // Run seed modules in order
-    // 1. RBAC (roles must exist before users)
-    await seedRbac(ctx);
+  // Run seed modules in order
+  // 1. RBAC (roles must exist before users)
+  await seedRbac(ctx);
 
-    // 2. User (allergies - reference data)
-    await seedUser(ctx);
+  // 2. User (allergies - reference data)
+  await seedUser(ctx);
 
-    // 3. Auth (users)
-    await seedAuth(ctx);
+  // 3. Auth (users)
+  await seedAuth(ctx);
 
-    // 4. Org (groups)
-    await seedOrg(ctx);
+  // 4. Org (groups)
+  await seedOrg(ctx);
 
-    // 5. Event (categories)
-    await seedEvent(ctx);
+  // 5. Event (categories)
+  await seedEvent(ctx);
 
-    console.log("🌱 Successfully seeded the database");
+  console.log("🌱 Successfully seeded the database");
 };

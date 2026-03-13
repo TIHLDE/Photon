@@ -7,45 +7,39 @@ import { requireAuth } from "../../middleware/auth";
 import { deleteNotificationResponseSchema } from "./schema";
 
 export const deleteNotificationRoute = route().delete(
-    "/:id",
-    describeRoute({
-        tags: ["notifications"],
-        summary: "Delete notification",
-        operationId: "deleteNotification",
-        description:
-            "Delete a notification by ID. User must be authenticated and own the notification.",
+  "/:id",
+  describeRoute({
+    tags: ["notifications"],
+    summary: "Delete notification",
+    operationId: "deleteNotification",
+    description: "Delete a notification by ID. User must be authenticated and own the notification.",
+  })
+    .schemaResponse({
+      statusCode: 200,
+      schema: deleteNotificationResponseSchema,
+      description: "Notification deleted successfully",
     })
-        .schemaResponse({
-            statusCode: 200,
-            schema: deleteNotificationResponseSchema,
-            description: "Notification deleted successfully",
-        })
-        .notFound({
-            description: "Notification not found or not owned by user",
-        })
-        .build(),
-    requireAuth,
-    async (c) => {
-        const { db } = c.get("ctx");
-        const notificationId = c.req.param("id");
-        const userId = c.get("user").id;
+    .notFound({
+      description: "Notification not found or not owned by user",
+    })
+    .build(),
+  requireAuth,
+  async (c) => {
+    const { db } = c.get("ctx");
+    const notificationId = c.req.param("id");
+    const userId = c.get("user").id;
 
-        const [deleted] = await db
-            .delete(schema.notification)
-            .where(
-                and(
-                    eq(schema.notification.id, notificationId),
-                    eq(schema.notification.userId, userId),
-                ),
-            )
-            .returning();
+    const [deleted] = await db
+      .delete(schema.notification)
+      .where(and(eq(schema.notification.id, notificationId), eq(schema.notification.userId, userId)))
+      .returning();
 
-        if (!deleted) {
-            throw new HTTPException(404, {
-                message: "Notification not found or not owned by user",
-            });
-        }
+    if (!deleted) {
+      throw new HTTPException(404, {
+        message: "Notification not found or not owned by user",
+      });
+    }
 
-        return c.json({ success: true });
-    },
+    return c.json({ success: true });
+  },
 );

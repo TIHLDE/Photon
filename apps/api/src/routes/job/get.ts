@@ -6,50 +6,50 @@ import { route } from "~/lib/route";
 import { jobDetailSchema } from "./schema";
 
 export const getRoute = route().get(
-    "/:id",
-    describeRoute({
-        tags: ["jobs"],
-        summary: "Get job posting",
-        operationId: "getJob",
-        description: "Get a single job posting by ID. Public endpoint.",
+  "/:id",
+  describeRoute({
+    tags: ["jobs"],
+    summary: "Get job posting",
+    operationId: "getJob",
+    description: "Get a single job posting by ID. Public endpoint.",
+  })
+    .schemaResponse({
+      statusCode: 200,
+      schema: jobDetailSchema,
+      description: "Job posting details",
     })
-        .schemaResponse({
-            statusCode: 200,
-            schema: jobDetailSchema,
-            description: "Job posting details",
-        })
-        .notFound({ description: "Job posting not found" })
-        .build(),
-    async (c) => {
-        const { db } = c.get("ctx");
-        const { id } = c.req.param();
+    .notFound({ description: "Job posting not found" })
+    .build(),
+  async (c) => {
+    const { db } = c.get("ctx");
+    const { id } = c.req.param();
 
-        const job = await db.query.jobPost.findFirst({
-            where: eq(schema.jobPost.id, id),
-            with: {
-                creator: {
-                    columns: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+    const job = await db.query.jobPost.findFirst({
+      where: eq(schema.jobPost.id, id),
+      with: {
+        creator: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-        if (!job) {
-            throw new HTTPException(404, {
-                message: "Job posting not found",
-            });
-        }
+    if (!job) {
+      throw new HTTPException(404, {
+        message: "Job posting not found",
+      });
+    }
 
-        // Add computed "expired" field
-        const now = new Date();
-        const jobWithExpired = {
-            ...job,
-            expired: job.deadline ? job.deadline < now : false,
-        };
+    // Add computed "expired" field
+    const now = new Date();
+    const jobWithExpired = {
+      ...job,
+      expired: job.deadline ? job.deadline < now : false,
+    };
 
-        return c.json(jobWithExpired);
-    },
+    return c.json(jobWithExpired);
+  },
 );

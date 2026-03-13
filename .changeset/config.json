@@ -1,8 +1,8 @@
 {
-    "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
-    "changelog": ["@changesets/changelog-github", { "repo": "TIHLDE/Photon" }],
-    "commit": false,
-    "access": "public",
-    "baseBranch": "main",
-    "ignore": ["@photon/*"]
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "TIHLDE/Photon" }],
+  "commit": false,
+  "access": "public",
+  "baseBranch": "main",
+  "ignore": ["@photon/*"]
 }

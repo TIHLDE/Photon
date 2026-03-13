@@ -1,22 +1,22 @@
 {
-    "name": "@photon/core",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "exports": {
-        ".": "./src/index.ts",
-        "./env": "./src/env.ts",
-        "./cache": "./src/cache/index.ts"
-    },
-    "dependencies": {
-        "@dotenvx/dotenvx": "^1.49.0",
-        "bullmq": "catalog:",
-        "redis": "^5.8.2",
-        "zod": "catalog:"
-    },
-    "devDependencies": {
-        "@photon/tsconfig": "workspace:*",
-        "@types/node": "catalog:",
-        "typescript": "catalog:"
-    }
+  "name": "@photon/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/env.ts",
+    "./cache": "./src/cache/index.ts"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^1.49.0",
+    "bullmq": "catalog:",
+    "redis": "^5.8.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@photon/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
 }

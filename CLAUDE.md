@@ -7,6 +7,7 @@ This is a TypeScript backend project for Kvark, porting and improving the Python
 ## Project Overview
 
 Photon is a complete backend solution featuring:
+
 - Feide OAuth2 authentication via Better Auth
 - Event management with registration and payment handling
 - Vipps MobilePay integration
@@ -44,13 +45,15 @@ Photon/
 ├── infra/
 │   └── docker/                  # Docker Compose files & Dockerfile
 ├── turbo.json                   # Turborepo pipeline config
-├── biome.json                   # Linting & formatting config
+├── .oxlintrc.json               # oxlint config
+├── .oxfmtrc.json                # oxfmt config
 └── bun.lock
 ```
 
 ## Tech Stack
 
 ### Core
+
 - **Hono v4** - Web framework
 - **PostgreSQL 17** - Database
 - **Drizzle ORM** - Type-safe database toolkit
@@ -61,10 +64,11 @@ Photon/
 - **MinIO** - S3-compatible object storage
 
 ### Dev Tools
+
 - **Bun 1.2** - Package manager & runtime
 - **Turborepo** - Monorepo build orchestration
 - **TypeScript 5.9** - Type system (strict mode)
-- **Biome** - Linting and formatting
+- **Oxc (oxlint + oxfmt)** - Linting and formatting
 - **Vitest** - Testing with Testcontainers
 
 ## Common Commands
@@ -72,6 +76,7 @@ Photon/
 All commands run through Turbo via the root `package.json`. Use `bun run` (or just `bun`).
 
 ### Development
+
 ```bash
 bun dev               # Start dev server (spins up Docker + db:push automatically)
 bun run build         # Build for production
@@ -80,18 +85,22 @@ bun run typecheck     # Type check all packages
 ```
 
 ### Testing
+
 ```bash
 bun run test              # Run all tests (requires Docker)
 ```
 
 ### Linting & Formatting
+
 ```bash
-bun run lint          # Check code with Biome
-bun run lint:fix      # Auto-fix issues
-bun run format        # Format code
+bun run lint          # Lint with oxlint (root task)
+bun run lint:fix      # Auto-fix lint issues
+bun run format        # Check formatting with oxfmt
+bun run format:fix    # Auto-format with oxfmt
 ```
 
 ### Database (Drizzle ORM)
+
 ```bash
 bun run db:push       # Push schema to DB (dev)
 bun run db:generate   # Generate migrations
@@ -100,11 +109,13 @@ bun run db:studio     # Open Drizzle Studio
 ```
 
 ### Email Development
+
 ```bash
 bun run email         # Start React Email preview (port 4001)
 ```
 
 ### Docker
+
 ```bash
 bun run docker:dev       # Start dev environment (PostgreSQL, Redis, Mailpit, MinIO)
 bun run docker:dev:down  # Stop dev environment
@@ -116,10 +127,13 @@ bun run docker:prod:down # Stop production environment
 ## Turborepo Pipeline
 
 Key dependency chain in `turbo.json`:
+
 - `dev` depends on `@photon/docker#dev:up` then `@photon/db#db:push`
 - `build` depends on upstream `^build`
 - `db:push` depends on `@photon/docker#dev:up`
 - `typecheck` depends on upstream `^typecheck`
+- `lint`, `lint:fix`, `format`, `format:fix` are root tasks (oxlint/oxfmt run at repo root)
+- `quality` runs `lint` + `format` in parallel; `quality:fix` runs both fix tasks
 
 ## Git & GitHub Workflow
 
@@ -138,6 +152,7 @@ Key dependency chain in `turbo.json`:
 - `perf: description` - Performance improvements
 
 ### Pull Requests
+
 - Use `gh pr create` to create pull requests
 - Include descriptive title and body
 - Reference related issues when applicable
@@ -145,12 +160,14 @@ Key dependency chain in `turbo.json`:
 ## Code Style & Conventions
 
 ### General
+
 - **Module System**: ESM only (`type: "module"`)
-- **Formatting**: Biome — 4-space indent, double quotes, LF line endings
+- **Formatting**: oxfmt — 4-space indent, double quotes, LF line endings
 - **Imports**: Prefer named imports. Use `@photon/*` for cross-package imports, `~/` path alias within `apps/api`
 - **File naming**: kebab-case for files, PascalCase for types/classes
 
 ### TypeScript
+
 - Strict mode enabled across all packages
 - Use explicit return types for public APIs
 - Prefer `type` over `interface` for object shapes
@@ -158,6 +175,7 @@ Key dependency chain in `turbo.json`:
 - No `any` types
 
 ### API Development
+
 - **Routes**: Use Hono router patterns in `apps/api/src/routes/`
 - **Validation**: Zod schemas via `@hono/standard-validator`
 - **OpenAPI**: Document routes using `hono-openapi`
@@ -165,6 +183,7 @@ Key dependency chain in `turbo.json`:
 - **Middleware**: Chain middleware using Hono patterns
 
 ### Database
+
 - **ORM**: Drizzle exclusively
 - **Schemas**: Define in `packages/db/src/schema/`
 - **Migrations**: Generate with `bun run db:generate` (outputs to `packages/db/drizzle/`)
@@ -172,12 +191,14 @@ Key dependency chain in `turbo.json`:
 - **Queries**: Use Drizzle query builder, avoid raw SQL unless necessary
 
 ### Testing
+
 - **Framework**: Vitest (config in `apps/api/vitest.config.ts`)
 - **Integration tests**: Use Testcontainers for PostgreSQL, Redis, MinIO
 - **Test location**: `apps/api/src/test/`
 - **Config**: `maxWorkers: 1` by default (configurable via `MAX_TEST_WORKERS` env)
 
 ### Authentication & Authorization
+
 - **Auth**: Better Auth library (`packages/auth/src/index.ts`)
 - **RBAC**: Permission system in `packages/auth/src/rbac/`
 - **Middleware**: Use `requireAuth`, `requirePermission`, `requireOwnershipOrPermission`
@@ -190,40 +211,42 @@ Key dependency chain in `turbo.json`:
 **IMPORTANT**: Always use the database instance from Hono context (`c.get('ctx').db`), NOT a direct import. This is required for the testing setup with Testcontainers.
 
 ```typescript
-import { schema } from '@photon/db/schema'
-import { eq } from 'drizzle-orm'
+import { schema } from "@photon/db/schema";
+import { eq } from "drizzle-orm";
 
-export default route().post('/', async (c) => {
-  const { db } = c.get('ctx')
+export default route().post("/", async (c) => {
+  const { db } = c.get("ctx");
 
   const event = await db.query.event.findFirst({
     where: eq(schema.event.id, eventId),
-  })
+  });
 
-  const [newEvent] = await db.insert(schema.event).values({
-    title: 'New Event',
-  }).returning()
+  const [newEvent] = await db
+    .insert(schema.event)
+    .values({
+      title: "New Event",
+    })
+    .returning();
 
-  await db.update(schema.event)
-    .set({ title: 'Updated' })
-    .where(eq(schema.event.id, eventId))
-})
+  await db.update(schema.event).set({ title: "Updated" }).where(eq(schema.event.id, eventId));
+});
 ```
 
 ```typescript
 // WRONG: Do NOT import db directly in routes
-import { db } from '@photon/db'  // DON'T DO THIS
+import { db } from "@photon/db"; // DON'T DO THIS
 ```
 
 ### Cross-Package Imports
+
 ```typescript
 // Use workspace package names
-import { schema } from '@photon/db/schema'
-import { env } from '@photon/core/env'
-import { auth } from '@photon/auth'
+import { schema } from "@photon/db/schema";
+import { env } from "@photon/core/env";
+import { auth } from "@photon/auth";
 
 // Within apps/api, use path alias
-import { someUtil } from '~/lib/utils'
+import { someUtil } from "~/lib/utils";
 ```
 
 ## Environment Variables
@@ -244,25 +267,31 @@ SMTP_PORT=1025
 ## Important Notes
 
 ### Migration from Lepton
+
 - This is a **port with improvements**, not a direct translation
 - Use TypeScript best practices, not Python patterns
 
 ### Testing with Docker
+
 - Testcontainers requires Docker to be running
 - Tests automatically spin up PostgreSQL/Redis/MinIO containers
 
 ### Email Development
+
 - Templates in `packages/email/src/template/`
 - Preview at `http://localhost:4001` (run `bun run email`)
 - In dev, emails are caught by Mailpit at `http://localhost:8025`
 
 ### API Documentation
+
 When server is running:
+
 - **API Base**: `http://localhost:4000/api`
 - **OpenAPI Schema**: `http://localhost:4000/openapi`
 - **Scalar Docs**: `http://localhost:4000/docs`
 
 ### Security
+
 - Never commit secrets to git
 - Use environment variables
 - Validate all user input with Zod
@@ -272,7 +301,7 @@ When server is running:
 
 1. **Use db from context** - Always use `c.get('ctx').db` in routes, NEVER import db directly
 2. **Always run tests** before committing
-3. **Follow Biome rules** - auto-format before committing
+3. **Follow oxlint/oxfmt rules** - auto-format before committing
 4. **Use Zod for validation** of all external input
 5. **Prefer Drizzle ORM** over raw SQL
 6. **Update OpenAPI docs** when changing routes

@@ -8,8 +8,8 @@ let redisInstance: RedisClient | null = null;
  * For request-scoped code, prefer using the redis client from AppContext instead.
  */
 export async function getRedis(): Promise<RedisClient> {
-    if (!redisInstance) {
-        redisInstance = await createRedisClient(env.REDIS_URL);
-    }
-    return redisInstance;
+  if (!redisInstance) {
+    redisInstance = await createRedisClient(env.REDIS_URL);
+  }
+  return redisInstance;
 }

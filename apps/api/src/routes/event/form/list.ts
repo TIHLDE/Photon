@@ -8,65 +8,63 @@ import { requireAuth } from "~/middleware/auth";
 import { eventFormListSchema } from "./schema";
 
 export const listEventFormsRoute = route().get(
-    "/:eventId/forms",
-    describeRoute({
-        tags: ["events", "forms"],
-        summary: "List event forms",
-        operationId: "listEventForms",
-        description: "Get all forms (survey and evaluation) for an event",
+  "/:eventId/forms",
+  describeRoute({
+    tags: ["events", "forms"],
+    summary: "List event forms",
+    operationId: "listEventForms",
+    description: "Get all forms (survey and evaluation) for an event",
+  })
+    .schemaResponse({
+      statusCode: 200,
+      schema: eventFormListSchema,
+      description: "Success",
     })
-        .schemaResponse({
-            statusCode: 200,
-            schema: eventFormListSchema,
-            description: "Success",
-        })
-        .notFound({ description: "Event not found" })
-        .build(),
-    requireAuth,
-    async (c) => {
-        const { db } = c.get("ctx");
-        const user = c.get("user");
-        const eventId = c.req.param("eventId");
+    .notFound({ description: "Event not found" })
+    .build(),
+  requireAuth,
+  async (c) => {
+    const { db } = c.get("ctx");
+    const user = c.get("user");
+    const eventId = c.req.param("eventId");
 
-        // Check if event exists
-        const event = await db.query.event.findFirst({
-            where: eq(schema.event.id, eventId),
-        });
+    // Check if event exists
+    const event = await db.query.event.findFirst({
+      where: eq(schema.event.id, eventId),
+    });
 
-        if (!event) {
-            throw new HTTPException(404, {
-                message: "Event not found",
-            });
-        }
+    if (!event) {
+      throw new HTTPException(404, {
+        message: "Event not found",
+      });
+    }
 
-        // Get all event forms
-        const eventForms = await db.query.formEventForm.findMany({
-            where: eq(schema.formEventForm.eventId, eventId),
-            with: {
-                form: true,
-            },
-        });
+    // Get all event forms
+    const eventForms = await db.query.formEventForm.findMany({
+      where: eq(schema.formEventForm.eventId, eventId),
+      with: {
+        form: true,
+      },
+    });
 
-        // Check if user has answered each form
-        const formsWithAnswers = await Promise.all(
-            eventForms.map(async (eventForm) => {
-                const hasAnswered = user
-                    ? await userHasSubmitted(db, eventForm.form.id, user.id)
-                    : false;
+    // Check if user has answered each form
+    const formsWithAnswers = await Promise.all(
+      eventForms.map(async (eventForm) => {
+        const hasAnswered = user ? await userHasSubmitted(db, eventForm.form.id, user.id) : false;
 
-                return {
-                    id: eventForm.form.id,
-                    title: eventForm.form.title,
-                    description: eventForm.form.description,
-                    type: eventForm.type,
-                    resource_type: "EventForm",
-                    viewer_has_answered: hasAnswered,
-                    created_at: eventForm.form.createdAt.toISOString(),
-                    updated_at: eventForm.form.updatedAt.toISOString(),
-                };
-            }),
-        );
+        return {
+          id: eventForm.form.id,
+          title: eventForm.form.title,
+          description: eventForm.form.description,
+          type: eventForm.type,
+          resource_type: "EventForm",
+          viewer_has_answered: hasAnswered,
+          created_at: eventForm.form.createdAt.toISOString(),
+          updated_at: eventForm.form.updatedAt.toISOString(),
+        };
+      }),
+    );
 
-        return c.json(formsWithAnswers);
-    },
+    return c.json(formsWithAnswers);
+  },
 );

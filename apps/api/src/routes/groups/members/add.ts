@@ -9,86 +9,80 @@ import { requireAuth } from "~/middleware/auth";
 import { addMemberSchema, membershipResponseSchema } from "../schema";
 
 export const addMemberRoute = route().post(
-    "/:groupSlug/members",
-    describeRoute({
-        tags: ["groups"],
-        summary: "Add member to group",
-        operationId: "addGroupMember",
-        description:
-            "Add a member to a group. Requires 'groups:manage' permission.",
+  "/:groupSlug/members",
+  describeRoute({
+    tags: ["groups"],
+    summary: "Add member to group",
+    operationId: "addGroupMember",
+    description: "Add a member to a group. Requires 'groups:manage' permission.",
+  })
+    .schemaResponse({
+      statusCode: 201,
+      schema: membershipResponseSchema,
+      description: "Member added successfully",
     })
-        .schemaResponse({
-            statusCode: 201,
-            schema: membershipResponseSchema,
-            description: "Member added successfully",
-        })
-        .badRequest({ description: "User already a member or user not found" })
-        .notFound({ description: "Group not found" })
-        .build(),
-    requireAuth,
-    requireAccess({ permission: "groups:manage" }),
-    validator("json", addMemberSchema),
-    async (c) => {
-        const body = c.req.valid("json");
-        const groupSlug = c.req.param("groupSlug");
-        const { db } = c.get("ctx");
+    .badRequest({ description: "User already a member or user not found" })
+    .notFound({ description: "Group not found" })
+    .build(),
+  requireAuth,
+  requireAccess({ permission: "groups:manage" }),
+  validator("json", addMemberSchema),
+  async (c) => {
+    const body = c.req.valid("json");
+    const groupSlug = c.req.param("groupSlug");
+    const { db } = c.get("ctx");
 
-        // Validate group exists
-        const group = await db
-            .select()
-            .from(schema.group)
-            .where(eq(schema.group.slug, groupSlug))
-            .limit(1)
-            .then((res) => res[0]);
+    // Validate group exists
+    const group = await db
+      .select()
+      .from(schema.group)
+      .where(eq(schema.group.slug, groupSlug))
+      .limit(1)
+      .then((res) => res[0]);
 
-        if (!group) {
-            throw new HTTPException(404, {
-                message: `Group with slug "${groupSlug}" not found`,
-            });
-        }
+    if (!group) {
+      throw new HTTPException(404, {
+        message: `Group with slug "${groupSlug}" not found`,
+      });
+    }
 
-        // Validate user exists
-        const user = await db
-            .select()
-            .from(schema.user)
-            .where(eq(schema.user.id, body.userId))
-            .limit(1)
-            .then((res) => res[0]);
+    // Validate user exists
+    const user = await db
+      .select()
+      .from(schema.user)
+      .where(eq(schema.user.id, body.userId))
+      .limit(1)
+      .then((res) => res[0]);
 
-        if (!user) {
-            throw new HTTPException(400, {
-                message: `User with ID "${body.userId}" not found`,
-            });
-        }
+    if (!user) {
+      throw new HTTPException(400, {
+        message: `User with ID "${body.userId}" not found`,
+      });
+    }
 
-        // Check if already a member
-        const existingMembership = await db
-            .select()
-            .from(schema.groupMembership)
-            .where(
-                and(
-                    eq(schema.groupMembership.userId, body.userId),
-                    eq(schema.groupMembership.groupSlug, groupSlug),
-                ),
-            )
-            .limit(1);
+    // Check if already a member
+    const existingMembership = await db
+      .select()
+      .from(schema.groupMembership)
+      .where(and(eq(schema.groupMembership.userId, body.userId), eq(schema.groupMembership.groupSlug, groupSlug)))
+      .limit(1);
 
-        if (existingMembership.length > 0) {
-            throw new HTTPException(400, {
-                message: `User is already a member of group "${groupSlug}"`,
-            });
-        }
+    if (existingMembership.length > 0) {
+      throw new HTTPException(400, {
+        message: `User is already a member of group "${groupSlug}"`,
+      });
+    }
 
-        // Add membership
-        const [membership] = await db
-            .insert(schema.groupMembership)
-            .values({
-                userId: body.userId,
-                groupSlug: groupSlug,
-                role: body.role,
-            })
-            .returning();
+    // Add membership
+    const [membership] = await db
+      .insert(schema.groupMembership)
+      .values({
+        userId: body.userId,
+        groupSlug: groupSlug,
+        role: body.role,
+      })
+      .returning();
 
-        return c.json(membership, 201);
-    },
+    return c.json(membership, 201);
+  },
 );

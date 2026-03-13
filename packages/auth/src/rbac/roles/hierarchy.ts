@@ -18,20 +18,13 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
  * Higher position = higher in hierarchy (better role).
  * Returns null if user has no roles.
  */
-export async function getUserHighestRolePosition(
-    ctx: DbCtx,
-    userId: string,
-): Promise<number | null> {
-    const db = ctx.db;
-    const rows = await db
-        .select({ position: role.position })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .where(eq(userRole.userId, userId));
+export async function getUserHighestRolePosition(ctx: DbCtx, userId: string): Promise<number | null> {
+  const db = ctx.db;
+  const rows = await db.select({ position: role.position }).from(userRole).innerJoin(role, eq(userRole.roleId, role.id)).where(eq(userRole.userId, userId));
 
-    if (rows.length === 0) return null;
+  if (rows.length === 0) return null;
 
-    return Math.max(...rows.map((r) => r.position));
+  return Math.max(...rows.map((r) => r.position));
 }
 
 /**
@@ -43,17 +36,10 @@ export async function getUserHighestRolePosition(
  * - moderator (position 3) CANNOT manage admin (position 5) ✗
  * - moderator (position 3) CANNOT manage another moderator (position 3) ✗
  */
-export async function userCanManageUser(
-    ctx: DbCtx,
-    managerId: string,
-    targetUserId: string,
-): Promise<boolean> {
-    const [managerPosition, targetPosition] = await Promise.all([
-        getUserHighestRolePosition(ctx, managerId),
-        getUserHighestRolePosition(ctx, targetUserId),
-    ]);
+export async function userCanManageUser(ctx: DbCtx, managerId: string, targetUserId: string): Promise<boolean> {
+  const [managerPosition, targetPosition] = await Promise.all([getUserHighestRolePosition(ctx, managerId), getUserHighestRolePosition(ctx, targetUserId)]);
 
-    if (managerPosition === null || targetPosition === null) return false;
+  if (managerPosition === null || targetPosition === null) return false;
 
-    return managerPosition > targetPosition;
+  return managerPosition > targetPosition;
 }

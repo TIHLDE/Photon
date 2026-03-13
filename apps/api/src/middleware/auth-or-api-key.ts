@@ -7,11 +7,11 @@ import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { ApiKey } from "~/lib/service/api-key";
 
 type AuthOrApiKeyVariables = {
-    user?: User;
-    session?: Session;
-    apiKey?: ApiKey;
-    ctx: AppContext;
-    service: AppServices;
+  user?: User;
+  session?: Session;
+  apiKey?: ApiKey;
+  ctx: AppContext;
+  service: AppServices;
 };
 
 /**
@@ -26,38 +26,36 @@ type AuthOrApiKeyVariables = {
  * Expected API key format: `Authorization: Bearer photon_...`
  */
 export const requireAuthOrApiKey = describeMiddleware(
-    createMiddleware<{ Variables: AuthOrApiKeyVariables }>(async (c, next) => {
-        const { auth } = c.get("ctx");
+  createMiddleware<{ Variables: AuthOrApiKeyVariables }>(async (c, next) => {
+    const { auth } = c.get("ctx");
 
-        // Try session auth first
-        const session = await auth.api.getSession({
-            headers: c.req.raw.headers,
-        });
+    // Try session auth first
+    const session = await auth.api.getSession({
+      headers: c.req.raw.headers,
+    });
 
-        if (session) {
-            c.set("user", session.user);
-            c.set("session", session.session);
-            await next();
-            return;
-        }
+    if (session) {
+      c.set("user", session.user);
+      c.set("session", session.session);
+      await next();
+      return;
+    }
 
-        // Try API key auth
-        const token = parseBearerOptional(c.req.header("Authorization"));
+    // Try API key auth
+    const token = parseBearerOptional(c.req.header("Authorization"));
 
-        if (token) {
-            const apiKeyService = c.get("service").apiKey;
-            const result = await apiKeyService.validate(token);
+    if (token) {
+      const apiKeyService = c.get("service").apiKey;
+      const result = await apiKeyService.validate(token);
 
-            if (result.valid && result.apiKey) {
-                c.set("apiKey", result.apiKey);
-                await next();
-                return;
-            }
-        }
+      if (result.valid && result.apiKey) {
+        c.set("apiKey", result.apiKey);
+        await next();
+        return;
+      }
+    }
 
-        throw HTTPAppException.Unauthorized("Authentication required");
-    }),
-    describeMiddlewareRoute()
-        .errorResponses([HTTPAppException.Unauthorized()])
-        .getSpec(),
+    throw HTTPAppException.Unauthorized("Authentication required");
+  }),
+  describeMiddlewareRoute().errorResponses([HTTPAppException.Unauthorized()]).getSpec(),
 );

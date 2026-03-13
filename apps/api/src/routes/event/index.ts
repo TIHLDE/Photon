@@ -16,29 +16,29 @@ import { getAllRegistrationsForEventsRoute } from "./registration/list";
 import { updateRoute } from "./update";
 
 export const eventRoutes = route()
-    // Event routes
-    .route("/", createRoute)
-    .route("/", listRoute)
-    .route("/", updateRoute)
-    .route("/", deleteRoute)
-    .route("/", getRoute)
+  // Event routes
+  .route("/", createRoute)
+  .route("/", listRoute)
+  .route("/", updateRoute)
+  .route("/", deleteRoute)
+  .route("/", getRoute)
 
-    // Favorites
-    .route("/favorite", updateFavoriteEventsRoute)
-    .route("/favorite", getFavoriteEventsRoute)
+  // Favorites
+  .route("/favorite", updateFavoriteEventsRoute)
+  .route("/favorite", getFavoriteEventsRoute)
 
-    // Registration
-    // url prefix is delegated because we capture the :eventId there
-    // i.e. /:eventId/registration
-    .route("/", registerToEventRoute)
-    .route("/", getAllRegistrationsForEventsRoute)
-    .route("/", deleteEventRegistrationRoute)
+  // Registration
+  // url prefix is delegated because we capture the :eventId there
+  // i.e. /:eventId/registration
+  .route("/", registerToEventRoute)
+  .route("/", getAllRegistrationsForEventsRoute)
+  .route("/", deleteEventRegistrationRoute)
 
-    // Payment
-    .route("/", createPaymentRoute)
-    .route("/", paymentWebhookRoute)
+  // Payment
+  .route("/", createPaymentRoute)
+  .route("/", paymentWebhookRoute)
 
-    // Forms
-    .route("/", createEventFormRoute)
-    .route("/", listEventFormsRoute)
-    .route("/", getEventFormRoute);
+  // Forms
+  .route("/", createEventFormRoute)
+  .route("/", listEventFormsRoute)
+  .route("/", getEventFormRoute);

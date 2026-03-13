@@ -1,25 +1,25 @@
 {
-    "name": "@photon/auth",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "exports": {
-        ".": "./src/index.ts",
-        "./rbac": "./src/rbac/permissions/index.ts",
-        "./rbac/registry": "./src/rbac/permissions/registry.ts",
-        "./roles": "./src/rbac/roles/index.ts",
-        "./bearer": "./src/bearer.ts",
-        "./feide": "./src/feide.ts"
-    },
-    "dependencies": {
-        "@photon/core": "workspace:*",
-        "@photon/db": "workspace:*",
-        "@photon/email": "workspace:*",
-        "better-auth": "catalog:",
-        "drizzle-orm": "catalog:"
-    },
-    "devDependencies": {
-        "@photon/tsconfig": "workspace:*",
-        "typescript": "catalog:"
-    }
+  "name": "@photon/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./rbac": "./src/rbac/permissions/index.ts",
+    "./rbac/registry": "./src/rbac/permissions/registry.ts",
+    "./roles": "./src/rbac/roles/index.ts",
+    "./bearer": "./src/bearer.ts",
+    "./feide": "./src/feide.ts"
+  },
+  "dependencies": {
+    "@photon/core": "workspace:*",
+    "@photon/db": "workspace:*",
+    "@photon/email": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@photon/tsconfig": "workspace:*",
+    "typescript": "catalog:"
+  }
 }

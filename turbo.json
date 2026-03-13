@@ -1,49 +1,62 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "globalDependencies": [".env"],
-    "ui": "tui",
-    "tasks": {
-        "dev": {
-            "dependsOn": ["@photon/docker#dev:up", "@photon/db#db:push"],
-            "persistent": true
-        },
-        "@photon/web#dev": {
-            "dependsOn": [],
-            "persistent": true
-        },
-        "dev:up": { "cache": false },
-        "dev:down": { "cache": false },
-        "dev:fresh": { "cache": false },
-        "build": {
-            "dependsOn": ["^build"],
-            "outputs": ["dist/**"]
-        },
-        "start": {
-            "dependsOn": ["build"],
-            "persistent": true
-        },
-        "typecheck": { "dependsOn": ["^typecheck"] },
-        "lint": {},
-        "lint:fix": {},
-        "test": { "cache": false },
-        "db:push": {
-            "dependsOn": ["@photon/docker#dev:up"],
-            "cache": false,
-            "interactive": true
-        },
-        "db:generate": { "cache": false },
-        "db:migrate": {
-            "dependsOn": ["@photon/docker#dev:up"],
-            "cache": false
-        },
-        "db:studio": {
-            "dependsOn": ["@photon/docker#dev:up"],
-            "persistent": true
-        },
-        "db:drop": { "cache": false },
-        "db:check": { "cache": false },
-        "email": { "persistent": true },
-        "prod:up": { "cache": false },
-        "prod:down": { "cache": false }
-    }
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".env"],
+  "ui": "tui",
+  "tasks": {
+    "dev": {
+      "dependsOn": ["@photon/docker#dev:up", "@photon/db#db:push"],
+      "persistent": true
+    },
+    "@photon/web#dev": {
+      "dependsOn": [],
+      "persistent": true
+    },
+    "dev:up": { "cache": false },
+    "dev:down": { "cache": false },
+    "dev:fresh": { "cache": false },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "start": {
+      "dependsOn": ["build"],
+      "persistent": true
+    },
+    "typecheck": { "dependsOn": ["^typecheck"] },
+    "//#quality": {
+      "dependsOn": ["//#lint", "//#format"]
+    },
+    "//#quality:fix": {
+      "dependsOn": ["//#lint:fix", "//#format:fix"]
+    },
+    "//#lint": {},
+    "//#lint:fix": {
+      "cache": false
+    },
+    "//#format": {},
+    "//#format:fix": {
+      "dependsOn": ["//#lint:fix"],
+      "cache": false
+    },
+    "test": { "cache": false },
+    "db:push": {
+      "dependsOn": ["@photon/docker#dev:up"],
+      "cache": false,
+      "interactive": true
+    },
+    "db:generate": { "cache": false },
+    "db:migrate": {
+      "dependsOn": ["@photon/docker#dev:up"],
+      "cache": false
+    },
+    "db:studio": {
+      "dependsOn": ["@photon/docker#dev:up"],
+      "persistent": true
+    },
+    "db:drop": { "cache": false },
+    "db:check": { "cache": false },
+    "email": { "persistent": true },
+    "prod:up": { "cache": false },
+    "prod:down": { "cache": false }
+  }
 }

@@ -21,17 +21,8 @@ const DEFAULT_OFFSET = 0;
  * ```
  */
 export const PaginationSchema = z.object({
-    pageSize: z.coerce
-        .number()
-        .min(MIN_LIMIT)
-        .max(MAX_LIMIT)
-        .default(DEFAULT_LIMIT)
-        .describe("Number of items to return"),
-    page: z.coerce
-        .number()
-        .min(0)
-        .default(DEFAULT_OFFSET)
-        .describe("Number of items to skip"),
+  pageSize: z.coerce.number().min(MIN_LIMIT).max(MAX_LIMIT).default(DEFAULT_LIMIT).describe("Number of items to return"),
+  page: z.coerce.number().min(0).default(DEFAULT_OFFSET).describe("Number of items to skip"),
 });
 
 /**
@@ -51,12 +42,9 @@ export const PaginationSchema = z.object({
  * ```
  */
 export const PagniationResponseSchema = z.object({
-    totalCount: z.number().describe("Total number of items available"),
-    pages: z.number().describe("Total number of pages available"),
-    nextPage: z
-        .number()
-        .nullable()
-        .describe("The next page number that can be fetched"),
+  totalCount: z.number().describe("Total number of items available"),
+  pages: z.number().describe("Total number of pages available"),
+  nextPage: z.number().nullable().describe("The next page number that can be fetched"),
 });
 
 /**
@@ -65,8 +53,7 @@ export const PagniationResponseSchema = z.object({
  * @param pageSize the page size used
  * @returns the page offset to fetch in the database
  */
-export const getPageOffset = (page: number, pageSize: number) =>
-    page * pageSize;
+export const getPageOffset = (page: number, pageSize: number) => page * pageSize;
 
 /**
  * Calculate the total page count based on a 0-based page index
@@ -74,5 +61,4 @@ export const getPageOffset = (page: number, pageSize: number) =>
  * @param pageSize the size of each page
  * @returns the total number of pages available
  */
-export const getTotalPages = (totalCount: number, pageSize: number) =>
-    pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0;
+export const getTotalPages = (totalCount: number, pageSize: number) => (pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0);

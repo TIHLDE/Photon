@@ -1,9 +1,5 @@
 import { type AuthInstance, createAuth } from "@photon/auth";
-import {
-    QueueManager,
-    type RedisClient,
-    createRedisClient,
-} from "@photon/core/cache";
+import { QueueManager, type RedisClient, createRedisClient } from "@photon/core/cache";
 import { env } from "@photon/core/env";
 import { type DbSchema, createDb } from "@photon/db";
 import { type EmailTransporter, createEmailTransporter } from "@photon/email";
@@ -16,18 +12,18 @@ import { type StorageClient, createStorageClient } from "./storage";
  * This allows for dependency injection and makes testing easier.
  */
 export interface AppContext {
-    /** Database client instance */
-    db: NodePgDatabase<DbSchema>;
-    /** Redis client instance */
-    redis: RedisClient;
-    /** Queue manager for creating/accessing Bull queues */
-    queue: QueueManager;
-    /** BetterAuth instance */
-    auth: AuthInstance;
-    /** Email transporter instance */
-    mailer: EmailTransporter;
-    /** Storage bucket client instance */
-    bucket: StorageClient;
+  /** Database client instance */
+  db: NodePgDatabase<DbSchema>;
+  /** Redis client instance */
+  redis: RedisClient;
+  /** Queue manager for creating/accessing Bull queues */
+  queue: QueueManager;
+  /** BetterAuth instance */
+  auth: AuthInstance;
+  /** Email transporter instance */
+  mailer: EmailTransporter;
+  /** Storage bucket client instance */
+  bucket: StorageClient;
 }
 
 /**
@@ -35,30 +31,30 @@ export interface AppContext {
  * This is used in production.
  */
 export async function createAppContext(): Promise<AppContext> {
-    const db = createDb({ connectionString: env.DATABASE_URL });
-    const redis = await createRedisClient(env.REDIS_URL);
-    const queue = new QueueManager(env.REDIS_URL);
-    const mailer = createEmailTransporter();
-    const bucket = await createStorageClient({ db });
+  const db = createDb({ connectionString: env.DATABASE_URL });
+  const redis = await createRedisClient(env.REDIS_URL);
+  const queue = new QueueManager(env.REDIS_URL);
+  const mailer = createEmailTransporter();
+  const bucket = await createStorageClient({ db });
 
-    const auth = createAuth({ db, redis, mailer, queue, bucket });
+  const auth = createAuth({ db, redis, mailer, queue, bucket });
 
-    return {
-        db,
-        redis,
-        queue,
-        auth,
-        mailer,
-        bucket,
-    };
+  return {
+    db,
+    redis,
+    queue,
+    auth,
+    mailer,
+    bucket,
+  };
 }
 
 export interface AppServices {
-    apiKey: ApiKeyService;
+  apiKey: ApiKeyService;
 }
 
 export function createAppServices(ctx: AppContext): AppServices {
-    return {
-        apiKey: createApiKeyService(ctx),
-    };
+  return {
+    apiKey: createApiKeyService(ctx),
+  };
 }

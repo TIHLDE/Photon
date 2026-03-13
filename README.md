@@ -23,6 +23,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 ## 🛠️ Teknologistack
 
 ### Backend
+
 - **Hono v4** - Minimalistisk og lynrask web-rammeverk
 - **PostgreSQL 17** - Relasjonsdatabase
 - **Drizzle ORM** - Type-sikker database-toolkit
@@ -33,6 +34,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 - **MinIO** - S3-kompatibel objektlagring
 
 ### Utviklingsverktøy
+
 - **TypeScript 5.9** - Statisk typing
 - **Bun 1.3** - Pakkebehandler og runtime
 - **Turborepo** - Monorepo byggeorkestrering
@@ -50,12 +52,14 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 ### Installasjon
 
 1. **Klon repositoryet**
+
    ```bash
    git clone <repository-url>
    cd Photon
    ```
 
 2. **Installer avhengigheter**
+
    ```bash
    bun install
    ```
@@ -63,11 +67,13 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 3. **Konfigurer miljøvariabler**
 
    Kopier eksempelfilen og rediger verdiene:
+
    ```bash
    cp .env.example .env
    ```
 
    Nødvendige miljøvariabler:
+
    ```env
    # Database
    DATABASE_URL=postgresql://postgres:password@localhost:5432/photon_db
@@ -92,6 +98,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
    ```
 
 4. **Start utviklingsmiljøet**
+
    ```bash
    bun dev
    ```
@@ -130,6 +137,7 @@ Photon/
 ## 🎯 Utviklingskommandoer
 
 ### Generelt
+
 ```bash
 # Start utviklingsserver (starter Docker + db:push automatisk)
 bun dev
@@ -145,12 +153,14 @@ bun run typecheck
 ```
 
 ### Testing
+
 ```bash
 # Kjør alle tester (krever Docker)
 bun run test
 ```
 
 ### Kodeformatering
+
 ```bash
 # Sjekk kode med Biome
 bun lint
@@ -163,6 +173,7 @@ bun format
 ```
 
 ### Database
+
 ```bash
 # Push skjema til database (utvikling)
 bun db:push
@@ -178,6 +189,7 @@ bun db:studio
 ```
 
 ### E-post
+
 ```bash
 # Start React Email forhåndsvisning
 bun email
@@ -186,6 +198,7 @@ bun email
 Åpner utviklingsserver på `http://localhost:4001` for å forhåndsvise e-postmaler.
 
 ### Docker
+
 ```bash
 # Start utviklingsmiljø
 bun docker:dev
@@ -227,6 +240,7 @@ Photon inkluderer role-based access control (RBAC) i `packages/auth/src/rbac/` f
 Prosjektet har innebygd støtte for Vipps MobilePay. Webhooks konfigureres automatisk ved oppstart av serveren.
 
 Vipps-variabler trengs ikke for å kjøre serveren. Men om du ønsker å teste Vipps må du sette opp følgende miljøvariabler:
+
 ```
 VIPPS_SUBSCRIPTION_KEY       = "subscription_key ..."
 VIPPS_CLIENT_ID              = "client_id ..."
@@ -286,6 +300,7 @@ bun docker:dev
 ```
 
 Starter:
+
 - PostgreSQL 17
 - Redis 7.4
 - Mailpit

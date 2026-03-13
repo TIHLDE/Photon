@@ -8,10 +8,10 @@ import { updateRoute } from "./update";
 import { validateRoute } from "./validate";
 
 export const apiKeyRoutes = route()
-    .route("/", createRoute)
-    .route("/", listRoute)
-    .route("/", getRoute)
-    .route("/", updateRoute)
-    .route("/", regenerateRoute)
-    .route("/", deleteRoute)
-    .route("/", validateRoute);
+  .route("/", createRoute)
+  .route("/", listRoute)
+  .route("/", getRoute)
+  .route("/", updateRoute)
+  .route("/", regenerateRoute)
+  .route("/", deleteRoute)
+  .route("/", validateRoute);

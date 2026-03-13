@@ -6,8 +6,8 @@ import { listFinesRoute } from "./list";
 import { updateFineRoute } from "./update";
 
 export const finesRoutes = route()
-    .route("/", listFinesRoute)
-    .route("/", createFineRoute)
-    .route("/", getFineRoute)
-    .route("/", updateFineRoute)
-    .route("/", deleteFineRoute);
+  .route("/", listFinesRoute)
+  .route("/", createFineRoute)
+  .route("/", getFineRoute)
+  .route("/", updateFineRoute)
+  .route("/", deleteFineRoute);

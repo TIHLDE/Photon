@@ -15,18 +15,18 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
  * Get a role by its name.
  */
 export async function getRoleByName(ctx: DbCtx, roleName: string) {
-    const db = ctx.db;
-    const [r] = await db.select().from(role).where(eq(role.name, roleName));
-    return r ?? null;
+  const db = ctx.db;
+  const [r] = await db.select().from(role).where(eq(role.name, roleName));
+  return r ?? null;
 }
 
 /**
  * Get a role by its ID.
  */
 export async function getRoleById(ctx: DbCtx, roleId: number) {
-    const db = ctx.db;
-    const [r] = await db.select().from(role).where(eq(role.id, roleId));
-    return r ?? null;
+  const db = ctx.db;
+  const [r] = await db.select().from(role).where(eq(role.id, roleId));
+  return r ?? null;
 }
 
 /**
@@ -34,6 +34,9 @@ export async function getRoleById(ctx: DbCtx, roleId: number) {
  * Higher position = better role, so descending order.
  */
 export async function getAllRoles(ctx: DbCtx) {
-    const db = ctx.db;
-    return await db.select().from(role).orderBy(sql`${role.position} DESC`);
+  const db = ctx.db;
+  return await db
+    .select()
+    .from(role)
+    .orderBy(sql`${role.position} DESC`);
 }

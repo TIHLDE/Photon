@@ -36,45 +36,41 @@ import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
 
 type Variables = {
-    user: User | null;
-    session: Session | null;
-    ctx: AppContext;
-    isResourceOwner?: boolean;
+  user: User | null;
+  session: Session | null;
+  ctx: AppContext;
+  isResourceOwner?: boolean;
 };
 
 /**
  * Function that checks if a user owns/created a resource.
  */
-export type OwnershipChecker = (
-    ctx: AppContext,
-    resourceId: string,
-    userId: string,
-) => Promise<boolean>;
+export type OwnershipChecker = (ctx: AppContext, resourceId: string, userId: string) => Promise<boolean>;
 
 /**
  * Options for the requireAccess middleware.
  */
 export type RequireAccessOptions = {
-    /**
-     * Permission(s) required. If array, user needs ANY of them.
-     */
-    permission: string | string[];
+  /**
+   * Permission(s) required. If array, user needs ANY of them.
+   */
+  permission: string | string[];
 
-    /**
-     * Optional scope resolver. If provided, checks both global and scoped permissions.
-     * If not provided, only checks global permissions.
-     */
-    scope?: (c: Context<{ Variables: Variables }>) => string;
+  /**
+   * Optional scope resolver. If provided, checks both global and scoped permissions.
+   * If not provided, only checks global permissions.
+   */
+  scope?: (c: Context<{ Variables: Variables }>) => string;
 
-    /**
-     * Optional ownership check. If provided, owner bypasses permission check.
-     */
-    ownership?: {
-        /** Route parameter name for the resource ID */
-        param: string;
-        /** Function to check if user owns the resource */
-        check: OwnershipChecker;
-    };
+  /**
+   * Optional ownership check. If provided, owner bypasses permission check.
+   */
+  ownership?: {
+    /** Route parameter name for the resource ID */
+    param: string;
+    /** Function to check if user owns the resource */
+    check: OwnershipChecker;
+  };
 };
 
 /**
@@ -88,65 +84,54 @@ export type RequireAccessOptions = {
  * For multiple permissions, user needs ANY of them (not all).
  */
 export const requireAccess = (options: RequireAccessOptions) =>
-    createMiddleware<{ Variables: Variables }>(async (c, next) => {
-        const user = c.get("user");
+  createMiddleware<{ Variables: Variables }>(async (c, next) => {
+    const user = c.get("user");
 
-        if (!user) {
-            throw new HTTPException(401, {
-                message: "Authentication required",
-            });
-        }
+    if (!user) {
+      throw new HTTPException(401, {
+        message: "Authentication required",
+      });
+    }
 
-        const ctx = c.get("ctx");
+    const ctx = c.get("ctx");
 
-        // 1. Check ownership first (if configured)
-        if (options.ownership) {
-            const resourceId = c.req.param(options.ownership.param);
-            if (!resourceId) {
-                throw new HTTPException(400, {
-                    message: `Resource ID parameter '${options.ownership.param}' required`,
-                });
-            }
+    // 1. Check ownership first (if configured)
+    if (options.ownership) {
+      const resourceId = c.req.param(options.ownership.param);
+      if (!resourceId) {
+        throw new HTTPException(400, {
+          message: `Resource ID parameter '${options.ownership.param}' required`,
+        });
+      }
 
-            const isOwner = await options.ownership.check(
-                ctx,
-                resourceId,
-                user.id,
-            );
-            if (isOwner) {
-                c.set("isResourceOwner", true);
-                await next();
-                return;
-            }
-        }
-
-        // 2. Check permissions (functions accept string | string[])
-        let hasAccess = false;
-
-        if (options.scope) {
-            // Scoped permission check (global OR scoped)
-            const scope = options.scope(c);
-            hasAccess = await hasScopedPermission(
-                ctx,
-                user.id,
-                options.permission,
-                scope,
-            );
-        } else {
-            // Global permission check only
-            hasAccess = await hasPermission(ctx, user.id, options.permission);
-        }
-
-        if (!hasAccess) {
-            const permStr = Array.isArray(options.permission)
-                ? options.permission.join(" or ")
-                : options.permission;
-            const scopeStr = options.scope ? " (globally or scoped)" : "";
-            throw new HTTPException(403, {
-                message: `Forbidden - requires permission: ${permStr}${scopeStr}`,
-            });
-        }
-
-        c.set("isResourceOwner", false);
+      const isOwner = await options.ownership.check(ctx, resourceId, user.id);
+      if (isOwner) {
+        c.set("isResourceOwner", true);
         await next();
-    });
+        return;
+      }
+    }
+
+    // 2. Check permissions (functions accept string | string[])
+    let hasAccess = false;
+
+    if (options.scope) {
+      // Scoped permission check (global OR scoped)
+      const scope = options.scope(c);
+      hasAccess = await hasScopedPermission(ctx, user.id, options.permission, scope);
+    } else {
+      // Global permission check only
+      hasAccess = await hasPermission(ctx, user.id, options.permission);
+    }
+
+    if (!hasAccess) {
+      const permStr = Array.isArray(options.permission) ? options.permission.join(" or ") : options.permission;
+      const scopeStr = options.scope ? " (globally or scoped)" : "";
+      throw new HTTPException(403, {
+        message: `Forbidden - requires permission: ${permStr}${scopeStr}`,
+      });
+    }
+
+    c.set("isResourceOwner", false);
+    await next();
+  });

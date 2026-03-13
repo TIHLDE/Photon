@@ -1,13 +1,13 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "extends": ["//"],
-    "tasks": {
-        "codegen": {
-            "cache": false
-        },
-        "build": {
-            "dependsOn": ["codegen"],
-            "outputs": ["dist/**"]
-        }
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "codegen": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["codegen"],
+      "outputs": ["dist/**"]
     }
+  }
 }

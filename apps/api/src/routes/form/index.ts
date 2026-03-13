@@ -12,19 +12,19 @@ import { listSubmissionsRoute } from "./submission/list";
 import { updateRoute } from "./update";
 
 export const formRoutes = route()
-    // Form CRUD
-    .route("/", createRoute)
-    .route("/", listRoute)
-    .route("/", getRoute)
-    .route("/", updateRoute)
-    .route("/", deleteRoute)
+  // Form CRUD
+  .route("/", createRoute)
+  .route("/", listRoute)
+  .route("/", getRoute)
+  .route("/", updateRoute)
+  .route("/", deleteRoute)
 
-    // Form statistics
-    .route("/", statisticsRoute)
+  // Form statistics
+  .route("/", statisticsRoute)
 
-    // Submissions
-    .route("/", createSubmissionRoute)
-    .route("/", listSubmissionsRoute)
-    .route("/", getSubmissionRoute)
-    .route("/", downloadSubmissionsRoute)
-    .route("/", deleteSubmissionWithReasonRoute);
+  // Submissions
+  .route("/", createSubmissionRoute)
+  .route("/", listSubmissionsRoute)
+  .route("/", getSubmissionRoute)
+  .route("/", downloadSubmissionsRoute)
+  .route("/", deleteSubmissionWithReasonRoute);

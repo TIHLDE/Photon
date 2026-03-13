@@ -12,23 +12,10 @@
  */
 
 // Registry and types
-export {
-    PERMISSION_REGISTRY,
-    SPECIAL_PERMISSIONS,
-    PERMISSIONS,
-    PERMISSIONS_SET,
-    isPermission,
-    getAllPermissions,
-    type Permission,
-} from "./registry";
+export { PERMISSION_REGISTRY, SPECIAL_PERMISSIONS, PERMISSIONS, PERMISSIONS_SET, isPermission, getAllPermissions, type Permission } from "./registry";
 
 // Permission checking
-export {
-    getUserPermissions,
-    getUserPermissionsWithScope,
-    hasPermission,
-    hasScopedPermission,
-} from "./checker";
+export { getUserPermissions, getUserPermissionsWithScope, hasPermission, hasScopedPermission } from "./checker";
 
 // Granting/revoking
 export { grantUserPermission, revokeUserPermission } from "./grant";

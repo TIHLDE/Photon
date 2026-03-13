@@ -11,19 +11,19 @@ import { createGiveUserPermissions } from "./give-user-permission";
 import { createSetupGroups } from "./setup-groups";
 
 export type TestUtilContext = TestAppContext & {
-    app: Awaited<ReturnType<typeof createApp>>;
+  app: Awaited<ReturnType<typeof createApp>>;
 };
 
 export const createTestUtils = (ctx: TestUtilContext) => {
-    return {
-        createTestUser: createCreateTestUser(ctx),
-        client: createGetClient(ctx),
-        clientForUser: createGetClientForUser(ctx),
-        setupGroups: createSetupGroups(ctx),
-        setupEventCategories: createSetupEventCategories(ctx),
-        createTestEvent: createCreateTestEvent(ctx),
-        createTestGroup: createCreateTestGroup(ctx),
-        createPendingRegistration: createCreatePendingRegistration(ctx),
-        giveUserPermissions: createGiveUserPermissions(ctx),
-    };
+  return {
+    createTestUser: createCreateTestUser(ctx),
+    client: createGetClient(ctx),
+    clientForUser: createGetClientForUser(ctx),
+    setupGroups: createSetupGroups(ctx),
+    setupEventCategories: createSetupEventCategories(ctx),
+    createTestEvent: createCreateTestEvent(ctx),
+    createTestGroup: createCreateTestGroup(ctx),
+    createPendingRegistration: createCreatePendingRegistration(ctx),
+    giveUserPermissions: createGiveUserPermissions(ctx),
+  };
 };

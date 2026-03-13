@@ -9,12 +9,7 @@ import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role, userPermission, userRole } from "@photon/db/schema";
 import type { DbSchema } from "@photon/db";
-import {
-    GLOBAL_SCOPE,
-    formatPermission,
-    matchesPermission,
-    parsePermission,
-} from "../permission-parser";
+import { GLOBAL_SCOPE, formatPermission, matchesPermission, parsePermission } from "../permission-parser";
 
 type DbCtx = { db: NodePgDatabase<DbSchema> };
 
@@ -26,54 +21,42 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
  * Get all permissions for a user from their roles.
  * Returns raw array with potential duplicates.
  */
-async function getPermissionsFromRoles(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
-        .select({ permissions: role.permissions })
-        .from(userRole)
-        .innerJoin(role, eq(userRole.roleId, role.id))
-        .where(eq(userRole.userId, userId));
+async function getPermissionsFromRoles(ctx: DbCtx, userId: string): Promise<string[]> {
+  const db = ctx.db;
+  const rows = await db
+    .select({ permissions: role.permissions })
+    .from(userRole)
+    .innerJoin(role, eq(userRole.roleId, role.id))
+    .where(eq(userRole.userId, userId));
 
-    return rows.flatMap((r) => r.permissions ?? []);
+  return rows.flatMap((r) => r.permissions ?? []);
 }
 
 /**
  * Get all direct permissions for a user (not from roles).
  * Returns array of permission strings in format "permission" or "permission@scope".
  */
-async function getDirectPermissions(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
-        .select({
-            permission: userPermission.permission,
-            scope: userPermission.scope,
-        })
-        .from(userPermission)
-        .where(eq(userPermission.userId, userId));
+async function getDirectPermissions(ctx: DbCtx, userId: string): Promise<string[]> {
+  const db = ctx.db;
+  const rows = await db
+    .select({
+      permission: userPermission.permission,
+      scope: userPermission.scope,
+    })
+    .from(userPermission)
+    .where(eq(userPermission.userId, userId));
 
-    return rows.map((r) => formatPermission(r.permission, r.scope));
+  return rows.map((r) => formatPermission(r.permission, r.scope));
 }
 
 /**
  * Get all permissions for a user (from roles + direct grants).
  * Returns raw array with potential duplicates.
  */
-export async function getUserPermissions(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const [rolePerms, directPerms] = await Promise.all([
-        getPermissionsFromRoles(ctx, userId),
-        getDirectPermissions(ctx, userId),
-    ]);
+export async function getUserPermissions(ctx: DbCtx, userId: string): Promise<string[]> {
+  const [rolePerms, directPerms] = await Promise.all([getPermissionsFromRoles(ctx, userId), getDirectPermissions(ctx, userId)]);
 
-    return [...rolePerms, ...directPerms];
+  return [...rolePerms, ...directPerms];
 }
 
 /**
@@ -86,20 +69,17 @@ export async function getUserPermissions(
  * //   { permission: "events:update", scope: "group:fotball" },
  * // ]
  */
-export async function getUserPermissionsWithScope(
-    ctx: DbCtx,
-    userId: string,
-): Promise<Array<{ permission: string; scope: string }>> {
-    const db = ctx.db;
-    const rows = await db
-        .select({
-            permission: userPermission.permission,
-            scope: userPermission.scope,
-        })
-        .from(userPermission)
-        .where(eq(userPermission.userId, userId));
+export async function getUserPermissionsWithScope(ctx: DbCtx, userId: string): Promise<Array<{ permission: string; scope: string }>> {
+  const db = ctx.db;
+  const rows = await db
+    .select({
+      permission: userPermission.permission,
+      scope: userPermission.scope,
+    })
+    .from(userPermission)
+    .where(eq(userPermission.userId, userId));
 
-    return rows;
+  return rows;
 }
 
 // =============================================================================
@@ -110,7 +90,7 @@ export async function getUserPermissionsWithScope(
  * Check if user has "root" permission (grants everything).
  */
 function hasRoot(permissions: string[]): boolean {
-    return permissions.includes("root");
+  return permissions.includes("root");
 }
 
 /**
@@ -131,30 +111,21 @@ function hasRoot(permissions: string[]): boolean {
  *     // User can update or manage ANY event
  * }
  */
-export async function hasPermission(
-    ctx: DbCtx,
-    userId: string,
-    permissionName: string | string[],
-): Promise<boolean> {
-    const permissionNames = Array.isArray(permissionName)
-        ? permissionName
-        : [permissionName];
+export async function hasPermission(ctx: DbCtx, userId: string, permissionName: string | string[]): Promise<boolean> {
+  const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
 
-    if (permissionNames.length === 0) return false;
+  if (permissionNames.length === 0) return false;
 
-    const permissions = await getUserPermissions(ctx, userId);
+  const permissions = await getUserPermissions(ctx, userId);
 
-    if (hasRoot(permissions)) return true;
+  if (hasRoot(permissions)) return true;
 
-    return permissionNames.some((requiredPerm) =>
-        permissions.some((p) => {
-            const parsed = parsePermission(p);
-            return (
-                parsed.permission === requiredPerm &&
-                parsed.scope === GLOBAL_SCOPE
-            );
-        }),
-    );
+  return permissionNames.some((requiredPerm) =>
+    permissions.some((p) => {
+      const parsed = parsePermission(p);
+      return parsed.permission === requiredPerm && parsed.scope === GLOBAL_SCOPE;
+    }),
+  );
 }
 
 // =============================================================================
@@ -185,25 +156,14 @@ export async function hasPermission(
  *     // Allow update or manage
  * }
  */
-export async function hasScopedPermission(
-    ctx: DbCtx,
-    userId: string,
-    permissionName: string | string[],
-    requiredScope: string,
-): Promise<boolean> {
-    const permissionNames = Array.isArray(permissionName)
-        ? permissionName
-        : [permissionName];
+export async function hasScopedPermission(ctx: DbCtx, userId: string, permissionName: string | string[], requiredScope: string): Promise<boolean> {
+  const permissionNames = Array.isArray(permissionName) ? permissionName : [permissionName];
 
-    if (permissionNames.length === 0) return false;
+  if (permissionNames.length === 0) return false;
 
-    const permissions = await getUserPermissions(ctx, userId);
+  const permissions = await getUserPermissions(ctx, userId);
 
-    if (hasRoot(permissions)) return true;
+  if (hasRoot(permissions)) return true;
 
-    return permissionNames.some((requiredPerm) =>
-        permissions.some((grantedPerm) =>
-            matchesPermission(grantedPerm, requiredPerm, requiredScope),
-        ),
-    );
+  return permissionNames.some((requiredPerm) => permissions.some((grantedPerm) => matchesPermission(grantedPerm, requiredPerm, requiredScope)));
 }

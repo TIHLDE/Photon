@@ -17,14 +17,7 @@
 export { getRoleByName, getRoleById, getAllRoles } from "./queries";
 
 // User-role operations
-export {
-    getUserRoles,
-    userHasRole,
-    userHasAnyRole,
-    assignUserRole,
-    removeUserRole,
-    getRoleUserIds,
-} from "./user-roles";
+export { getUserRoles, userHasRole, userHasAnyRole, assignUserRole, removeUserRole, getRoleUserIds } from "./user-roles";
 
 // Hierarchy
 export { getUserHighestRolePosition, userCanManageUser } from "./hierarchy";
@@ -33,9 +26,4 @@ export { getUserHighestRolePosition, userCanManageUser } from "./hierarchy";
 export { assignRolePermissions, setRolePermissions } from "./role-permissions";
 
 // Role CRUD
-export {
-    createRole,
-    createTestingRole,
-    deleteRole,
-    reorderRole,
-} from "./crud";
+export { createRole, createTestingRole, deleteRole, reorderRole } from "./crud";

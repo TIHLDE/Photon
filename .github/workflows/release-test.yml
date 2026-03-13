@@ -26,7 +26,6 @@ jobs:
       context: .
       dockerfile: infra/docker/Dockerfile
 
-
   deploy:
     needs: build
     if: github.event_name != 'pull_request'

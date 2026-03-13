@@ -9,46 +9,45 @@ import { requireAuth } from "~/middleware/auth";
 import { deleteJobResponseSchema } from "./schema";
 
 export const deleteRoute = route().delete(
-    "/:id",
-    describeRoute({
-        tags: ["jobs"],
-        summary: "Delete job posting",
-        operationId: "deleteJob",
-        description:
-            "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
+  "/:id",
+  describeRoute({
+    tags: ["jobs"],
+    summary: "Delete job posting",
+    operationId: "deleteJob",
+    description: "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
+  })
+    .schemaResponse({
+      statusCode: 200,
+      schema: deleteJobResponseSchema,
+      description: "Job posting deleted successfully",
     })
-        .schemaResponse({
-            statusCode: 200,
-            schema: deleteJobResponseSchema,
-            description: "Job posting deleted successfully",
-        })
-        .forbidden({ description: "Insufficient permissions" })
-        .notFound({ description: "Job posting not found" })
-        .build(),
-    requireAuth,
-    requireAccess({
-        permission: ["jobs:delete", "jobs:manage"],
-        scope: (c) => `job-${c.req.param("id")}`,
-        ownership: { param: "id", check: isJobCreator },
-    }),
-    async (c) => {
-        const { db } = c.get("ctx");
-        const { id } = c.req.param();
+    .forbidden({ description: "Insufficient permissions" })
+    .notFound({ description: "Job posting not found" })
+    .build(),
+  requireAuth,
+  requireAccess({
+    permission: ["jobs:delete", "jobs:manage"],
+    scope: (c) => `job-${c.req.param("id")}`,
+    ownership: { param: "id", check: isJobCreator },
+  }),
+  async (c) => {
+    const { db } = c.get("ctx");
+    const { id } = c.req.param();
 
-        // Check if job exists
-        const job = await db.query.jobPost.findFirst({
-            where: eq(schema.jobPost.id, id),
-        });
+    // Check if job exists
+    const job = await db.query.jobPost.findFirst({
+      where: eq(schema.jobPost.id, id),
+    });
 
-        if (!job) {
-            throw new HTTPException(404, {
-                message: "Job posting not found",
-            });
-        }
+    if (!job) {
+      throw new HTTPException(404, {
+        message: "Job posting not found",
+      });
+    }
 
-        // Delete the job posting
-        await db.delete(schema.jobPost).where(eq(schema.jobPost.id, id));
+    // Delete the job posting
+    await db.delete(schema.jobPost).where(eq(schema.jobPost.id, id));
 
-        return c.json({ message: "Job posting deleted successfully" });
-    },
+    return c.json({ message: "Job posting deleted successfully" });
+  },
 );

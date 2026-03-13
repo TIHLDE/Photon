@@ -3,7 +3,4 @@ import { deleteNotificationRoute } from "./delete";
 import { listNotificationsRoute } from "./list";
 import { markReadNotificationRoute } from "./mark-read";
 
-export const notificationRoutes = route()
-    .route("/", listNotificationsRoute)
-    .route("/", deleteNotificationRoute)
-    .route("/", markReadNotificationRoute);
+export const notificationRoutes = route().route("/", listNotificationsRoute).route("/", deleteNotificationRoute).route("/", markReadNotificationRoute);

@@ -2,9 +2,7 @@
  * Bearer token parsing utilities.
  */
 
-export type ParseBearerResult =
-    | { success: true; token: string }
-    | { success: false; error: string };
+export type ParseBearerResult = { success: true; token: string } | { success: false; error: string };
 
 /**
  * Parse a Bearer token from an Authorization header.
@@ -20,22 +18,22 @@ export type ParseBearerResult =
  * const token = result.token;
  */
 export function parseBearer(authHeader: string | undefined): ParseBearerResult {
-    if (!authHeader) {
-        return {
-            success: false,
-            error: "Authorization header required",
-        };
-    }
+  if (!authHeader) {
+    return {
+      success: false,
+      error: "Authorization header required",
+    };
+  }
 
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
-        return {
-            success: false,
-            error: 'Invalid Authorization header format. Expected "Bearer <token>"',
-        };
-    }
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer" || !parts[1]) {
+    return {
+      success: false,
+      error: 'Invalid Authorization header format. Expected "Bearer <token>"',
+    };
+  }
 
-    return { success: true, token: parts[1] };
+  return { success: true, token: parts[1] };
 }
 
 /**
@@ -51,9 +49,7 @@ export function parseBearer(authHeader: string | undefined): ParseBearerResult {
  *     // Use token
  * }
  */
-export function parseBearerOptional(
-    authHeader: string | undefined,
-): string | null {
-    const result = parseBearer(authHeader);
-    return result.success ? result.token : null;
+export function parseBearerOptional(authHeader: string | undefined): string | null {
+  const result = parseBearer(authHeader);
+  return result.success ? result.token : null;
 }

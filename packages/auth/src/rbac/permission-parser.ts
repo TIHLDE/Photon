@@ -14,8 +14,8 @@
 export const GLOBAL_SCOPE = "*";
 
 export type ParsedPermission = {
-    permission: string;
-    scope: string;
+  permission: string;
+  scope: string;
 };
 
 /**
@@ -26,43 +26,39 @@ export type ParsedPermission = {
  * parsePermission("events:create@group:fotball") → { permission: "events:create", scope: "group:fotball" }
  */
 export function parsePermission(raw: string): ParsedPermission {
-    const parts = raw.split("@");
+  const parts = raw.split("@");
 
-    if (parts.length === 1) {
-        // No scope: "events:create"
-        const perm = parts[0];
-        if (!perm) {
-            throw new Error("Invalid permission format: empty string");
-        }
-        return { permission: perm.trim(), scope: GLOBAL_SCOPE };
+  if (parts.length === 1) {
+    // No scope: "events:create"
+    const perm = parts[0];
+    if (!perm) {
+      throw new Error("Invalid permission format: empty string");
     }
+    return { permission: perm.trim(), scope: GLOBAL_SCOPE };
+  }
 
-    if (parts.length === 2) {
-        // Has scope: "events:create@group:fotball"
-        const perm = parts[0];
-        const scopePart = parts[1];
-        if (!perm || !scopePart) {
-            throw new Error(
-                `Invalid permission format: "${raw}". Both permission and scope must be non-empty`,
-            );
-        }
-        return {
-            permission: perm.trim(),
-            scope: scopePart.trim(),
-        };
+  if (parts.length === 2) {
+    // Has scope: "events:create@group:fotball"
+    const perm = parts[0];
+    const scopePart = parts[1];
+    if (!perm || !scopePart) {
+      throw new Error(`Invalid permission format: "${raw}". Both permission and scope must be non-empty`);
     }
+    return {
+      permission: perm.trim(),
+      scope: scopePart.trim(),
+    };
+  }
 
-    // Invalid format (multiple @)
-    throw new Error(
-        `Invalid permission format: "${raw}". Expected "permission" or "permission@scope"`,
-    );
+  // Invalid format (multiple @)
+  throw new Error(`Invalid permission format: "${raw}". Expected "permission" or "permission@scope"`);
 }
 
 /**
  * Parse an array of permission strings.
  */
 export function parsePermissions(raw: string[]): ParsedPermission[] {
-    return raw.map(parsePermission);
+  return raw.map(parsePermission);
 }
 
 /**
@@ -73,14 +69,14 @@ export function parsePermissions(raw: string[]): ParsedPermission[] {
  * formatPermission("events:create", "group:fotball") → "events:create@group:fotball"
  */
 export function formatPermission(permission: string, scope: string): string {
-    return scope === GLOBAL_SCOPE ? permission : `${permission}@${scope}`;
+  return scope === GLOBAL_SCOPE ? permission : `${permission}@${scope}`;
 }
 
 /**
  * Check if a permission string has a scope.
  */
 export function hasScope(raw: string): boolean {
-    return raw.includes("@");
+  return raw.includes("@");
 }
 
 /**
@@ -91,7 +87,7 @@ export function hasScope(raw: string): boolean {
  * getPermissionName("events:create") → "events:create"
  */
 export function getPermissionName(raw: string): string {
-    return parsePermission(raw).permission;
+  return parsePermission(raw).permission;
 }
 
 /**
@@ -102,7 +98,7 @@ export function getPermissionName(raw: string): string {
  * getPermissionScope("events:create") → "*"
  */
 export function getPermissionScope(raw: string): string {
-    return parsePermission(raw).scope;
+  return parsePermission(raw).scope;
 }
 
 /**
@@ -128,23 +124,19 @@ export function getPermissionScope(raw: string): string {
  * // User has scoped permission (wrong scope)
  * matchesPermission("events:create@group:index", "events:create", "group:fotball") → false
  */
-export function matchesPermission(
-    grantedRaw: string,
-    requiredPermission: string,
-    requiredScope: string,
-): boolean {
-    const granted = parsePermission(grantedRaw);
+export function matchesPermission(grantedRaw: string, requiredPermission: string, requiredScope: string): boolean {
+  const granted = parsePermission(grantedRaw);
 
-    // Permission name must match
-    if (granted.permission !== requiredPermission) {
-        return false;
-    }
+  // Permission name must match
+  if (granted.permission !== requiredPermission) {
+    return false;
+  }
 
-    // If granted permission is global (wildcard scope), it matches any required scope
-    if (granted.scope === GLOBAL_SCOPE) {
-        return true;
-    }
+  // If granted permission is global (wildcard scope), it matches any required scope
+  if (granted.scope === GLOBAL_SCOPE) {
+    return true;
+  }
 
-    // If granted permission is scoped, it must match the required scope exactly
-    return granted.scope === requiredScope;
+  // If granted permission is scoped, it must match the required scope exactly
+  return granted.scope === requiredScope;
 }

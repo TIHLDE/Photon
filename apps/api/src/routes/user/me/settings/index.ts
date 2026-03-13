@@ -3,7 +3,4 @@ import { getSettingsRoute } from "./get";
 import { onboardRoute } from "./onboard";
 import { updateSettingsRoute } from "./update";
 
-export const settingsRoutes = route()
-    .route("/", getSettingsRoute)
-    .route("/", onboardRoute)
-    .route("/", updateSettingsRoute);
+export const settingsRoutes = route().route("/", getSettingsRoute).route("/", onboardRoute).route("/", updateSettingsRoute);
