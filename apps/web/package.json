@@ -1,11 +1,11 @@
 {
-  "name": "kvark",
+  "name": "kvark-old",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "serve": "node .output/server/index.mjs",
     "start": "vite",
     "check": "tsc --noEmit",

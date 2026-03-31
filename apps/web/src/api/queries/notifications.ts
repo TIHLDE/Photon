@@ -2,8 +2,9 @@ import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { photonClient } from "../apiClient";
 import { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { MarkNotificationRead } from "@tihlde/sdk";
 
-export type { Notification, NotificationList, DeleteNotificationResponse, MarkReadResponse } from "@tihlde/sdk";
+export type { MarkNotificationRead, Notification, NotificationList, DeleteNotificationResponse, MarkReadResponse } from "@tihlde/sdk";
 
 export type NotificationFilters = QueryParamsHelper<"get", "/api/notification">;
 
@@ -38,7 +39,7 @@ export const deleteNotificationMutation = (id: string) =>
 
 export const markNotificationReadMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/notification/{id}/read">>[1]) =>
+    mutationFn: (body: MarkNotificationRead) =>
       photonClient
         .patch("/api/notification/{id}/read", body, {
           pathParams: { id },

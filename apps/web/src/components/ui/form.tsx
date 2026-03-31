@@ -82,7 +82,7 @@ function FormControl({ children = <div /> }: { children?: useRender.RenderProp |
       "data-slot": "field-control",
       id: formItemId,
       "aria-describedby": !error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`,
-      "aria-invalid": !!error,
+      "aria-invalid": Boolean(error),
     },
   });
 }

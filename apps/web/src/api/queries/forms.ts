@@ -1,8 +1,13 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { photonClient } from "../apiClient";
+import type { CreateForm, CreateSubmission, DeleteSubmissionWithReason, UpdateForm } from "@tihlde/sdk";
 
 export type {
+  CreateForm,
+  CreateSubmission,
+  DeleteSubmissionWithReason,
+  UpdateForm,
   FormDetail,
   FormList,
   FormResponse,
@@ -74,7 +79,7 @@ export const getFormSubmissionQuery = (formId: string, id: string) =>
   });
 
 export const createFormMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/forms">>[1]) => photonClient.post("/api/forms", body).then((r) => r.unwrap().data),
+  mutationFn: (body: CreateForm) => photonClient.post("/api/forms", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: formKeys.lists });
   },
@@ -85,7 +90,7 @@ export const createFormMutation = mutationOptions({
 
 export const updateFormMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/forms/{id}">>[1]) =>
+    mutationFn: (body: UpdateForm) =>
       photonClient
         .patch("/api/forms/{id}", body, {
           pathParams: { id },
@@ -114,7 +119,7 @@ export const deleteFormMutation = (id: string) =>
 
 export const createFormSubmissionMutation = (formId: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/forms/{formId}/submissions">>[1]) =>
+    mutationFn: (body: CreateSubmission) =>
       photonClient
         .post("/api/forms/{formId}/submissions", body, {
           pathParams: { formId },
@@ -130,7 +135,7 @@ export const createFormSubmissionMutation = (formId: string) =>
 
 export const deleteFormSubmissionMutation = (formId: string, id: string) =>
   mutationOptions({
-    mutationFn: (body: { reason: string }) =>
+    mutationFn: (body: DeleteSubmissionWithReason) =>
       photonClient
         .del("/api/forms/{formId}/submissions/{id}/destroy_with_reason", {
           pathParams: { formId, id },

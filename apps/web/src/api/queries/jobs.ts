@@ -2,8 +2,9 @@ import { infiniteQueryOptions, mutationOptions, queryOptions } from "@tanstack/r
 
 import { photonClient } from "../apiClient";
 import { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { CreateJob, UpdateJob } from "@tihlde/sdk";
 
-export type { JobDetail, JobList, JobListItem, DeleteJobResponse } from "@tihlde/sdk";
+export type { CreateJob, UpdateJob, JobDetail, JobList, JobListItem, DeleteJobResponse } from "@tihlde/sdk";
 
 export type { JobListItem as JobListEntry } from "@tihlde/sdk";
 
@@ -59,7 +60,7 @@ export const getJobQuery = (id: string) =>
   });
 
 export const createJobMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/jobs">>[1]) => photonClient.post("/api/jobs", body).then((r) => r.unwrap().data),
+  mutationFn: (body: CreateJob) => photonClient.post("/api/jobs", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: jobKeys.lists });
   },
@@ -70,7 +71,7 @@ export const createJobMutation = mutationOptions({
 
 export const updateJobMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/jobs/{id}">>[1]) =>
+    mutationFn: (body: UpdateJob) =>
       photonClient
         .patch("/api/jobs/{id}", body, {
           pathParams: { id },

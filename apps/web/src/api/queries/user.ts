@@ -1,8 +1,9 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { photonClient } from "../apiClient";
+import type { OnboardUserInput, UpdateUserSettingsInput } from "@tihlde/sdk";
 
-export type { UpdateUserSettings, UserSettings, UserSettingsBase } from "@tihlde/sdk";
+export type { OnboardUserInput, UpdateUserSettingsInput, UpdateUserSettings, UserSettings, UserSettingsBase } from "@tihlde/sdk";
 
 export const userKeys = {
   all: ["user"],
@@ -23,8 +24,7 @@ export const listAllergiesQuery = () =>
   });
 
 export const updateUserSettingsMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.patch<"/api/user/me/settings">>[1]) =>
-    photonClient.patch("/api/user/me/settings", body).then((r) => r.unwrap().data),
+  mutationFn: (body: UpdateUserSettingsInput) => photonClient.patch("/api/user/me/settings", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: userKeys.settings });
   },
@@ -34,8 +34,7 @@ export const updateUserSettingsMutation = mutationOptions({
 });
 
 export const onboardUserMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/user/me/settings">>[1]) =>
-    photonClient.post("/api/user/me/settings", body).then((r) => r.unwrap().data),
+  mutationFn: (body: OnboardUserInput) => photonClient.post("/api/user/me/settings", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: userKeys.settings });
   },

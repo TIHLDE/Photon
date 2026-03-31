@@ -61,7 +61,7 @@ export const routes = rootRoute("./routes/__root.tsx", [
     route("stillingsannonser", [
       index("./routes/jobs/list/index.tsx"),
       //
-      route("/$id/{-$urlTitle}", "./pages/JobPostDetails/index.tsx"),
+      route("/$id/{-$urlTitle}", "./routes/jobs/$id/index.tsx"),
     ]),
 
     route("/galleri", [
@@ -72,7 +72,7 @@ export const routes = rootRoute("./routes/__root.tsx", [
 
     route("/nyheter", [
       index("./routes/news/list/index.tsx"),
-      route("/$id/{-$urlTitle}", "./pages/NewsDetails/index.tsx"),
+      route("/$id/{-$urlTitle}", "./routes/news/$id/index.tsx"),
       //
     ]),
 

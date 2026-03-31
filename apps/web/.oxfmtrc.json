@@ -12,5 +12,5 @@
   "singleQuote": true,
   "trailingComma": "all",
   "sortPackageJson": false,
-  "ignorePatterns": ["/src/components/ui/", "/src/lib/utils.ts", "src/routeTree.gen.ts"]
+  "ignorePatterns": ["./src/components/ui/", "./src/lib/utils.ts", "./src/routeTree.gen.ts"]
 }

@@ -1,8 +1,9 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { photonClient } from "../apiClient";
+import type { CreateFine, UpdateFine } from "@tihlde/sdk";
 
-export type { Fine, FineList, UpdateFineResponse } from "@tihlde/sdk";
+export type { CreateFine, UpdateFine, Fine, FineList, UpdateFineResponse } from "@tihlde/sdk";
 
 export const fineKeys = {
   all: ["fines"],
@@ -34,7 +35,7 @@ export const getFineQuery = (groupSlug: string, fineId: string) =>
 
 export const createFineMutation = (groupSlug: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/groups/{groupSlug}/fines">>[1]) =>
+    mutationFn: (body: CreateFine) =>
       photonClient
         .post("/api/groups/{groupSlug}/fines", body, {
           pathParams: { groupSlug },
@@ -50,7 +51,7 @@ export const createFineMutation = (groupSlug: string) =>
 
 export const updateFineMutation = (groupSlug: string, fineId: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/groups/{groupSlug}/fines/{fineId}">>[1]) =>
+    mutationFn: (body: UpdateFine) =>
       photonClient
         .patch("/api/groups/{groupSlug}/fines/{fineId}", body, {
           pathParams: { groupSlug, fineId },

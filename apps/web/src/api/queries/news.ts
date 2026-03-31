@@ -2,8 +2,19 @@ import { infiniteQueryOptions, mutationOptions, queryOptions } from "@tanstack/r
 
 import { photonClient } from "../apiClient";
 import { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { CreateNews, CreateNewsReaction, UpdateNews } from "@tihlde/sdk";
 
-export type { NewsArticle, NewsList, NewsListItem, NewsReaction, DeleteNewsResponse, DeleteNewsReactionResponse } from "@tihlde/sdk";
+export type {
+  CreateNews,
+  CreateNewsReaction,
+  UpdateNews,
+  NewsArticle,
+  NewsList,
+  NewsListItem,
+  NewsReaction,
+  DeleteNewsResponse,
+  DeleteNewsReactionResponse,
+} from "@tihlde/sdk";
 
 export type { NewsListItem as NewsListEntry } from "@tihlde/sdk";
 
@@ -62,7 +73,7 @@ export const getNewsQuery = (id: string) =>
   });
 
 export const createNewsMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/news">>[1]) => photonClient.post("/api/news", body).then((r) => r.unwrap().data),
+  mutationFn: (body: CreateNews) => photonClient.post("/api/news", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: newsKeys.lists });
   },
@@ -73,7 +84,7 @@ export const createNewsMutation = mutationOptions({
 
 export const updateNewsMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/news/{id}">>[1]) =>
+    mutationFn: (body: UpdateNews) =>
       photonClient
         .patch("/api/news/{id}", body, {
           pathParams: { id },
@@ -102,7 +113,7 @@ export const deleteNewsMutation = (id: string) =>
 
 export const createNewsReactionMutation = (id: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/news/{id}/reactions">>[1]) =>
+    mutationFn: (body: CreateNewsReaction) =>
       photonClient
         .post("/api/news/{id}/reactions", body, {
           pathParams: { id },

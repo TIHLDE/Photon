@@ -2,10 +2,12 @@ import { infiniteQueryOptions, mutationOptions, queryOptions } from "@tanstack/r
 
 import { photonClient } from "../apiClient";
 import { QueryParamsHelper } from "@tihlde/sdk/types";
-import { CreateEventSchema, EventRegistration, UpdateEventSchema, UpdateFavoriteEvent } from "@tihlde/sdk";
+import type { CreateEventForm, CreateEventSchema, CreatePaymentBody, EventRegistration, UpdateEventSchema, UpdateFavoriteEvent } from "@tihlde/sdk";
 
 export type {
   CreateEventResponse,
+  CreateEventForm,
+  CreatePaymentBody,
   Event,
   EventFormDetail,
   EventFormList,
@@ -19,7 +21,7 @@ export type {
   FavoriteEvents,
   CreateEventSchema,
   UpdateEventSchema,
-  UpdateFavoriteEvent
+  UpdateFavoriteEvent,
 } from "@tihlde/sdk";
 
 export type { EventListItem as EventListEntry } from "@tihlde/sdk";
@@ -209,7 +211,7 @@ export const deleteEventRegistrationMutation = (eventId: string) =>
 
 export const createEventPaymentMutation = (eventId: string) =>
   mutationOptions({
-    mutationFn: (body: ) =>
+    mutationFn: (body: CreatePaymentBody) =>
       photonClient
         .post("/api/event/{eventId}/payment", body, {
           pathParams: { eventId },
@@ -222,7 +224,7 @@ export const createEventPaymentMutation = (eventId: string) =>
 
 export const createEventFormMutation = (eventId: string) =>
   mutationOptions({
-    mutationFn: (body: ) =>
+    mutationFn: (body: CreateEventForm) =>
       photonClient
         .post("/api/event/{eventId}/forms", body, {
           pathParams: { eventId },

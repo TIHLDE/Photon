@@ -1,8 +1,14 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 
 import { photonClient } from "../apiClient";
+import type { AddGroupMember, CreateGroup, CreateGroupForm, UpdateGroup, UpdateGroupMemberRole } from "@tihlde/sdk";
 
 export type {
+  AddGroupMember,
+  CreateGroup,
+  CreateGroupForm,
+  UpdateGroup,
+  UpdateGroupMemberRole,
   Group,
   GroupFormList,
   GroupList,
@@ -62,7 +68,7 @@ export const listGroupFormsQuery = (slug: string) =>
   });
 
 export const createGroupMutation = mutationOptions({
-  mutationFn: (body: Parameters<typeof photonClient.post<"/api/groups">>[1]) => photonClient.post("/api/groups", body).then((r) => r.unwrap().data),
+  mutationFn: (body: CreateGroup) => photonClient.post("/api/groups", body).then((r) => r.unwrap().data),
   onMutate: async (_, ctx) => {
     await ctx.client.cancelQueries({ queryKey: groupKeys.lists });
   },
@@ -73,7 +79,7 @@ export const createGroupMutation = mutationOptions({
 
 export const updateGroupMutation = (slug: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/groups/{slug}">>[1]) =>
+    mutationFn: (body: UpdateGroup) =>
       photonClient
         .patch("/api/groups/{slug}", body, {
           pathParams: { slug },
@@ -102,7 +108,7 @@ export const deleteGroupMutation = (slug: string) =>
 
 export const addGroupMemberMutation = (groupSlug: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/groups/{groupSlug}/members">>[1]) =>
+    mutationFn: (body: AddGroupMember) =>
       photonClient
         .post("/api/groups/{groupSlug}/members", body, {
           pathParams: { groupSlug },
@@ -131,7 +137,7 @@ export const removeGroupMemberMutation = (groupSlug: string, userId: string) =>
 
 export const updateGroupMemberRoleMutation = (groupSlug: string, userId: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.patch<"/api/groups/{groupSlug}/members/{userId}">>[1]) =>
+    mutationFn: (body: UpdateGroupMemberRole) =>
       photonClient
         .patch("/api/groups/{groupSlug}/members/{userId}", body, {
           pathParams: { groupSlug, userId },
@@ -147,7 +153,7 @@ export const updateGroupMemberRoleMutation = (groupSlug: string, userId: string)
 
 export const createGroupFormMutation = (slug: string) =>
   mutationOptions({
-    mutationFn: (body: Parameters<typeof photonClient.post<"/api/groups/{slug}/forms">>[1]) =>
+    mutationFn: (body: CreateGroupForm) =>
       photonClient
         .post("/api/groups/{slug}/forms", body, {
           pathParams: { slug },
