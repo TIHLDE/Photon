@@ -1,4 +1,8 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["**/drizzle/**", "**/dist/**", "**/generated/**", ".claude/**/*"]
+  "useTabs": false,
+  "tabWidth": 2,
+  "endOfLine": "lf",
+  "printWidth": 160,
+  "ignorePatterns": ["**/drizzle/**", "**/dist/**", "**/generated/**", ".claude/**/*", "**/routeTree.gen.ts"]
 }

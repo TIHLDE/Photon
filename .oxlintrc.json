@@ -33,5 +33,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["**/drizzle/**", "**/dist/**", "**/generated/**"]
+  "ignorePatterns": ["**/drizzle/**", "**/dist/**", "**/generated/**", "apps/web-old/**", "**/.oxlintrc.json", "**/.oxfmtrc.json"]
 }
