@@ -151,6 +151,7 @@
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
+        "drizzle-orm": "catalog:",
         "mysql2": "^3.14.4",
       },
       "devDependencies": {
@@ -161,7 +162,7 @@
     },
     "packages/sdk": {
       "name": "@tihlde/sdk",
-      "version": "0.0.3",
+      "version": "0.0.5",
       "dependencies": {
         "openapi-fetch": "^0.17.0",
       },
