@@ -1,6 +1,5 @@
 import { parseBearer } from "@photon/auth/bearer";
 import { enqueueEmail } from "@photon/email";
-import { sendCustomEmailSchema } from "@photon/email/schema";
 import { CustomEmail } from "@photon/email/templates";
 import type { MiddlewareHandler } from "hono";
 import { validator } from "hono-openapi";
@@ -9,7 +8,7 @@ import React from "react";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { sendEmailResponseSchema } from "./schema";
+import { sendCustomEmailInputSchema, sendEmailResponseSchema } from "./schema";
 
 /**
  * Middleware to validate API key from Bearer token
@@ -58,7 +57,7 @@ export const sendEmailRoute = route().post(
         .response({ statusCode: 503, description: "Email API not configured" })
         .build(),
     requireEmailApiKey,
-    validator("json", sendCustomEmailSchema),
+    validator("json", sendCustomEmailInputSchema),
     async (c) => {
         const body = c.req.valid("json");
         const { ctx } = c.var;

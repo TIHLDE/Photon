@@ -35,5 +35,8 @@ export async function getRoleById(ctx: DbCtx, roleId: number) {
  */
 export async function getAllRoles(ctx: DbCtx) {
     const db = ctx.db;
-    return await db.select().from(role).orderBy(sql`${role.position} DESC`);
+    return await db
+        .select()
+        .from(role)
+        .orderBy(sql`${role.position} DESC`);
 }

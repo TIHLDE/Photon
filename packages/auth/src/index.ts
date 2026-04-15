@@ -3,12 +3,12 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
     admin,
     bearer,
-    createAuthMiddleware,
     customSession,
     emailOTP,
     openAPI,
     username,
 } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "@photon/db/schema";
 import type { DbSchema } from "@photon/db";
@@ -94,7 +94,7 @@ export const createAuth = (ctx: AuthCreateContext) =>
             },
             changeEmail: {
                 enabled: true,
-                sendChangeEmailVerification: async ({ newEmail, url }) => {
+                async sendChangeEmailConfirmation({ newEmail, url }) {
                     await enqueueEmail(
                         {
                             component: ChangeEmailVerificationEmail({ url }),

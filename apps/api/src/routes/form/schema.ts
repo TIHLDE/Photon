@@ -33,47 +33,63 @@ export const updateFieldSchema = z.object({
 
 // ===== BASE FORM INPUT SCHEMAS =====
 
-export const createFormSchema = z.object({
+const createFormBase = z.object({
     title: z.string().max(400),
     description: z.string().optional(),
     template: z.boolean().default(false),
     fields: z.array(createFieldSchema).optional().default([]),
 });
 
-export const updateFormSchema = z.object({
+export const createFormSchema = Schema("CreateForm", createFormBase);
+
+const updateFormBase = z.object({
     title: z.string().max(400).optional(),
     description: z.string().optional(),
     template: z.boolean().optional(),
     fields: z.array(updateFieldSchema).optional(),
 });
 
+export const updateFormSchema = Schema("UpdateForm", updateFormBase);
+
 // ===== EVENT FORM INPUT SCHEMAS =====
 
-export const createEventFormSchema = createFormSchema.extend({
-    event: z.uuid(),
-    type: z.enum(["survey", "evaluation"]),
-});
+export const createEventFormSchema = Schema(
+    "CreateEventForm",
+    createFormBase.extend({
+        event: z.uuid(),
+        type: z.enum(["survey", "evaluation"]),
+    }),
+);
 
-export const updateEventFormSchema = updateFormSchema.extend({
-    type: z.enum(["survey", "evaluation"]).optional(),
-});
+export const updateEventFormSchema = Schema(
+    "UpdateEventForm",
+    updateFormBase.extend({
+        type: z.enum(["survey", "evaluation"]).optional(),
+    }),
+);
 
 // ===== GROUP FORM INPUT SCHEMAS =====
 
-export const createGroupFormSchema = createFormSchema.extend({
-    group: z.string().max(128),
-    email_receiver_on_submit: z.string().email().optional(),
-    can_submit_multiple: z.boolean().default(true),
-    is_open_for_submissions: z.boolean().default(false),
-    only_for_group_members: z.boolean().default(false),
-});
+export const createGroupFormSchema = Schema(
+    "CreateGroupForm",
+    createFormBase.extend({
+        group: z.string().max(128),
+        email_receiver_on_submit: z.string().email().optional(),
+        can_submit_multiple: z.boolean().default(true),
+        is_open_for_submissions: z.boolean().default(false),
+        only_for_group_members: z.boolean().default(false),
+    }),
+);
 
-export const updateGroupFormSchema = updateFormSchema.extend({
-    email_receiver_on_submit: z.string().email().optional(),
-    can_submit_multiple: z.boolean().optional(),
-    is_open_for_submissions: z.boolean().optional(),
-    only_for_group_members: z.boolean().optional(),
-});
+export const updateGroupFormSchema = Schema(
+    "UpdateGroupForm",
+    updateFormBase.extend({
+        email_receiver_on_submit: z.string().email().optional(),
+        can_submit_multiple: z.boolean().optional(),
+        is_open_for_submissions: z.boolean().optional(),
+        only_for_group_members: z.boolean().optional(),
+    }),
+);
 
 // ===== SUBMISSION INPUT SCHEMAS =====
 
@@ -104,13 +120,19 @@ export const createAnswerSchema = z
         },
     );
 
-export const createSubmissionSchema = z.object({
-    answers: z.array(createAnswerSchema),
-});
+export const createSubmissionSchema = Schema(
+    "CreateSubmission",
+    z.object({
+        answers: z.array(createAnswerSchema),
+    }),
+);
 
-export const deleteSubmissionWithReasonSchema = z.object({
-    reason: z.string().min(1, "Reason is required"),
-});
+export const deleteSubmissionWithReasonSchema = Schema(
+    "DeleteSubmissionWithReason",
+    z.object({
+        reason: z.string().min(1, "Reason is required"),
+    }),
+);
 
 // ===== SHARED SUB-SCHEMAS =====
 

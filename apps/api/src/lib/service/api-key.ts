@@ -91,7 +91,9 @@ export function validateApiKeyPermissions(
     if (invalid.length > 0) {
         throw new ValidationError(
             `Invalid API key permissions: ${invalid.join(", ")}. Valid permissions are: ${Array.from(API_KEY_PERMISSIONS).join(", ")}`,
-            { invalidPermissions: invalid },
+            {
+                invalidPermissions: invalid,
+            },
         );
     }
     return permissions as ApiKeyPermission[];

@@ -9,7 +9,8 @@
         "./rbac/registry": "./src/rbac/permissions/registry.ts",
         "./roles": "./src/rbac/roles/index.ts",
         "./bearer": "./src/bearer.ts",
-        "./feide": "./src/feide.ts"
+        "./feide": "./src/feide.ts",
+        "./client": "./src/client.ts"
     },
     "dependencies": {
         "@photon/core": "workspace:*",
@@ -20,6 +21,7 @@
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
+        "@types/node": "catalog:",
         "typescript": "catalog:"
     }
 }

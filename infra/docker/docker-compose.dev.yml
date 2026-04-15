@@ -1,76 +1,75 @@
-
 name: "photon_dev"
 
 services:
-  photon_dev_db:
-    image: postgres:17.6
-    container_name: photon_dev_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-  
-  photon_dev_mail_sink:
-    image: axllent/mailpit:v1.27
-    container_name: photon_dev_mail_sink
-    restart: unless-stopped
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    volumes:
-      - mail_sink_data:/data
-    environment:
-      MP_MAX_MESSAGES: 5000
-      MP_DATABASE: /data/mailpit.db
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    photon_dev_db:
+        image: postgres:17.6
+        container_name: photon_dev_db
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        ports:
+            - "5432:5432"
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  photon_dev_redis:
-    image: redis:7.4-alpine
-    container_name: photon_dev_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--save", "", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    photon_dev_mail_sink:
+        image: axllent/mailpit:v1.27
+        container_name: photon_dev_mail_sink
+        restart: unless-stopped
+        ports:
+            - "8025:8025"
+            - "1025:1025"
+        volumes:
+            - mail_sink_data:/data
+        environment:
+            MP_MAX_MESSAGES: 5000
+            MP_DATABASE: /data/mailpit.db
+            MP_SMTP_AUTH_ACCEPT_ANY: 1
+            MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
-  photon_dev_minio:
-    image: minio/minio:latest
-    container_name: photon_dev_minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    photon_dev_redis:
+        image: redis:7.4-alpine
+        container_name: photon_dev_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        command: ["redis-server", "--save", "", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    photon_dev_minio:
+        image: minio/minio:latest
+        container_name: photon_dev_minio
+        restart: unless-stopped
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        environment:
+            MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-minioadmin}
+            MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-minioadmin}
+        command: server /data --console-address ":9001"
+        volumes:
+            - minio_data:/data
+        healthcheck:
+            test: ["CMD", "mc", "ready", "local"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
 volumes:
-  db_data:
-  mail_sink_data:
-  redis_data:
-  minio_data:
+    db_data:
+    mail_sink_data:
+    redis_data:
+    minio_data:

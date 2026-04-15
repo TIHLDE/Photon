@@ -1,18 +1,15 @@
-import type { BetterAuthClientOptions } from "better-auth/client";
-import {
-    customSessionClient,
-    genericOAuthClient,
-    usernameClient,
-} from "better-auth/client/plugins";
-import type { AuthInstance } from "@photon/auth";
+import { genericOAuthClient, usernameClient } from "better-auth/client/plugins";
 
-export function createPhotonClientAuthOptions(options: { baseURL: string }) {
+export type { ExtendedSession } from "./generated/session-types";
+
+export interface PhotonAuthOptions {
+    /** Defaults to `https://photon.tihlde.org` */
+    baseUrl?: string;
+}
+
+export function createPhotonAuthOptions(options: PhotonAuthOptions = {}) {
     return {
-        baseURL: options.baseURL,
-        plugins: [
-            genericOAuthClient(),
-            usernameClient(),
-            customSessionClient<AuthInstance>(),
-        ],
-    } satisfies BetterAuthClientOptions;
+        baseURL: options.baseUrl ?? "https://photon.tihlde.org",
+        plugins: [genericOAuthClient(), usernameClient()],
+    };
 }

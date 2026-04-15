@@ -1,13 +1,16 @@
 {
     "name": "photon",
     "private": true,
-    "type": "module",
     "workspaces": {
-        "packages": ["apps/*", "packages/*", "infra/*"],
+        "packages": [
+            "apps/*",
+            "packages/*",
+            "infra/*"
+        ],
         "catalog": {
             "drizzle-orm": "^0.44.5",
             "drizzle-seed": "^0.3.1",
-            "better-auth": "^1.4.18",
+            "better-auth": "^1.5.5",
             "typescript": "^5.9.2",
             "zod": "^4.1.5",
             "@types/bun": "^1.3.9",
@@ -23,15 +26,17 @@
             "hono": "^4.11.7"
         }
     },
+    "type": "module",
     "scripts": {
         "dev": "turbo dev",
         "build": "turbo build",
         "start": "turbo start",
         "test": "turbo test",
         "typecheck": "turbo typecheck",
-        "lint": "turbo lint",
-        "lint:fix": "turbo lint:fix",
-        "format": "biome format --write .",
+        "lint": "oxlint .",
+        "lint:fix": "oxlint --fix .",
+        "format": "oxfmt --check",
+        "format:fix": "oxfmt .",
         "db:push": "turbo db:push",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate",
@@ -48,12 +53,15 @@
         "version-packages": "changeset version",
         "release": "turbo build --filter=@tihlde/sdk && changeset publish"
     },
-    "packageManager": "bun@1.3.9",
     "devDependencies": {
-        "@biomejs/biome": "^1.9.4",
         "@changesets/changelog-github": "^0.5.2",
         "@changesets/cli": "^2.29.8",
+        "@tihlde/sdk": "workspace:*",
+        "oxfmt": "^0.40.0",
+        "oxlint": "^1.55.0",
+        "ts-morph": "^27.0.2",
         "turbo": "^2.5.0",
         "typescript": "catalog:"
-    }
+    },
+    "packageManager": "bun@1.3.9"
 }
