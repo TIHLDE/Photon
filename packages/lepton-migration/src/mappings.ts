@@ -58,9 +58,7 @@ export function slugify(text: string): string {
 }
 
 /** Map old gender int to new gender enum */
-export function mapGender(
-    value: number | null,
-): "male" | "female" | "other" {
+export function mapGender(value: number | null): "male" | "female" | "other" {
     switch (value) {
         case 1:
             return "male";
@@ -72,9 +70,7 @@ export function mapGender(
 }
 
 /** Map old membership_type to new role enum */
-export function mapMembershipRole(
-    membershipType: string,
-): "member" | "leader" {
+export function mapMembershipRole(membershipType: string): "member" | "leader" {
     return membershipType.toUpperCase() === "LEADER" ? "leader" : "member";
 }
 
@@ -104,7 +100,8 @@ export function mapPaymentStatus(
 ): "pending" | "paid" | "refunded" | "failed" {
     const s = status.toUpperCase();
     if (s === "SALE" || s === "CAPTURED") return "paid";
-    if (s === "INITIATE" || s === "RESERVE" || s === "RESERVED") return "pending";
+    if (s === "INITIATE" || s === "RESERVE" || s === "RESERVED")
+        return "pending";
     if (s === "CANCEL" || s === "VOID" || s === "REFUND" || s === "REFUNDED")
         return "refunded";
     return "failed";
@@ -114,7 +111,10 @@ export function mapPaymentStatus(
 export function mapUserClass(
     value: number,
 ): "first" | "second" | "third" | "fourth" | "fifth" | "alumni" {
-    const map: Record<number, "first" | "second" | "third" | "fourth" | "fifth"> = {
+    const map: Record<
+        number,
+        "first" | "second" | "third" | "fourth" | "fifth"
+    > = {
         1: "first",
         2: "second",
         3: "third",
@@ -140,7 +140,8 @@ export function mapFormFieldType(
     value: string,
 ): "text_answer" | "multiple_select" | "single_select" {
     const s = value.toLowerCase().replace(/ /g, "_");
-    if (s === "multiple_select" || s === "multiple select") return "multiple_select";
+    if (s === "multiple_select" || s === "multiple select")
+        return "multiple_select";
     if (s === "single_select" || s === "single select") return "single_select";
     return "text_answer";
 }
@@ -173,7 +174,11 @@ export async function batchInsert<T>(
 }
 
 /** Log progress for a phase */
-export function logProgress(phase: string, current: number, total: number): void {
+export function logProgress(
+    phase: string,
+    current: number,
+    total: number,
+): void {
     if (current % 100 === 0 || current === total) {
         console.log(`  [${phase}] ${current}/${total}`);
     }

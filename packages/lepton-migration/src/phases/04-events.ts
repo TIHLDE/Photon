@@ -112,7 +112,10 @@ export async function migrateEvents(
     }
 
     await batchInsert(eventRecords, 500, async (batch) => {
-        await db.insert(schema.event).values(batch as any).onConflictDoNothing();
+        await db
+            .insert(schema.event)
+            .values(batch as any)
+            .onConflictDoNothing();
     });
 
     console.log(`  Inserted ${eventRecords.length} events`);

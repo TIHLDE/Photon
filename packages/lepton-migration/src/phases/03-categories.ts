@@ -45,6 +45,8 @@ export async function migrateCategories(
             .onConflictDoNothing();
     }
 
-    console.log(`  Inserted ${categories.length + 1} categories (including uncategorized)`);
+    console.log(
+        `  Inserted ${categories.length + 1} categories (including uncategorized)`,
+    );
     console.log("  Phase 3 complete");
 }

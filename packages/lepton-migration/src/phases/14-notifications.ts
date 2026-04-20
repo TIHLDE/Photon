@@ -63,6 +63,8 @@ export async function migrateNotifications(
             .onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${records.length} notifications (${skipped} skipped)`);
+    console.log(
+        `  Inserted ${records.length} notifications (${skipped} skipped)`,
+    );
     console.log("  Phase 14 complete");
 }

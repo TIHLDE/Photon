@@ -92,7 +92,9 @@ export async function migrateUsers(
                 userIdMap.set(u.user_id, result.user.id);
                 created++;
             } else {
-                console.warn(`  SKIP user creation returned no id: ${u.user_id}`);
+                console.warn(
+                    `  SKIP user creation returned no id: ${u.user_id}`,
+                );
                 skippedUsers.add(u.user_id);
             }
         } catch (err) {
@@ -111,7 +113,10 @@ export async function migrateUsers(
     const allergySet = new Map<string, string>(); // slug -> label
     for (const u of uniqueUsers) {
         if (!u.allergy || !u.allergy.trim()) continue;
-        const parts = u.allergy.split(",").map((s) => s.trim()).filter(Boolean);
+        const parts = u.allergy
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         for (const part of parts) {
             const slug = slugify(part).slice(0, 64);
             if (slug && !allergySet.has(slug)) {
@@ -164,7 +169,10 @@ export async function migrateUsers(
     }
 
     await batchInsert(settingsRecords, 500, async (batch) => {
-        await db.insert(schema.userSettings).values(batch).onConflictDoNothing();
+        await db
+            .insert(schema.userSettings)
+            .values(batch)
+            .onConflictDoNothing();
     });
     console.log(`  Inserted ${settingsRecords.length} user settings`);
 
@@ -174,7 +182,10 @@ export async function migrateUsers(
         const newId = userIdMap.get(u.user_id);
         if (!newId || !u.allergy?.trim()) continue;
 
-        const parts = u.allergy.split(",").map((s) => s.trim()).filter(Boolean);
+        const parts = u.allergy
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
         for (const part of parts) {
             const slug = slugify(part).slice(0, 64);
             if (slug) {
@@ -193,5 +204,7 @@ export async function migrateUsers(
         console.log(`  Inserted ${allergyJunction.length} user-allergy links`);
     }
 
-    console.log(`  Phase 1 complete: ${created} users, ${skippedUsers.size} skipped`);
+    console.log(
+        `  Phase 1 complete: ${created} users, ${skippedUsers.size} skipped`,
+    );
 }

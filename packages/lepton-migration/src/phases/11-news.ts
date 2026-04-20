@@ -17,9 +17,7 @@ interface LeptonNews {
     updated_at: Date;
 }
 
-export async function migrateNews(
-    db: NodePgDatabase<DbSchema>,
-): Promise<void> {
+export async function migrateNews(db: NodePgDatabase<DbSchema>): Promise<void> {
     console.log("\n=== Phase 11: News ===");
 
     const news = await query<LeptonNews>("SELECT * FROM content_news");

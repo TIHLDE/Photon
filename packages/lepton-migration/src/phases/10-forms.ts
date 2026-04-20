@@ -209,7 +209,9 @@ export async function migrateForms(
         answerRecords.push({
             id: newId,
             submissionId: newSubmissionId,
-            fieldId: a.field_id ? (formFieldIdMap.get(a.field_id) ?? null) : null,
+            fieldId: a.field_id
+                ? (formFieldIdMap.get(a.field_id) ?? null)
+                : null,
             answerText: a.answer_text || null,
             createdAt: a.created_at,
             updatedAt: a.updated_at,
@@ -303,7 +305,8 @@ export async function migrateForms(
             id: crypto.randomUUID(),
             formId: newFormId,
             groupSlug: gf.group_id,
-            emailReceiverOnSubmit: gf.email_receiver_on_submit?.slice(0, 256) ?? null,
+            emailReceiverOnSubmit:
+                gf.email_receiver_on_submit?.slice(0, 256) ?? null,
             canSubmitMultiple: Boolean(gf.can_submit_multiple),
             isOpenForSubmissions: Boolean(gf.is_open_for_submissions),
             onlyForGroupMembers: Boolean(gf.only_for_group_members),

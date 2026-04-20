@@ -61,9 +61,7 @@ function parseArgs(): {
     }
 
     if (!mysqlUrl) {
-        console.error(
-            "ERROR: --mysql-url or MYSQL_URL env var is required",
-        );
+        console.error("ERROR: --mysql-url or MYSQL_URL env var is required");
         process.exit(1);
     }
 
@@ -99,7 +97,9 @@ async function main() {
     const { mysqlUrl, phase, force, verifyOnly } = parseArgs();
 
     console.log("🚀 Lepton → Photon Migration");
-    console.log(`  PostgreSQL: ${env.DATABASE_URL.replace(/:[^@]+@/, ":***@")}`);
+    console.log(
+        `  PostgreSQL: ${env.DATABASE_URL.replace(/:[^@]+@/, ":***@")}`,
+    );
     console.log(`  MySQL: ${mysqlUrl.replace(/:[^@]+@/, ":***@")}`);
     if (phase) console.log(`  Phase: ${phase}`);
     if (force) console.log(`  Force mode: ON`);
