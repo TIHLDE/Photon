@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { linkOptions, redirect } from "@tanstack/react-router";
-import { getQueryClient } from "~/integrations/tanstack-query";
+import { getQueryClient } from "#/integrations/tanstack-query";
 
 import { createAuthClient } from "better-auth/react";
 import { usernameClient, genericOAuthClient } from "better-auth/client/plugins";

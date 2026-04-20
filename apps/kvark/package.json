@@ -26,6 +26,7 @@
         "@tanstack/react-start": "latest",
         "@tanstack/react-table": "latest",
         "@tanstack/router-plugin": "^1.132.0",
+        "@tihlde/sdk": "workspace:*",
         "@tihlde/ui": "workspace:*",
         "better-auth": "catalog:",
         "class-variance-authority": "^0.7.1",
