@@ -21,6 +21,7 @@
         "@tanstack/match-sorter-utils": "latest",
         "@tanstack/react-devtools": "latest",
         "@tanstack/react-form": "latest",
+        "@tanstack/react-hotkeys": "^0.9.1",
         "@tanstack/react-query": "latest",
         "@tanstack/react-query-devtools": "latest",
         "@tanstack/react-router": "latest",

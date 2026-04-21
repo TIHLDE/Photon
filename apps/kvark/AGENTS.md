@@ -165,66 +165,69 @@ Route files are the containers: they load data, manage Suspense boundaries, wire
 - Unsure what to show while loading? → a `@tihlde/ui` skeleton that mirrors the final layout.
 
 <!-- intent-skills:start -->
+
 # Skill mappings - when working in these areas, load the linked skill file into context.
+
 skills:
-  - task: "working on the TanStack Start app shell, router setup, or overall app wiring"
-    load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md"
-  - task: "working on TanStack Start React Server Components or RSC caching"
-    load: "node_modules/@tanstack/react-start/skills/react-start/server-components/SKILL.md"
-  - task: "working on generated file-based routes, route tree generation, or router bundler setup"
-    load: "node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md"
-  - task: "working on TanStack Devtools Vite setup, source inspection, or devtools console piping"
-    load: "node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
-  - task: "working on core TanStack Router structure, route trees, or root route context"
+
+- task: "working on the TanStack Start app shell, router setup, or overall app wiring"
+  load: "node_modules/@tanstack/react-start/skills/react-start/SKILL.md"
+- task: "working on TanStack Start React Server Components or RSC caching"
+  load: "node_modules/@tanstack/react-start/skills/react-start/server-components/SKILL.md"
+- task: "working on generated file-based routes, route tree generation, or router bundler setup"
+  load: "node_modules/@tanstack/router-plugin/skills/router-plugin/SKILL.md"
+- task: "working on TanStack Devtools Vite setup, source inspection, or devtools console piping"
+  load: "node_modules/@tanstack/devtools-vite/skills/devtools-vite-plugin/SKILL.md"
+- task: "working on core TanStack Router structure, route trees, or root route context"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x router-core
-  - task: "working on route auth, redirects, or protected pages"
+- task: "working on route auth, redirects, or protected pages"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep auth-and-guards
-  - task: "working on route code splitting, lazy routes, or split route APIs"
+- task: "working on route code splitting, lazy routes, or split route APIs"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep code-splitting
-  - task: "working on route loaders, preloading, or query-backed data loading"
+- task: "working on route loaders, preloading, or query-backed data loading"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep data-loading
-  - task: "working on navigation, links, redirects, or preload behavior"
+- task: "working on navigation, links, redirects, or preload behavior"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep navigation
-  - task: "working on not found handling, error boundaries, or route masking"
+- task: "working on not found handling, error boundaries, or route masking"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep not-found-and-errors
-  - task: "working on path params, dynamic segments, or route param parsing"
+- task: "working on path params, dynamic segments, or route param parsing"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep path-params
-  - task: "working on search params, filters, or URL-driven state"
+- task: "working on search params, filters, or URL-driven state"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep search-params
-  - task: "working on route SSR, streaming, head metadata, or document rendering"
+- task: "working on route SSR, streaming, head metadata, or document rendering"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x ssr
-  - task: "working on typed route APIs, route inference, or Link/useNavigate type safety"
+- task: "working on typed route APIs, route inference, or Link/useNavigate type safety"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep type-safety
-  - task: "working on TanStack Devtools app setup, shell config, or plugin registration"
+- task: "working on TanStack Devtools app setup, shell config, or plugin registration"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-app-setup
-  - task: "working on TanStack Devtools marketplace publishing"
+- task: "working on TanStack Devtools marketplace publishing"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-marketplace
-  - task: "working on a TanStack Devtools plugin panel"
+- task: "working on a TanStack Devtools plugin panel"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-plugin-panel
-  - task: "working on production handling for TanStack Devtools"
+- task: "working on production handling for TanStack Devtools"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-production
-  - task: "working on bidirectional app and devtools events"
+- task: "working on bidirectional app and devtools events"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-bidirectional
-  - task: "working on a typed TanStack Devtools event client"
+- task: "working on a typed TanStack Devtools event client"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x devtools-event-client
-  - task: "working on instrumenting code for TanStack Devtools events"
+- task: "working on instrumenting code for TanStack Devtools events"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep devtools-instrumentation
-  - task: "working on TanStack Start core setup, entry points, or routeTree generation"
+- task: "working on TanStack Start core setup, entry points, or routeTree generation"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x start-core
-  - task: "working on deployment targets, SSR strategy, or prerendering"
+- task: "working on deployment targets, SSR strategy, or prerendering"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep deployment
-  - task: "working on server/client boundaries, auth session fetching, or environment-specific code"
+- task: "working on server/client boundaries, auth session fetching, or environment-specific code"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep execution-model
-  - task: "working on TanStack Start middleware, request context, or cross-cutting server logic"
+- task: "working on TanStack Start middleware, request context, or cross-cutting server logic"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x middleware
-  - task: "working on TanStack Start server functions, useServerFn, or validated server mutations"
+- task: "working on TanStack Start server functions, useServerFn, or validated server mutations"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep server-functions
-  - task: "working on TanStack Start server routes or API handlers"
+- task: "working on TanStack Start server routes or API handlers"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep server-routes
-  - task: "working on TanStack Start server runtime internals, request utilities, or session helpers"
+- task: "working on TanStack Start server runtime internals, request utilities, or session helpers"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep -x start-server-core
-  - task: "working on virtual or programmatic route trees instead of file-based routes"
+- task: "working on virtual or programmatic route trees instead of file-based routes"
     # To load this skill, run: bunx @tanstack/intent@latest list | grep virtual-file-routes
-  - task: "giving feedback on TanStack intent skill usage"
-    load: "node_modules/@tanstack/intent/meta/feedback-collection/SKILL.md"
-<!-- intent-skills:end -->
+- task: "giving feedback on TanStack intent skill usage"
+  load: "node_modules/@tanstack/intent/meta/feedback-collection/SKILL.md"
+  <!-- intent-skills:end -->
