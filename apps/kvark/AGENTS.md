@@ -230,4 +230,4 @@ skills:
     # To load this skill, run: bunx @tanstack/intent@latest list | grep virtual-file-routes
 - task: "giving feedback on TanStack intent skill usage"
   load: "node_modules/@tanstack/intent/meta/feedback-collection/SKILL.md"
-  <!-- intent-skills:end -->
+      <!-- intent-skills:end -->

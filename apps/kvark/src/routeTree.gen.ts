@@ -18,9 +18,12 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AppProfilRouteImport } from './routes/_app/profil'
 import { Route as AppNyheterRouteImport } from './routes/_app/nyheter'
+import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppGrupperRouteImport } from './routes/_app/grupper'
 import { Route as AppArrangementerRouteImport } from './routes/_app/arrangementer'
 import { Route as AppAnnonserRouteImport } from './routes/_app/annonser'
+import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
+import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -65,6 +68,11 @@ const AppNyheterRoute = AppNyheterRouteImport.update({
   path: '/nyheter',
   getParentRoute: () => AppRoute,
 } as any)
+const AppKokebokRoute = AppKokebokRouteImport.update({
+  id: '/kokebok',
+  path: '/kokebok',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGrupperRoute = AppGrupperRouteImport.update({
   id: '/grupper',
   path: '/grupper',
@@ -80,30 +88,46 @@ const AppAnnonserRoute = AppAnnonserRouteImport.update({
   path: '/annonser',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
+  id: '/galleri/',
+  path: '/galleri/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
+  id: '/galleri/$slug',
+  path: '/galleri/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
   '/grupper': typeof AppGrupperRoute
+  '/kokebok': typeof AppKokebokRoute
   '/nyheter': typeof AppNyheterRoute
   '/profil': typeof AppProfilRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/galleri/$slug': typeof AppGalleriSlugRoute
+  '/galleri/': typeof AppGalleriIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
   '/grupper': typeof AppGrupperRoute
+  '/kokebok': typeof AppKokebokRoute
   '/nyheter': typeof AppNyheterRoute
   '/profil': typeof AppProfilRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/galleri/$slug': typeof AppGalleriSlugRoute
+  '/galleri': typeof AppGalleriIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,6 +136,7 @@ export interface FileRoutesById {
   '/_app/annonser': typeof AppAnnonserRoute
   '/_app/arrangementer': typeof AppArrangementerRoute
   '/_app/grupper': typeof AppGrupperRoute
+  '/_app/kokebok': typeof AppKokebokRoute
   '/_app/nyheter': typeof AppNyheterRoute
   '/_app/profil': typeof AppProfilRoute
   '/_app/toddel': typeof AppToddelRoute
@@ -119,6 +144,8 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/galleri/$slug': typeof AppGalleriSlugRoute
+  '/_app/galleri/': typeof AppGalleriIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,24 +154,30 @@ export interface FileRouteTypes {
     | '/annonser'
     | '/arrangementer'
     | '/grupper'
+    | '/kokebok'
     | '/nyheter'
     | '/profil'
     | '/toddel'
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/galleri/$slug'
+    | '/galleri/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/annonser'
     | '/arrangementer'
     | '/grupper'
+    | '/kokebok'
     | '/nyheter'
     | '/profil'
     | '/toddel'
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/galleri/$slug'
+    | '/galleri'
   id:
     | '__root__'
     | '/_app'
@@ -152,6 +185,7 @@ export interface FileRouteTypes {
     | '/_app/annonser'
     | '/_app/arrangementer'
     | '/_app/grupper'
+    | '/_app/kokebok'
     | '/_app/nyheter'
     | '/_app/profil'
     | '/_app/toddel'
@@ -159,6 +193,8 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/_auth/register'
     | '/_app/'
+    | '/_app/galleri/$slug'
+    | '/_app/galleri/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -231,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNyheterRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/kokebok': {
+      id: '/_app/kokebok'
+      path: '/kokebok'
+      fullPath: '/kokebok'
+      preLoaderRoute: typeof AppKokebokRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/grupper': {
       id: '/_app/grupper'
       path: '/grupper'
@@ -252,6 +295,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnnonserRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/galleri/': {
+      id: '/_app/galleri/'
+      path: '/galleri'
+      fullPath: '/galleri/'
+      preLoaderRoute: typeof AppGalleriIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/galleri/$slug': {
+      id: '/_app/galleri/$slug'
+      path: '/galleri/$slug'
+      fullPath: '/galleri/$slug'
+      preLoaderRoute: typeof AppGalleriSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -259,20 +316,26 @@ interface AppRouteChildren {
   AppAnnonserRoute: typeof AppAnnonserRoute
   AppArrangementerRoute: typeof AppArrangementerRoute
   AppGrupperRoute: typeof AppGrupperRoute
+  AppKokebokRoute: typeof AppKokebokRoute
   AppNyheterRoute: typeof AppNyheterRoute
   AppProfilRoute: typeof AppProfilRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppGalleriSlugRoute: typeof AppGalleriSlugRoute
+  AppGalleriIndexRoute: typeof AppGalleriIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAnnonserRoute: AppAnnonserRoute,
   AppArrangementerRoute: AppArrangementerRoute,
   AppGrupperRoute: AppGrupperRoute,
+  AppKokebokRoute: AppKokebokRoute,
   AppNyheterRoute: AppNyheterRoute,
   AppProfilRoute: AppProfilRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
+  AppGalleriSlugRoute: AppGalleriSlugRoute,
+  AppGalleriIndexRoute: AppGalleriIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

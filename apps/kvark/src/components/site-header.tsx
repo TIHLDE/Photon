@@ -9,7 +9,7 @@ import {
     NavigationMenuList,
     NavigationMenuTrigger,
 } from "@tihlde/ui/ui/navigation-menu";
-import { Moon, Sun } from "lucide-react";
+import { ExternalLinkIcon, Moon, Sun } from "lucide-react";
 
 export type InternalLink = {
     kind: "internal";
@@ -72,8 +72,9 @@ export function SiteHeader({
                                                 <li key={sub.label}>
                                                     <NavigationMenuLink
                                                         render={renderLink(sub)}
+                                                        closeOnClick={true}
                                                     >
-                                                        <div className="flex flex-col gap-1">
+                                                        <div className="relative flex flex-col gap-1">
                                                             <span className="font-medium">
                                                                 {sub.label}
                                                             </span>
@@ -83,6 +84,13 @@ export function SiteHeader({
                                                                         sub.description
                                                                     }
                                                                 </span>
+                                                            ) : null}
+                                                            {sub.kind ===
+                                                            "external" ? (
+                                                                <ExternalLinkIcon
+                                                                    className="absolute top-0 right-0 size-4"
+                                                                    aria-hidden
+                                                                />
                                                             ) : null}
                                                         </div>
                                                     </NavigationMenuLink>
