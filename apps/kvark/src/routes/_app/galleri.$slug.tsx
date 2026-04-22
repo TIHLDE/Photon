@@ -1,10 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogTrigger,
-} from "@tihlde/ui/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@tihlde/ui/ui/dialog";
 
 export const Route = createFileRoute("/_app/galleri/$slug")({
     component: GalleryDetailPage,

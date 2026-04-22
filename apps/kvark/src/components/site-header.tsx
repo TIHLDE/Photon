@@ -1,6 +1,5 @@
 import { Link, type LinkOptions } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
-import { Button } from "@tihlde/ui/ui/button";
 import {
     NavigationMenu,
     NavigationMenuContent,
@@ -9,7 +8,9 @@ import {
     NavigationMenuList,
     NavigationMenuTrigger,
 } from "@tihlde/ui/ui/navigation-menu";
-import { ExternalLinkIcon, Moon, Sun } from "lucide-react";
+import { ExternalLinkIcon, User } from "lucide-react";
+
+import { ThemeSwitcher } from "./theme-switcher";
 
 export type InternalLink = {
     kind: "internal";
@@ -38,18 +39,9 @@ export type NavItem = NavLink | NavGroup;
 type SiteHeaderProps = {
     navItems: NavItem[];
     user?: { name: string; avatarUrl?: string } | null;
-    theme?: "light" | "dark";
-    themeReady?: boolean;
-    onToggleTheme?: () => void;
 };
 
-export function SiteHeader({
-    navItems,
-    user,
-    theme,
-    themeReady,
-    onToggleTheme,
-}: SiteHeaderProps) {
+export function SiteHeader({ navItems, user }: SiteHeaderProps) {
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
@@ -113,28 +105,25 @@ export function SiteHeader({
                 </NavigationMenu>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Bytt tema"
-                        onClick={onToggleTheme}
+                    <ThemeSwitcher />
+                    <Link
+                        to={user ? "/profil/me" : "/login"}
+                        aria-label={user ? "Gå til profil" : "Logg inn"}
                     >
-                        {themeReady ? (
-                            theme === "dark" ? (
-                                <Sun />
-                            ) : (
-                                <Moon />
-                            )
-                        ) : null}
-                    </Button>
-                    <Avatar className="size-8">
-                        {user?.avatarUrl ? (
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        ) : null}
-                        <AvatarFallback>
-                            {user?.name?.slice(0, 1).toUpperCase() ?? "?"}
-                        </AvatarFallback>
-                    </Avatar>
+                        <Avatar className="size-8">
+                            {user?.avatarUrl ? (
+                                <AvatarImage
+                                    src={user.avatarUrl}
+                                    alt={user.name}
+                                    // Make picture funny by squashing the image :)
+                                    className="object-fill"
+                                />
+                            ) : null}
+                            <AvatarFallback>
+                                {user ? getInitials(user.name) : <User />}
+                            </AvatarFallback>
+                        </Avatar>
+                    </Link>
                 </div>
             </div>
         </header>
@@ -147,4 +136,13 @@ function renderLink(link: NavLink) {
     }
 
     return <a href={link.href} target="_blank" rel="noopener noreferrer" />;
+}
+
+function getInitials(name: string) {
+    return name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.slice(0, 1).toUpperCase())
+        .join("");
 }

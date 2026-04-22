@@ -16,6 +16,7 @@ import {
     CalendarDays,
     Home,
     Newspaper,
+    ShieldCheck,
     Tv,
     User,
     Users,
@@ -95,7 +96,19 @@ const SECTIONS: CommandSection[] = [
                 label: "Min profil",
                 icon: <User />,
                 keywords: ["profil", "meg"],
-                action: { kind: "navigate", link: { to: "/profil" } },
+                action: { kind: "navigate", link: { to: "/profil/me" } },
+            },
+        ],
+    },
+    {
+        heading: "Administrasjon",
+        items: [
+            {
+                id: "dashboard",
+                label: "Admin Dashboard",
+                icon: <ShieldCheck />,
+                keywords: ["admin", "dashboard"],
+                action: { kind: "navigate", link: { to: "/admin" } },
             },
         ],
     },

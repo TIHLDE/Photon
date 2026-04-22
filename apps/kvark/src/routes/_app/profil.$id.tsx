@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-export const Route = createFileRoute("/_app/profil")({
+export const Route = createFileRoute("/_app/profil/$id")({
     component: ProfilePage,
 });
 

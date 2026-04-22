@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-    GalleryCard,
-    type GalleryCardProps,
-} from "#/components/gallery-card";
+import { GalleryCard, type GalleryCardProps } from "#/components/gallery-card";
 
 export const Route = createFileRoute("/_app/galleri/")({
     component: GalleriesPage,

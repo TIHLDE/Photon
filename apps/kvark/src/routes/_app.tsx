@@ -2,16 +2,18 @@ import { Outlet, createFileRoute, linkOptions } from "@tanstack/react-router";
 
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader, type NavItem } from "#/components/site-header";
-import { useTheme } from "#/integrations/theme";
 import { useMemo } from "react";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
 function AppLayout() {
-    const { theme, mounted, toggleTheme } = useTheme();
-
     // Mock this for now
-    const isAuthenticated = true;
+    const mockCurrentUser: { name: string; avatarUrl?: string } | null = {
+        name: "Aleksander Hjortkær Sand Evensen",
+        avatarUrl:
+            "https://leptonstoragepro.blob.core.windows.net/imagepng/07cf636a-fa02-41c5-848a-578bddeec94bSCR-20260330-uhro.png",
+    };
+    const isAuthenticated = Boolean(mockCurrentUser);
 
     // Mock this for now
     const isNewStudentTime = false;
@@ -139,13 +141,7 @@ function AppLayout() {
     );
     return (
         <div className="flex min-h-screen flex-col">
-            <SiteHeader
-                navItems={navItems}
-                user={{ name: "A" }}
-                theme={theme}
-                themeReady={mounted}
-                onToggleTheme={toggleTheme}
-            />
+            <SiteHeader navItems={navItems} user={mockCurrentUser} />
             <main className="flex flex-1 flex-col">
                 <Outlet />
             </main>
