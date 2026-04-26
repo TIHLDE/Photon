@@ -38,6 +38,7 @@ import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_sup
 import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
 import { Route as AppProfilMeRouteImport } from './routes/_app/profil.me'
 import { Route as AppProfilIdRouteImport } from './routes/_app/profil.$id'
+import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 
 const AdminRoute = AdminRouteImport.update({
@@ -182,6 +183,11 @@ const AppProfilIdRoute = AppProfilIdRouteImport.update({
   path: '/profil/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPlaygroundMarkdownRoute = AppPlaygroundMarkdownRouteImport.update({
+  id: '/playground/markdown',
+  path: '/playground/markdown',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
   id: '/galleri/$slug',
   path: '/galleri/$slug',
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/': typeof AdminIndexRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
+  '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRoute
   '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
+  '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRoute
   '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRoute
+  '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRoute
   '/_app/profil/me': typeof AppProfilMeRoute
   '/admin/_super-admin/api-keys': typeof AdminSuperAdminApiKeysRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/admin/'
     | '/galleri/$slug'
+    | '/playground/markdown'
     | '/profil/$id'
     | '/profil/me'
     | '/admin/api-keys'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/admin/opptak'
     | '/admin/prikker'
     | '/galleri/$slug'
+    | '/playground/markdown'
     | '/profil/$id'
     | '/profil/me'
     | '/admin/api-keys'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/admin/'
     | '/_app/galleri/$slug'
+    | '/_app/playground/markdown'
     | '/_app/profil/$id'
     | '/_app/profil/me'
     | '/admin/_super-admin/api-keys'
@@ -581,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/playground/markdown': {
+      id: '/_app/playground/markdown'
+      path: '/playground/markdown'
+      fullPath: '/playground/markdown'
+      preLoaderRoute: typeof AppPlaygroundMarkdownRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/galleri/$slug': {
       id: '/_app/galleri/$slug'
       path: '/galleri/$slug'
@@ -600,6 +619,7 @@ interface AppRouteChildren {
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRoute
+  AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRoute
   AppProfilMeRoute: typeof AppProfilMeRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
@@ -614,6 +634,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
   AppGalleriSlugRoute: AppGalleriSlugRoute,
+  AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRoute,
   AppProfilMeRoute: AppProfilMeRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
