@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import type {
+    AlignType,
     BlockContent,
     Code,
     Heading,
@@ -11,6 +12,9 @@ import type {
     PhrasingContent,
     Root,
     RootContent,
+    Table,
+    TableCell,
+    TableRow,
 } from "mdast";
 import type {
     ContainerDirective,
@@ -83,6 +87,8 @@ function convertBlock(
             return convertList(node, true, registry);
         case "codeBlock":
             return convertCodeBlock(node);
+        case "table":
+            return convertTable(node);
         case "horizontalRule":
             return { type: "thematicBreak" };
         default:
@@ -146,6 +152,59 @@ function convertListItem(
         spread: false,
         children: convertBlocks(node.content ?? [], registry) as BlockContent[],
     };
+}
+
+function convertTable(node: JSONContent): Table {
+    const rows = (node.content ?? []).filter((c) => c.type === "tableRow");
+    const align = computeTableAlign(rows);
+    const children = rows.map((row) => convertTableRow(row));
+    return { type: "table", align, children };
+}
+
+function computeTableAlign(
+    rows: ReadonlyArray<JSONContent>,
+): Array<AlignType> {
+    const widths = rows.map((row) => (row.content ?? []).length);
+    const columnCount = widths.length > 0 ? Math.max(...widths) : 0;
+    const align: Array<AlignType> = [];
+    for (let column = 0; column < columnCount; column += 1) {
+        let columnAlign: AlignType = null;
+        for (const row of rows) {
+            const cell = (row.content ?? [])[column];
+            const value = cell?.attrs?.["textAlign"];
+            if (
+                value === "left" ||
+                value === "center" ||
+                value === "right"
+            ) {
+                columnAlign = value;
+                break;
+            }
+        }
+        align.push(columnAlign);
+    }
+    return align;
+}
+
+function convertTableRow(node: JSONContent): TableRow {
+    const cells = (node.content ?? [])
+        .filter((c) => c.type === "tableCell" || c.type === "tableHeader")
+        .map((c) => convertTableCell(c));
+    return { type: "tableRow", children: cells };
+}
+
+function convertTableCell(node: JSONContent): TableCell {
+    const blocks = node.content ?? [];
+    const inline: PhrasingContent[] = [];
+    for (const block of blocks) {
+        if (block.type !== "paragraph") continue;
+        const run = convertInlineRun(block.content ?? []);
+        if (inline.length > 0 && run.length > 0) {
+            inline.push({ type: "break" });
+        }
+        inline.push(...run);
+    }
+    return { type: "tableCell", children: inline };
 }
 
 function convertCodeBlock(node: JSONContent): Code {

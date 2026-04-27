@@ -21,6 +21,14 @@ and the **minimal** registry (no directives) all render the same source.
 
 ## Standard markdown
 
+| Route | Method | Description |
+|-------|--------|-------------|
+| /api/auth/sign-in | POST | Sign in with Feide |
+| /api/auth/sign-out | POST | Sign out |
+| /api/events | GET | List events |
+| /api/events | POST | Create event |
+| /api/events/:id | GET | Get event |
+
 - *italic*, **bold**, ~~strike~~, \`inline code\`
 - a [link](https://tihlde.org)
 - a numbered list:

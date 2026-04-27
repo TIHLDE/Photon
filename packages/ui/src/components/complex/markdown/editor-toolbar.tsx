@@ -14,6 +14,7 @@ import {
     Redo2,
     SquareCode,
     Strikethrough,
+    Table as TableIcon,
     Undo2,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -234,6 +235,22 @@ export function EditorToolbar({ editor, registry }: EditorToolbarProps) {
                 <TooltipContent>Link</TooltipContent>
             </Tooltip>
 
+            <Tooltip>
+                <TooltipTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => insertTable(editor)}
+                        >
+                            <TableIcon className="size-4" />
+                        </Button>
+                    }
+                />
+                <TooltipContent>Insert table</TooltipContent>
+            </Tooltip>
+
             {registry.directives.length > 0 ? (
                 <>
                     <Separator orientation="vertical" className="mx-1 h-6" />
@@ -362,6 +379,14 @@ function insertDirective(editor: Editor, name: string): void {
         .chain()
         .focus()
         .insertContent({ type: directiveType, attrs: {} })
+        .run();
+}
+
+function insertTable(editor: Editor): void {
+    editor
+        .chain()
+        .focus()
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
         .run();
 }
 

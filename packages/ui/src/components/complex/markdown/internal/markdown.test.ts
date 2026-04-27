@@ -132,6 +132,20 @@ describe("markdown round-trip", () => {
         expect(result).toContain("with two paragraphs.");
     });
 
+    test("gfm table survives round-trip with header and rows", () => {
+        const input = [
+            "| Method | Path | Description |",
+            "| ------ | ---- | ----------- |",
+            "| GET | /events | List events |",
+            "| POST | /events | Create event |",
+        ].join("\n");
+        const result = roundTrip(input);
+        expect(result).toContain("| Method");
+        expect(result).toContain("| GET");
+        expect(result).toContain("/events");
+        expect(result).toContain("Create event");
+    });
+
     test("thematic break (hr)", () => {
         const input = "before\n\n---\n\nafter";
         const result = roundTrip(input);

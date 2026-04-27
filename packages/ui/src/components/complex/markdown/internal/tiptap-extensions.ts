@@ -3,6 +3,10 @@ import { ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 import { createElement, type ReactNode } from "react";
 
 import type {
@@ -11,6 +15,7 @@ import type {
     DirectiveRegistry,
 } from "../directive";
 
+import { TableNodeView } from "./table-node-view";
 import { attrsFromSchema } from "./zod-to-attrs";
 
 export type BuildOptions = {
@@ -43,6 +48,14 @@ export function buildTiptapExtensions(
         Placeholder.configure({
             placeholder: options.placeholder ?? "Start writing…",
         }),
+        Table.configure({ resizable: false }).extend({
+            addNodeView() {
+                return ReactNodeViewRenderer(TableNodeView);
+            },
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
     ];
 
     const directiveExtensions = registry.directives.map((directive) =>

@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core";
 import type {
+    AlignType,
     Blockquote,
     Code,
     Heading,
@@ -11,6 +12,9 @@ import type {
     PhrasingContent,
     Root,
     RootContent,
+    Table,
+    TableCell,
+    TableRow,
     Text,
 } from "mdast";
 import type { Directives } from "mdast-util-directive";
@@ -69,6 +73,8 @@ function convertBlock(
             return convertList(node, registry);
         case "code":
             return convertCodeBlock(node);
+        case "table":
+            return convertTable(node);
         case "thematicBreak":
             return { type: "horizontalRule" };
         case "html":
@@ -132,6 +138,44 @@ function convertListItem(
     return {
         type: "listItem",
         content: blocks.length > 0 ? blocks : [{ type: "paragraph" }],
+    };
+}
+
+function convertTable(node: Table): JSONContent {
+    const align = node.align ?? [];
+    const rows = node.children.map((row, index) =>
+        convertTableRow(row, align, index === 0),
+    );
+    return { type: "table", content: rows };
+}
+
+function convertTableRow(
+    row: TableRow,
+    align: ReadonlyArray<AlignType | null | undefined>,
+    isHeader: boolean,
+): JSONContent {
+    const cells = row.children.map((cell, columnIndex) =>
+        convertTableCell(cell, align[columnIndex] ?? null, isHeader),
+    );
+    return { type: "tableRow", content: cells };
+}
+
+function convertTableCell(
+    cell: TableCell,
+    alignment: AlignType | null | undefined,
+    isHeader: boolean,
+): JSONContent {
+    const inline = convertInline(cell.children, []);
+    const paragraph: JSONContent =
+        inline.length > 0
+            ? { type: "paragraph", content: inline }
+            : { type: "paragraph" };
+    const attrs: Record<string, unknown> = {};
+    if (alignment) attrs["textAlign"] = alignment;
+    return {
+        type: isHeader ? "tableHeader" : "tableCell",
+        ...(Object.keys(attrs).length > 0 ? { attrs } : {}),
+        content: [paragraph],
     };
 }
 
