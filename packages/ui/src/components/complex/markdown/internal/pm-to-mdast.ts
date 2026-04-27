@@ -161,9 +161,7 @@ function convertTable(node: JSONContent): Table {
     return { type: "table", align, children };
 }
 
-function computeTableAlign(
-    rows: ReadonlyArray<JSONContent>,
-): Array<AlignType> {
+function computeTableAlign(rows: ReadonlyArray<JSONContent>): Array<AlignType> {
     const widths = rows.map((row) => (row.content ?? []).length);
     const columnCount = widths.length > 0 ? Math.max(...widths) : 0;
     const align: Array<AlignType> = [];
@@ -172,11 +170,7 @@ function computeTableAlign(
         for (const row of rows) {
             const cell = (row.content ?? [])[column];
             const value = cell?.attrs?.["textAlign"];
-            if (
-                value === "left" ||
-                value === "center" ||
-                value === "right"
-            ) {
+            if (value === "left" || value === "center" || value === "right") {
                 columnAlign = value;
                 break;
             }

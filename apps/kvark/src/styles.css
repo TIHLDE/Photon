@@ -1,2 +1,10 @@
 @import "@tihlde/ui/styles.css";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+.react-flow__node-groupTreeNode {
+    cursor: pointer;
+    pointer-events: all;
+}
+.react-flow__node-groupTreeNode a {
+    cursor: pointer;
+}
