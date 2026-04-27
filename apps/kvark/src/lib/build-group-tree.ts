@@ -113,11 +113,7 @@ function junctionNode(
     };
 }
 
-function edge(
-    source: string,
-    target: string,
-    opts: Partial<Edge> = {},
-): Edge {
+function edge(source: string, target: string, opts: Partial<Edge> = {}): Edge {
     return {
         id: `${source}->${target}`,
         source,
@@ -128,11 +124,7 @@ function edge(
     };
 }
 
-function placeItems(
-    section: SimpleSection,
-    x: number,
-    itemsY: number,
-): Node[] {
+function placeItems(section: SimpleSection, x: number, itemsY: number): Node[] {
     return section.items.map((item, index) => {
         const col = index % section.cols;
         const row = Math.floor(index / section.cols);
@@ -169,11 +161,9 @@ function layoutOneCol(
         );
         for (let i = 0; i < section.items.length - 1; i++) {
             edges.push(
-                edge(
-                    `${section.id}-item-${i}`,
-                    `${section.id}-item-${i + 1}`,
-                    { type: "straight" },
-                ),
+                edge(`${section.id}-item-${i}`, `${section.id}-item-${i + 1}`, {
+                    type: "straight",
+                }),
             );
         }
     }
@@ -236,12 +226,8 @@ function layoutTwoCol(
         const fromLeft = col === 0;
         edges.push(
             edge(`${section.id}-spine-${row}`, itemId, {
-                sourceHandle: fromLeft
-                    ? HANDLE.leftSource
-                    : HANDLE.rightSource,
-                targetHandle: fromLeft
-                    ? HANDLE.rightTarget
-                    : HANDLE.leftTarget,
+                sourceHandle: fromLeft ? HANDLE.leftSource : HANDLE.rightSource,
+                targetHandle: fromLeft ? HANDLE.rightTarget : HANDLE.leftTarget,
                 type: "straight",
             }),
         );
@@ -280,7 +266,9 @@ function layoutThreeCol(
 
     edges.push(edge(section.id, middleId(0), { type: "straight" }));
     for (let row = 0; row < rows - 1; row++) {
-        edges.push(edge(middleId(row), middleId(row + 1), { type: "straight" }));
+        edges.push(
+            edge(middleId(row), middleId(row + 1), { type: "straight" }),
+        );
     }
 
     for (let row = 0; row < rows; row++) {
@@ -354,9 +342,7 @@ export function buildGroupTree(data: GroupTreeInput): GroupTreeOutput {
             true,
         );
         if (prevLastSpineId) {
-            edges.push(
-                edge(prevLastSpineId, section.id, { type: "straight" }),
-            );
+            edges.push(edge(prevLastSpineId, section.id, { type: "straight" }));
         }
         nodes.push(...layout.nodes);
         edges.push(...layout.edges);
@@ -384,9 +370,7 @@ export function buildGroupTree(data: GroupTreeInput): GroupTreeOutput {
                 false,
             );
             if (prevLastSpineId) {
-                edges.push(
-                    edge(prevLastSpineId, branch.id),
-                );
+                edges.push(edge(prevLastSpineId, branch.id));
             }
             nodes.push(...layout.nodes);
             edges.push(...layout.edges);
@@ -402,9 +386,7 @@ export function buildGroupTree(data: GroupTreeInput): GroupTreeOutput {
                 ),
             );
             if (prevLastSpineId) {
-                edges.push(
-                    edge(prevLastSpineId, branch.id),
-                );
+                edges.push(edge(prevLastSpineId, branch.id));
             }
 
             let subCursorX = cursorX;

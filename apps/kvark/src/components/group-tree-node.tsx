@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Card } from "@tihlde/ui/ui/card";
 import { Handle, Position } from "@xyflow/react";
 import { Fragment } from "react";
@@ -88,10 +89,10 @@ export function GroupTreeNode({ data }: { data: GroupTreeNodeData }) {
     return (
         <>
             <HiddenHandles sides={GROUP_HANDLES} />
-            <a
+            <Link
                 className="nopan nodrag block cursor-pointer"
-                href={groupHref(data.name)}
                 style={GROUP_NODE_STYLE}
+                to={groupHref(data.name)}
             >
                 <Card
                     className="flex h-full flex-row items-center gap-3 px-3 py-2"
@@ -99,7 +100,7 @@ export function GroupTreeNode({ data }: { data: GroupTreeNodeData }) {
                 >
                     <GroupIdentity {...data} />
                 </Card>
-            </a>
+            </Link>
         </>
     );
 }
@@ -108,11 +109,7 @@ export type GroupTreeSectionData = {
     label: string;
 };
 
-export function GroupTreeSectionNode({
-    data,
-}: {
-    data: GroupTreeSectionData;
-}) {
+export function GroupTreeSectionNode({ data }: { data: GroupTreeSectionData }) {
     return (
         <>
             <HiddenHandles sides={SECTION_HANDLES} />

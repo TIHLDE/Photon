@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 
 import { GroupIdentity } from "#/components/group-identity";
@@ -27,17 +28,17 @@ export function GroupTreeMobile({ tree }: { tree: GroupTreeInput }) {
                     <h2 className="text-lg font-semibold">{section.label}</h2>
                     <div className="grid gap-2 sm:grid-cols-2">
                         {section.items.map((item) => (
-                            <a
+                            <Link
                                 key={item.name}
                                 className="block cursor-pointer"
-                                href={groupHref(item.name)}
+                                to={groupHref(item.name)}
                             >
                                 <Card size="sm">
                                     <CardContent className="flex items-center gap-3">
                                         <GroupIdentity {...item} />
                                     </CardContent>
                                 </Card>
-                            </a>
+                            </Link>
                         ))}
                     </div>
                 </section>
