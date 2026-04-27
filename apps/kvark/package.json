@@ -33,6 +33,7 @@
         "@tihlde/sdk": "workspace:*",
         "@tihlde/ui": "workspace:*",
         "@tiptap/react": "^3.22.4",
+        "@xyflow/react": "^12.10.2",
         "better-auth": "catalog:",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

@@ -45,12 +45,6 @@ function AppLayout() {
                                 "Få oversikt over alle verv og grupper",
                         },
                         {
-                            kind: "internal",
-                            label: "Interessegrupper",
-                            link: linkOptions({ to: "/" }),
-                            description: "Se alle interessegrupper",
-                        },
-                        {
                             kind: "external",
                             label: "Fondet",
                             href: "https://fondet.tihlde.org",
