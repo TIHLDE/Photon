@@ -16,6 +16,7 @@ import { formRoutes } from "~/routes/form";
 import { pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
 import { assetRoutes } from "./routes/asset";
+import { contractsRoutes } from "./routes/contracts";
 import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
 import { newsRoutes } from "./routes/news";
@@ -69,6 +70,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/forms", formRoutes)
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
+        .route("/contracts", contractsRoutes)
         .route("/news", newsRoutes)
         .route("/jobs", jobRoutes)
         .route("/user", userRoutes)

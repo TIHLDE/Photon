@@ -7,6 +7,7 @@ import {
     serial,
     text,
     timestamp,
+    uniqueIndex,
     uuid,
     varchar,
 } from "drizzle-orm/pg-core";
@@ -104,6 +105,12 @@ export const group = pgTable("group", {
     permissionMode: groupPermissionMode("permission_mode")
         .notNull()
         .default("leader_only"),
+    contractSigningRequired: boolean("contract_signing_required")
+        .notNull()
+        .default(false),
+    contractNotificationEmail: varchar("contract_notification_email", {
+        length: 200,
+    }),
     ...timestamps,
 });
 
@@ -176,3 +183,34 @@ export const fine = pgTable("fine", {
     paidAt: timestamp("paid_at"),
     ...timestamps,
 });
+
+export const contract = pgTable("contract", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: varchar("title", { length: 256 }).notNull(),
+    fileKey: varchar("file_key", { length: 600 }).notNull(),
+    version: varchar("version", { length: 64 }).notNull(),
+    isActive: boolean("is_active").notNull().default(false),
+    createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
+        () => user.id,
+        { onDelete: "set null" },
+    ),
+    ...timestamps,
+});
+
+export const contractSignature = pgTable(
+    "contract_signature",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        contractId: uuid("contract_id")
+            .notNull()
+            .references(() => contract.id, { onDelete: "cascade" }),
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        signedAt: timestamp("signed_at").defaultNow().notNull(),
+        ...timestamps,
+    },
+    (t) => [
+        uniqueIndex("contract_signature_unique_idx").on(t.contractId, t.userId),
+    ],
+);
