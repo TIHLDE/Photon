@@ -821,6 +821,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active contract
+         * @description Returns the currently active volunteer contract with a direct download URL for the PDF.
+         */
+        get: operations["getActiveContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/my-signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my signature status
+         * @description Returns whether the authenticated user has signed the currently active contract.
+         */
+        get: operations["getMySignatureStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign the active contract
+         * @description Signs the active volunteer contract for the authenticated user. Sends email to notification contacts of all groups the user belongs to that require contract signing.
+         */
+        post: operations["signContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all contract versions
+         * @description Returns all contract versions newest first. Requires 'contracts:view' permission.
+         */
+        get: operations["listContracts"];
+        put?: never;
+        /**
+         * Create a new contract version
+         * @description Registers a new contract version. Does not auto-activate. Upload the PDF via POST /api/assets first, then pass the returned fileKey here. Requires 'contracts:create' permission.
+         */
+        post: operations["createContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Activate a contract version
+         * @description Sets the specified contract as active; deactivates all others. Requires 'contracts:update' permission.
+         */
+        patch: operations["activateContract"];
+        trace?: never;
+    };
+    "/api/contracts/groups/{groupSlug}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get member signing status for a group
+         * @description Returns all group members with their signing status for the active contract. Requires being a group leader or 'contracts:view' permission.
+         */
+        get: operations["getGroupContractSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/groups/{groupSlug}/signatures/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a member's contract signature
+         * @description Removes a member's signature from the active contract. Requires being a group leader or 'contracts:manage' permission.
+         */
+        delete: operations["revokeContractSignature"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/news": {
         parameters: {
             query?: never;
@@ -1941,6 +2085,10 @@ export interface components {
             finesActivated: boolean;
             /** @description Group fines admin ID */
             finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
+            /** @description Contract notification email */
+            contractNotificationEmail: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -1966,6 +2114,10 @@ export interface components {
             finesActivated: boolean;
             /** @description Group fines admin ID */
             finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
+            /** @description Contract notification email */
+            contractNotificationEmail: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -2033,6 +2185,10 @@ export interface components {
             finesActivated?: boolean;
             /** @description User ID of the fines administrator */
             finesAdminId?: string | null;
+            /** @description Whether contract signing is required for group members */
+            contractSigningRequired?: boolean;
+            /** @description Email to notify when a member signs. Defaults to group contact email then leader email. */
+            contractNotificationEmail?: string | null;
         };
         Fine: {
             /** @description Fine ID */
@@ -2211,6 +2367,61 @@ export interface components {
             created_at: string;
             updated_at: string;
         }[];
+        ActiveContract: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            version: string;
+            fileKey: string;
+            isActive: boolean;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Direct URL to stream the PDF */
+            downloadUrl: string;
+        };
+        SignatureStatus: {
+            hasSigned: boolean;
+            signedAt: string | null;
+        };
+        SignContractResponse: {
+            message: string;
+            signedAt: string;
+        };
+        Contract: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            version: string;
+            fileKey: string;
+            isActive: boolean;
+            createdAt: string;
+            updatedAt: string;
+        };
+        ContractList: components["schemas"]["Contract"][];
+        CreateContract: {
+            /** @description Contract title */
+            title: string;
+            /** @description Version identifier e.g. '2026-01' */
+            version: string;
+            /** @description MinIO asset key from POST /api/assets */
+            fileKey: string;
+        };
+        ActivateContractResponse: {
+            message: string;
+        };
+        GroupSignatureMember: {
+            userId: string;
+            hasSigned: boolean;
+            signedAt: string | null;
+        };
+        GroupSignatureList: {
+            members: components["schemas"]["GroupSignatureMember"][];
+            totalMembers: number;
+            signedCount: number;
+        };
+        RevokeSignatureResponse: {
+            message: string;
+        };
         NewsArticle: {
             /**
              * Format: uuid
@@ -4906,6 +5117,333 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getActiveContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active contract */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveContract"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMySignatureStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signature status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureStatus"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    signContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract signed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignContractResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already signed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listContracts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of contracts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContract"];
+            };
+        };
+        responses: {
+            /** @description Contract created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activateContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract activated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivateContractResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Contract not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGroupContractSignatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member signing status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupSignatureList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    revokeContractSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signature revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeSignatureResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Signature not found */
             404: {
                 headers: {
                     [name: string]: unknown;

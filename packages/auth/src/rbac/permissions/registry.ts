@@ -53,6 +53,9 @@ export const PERMISSION_REGISTRY = {
     fines: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
+    contracts: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
     forms: {
         actions: ["view", "create", "update", "delete", "manage"],
     },

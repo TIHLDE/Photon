@@ -9,3 +9,4 @@ export { default as RegistrationConfirmedEmail } from "./registration-confirmed"
 export { default as ResetPasswordEmail } from "./reset-password";
 export { default as SwappedToWaitlistEmail } from "./swapped-to-waitlist";
 export { default as WaitlistPlacementEmail } from "./waitlist-placement";
+export { ContractSignedEmail } from "./contract-signed";
