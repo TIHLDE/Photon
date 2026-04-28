@@ -31,7 +31,7 @@ const PRO_OPTIONS = { hideAttribution: true };
 const TRANSPARENT_BG = { background: "transparent" } as const;
 const FIT_VIEW_OPTIONS = { padding: 0.05 };
 
-export const Route = createFileRoute("/_app/grupper")({
+export const Route = createFileRoute("/_app/grupper/")({
     component: GroupsPage,
 });
 
