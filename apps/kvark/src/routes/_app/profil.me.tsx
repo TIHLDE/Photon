@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -7,6 +8,7 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import {
     Bell,
     CalendarDays,
+    FileSignature,
     Github,
     HelpCircle,
     LayoutGrid,
@@ -20,6 +22,7 @@ import {
     Ticket,
     UserCircle2,
 } from "lucide-react";
+import type { SignatureStatus } from "@tihlde/sdk";
 import { useState, type ReactNode } from "react";
 
 export const Route = createFileRoute("/_app/profil/me")({
@@ -129,6 +132,7 @@ function ProfilePage() {
 
                 <section className="flex flex-col gap-6">
                     <OverviewHeader />
+                    <ContractBanner signature={MOCK_SIGNATURE} />
                     <StatGrid stats={STATS} />
                     <UpcomingSection events={UPCOMING} />
                     <TodoSection todos={TODOS} />
@@ -377,5 +381,31 @@ function TodoSection({ todos }: { todos: TodoItem[] }) {
                 ))}
             </ul>
         </div>
+    );
+}
+
+const MOCK_SIGNATURE: SignatureStatus | null = null;
+
+function ContractBanner({ signature }: { signature: SignatureStatus | null }) {
+    if (signature?.hasSigned) return null;
+
+    return (
+        <Alert>
+            <FileSignature className="size-4" />
+            <AlertTitle>Frivillighetskontrakt ikke signert</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4">
+                <span>
+                    Du må signere frivillighetskontrakten for å bekrefte din
+                    frivillighetsavtale.
+                </span>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.location.assign("/kontrakt")}
+                >
+                    Gå til kontrakt
+                </Button>
+            </AlertDescription>
+        </Alert>
     );
 }

@@ -232,3 +232,12 @@ skills:
   load: "node_modules/@tanstack/intent/meta/feedback-collection/SKILL.md"
 
 <!-- intent-skills:end -->
+
+## Mock data & future real-auth wiring
+
+The Kvark app currently uses static mock data throughout — auth is a stub, no real API calls are made from most pages. This is intentional for the wireframe/design phase.
+
+When it's time to wire up real auth and live data, see the migration guide saved in the team Obsidian vault:
+`Claude/projects/photon-kvark-mock-to-real-auth.md`
+
+It covers: login page, profile contract banner, contract signing page, and both admin pages (opptak + grupper) — with exact code diffs and the query helpers in `src/api/queries/contracts.ts` that are already written and ready.
