@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -41,6 +41,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@tihlde/ui/ui/dropdown-menu";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import {
@@ -52,14 +59,17 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import {
+    ArrowUpCircle,
     CalendarDays,
     ChevronLeft,
     ChevronRight,
     ClipboardList,
+    Crown,
     HandCoins,
     ImagePlus,
     Info,
     Mail,
+    MoreHorizontal,
     Pencil,
     Plus,
     Scale,
@@ -67,7 +77,8 @@ import {
     Share2,
     Trash2,
     TrendingUp,
-    User,
+    UserMinus,
+    UserRound,
     Users,
     X,
 } from "lucide-react";
@@ -718,11 +729,12 @@ function GroupDetailPage() {
             <GroupHeader group={GROUP} onGiveFine={openGiveFine} />
 
             <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
-                <aside>
+                <GroupNavMobile active={active} onSelect={setActive} />
+                <aside className="hidden md:block">
                     <GroupSidebar active={active} onSelect={setActive} />
                 </aside>
 
-                <section className="flex flex-col gap-6">
+                <section className="flex min-w-0 flex-col gap-6">
                     {active === "om" ? <OmTab /> : null}
                     {active === "medlemmer" ? <MembersTab /> : null}
                     {active === "arrangementer" ? <EventsTab /> : null}
@@ -769,6 +781,33 @@ function GroupSidebar({
     );
 }
 
+function GroupNavMobile({
+    active,
+    onSelect,
+}: {
+    active: NavKey;
+    onSelect: (key: NavKey) => void;
+}) {
+    return (
+        <nav className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+            <ul className="flex w-max gap-2">
+                {NAV_ITEMS.map((item) => (
+                    <li key={item.key} className="shrink-0">
+                        <Button
+                            variant={active === item.key ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => onSelect(item.key)}
+                        >
+                            {item.icon}
+                            {item.label}
+                        </Button>
+                    </li>
+                ))}
+            </ul>
+        </nav>
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Header
 // ---------------------------------------------------------------------------
@@ -781,35 +820,36 @@ function GroupHeader({
     onGiveFine: () => void;
 }) {
     return (
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-4">
-                <Avatar className="size-16">
-                    <AvatarFallback>{initials(group.name)}</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-2xl">{group.name}</h1>
-                    <p className="text-sm text-muted-foreground">
-                        {group.description}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="gap-1.5">
-                            <User />
-                            {group.leader}
-                        </Badge>
-                        <Badge variant="outline" className="gap-1.5">
-                            <Mail />
-                            {group.contactEmail}
-                        </Badge>
-                    </div>
+        <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3 md:items-stretch">
+            <Avatar className="size-16 row-span-2 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
+                <AvatarFallback className="text-2xl">
+                    {initials(group.name)}
+                </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 items-start justify-between gap-2">
+                <h1 className="text-2xl">{group.name}</h1>
+                <div className="flex shrink-0 items-center gap-2">
+                    <Button onClick={onGiveFine} aria-label="Gi bot">
+                        <HandCoins />
+                        <span className="hidden md:inline">Gi bot</span>
+                    </Button>
+                    <EditGroupDialog group={group} />
                 </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={onGiveFine}>
-                    <HandCoins />
-                    Gi bot
-                </Button>
-                <EditGroupDialog group={group} />
+            <p className="col-span-2 text-sm text-muted-foreground md:col-span-1 md:col-start-2">
+                {group.description}
+            </p>
+            <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1 md:col-start-2">
+                <Badge variant="secondary" className="gap-1.5">
+                    <Crown />
+                    <span className="font-medium">Leder</span>
+                    <span className="text-muted-foreground">·</span>
+                    {group.leader}
+                </Badge>
+                <Badge variant="secondary" className="gap-1.5">
+                    <Mail />
+                    {group.contactEmail}
+                </Badge>
             </div>
         </div>
     );
@@ -1055,7 +1095,7 @@ function EditGroupDialog({ group }: { group: Group }) {
                 render={
                     <Button variant="outline">
                         <Pencil />
-                        Rediger gruppe
+                        <span className="hidden md:inline">Rediger gruppe</span>
                     </Button>
                 }
             />
@@ -1375,7 +1415,7 @@ function MembersTab() {
 
             <div className="flex flex-col gap-2">
                 <h3 className="text-lg">Leder</h3>
-                <MemberRow member={LEADER} />
+                <MemberRow member={LEADER} isLeader />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -1448,23 +1488,93 @@ function AddMemberDialog() {
 function MemberRow({
     member,
     historic = false,
+    isLeader = false,
 }: {
     member: Member;
     historic?: boolean;
+    isLeader?: boolean;
 }) {
     return (
-        <Card size="sm" className="flex-row items-center gap-3 px-3 py-2">
-            <Avatar className="size-10">
-                <AvatarFallback>{initials(member.name)}</AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate font-medium">{member.name}</span>
-                <span className="truncate text-sm text-muted-foreground">
-                    {member.joined} → {historic ? member.until : "nå"}
-                    {historic && member.role ? ` · ${member.role}` : ""}
-                </span>
-            </div>
+        <Card
+            size="sm"
+            className="flex-row items-center gap-1 py-2 pr-2 pl-3"
+        >
+            <Link
+                to="/profil/$id"
+                params={{ id: member.name }}
+                className="flex min-w-0 flex-1 items-center gap-3"
+            >
+                <Avatar className="size-10">
+                    <AvatarFallback>{initials(member.name)}</AvatarFallback>
+                </Avatar>
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="flex items-center gap-2 truncate font-medium">
+                        {member.name}
+                        {isLeader ? (
+                            <Badge variant="secondary" className="gap-1">
+                                <Crown />
+                                Leder
+                            </Badge>
+                        ) : null}
+                    </span>
+                    <span className="truncate text-sm text-muted-foreground">
+                        {member.joined} → {historic ? member.until : "nå"}
+                        {historic && member.role ? ` · ${member.role}` : ""}
+                    </span>
+                </div>
+            </Link>
+            {!historic ? (
+                <MemberRowMenu member={member} isLeader={isLeader} />
+            ) : null}
         </Card>
+    );
+}
+
+function MemberRowMenu({
+    member,
+    isLeader,
+}: {
+    member: Member;
+    isLeader: boolean;
+}) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Handlinger for ${member.name}`}
+                    >
+                        <MoreHorizontal />
+                    </Button>
+                }
+            />
+            <DropdownMenuContent align="end" className="w-auto min-w-48">
+                <DropdownMenuItem
+                    render={
+                        <Link
+                            to="/profil/$id"
+                            params={{ id: member.name }}
+                        />
+                    }
+                >
+                    <UserRound />
+                    Se profil
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {!isLeader ? (
+                    <DropdownMenuItem>
+                        <ArrowUpCircle />
+                        Promoter til leder
+                    </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem variant="destructive">
+                    <UserMinus />
+                    Fjern medlem
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -1604,7 +1714,7 @@ function FinesTab() {
                             <li key={user}>
                                 <Card
                                     size="sm"
-                                    className="flex-row items-center gap-3 px-3 py-2"
+                                    className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
                                     role="button"
                                     onClick={() => {
                                         const i = filtered.findIndex(
@@ -1697,7 +1807,7 @@ function FineRow({
     return (
         <Card
             size="sm"
-            className="flex-row items-center gap-3 px-3 py-2"
+            className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
             onClick={onOpen}
             role="button"
         >
