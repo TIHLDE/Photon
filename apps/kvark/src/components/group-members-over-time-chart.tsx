@@ -6,10 +6,7 @@ import {
 import { CartesianGrid, Dot, Line, LineChart } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import {
-    MEMBERS_OVER_TIME,
-    membersChartConfig,
-} from "#/routes/_app/grupper.$slug.mock";
+import { MEMBERS_OVER_TIME, membersChartConfig } from "#/mock/group-detail";
 
 export function GroupMembersOverTimeChart({
     className,

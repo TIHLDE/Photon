@@ -6,10 +6,7 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import {
-    STUDY_RADAR,
-    radarChartConfig,
-} from "#/routes/_app/grupper.$slug.mock";
+import { STUDY_RADAR, radarChartConfig } from "#/mock/group-detail";
 
 export function GroupStudyRadarChart({ className }: { className?: string }) {
     return (

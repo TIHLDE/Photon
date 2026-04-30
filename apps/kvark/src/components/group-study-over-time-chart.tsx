@@ -8,10 +8,7 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import {
-    STUDY_OVER_TIME,
-    studyChartConfig,
-} from "#/routes/_app/grupper.$slug.mock";
+import { STUDY_OVER_TIME, studyChartConfig } from "#/mock/group-detail";
 
 export function GroupStudyOverTimeChart({ className }: { className?: string }) {
     return (

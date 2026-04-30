@@ -16,7 +16,7 @@ import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
 
-import { GROUP, LAWS, USERS } from "./grupper.$slug.mock";
+import { GROUP, LAWS, USERS } from "#/mock/group-detail";
 
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,

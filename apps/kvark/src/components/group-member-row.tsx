@@ -18,8 +18,8 @@ import {
     UserRound,
 } from "lucide-react";
 
-import { initials } from "#/lib/initials";
-import type { Member } from "#/routes/_app/grupper.$slug.mock";
+import { initials } from "#/lib/utils";
+import type { Member } from "#/mock/group-detail";
 
 type GroupMemberRowProps = {
     member: Member;

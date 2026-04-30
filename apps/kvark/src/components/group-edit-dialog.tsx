@@ -14,7 +14,7 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import { Pencil, X } from "lucide-react";
 
-import type { Group } from "#/routes/_app/grupper.$slug.mock";
+import type { Group } from "#/mock/group-detail";
 
 type GroupEditDialogProps = {
     group: Group;

@@ -11,7 +11,7 @@ import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 
-import type { Law } from "#/routes/_app/grupper.$slug.mock";
+import type { Law } from "#/mock/group-detail";
 
 type GroupLawFormDialogProps = {
     open: boolean;

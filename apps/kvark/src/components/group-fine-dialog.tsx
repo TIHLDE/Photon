@@ -10,7 +10,7 @@ import {
 } from "@tihlde/ui/ui/dialog";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 
-import type { Fine } from "#/routes/_app/grupper.$slug.mock";
+import type { Fine } from "#/mock/group-detail";
 
 type GroupFineDialogProps = {
     fines: Fine[];

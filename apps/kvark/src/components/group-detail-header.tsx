@@ -5,8 +5,8 @@ import { Crown, HandCoins, Mail } from "lucide-react";
 
 import { DetailHeader } from "#/components/detail-layout";
 import { GroupEditDialog } from "#/components/group-edit-dialog";
-import { initials } from "#/lib/initials";
-import type { Group } from "#/routes/_app/grupper.$slug.mock";
+import { initials } from "#/lib/utils";
+import type { Group } from "#/mock/group-detail";
 
 type GroupDetailHeaderProps = {
     group: Group;

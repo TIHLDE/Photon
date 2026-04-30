@@ -16,7 +16,7 @@ import { useState } from "react";
 import { ImageDropzone } from "#/components/image-dropzone";
 import { LawCombobox } from "#/components/law-combobox";
 import { UserMultiCombobox } from "#/components/user-combobox";
-import type { Law } from "#/routes/_app/grupper.$slug.mock";
+import type { Law } from "#/mock/group-detail";
 
 type GroupGiveFineDialogProps = {
     open: boolean;

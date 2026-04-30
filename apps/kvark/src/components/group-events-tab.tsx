@@ -1,6 +1,6 @@
 import { EventCard } from "#/components/event-card";
 import { GroupPageHeader } from "#/components/group-page-header";
-import { EVENTS } from "#/routes/_app/grupper.$slug.mock";
+import { EVENTS } from "#/mock/group-detail";
 
 export function GroupEventsTab() {
     return (

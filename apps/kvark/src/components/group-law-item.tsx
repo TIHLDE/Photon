@@ -1,6 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 
-import type { Law } from "#/routes/_app/grupper.$slug.mock";
+import type { Law } from "#/mock/group-detail";
 
 type GroupLawItemProps = {
     law: Law;

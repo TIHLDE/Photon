@@ -3,12 +3,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupMemberRow } from "#/components/group-member-row";
 import { GroupPageHeader } from "#/components/group-page-header";
-import {
-    LEADER,
-    MEMBER_HISTORY,
-    MEMBERS,
-    USERS,
-} from "#/routes/_app/grupper.$slug.mock";
+import { LEADER, MEMBER_HISTORY, MEMBERS, USERS } from "#/mock/group-detail";
 
 export function GroupMembersTab() {
     return (

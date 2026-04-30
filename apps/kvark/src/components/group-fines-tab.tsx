@@ -9,8 +9,8 @@ import { GroupFineRow } from "#/components/group-fine-row";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
 import { GroupPageHeader } from "#/components/group-page-header";
 import { TriStateFilter, type TriState } from "#/components/tri-state-filter";
-import { initials } from "#/lib/initials";
-import { FINES, MEMBERS, type Fine } from "#/routes/_app/grupper.$slug.mock";
+import { initials } from "#/lib/utils";
+import { FINES, MEMBERS, type Fine } from "#/mock/group-detail";
 
 type GroupingMode = "all" | "per-member";
 

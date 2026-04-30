@@ -12,7 +12,7 @@ import {
 import { useTheme } from "#/integrations/theme";
 import { buildGroupTree } from "#/lib/build-group-tree";
 
-import { TREE_MOCK } from "./grupper.mock";
+import { TREE_MOCK } from "#/mock/groups";
 
 const { nodes, edges, width, height } = buildGroupTree(TREE_MOCK);
 const CHART_ASPECT = `${width} / ${height}`;

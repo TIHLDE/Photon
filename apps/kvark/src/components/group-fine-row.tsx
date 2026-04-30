@@ -2,7 +2,7 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
 import { ChevronRight, HandCoins } from "lucide-react";
 
-import type { Fine } from "#/routes/_app/grupper.$slug.mock";
+import type { Fine } from "#/mock/group-detail";
 
 type GroupFineRowProps = {
     fine: Fine;

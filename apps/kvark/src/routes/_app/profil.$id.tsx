@@ -22,7 +22,7 @@ import { ProfileOverviewHeader } from "#/components/profile-overview-header";
 import { ProfileStatCard } from "#/components/profile-stat-card";
 import { ProfileTodoRow } from "#/components/profile-todo-row";
 
-import { STATS, TODOS, UPCOMING, USER } from "./profil.mock";
+import { STATS, TODOS, UPCOMING, USER } from "#/mock/profile";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: ProfilePage,

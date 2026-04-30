@@ -4,6 +4,7 @@ import { Github, Linkedin, Mail, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { DetailHeader } from "#/components/detail-layout";
+import { initials } from "#/lib/utils";
 
 export type ProfileLink = {
     kind: "github" | "linkedin";
@@ -81,12 +82,4 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
             actions={actions}
         />
     );
-}
-
-function initials(name: string) {
-    return name
-        .split(" ")
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join("");
 }

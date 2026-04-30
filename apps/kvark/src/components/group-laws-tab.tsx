@@ -10,7 +10,7 @@ import { useMemo, useState } from "react";
 import { GroupLawFormDialog } from "#/components/group-law-form-dialog";
 import { GroupLawItem } from "#/components/group-law-item";
 import { GroupPageHeader } from "#/components/group-page-header";
-import { LAWS, type Law } from "#/routes/_app/grupper.$slug.mock";
+import { LAWS, type Law } from "#/mock/group-detail";
 
 export function GroupLawsTab() {
     const [editing, setEditing] = useState<Law | null>(null);

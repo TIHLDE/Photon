@@ -5,7 +5,7 @@ import { useState } from "react";
 import { GroupFormRow } from "#/components/group-form-row";
 import { GroupNewFormDialog } from "#/components/group-new-form-dialog";
 import { GroupPageHeader } from "#/components/group-page-header";
-import { FORMS } from "#/routes/_app/grupper.$slug.mock";
+import { FORMS } from "#/mock/group-detail";
 
 export function GroupFormsTab() {
     const [creating, setCreating] = useState(false);

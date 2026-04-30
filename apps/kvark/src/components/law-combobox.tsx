@@ -8,7 +8,7 @@ import {
     ComboboxList,
 } from "@tihlde/ui/ui/combobox";
 
-import type { Law } from "#/routes/_app/grupper.$slug.mock";
+import type { Law } from "#/mock/group-detail";
 
 type LawComboboxProps = {
     items: Law[];
