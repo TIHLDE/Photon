@@ -12,7 +12,7 @@ import {
 import { useTheme } from "#/integrations/theme";
 import { buildGroupTree } from "#/lib/build-group-tree";
 
-import { TREE_MOCK } from "./grupper.mock";
+import { TREE_MOCK } from "#/mock/groups";
 
 const { nodes, edges, width, height } = buildGroupTree(TREE_MOCK);
 const CHART_ASPECT = `${width} / ${height}`;
@@ -31,7 +31,7 @@ const PRO_OPTIONS = { hideAttribution: true };
 const TRANSPARENT_BG = { background: "transparent" } as const;
 const FIT_VIEW_OPTIONS = { padding: 0.05 };
 
-export const Route = createFileRoute("/_app/grupper")({
+export const Route = createFileRoute("/_app/grupper/")({
     component: GroupsPage,
 });
 
