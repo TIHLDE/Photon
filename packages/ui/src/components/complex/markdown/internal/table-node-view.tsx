@@ -77,9 +77,7 @@ export function TableNodeView({ editor, node, getPos }: NodeViewProps) {
                     </Action>
                     <Action
                         label="Delete row"
-                        onClick={() =>
-                            editor.chain().focus().deleteRow().run()
-                        }
+                        onClick={() => editor.chain().focus().deleteRow().run()}
                     >
                         <Rows3 className="size-4" />
                     </Action>
@@ -140,8 +138,7 @@ function useSelectionInside(
     );
 
     useEffect(() => {
-        const update = () =>
-            setActive(isSelectionInside(editor, node, getPos));
+        const update = () => setActive(isSelectionInside(editor, node, getPos));
         editor.on("selectionUpdate", update);
         editor.on("transaction", update);
         return () => {
