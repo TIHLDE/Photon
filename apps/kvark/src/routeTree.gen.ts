@@ -37,7 +37,6 @@ import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
-import { Route as AppProfilMeRouteImport } from './routes/_app/profil.me'
 import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
@@ -185,11 +184,6 @@ const AdminSuperAdminApiKeysRoute = AdminSuperAdminApiKeysRouteImport.update({
   path: '/api-keys',
   getParentRoute: () => AdminSuperAdminRoute,
 } as any)
-const AppProfilMeRoute = AppProfilMeRouteImport.update({
-  id: '/profil/me',
-  path: '/profil/me',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppProfilIdRoute = AppProfilIdRouteImport.update({
   id: '/profil/$id',
   path: '/profil/$id',
@@ -263,7 +257,6 @@ export interface FileRoutesByFullPath {
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
-  '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
@@ -298,7 +291,6 @@ export interface FileRoutesByTo {
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
-  '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
@@ -339,7 +331,6 @@ export interface FileRoutesById {
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
-  '/_app/profil/me': typeof AppProfilMeRoute
   '/admin/_super-admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/_super-admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/_super-admin/logs': typeof AdminSuperAdminLogsRoute
@@ -378,7 +369,6 @@ export interface FileRouteTypes {
     | '/grupper/$slug'
     | '/playground/markdown'
     | '/profil/$id'
-    | '/profil/me'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
@@ -413,7 +403,6 @@ export interface FileRouteTypes {
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/playground/markdown'
-    | '/profil/me'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
@@ -453,7 +442,6 @@ export interface FileRouteTypes {
     | '/_app/grupper/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
-    | '/_app/profil/me'
     | '/admin/_super-admin/api-keys'
     | '/admin/_super-admin/database'
     | '/admin/_super-admin/logs'
@@ -670,13 +658,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuperAdminApiKeysRouteImport
       parentRoute: typeof AdminSuperAdminRoute
     }
-    '/_app/profil/me': {
-      id: '/_app/profil/me'
-      path: '/profil/me'
-      fullPath: '/profil/me'
-      preLoaderRoute: typeof AppProfilMeRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/profil/$id': {
       id: '/_app/profil/$id'
       path: '/profil/$id'
@@ -775,7 +756,6 @@ interface AppRouteChildren {
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
   AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
-  AppProfilMeRoute: typeof AppProfilMeRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
 }
@@ -792,7 +772,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperSlugRoute: AppGrupperSlugRoute,
   AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
-  AppProfilMeRoute: AppProfilMeRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
 }

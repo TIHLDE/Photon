@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
@@ -52,6 +53,12 @@ export const createContractRoute = route().post(
                 message: "Failed to create contract",
             });
         }
+
+        // Promote the asset from staged → ready so it is not cleaned up automatically
+        await db
+            .update(schema.asset)
+            .set({ status: "ready", promotedAt: new Date() })
+            .where(eq(schema.asset.key, newContract.fileKey));
 
         return c.json(
             {

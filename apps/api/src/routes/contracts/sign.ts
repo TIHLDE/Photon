@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { enqueueEmail } from "@photon/email";
 import { ContractSignedEmail } from "@photon/email/templates";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -80,24 +80,43 @@ export const signContractRoute = route().post(
             with: { group: true },
         });
 
-        for (const membership of memberships) {
-            const grp = membership.group;
-            if (!grp.contractSigningRequired) continue;
+        const signingGroups = memberships
+            .map((m) => m.group)
+            .filter((g) => g.contractSigningRequired);
 
-            // Resolve notification email: configured → group contact → leader's email
-            let notifyEmail: string | null =
-                grp.contractNotificationEmail ?? grp.contactEmail ?? null;
+        // Batch-fetch leaders for groups that have no configured notification email
+        const groupsNeedingLeaderLookup = signingGroups
+            .filter((g) => !g.contractNotificationEmail && !g.contactEmail)
+            .map((g) => g.slug);
 
-            if (!notifyEmail) {
-                const leader = await db.query.groupMembership.findFirst({
-                    where: and(
-                        eq(schema.groupMembership.groupSlug, grp.slug),
-                        eq(schema.groupMembership.role, "leader"),
+        const leaderEmailByGroup = new Map<string, string>();
+        if (groupsNeedingLeaderLookup.length > 0) {
+            const leaders = await db.query.groupMembership.findMany({
+                where: and(
+                    inArray(
+                        schema.groupMembership.groupSlug,
+                        groupsNeedingLeaderLookup,
                     ),
-                    with: { user: true },
-                });
-                notifyEmail = leader?.user.email ?? null;
+                    eq(schema.groupMembership.role, "leader"),
+                ),
+                with: { user: true },
+            });
+            for (const leader of leaders) {
+                if (!leaderEmailByGroup.has(leader.groupSlug)) {
+                    leaderEmailByGroup.set(
+                        leader.groupSlug,
+                        leader.user.email,
+                    );
+                }
             }
+        }
+
+        for (const grp of signingGroups) {
+            const notifyEmail =
+                grp.contractNotificationEmail ??
+                grp.contactEmail ??
+                leaderEmailByGroup.get(grp.slug) ??
+                null;
 
             if (notifyEmail) {
                 await enqueueEmail(

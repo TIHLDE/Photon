@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
@@ -50,35 +50,38 @@ export const groupSignaturesRoute = route().get(
 
         const memberships = await db.query.groupMembership.findMany({
             where: eq(schema.groupMembership.groupSlug, groupSlug),
+            with: { user: true },
         });
 
-        const results = await Promise.all(
-            memberships.map(async (m) => {
-                if (!activeContract) {
-                    return {
-                        userId: m.userId,
-                        hasSigned: false,
-                        signedAt: null,
-                    };
-                }
+        const memberIds = memberships.map((m) => m.userId);
 
-                const sig = await db.query.contractSignature.findFirst({
-                    where: and(
-                        eq(
-                            schema.contractSignature.contractId,
-                            activeContract.id,
-                        ),
-                        eq(schema.contractSignature.userId, m.userId),
-                    ),
-                });
+        const signatures =
+            activeContract && memberIds.length > 0
+                ? await db.query.contractSignature.findMany({
+                      where: and(
+                          eq(
+                              schema.contractSignature.contractId,
+                              activeContract.id,
+                          ),
+                          inArray(schema.contractSignature.userId, memberIds),
+                      ),
+                  })
+                : [];
 
-                return {
-                    userId: m.userId,
-                    hasSigned: !!sig,
-                    signedAt: sig?.signedAt?.toISOString() ?? null,
-                };
-            }),
+        const signatureMap = new Map(
+            signatures.map((s) => [s.userId, s]),
         );
+
+        const results = memberships.map((m) => {
+            const sig = signatureMap.get(m.userId);
+            return {
+                userId: m.userId,
+                userName: m.user.name,
+                userEmail: m.user.email,
+                hasSigned: !!sig,
+                signedAt: sig?.signedAt?.toISOString() ?? null,
+            };
+        });
 
         return c.json(
             {

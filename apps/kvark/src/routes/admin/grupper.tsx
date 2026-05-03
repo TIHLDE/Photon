@@ -86,16 +86,22 @@ const MOCK_SIGNATURES: Record<string, GroupSignatureList> = {
         members: [
             {
                 userId: "user-001",
+                userName: "Ola Nordmann",
+                userEmail: "ola@tihlde.org",
                 hasSigned: true,
                 signedAt: "2026-01-15T12:00:00.000Z",
             },
             {
                 userId: "user-002",
+                userName: "Kari Hansen",
+                userEmail: "kari@tihlde.org",
                 hasSigned: false,
                 signedAt: null,
             },
             {
                 userId: "user-003",
+                userName: "Per Olsen",
+                userEmail: "per@tihlde.org",
                 hasSigned: true,
                 signedAt: "2026-01-20T09:30:00.000Z",
             },
@@ -107,6 +113,8 @@ const MOCK_SIGNATURES: Record<string, GroupSignatureList> = {
         members: [
             {
                 userId: "user-004",
+                userName: "Anne Andersen",
+                userEmail: "anne@tihlde.org",
                 hasSigned: false,
                 signedAt: null,
             },
@@ -118,6 +126,8 @@ const MOCK_SIGNATURES: Record<string, GroupSignatureList> = {
         members: [
             {
                 userId: "user-005",
+                userName: "Lars Larsen",
+                userEmail: "lars@tihlde.org",
                 hasSigned: true,
                 signedAt: "2026-01-10T08:00:00.000Z",
             },
@@ -170,8 +180,8 @@ function GrupperAdminPage() {
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">Grupper – kontraktinnstillinger</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1>Grupper – kontraktinnstillinger</h1>
+                <p>
                     Administrer kontraktsignering per gruppe og se
                     signeringsstatus for medlemmer.
                 </p>
@@ -303,25 +313,21 @@ function MemberSigningTable({
     onRevoke: (userId: string) => void;
 }) {
     if (!signatures.members.length) {
-        return (
-            <p className="text-sm text-muted-foreground">
-                Ingen medlemmer i denne gruppen.
-            </p>
-        );
+        return <p>Ingen medlemmer i denne gruppen.</p>;
     }
 
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Signeringsstatus</h4>
-                <span className="text-sm text-muted-foreground">
+                <h4>Signeringsstatus</h4>
+                <span>
                     {signatures.signedCount} / {signatures.totalMembers} signert
                 </span>
             </div>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Bruker-ID</TableHead>
+                        <TableHead>Navn</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Signert</TableHead>
                         <TableHead />
@@ -350,21 +356,26 @@ function MemberRow({
 }) {
     return (
         <TableRow>
-            <TableCell className="font-mono text-xs">{member.userId}</TableCell>
+            <TableCell>
+                <div className="flex flex-col gap-0.5">
+                    <span>{member.userName}</span>
+                    <span>{member.userEmail}</span>
+                </div>
+            </TableCell>
             <TableCell>
                 {member.hasSigned ? (
-                    <span className="flex items-center gap-1 text-sm">
+                    <span className="flex items-center gap-1">
                         <CheckCircle2 className="size-4" />
                         Signert
                     </span>
                 ) : (
-                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
                         <XCircle className="size-4" />
                         Ikke signert
                     </span>
                 )}
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
+            <TableCell>
                 {member.signedAt
                     ? new Date(member.signedAt).toLocaleDateString("nb-NO")
                     : "—"}

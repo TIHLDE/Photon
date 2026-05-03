@@ -77,10 +77,8 @@ function OpptakAdminPage() {
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">Kontraktstyring</h1>
-                <p className="text-sm text-muted-foreground">
-                    Last opp og administrer frivillighetskontrakter.
-                </p>
+                <h1>Kontraktstyring</h1>
+                <p>Last opp og administrer frivillighetskontrakter.</p>
             </div>
             <UploadContractCard onCreate={handleCreate} />
             <ContractListCard
@@ -199,9 +197,7 @@ function ContractListCard({
                     <CardTitle>Kontraktversjoner</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        Ingen kontrakter lastet opp ennå.
-                    </p>
+                    <p>Ingen kontrakter lastet opp ennå.</p>
                 </CardContent>
             </Card>
         );
@@ -251,7 +247,7 @@ function ContractRow({
 }) {
     return (
         <TableRow>
-            <TableCell className="font-medium">{contract.title}</TableCell>
+            <TableCell>{contract.title}</TableCell>
             <TableCell>{contract.version}</TableCell>
             <TableCell>
                 {contract.isActive ? (

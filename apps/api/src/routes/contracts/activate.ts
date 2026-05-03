@@ -39,15 +39,17 @@ export const activateContractRoute = route().patch(
             throw new HTTPException(404, { message: "Contract not found" });
         }
 
-        await db
-            .update(schema.contract)
-            .set({ isActive: false, updatedAt: new Date() })
-            .where(ne(schema.contract.id, id));
+        await db.transaction(async (tx) => {
+            await tx
+                .update(schema.contract)
+                .set({ isActive: false, updatedAt: new Date() })
+                .where(ne(schema.contract.id, id));
 
-        await db
-            .update(schema.contract)
-            .set({ isActive: true, updatedAt: new Date() })
-            .where(eq(schema.contract.id, id));
+            await tx
+                .update(schema.contract)
+                .set({ isActive: true, updatedAt: new Date() })
+                .where(eq(schema.contract.id, id));
+        });
 
         return c.json({ message: "Contract activated" }, 200);
     },

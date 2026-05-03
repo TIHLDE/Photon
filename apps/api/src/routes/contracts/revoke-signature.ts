@@ -33,8 +33,22 @@ export const revokeSignatureRoute = route().delete(
         ownership: { param: "groupSlug", check: isGroupLeader },
     }),
     async (c) => {
+        const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");
         const { db } = c.get("ctx");
+
+        const membership = await db.query.groupMembership.findFirst({
+            where: and(
+                eq(schema.groupMembership.groupSlug, groupSlug),
+                eq(schema.groupMembership.userId, userId),
+            ),
+        });
+
+        if (!membership) {
+            throw new HTTPException(404, {
+                message: "User is not a member of this group",
+            });
+        }
 
         const activeContract = await db.query.contract.findFirst({
             where: eq(schema.contract.isActive, true),
