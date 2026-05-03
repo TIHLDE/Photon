@@ -41,6 +41,9 @@ import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playgro
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
+import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
+import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
+import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
 
 const AdminRoute = AdminRouteImport.update({
@@ -200,6 +203,22 @@ const AppProfilIdIndexRoute = AppProfilIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppProfilIdRoute,
 } as any)
+const AppProfilIdSporreskjemaerRoute =
+  AppProfilIdSporreskjemaerRouteImport.update({
+    id: '/sporreskjemaer',
+    path: '/sporreskjemaer',
+    getParentRoute: () => AppProfilIdRoute,
+  } as any)
+const AppProfilIdPrikkerRoute = AppProfilIdPrikkerRouteImport.update({
+  id: '/prikker',
+  path: '/prikker',
+  getParentRoute: () => AppProfilIdRoute,
+} as any)
+const AppProfilIdMedlemskapRoute = AppProfilIdMedlemskapRouteImport.update({
+  id: '/medlemskap',
+  path: '/medlemskap',
+  getParentRoute: () => AppProfilIdRoute,
+} as any)
 const AppProfilIdArrangementerRoute =
   AppProfilIdArrangementerRouteImport.update({
     id: '/arrangementer',
@@ -237,6 +256,9 @@ export interface FileRoutesByFullPath {
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
+  '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
+  '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/profil/$id/': typeof AppProfilIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -267,6 +289,9 @@ export interface FileRoutesByTo {
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
+  '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
+  '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/profil/$id': typeof AppProfilIdIndexRoute
 }
 export interface FileRoutesById {
@@ -303,6 +328,9 @@ export interface FileRoutesById {
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
+  '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
+  '/_app/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
   '/_app/profil/$id/': typeof AppProfilIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -337,6 +365,9 @@ export interface FileRouteTypes {
     | '/galleri/'
     | '/grupper/'
     | '/profil/$id/arrangementer'
+    | '/profil/$id/medlemskap'
+    | '/profil/$id/prikker'
+    | '/profil/$id/sporreskjemaer'
     | '/profil/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -367,6 +398,9 @@ export interface FileRouteTypes {
     | '/galleri'
     | '/grupper'
     | '/profil/$id/arrangementer'
+    | '/profil/$id/medlemskap'
+    | '/profil/$id/prikker'
+    | '/profil/$id/sporreskjemaer'
     | '/profil/$id'
   id:
     | '__root__'
@@ -402,6 +436,9 @@ export interface FileRouteTypes {
     | '/_app/galleri/'
     | '/_app/grupper/'
     | '/_app/profil/$id/arrangementer'
+    | '/_app/profil/$id/medlemskap'
+    | '/_app/profil/$id/prikker'
+    | '/_app/profil/$id/sporreskjemaer'
     | '/_app/profil/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -637,6 +674,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdIndexRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
+    '/_app/profil/$id/sporreskjemaer': {
+      id: '/_app/profil/$id/sporreskjemaer'
+      path: '/sporreskjemaer'
+      fullPath: '/profil/$id/sporreskjemaer'
+      preLoaderRoute: typeof AppProfilIdSporreskjemaerRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
+    '/_app/profil/$id/prikker': {
+      id: '/_app/profil/$id/prikker'
+      path: '/prikker'
+      fullPath: '/profil/$id/prikker'
+      preLoaderRoute: typeof AppProfilIdPrikkerRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
+    '/_app/profil/$id/medlemskap': {
+      id: '/_app/profil/$id/medlemskap'
+      path: '/medlemskap'
+      fullPath: '/profil/$id/medlemskap'
+      preLoaderRoute: typeof AppProfilIdMedlemskapRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
     '/_app/profil/$id/arrangementer': {
       id: '/_app/profil/$id/arrangementer'
       path: '/arrangementer'
@@ -649,11 +707,17 @@ declare module '@tanstack/react-router' {
 
 interface AppProfilIdRouteChildren {
   AppProfilIdArrangementerRoute: typeof AppProfilIdArrangementerRoute
+  AppProfilIdMedlemskapRoute: typeof AppProfilIdMedlemskapRoute
+  AppProfilIdPrikkerRoute: typeof AppProfilIdPrikkerRoute
+  AppProfilIdSporreskjemaerRoute: typeof AppProfilIdSporreskjemaerRoute
   AppProfilIdIndexRoute: typeof AppProfilIdIndexRoute
 }
 
 const AppProfilIdRouteChildren: AppProfilIdRouteChildren = {
   AppProfilIdArrangementerRoute: AppProfilIdArrangementerRoute,
+  AppProfilIdMedlemskapRoute: AppProfilIdMedlemskapRoute,
+  AppProfilIdPrikkerRoute: AppProfilIdPrikkerRoute,
+  AppProfilIdSporreskjemaerRoute: AppProfilIdSporreskjemaerRoute,
   AppProfilIdIndexRoute: AppProfilIdIndexRoute,
 }
 
@@ -759,12 +823,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
