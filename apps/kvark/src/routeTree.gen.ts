@@ -28,6 +28,7 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AppNyheterRouteImport } from './routes/_app/nyheter'
+import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppArrangementerRouteImport } from './routes/_app/arrangementer'
 import { Route as AppAnnonserRouteImport } from './routes/_app/annonser'
@@ -36,6 +37,7 @@ import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
+import { Route as AppProfilMeRouteImport } from './routes/_app/profil.me'
 import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
@@ -138,6 +140,11 @@ const AppNyheterRoute = AppNyheterRouteImport.update({
   path: '/nyheter',
   getParentRoute: () => AppRoute,
 } as any)
+const AppKontraktRoute = AppKontraktRouteImport.update({
+  id: '/kontrakt',
+  path: '/kontrakt',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
   id: '/kokebok',
   path: '/kokebok',
@@ -177,6 +184,11 @@ const AdminSuperAdminApiKeysRoute = AdminSuperAdminApiKeysRouteImport.update({
   id: '/api-keys',
   path: '/api-keys',
   getParentRoute: () => AdminSuperAdminRoute,
+} as any)
+const AppProfilMeRoute = AppProfilMeRouteImport.update({
+  id: '/profil/me',
+  path: '/profil/me',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppProfilIdRoute = AppProfilIdRouteImport.update({
   id: '/profil/$id',
@@ -232,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
   '/kokebok': typeof AppKokebokRoute
+  '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -250,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
+  '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
@@ -266,6 +280,7 @@ export interface FileRoutesByTo {
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
   '/kokebok': typeof AppKokebokRoute
+  '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -283,6 +298,7 @@ export interface FileRoutesByTo {
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
+  '/profil/me': typeof AppProfilMeRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
@@ -302,6 +318,7 @@ export interface FileRoutesById {
   '/_app/annonser': typeof AppAnnonserRoute
   '/_app/arrangementer': typeof AppArrangementerRoute
   '/_app/kokebok': typeof AppKokebokRoute
+  '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/nyheter': typeof AppNyheterRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -322,6 +339,7 @@ export interface FileRoutesById {
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
+  '/_app/profil/me': typeof AppProfilMeRoute
   '/admin/_super-admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/_super-admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/_super-admin/logs': typeof AdminSuperAdminLogsRoute
@@ -341,6 +359,7 @@ export interface FileRouteTypes {
     | '/annonser'
     | '/arrangementer'
     | '/kokebok'
+    | '/kontrakt'
     | '/nyheter'
     | '/toddel'
     | '/forgot-password'
@@ -359,6 +378,7 @@ export interface FileRouteTypes {
     | '/grupper/$slug'
     | '/playground/markdown'
     | '/profil/$id'
+    | '/profil/me'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
@@ -375,6 +395,7 @@ export interface FileRouteTypes {
     | '/annonser'
     | '/arrangementer'
     | '/kokebok'
+    | '/kontrakt'
     | '/nyheter'
     | '/toddel'
     | '/forgot-password'
@@ -392,6 +413,7 @@ export interface FileRouteTypes {
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/playground/markdown'
+    | '/profil/me'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
@@ -410,6 +432,7 @@ export interface FileRouteTypes {
     | '/_app/annonser'
     | '/_app/arrangementer'
     | '/_app/kokebok'
+    | '/_app/kontrakt'
     | '/_app/nyheter'
     | '/_app/toddel'
     | '/_auth/forgot-password'
@@ -430,6 +453,7 @@ export interface FileRouteTypes {
     | '/_app/grupper/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
+    | '/_app/profil/me'
     | '/admin/_super-admin/api-keys'
     | '/admin/_super-admin/database'
     | '/admin/_super-admin/logs'
@@ -583,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNyheterRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/kontrakt': {
+      id: '/_app/kontrakt'
+      path: '/kontrakt'
+      fullPath: '/kontrakt'
+      preLoaderRoute: typeof AppKontraktRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/kokebok': {
       id: '/_app/kokebok'
       path: '/kokebok'
@@ -638,6 +669,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/api-keys'
       preLoaderRoute: typeof AdminSuperAdminApiKeysRouteImport
       parentRoute: typeof AdminSuperAdminRoute
+    }
+    '/_app/profil/me': {
+      id: '/_app/profil/me'
+      path: '/profil/me'
+      fullPath: '/profil/me'
+      preLoaderRoute: typeof AppProfilMeRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/profil/$id': {
       id: '/_app/profil/$id'
@@ -729,6 +767,7 @@ interface AppRouteChildren {
   AppAnnonserRoute: typeof AppAnnonserRoute
   AppArrangementerRoute: typeof AppArrangementerRoute
   AppKokebokRoute: typeof AppKokebokRoute
+  AppKontraktRoute: typeof AppKontraktRoute
   AppNyheterRoute: typeof AppNyheterRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -736,6 +775,7 @@ interface AppRouteChildren {
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
   AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
+  AppProfilMeRoute: typeof AppProfilMeRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
 }
@@ -744,6 +784,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnnonserRoute: AppAnnonserRoute,
   AppArrangementerRoute: AppArrangementerRoute,
   AppKokebokRoute: AppKokebokRoute,
+  AppKontraktRoute: AppKontraktRoute,
   AppNyheterRoute: AppNyheterRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
@@ -751,6 +792,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperSlugRoute: AppGrupperSlugRoute,
   AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
+  AppProfilMeRoute: AppProfilMeRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
 }
@@ -823,3 +865,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

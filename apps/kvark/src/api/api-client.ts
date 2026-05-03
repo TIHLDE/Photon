@@ -193,7 +193,7 @@ class Client<Paths extends object> {
             resolvedPath = resolvePath(path, params as Record<string, unknown>);
         }
 
-        // Strip leading slash — ky prefixUrl doesn't want it
+        // Strip leading slash — ky prefix doesn't want it
         if (resolvedPath.startsWith("/")) {
             resolvedPath = resolvedPath.slice(1);
         }
@@ -242,5 +242,6 @@ export type {
 };
 
 export const apiClient = createClient<paths>({
-    prefixUrl: import.meta.env.VITE_API_URL ?? "https://photon.tihlde.org/",
+    prefix: import.meta.env.VITE_API_URL ?? "https://photon.tihlde.org/",
+    credentials: "include",
 });
