@@ -8,7 +8,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { useEffect, useRef, useState } from "react";
 
 const MOCK_CONTRACT: ActiveContract = {
@@ -129,17 +128,3 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
     );
 }
 
-export function KontraktSkeleton() {
-    return (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <Skeleton style={{ height: "65vh" }} />
-                <Skeleton className="h-10 w-full" />
-            </CardContent>
-        </Card>
-    );
-}
