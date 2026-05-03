@@ -4,11 +4,8 @@ import {
     type LinkOptions,
     linkOptions,
     Outlet,
+    useMatchRoute,
 } from "@tanstack/react-router";
-import {
-    DetailLayout,
-    DetailLayoutContent,
-} from "#/components/detail-layout";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import {
@@ -31,14 +28,16 @@ export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
 });
 
+type ProfileNavItem = {
+    label: string;
+    icon: LucideIcon;
+    link: LinkOptions;
+    exact?: boolean;
+};
+
 type ProfileNavGroup = {
     id: string;
-    items: {
-        label: string;
-        icon: LucideIcon;
-        link: LinkOptions;
-        exact?: boolean;
-    }[];
+    items: ProfileNavItem[];
 };
 
 function RouteComponent() {
@@ -101,24 +100,52 @@ function RouteComponent() {
     ];
 
     return (
-        <DetailLayout
-            header={
-                <ProfileHeader
-                    user={USER}
-                    actions={
-                        <>
-                            <MembershipQrDialog name={USER.name} />
-                            <EditBioDialog />
-                        </>
-                    }
-                />
-            }
+        <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
+            <ProfileHeader
+                user={USER}
+                actions={
+                    <>
+                        <MembershipQrDialog name={USER.name} />
+                        <EditBioDialog />
+                    </>
+                }
+            />
+            <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
+                <ProfileNav navGroups={navGroups} />
+                <section className="flex min-w-0 flex-col gap-6">
+                    <Outlet />
+                </section>
+            </div>
+        </div>
+    );
+}
+
+function NavButton({
+    item,
+    size,
+    className,
+}: {
+    item: ProfileNavItem;
+    size?: "default" | "sm";
+    className?: string;
+}) {
+    const matchRoute = useMatchRoute();
+    const isActive = !!matchRoute({
+        to: item.link.to as string,
+        params: item.link.params as Record<string, string> | undefined,
+        fuzzy: !(item.exact ?? false),
+    });
+
+    return (
+        <Button
+            variant={isActive ? "default" : "ghost"}
+            size={size}
+            className={className}
+            render={<Link {...item.link} />}
         >
-            <ProfileNav navGroups={navGroups} />
-            <DetailLayoutContent>
-                <Outlet />
-            </DetailLayoutContent>
-        </DetailLayout>
+            <item.icon />
+            <span>{item.label}</span>
+        </Button>
     );
 }
 
@@ -132,23 +159,7 @@ function ProfileNav({ navGroups }: { navGroups: ProfileNavGroup[] }) {
                 <ul className="flex w-max gap-2">
                     {flatItems.map((item) => (
                         <li key={item.label} className="shrink-0">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="[&.active]:bg-primary [&.active]:text-primary-foreground"
-                                render={
-                                    <Link
-                                        {...item.link}
-                                        activeProps={{ className: "active" }}
-                                        activeOptions={{
-                                            exact: item.exact ?? false,
-                                        }}
-                                    />
-                                }
-                            >
-                                <item.icon />
-                                {item.label}
-                            </Button>
+                            <NavButton item={item} size="sm" />
                         </li>
                     ))}
                 </ul>
@@ -163,27 +174,10 @@ function ProfileNav({ navGroups }: { navGroups: ProfileNavGroup[] }) {
                             <ul className="flex flex-col gap-1">
                                 {group.items.map((item) => (
                                     <li key={item.label}>
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start [&.active]:bg-primary [&.active]:text-primary-foreground"
-                                            render={
-                                                <Link
-                                                    {...item.link}
-                                                    activeProps={{
-                                                        className: "active",
-                                                    }}
-                                                    activeOptions={{
-                                                        exact:
-                                                            item.exact ?? false,
-                                                    }}
-                                                />
-                                            }
-                                        >
-                                            <item.icon />
-                                            <span className="flex-1 text-left">
-                                                {item.label}
-                                            </span>
-                                        </Button>
+                                        <NavButton
+                                            item={item}
+                                            className="w-full justify-start"
+                                        />
                                     </li>
                                 ))}
                             </ul>
