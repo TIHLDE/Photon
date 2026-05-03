@@ -17,18 +17,18 @@
         "@photon/core": "workspace:*",
         "@react-email/components": "^0.5.2",
         "@react-email/render": "^1.2.2",
-        "bullmq": "catalog:",
+        "bullmq": "catalog:backend",
         "nodemailer": "^7.0.11",
-        "react": "catalog:",
-        "react-dom": "catalog:",
+        "react": "catalog:frontend",
+        "react-dom": "catalog:frontend",
         "zod": "catalog:"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
         "@react-email/preview-server": "^4.2.8",
         "@types/nodemailer": "^7.0.1",
-        "@types/react": "catalog:",
-        "@types/react-dom": "catalog:",
+        "@types/react": "catalog:frontend",
+        "@types/react-dom": "catalog:frontend",
         "react-email": "4.2.8",
         "typescript": "catalog:"
     }

@@ -1,16 +1,13 @@
-import { queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { linkOptions, redirect } from "@tanstack/react-router";
 import { getQueryClient } from "#/integrations/tanstack-query";
 
-import { createAuthClient } from "better-auth/react";
-import { usernameClient, genericOAuthClient } from "better-auth/client/plugins";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import type { ExtendedSession } from "@tihlde/sdk/auth";
+import { createPhotonAuthClient } from "@photon/auth/client";
 
-export const clientAuthInstance = createAuthClient({
-    plugins: [usernameClient(), genericOAuthClient()],
-    baseURL: import.meta.env.VITE_AUTH_BASE_URL ?? "https://photon.tihlde.org",
+export const clientAuthInstance = createPhotonAuthClient({
+    baseUrl: import.meta.env.VITE_AUTH_BASE_URL ?? "https://photon.tihlde.org",
 });
 
 export class AuthError extends Error {
@@ -26,7 +23,7 @@ export const getAuthSession = createIsomorphicFn()
         if (session.error) {
             throw new AuthError(`Failed to get session: ${session.error}`);
         }
-        return session.data as ExtendedSession;
+        return session.data;
     })
     .server(async () => {
         const session = await clientAuthInstance.getSession({
@@ -38,7 +35,7 @@ export const getAuthSession = createIsomorphicFn()
         if (session.error) {
             throw new AuthError(`Failed to get session: ${session.error}`);
         }
-        return session.data as ExtendedSession;
+        return session.data;
     });
 
 export const authQueryOptions = queryOptions({
@@ -164,3 +161,94 @@ export async function logoutUser() {
     await clientAuthInstance.signOut();
     await invalidateAuth();
 }
+
+export const changePasswordMutationOptions = mutationOptions({
+    mutationFn: async ({
+        newPassword,
+        token,
+    }: {
+        newPassword: string;
+        token: string;
+    }) => {
+        const result = await clientAuthInstance.resetPassword({
+            newPassword,
+            token,
+        });
+        if (result.error) {
+            throw new Error(
+                "Kunne ikke endre passord: " + result.error.message,
+            );
+        }
+        return result.data;
+    },
+});
+
+export type SignInEmailResult =
+    | { redirect?: boolean; url?: string }
+    | { user: unknown; session: unknown };
+
+export const signInEmailMutationOptions = mutationOptions({
+    mutationFn: async ({
+        email,
+        password,
+    }: {
+        email: string;
+        password: string;
+    }) => {
+        const result = await clientAuthInstance.signIn.email({
+            email,
+            password,
+        });
+        if (result.error) {
+            throw new Error(result.error.message ?? "Innlogging feilet");
+        }
+        return result.data as SignInEmailResult;
+    },
+});
+
+export type SignUpEmailResult =
+    | { user: unknown; session: { token: string } | null }
+    | { redirect?: boolean; url?: string };
+
+export const signUpEmailMutationOptions = mutationOptions({
+    mutationFn: async ({
+        name,
+        email,
+        password,
+    }: {
+        name: string;
+        email: string;
+        password: string;
+    }) => {
+        const result = await clientAuthInstance.signUp.email({
+            name,
+            email,
+            password,
+        });
+        if (result.error) {
+            throw new Error(result.error.message ?? "Registrering feilet");
+        }
+        return result.data as SignUpEmailResult;
+    },
+});
+
+export const requestPasswordResetMutationOptions = mutationOptions({
+    mutationFn: async ({
+        email,
+        redirectTo,
+    }: {
+        email: string;
+        redirectTo: string;
+    }) => {
+        const result = await clientAuthInstance.requestPasswordReset({
+            email,
+            redirectTo,
+        });
+        if (result.error) {
+            throw new Error(
+                result.error.message ?? "Kunne ikke sende lenke akkurat nå.",
+            );
+        }
+        return result.data;
+    },
+});

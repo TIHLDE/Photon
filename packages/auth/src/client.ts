@@ -5,14 +5,16 @@ import {
     genericOAuthClient,
     usernameClient,
 } from "better-auth/client/plugins";
+import { oauthProviderClient } from "@better-auth/oauth-provider/client";
 
-export function createPhotonAuthClient(url: string) {
+export function createPhotonAuthClient({ baseUrl }: { baseUrl: string }) {
     return createAuthClient({
-        baseURL: url,
+        baseURL: baseUrl,
         plugins: [
             genericOAuthClient(),
             usernameClient(),
             customSessionClient<AuthInstance>(),
+            oauthProviderClient(),
         ],
     });
 }

@@ -10,7 +10,7 @@
     },
     "dependencies": {
         "@dotenvx/dotenvx": "^1.49.0",
-        "bullmq": "catalog:",
+        "bullmq": "catalog:backend",
         "redis": "^5.8.2",
         "zod": "catalog:"
     },

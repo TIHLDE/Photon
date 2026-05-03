@@ -25,6 +25,7 @@ import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangeme
 import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
 import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
 import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
+import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
@@ -36,9 +37,11 @@ import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index
 import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
 import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
+import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
+import { Route as AuthOauthConsentRouteImport } from './routes/_auth/oauth/consent'
 import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
@@ -128,6 +131,11 @@ const DevFormTestRoute = DevFormTestRouteImport.update({
   path: '/form-test',
   getParentRoute: () => DevRoute,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -183,6 +191,12 @@ const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
   path: '/annonser/',
   getParentRoute: () => AppRoute,
 } as any)
+const AdminSuperAdminOauthClientsRoute =
+  AdminSuperAdminOauthClientsRouteImport.update({
+    id: '/oauth-clients',
+    path: '/oauth-clients',
+    getParentRoute: () => AdminSuperAdminRoute,
+  } as any)
 const AdminSuperAdminLogsRoute = AdminSuperAdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
@@ -197,6 +211,11 @@ const AdminSuperAdminApiKeysRoute = AdminSuperAdminApiKeysRouteImport.update({
   id: '/api-keys',
   path: '/api-keys',
   getParentRoute: () => AdminSuperAdminRoute,
+} as any)
+const AuthOauthConsentRoute = AuthOauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AppProfilIdRoute = AppProfilIdRouteImport.update({
   id: '/profil/$id',
@@ -270,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/form-test': typeof DevFormTestRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
@@ -287,9 +307,11 @@ export interface FileRoutesByFullPath {
   '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
+  '/oauth/consent': typeof AuthOauthConsentRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
+  '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/annonser/': typeof AppAnnonserIndexRoute
   '/arrangementer/': typeof AppArrangementerIndexRoute
   '/galleri/': typeof AppGalleriIndexRoute
@@ -309,6 +331,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/reset-password': typeof AuthResetPasswordRoute
   '/form-test': typeof DevFormTestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/annonser': typeof AdminAnnonserRoute
@@ -325,9 +348,11 @@ export interface FileRoutesByTo {
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
+  '/oauth/consent': typeof AuthOauthConsentRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
+  '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/annonser': typeof AppAnnonserIndexRoute
   '/arrangementer': typeof AppArrangementerIndexRoute
   '/galleri': typeof AppGalleriIndexRoute
@@ -351,6 +376,7 @@ export interface FileRoutesById {
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_dev/form-test': typeof DevFormTestRoute
   '/admin/_super-admin': typeof AdminSuperAdminRouteWithChildren
   '/admin/annonser': typeof AdminAnnonserRoute
@@ -370,9 +396,11 @@ export interface FileRoutesById {
   '/_app/nyheter/$slug': typeof AppNyheterSlugRoute
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
+  '/_auth/oauth/consent': typeof AuthOauthConsentRoute
   '/admin/_super-admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/_super-admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/_super-admin/logs': typeof AdminSuperAdminLogsRoute
+  '/admin/_super-admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/_app/annonser/': typeof AppAnnonserIndexRoute
   '/_app/arrangementer/': typeof AppArrangementerIndexRoute
   '/_app/galleri/': typeof AppGalleriIndexRoute
@@ -395,6 +423,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/reset-password'
     | '/form-test'
     | '/admin/annonser'
     | '/admin/arrangementer'
@@ -412,9 +441,11 @@ export interface FileRouteTypes {
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/profil/$id'
+    | '/oauth/consent'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
+    | '/admin/oauth-clients'
     | '/annonser/'
     | '/arrangementer/'
     | '/galleri/'
@@ -434,6 +465,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/reset-password'
     | '/form-test'
     | '/admin'
     | '/admin/annonser'
@@ -450,9 +482,11 @@ export interface FileRouteTypes {
     | '/grupper/$slug'
     | '/nyheter/$slug'
     | '/playground/markdown'
+    | '/oauth/consent'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
+    | '/admin/oauth-clients'
     | '/annonser'
     | '/arrangementer'
     | '/galleri'
@@ -475,6 +509,7 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
+    | '/_auth/reset-password'
     | '/_dev/form-test'
     | '/admin/_super-admin'
     | '/admin/annonser'
@@ -494,9 +529,11 @@ export interface FileRouteTypes {
     | '/_app/nyheter/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
+    | '/_auth/oauth/consent'
     | '/admin/_super-admin/api-keys'
     | '/admin/_super-admin/database'
     | '/admin/_super-admin/logs'
+    | '/admin/_super-admin/oauth-clients'
     | '/_app/annonser/'
     | '/_app/arrangementer/'
     | '/_app/galleri/'
@@ -630,6 +667,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevFormTestRouteImport
       parentRoute: typeof DevRoute
     }
+    '/_auth/reset-password': {
+      id: '/_auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/register': {
       id: '/_auth/register'
       path: '/register'
@@ -707,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnnonserIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/admin/_super-admin/oauth-clients': {
+      id: '/admin/_super-admin/oauth-clients'
+      path: '/oauth-clients'
+      fullPath: '/admin/oauth-clients'
+      preLoaderRoute: typeof AdminSuperAdminOauthClientsRouteImport
+      parentRoute: typeof AdminSuperAdminRoute
+    }
     '/admin/_super-admin/logs': {
       id: '/admin/_super-admin/logs'
       path: '/logs'
@@ -727,6 +778,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/api-keys'
       preLoaderRoute: typeof AdminSuperAdminApiKeysRouteImport
       parentRoute: typeof AdminSuperAdminRoute
+    }
+    '/_auth/oauth/consent': {
+      id: '/_auth/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof AuthOauthConsentRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_app/profil/$id': {
       id: '/_app/profil/$id'
@@ -879,12 +937,16 @@ interface AuthRouteChildren {
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthOauthConsentRoute: typeof AuthOauthConsentRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthOauthConsentRoute: AuthOauthConsentRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -903,12 +965,14 @@ interface AdminSuperAdminRouteChildren {
   AdminSuperAdminApiKeysRoute: typeof AdminSuperAdminApiKeysRoute
   AdminSuperAdminDatabaseRoute: typeof AdminSuperAdminDatabaseRoute
   AdminSuperAdminLogsRoute: typeof AdminSuperAdminLogsRoute
+  AdminSuperAdminOauthClientsRoute: typeof AdminSuperAdminOauthClientsRoute
 }
 
 const AdminSuperAdminRouteChildren: AdminSuperAdminRouteChildren = {
   AdminSuperAdminApiKeysRoute: AdminSuperAdminApiKeysRoute,
   AdminSuperAdminDatabaseRoute: AdminSuperAdminDatabaseRoute,
   AdminSuperAdminLogsRoute: AdminSuperAdminLogsRoute,
+  AdminSuperAdminOauthClientsRoute: AdminSuperAdminOauthClientsRoute,
 }
 
 const AdminSuperAdminRouteWithChildren = AdminSuperAdminRoute._addFileChildren(

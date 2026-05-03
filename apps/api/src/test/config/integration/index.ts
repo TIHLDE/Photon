@@ -154,13 +154,18 @@ async function createTestAppContext(): Promise<TestAppContext> {
     const queue = new QueueManager(redisUrl);
 
     // Setup auth
-    const auth = createAuth({
-        db: newDb,
-        redis,
-        queue,
-        mailer: undefined,
-        bucket,
-    });
+    const auth = createAuth(
+        {
+            db: newDb,
+            redis,
+            queue,
+            mailer: undefined,
+            bucket,
+        },
+        {
+            isDev: true,
+        },
+    );
 
     const defaultContext: AppContext = {
         db: newDb,
@@ -203,13 +208,18 @@ async function resetDatabase(ctx: TestAppContext): Promise<void> {
     ctx.db = newDb;
 
     // Recreate auth with new db
-    ctx.auth = createAuth({
-        db: newDb,
-        redis: ctx.redis,
-        queue: ctx.queue,
-        mailer: undefined,
-        bucket: ctx.bucket,
-    });
+    ctx.auth = createAuth(
+        {
+            db: newDb,
+            redis: ctx.redis,
+            queue: ctx.queue,
+            mailer: undefined,
+            bucket: ctx.bucket,
+        },
+        {
+            isDev: true,
+        },
+    );
 }
 
 /**

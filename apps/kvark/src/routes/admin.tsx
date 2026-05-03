@@ -29,6 +29,7 @@ import {
     LogsIcon,
     type LucideIcon,
     NewspaperIcon,
+    ShieldCheckIcon,
     UserIcon,
     Users2Icon,
 } from "lucide-react";
@@ -142,6 +143,11 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "API Nøkler",
                 icon: KeyIcon,
                 link: linkOptions({ to: "/admin/api-keys" }),
+            },
+            {
+                label: "OAuth-klienter",
+                icon: ShieldCheckIcon,
+                link: linkOptions({ to: "/admin/oauth-clients" }),
             },
             {
                 label: "Database Viewer",
