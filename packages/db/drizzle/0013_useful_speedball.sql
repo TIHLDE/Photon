@@ -19,7 +19,6 @@ CREATE TABLE "org_contract_signature" (
 );
 --> statement-breakpoint
 ALTER TABLE "org_group" ADD COLUMN "contract_signing_required" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "org_group" ADD COLUMN "contract_notification_email" varchar(200);--> statement-breakpoint
 ALTER TABLE "org_contract" ADD CONSTRAINT "org_contract_created_by_user_id_auth_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."auth_user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "org_contract_signature" ADD CONSTRAINT "org_contract_signature_contract_id_org_contract_id_fk" FOREIGN KEY ("contract_id") REFERENCES "public"."org_contract"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "org_contract_signature" ADD CONSTRAINT "org_contract_signature_user_id_auth_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."auth_user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

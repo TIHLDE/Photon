@@ -19,9 +19,9 @@ interface ContractSignedEmailProps {
 }
 
 export const ContractSignedEmail = ({
-    memberName = "Ola Nordmann",
-    groupName = "Index",
-    signedAt = new Date().toISOString(),
+    memberName,
+    groupName,
+    signedAt,
 }: ContractSignedEmailProps) => {
     const formattedDate = new Date(signedAt).toLocaleDateString("nb-NO", {
         year: "numeric",

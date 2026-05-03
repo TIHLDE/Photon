@@ -84,9 +84,8 @@ export const signContractRoute = route().post(
             .map((m) => m.group)
             .filter((g) => g.contractSigningRequired);
 
-        // Batch-fetch leaders for groups that have no configured notification email
         const groupsNeedingLeaderLookup = signingGroups
-            .filter((g) => !g.contractNotificationEmail && !g.contactEmail)
+            .filter((g) => !g.contactEmail)
             .map((g) => g.slug);
 
         const leaderEmailByGroup = new Map<string, string>();
@@ -113,7 +112,6 @@ export const signContractRoute = route().post(
 
         for (const grp of signingGroups) {
             const notifyEmail =
-                grp.contractNotificationEmail ??
                 grp.contactEmail ??
                 leaderEmailByGroup.get(grp.slug) ??
                 null;

@@ -108,9 +108,6 @@ export const group = pgTable("group", {
     contractSigningRequired: boolean("contract_signing_required")
         .notNull()
         .default(false),
-    contractNotificationEmail: varchar("contract_notification_email", {
-        length: 200,
-    }),
     ...timestamps,
 });
 
