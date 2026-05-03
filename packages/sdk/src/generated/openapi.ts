@@ -2411,6 +2411,10 @@ export interface components {
         };
         GroupSignatureMember: {
             userId: string;
+            /** @description User's display name */
+            userName: string;
+            /** @description User's email address */
+            userEmail: string;
             hasSigned: boolean;
             signedAt: string | null;
         };
