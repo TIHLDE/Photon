@@ -62,7 +62,6 @@ type SidebarGroup = {
         link: LinkOptions;
 
         icon?: LucideIcon;
-        exact?: boolean;
     }[];
 };
 
@@ -74,8 +73,10 @@ const sidebarMenuGroups: SidebarGroup[] = [
             {
                 label: "Dashboard",
                 icon: LayoutDashboardIcon,
-                link: linkOptions({ to: "/admin" }),
-                exact: true,
+                link: linkOptions({
+                    to: "/admin",
+                    activeOptions: { exact: true },
+                }),
             },
         ],
     },
@@ -195,9 +196,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                                 className="[&.active]:bg-sidebar-primary [&.active]:text-sidebar-primary-foreground"
                                                 activeProps={{
                                                     className: "active",
-                                                }}
-                                                activeOptions={{
-                                                    exact: item.exact ?? false,
                                                 }}
                                             />
                                         }
