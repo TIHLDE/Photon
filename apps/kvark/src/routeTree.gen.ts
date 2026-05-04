@@ -29,7 +29,6 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
-import { Route as AppArrangementerStatesRouteImport } from './routes/_app/arrangementer-states'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
@@ -148,11 +147,6 @@ const AppKokebokRoute = AppKokebokRouteImport.update({
   path: '/kokebok',
   getParentRoute: () => AppRoute,
 } as any)
-const AppArrangementerStatesRoute = AppArrangementerStatesRouteImport.update({
-  id: '/arrangementer-states',
-  path: '/arrangementer-states',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
   id: '/nyheter/',
   path: '/nyheter/',
@@ -259,7 +253,6 @@ const AppProfilIdArrangementerRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminSuperAdminRouteWithChildren
-  '/arrangementer-states': typeof AppArrangementerStatesRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/toddel': typeof AppToddelRoute
@@ -298,7 +291,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
-  '/arrangementer-states': typeof AppArrangementerStatesRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/toddel': typeof AppToddelRoute
@@ -339,7 +331,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
-  '/_app/arrangementer-states': typeof AppArrangementerStatesRoute
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/toddel': typeof AppToddelRoute
@@ -383,7 +374,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/arrangementer-states'
     | '/kokebok'
     | '/kontrakt'
     | '/toddel'
@@ -422,7 +412,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/arrangementer-states'
     | '/kokebok'
     | '/kontrakt'
     | '/toddel'
@@ -462,7 +451,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/admin'
-    | '/_app/arrangementer-states'
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/toddel'
@@ -650,13 +638,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppKokebokRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/arrangementer-states': {
-      id: '/_app/arrangementer-states'
-      path: '/arrangementer-states'
-      fullPath: '/arrangementer-states'
-      preLoaderRoute: typeof AppArrangementerStatesRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/nyheter/': {
       id: '/_app/nyheter/'
       path: '/nyheter'
@@ -821,7 +802,6 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
-  AppArrangementerStatesRoute: typeof AppArrangementerStatesRoute
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
   AppToddelRoute: typeof AppToddelRoute
@@ -841,7 +821,6 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppArrangementerStatesRoute: AppArrangementerStatesRoute,
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
   AppToddelRoute: AppToddelRoute,

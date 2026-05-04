@@ -42,8 +42,6 @@ function EventDetailPage() {
     const { event } = Route.useLoaderData();
 
     const calendarUrl = buildGoogleCalendarUrl(event);
-    const [startDate, startTime] = event.startsAt.split(", ");
-    const [endDate, endTime] = event.endsAt.split(", ");
 
     return (
         <DetailPage
@@ -82,7 +80,7 @@ function EventDetailPage() {
                     <div className="hidden flex-wrap items-center gap-x-4 gap-y-2 lg:flex">
                         <DetailField
                             icon={CalendarDays}
-                            value={event.startsAt}
+                            value={`${event.start.date}, kl. ${event.start.time}`}
                         />
                         <DetailField icon={MapPin} value={event.location} />
                     </div>
@@ -94,8 +92,14 @@ function EventDetailPage() {
                         title="Detaljer"
                         items={[
                             <DetailDateRange
-                                start={{ date: startDate, time: startTime }}
-                                end={{ date: endDate, time: endTime }}
+                                start={{
+                                    date: event.start.date,
+                                    time: event.start.time,
+                                }}
+                                end={{
+                                    date: event.end.date,
+                                    time: event.end.time,
+                                }}
                                 action={
                                     <IconActionButton
                                         icon={CalendarPlus}
@@ -110,14 +114,16 @@ function EventDetailPage() {
                                     />
                                 }
                             />,
-                            <DetailField
-                                icon={MapPin}
-                                value={event.location}
-                            />,
-                            <DetailField
-                                icon={Mail}
-                                value={event.contactPerson}
-                            />,
+                            [
+                                <DetailField
+                                    icon={MapPin}
+                                    value={event.location}
+                                />,
+                                <DetailField
+                                    icon={Mail}
+                                    value={event.contactPerson}
+                                />,
+                            ],
                         ]}
                     />
 

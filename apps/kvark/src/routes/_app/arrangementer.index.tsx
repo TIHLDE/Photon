@@ -23,8 +23,9 @@ const CATEGORIES = [
 ];
 
 function EventsPage() {
-    const [filters, setFilters] =
-        useState<EventFiltersValue>(DEFAULT_EVENT_FILTERS);
+    const [filters, setFilters] = useState<EventFiltersValue>(
+        DEFAULT_EVENT_FILTERS,
+    );
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -55,9 +56,10 @@ function EventsPage() {
                                 <EventCard
                                     slug={event.slug}
                                     title={event.title}
-                                    startsAt={event.startsAt}
+                                    startsAt={`${event.start.date}, ${event.start.time}`}
                                     location={event.location}
                                     organizer={event.organizer}
+                                    category={event.category}
                                     imageUrl={event.imageUrl}
                                     capacity={event.capacity}
                                     registeredCount={event.registeredCount}

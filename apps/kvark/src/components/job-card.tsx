@@ -24,7 +24,15 @@ export function JobCard({
 }: JobCardProps) {
     return (
         <ListCard
-            link={<Link to="/annonser/$slug" params={{ slug }} />}
+            renderLink={(p) => (
+                <Link
+                    to="/annonser/$slug"
+                    params={{ slug }}
+                    className={p.className}
+                >
+                    {p.children}
+                </Link>
+            )}
             title={title}
             imageUrl={imageUrl}
             imageBadge={jobType}

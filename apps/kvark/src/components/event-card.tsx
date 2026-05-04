@@ -9,6 +9,7 @@ export type EventCardProps = {
     startsAt: string;
     location: string;
     organizer: string;
+    category?: string;
     imageUrl?: string;
     capacity: number | null;
     registeredCount: number;
@@ -26,7 +27,15 @@ export function EventCard({
 }: EventCardProps) {
     return (
         <ListCard
-            link={<Link to="/arrangementer/$slug" params={{ slug }} />}
+            renderLink={(p) => (
+                <Link
+                    to="/arrangementer/$slug"
+                    params={{ slug }}
+                    className={p.className}
+                >
+                    {p.children}
+                </Link>
+            )}
             title={title}
             imageUrl={imageUrl}
             imageBadge={organizer}

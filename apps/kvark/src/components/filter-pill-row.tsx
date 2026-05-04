@@ -30,7 +30,7 @@ export function FilterPillRow({ pills, onClearAll }: FilterPillRowProps) {
                     }
                 >
                     {p.label}
-                    <X />
+                    <X aria-hidden />
                 </Badge>
             ))}
             <Badge
@@ -43,7 +43,7 @@ export function FilterPillRow({ pills, onClearAll }: FilterPillRowProps) {
                     />
                 }
             >
-                <FilterX />
+                <FilterX aria-hidden />
             </Badge>
         </div>
     );

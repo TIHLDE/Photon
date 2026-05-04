@@ -17,21 +17,24 @@ import {
 } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 
-import type { EventItem, EventRegistrationState } from "#/mock/events";
+import type {
+    EventDeadline,
+    EventPrice,
+    EventRegistrationState,
+} from "#/mock/events";
 
-type EventRegistrationCardProps = Pick<
-    EventItem,
-    | "registrationState"
-    | "registrationOpensAt"
-    | "registrationOpensInLabel"
-    | "registrationClosesAt"
-    | "unregisterDeadline"
-    | "capacity"
-    | "registeredCount"
-    | "waitlistCount"
-    | "isAdmin"
-    | "price"
-> & {
+type EventRegistrationCardProps = {
+    registrationState: EventRegistrationState;
+    registrationOpensAt?: EventDeadline;
+    registrationOpensInLabel?: string;
+    registrationClosesAt?: EventDeadline;
+    unregisterDeadline?: EventDeadline;
+    paymentDeadline?: EventDeadline;
+    capacity: number | null;
+    registeredCount: number;
+    waitlistCount: number;
+    isAdmin: boolean;
+    price: EventPrice;
     onRegister?: () => void;
     onUnregister?: () => void;
     onJoinWaitlist?: () => void;
@@ -40,7 +43,6 @@ type EventRegistrationCardProps = Pick<
     qrSlot?: ReactNode;
     headerSlot?: ReactNode;
     notEligibleReason?: string;
-    paymentDeadline?: string;
     waitlistPosition?: number;
 };
 
@@ -53,10 +55,10 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                 <CardTitle>Påmelding</CardTitle>
                 <div className="flex items-center gap-2">
-                    {!/^gratis$/i.test(props.price.trim()) ? (
+                    {props.price.kind === "paid" ? (
                         <Badge variant="secondary">
                             <Tag />
-                            {props.price}
+                            {props.price.label}
                         </Badge>
                     ) : null}
                     {props.headerSlot}
@@ -91,7 +93,7 @@ type StateRendering = {
 };
 
 function getStateRendering(props: EventRegistrationCardProps): StateRendering {
-    const state: EventRegistrationState = props.registrationState;
+    const state = props.registrationState;
 
     switch (state) {
         case "not-open":
@@ -138,7 +140,7 @@ function getStateRendering(props: EventRegistrationCardProps): StateRendering {
                 icon: CreditCard,
                 message: "Plass reservert — venter på betaling",
                 secondary: props.paymentDeadline
-                    ? `Betal innen ${props.paymentDeadline}`
+                    ? `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}`
                     : null,
                 actions: (
                     <>
@@ -213,13 +215,18 @@ function getStateRendering(props: EventRegistrationCardProps): StateRendering {
                     </Button>
                 ),
             };
+
+        default: {
+            const _exhaustive: never = state;
+            return _exhaustive;
+        }
     }
 }
 
 type TimelinePoint = {
     label: string;
-    date: string;
-    time?: string;
+    day: string;
+    time: string;
 };
 
 function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
@@ -227,7 +234,7 @@ function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
     if (props.registrationOpensAt) {
         points.push({
             label: props.registrationState === "not-open" ? "Åpner" : "Åpnet",
-            ...splitDateTime(props.registrationOpensAt),
+            ...props.registrationOpensAt,
         });
     }
     const showUnregister =
@@ -236,23 +243,16 @@ function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
     if (showUnregister && props.unregisterDeadline) {
         points.push({
             label: "Avmelding",
-            ...splitDateTime(props.unregisterDeadline),
+            ...props.unregisterDeadline,
         });
     }
     if (props.registrationClosesAt) {
         points.push({
             label: props.registrationState === "closed" ? "Lukket" : "Lukker",
-            ...splitDateTime(props.registrationClosesAt),
+            ...props.registrationClosesAt,
         });
     }
     return points;
-}
-
-function splitDateTime(formatted: string): { date: string; time?: string } {
-    const [datepart, time] = formatted.split(", ");
-    if (!datepart) return { date: formatted };
-    const match = datepart.match(/(\d+\.\s+\w+)/);
-    return { date: match?.[1] ?? datepart, time };
 }
 
 function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
@@ -260,19 +260,15 @@ function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
         <div className="flex items-center gap-3 text-sm">
             {points.map((point, i) => (
                 <Fragment key={point.label}>
-                    {i > 0 ? (
-                        <div className="h-px flex-1 bg-border" />
-                    ) : null}
+                    {i > 0 ? <div className="h-px flex-1 bg-border" /> : null}
                     <div className="flex shrink-0 flex-col gap-0.5">
                         <span>{point.label}</span>
                         <span className="text-muted-foreground">
-                            {point.date}
+                            {point.day}
                         </span>
-                        {point.time ? (
-                            <span className="text-muted-foreground">
-                                kl. {point.time}
-                            </span>
-                        ) : null}
+                        <span className="text-muted-foreground">
+                            kl. {point.time}
+                        </span>
                     </div>
                 </Fragment>
             ))}

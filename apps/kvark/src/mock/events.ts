@@ -10,6 +10,19 @@ export type EventRegistrationState =
     | "full"
     | "not-eligible";
 
+export type EventDate = {
+    date: string;
+    time: string;
+    iso: string;
+};
+
+export type EventDeadline = {
+    day: string;
+    time: string;
+};
+
+export type EventPrice = { kind: "free" } | { kind: "paid"; label: string };
+
 export type EventRegistrant = {
     id: string;
     name: string;
@@ -21,10 +34,8 @@ export type EventRegistrant = {
 export type EventItem = {
     slug: string;
     title: string;
-    startsAt: string;
-    endsAt: string;
-    startsAtIso: string;
-    endsAtIso: string;
+    start: EventDate;
+    end: EventDate;
     location: string;
     category: EventCategory;
     organizer: string;
@@ -33,15 +44,14 @@ export type EventItem = {
     contactEmail: string;
     imageUrl?: string;
     mapEmbedUrl?: string;
-    /** Display string, e.g. "Gratis", "kr 250", "kr 100 / kr 50 medlem". */
-    price: string;
+    price: EventPrice;
     body: string;
 
     registrationState: EventRegistrationState;
-    registrationOpensAt?: string;
+    registrationOpensAt?: EventDeadline;
     registrationOpensInLabel?: string;
-    registrationClosesAt?: string;
-    unregisterDeadline?: string;
+    registrationClosesAt?: EventDeadline;
+    unregisterDeadline?: EventDeadline;
     capacity: number | null;
     registeredCount: number;
     waitlistCount: number;
@@ -114,23 +124,29 @@ export const EVENTS: EventItem[] = [
     {
         slug: "ski-sosialt-april",
         title: "Sosial samling med TIHLDE Ski",
-        startsAt: "Tor 30. apr 2026, 12:00",
-        endsAt: "Tor 30. apr 2026, 12:30",
-        startsAtIso: "2026-04-30T12:00:00+02:00",
-        endsAtIso: "2026-04-30T12:30:00+02:00",
+        start: {
+            date: "Tor 30. apr 2026",
+            time: "12:00",
+            iso: "2026-04-30T12:00:00+02:00",
+        },
+        end: {
+            date: "Tor 30. apr 2026",
+            time: "12:30",
+            iso: "2026-04-30T12:30:00+02:00",
+        },
         location: "Høyskoleparken",
         category: "Sosialt",
         organizer: "TIHLDE Ski",
         contactPerson: "Tiril Tøllefsen Ohr",
         contactEmail: "tiril@tihlde.org",
-        price: "Gratis",
+        price: { kind: "free" },
         mapEmbedUrl:
             "https://use.mazemap.com/embed.html?campusid=55&campuses=ntnu&zlevel=1&center=10.40450,63.41783&zoom=16&sharepoitype=poi&sharepoi=1000587991",
         body: SKI_BODY,
         registrationState: "joined",
-        registrationOpensAt: "Tor 23. apr 2026, 12:00",
-        registrationClosesAt: "Tor 30. apr 2026, 10:00",
-        unregisterDeadline: "Ons 29. apr 2026, 12:00",
+        registrationOpensAt: { day: "Tor 23.", time: "12:00" },
+        registrationClosesAt: { day: "Tor 30.", time: "10:00" },
+        unregisterDeadline: { day: "Ons 29.", time: "12:00" },
         capacity: null,
         registeredCount: 12,
         waitlistCount: 0,
@@ -171,20 +187,26 @@ export const EVENTS: EventItem[] = [
     {
         slug: "toddelmaga",
         title: "Tøddelmåga!",
-        startsAt: "Tor 30. apr 2026, 20:00",
-        endsAt: "Fre 01. mai 2026, 02:00",
-        startsAtIso: "2026-04-30T20:00:00+02:00",
-        endsAtIso: "2026-05-01T02:00:00+02:00",
+        start: {
+            date: "Tor 30. apr 2026",
+            time: "20:00",
+            iso: "2026-04-30T20:00:00+02:00",
+        },
+        end: {
+            date: "Fre 01. mai 2026",
+            time: "02:00",
+            iso: "2026-05-01T02:00:00+02:00",
+        },
         location: "TÖDDEL",
         category: "Sosialt",
         organizer: "TÖDDEL",
         contactPerson: "Mads Henriksen",
         contactEmail: "toddel@tihlde.org",
-        price: "kr 150",
+        price: { kind: "paid", label: "kr 150" },
         body: TODDELMAGA_BODY,
         registrationState: "open",
-        registrationOpensAt: "Tor 23. apr 2026, 12:00",
-        registrationClosesAt: "Tor 30. apr 2026, 18:00",
+        registrationOpensAt: { day: "Tor 23.", time: "12:00" },
+        registrationClosesAt: { day: "Tor 30.", time: "18:00" },
         capacity: 80,
         registeredCount: 56,
         waitlistCount: 4,
@@ -220,23 +242,29 @@ export const EVENTS: EventItem[] = [
     {
         slug: "utmarkslutningsball-2026",
         title: "Utmarkslutningsball 2026",
-        startsAt: "Lør 14. jun 2026, 18:00",
-        endsAt: "Søn 15. jun 2026, 02:00",
-        startsAtIso: "2026-06-14T18:00:00+02:00",
-        endsAtIso: "2026-06-15T02:00:00+02:00",
+        start: {
+            date: "Lør 14. jun 2026",
+            time: "18:00",
+            iso: "2026-06-14T18:00:00+02:00",
+        },
+        end: {
+            date: "Søn 15. jun 2026",
+            time: "02:00",
+            iso: "2026-06-15T02:00:00+02:00",
+        },
         location: "Britannia Hotel",
         category: "Foreningen",
         organizer: "TIHLDE Hovedstyret",
         contactPerson: "Sondre Eikeland",
         contactEmail: "festkomite@tihlde.org",
-        price: "kr 950",
+        price: { kind: "paid", label: "kr 950" },
         mapEmbedUrl:
             "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d889.7032!2d10.39468!3d63.43317!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x466d319a5cfd0c41%3A0x9d0e3fa6e4d3a91d!2sBritannia%20Hotel!5e0!3m2!1sen!2sno!4v1714000000000",
         body: GENERAL_BODY,
         registrationState: "not-open",
-        registrationOpensAt: "Fre 22. mai 2026, 00:00",
+        registrationOpensAt: { day: "Fre 22.", time: "00:00" },
         registrationOpensInLabel: "1 time",
-        registrationClosesAt: "Fre 12. jun 2026, 18:00",
+        registrationClosesAt: { day: "Fre 12.", time: "18:00" },
         capacity: 200,
         registeredCount: 0,
         waitlistCount: 0,
@@ -246,20 +274,26 @@ export const EVENTS: EventItem[] = [
     {
         slug: "generalforsamling-utveksling",
         title: "Generalforsamling med TIHLDE Utveksling",
-        startsAt: "Tor 23. apr 2026, 18:00",
-        endsAt: "Tor 23. apr 2026, 20:00",
-        startsAtIso: "2026-04-23T18:00:00+02:00",
-        endsAtIso: "2026-04-23T20:00:00+02:00",
+        start: {
+            date: "Tor 23. apr 2026",
+            time: "18:00",
+            iso: "2026-04-23T18:00:00+02:00",
+        },
+        end: {
+            date: "Tor 23. apr 2026",
+            time: "20:00",
+            iso: "2026-04-23T20:00:00+02:00",
+        },
         location: "TIHLDE Utveksling / Zoom",
         category: "Foreningen",
         organizer: "TIHLDE Utveksling",
         contactPerson: "Jonas Stensrud",
         contactEmail: "utveksling@tihlde.org",
-        price: "Gratis",
+        price: { kind: "free" },
         body: GENERAL_BODY,
         registrationState: "open",
-        registrationOpensAt: "Ons 15. apr 2026, 12:00",
-        registrationClosesAt: "Tor 23. apr 2026, 16:00",
+        registrationOpensAt: { day: "Ons 15.", time: "12:00" },
+        registrationClosesAt: { day: "Tor 23.", time: "16:00" },
         capacity: null,
         registeredCount: 28,
         waitlistCount: 0,
