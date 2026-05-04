@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { JobCard, type JobCardProps } from "#/components/job-card";
+import { JobCard } from "#/components/job-card";
 import {
     JobFilters,
     type JobFiltersValue,
     type JobType,
 } from "#/components/job-filters";
+import { JOBS } from "#/data/jobs";
 
-export const Route = createFileRoute("/_app/annonser")({ component: JobsPage });
+export const Route = createFileRoute("/_app/annonser/")({
+    component: JobsPage,
+});
 
 const CLASS_LEVELS = [
     { value: 1, label: "1. klasse" },
@@ -23,41 +26,6 @@ const JOB_TYPES: { value: JobType; label: string }[] = [
     { value: "deltid", label: "Deltid" },
     { value: "fulltid", label: "Fulltid" },
     { value: "annet", label: "Annet" },
-];
-
-const JOBS: JobCardProps[] = [
-    {
-        title: "Fullstack Utvikler – Sommerjobb",
-        company: "Fikse",
-        jobType: "Sommerjobb",
-        classLevels: "3. - 5. klasse",
-        location: "Oslo",
-        deadline: "Fortløpende",
-    },
-    {
-        title: "Hjelp ungdommer med matteleksjer på nett – Matteheiten",
-        company: "Matteheiten",
-        jobType: "Deltid",
-        classLevels: "Digitalt",
-        location: "Nett",
-        deadline: "Man 15. juni",
-    },
-    {
-        title: "Social Minds",
-        company: "Social Minds",
-        jobType: "Deltid",
-        classLevels: "1. - 5. klasse",
-        location: "Digitalt",
-        deadline: "Fortløpende",
-    },
-    {
-        title: "Cloud Engineer",
-        company: "Borg",
-        jobType: "Deltid",
-        classLevels: "1. - 5. klasse",
-        location: "Trondheim",
-        deadline: "Fortløpende",
-    },
 ];
 
 function JobsPage() {
@@ -93,8 +61,17 @@ function JobsPage() {
                     </p>
                     <ul className="flex flex-col gap-3">
                         {JOBS.map((job) => (
-                            <li key={job.title}>
-                                <JobCard {...job} />
+                            <li key={job.slug}>
+                                <JobCard
+                                    slug={job.slug}
+                                    title={job.title}
+                                    company={job.company}
+                                    jobType={job.jobType}
+                                    classLevels={job.classLevels}
+                                    location={job.location}
+                                    deadline={job.deadline}
+                                    logoUrl={job.logoUrl}
+                                />
                             </li>
                         ))}
                     </ul>

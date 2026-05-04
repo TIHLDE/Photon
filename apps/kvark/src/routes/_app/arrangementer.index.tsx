@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { useState } from "react";
 
-import { EventCard, type EventCardProps } from "#/components/event-card";
+import { EventCard } from "#/components/event-card";
 import {
     EventFilters,
     type EventFiltersValue,
 } from "#/components/event-filters";
+import { EVENTS } from "#/data/events";
 
-export const Route = createFileRoute("/_app/arrangementer")({
+export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
 });
 
@@ -18,81 +19,6 @@ const CATEGORIES = [
     { value: "association", label: "Foreningen" },
     { value: "course", label: "Kurs" },
     { value: "jentelunsj", label: "Jentelunsj" },
-];
-
-const EVENTS: EventCardProps[] = [
-    {
-        title: "Generalforsamling med TIHLDE Utveksling",
-        startsAt: "Tor 23. apr 18:00",
-        location: "TIHLDE Utveksling / Zoom",
-        category: "Foreningen",
-    },
-    {
-        title: "Jentelunsj arrangerer spillkveld",
-        startsAt: "Lør 25. apr 18:00",
-        location: "Hangaren / Sosialt",
-        category: "Jentelunsj",
-    },
-    {
-        title: "Lightning Talks",
-        startsAt: "Ons 22. apr 17:00",
-        location: "Realfagbygget, Aud. S1 / Kurs",
-        category: "Kurs",
-    },
-    {
-        title: "Tøddelmåga!",
-        startsAt: "Tor 30. apr 20:00",
-        location: "TÖDDEL / Sosialt",
-        category: "Sosialt",
-    },
-    {
-        title: "Laptoplotteri",
-        startsAt: "Fre 02. mai 14:00",
-        location: "Hangaren / Sosialt",
-        category: "Sosialt",
-    },
-    {
-        title: "Badstua med Jentelunsj",
-        startsAt: "Lør 03. mai 17:00",
-        location: "Solsiden / Jentelunsj",
-        category: "Jentelunsj",
-    },
-    {
-        title: "Piknik med Jentelunsj i Dødens dal",
-        startsAt: "Søn 04. mai 14:00",
-        location: "Dødens dal / Jentelunsj",
-        category: "Jentelunsj",
-    },
-    {
-        title: "Eksamensbenet",
-        startsAt: "Man 05. mai 18:00",
-        location: "Hangaren / Sosialt",
-        category: "Sosialt",
-    },
-    {
-        title: "Beerfund",
-        startsAt: "Tir 06. mai 20:00",
-        location: "TIHLDE Hybel og PT / Sosialt",
-        category: "Sosialt",
-    },
-    {
-        title: "17. mai fest",
-        startsAt: "Fre 17. mai 12:00",
-        location: "Trondheim / Sosialt",
-        category: "Sosialt",
-    },
-    {
-        title: "Utmarkslutningsball 2026",
-        startsAt: "Lør 14. jun 18:00",
-        location: "TIHLDE / Foreningen",
-        category: "Foreningen",
-    },
-    {
-        title: "Summer meet-up",
-        startsAt: "Lør 28. jun 17:00",
-        location: "Hangaren / Sosialt",
-        category: "Sosialt",
-    },
 ];
 
 function EventsPage() {
@@ -136,8 +62,15 @@ function EventsPage() {
                             </p>
                             <ul className="flex flex-col gap-3">
                                 {EVENTS.map((event) => (
-                                    <li key={event.title}>
-                                        <EventCard {...event} />
+                                    <li key={event.slug}>
+                                        <EventCard
+                                            slug={event.slug}
+                                            title={event.title}
+                                            startsAt={event.startsAt}
+                                            location={event.location}
+                                            imageUrl={event.imageUrl}
+                                            category={event.category}
+                                        />
                                     </li>
                                 ))}
                             </ul>
