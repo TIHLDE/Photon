@@ -7,7 +7,6 @@ export type NewsItem = {
     updatedAt?: string;
     imageUrl?: string;
     body: string;
-    reactionsEnabled: boolean;
 };
 
 const HOW_TO_NOTION_BODY = `## Hvorfor Notion?
@@ -96,10 +95,7 @@ export const NEWS: NewsItem[] = [
         publishedAt: "Oppdatert i går",
         publishedAtAbsolute: "Tor 24. apr 2026, 14:30",
         updatedAt: "Tir 29. apr 2026, 09:12",
-        imageUrl:
-            "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1600&q=80",
         body: HOW_TO_NOTION_BODY,
-        reactionsEnabled: true,
     },
     {
         slug: "trivselsundersokelse-v26",
@@ -108,10 +104,7 @@ export const NEWS: NewsItem[] = [
             "Vinn gavekort ved å svare på den årlige trivselsundersøkelsen. Din stemme teller!",
         publishedAt: "3 dager siden",
         publishedAtAbsolute: "Søn 27. apr 2026, 12:00",
-        imageUrl:
-            "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=80",
         body: TRIVSEL_BODY,
-        reactionsEnabled: true,
     },
     {
         slug: "aten-scholarship",
@@ -120,8 +113,6 @@ export const NEWS: NewsItem[] = [
             "Søk om stipend til å delta på konferanser og workshops gjennom Aten.",
         publishedAt: "4 dager siden",
         publishedAtAbsolute: "Lør 26. apr 2026, 10:00",
-        imageUrl:
-            "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1600&q=80",
         body: `## Aten Scholarship
 
 Aten støtter studenter som vil dra på relevante konferanser og workshops.
@@ -136,7 +127,6 @@ Aten støtter studenter som vil dra på relevante konferanser og workshops.
 
 Send en kort søknad til \`stipend@aten.no\` innen **15. mai**. Beskriv hvorfor
 nettopp denne konferansen er relevant for studiet ditt.`,
-        reactionsEnabled: false,
     },
     {
         slug: "klatring-i-tihlde",
@@ -159,7 +149,6 @@ Vi arrangerer klatrekvelder annenhver onsdag på **Trondheim Klatresenter**.
 
 Meld deg på via Slack-kanalen \`#klatring\`. Vi har plass til 12 personer per
 kveld.`,
-        reactionsEnabled: true,
     },
     {
         slug: "snart-generalforsamling",
@@ -186,7 +175,6 @@ velger styre og legger føringer for året som kommer.
 
 Alle TIHLDE-medlemmer har stemmerett. Du må være registrert som medlem senest
 **14 dager** før møtet.`,
-        reactionsEnabled: false,
     },
 ];
 

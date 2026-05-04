@@ -2,13 +2,14 @@ export type JobItem = {
     slug: string;
     title: string;
     company: string;
+    companyLogoUrl?: string;
     jobType: string;
     classLevels: string;
     location: string;
     deadline: string;
     deadlineAbsolute: string;
     publishedAt: string;
-    logoUrl?: string;
+    imageUrl?: string;
     body: string;
     applyUrl: string;
 };
@@ -98,7 +99,6 @@ export const JOBS: JobItem[] = [
         deadline: "Man 15. juni 2026",
         deadlineAbsolute: "Man 15. juni 2026, 23:59",
         publishedAt: "Tor 24. apr 2026",
-        logoUrl: undefined,
         body: MATTEHEITEN_BODY,
         applyUrl: "https://matteheiten.no/karriere",
     },

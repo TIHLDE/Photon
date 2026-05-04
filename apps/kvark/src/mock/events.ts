@@ -1,6 +1,14 @@
 export type EventCategory = "Sosialt" | "Foreningen" | "Kurs" | "Jentelunsj";
 
-export type EventRegistrationState = "not-open" | "open" | "joined";
+export type EventRegistrationState =
+    | "not-open"
+    | "open"
+    | "joined"
+    | "awaiting-payment"
+    | "on-waitlist"
+    | "closed"
+    | "full"
+    | "not-eligible";
 
 export type EventRegistrant = {
     id: string;
@@ -20,15 +28,20 @@ export type EventItem = {
     location: string;
     category: EventCategory;
     organizer: string;
+    organizerLogoUrl?: string;
     contactPerson: string;
     contactEmail: string;
     imageUrl?: string;
+    mapEmbedUrl?: string;
+    /** Display string, e.g. "Gratis", "kr 250", "kr 100 / kr 50 medlem". */
+    price: string;
     body: string;
-    reactionsEnabled: boolean;
 
     registrationState: EventRegistrationState;
     registrationOpensAt?: string;
     registrationOpensInLabel?: string;
+    registrationClosesAt?: string;
+    unregisterDeadline?: string;
     capacity: number | null;
     registeredCount: number;
     waitlistCount: number;
@@ -110,11 +123,14 @@ export const EVENTS: EventItem[] = [
         organizer: "TIHLDE Ski",
         contactPerson: "Tiril Tøllefsen Ohr",
         contactEmail: "tiril@tihlde.org",
-        imageUrl:
-            "https://images.unsplash.com/photo-1465188466887-15c87dc7be86?auto=format&fit=crop&w=1600&q=80",
+        price: "Gratis",
+        mapEmbedUrl:
+            "https://use.mazemap.com/embed.html?campusid=55&campuses=ntnu&zlevel=1&center=10.40450,63.41783&zoom=16&sharepoitype=poi&sharepoi=1000587991",
         body: SKI_BODY,
-        reactionsEnabled: true,
         registrationState: "joined",
+        registrationOpensAt: "Tor 23. apr 2026, 12:00",
+        registrationClosesAt: "Tor 30. apr 2026, 10:00",
+        unregisterDeadline: "Ons 29. apr 2026, 12:00",
         capacity: null,
         registeredCount: 12,
         waitlistCount: 0,
@@ -164,11 +180,11 @@ export const EVENTS: EventItem[] = [
         organizer: "TÖDDEL",
         contactPerson: "Mads Henriksen",
         contactEmail: "toddel@tihlde.org",
-        imageUrl:
-            "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1600&q=80",
+        price: "kr 150",
         body: TODDELMAGA_BODY,
-        reactionsEnabled: true,
         registrationState: "open",
+        registrationOpensAt: "Tor 23. apr 2026, 12:00",
+        registrationClosesAt: "Tor 30. apr 2026, 18:00",
         capacity: 80,
         registeredCount: 56,
         waitlistCount: 4,
@@ -199,7 +215,7 @@ export const EVENTS: EventItem[] = [
                 onWaitlist: true,
             },
         ],
-        isAdmin: false,
+        isAdmin: true,
     },
     {
         slug: "utmarkslutningsball-2026",
@@ -213,18 +229,19 @@ export const EVENTS: EventItem[] = [
         organizer: "TIHLDE Hovedstyret",
         contactPerson: "Sondre Eikeland",
         contactEmail: "festkomite@tihlde.org",
-        imageUrl:
-            "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1600&q=80",
+        price: "kr 950",
+        mapEmbedUrl:
+            "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d889.7032!2d10.39468!3d63.43317!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x466d319a5cfd0c41%3A0x9d0e3fa6e4d3a91d!2sBritannia%20Hotel!5e0!3m2!1sen!2sno!4v1714000000000",
         body: GENERAL_BODY,
-        reactionsEnabled: true,
         registrationState: "not-open",
         registrationOpensAt: "Fre 22. mai 2026, 00:00",
         registrationOpensInLabel: "1 time",
+        registrationClosesAt: "Fre 12. jun 2026, 18:00",
         capacity: 200,
         registeredCount: 0,
         waitlistCount: 0,
         registrants: [],
-        isAdmin: false,
+        isAdmin: true,
     },
     {
         slug: "generalforsamling-utveksling",
@@ -238,9 +255,11 @@ export const EVENTS: EventItem[] = [
         organizer: "TIHLDE Utveksling",
         contactPerson: "Jonas Stensrud",
         contactEmail: "utveksling@tihlde.org",
+        price: "Gratis",
         body: GENERAL_BODY,
-        reactionsEnabled: false,
         registrationState: "open",
+        registrationOpensAt: "Ons 15. apr 2026, 12:00",
+        registrationClosesAt: "Tor 23. apr 2026, 16:00",
         capacity: null,
         registeredCount: 28,
         waitlistCount: 0,
@@ -252,7 +271,7 @@ export const EVENTS: EventItem[] = [
                 classYear: 3,
             },
         ],
-        isAdmin: false,
+        isAdmin: true,
     },
 ];
 

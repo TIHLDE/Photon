@@ -1,33 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { useState } from "react";
 
 import { EventCard } from "#/components/event-card";
 import {
+    DEFAULT_EVENT_FILTERS,
     EventFilters,
     type EventFiltersValue,
 } from "#/components/event-filters";
-import { EVENTS } from "#/data/events";
+import { EVENTS } from "#/mock/events";
 
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
 });
 
 const CATEGORIES = [
-    { value: "all", label: "Alle" },
-    { value: "social", label: "Sosialt" },
-    { value: "association", label: "Foreningen" },
-    { value: "course", label: "Kurs" },
-    { value: "jentelunsj", label: "Jentelunsj" },
+    { value: "all", label: "Alle kategorier" },
+    { value: "kurs", label: "Kurs" },
+    { value: "annet", label: "Annet" },
+    { value: "fadderuka", label: "Fadderuka" },
+    { value: "bedpres", label: "Bedpres" },
+    { value: "sosialt", label: "Sosialt" },
 ];
 
 function EventsPage() {
-    const [filters, setFilters] = useState<EventFiltersValue>({
-        query: "",
-        category: "all",
-        showPast: false,
-        openRegistration: false,
-    });
+    const [filters, setFilters] =
+        useState<EventFiltersValue>(DEFAULT_EVENT_FILTERS);
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -38,58 +35,38 @@ function EventsPage() {
                 </p>
             </div>
 
-            <Tabs defaultValue="list">
-                <TabsList>
-                    <TabsTrigger value="list">Liste</TabsTrigger>
-                    <TabsTrigger value="calendar">Kalender</TabsTrigger>
-                    <TabsTrigger value="featured">Utendrikkert</TabsTrigger>
-                </TabsList>
+            <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
+                <aside>
+                    <EventFilters
+                        value={filters}
+                        categories={CATEGORIES}
+                        onChange={setFilters}
+                        onSubmit={() => {}}
+                    />
+                </aside>
 
-                <TabsContent value="list">
-                    <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
-                        <aside>
-                            <EventFilters
-                                value={filters}
-                                categories={CATEGORIES}
-                                onChange={setFilters}
-                                onSubmit={() => {}}
-                            />
-                        </aside>
-
-                        <section className="flex flex-col gap-3">
-                            <p className="text-sm text-muted-foreground">
-                                {EVENTS.length} arrangementer funnet
-                            </p>
-                            <ul className="flex flex-col gap-3">
-                                {EVENTS.map((event) => (
-                                    <li key={event.slug}>
-                                        <EventCard
-                                            slug={event.slug}
-                                            title={event.title}
-                                            startsAt={event.startsAt}
-                                            location={event.location}
-                                            imageUrl={event.imageUrl}
-                                            category={event.category}
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
-                        </section>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="calendar">
-                    <div className="flex min-h-80 items-center justify-center">
-                        <p>Kalendervisning kommer</p>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="featured">
-                    <div className="flex min-h-80 items-center justify-center">
-                        <p>Utvalgte arrangementer kommer</p>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                <section className="flex flex-col gap-3">
+                    <p className="text-sm text-muted-foreground">
+                        {EVENTS.length} arrangementer funnet
+                    </p>
+                    <ul className="flex flex-col gap-4 sm:gap-1">
+                        {EVENTS.map((event) => (
+                            <li key={event.slug}>
+                                <EventCard
+                                    slug={event.slug}
+                                    title={event.title}
+                                    startsAt={event.startsAt}
+                                    location={event.location}
+                                    organizer={event.organizer}
+                                    imageUrl={event.imageUrl}
+                                    capacity={event.capacity}
+                                    registeredCount={event.registeredCount}
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            </div>
         </div>
     );
 }

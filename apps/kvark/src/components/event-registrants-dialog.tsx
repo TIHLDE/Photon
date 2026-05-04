@@ -11,7 +11,7 @@ import {
 import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
 import type { ReactElement } from "react";
 
-import type { EventRegistrant } from "#/data/events";
+import type { EventRegistrant } from "#/mock/events";
 
 type EventRegistrantsDialogProps = {
     trigger: ReactElement;

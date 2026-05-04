@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { NewsCard } from "#/components/news-card";
-import { NEWS } from "#/data/news";
+import { NEWS } from "#/mock/news";
 
 export const Route = createFileRoute("/_app/nyheter/")({ component: NewsPage });
 

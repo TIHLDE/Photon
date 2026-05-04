@@ -1,10 +1,10 @@
-import { Button } from "@tihlde/ui/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
-import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Input } from "@tihlde/ui/ui/input";
 import { Label } from "@tihlde/ui/ui/label";
 import { RadioGroup, RadioGroupItem } from "@tihlde/ui/ui/radio-group";
-import { Search } from "lucide-react";
+
+import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
+import { type FilterPill } from "#/components/filter-pill-row";
+import { FilterShell } from "#/components/filter-shell";
 
 export type JobType = "sommerjobb" | "deltid" | "fulltid" | "annet";
 
@@ -12,6 +12,12 @@ export type JobFiltersValue = {
     query: string;
     classLevels: number[];
     jobType: JobType | null;
+};
+
+export const DEFAULT_JOB_FILTERS: JobFiltersValue = {
+    query: "",
+    classLevels: [],
+    jobType: null,
 };
 
 type Option<T> = { value: T; label: string };
@@ -38,80 +44,94 @@ export function JobFilters({
         onChange({ ...value, classLevels: next });
     };
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Filter</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <form
-                    className="flex items-center gap-2"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        onSubmit();
-                    }}
-                >
-                    <Input
-                        placeholder="Søk etter tittel, firma..."
-                        value={value.query}
-                        onChange={(e) =>
-                            onChange({ ...value, query: e.target.value })
-                        }
-                    />
-                    <Button type="submit" size="icon" aria-label="Søk">
-                        <Search />
-                    </Button>
-                </form>
+    const pills: FilterPill[] = [];
+    if (value.query) {
+        pills.push({
+            key: "query",
+            label: `Søk: ${value.query}`,
+            clear: () => onChange({ ...value, query: "" }),
+        });
+    }
+    for (const level of value.classLevels) {
+        const opt = classLevelOptions.find((o) => o.value === level);
+        pills.push({
+            key: `class-${level}`,
+            label: opt?.label ?? `${level}. klasse`,
+            clear: () =>
+                onChange({
+                    ...value,
+                    classLevels: value.classLevels.filter((l) => l !== level),
+                }),
+        });
+    }
+    if (value.jobType) {
+        const opt = jobTypeOptions.find((o) => o.value === value.jobType);
+        pills.push({
+            key: "jobType",
+            label: opt?.label ?? value.jobType,
+            clear: () => onChange({ ...value, jobType: null }),
+        });
+    }
 
-                <div className="flex flex-col gap-2">
-                    <span className="text-sm">Klassetrinn</span>
+    return (
+        <FilterShell
+            searchSlot={
+                <Input
+                    placeholder="Søk etter tittel, firma..."
+                    value={value.query}
+                    onChange={(e) =>
+                        onChange({ ...value, query: e.target.value })
+                    }
+                />
+            }
+            fieldsSlot={
+                <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
-                        {classLevelOptions.map((opt) => (
-                            <Label
-                                key={opt.value}
-                                className="justify-start gap-2"
-                            >
-                                <Checkbox
+                        <span className="text-sm">Klassetrinn</span>
+                        <div className="flex flex-col gap-2">
+                            {classLevelOptions.map((opt) => (
+                                <FilterCheckboxOption
+                                    key={opt.value}
+                                    title={opt.label}
                                     checked={value.classLevels.includes(
                                         opt.value,
                                     )}
                                     onCheckedChange={(checked) =>
-                                        toggleClassLevel(
-                                            opt.value,
-                                            checked === true,
-                                        )
+                                        toggleClassLevel(opt.value, checked)
                                     }
                                 />
-                                {opt.label}
-                            </Label>
-                        ))}
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm">Jobbtype</span>
+                        <RadioGroup
+                            value={value.jobType ?? ""}
+                            onValueChange={(v) =>
+                                onChange({
+                                    ...value,
+                                    jobType: (v as JobType) || null,
+                                })
+                            }
+                            className="flex flex-col gap-2"
+                        >
+                            {jobTypeOptions.map((opt) => (
+                                <Label
+                                    key={opt.value}
+                                    className="flex items-center gap-2"
+                                >
+                                    <RadioGroupItem value={opt.value} />
+                                    {opt.label}
+                                </Label>
+                            ))}
+                        </RadioGroup>
                     </div>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                    <span className="text-sm">Jobbtype</span>
-                    <RadioGroup
-                        value={value.jobType ?? ""}
-                        onValueChange={(v) =>
-                            onChange({
-                                ...value,
-                                jobType: (v as JobType) || null,
-                            })
-                        }
-                        className="flex flex-col gap-2"
-                    >
-                        {jobTypeOptions.map((opt) => (
-                            <Label
-                                key={opt.value}
-                                className="justify-start gap-2"
-                            >
-                                <RadioGroupItem value={opt.value} />
-                                {opt.label}
-                            </Label>
-                        ))}
-                    </RadioGroup>
-                </div>
-            </CardContent>
-        </Card>
+            }
+            pills={pills}
+            onClearAll={() => onChange(DEFAULT_JOB_FILTERS)}
+            onSubmit={onSubmit}
+        />
     );
 }

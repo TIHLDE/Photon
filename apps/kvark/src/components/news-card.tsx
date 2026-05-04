@@ -25,7 +25,7 @@ export function NewsCard({
     return (
         <Link to="/nyheter/$slug" params={{ slug }} className="block h-full">
             <Card className="h-full">
-                <div className="aspect-video w-full overflow-hidden">
+                <div className="aspect-[16/7] w-full overflow-hidden">
                     {imageUrl ? (
                         <img
                             src={imageUrl}

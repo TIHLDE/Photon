@@ -1,14 +1,18 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@tihlde/ui/ui/card";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import {
     ArrowLeft,
     ArrowUpRight,
     Briefcase,
-    Building2,
     CalendarDays,
     CalendarX,
     GraduationCap,
@@ -16,13 +20,15 @@ import {
     PencilLine,
 } from "lucide-react";
 
-import {
-    DetailMetaList,
-    type DetailMetaItem,
-} from "#/components/detail-meta-list";
+import { DetailField } from "#/components/detail-field";
+import { DetailHero } from "#/components/detail-hero";
+import { DetailIdentity } from "#/components/detail-identity";
+import { DetailPage } from "#/components/detail-page";
+import { DetailsCard } from "#/components/details-card";
+import { IconActionButton } from "#/components/icon-action-button";
 import { ShareButton } from "#/components/share-button";
 import { richRegistry } from "#/components/markdown/directives/presets";
-import { getJobBySlug } from "#/data/jobs";
+import { getJobBySlug } from "#/mock/jobs";
 
 export const Route = createFileRoute("/_app/annonser/$slug")({
     component: JobDetailPage,
@@ -36,92 +42,56 @@ export const Route = createFileRoute("/_app/annonser/$slug")({
 function JobDetailPage() {
     const { job } = Route.useLoaderData();
 
-    const meta: DetailMetaItem[] = [
-        { icon: Building2, label: "Bedrift", value: job.company },
-        {
-            icon: CalendarX,
-            label: "Søknadsfrist",
-            value: job.deadlineAbsolute,
-        },
-        { icon: GraduationCap, label: "Årstrinn", value: job.classLevels },
-        { icon: Briefcase, label: "Stillingstype", value: job.jobType },
-        { icon: MapPin, label: "Sted", value: job.location },
-    ];
-
     return (
-        <article className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:py-10">
-            <div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    render={<Link to="/annonser" />}
-                >
-                    <ArrowLeft />
-                    Alle stillinger
-                </Button>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
-                <div className="flex flex-col gap-6">
-                    <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-xl border bg-muted">
-                        {job.logoUrl ? (
-                            <img
-                                src={job.logoUrl}
-                                alt={job.company}
-                                className="size-full object-contain p-12"
-                            />
-                        ) : (
-                            <span className="text-4xl text-muted-foreground">
-                                {job.company}
-                            </span>
-                        )}
-                    </div>
-
-                    <header className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                            <Badge variant="secondary" className="w-fit">
-                                {job.jobType}
-                            </Badge>
-                            <h1 className="text-3xl md:text-4xl">
-                                {job.title}
-                            </h1>
-                            <p className="text-muted-foreground">
-                                {job.company}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
-                                <CalendarDays className="size-4" />
-                                Publisert {job.publishedAt}
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <CalendarX className="size-4" />
-                                Søknadsfrist {job.deadline}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Button variant="outline" size="sm">
-                                <PencilLine />
-                                Rediger annonse
-                            </Button>
-                            <ShareButton label="Del stilling" />
-                        </div>
-                    </header>
-
-                    <Separator />
-
-                    <MarkdownView registry={richRegistry} source={job.body} />
+        <DetailPage
+            back={
+                <div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        render={<Link to="/annonser" />}
+                    >
+                        <ArrowLeft />
+                        Alle stillinger
+                    </Button>
                 </div>
-
-                <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+            }
+            hero={<DetailHero imageUrl={job.imageUrl} />}
+            header={
+                <>
+                    <div className="flex items-center justify-between gap-2">
+                        <DetailIdentity
+                            name={job.company}
+                            logoUrl={job.companyLogoUrl}
+                        />
+                        <div className="flex items-center gap-1">
+                            <ShareButton label="Del stilling" />
+                            <IconActionButton
+                                icon={PencilLine}
+                                label="Rediger annonse"
+                            />
+                        </div>
+                    </div>
+                    <h1 className="text-3xl md:text-4xl">{job.title}</h1>
+                    <DetailField
+                        icon={CalendarDays}
+                        value={`Publisert ${job.publishedAt}`}
+                    />
+                </>
+            }
+            sidebar={
+                <>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Detaljer</CardTitle>
+                            <CardTitle>Søk på stillingen</CardTitle>
+                            <CardDescription>
+                                <span className="flex items-center gap-1.5">
+                                    <CalendarX className="size-4" />
+                                    Frist {job.deadlineAbsolute}
+                                </span>
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            <DetailMetaList items={meta} />
+                        <CardContent>
                             <Button
                                 className="w-full"
                                 render={
@@ -137,8 +107,35 @@ function JobDetailPage() {
                             </Button>
                         </CardContent>
                     </Card>
-                </aside>
-            </div>
-        </article>
+
+                    <DetailsCard
+                        title="Detaljer"
+                        items={[
+                            <DetailField
+                                icon={GraduationCap}
+                                label="Årstrinn"
+                                value={job.classLevels}
+                            />,
+                            <DetailField
+                                icon={Briefcase}
+                                label="Type"
+                                value={job.jobType}
+                            />,
+                            <DetailField
+                                icon={MapPin}
+                                label="Sted"
+                                value={job.location}
+                            />,
+                        ]}
+                    />
+                </>
+            }
+            body={
+                <>
+                    <Separator />
+                    <MarkdownView registry={richRegistry} source={job.body} />
+                </>
+            }
+        />
     );
 }

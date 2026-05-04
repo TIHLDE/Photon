@@ -3,11 +3,12 @@ import { useState } from "react";
 
 import { JobCard } from "#/components/job-card";
 import {
+    DEFAULT_JOB_FILTERS,
     JobFilters,
     type JobFiltersValue,
     type JobType,
 } from "#/components/job-filters";
-import { JOBS } from "#/data/jobs";
+import { JOBS } from "#/mock/jobs";
 
 export const Route = createFileRoute("/_app/annonser/")({
     component: JobsPage,
@@ -29,11 +30,8 @@ const JOB_TYPES: { value: JobType; label: string }[] = [
 ];
 
 function JobsPage() {
-    const [filters, setFilters] = useState<JobFiltersValue>({
-        query: "",
-        classLevels: [],
-        jobType: null,
-    });
+    const [filters, setFilters] =
+        useState<JobFiltersValue>(DEFAULT_JOB_FILTERS);
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -59,18 +57,17 @@ function JobsPage() {
                     <p className="text-sm text-muted-foreground">
                         {JOBS.length} stillinger funnet
                     </p>
-                    <ul className="flex flex-col gap-3">
+                    <ul className="flex flex-col gap-4 sm:gap-1">
                         {JOBS.map((job) => (
                             <li key={job.slug}>
                                 <JobCard
                                     slug={job.slug}
                                     title={job.title}
-                                    company={job.company}
                                     jobType={job.jobType}
                                     classLevels={job.classLevels}
                                     location={job.location}
                                     deadline={job.deadline}
-                                    logoUrl={job.logoUrl}
+                                    imageUrl={job.imageUrl}
                                 />
                             </li>
                         ))}

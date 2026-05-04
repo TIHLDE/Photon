@@ -1,116 +1,282 @@
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Progress } from "@tihlde/ui/ui/progress";
 import {
     AlertCircle,
+    Ban,
     CalendarClock,
     CheckCircle2,
+    CreditCard,
+    Hourglass,
+    Lock,
     QrCode,
+    Tag,
     Users,
-    UsersRound,
+    type LucideIcon,
 } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
 
-import type { ReactNode } from "react";
-
-import type { EventItem, EventRegistrationState } from "#/data/events";
+import type { EventItem, EventRegistrationState } from "#/mock/events";
 
 type EventRegistrationCardProps = Pick<
     EventItem,
     | "registrationState"
     | "registrationOpensAt"
     | "registrationOpensInLabel"
+    | "registrationClosesAt"
+    | "unregisterDeadline"
     | "capacity"
     | "registeredCount"
     | "waitlistCount"
     | "isAdmin"
+    | "price"
 > & {
     onRegister?: () => void;
     onUnregister?: () => void;
-    onShowRegistrants?: () => void;
+    onJoinWaitlist?: () => void;
     onNotify?: () => void;
+    onPay?: () => void;
     qrSlot?: ReactNode;
+    headerSlot?: ReactNode;
+    notEligibleReason?: string;
+    paymentDeadline?: string;
+    waitlistPosition?: number;
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
+    const timeline = buildTimeline(props);
+    const state = getStateRendering(props);
+
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                 <CardTitle>Påmelding</CardTitle>
+                <div className="flex items-center gap-2">
+                    {!/^gratis$/i.test(props.price.trim()) ? (
+                        <Badge variant="secondary">
+                            <Tag />
+                            {props.price}
+                        </Badge>
+                    ) : null}
+                    {props.headerSlot}
+                </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-                {renderState(props)}
+                {timeline.length >= 2 ? (
+                    <RegistrationTimeline points={timeline} />
+                ) : null}
+                <RegistrationStats {...props} />
+                {state.message ? (
+                    <InfoRow icon={state.icon}>
+                        <span>{state.message}</span>
+                        {state.secondary ? (
+                            <span className="text-sm text-muted-foreground">
+                                {state.secondary}
+                            </span>
+                        ) : null}
+                    </InfoRow>
+                ) : null}
+                {state.actions}
             </CardContent>
         </Card>
     );
 }
 
-function renderState(props: EventRegistrationCardProps) {
+type StateRendering = {
+    icon?: LucideIcon;
+    message?: ReactNode;
+    secondary?: ReactNode;
+    actions?: ReactNode;
+};
+
+function getStateRendering(props: EventRegistrationCardProps): StateRendering {
     const state: EventRegistrationState = props.registrationState;
 
-    if (state === "not-open") {
-        return (
-            <>
-                <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-0.5 size-4 text-muted-foreground" />
-                    <div className="flex flex-col">
-                        <span>
-                            Påmelding åpner om{" "}
-                            {props.registrationOpensInLabel ?? "en stund"}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                            Start: {props.registrationOpensAt}
-                        </span>
-                    </div>
-                </div>
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={props.onNotify}
-                >
-                    <CalendarClock />
-                    Varsle meg
-                </Button>
-            </>
-        );
-    }
-
-    if (state === "joined") {
-        return (
-            <>
-                <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 size-4" />
-                    <div className="flex flex-col">
-                        <span>Du har plass på arrangementet!</span>
-                        <span className="text-sm text-muted-foreground">
-                            Vi gleder oss til å se deg
-                        </span>
-                    </div>
-                </div>
-                {props.qrSlot ?? (
-                    <Button className="w-full">
-                        <QrCode />
-                        Påmeldingsbevis
+    switch (state) {
+        case "not-open":
+            return {
+                icon: AlertCircle,
+                message: `Påmelding åpner om ${props.registrationOpensInLabel ?? "en stund"}`,
+                actions: (
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={props.onNotify}
+                    >
+                        <CalendarClock />
+                        Varsle meg
                     </Button>
-                )}
-                <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={props.onUnregister}
-                >
-                    Meld deg av
-                </Button>
-                <RegistrationStats {...props} />
-            </>
-        );
-    }
+                ),
+            };
 
+        case "joined":
+            return {
+                icon: CheckCircle2,
+                message: "Du har plass på arrangementet!",
+                actions: (
+                    <>
+                        {props.qrSlot ?? (
+                            <Button className="w-full">
+                                <QrCode />
+                                Påmeldingsbevis
+                            </Button>
+                        )}
+                        <Button
+                            variant="destructive"
+                            className="w-full"
+                            onClick={props.onUnregister}
+                        >
+                            Meld deg av
+                        </Button>
+                    </>
+                ),
+            };
+
+        case "awaiting-payment":
+            return {
+                icon: CreditCard,
+                message: "Plass reservert — venter på betaling",
+                secondary: props.paymentDeadline
+                    ? `Betal innen ${props.paymentDeadline}`
+                    : null,
+                actions: (
+                    <>
+                        <Button className="w-full" onClick={props.onPay}>
+                            <CreditCard />
+                            Betal nå
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            className="w-full"
+                            onClick={props.onUnregister}
+                        >
+                            Meld deg av
+                        </Button>
+                    </>
+                ),
+            };
+
+        case "on-waitlist":
+            return {
+                icon: Hourglass,
+                message: "Du er på venteliste",
+                secondary: props.waitlistPosition
+                    ? `Posisjon ${props.waitlistPosition}`
+                    : null,
+                actions: (
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={props.onUnregister}
+                    >
+                        Forlat venteliste
+                    </Button>
+                ),
+            };
+
+        case "closed":
+            return {
+                icon: Lock,
+                message: "Påmelding er stengt",
+            };
+
+        case "full":
+            return {
+                icon: AlertCircle,
+                message: "Arrangementet er fullt",
+                actions: (
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={props.onJoinWaitlist}
+                    >
+                        Sett meg på venteliste
+                    </Button>
+                ),
+            };
+
+        case "not-eligible":
+            return {
+                icon: Ban,
+                message: "Du kan ikke melde deg på",
+                secondary:
+                    props.notEligibleReason ??
+                    "Dette arrangementet er ikke åpent for deg basert på årstrinn eller undergruppe.",
+            };
+
+        case "open":
+            return {
+                actions: (
+                    <Button className="w-full" onClick={props.onRegister}>
+                        Meld deg på
+                    </Button>
+                ),
+            };
+    }
+}
+
+type TimelinePoint = {
+    label: string;
+    date: string;
+    time?: string;
+};
+
+function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
+    const points: TimelinePoint[] = [];
+    if (props.registrationOpensAt) {
+        points.push({
+            label: props.registrationState === "not-open" ? "Åpner" : "Åpnet",
+            ...splitDateTime(props.registrationOpensAt),
+        });
+    }
+    const showUnregister =
+        props.registrationState === "joined" ||
+        props.registrationState === "awaiting-payment";
+    if (showUnregister && props.unregisterDeadline) {
+        points.push({
+            label: "Avmelding",
+            ...splitDateTime(props.unregisterDeadline),
+        });
+    }
+    if (props.registrationClosesAt) {
+        points.push({
+            label: props.registrationState === "closed" ? "Lukket" : "Lukker",
+            ...splitDateTime(props.registrationClosesAt),
+        });
+    }
+    return points;
+}
+
+function splitDateTime(formatted: string): { date: string; time?: string } {
+    const [datepart, time] = formatted.split(", ");
+    if (!datepart) return { date: formatted };
+    const match = datepart.match(/(\d+\.\s+\w+)/);
+    return { date: match?.[1] ?? datepart, time };
+}
+
+function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
     return (
-        <>
-            <RegistrationStats {...props} />
-            <Button className="w-full" onClick={props.onRegister}>
-                Meld deg på
-            </Button>
-        </>
+        <div className="flex items-center gap-3 text-sm">
+            {points.map((point, i) => (
+                <Fragment key={point.label}>
+                    {i > 0 ? (
+                        <div className="h-px flex-1 bg-border" />
+                    ) : null}
+                    <div className="flex shrink-0 flex-col gap-0.5">
+                        <span>{point.label}</span>
+                        <span className="text-muted-foreground">
+                            {point.date}
+                        </span>
+                        {point.time ? (
+                            <span className="text-muted-foreground">
+                                kl. {point.time}
+                            </span>
+                        ) : null}
+                    </div>
+                </Fragment>
+            ))}
+        </div>
     );
 }
 
@@ -118,8 +284,6 @@ function RegistrationStats({
     capacity,
     registeredCount,
     waitlistCount,
-    isAdmin,
-    onShowRegistrants,
 }: EventRegistrationCardProps) {
     const capacityLabel = capacity === null ? "∞" : String(capacity);
     const progress =
@@ -128,36 +292,36 @@ function RegistrationStats({
             : Math.min(100, Math.round((registeredCount / capacity) * 100));
 
     return (
-        <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                    <Users className="size-4 text-muted-foreground" />
-                    <span>Påmeldte</span>
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-sm">
+                <Users className="size-4 text-muted-foreground" />
+                <span className="tabular-nums">
+                    {registeredCount}/{capacityLabel} påmeldte
                 </span>
-                <div className="flex items-center gap-1">
-                    <span className="tabular-nums">
-                        {registeredCount}/{capacityLabel}
+                {waitlistCount > 0 ? (
+                    <span className="text-muted-foreground">
+                        · {waitlistCount} venteliste
                     </span>
-                    {isAdmin ? (
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={onShowRegistrants}
-                            aria-label="Se påmeldte"
-                        >
-                            <UsersRound />
-                        </Button>
-                    ) : null}
-                </div>
+                ) : null}
             </div>
             {progress !== null ? <Progress value={progress} /> : null}
-            <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                    <UsersRound className="size-4 text-muted-foreground" />
-                    <span>Venteliste</span>
-                </span>
-                <span className="tabular-nums">{waitlistCount}</span>
-            </div>
+        </div>
+    );
+}
+
+function InfoRow({
+    icon: Icon,
+    children,
+}: {
+    icon?: LucideIcon;
+    children: ReactNode;
+}) {
+    return (
+        <div className="flex items-start gap-2 text-sm">
+            {Icon ? (
+                <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            ) : null}
+            <div className="flex min-w-0 flex-col gap-1">{children}</div>
         </div>
     );
 }

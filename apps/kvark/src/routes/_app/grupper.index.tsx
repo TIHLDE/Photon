@@ -1,16 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ReactFlow } from "@xyflow/react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ReactFlow, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useCallback } from "react";
 
 import { GroupTreeMobile } from "#/components/group-tree-mobile";
 import {
     GroupTreeJunctionNode,
+    type GroupTreeNodeData,
     GroupTreeNode,
     GroupTreeSectionNode,
     NODE_TYPE,
 } from "#/components/group-tree-node";
 import { useTheme } from "#/integrations/theme";
 import { buildGroupTree } from "#/lib/build-group-tree";
+import { nameToSlug } from "#/lib/utils";
 
 import { TREE_MOCK } from "#/mock/groups";
 
@@ -37,6 +40,19 @@ export const Route = createFileRoute("/_app/grupper/")({
 
 function GroupsPage() {
     const { theme } = useTheme();
+    const navigate = useNavigate();
+
+    const onNodeClick = useCallback(
+        (_: React.MouseEvent, node: Node) => {
+            if (node.type !== NODE_TYPE.group) return;
+            const data = node.data as GroupTreeNodeData;
+            navigate({
+                to: "/grupper/$slug",
+                params: { slug: nameToSlug(data.name) },
+            });
+        },
+        [navigate],
+    );
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-4 px-4 py-8">
@@ -66,6 +82,7 @@ function GroupsPage() {
                     nodesConnectable={false}
                     nodesDraggable={false}
                     nodesFocusable={false}
+                    onNodeClick={onNodeClick}
                     panOnDrag={false}
                     panOnScroll={false}
                     preventScrolling={false}
