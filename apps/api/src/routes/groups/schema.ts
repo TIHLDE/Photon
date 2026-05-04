@@ -95,16 +95,6 @@ export const updateGroupSchema = Schema(
             description:
                 "Whether contract signing is required for group members",
         }),
-        contractNotificationEmail: z
-            .string()
-            .email()
-            .max(200)
-            .optional()
-            .nullable()
-            .meta({
-                description:
-                    "Email to notify when a member signs. Defaults to group contact email then leader email.",
-            }),
     }),
 );
 
@@ -162,10 +152,6 @@ export const groupSchema = Schema(
         contractSigningRequired: z.boolean().meta({
             description: "Whether contract signing is required",
         }),
-        contractNotificationEmail: z
-            .string()
-            .nullable()
-            .meta({ description: "Contract notification email" }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
     }),

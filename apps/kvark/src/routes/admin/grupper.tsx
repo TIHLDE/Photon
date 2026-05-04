@@ -10,7 +10,6 @@ import {
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
-import { Input } from "@tihlde/ui/ui/input";
 import {
     Table,
     TableBody,
@@ -43,7 +42,6 @@ const MOCK_GROUPS: Group[] = [
         finesActivated: false,
         finesAdminId: null,
         contractSigningRequired: true,
-        contractNotificationEmail: "index@tihlde.org",
         createdAt: "2020-01-01T00:00:00.000Z",
         updatedAt: "2025-01-01T00:00:00.000Z",
     },
@@ -58,7 +56,6 @@ const MOCK_GROUPS: Group[] = [
         finesActivated: false,
         finesAdminId: null,
         contractSigningRequired: false,
-        contractNotificationEmail: null,
         createdAt: "2020-01-01T00:00:00.000Z",
         updatedAt: "2025-01-01T00:00:00.000Z",
     },
@@ -73,7 +70,6 @@ const MOCK_GROUPS: Group[] = [
         finesActivated: false,
         finesAdminId: null,
         contractSigningRequired: true,
-        contractNotificationEmail: null,
         createdAt: "2020-01-01T00:00:00.000Z",
         updatedAt: "2025-01-01T00:00:00.000Z",
     },
@@ -143,10 +139,7 @@ function GrupperAdminPage() {
 
     function handleUpdateGroup(
         slug: string,
-        patch: Pick<
-            Group,
-            "contractSigningRequired" | "contractNotificationEmail"
-        >,
+        patch: Pick<Group, "contractSigningRequired">,
     ) {
         setGroups((prev) =>
             prev.map((g) =>
@@ -221,19 +214,11 @@ function GroupCard({
     signatures: GroupSignatureList | undefined;
     expanded: boolean;
     onToggle: () => void;
-    onUpdate: (
-        patch: Pick<
-            Group,
-            "contractSigningRequired" | "contractNotificationEmail"
-        >,
-    ) => void;
+    onUpdate: (patch: Pick<Group, "contractSigningRequired">) => void;
     onRevoke: (userId: string) => void;
 }) {
     const [requiresSigning, setRequiresSigning] = useState(
         group.contractSigningRequired,
-    );
-    const [notifyEmail, setNotifyEmail] = useState(
-        group.contractNotificationEmail ?? "",
     );
 
     return (
@@ -269,25 +254,12 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor={`email-${group.slug}`}>
-                                Varslingse-post (valgfri)
-                            </FieldLabel>
-                            <Input
-                                id={`email-${group.slug}`}
-                                type="email"
-                                value={notifyEmail}
-                                onChange={(e) => setNotifyEmail(e.target.value)}
-                                placeholder="gruppe@tihlde.org"
-                            />
-                        </Field>
                     </FieldGroup>
                     <Button
                         className="self-start"
                         onClick={() =>
                             onUpdate({
                                 contractSigningRequired: requiresSigning,
-                                contractNotificationEmail: notifyEmail || null,
                             })
                         }
                     >

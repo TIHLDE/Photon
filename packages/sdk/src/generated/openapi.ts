@@ -2087,8 +2087,6 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description Contract notification email */
-            contractNotificationEmail: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -2116,8 +2114,6 @@ export interface components {
             finesAdminId: string | null;
             /** @description Whether contract signing is required */
             contractSigningRequired: boolean;
-            /** @description Contract notification email */
-            contractNotificationEmail: string | null;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -2187,8 +2183,6 @@ export interface components {
             finesAdminId?: string | null;
             /** @description Whether contract signing is required for group members */
             contractSigningRequired?: boolean;
-            /** @description Email to notify when a member signs. Defaults to group contact email then leader email. */
-            contractNotificationEmail?: string | null;
         };
         Fine: {
             /** @description Fine ID */
