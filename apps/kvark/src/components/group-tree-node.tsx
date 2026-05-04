@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Card } from "@tihlde/ui/ui/card";
 import { Handle, Position } from "@xyflow/react";
 import { Fragment } from "react";
@@ -7,7 +6,6 @@ import {
     GroupIdentity,
     type GroupIdentityProps,
 } from "#/components/group-identity";
-import { groupHref } from "#/lib/utils";
 
 export const GROUP_NODE_WIDTH = 288;
 export const GROUP_NODE_HEIGHT = 92;
@@ -89,18 +87,14 @@ export function GroupTreeNode({ data }: { data: GroupTreeNodeData }) {
     return (
         <>
             <HiddenHandles sides={GROUP_HANDLES} />
-            <Link
-                className="nopan nodrag block cursor-pointer"
-                style={GROUP_NODE_STYLE}
-                to={groupHref(data.name)}
-            >
+            <div className="nopan nodrag" style={GROUP_NODE_STYLE}>
                 <Card
-                    className="flex h-full flex-row items-center gap-3 px-3 py-2"
+                    className="flex h-full cursor-pointer flex-row items-center gap-3 px-3 py-2"
                     size="sm"
                 >
                     <GroupIdentity {...data} />
                 </Card>
-            </Link>
+            </div>
         </>
     );
 }
