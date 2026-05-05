@@ -20,25 +20,26 @@ export function GalleryCard({
     imageUrl,
 }: GalleryCardProps) {
     return (
-        <Link to="/galleri/$slug" params={{ slug }} className="block h-full">
-            <Card className="h-full">
-                <div className="aspect-video w-full overflow-hidden">
-                    <img
-                        src={imageUrl}
-                        alt=""
-                        loading="lazy"
-                        className="size-full object-cover"
-                    />
-                </div>
-                <CardHeader>
-                    <CardTitle>{title}</CardTitle>
-                    {description ? (
-                        <CardDescription className="line-clamp-2">
-                            {description}
-                        </CardDescription>
-                    ) : null}
-                </CardHeader>
-            </Card>
-        </Link>
+        <Card
+            className="h-full"
+            render={<Link to="/galleri/$slug" params={{ slug }} />}
+        >
+            <div className="aspect-video w-full overflow-hidden">
+                <img
+                    src={imageUrl}
+                    alt=""
+                    loading="lazy"
+                    className="size-full object-cover"
+                />
+            </div>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+                {description && (
+                    <CardDescription className="line-clamp-2">
+                        {description}
+                    </CardDescription>
+                )}
+            </CardHeader>
+        </Card>
     );
 }

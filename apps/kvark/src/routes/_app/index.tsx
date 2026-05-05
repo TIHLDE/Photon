@@ -96,6 +96,7 @@ function Home() {
                     <TabsContent value="list">
                         <div className="grid gap-4 md:grid-cols-2">
                             {EVENTS.map((event) => (
+                                // TODO: replace with a unique id field once wired up to the backend
                                 <EventCard key={event.title} {...event} />
                             ))}
                         </div>
@@ -112,6 +113,7 @@ function Home() {
                 <SectionHeader title="Nyheter" actionLabel="Ny nyhet" />
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {NEWS.map((item) => (
+                        // TODO: replace with a unique id field once wired up to the backend
                         <NewsCard key={item.title} {...item} />
                     ))}
                 </div>

@@ -23,27 +23,28 @@ export function NewsCard({
     imageUrl,
 }: NewsCardProps) {
     return (
-        <Link to="/nyheter/$slug" params={{ slug }} className="block h-full">
-            <Card className="h-full">
-                <div className="aspect-[16/7] w-full overflow-hidden">
-                    {imageUrl ? (
-                        <img
-                            src={imageUrl}
-                            alt=""
-                            className="size-full object-cover"
-                        />
-                    ) : (
-                        <div className="size-full bg-muted" aria-hidden />
-                    )}
-                </div>
-                <CardHeader>
-                    <CardTitle>{title}</CardTitle>
-                    <CardDescription>{publishedAt}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="line-clamp-2">{excerpt}</p>
-                </CardContent>
-            </Card>
-        </Link>
+        <Card
+            className="h-full"
+            render={<Link to="/nyheter/$slug" params={{ slug }} />}
+        >
+            <div className="aspect-[16/7] w-full overflow-hidden">
+                {imageUrl ? (
+                    <img
+                        src={imageUrl}
+                        alt=""
+                        className="size-full object-cover"
+                    />
+                ) : (
+                    <div className="size-full bg-muted" aria-hidden />
+                )}
+            </div>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{publishedAt}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="line-clamp-2">{excerpt}</p>
+            </CardContent>
+        </Card>
     );
 }

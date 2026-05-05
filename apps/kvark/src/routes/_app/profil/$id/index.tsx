@@ -31,6 +31,7 @@ function RouteComponent() {
                 <h3>KOMMENDE</h3>
                 <ul className="flex flex-col gap-3">
                     {UPCOMING.map((event) => (
+                        // TODO: replace with a unique id field once wired up to the backend
                         <li key={event.title}>
                             <ProfileEventRow {...event} />
                         </li>
@@ -42,6 +43,7 @@ function RouteComponent() {
                 <h3>MÅ GJØRES</h3>
                 <ul className="flex flex-col gap-3">
                     {TODOS.map((todo) => (
+                        // TODO: replace with a unique id field once wired up to the backend
                         <li key={todo.title}>
                             <ProfileTodoRow {...todo} />
                         </li>

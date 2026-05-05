@@ -7,6 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import { type FilterPill } from "#/components/filter-pill-row";
@@ -41,36 +42,39 @@ export function EventFilters({
     onChange,
     onSubmit,
 }: EventFiltersProps) {
-    const pills: FilterPill[] = [];
-    if (value.query) {
-        pills.push({
-            key: "query",
-            label: `Søk: ${value.query}`,
-            clear: () => onChange({ ...value, query: "" }),
-        });
-    }
-    if (value.category && value.category !== "all") {
-        const cat = categories.find((c) => c.value === value.category);
-        pills.push({
-            key: "category",
-            label: cat?.label ?? value.category,
-            clear: () => onChange({ ...value, category: "all" }),
-        });
-    }
-    if (value.showPast) {
-        pills.push({
-            key: "showPast",
-            label: "Tidligere",
-            clear: () => onChange({ ...value, showPast: false }),
-        });
-    }
-    if (value.openRegistration) {
-        pills.push({
-            key: "openRegistration",
-            label: "Åpen påmelding",
-            clear: () => onChange({ ...value, openRegistration: false }),
-        });
-    }
+    const pills = useMemo<FilterPill[]>(() => {
+        const next: FilterPill[] = [];
+        if (value.query) {
+            next.push({
+                key: "query",
+                label: `Søk: ${value.query}`,
+                clear: () => onChange({ ...value, query: "" }),
+            });
+        }
+        if (value.category && value.category !== "all") {
+            const cat = categories.find((c) => c.value === value.category);
+            next.push({
+                key: "category",
+                label: cat?.label ?? value.category,
+                clear: () => onChange({ ...value, category: "all" }),
+            });
+        }
+        if (value.showPast) {
+            next.push({
+                key: "showPast",
+                label: "Tidligere",
+                clear: () => onChange({ ...value, showPast: false }),
+            });
+        }
+        if (value.openRegistration) {
+            next.push({
+                key: "openRegistration",
+                label: "Åpen påmelding",
+                clear: () => onChange({ ...value, openRegistration: false }),
+            });
+        }
+        return next;
+    }, [value, categories, onChange]);
 
     return (
         <FilterShell

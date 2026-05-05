@@ -48,7 +48,7 @@ import {
     CookbookStudyLabels,
     StudyCookbook,
     type CookbookEntry,
-} from "#/mock/cookbook";
+} from "#/data/cookbook";
 
 export const Route = createFileRoute("/_app/kokebok")({
     component: CookbookPage,

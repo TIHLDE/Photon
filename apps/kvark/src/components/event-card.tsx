@@ -27,15 +27,7 @@ export function EventCard({
 }: EventCardProps) {
     return (
         <ListCard
-            renderLink={(p) => (
-                <Link
-                    to="/arrangementer/$slug"
-                    params={{ slug }}
-                    className={p.className}
-                >
-                    {p.children}
-                </Link>
-            )}
+            render={<Link to="/arrangementer/$slug" params={{ slug }} />}
             title={title}
             imageUrl={imageUrl}
             imageBadge={organizer}

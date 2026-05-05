@@ -40,11 +40,22 @@ function NewsDetailPage() {
             hero={<DetailHero imageUrl={news.imageUrl} />}
             header={
                 <>
-                    <div className="flex flex-col gap-3">
-                        <h1 className="text-3xl md:text-4xl">{news.title}</h1>
-                        <p className="text-lg text-muted-foreground">
-                            {news.excerpt}
-                        </p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="flex flex-col gap-3">
+                            <h1 className="text-3xl md:text-4xl">
+                                {news.title}
+                            </h1>
+                            <p className="text-lg text-muted-foreground">
+                                {news.excerpt}
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <Button variant="outline" size="sm">
+                                <PencilLine />
+                                Rediger nyhet
+                            </Button>
+                            <ShareButton label="Del nyhet" />
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -52,20 +63,12 @@ function NewsDetailPage() {
                             icon={CalendarDays}
                             value={`Publisert ${news.publishedAtAbsolute}`}
                         />
-                        {news.updatedAt ? (
+                        {news.updatedAt && (
                             <DetailField
                                 icon={Clock3}
                                 value={`Oppdatert ${news.updatedAt}`}
                             />
-                        ) : null}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button variant="outline" size="sm">
-                            <PencilLine />
-                            Rediger nyhet
-                        </Button>
-                        <ShareButton label="Del nyhet" />
+                        )}
                     </div>
                 </>
             }

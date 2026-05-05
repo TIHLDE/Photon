@@ -22,6 +22,7 @@ export function GroupMembersTab() {
                 <h3 className="text-lg">Medlemmer ({MEMBERS.length})</h3>
                 <ul className="flex flex-col gap-2">
                     {MEMBERS.map((m) => (
+                        // TODO: replace with a unique id field once wired up to the backend
                         <li key={m.name}>
                             <GroupMemberRow member={m} />
                         </li>

@@ -49,6 +49,7 @@ function EventSection({
             <h3>{label}</h3>
             <ul className="flex flex-col gap-3">
                 {events.map((event) => (
+                    // TODO: replace with a unique id field once wired up to the backend
                     <li key={event.title}>
                         <Card
                             size="sm"

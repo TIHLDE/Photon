@@ -71,7 +71,7 @@ export function FilterShell({
             <Card className="hidden md:block">
                 <CardHeader className="min-h-12 pb-4">
                     <CardTitle>Filter</CardTitle>
-                    {pills.length > 0 ? (
+                    {pills.length > 0 && (
                         <CardAction>
                             <Button
                                 variant="ghost"
@@ -82,7 +82,7 @@ export function FilterShell({
                                 <FilterX />
                             </Button>
                         </CardAction>
-                    ) : null}
+                    )}
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                     {searchSlot}

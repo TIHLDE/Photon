@@ -1,6 +1,7 @@
 import { Input } from "@tihlde/ui/ui/input";
 import { Label } from "@tihlde/ui/ui/label";
 import { RadioGroup, RadioGroupItem } from "@tihlde/ui/ui/radio-group";
+import { useMemo } from "react";
 
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import { type FilterPill } from "#/components/filter-pill-row";
@@ -44,34 +45,39 @@ export function JobFilters({
         onChange({ ...value, classLevels: next });
     };
 
-    const pills: FilterPill[] = [];
-    if (value.query) {
-        pills.push({
-            key: "query",
-            label: `Søk: ${value.query}`,
-            clear: () => onChange({ ...value, query: "" }),
-        });
-    }
-    for (const level of value.classLevels) {
-        const opt = classLevelOptions.find((o) => o.value === level);
-        pills.push({
-            key: `class-${level}`,
-            label: opt?.label ?? `${level}. klasse`,
-            clear: () =>
-                onChange({
-                    ...value,
-                    classLevels: value.classLevels.filter((l) => l !== level),
-                }),
-        });
-    }
-    if (value.jobType) {
-        const opt = jobTypeOptions.find((o) => o.value === value.jobType);
-        pills.push({
-            key: "jobType",
-            label: opt?.label ?? value.jobType,
-            clear: () => onChange({ ...value, jobType: null }),
-        });
-    }
+    const pills = useMemo<FilterPill[]>(() => {
+        const next: FilterPill[] = [];
+        if (value.query) {
+            next.push({
+                key: "query",
+                label: `Søk: ${value.query}`,
+                clear: () => onChange({ ...value, query: "" }),
+            });
+        }
+        for (const level of value.classLevels) {
+            const opt = classLevelOptions.find((o) => o.value === level);
+            next.push({
+                key: `class-${level}`,
+                label: opt?.label ?? `${level}. klasse`,
+                clear: () =>
+                    onChange({
+                        ...value,
+                        classLevels: value.classLevels.filter(
+                            (l) => l !== level,
+                        ),
+                    }),
+            });
+        }
+        if (value.jobType) {
+            const opt = jobTypeOptions.find((o) => o.value === value.jobType);
+            next.push({
+                key: "jobType",
+                label: opt?.label ?? value.jobType,
+                clear: () => onChange({ ...value, jobType: null }),
+            });
+        }
+        return next;
+    }, [value, classLevelOptions, jobTypeOptions, onChange]);
 
     return (
         <FilterShell
