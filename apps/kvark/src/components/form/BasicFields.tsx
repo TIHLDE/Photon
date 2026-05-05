@@ -1,4 +1,4 @@
-import { useFieldContext } from "#/hooks/form";
+import { useFieldContext, useFieldErrorVisible } from "#/hooks/form";
 import {
     Field,
     FieldDescription,
@@ -20,6 +20,8 @@ interface BasicFieldPropBase {
     required?: boolean;
     description?: string;
     hideError?: boolean;
+    startAddon?: React.ReactNode;
+    endAddon?: React.ReactNode;
 }
 
 interface InputFieldProps
@@ -30,55 +32,76 @@ export function InputField({
     required,
     description,
     hideError = false,
+    startAddon,
+    endAddon,
     type,
     ...props
 }: InputFieldProps) {
     const field = useFieldContext<string>();
     const inputId = useId();
+    const isInvalid = useFieldErrorVisible();
 
-    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        switch (type) {
+            case "number":
+                field.handleChange(e.target.valueAsNumber as unknown as string);
+                break;
+            case "date":
+            case "datetime-local":
+                field.handleChange(e.target.valueAsDate as unknown as string);
+                break;
+            default:
+                field.handleChange(e.target.value);
+        }
+    };
+
+    const hasAddons = startAddon != null || endAddon != null;
 
     return (
-        <Field
-            data-invalid={
-                field.state.meta.isTouched && !field.state.meta.isValid
-            }
-        >
+        <Field data-invalid={isInvalid}>
             {label && (
                 <FieldLabel htmlFor={inputId}>
                     {label}{" "}
                     {required && <span className="text-destructive">*</span>}
                 </FieldLabel>
             )}
-            <Input
-                {...props}
-                id={inputId}
-                name={field.name}
-                required={required}
-                type={type}
-                value={field.state.value}
-                onChange={(e) => {
-                    switch (type) {
-                        case "number":
-                            field.handleChange(
-                                e.target.valueAsNumber as unknown as string,
-                            );
-                            break;
-
-                        case "date":
-                        case "datetime-local":
-                            field.handleChange(
-                                e.target.valueAsDate as unknown as string,
-                            );
-                            break;
-
-                        default:
-                            field.handleChange(e.target.value);
-                    }
-                }}
-                onBlur={field.handleBlur}
-                aria-invalid={isInvalid}
-            />
+            {hasAddons ? (
+                <InputGroup>
+                    {startAddon != null && (
+                        <InputGroupAddon align="inline-start">
+                            {startAddon}
+                        </InputGroupAddon>
+                    )}
+                    <InputGroupInput
+                        {...props}
+                        id={inputId}
+                        name={field.name}
+                        required={required}
+                        type={type}
+                        value={field.state.value}
+                        onChange={onChange}
+                        onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
+                    />
+                    {endAddon != null && (
+                        <InputGroupAddon align="inline-end">
+                            {endAddon}
+                        </InputGroupAddon>
+                    )}
+                </InputGroup>
+            ) : (
+                <Input
+                    {...props}
+                    id={inputId}
+                    name={field.name}
+                    required={required}
+                    type={type}
+                    value={field.state.value}
+                    onChange={onChange}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                />
+            )}
             {description && <FieldDescription>{description}</FieldDescription>}
             {!hideError && isInvalid && (
                 <FieldError errors={field.state.meta.errors} />
@@ -96,20 +119,17 @@ export function PasswordField({
     description,
     hideError = false,
     autoComplete = "current-password",
+    startAddon,
+    endAddon,
     ...props
 }: Omit<PasswordFieldProps, "type">) {
     const field = useFieldContext<string>();
     const inputId = useId();
     const [showPassword, setShowPassword] = useState(false);
-
-    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+    const isInvalid = useFieldErrorVisible();
 
     return (
-        <Field
-            data-invalid={
-                field.state.meta.isTouched && !field.state.meta.isValid
-            }
-        >
+        <Field data-invalid={isInvalid}>
             {label && (
                 <FieldLabel htmlFor={inputId}>
                     {label}{" "}
@@ -117,6 +137,11 @@ export function PasswordField({
                 </FieldLabel>
             )}
             <InputGroup>
+                {startAddon != null && (
+                    <InputGroupAddon align="inline-start">
+                        {startAddon}
+                    </InputGroupAddon>
+                )}
                 <InputGroupInput
                     {...props}
                     type={showPassword ? "text" : "password"}
@@ -130,9 +155,13 @@ export function PasswordField({
                     aria-invalid={isInvalid}
                 />
                 <InputGroupAddon align="inline-end">
+                    {endAddon}
                     <InputGroupButton
                         size="icon-xs"
                         onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={
+                            showPassword ? "Skjul passord" : "Vis passord"
+                        }
                     >
                         {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </InputGroupButton>

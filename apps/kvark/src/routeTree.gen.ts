@@ -30,6 +30,7 @@ import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AppNyheterRouteImport } from './routes/_app/nyheter'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
+import { Route as AppFormTestRouteImport } from './routes/_app/form-test'
 import { Route as AppArrangementerRouteImport } from './routes/_app/arrangementer'
 import { Route as AppAnnonserRouteImport } from './routes/_app/annonser'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
@@ -149,6 +150,11 @@ const AppKokebokRoute = AppKokebokRouteImport.update({
   path: '/kokebok',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFormTestRoute = AppFormTestRouteImport.update({
+  id: '/form-test',
+  path: '/form-test',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppArrangementerRoute = AppArrangementerRouteImport.update({
   id: '/arrangementer',
   path: '/arrangementer',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminSuperAdminRouteWithChildren
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
+  '/form-test': typeof AppFormTestRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
+  '/form-test': typeof AppFormTestRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
@@ -309,6 +317,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/_app/annonser': typeof AppAnnonserRoute
   '/_app/arrangementer': typeof AppArrangementerRoute
+  '/_app/form-test': typeof AppFormTestRoute
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/nyheter': typeof AppNyheterRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annonser'
     | '/arrangementer'
+    | '/form-test'
     | '/kokebok'
     | '/kontrakt'
     | '/nyheter'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/'
     | '/annonser'
     | '/arrangementer'
+    | '/form-test'
     | '/kokebok'
     | '/kontrakt'
     | '/nyheter'
@@ -420,6 +431,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/_app/annonser'
     | '/_app/arrangementer'
+    | '/_app/form-test'
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/nyheter'
@@ -609,6 +621,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppKokebokRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/form-test': {
+      id: '/_app/form-test'
+      path: '/form-test'
+      fullPath: '/form-test'
+      preLoaderRoute: typeof AppFormTestRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/arrangementer': {
       id: '/_app/arrangementer'
       path: '/arrangementer'
@@ -747,6 +766,7 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 interface AppRouteChildren {
   AppAnnonserRoute: typeof AppAnnonserRoute
   AppArrangementerRoute: typeof AppArrangementerRoute
+  AppFormTestRoute: typeof AppFormTestRoute
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
   AppNyheterRoute: typeof AppNyheterRoute
@@ -763,6 +783,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAnnonserRoute: AppAnnonserRoute,
   AppArrangementerRoute: AppArrangementerRoute,
+  AppFormTestRoute: AppFormTestRoute,
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
   AppNyheterRoute: AppNyheterRoute,
