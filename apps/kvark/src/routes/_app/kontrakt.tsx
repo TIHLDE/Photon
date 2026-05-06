@@ -127,4 +127,3 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
         </Card>
     );
 }
-

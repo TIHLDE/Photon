@@ -37,6 +37,7 @@ function ToddelPage() {
 
             <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {ISSUES.map((issue) => (
+                    // TODO: replace with a unique id field once wired up to the backend
                     <li key={issue.title}>
                         <IssueCard {...issue} />
                     </li>

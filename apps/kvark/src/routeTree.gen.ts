@@ -27,20 +27,23 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
-import { Route as AppNyheterRouteImport } from './routes/_app/nyheter'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
-import { Route as AppArrangementerRouteImport } from './routes/_app/arrangementer'
-import { Route as AppAnnonserRouteImport } from './routes/_app/annonser'
+import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
+import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
+import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
 import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
+import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
+import { Route as AppArrangementerSlugRouteImport } from './routes/_app/arrangementer.$slug'
+import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
 import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
@@ -134,11 +137,6 @@ const AppToddelRoute = AppToddelRouteImport.update({
   path: '/toddel',
   getParentRoute: () => AppRoute,
 } as any)
-const AppNyheterRoute = AppNyheterRouteImport.update({
-  id: '/nyheter',
-  path: '/nyheter',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppKontraktRoute = AppKontraktRouteImport.update({
   id: '/kontrakt',
   path: '/kontrakt',
@@ -149,14 +147,9 @@ const AppKokebokRoute = AppKokebokRouteImport.update({
   path: '/kokebok',
   getParentRoute: () => AppRoute,
 } as any)
-const AppArrangementerRoute = AppArrangementerRouteImport.update({
-  id: '/arrangementer',
-  path: '/arrangementer',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAnnonserRoute = AppAnnonserRouteImport.update({
-  id: '/annonser',
-  path: '/annonser',
+const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
+  id: '/nyheter/',
+  path: '/nyheter/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGrupperIndexRoute = AppGrupperIndexRouteImport.update({
@@ -167,6 +160,16 @@ const AppGrupperIndexRoute = AppGrupperIndexRouteImport.update({
 const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
   id: '/galleri/',
   path: '/galleri/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArrangementerIndexRoute = AppArrangementerIndexRouteImport.update({
+  id: '/arrangementer/',
+  path: '/arrangementer/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
+  id: '/annonser/',
+  path: '/annonser/',
   getParentRoute: () => AppRoute,
 } as any)
 const AdminSuperAdminLogsRoute = AdminSuperAdminLogsRouteImport.update({
@@ -194,6 +197,11 @@ const AppPlaygroundMarkdownRoute = AppPlaygroundMarkdownRouteImport.update({
   path: '/playground/markdown',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNyheterSlugRoute = AppNyheterSlugRouteImport.update({
+  id: '/nyheter/$slug',
+  path: '/nyheter/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
   id: '/grupper/$slug',
   path: '/grupper/$slug',
@@ -202,6 +210,16 @@ const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
 const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
   id: '/galleri/$slug',
   path: '/galleri/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArrangementerSlugRoute = AppArrangementerSlugRouteImport.update({
+  id: '/arrangementer/$slug',
+  path: '/arrangementer/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnnonserSlugRoute = AppAnnonserSlugRouteImport.update({
+  id: '/annonser/$slug',
+  path: '/annonser/$slug',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfilIdIndexRoute = AppProfilIdIndexRouteImport.update({
@@ -235,11 +253,8 @@ const AppProfilIdArrangementerRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminSuperAdminRouteWithChildren
-  '/annonser': typeof AppAnnonserRoute
-  '/arrangementer': typeof AppArrangementerRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
-  '/nyheter': typeof AppNyheterRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -253,15 +268,21 @@ export interface FileRoutesByFullPath {
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/': typeof AdminIndexRoute
+  '/annonser/$slug': typeof AppAnnonserSlugRoute
+  '/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
+  '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
+  '/annonser/': typeof AppAnnonserIndexRoute
+  '/arrangementer/': typeof AppArrangementerIndexRoute
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
+  '/nyheter/': typeof AppNyheterIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -270,11 +291,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
-  '/annonser': typeof AppAnnonserRoute
-  '/arrangementer': typeof AppArrangementerRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
-  '/nyheter': typeof AppNyheterRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -288,14 +306,20 @@ export interface FileRoutesByTo {
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
+  '/annonser/$slug': typeof AppAnnonserSlugRoute
+  '/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
+  '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
+  '/annonser': typeof AppAnnonserIndexRoute
+  '/arrangementer': typeof AppArrangementerIndexRoute
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
+  '/nyheter': typeof AppNyheterIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -307,11 +331,8 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
-  '/_app/annonser': typeof AppAnnonserRoute
-  '/_app/arrangementer': typeof AppArrangementerRoute
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
-  '/_app/nyheter': typeof AppNyheterRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -327,15 +348,21 @@ export interface FileRoutesById {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
+  '/_app/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRoute
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
+  '/_app/nyheter/$slug': typeof AppNyheterSlugRoute
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
   '/admin/_super-admin/api-keys': typeof AdminSuperAdminApiKeysRoute
   '/admin/_super-admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/_super-admin/logs': typeof AdminSuperAdminLogsRoute
+  '/_app/annonser/': typeof AppAnnonserIndexRoute
+  '/_app/arrangementer/': typeof AppArrangementerIndexRoute
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
+  '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -347,11 +374,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/annonser'
-    | '/arrangementer'
     | '/kokebok'
     | '/kontrakt'
-    | '/nyheter'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -365,15 +389,21 @@ export interface FileRouteTypes {
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/'
+    | '/annonser/$slug'
+    | '/arrangementer/$slug'
     | '/galleri/$slug'
     | '/grupper/$slug'
+    | '/nyheter/$slug'
     | '/playground/markdown'
     | '/profil/$id'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
+    | '/annonser/'
+    | '/arrangementer/'
     | '/galleri/'
     | '/grupper/'
+    | '/nyheter/'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -382,11 +412,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/annonser'
-    | '/arrangementer'
     | '/kokebok'
     | '/kontrakt'
-    | '/nyheter'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -400,14 +427,20 @@ export interface FileRouteTypes {
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
+    | '/annonser/$slug'
+    | '/arrangementer/$slug'
     | '/galleri/$slug'
     | '/grupper/$slug'
+    | '/nyheter/$slug'
     | '/playground/markdown'
     | '/admin/api-keys'
     | '/admin/database'
     | '/admin/logs'
+    | '/annonser'
+    | '/arrangementer'
     | '/galleri'
     | '/grupper'
+    | '/nyheter'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -418,11 +451,8 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/admin'
-    | '/_app/annonser'
-    | '/_app/arrangementer'
     | '/_app/kokebok'
     | '/_app/kontrakt'
-    | '/_app/nyheter'
     | '/_app/toddel'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -438,15 +468,21 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/_app/'
     | '/admin/'
+    | '/_app/annonser/$slug'
+    | '/_app/arrangementer/$slug'
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
+    | '/_app/nyheter/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
     | '/admin/_super-admin/api-keys'
     | '/admin/_super-admin/database'
     | '/admin/_super-admin/logs'
+    | '/_app/annonser/'
+    | '/_app/arrangementer/'
     | '/_app/galleri/'
     | '/_app/grupper/'
+    | '/_app/nyheter/'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
@@ -588,13 +624,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppToddelRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/nyheter': {
-      id: '/_app/nyheter'
-      path: '/nyheter'
-      fullPath: '/nyheter'
-      preLoaderRoute: typeof AppNyheterRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/kontrakt': {
       id: '/_app/kontrakt'
       path: '/kontrakt'
@@ -609,18 +638,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppKokebokRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/arrangementer': {
-      id: '/_app/arrangementer'
-      path: '/arrangementer'
-      fullPath: '/arrangementer'
-      preLoaderRoute: typeof AppArrangementerRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/annonser': {
-      id: '/_app/annonser'
-      path: '/annonser'
-      fullPath: '/annonser'
-      preLoaderRoute: typeof AppAnnonserRouteImport
+    '/_app/nyheter/': {
+      id: '/_app/nyheter/'
+      path: '/nyheter'
+      fullPath: '/nyheter/'
+      preLoaderRoute: typeof AppNyheterIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/grupper/': {
@@ -635,6 +657,20 @@ declare module '@tanstack/react-router' {
       path: '/galleri'
       fullPath: '/galleri/'
       preLoaderRoute: typeof AppGalleriIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/arrangementer/': {
+      id: '/_app/arrangementer/'
+      path: '/arrangementer'
+      fullPath: '/arrangementer/'
+      preLoaderRoute: typeof AppArrangementerIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/annonser/': {
+      id: '/_app/annonser/'
+      path: '/annonser'
+      fullPath: '/annonser/'
+      preLoaderRoute: typeof AppAnnonserIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/admin/_super-admin/logs': {
@@ -672,6 +708,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlaygroundMarkdownRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/nyheter/$slug': {
+      id: '/_app/nyheter/$slug'
+      path: '/nyheter/$slug'
+      fullPath: '/nyheter/$slug'
+      preLoaderRoute: typeof AppNyheterSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/grupper/$slug': {
       id: '/_app/grupper/$slug'
       path: '/grupper/$slug'
@@ -684,6 +727,20 @@ declare module '@tanstack/react-router' {
       path: '/galleri/$slug'
       fullPath: '/galleri/$slug'
       preLoaderRoute: typeof AppGalleriSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/arrangementer/$slug': {
+      id: '/_app/arrangementer/$slug'
+      path: '/arrangementer/$slug'
+      fullPath: '/arrangementer/$slug'
+      preLoaderRoute: typeof AppArrangementerSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/annonser/$slug': {
+      id: '/_app/annonser/$slug'
+      path: '/annonser/$slug'
+      fullPath: '/annonser/$slug'
+      preLoaderRoute: typeof AppAnnonserSlugRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/profil/$id/': {
@@ -745,35 +802,41 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
-  AppAnnonserRoute: typeof AppAnnonserRoute
-  AppArrangementerRoute: typeof AppArrangementerRoute
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
-  AppNyheterRoute: typeof AppNyheterRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
+  AppArrangementerSlugRoute: typeof AppArrangementerSlugRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRoute
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
+  AppNyheterSlugRoute: typeof AppNyheterSlugRoute
   AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
+  AppAnnonserIndexRoute: typeof AppAnnonserIndexRoute
+  AppArrangementerIndexRoute: typeof AppArrangementerIndexRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
+  AppNyheterIndexRoute: typeof AppNyheterIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAnnonserRoute: AppAnnonserRoute,
-  AppArrangementerRoute: AppArrangementerRoute,
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
-  AppNyheterRoute: AppNyheterRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAnnonserSlugRoute: AppAnnonserSlugRoute,
+  AppArrangementerSlugRoute: AppArrangementerSlugRoute,
   AppGalleriSlugRoute: AppGalleriSlugRoute,
   AppGrupperSlugRoute: AppGrupperSlugRoute,
+  AppNyheterSlugRoute: AppNyheterSlugRoute,
   AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
+  AppAnnonserIndexRoute: AppAnnonserIndexRoute,
+  AppArrangementerIndexRoute: AppArrangementerIndexRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
+  AppNyheterIndexRoute: AppNyheterIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

@@ -37,14 +37,24 @@ function RouteComponent() {
     );
 }
 
-function EventSection({ label, events }: { label: string; events: EventRow[] }) {
+function EventSection({
+    label,
+    events,
+}: {
+    label: string;
+    events: EventRow[];
+}) {
     return (
         <section className="flex flex-col gap-3">
             <h3>{label}</h3>
             <ul className="flex flex-col gap-3">
                 {events.map((event) => (
+                    // TODO: replace with a unique id field once wired up to the backend
                     <li key={event.title}>
-                        <Card size="sm" className="flex-row items-center gap-3 px-3">
+                        <Card
+                            size="sm"
+                            className="flex-row items-center gap-3 px-3"
+                        >
                             <div className="flex min-w-0 flex-1 flex-col">
                                 <span>{event.title}</span>
                                 <span>{event.meta}</span>

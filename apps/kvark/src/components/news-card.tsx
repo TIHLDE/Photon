@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import {
     Card,
     CardContent,
@@ -7,6 +8,7 @@ import {
 } from "@tihlde/ui/ui/card";
 
 export type NewsCardProps = {
+    slug: string;
     title: string;
     excerpt: string;
     publishedAt: string;
@@ -14,14 +16,18 @@ export type NewsCardProps = {
 };
 
 export function NewsCard({
+    slug,
     title,
     excerpt,
     publishedAt,
     imageUrl,
 }: NewsCardProps) {
     return (
-        <Card>
-            <div className="aspect-video w-full overflow-hidden">
+        <Card
+            className="h-full"
+            render={<Link to="/nyheter/$slug" params={{ slug }} />}
+        >
+            <div className="aspect-[16/7] w-full overflow-hidden">
                 {imageUrl ? (
                     <img
                         src={imageUrl}

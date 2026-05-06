@@ -1,6 +1,3 @@
-import { Button } from "@tihlde/ui/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
-import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Input } from "@tihlde/ui/ui/input";
 import { Label } from "@tihlde/ui/ui/label";
 import {
@@ -10,7 +7,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
-import { Search } from "lucide-react";
+import { useMemo } from "react";
+
+import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
+import { type FilterPill } from "#/components/filter-pill-row";
+import { FilterShell } from "#/components/filter-shell";
 
 export type Category = { value: string; label: string };
 
@@ -19,6 +20,13 @@ export type EventFiltersValue = {
     category: string;
     showPast: boolean;
     openRegistration: boolean;
+};
+
+export const DEFAULT_EVENT_FILTERS: EventFiltersValue = {
+    query: "",
+    category: "all",
+    showPast: false,
+    openRegistration: false,
 };
 
 type EventFiltersProps = {
@@ -34,88 +42,98 @@ export function EventFilters({
     onChange,
     onSubmit,
 }: EventFiltersProps) {
+    const pills = useMemo<FilterPill[]>(() => {
+        const next: FilterPill[] = [];
+        if (value.query) {
+            next.push({
+                key: "query",
+                label: `Søk: ${value.query}`,
+                clear: () => onChange({ ...value, query: "" }),
+            });
+        }
+        if (value.category && value.category !== "all") {
+            const cat = categories.find((c) => c.value === value.category);
+            next.push({
+                key: "category",
+                label: cat?.label ?? value.category,
+                clear: () => onChange({ ...value, category: "all" }),
+            });
+        }
+        if (value.showPast) {
+            next.push({
+                key: "showPast",
+                label: "Tidligere",
+                clear: () => onChange({ ...value, showPast: false }),
+            });
+        }
+        if (value.openRegistration) {
+            next.push({
+                key: "openRegistration",
+                label: "Åpen påmelding",
+                clear: () => onChange({ ...value, openRegistration: false }),
+            });
+        }
+        return next;
+    }, [value, categories, onChange]);
+
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Filter</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                    <Label htmlFor="event-search">Søk</Label>
-                    <Input
-                        id="event-search"
-                        placeholder="Søk etter arrangement"
-                        value={value.query}
-                        onChange={(e) =>
-                            onChange({ ...value, query: e.target.value })
-                        }
-                    />
-                </div>
+        <FilterShell
+            searchSlot={
+                <Input
+                    placeholder="Søk etter arrangement"
+                    value={value.query}
+                    onChange={(e) =>
+                        onChange({ ...value, query: e.target.value })
+                    }
+                />
+            }
+            fieldsSlot={
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2">
+                        <Label>Kategori</Label>
+                        <Select
+                            value={value.category}
+                            onValueChange={(category) =>
+                                onChange({ ...value, category: category ?? "" })
+                            }
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Velg kategori" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((c) => (
+                                    <SelectItem key={c.value} value={c.value}>
+                                        {c.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <div className="flex flex-col gap-2">
-                    <Label>Kategori</Label>
-                    <Select
-                        value={value.category}
-                        onValueChange={(category) =>
-                            onChange({ ...value, category: category ?? "" })
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Velg kategori" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {categories.map((c) => (
-                                <SelectItem key={c.value} value={c.value}>
-                                    {c.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <span className="text-sm">Alternativ</span>
-                    <Label className="justify-between">
-                        <span className="flex flex-col">
-                            <span>Tidligere</span>
-                            <span className="text-muted-foreground">
-                                Vis tidligere arrangementer
-                            </span>
-                        </span>
-                        <Checkbox
+                    <div className="flex flex-col gap-2">
+                        <span className="text-sm">Alternativer</span>
+                        <FilterCheckboxOption
+                            title="Tidligere"
+                            description="Vis tidligere arrangementer"
                             checked={value.showPast}
-                            onCheckedChange={(checked) =>
-                                onChange({
-                                    ...value,
-                                    showPast: checked === true,
-                                })
+                            onCheckedChange={(showPast) =>
+                                onChange({ ...value, showPast })
                             }
                         />
-                    </Label>
-                    <Label className="justify-between">
-                        <span className="flex flex-col">
-                            <span>Åpen påmelding</span>
-                            <span className="text-muted-foreground">
-                                Vis kun arrangementer med åpen påmelding
-                            </span>
-                        </span>
-                        <Checkbox
+                        <FilterCheckboxOption
+                            title="Åpen påmelding"
+                            description="Vis kun arrangementer med åpen påmelding"
                             checked={value.openRegistration}
-                            onCheckedChange={(checked) =>
-                                onChange({
-                                    ...value,
-                                    openRegistration: checked === true,
-                                })
+                            onCheckedChange={(openRegistration) =>
+                                onChange({ ...value, openRegistration })
                             }
                         />
-                    </Label>
+                    </div>
                 </div>
-
-                <Button onClick={onSubmit} className="w-full">
-                    <Search />
-                    Søk
-                </Button>
-            </CardContent>
-        </Card>
+            }
+            pills={pills}
+            onClearAll={() => onChange(DEFAULT_EVENT_FILTERS)}
+            onSubmit={onSubmit}
+        />
     );
 }

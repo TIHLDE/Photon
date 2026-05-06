@@ -10,45 +10,67 @@ export const Route = createFileRoute("/_app/")({ component: Home });
 
 const EVENTS: EventCardProps[] = [
     {
+        slug: "lightning-talks",
         title: "Lightning Talks",
         startsAt: "Ons 22. apr 17:00",
         location: "Realfagbygget, Aud. S1",
+        organizer: "TIHLDE Promo",
         category: "Sosialt",
+        capacity: 60,
+        registeredCount: 42,
     },
     {
+        slug: "generalforsamling-utveksling",
         title: "Generalforsamling med TIHLDE",
         startsAt: "Man 27. apr 18:00",
         location: "Gjøvik, A-bygget",
+        organizer: "TIHLDE Hovedstyret",
         category: "Foreningen",
+        capacity: 200,
+        registeredCount: 87,
     },
     {
+        slug: "spillkveld",
         title: "Spillkveld!",
         startsAt: "Fre 24. apr 19:00",
         location: "Hangaren",
+        organizer: "TIHLDE Sosialt",
         category: "Sosialt",
+        capacity: null,
+        registeredCount: 24,
     },
     {
+        slug: "jentelunsj-spillkveld",
         title: "Jentelunsj arrangerer spillkveld",
         startsAt: "Lør 25. apr 18:00",
         location: "Hangaren",
+        organizer: "Jentelunsj",
         category: "Jentelunsj",
+        capacity: 40,
+        registeredCount: 12,
     },
     {
+        slug: "toddelmaga",
         title: "Tøddelmåga!",
         startsAt: "Tor 30. apr 20:00",
         location: "Hybrid / Trondheim",
+        organizer: "TÖDDEL",
         category: "Sosialt",
+        capacity: 80,
+        registeredCount: 56,
     },
 ];
 
 const NEWS: NewsCardProps[] = [
     {
+        slug: "how-to-notion",
         title: "How to Notion",
         excerpt:
             "Opplæring til Promo? Bruk Notion! Les vår nye guide om hvordan vi bruker Notion i undergrupper.",
         publishedAt: "3 dager siden",
     },
     {
+        slug: "trivselsundersokelse-v26",
         title: "TIHLDE Trivselsundersøkelse V26",
         excerpt:
             "Vinn gavekort ved å svare på den årlige trivselsundersøkelsen. Din stemme teller!",
@@ -74,6 +96,7 @@ function Home() {
                     <TabsContent value="list">
                         <div className="grid gap-4 md:grid-cols-2">
                             {EVENTS.map((event) => (
+                                // TODO: replace with a unique id field once wired up to the backend
                                 <EventCard key={event.title} {...event} />
                             ))}
                         </div>
@@ -90,6 +113,7 @@ function Home() {
                 <SectionHeader title="Nyheter" actionLabel="Ny nyhet" />
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {NEWS.map((item) => (
+                        // TODO: replace with a unique id field once wired up to the backend
                         <NewsCard key={item.title} {...item} />
                     ))}
                 </div>

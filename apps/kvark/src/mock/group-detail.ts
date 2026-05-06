@@ -284,28 +284,44 @@ export const USERS: string[] = [
 
 export const EVENTS: EventCardProps[] = [
     {
+        slug: "generalforsamling-utveksling",
         title: "Generalforsamling med TIHLDE Utveksling",
         startsAt: "Tor 23. apr 18:00",
         location: "TIHLDE Utveksling / Zoom",
+        organizer: "TIHLDE Utveksling",
         category: "Foreningen",
+        capacity: null,
+        registeredCount: 28,
     },
     {
+        slug: "lightning-talks",
         title: "Lightning Talks",
         startsAt: "Ons 22. apr 17:00",
         location: "Realfagbygget, Aud. S1 / Kurs",
+        organizer: "TIHLDE Promo",
         category: "Kurs",
+        capacity: 60,
+        registeredCount: 42,
     },
     {
+        slug: "toddelmaga",
         title: "Tøddelmåga!",
         startsAt: "Tor 30. apr 20:00",
         location: "TÖDDEL / Sosialt",
+        organizer: "TÖDDEL",
         category: "Sosialt",
+        capacity: 80,
+        registeredCount: 56,
     },
     {
+        slug: "laptoplotteri",
         title: "Laptoplotteri",
         startsAt: "Fre 02. mai 14:00",
         location: "Hangaren / Sosialt",
+        organizer: "TIHLDE Sosialt",
         category: "Sosialt",
+        capacity: null,
+        registeredCount: 12,
     },
 ];
 
