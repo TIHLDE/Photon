@@ -78,7 +78,9 @@ export function NumberField({
                     <NumberFieldIncrement />
                 </NumberFieldGroup>
             </NumberFieldRoot>
-            {description && <FieldDescription>{description}</FieldDescription>}
+            {description && !isInvalid && (
+                <FieldDescription>{description}</FieldDescription>
+            )}
             {!hideError && isInvalid && (
                 <FieldError errors={field.state.meta.errors} />
             )}

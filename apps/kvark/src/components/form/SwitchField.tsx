@@ -46,7 +46,7 @@ export function SwitchField({
                         )}
                     </FieldLabel>
                 )}
-                {description && (
+                {description && !isInvalid && (
                     <FieldDescription>{description}</FieldDescription>
                 )}
                 {!hideError && isInvalid && (

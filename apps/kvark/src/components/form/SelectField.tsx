@@ -79,7 +79,9 @@ export function SelectField<TValue extends string = string>({
                     ))}
                 </SelectContent>
             </Select>
-            {description && <FieldDescription>{description}</FieldDescription>}
+            {description && !isInvalid && (
+                <FieldDescription>{description}</FieldDescription>
+            )}
             {!hideError && isInvalid && (
                 <FieldError errors={field.state.meta.errors} />
             )}

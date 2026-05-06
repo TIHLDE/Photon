@@ -71,7 +71,9 @@ export function RadioGroupField<TValue extends string = string>({
                     );
                 })}
             </RadioGroup>
-            {description && <FieldDescription>{description}</FieldDescription>}
+            {description && !isInvalid && (
+                <FieldDescription>{description}</FieldDescription>
+            )}
             {!hideError && isInvalid && (
                 <FieldError errors={field.state.meta.errors} />
             )}

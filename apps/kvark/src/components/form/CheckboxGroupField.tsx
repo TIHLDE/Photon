@@ -86,7 +86,9 @@ export function CheckboxGroupField<TValue extends string | number>({
                     );
                 })}
             </div>
-            {description && <FieldDescription>{description}</FieldDescription>}
+            {description && !isInvalid && (
+                <FieldDescription>{description}</FieldDescription>
+            )}
             {!hideError && isInvalid && (
                 <FieldError errors={field.state.meta.errors} />
             )}

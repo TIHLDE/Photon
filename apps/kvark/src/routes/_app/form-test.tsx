@@ -8,7 +8,11 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
-import { InputGroupButton, InputGroupText } from "@tihlde/ui/ui/input-group";
+import {
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupText,
+} from "@tihlde/ui/ui/input-group";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import {
     AtSignIcon,
@@ -181,8 +185,7 @@ function FormTestPage() {
                     <CardHeader>
                         <CardTitle>Tekstinput</CardTitle>
                         <CardDescription>
-                            InputField (text/email), PasswordField,
-                            TextareaField
+                            InputField (text/email/password), TextareaField
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -212,8 +215,9 @@ function FormTestPage() {
 
                             <form.AppField name="password">
                                 {(field) => (
-                                    <field.PasswordField
+                                    <field.InputField
                                         label="Passord"
+                                        type="password"
                                         autoComplete="new-password"
                                         description="Minst 8 tegn"
                                         required
@@ -240,10 +244,9 @@ function FormTestPage() {
                     <CardHeader>
                         <CardTitle>InputGroup-varianter</CardTitle>
                         <CardDescription>
-                            Samme InputField / PasswordField / TextareaField,
-                            men med <code>startAddon</code> /{" "}
-                            <code>endAddon</code> for ikoner, prefikser,
-                            suffikser, knapper og hint.
+                            Samme InputField / TextareaField, men med{" "}
+                            <code>InputGroupAddon</code>-children for ikoner,
+                            prefikser, suffikser, knapper og hint.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -253,8 +256,11 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Søk"
                                         placeholder="Søk etter alt..."
-                                        startAddon={<SearchIcon />}
-                                    />
+                                    >
+                                        <InputGroupAddon align="inline-start">
+                                            <SearchIcon />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -264,8 +270,11 @@ function FormTestPage() {
                                         label="E-post (ikon)"
                                         type="email"
                                         placeholder="navn@example.com"
-                                        startAddon={<MailIcon />}
-                                    />
+                                    >
+                                        <InputGroupAddon align="inline-start">
+                                            <MailIcon />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -274,13 +283,14 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Beløp"
                                         placeholder="0.00"
-                                        startAddon={
+                                    >
+                                        <InputGroupAddon align="inline-start">
                                             <InputGroupText>$</InputGroupText>
-                                        }
-                                        endAddon={
+                                        </InputGroupAddon>
+                                        <InputGroupAddon align="inline-end">
                                             <InputGroupText>USD</InputGroupText>
-                                        }
-                                    />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -289,17 +299,16 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Nettside"
                                         placeholder="example"
-                                        startAddon={
+                                    >
+                                        <InputGroupAddon align="inline-start">
                                             <InputGroupText>
                                                 https://
                                             </InputGroupText>
-                                        }
-                                        endAddon={
-                                            <InputGroupText>
-                                                .com
-                                            </InputGroupText>
-                                        }
-                                    />
+                                        </InputGroupAddon>
+                                        <InputGroupAddon align="inline-end">
+                                            <InputGroupText>.com</InputGroupText>
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -308,13 +317,14 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Brukernavn"
                                         placeholder="brukernavn"
-                                        endAddon={
+                                    >
+                                        <InputGroupAddon align="inline-end">
                                             <InputGroupText>
                                                 <AtSignIcon />
                                                 tihlde.org
                                             </InputGroupText>
-                                        }
-                                    />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -323,7 +333,8 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Lenke å dele"
                                         readOnly
-                                        endAddon={
+                                    >
+                                        <InputGroupAddon align="inline-end">
                                             <InputGroupButton
                                                 size="icon-xs"
                                                 onClick={() =>
@@ -335,8 +346,8 @@ function FormTestPage() {
                                             >
                                                 <CopyIcon />
                                             </InputGroupButton>
-                                        }
-                                    />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -345,14 +356,17 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Kommando"
                                         placeholder="Søk..."
-                                        startAddon={<SearchIcon />}
-                                        endAddon={
+                                    >
+                                        <InputGroupAddon align="inline-start">
+                                            <SearchIcon />
+                                        </InputGroupAddon>
+                                        <InputGroupAddon align="inline-end">
                                             <InputGroupText className="rounded-sm bg-muted px-1 text-xs">
                                                 <CommandIcon className="size-3" />
                                                 K
                                             </InputGroupText>
-                                        }
-                                    />
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 
@@ -361,18 +375,21 @@ function FormTestPage() {
                                     <field.InputField
                                         label="Kortnummer"
                                         placeholder="0000 0000 0000 0000"
-                                        startAddon={<CreditCardIcon />}
-                                        endAddon={
-                                            field.state.value.length >= 12 ? (
+                                    >
+                                        <InputGroupAddon align="inline-start">
+                                            <CreditCardIcon />
+                                        </InputGroupAddon>
+                                        <InputGroupAddon align="inline-end">
+                                            {field.state.value.length >= 12 ? (
                                                 <CheckIcon className="text-emerald-500" />
                                             ) : (
                                                 <>
                                                     <StarIcon />
                                                     <InfoIcon />
                                                 </>
-                                            )
-                                        }
-                                    />
+                                            )}
+                                        </InputGroupAddon>
+                                    </field.InputField>
                                 )}
                             </form.AppField>
 

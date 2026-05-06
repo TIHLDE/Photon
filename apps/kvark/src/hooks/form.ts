@@ -4,7 +4,7 @@ import {
     useStore,
 } from "@tanstack/react-form";
 import { SubmitButton } from "#/components/form/SubmitButton";
-import { InputField, PasswordField } from "#/components/form/BasicFields";
+import { InputField } from "#/components/form/InputField";
 import { TextareaField } from "#/components/form/TextareaField";
 import { NumberField } from "#/components/form/NumberField";
 import { CheckboxField } from "#/components/form/CheckboxField";
@@ -54,7 +54,6 @@ export function useFieldErrorVisible(): boolean {
 export const { useAppForm, withForm, withFieldGroup } = createFormHook({
     fieldComponents: {
         InputField,
-        PasswordField,
         TextareaField,
         NumberField,
         CheckboxField,

@@ -46,7 +46,7 @@ export function CheckboxField({
                         )}
                     </FieldLabel>
                 )}
-                {description && (
+                {description && !isInvalid && (
                     <FieldDescription>{description}</FieldDescription>
                 )}
                 {!hideError && isInvalid && (

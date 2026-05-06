@@ -68,9 +68,7 @@ export const groupSignaturesRoute = route().get(
                   })
                 : [];
 
-        const signatureMap = new Map(
-            signatures.map((s) => [s.userId, s]),
-        );
+        const signatureMap = new Map(signatures.map((s) => [s.userId, s]));
 
         const results = memberships.map((m) => {
             const sig = signatureMap.get(m.userId);
