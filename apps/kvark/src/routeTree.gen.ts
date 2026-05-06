@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -23,6 +24,7 @@ import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
 import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
 import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
+import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
@@ -30,7 +32,6 @@ import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AppNyheterRouteImport } from './routes/_app/nyheter'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
-import { Route as AppFormTestRouteImport } from './routes/_app/form-test'
 import { Route as AppArrangementerRouteImport } from './routes/_app/arrangementer'
 import { Route as AppAnnonserRouteImport } from './routes/_app/annonser'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
@@ -51,6 +52,10 @@ import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/prof
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevRoute = DevRouteImport.update({
+  id: '/_dev',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -115,6 +120,11 @@ const AdminSuperAdminRoute = AdminSuperAdminRouteImport.update({
   id: '/_super-admin',
   getParentRoute: () => AdminRoute,
 } as any)
+const DevFormTestRoute = DevFormTestRouteImport.update({
+  id: '/form-test',
+  path: '/form-test',
+  getParentRoute: () => DevRoute,
+} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -148,11 +158,6 @@ const AppKontraktRoute = AppKontraktRouteImport.update({
 const AppKokebokRoute = AppKokebokRouteImport.update({
   id: '/kokebok',
   path: '/kokebok',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppFormTestRoute = AppFormTestRouteImport.update({
-  id: '/form-test',
-  path: '/form-test',
   getParentRoute: () => AppRoute,
 } as any)
 const AppArrangementerRoute = AppArrangementerRouteImport.update({
@@ -243,7 +248,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminSuperAdminRouteWithChildren
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
-  '/form-test': typeof AppFormTestRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
@@ -251,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/form-test': typeof DevFormTestRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
@@ -279,7 +284,6 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/annonser': typeof AppAnnonserRoute
   '/arrangementer': typeof AppArrangementerRoute
-  '/form-test': typeof AppFormTestRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/nyheter': typeof AppNyheterRoute
@@ -287,6 +291,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/form-test': typeof DevFormTestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
@@ -314,10 +319,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/_app/annonser': typeof AppAnnonserRoute
   '/_app/arrangementer': typeof AppArrangementerRoute
-  '/_app/form-test': typeof AppFormTestRoute
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/nyheter': typeof AppNyheterRoute
@@ -325,6 +330,7 @@ export interface FileRoutesById {
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/_dev/form-test': typeof DevFormTestRoute
   '/admin/_super-admin': typeof AdminSuperAdminRouteWithChildren
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
@@ -358,7 +364,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/annonser'
     | '/arrangementer'
-    | '/form-test'
     | '/kokebok'
     | '/kontrakt'
     | '/nyheter'
@@ -366,6 +371,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/form-test'
     | '/admin/annonser'
     | '/admin/arrangementer'
     | '/admin/bannere'
@@ -394,7 +400,6 @@ export interface FileRouteTypes {
     | '/'
     | '/annonser'
     | '/arrangementer'
-    | '/form-test'
     | '/kokebok'
     | '/kontrakt'
     | '/nyheter'
@@ -402,6 +407,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/form-test'
     | '/admin'
     | '/admin/annonser'
     | '/admin/arrangementer'
@@ -428,10 +434,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/_dev'
     | '/admin'
     | '/_app/annonser'
     | '/_app/arrangementer'
-    | '/_app/form-test'
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/nyheter'
@@ -439,6 +445,7 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
+    | '/_dev/form-test'
     | '/admin/_super-admin'
     | '/admin/annonser'
     | '/admin/arrangementer'
@@ -469,6 +476,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  DevRoute: typeof DevRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
 }
 
@@ -479,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_dev': {
+      id: '/_dev'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof DevRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -572,6 +587,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuperAdminRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_dev/form-test': {
+      id: '/_dev/form-test'
+      path: '/form-test'
+      fullPath: '/form-test'
+      preLoaderRoute: typeof DevFormTestRouteImport
+      parentRoute: typeof DevRoute
+    }
     '/_auth/register': {
       id: '/_auth/register'
       path: '/register'
@@ -619,13 +641,6 @@ declare module '@tanstack/react-router' {
       path: '/kokebok'
       fullPath: '/kokebok'
       preLoaderRoute: typeof AppKokebokRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/form-test': {
-      id: '/_app/form-test'
-      path: '/form-test'
-      fullPath: '/form-test'
-      preLoaderRoute: typeof AppFormTestRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/arrangementer': {
@@ -766,7 +781,6 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 interface AppRouteChildren {
   AppAnnonserRoute: typeof AppAnnonserRoute
   AppArrangementerRoute: typeof AppArrangementerRoute
-  AppFormTestRoute: typeof AppFormTestRoute
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
   AppNyheterRoute: typeof AppNyheterRoute
@@ -783,7 +797,6 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAnnonserRoute: AppAnnonserRoute,
   AppArrangementerRoute: AppArrangementerRoute,
-  AppFormTestRoute: AppFormTestRoute,
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
   AppNyheterRoute: AppNyheterRoute,
@@ -812,6 +825,16 @@ const AuthRouteChildren: AuthRouteChildren = {
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface DevRouteChildren {
+  DevFormTestRoute: typeof DevFormTestRoute
+}
+
+const DevRouteChildren: DevRouteChildren = {
+  DevFormTestRoute: DevFormTestRoute,
+}
+
+const DevRouteWithChildren = DevRoute._addFileChildren(DevRouteChildren)
 
 interface AdminSuperAdminRouteChildren {
   AdminSuperAdminApiKeysRoute: typeof AdminSuperAdminApiKeysRoute
@@ -860,6 +883,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  DevRoute: DevRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
 }
 export const routeTree = rootRouteImport
