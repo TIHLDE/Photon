@@ -8,6 +8,8 @@ import {
     Checkbox,
     CheckboxGroup,
     Combobox,
+    DatePicker,
+    DateRangePicker,
     Description,
     Error,
     Field,
@@ -20,6 +22,7 @@ import {
     Select,
     Switch,
     Textarea,
+    TimePicker,
 } from "#/components/form/field";
 import { FormErrors } from "#/components/form/form-errors";
 import { SubmitButton } from "#/components/form/submit-button";
@@ -34,8 +37,6 @@ export function formHandlers<TFormAPI extends FormAPI>(
     preventDefault = true,
 ): React.ComponentProps<"form"> {
     return {
-        // We validate via TanStack Form / Zod — disable browser-native validation
-        // so HTML5 tooltips ("Please fill in this field") don't intercept submit.
         noValidate: true,
         onSubmit: (e) => {
             if (preventDefault) e.preventDefault();
@@ -51,13 +52,6 @@ export function formHandlers<TFormAPI extends FormAPI>(
 export const { fieldContext, useFieldContext, formContext, useFormContext } =
     createFormHookContexts();
 
-/**
- * Whether the field's error message should be visible.
- *
- * The form's `validationLogic` decides *when* errors get set (blur or submit).
- * This gate decides *which* fields render their error: only the field the user
- * has interacted with, or all of them once submit has been attempted.
- */
 export function useFieldErrorVisible(): boolean {
     const field = useFieldContext();
     const submitted = useStore(
@@ -87,6 +81,9 @@ const {
         Select,
         RadioGroup,
         Combobox,
+        DatePicker,
+        DateRangePicker,
+        TimePicker,
         ImageDropzone,
         Description,
         Error,
@@ -99,18 +96,6 @@ const {
     formContext,
 });
 
-/**
- * Project-wide form hook. Wraps TanStack's `useAppForm` with our defaults:
- *
- * - `validationLogic: revalidateLogic({ mode: "blur", modeAfterSubmission: "change" })`
- *   — pre-submit, validation runs on blur (so a single field's error appears
- *   when the user leaves it). After the first submit, validation runs on every
- *   change so errors update live as the user fixes things.
- * - `canSubmitWhenInvalid: true` — submit always runs validation; clicking the
- *   submit button is the way to surface every error at once.
- *
- * Either default can be overridden per-form by passing the same key.
- */
 export const useAppForm = ((opts) => {
     return useAppFormBase({
         validationLogic: revalidateLogic({

@@ -192,7 +192,7 @@ export function EditProfileDialog({
                                     <field.Label>Allergier</field.Label>
                                     <field.Combobox
                                         items={ALLERGY_OPTIONS}
-                                        multi
+                                        multiple
                                         placeholder="Legg til allergi..."
                                     />
                                     <field.Description>

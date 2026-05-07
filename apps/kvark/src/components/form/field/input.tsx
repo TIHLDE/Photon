@@ -12,31 +12,20 @@ import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { Children, useState } from "react";
 import { useField } from "./field";
 
+type TextInputType = "text" | "email" | "url" | "search" | "tel" | "password";
+
 interface InputProps extends Omit<
     React.ComponentProps<"input">,
-    "value" | "required"
+    "value" | "required" | "type"
 > {
+    type?: TextInputType;
     children?: React.ReactNode;
 }
 
-export function Input({ children, type, ...props }: InputProps) {
+export function Input({ children, type = "text", ...props }: InputProps) {
     const field = useFieldContext<string>();
     const ctx = useField();
     const hasAddons = Children.count(children) > 0;
-
-    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        switch (type) {
-            case "number":
-                field.handleChange(e.target.valueAsNumber as unknown as string);
-                break;
-            case "date":
-            case "datetime-local":
-                field.handleChange(e.target.valueAsDate as unknown as string);
-                break;
-            default:
-                field.handleChange(e.target.value);
-        }
-    };
 
     const inputProps = {
         ...props,
@@ -45,7 +34,8 @@ export function Input({ children, type, ...props }: InputProps) {
         required: ctx.required,
         type,
         value: field.state.value,
-        onChange,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+            field.handleChange(e.target.value),
         onBlur: field.handleBlur,
         "aria-invalid": ctx.isInvalid,
     };

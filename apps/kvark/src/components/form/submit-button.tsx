@@ -28,7 +28,6 @@ export function SubmitButton({
                     onClick={(e) => {
                         onClick?.(e);
                         if (e.defaultPrevented) return;
-                        // Standalone (not inside a <form>) — native submit can't fire, so trigger manually.
                         if (!buttonRef.current?.form) {
                             form.handleSubmit();
                         }

@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
+import { type DateRange } from "@tihlde/ui/ui/date-picker";
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { z } from "zod";
@@ -39,6 +40,15 @@ const schema = z.object({
         .min(1, { error: "Minst 1" })
         .max(500, { error: "Maks 500" })
         .nullable(),
+    period: z
+        .object({
+            from: z.instanceof(Date),
+            to: z.instanceof(Date).optional(),
+        })
+        .nullable()
+        .refine((v) => v !== null && v.to !== undefined, {
+            error: "Velg start- og sluttdato",
+        }),
     image: z.instanceof(File).nullable(),
 });
 
@@ -57,6 +67,7 @@ export function CreateEventDialog({
             description: "",
             category: "" as "" | "social" | "academic" | "career" | "other",
             maxParticipants: null as number | null,
+            period: null as DateRange | null,
             image: null as File | null,
         },
         validators: { onDynamic: schema },
@@ -116,6 +127,18 @@ export function CreateEventDialog({
                                     <field.Description>
                                         Markdown støttes
                                     </field.Description>
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </form.AppField>
+                        <form.AppField name="period">
+                            {(field) => (
+                                <field.Field required>
+                                    <field.Label>Periode</field.Label>
+                                    <field.DateRangePicker
+                                        view="day"
+                                        placeholder="Velg start- og sluttdato"
+                                    />
                                     <field.Error />
                                 </field.Field>
                             )}

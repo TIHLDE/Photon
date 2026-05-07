@@ -13,7 +13,9 @@ import {
     InputGroupButton,
     InputGroupText,
 } from "@tihlde/ui/ui/input-group";
+import { type DateRange } from "@tihlde/ui/ui/date-picker";
 import { Spinner } from "@tihlde/ui/ui/spinner";
+import { type TimeValue } from "@tihlde/ui/ui/time-picker";
 import {
     AtSignIcon,
     CheckIcon,
@@ -149,6 +151,42 @@ const formTestSchema = z.object({
         .string()
         .min(1, { error: "Skriv et notat" })
         .max(120, { error: "Maks 120 tegn" }),
+    meetingDate: z
+        .instanceof(Date, { error: "Velg en dato" })
+        .nullable()
+        .refine((v) => v !== null, { error: "Velg en dato" }),
+    birthMonth: z
+        .instanceof(Date, { error: "Velg en måned" })
+        .nullable()
+        .refine((v) => v !== null, { error: "Velg en måned" }),
+    vacationRange: z
+        .object({
+            from: z.instanceof(Date),
+            to: z.instanceof(Date).optional(),
+        })
+        .nullable()
+        .refine((v) => v !== null && v.to !== undefined, {
+            error: "Velg start- og sluttdato",
+        }),
+    reportRange: z
+        .object({
+            from: z.instanceof(Date),
+            to: z.instanceof(Date).optional(),
+        })
+        .nullable(),
+    startTime: z
+        .object({
+            hour: z.number().int().min(0).max(23),
+            minute: z.number().int().min(0).max(59),
+        })
+        .nullable()
+        .refine((v) => v !== null, { error: "Velg starttid" }),
+    reminderTime: z
+        .object({
+            hour: z.number().int().min(0).max(23),
+            minute: z.number().int().min(0).max(59),
+        })
+        .nullable(),
 });
 
 function FormTestPage() {
@@ -188,6 +226,12 @@ function FormTestPage() {
             cardNumber: "",
             shortcutSearch: "",
             charLimitedNote: "",
+            meetingDate: null as Date | null,
+            birthMonth: null as Date | null,
+            vacationRange: null as DateRange | null,
+            reportRange: null as DateRange | null,
+            startTime: null as TimeValue | null,
+            reminderTime: null as TimeValue | null,
         },
         validators: { onDynamic: formTestSchema },
         async onSubmit({ value }) {
@@ -621,7 +665,7 @@ function FormTestPage() {
                     <CardHeader>
                         <CardTitle>Flervalg</CardTitle>
                         <CardDescription>
-                            CheckboxGroup, Combobox (multi)
+                            CheckboxGroup, Combobox (multiple)
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -644,7 +688,7 @@ function FormTestPage() {
                                         <field.Label>Tags</field.Label>
                                         <field.Combobox
                                             items={TAG_OPTIONS}
-                                            multi
+                                            multiple
                                             placeholder="Søk og legg til..."
                                         />
                                         <field.Error />
@@ -751,6 +795,106 @@ function FormTestPage() {
                                         <field.Description>
                                             JPG/PNG, maks 3 stk, maks 1 MB per
                                             fil
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Datoer og tider</CardTitle>
+                        <CardDescription>
+                            DatePicker (enkelt + range, dag- og månedsvisning)
+                            paret med TimePicker — 24-timers norsk klokke.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
+                            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+                                <form.AppField name="meetingDate">
+                                    {(field) => (
+                                        <field.Field required>
+                                            <field.Label>
+                                                Møtedato (dagsvisning)
+                                            </field.Label>
+                                            <field.DatePicker
+                                                view="day"
+                                                placeholder="Velg dato"
+                                            />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                                <form.AppField name="startTime">
+                                    {(field) => (
+                                        <field.Field required>
+                                            <field.Label>Starttid</field.Label>
+                                            <field.TimePicker />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                            </div>
+
+                            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+                                <form.AppField name="birthMonth">
+                                    {(field) => (
+                                        <field.Field required>
+                                            <field.Label>
+                                                Fødselsmåned (månedsvisning)
+                                            </field.Label>
+                                            <field.DatePicker
+                                                view="month"
+                                                placeholder="Velg måned"
+                                            />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                                <form.AppField name="reminderTime">
+                                    {(field) => (
+                                        <field.Field>
+                                            <field.Label>
+                                                Påminnelse
+                                            </field.Label>
+                                            <field.TimePicker minuteStep={15} />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                            </div>
+
+                            <form.AppField name="vacationRange">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>
+                                            Ferie (range, dag)
+                                        </field.Label>
+                                        <field.DateRangePicker
+                                            view="day"
+                                            placeholder="Velg periode"
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+
+                            <form.AppField name="reportRange">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>
+                                            Rapportperiode (range, måned)
+                                        </field.Label>
+                                        <field.DateRangePicker
+                                            view="month"
+                                            placeholder="Velg månedsperiode"
+                                        />
+                                        <field.Description>
+                                            Valgfri — brukes til månedsrapporter
                                         </field.Description>
                                         <field.Error />
                                     </field.Field>

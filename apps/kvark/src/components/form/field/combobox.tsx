@@ -17,11 +17,12 @@ import { useField } from "./field";
 
 interface ComboboxProps<TItem> {
     items: readonly TItem[];
-    multi?: boolean;
+    multiple?: boolean;
     placeholder?: string;
     emptyMessage?: string;
     disabled?: boolean;
     getLabel?: (item: TItem) => string;
+    getKey?: (item: TItem, index: number) => string | number;
     isEqual?: (a: TItem, b: TItem) => boolean;
     renderItem?: (item: TItem) => React.ReactNode;
     renderChip?: (item: TItem) => React.ReactNode;
@@ -29,11 +30,12 @@ interface ComboboxProps<TItem> {
 
 export function Combobox<TItem>({
     items,
-    multi,
+    multiple,
     placeholder,
     emptyMessage = "Ingen treff",
     disabled,
     getLabel,
+    getKey,
     isEqual,
     renderItem,
     renderChip,
@@ -43,11 +45,13 @@ export function Combobox<TItem>({
     const anchor = useComboboxAnchor();
 
     const labelOf = (item: TItem) => (getLabel ? getLabel(item) : String(item));
+    const keyOf = (item: TItem, index: number) =>
+        getKey ? getKey(item, index) : index;
 
     return (
         <ComboboxRoot
             items={items as TItem[]}
-            multiple={multi}
+            multiple={multiple}
             value={field.state.value as never}
             onValueChange={field.handleChange as never}
             onOpenChange={(open) => {
@@ -58,13 +62,13 @@ export function Combobox<TItem>({
             itemToStringLabel={getLabel}
             isItemEqualToValue={isEqual}
         >
-            {multi ? (
+            {multiple ? (
                 <ComboboxChips ref={anchor}>
                     <ComboboxValue>
                         {(selected: TItem[]) => (
                             <>
                                 {selected.map((item, index) => (
-                                    <ComboboxChip key={index}>
+                                    <ComboboxChip key={keyOf(item, index)}>
                                         {renderChip
                                             ? renderChip(item)
                                             : labelOf(item)}
@@ -86,15 +90,24 @@ export function Combobox<TItem>({
                     aria-invalid={ctx.isInvalid}
                 />
             )}
-            <ComboboxContent anchor={multi ? anchor : undefined}>
+            <ComboboxContent anchor={multiple ? anchor : undefined}>
                 <ComboboxList>
                     <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
                     <ComboboxCollection>
-                        {(item: TItem) => (
-                            <ComboboxItem key={labelOf(item)} value={item}>
-                                {renderItem ? renderItem(item) : labelOf(item)}
-                            </ComboboxItem>
-                        )}
+                        {(item: TItem) => {
+                            const items_ = items as TItem[];
+                            const index = items_.indexOf(item);
+                            return (
+                                <ComboboxItem
+                                    key={keyOf(item, index)}
+                                    value={item}
+                                >
+                                    {renderItem
+                                        ? renderItem(item)
+                                        : labelOf(item)}
+                                </ComboboxItem>
+                            );
+                        }}
                     </ComboboxCollection>
                 </ComboboxList>
             </ComboboxContent>

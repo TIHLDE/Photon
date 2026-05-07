@@ -19,10 +19,10 @@ export function Label({
         <FieldLabel
             id={`${ctx.inputId}-label`}
             htmlFor={ctx.inputId}
+            required={required}
             {...props}
         >
             {children}
-            {required && <span className="text-destructive">{" *"}</span>}
         </FieldLabel>
     );
 }
