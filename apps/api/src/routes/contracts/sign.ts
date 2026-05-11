@@ -102,19 +102,14 @@ export const signContractRoute = route().post(
             });
             for (const leader of leaders) {
                 if (!leaderEmailByGroup.has(leader.groupSlug)) {
-                    leaderEmailByGroup.set(
-                        leader.groupSlug,
-                        leader.user.email,
-                    );
+                    leaderEmailByGroup.set(leader.groupSlug, leader.user.email);
                 }
             }
         }
 
         for (const grp of signingGroups) {
             const notifyEmail =
-                grp.contactEmail ??
-                leaderEmailByGroup.get(grp.slug) ??
-                null;
+                grp.contactEmail ?? leaderEmailByGroup.get(grp.slug) ?? null;
 
             if (notifyEmail) {
                 await enqueueEmail(

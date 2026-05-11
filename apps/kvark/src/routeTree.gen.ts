@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -23,6 +24,7 @@ import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
 import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
 import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
+import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
@@ -53,6 +55,10 @@ import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/prof
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevRoute = DevRouteImport.update({
+  id: '/_dev',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -116,6 +122,11 @@ const AdminAnnonserRoute = AdminAnnonserRouteImport.update({
 const AdminSuperAdminRoute = AdminSuperAdminRouteImport.update({
   id: '/_super-admin',
   getParentRoute: () => AdminRoute,
+} as any)
+const DevFormTestRoute = DevFormTestRouteImport.update({
+  id: '/form-test',
+  path: '/form-test',
+  getParentRoute: () => DevRoute,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
@@ -259,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/form-test': typeof DevFormTestRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
@@ -297,6 +309,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/form-test': typeof DevFormTestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
@@ -330,6 +343,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
@@ -337,6 +351,7 @@ export interface FileRoutesById {
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/_dev/form-test': typeof DevFormTestRoute
   '/admin/_super-admin': typeof AdminSuperAdminRouteWithChildren
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/arrangementer': typeof AdminArrangementerRoute
@@ -380,6 +395,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/form-test'
     | '/admin/annonser'
     | '/admin/arrangementer'
     | '/admin/bannere'
@@ -418,6 +434,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/form-test'
     | '/admin'
     | '/admin/annonser'
     | '/admin/arrangementer'
@@ -450,6 +467,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/_dev'
     | '/admin'
     | '/_app/kokebok'
     | '/_app/kontrakt'
@@ -457,6 +475,7 @@ export interface FileRouteTypes {
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
+    | '/_dev/form-test'
     | '/admin/_super-admin'
     | '/admin/annonser'
     | '/admin/arrangementer'
@@ -493,6 +512,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  DevRoute: typeof DevRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
 }
 
@@ -503,6 +523,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_dev': {
+      id: '/_dev'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof DevRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -595,6 +622,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AdminSuperAdminRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/_dev/form-test': {
+      id: '/_dev/form-test'
+      path: '/form-test'
+      fullPath: '/form-test'
+      preLoaderRoute: typeof DevFormTestRouteImport
+      parentRoute: typeof DevRoute
     }
     '/_auth/register': {
       id: '/_auth/register'
@@ -855,6 +889,16 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface DevRouteChildren {
+  DevFormTestRoute: typeof DevFormTestRoute
+}
+
+const DevRouteChildren: DevRouteChildren = {
+  DevFormTestRoute: DevFormTestRoute,
+}
+
+const DevRouteWithChildren = DevRoute._addFileChildren(DevRouteChildren)
+
 interface AdminSuperAdminRouteChildren {
   AdminSuperAdminApiKeysRoute: typeof AdminSuperAdminApiKeysRoute
   AdminSuperAdminDatabaseRoute: typeof AdminSuperAdminDatabaseRoute
@@ -902,6 +946,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  DevRoute: DevRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
 }
 export const routeTree = rootRouteImport
