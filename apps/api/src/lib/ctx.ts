@@ -41,7 +41,10 @@ export async function createAppContext(): Promise<AppContext> {
     const mailer = createEmailTransporter();
     const bucket = await createStorageClient({ db });
 
-    const auth = createAuth({ db, redis, mailer, queue, bucket });
+    const auth = createAuth(
+        { db, redis, mailer, queue, bucket },
+        { isDev: env.NODE_ENV === "development" },
+    );
 
     return {
         db,

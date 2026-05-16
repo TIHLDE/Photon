@@ -10,14 +10,19 @@
         "./roles": "./src/rbac/roles/index.ts",
         "./bearer": "./src/bearer.ts",
         "./feide": "./src/feide.ts",
-        "./client": "./src/client.ts"
+        "./client": "./src/client.ts",
+        "./well-known": "./src/well-known.ts"
+    },
+    "scripts": {
+        "auth:generate-schema": "bunx auth@latest generate -y --config ./src/cli-auth-instance.ts --output ./src/__db_schema.ts"
     },
     "dependencies": {
+        "@better-auth/oauth-provider": "catalog:backend",
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
-        "better-auth": "catalog:",
-        "drizzle-orm": "catalog:"
+        "better-auth": "catalog:backend",
+        "drizzle-orm": "catalog:backend"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",

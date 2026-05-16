@@ -1,4 +1,8 @@
 import { env } from "@photon/core/env";
+import {
+    createOAuthAuthorizationServerMetadataHandler,
+    createOpenIdConfigurationMetadataHandler,
+} from "@photon/auth/well-known";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
@@ -94,6 +98,20 @@ export const createApp = async (variables?: Variables) => {
                 credentials: true,
             }),
         )
+        .get("/api/auth/.well-known/openid-configuration", (c) => {
+            const { auth } = c.get("ctx");
+            return createOpenIdConfigurationMetadataHandler(auth)(c.req.raw);
+        })
+        .get("/.well-known/openid-configuration", (c) => {
+            const { auth } = c.get("ctx");
+            return createOpenIdConfigurationMetadataHandler(auth)(c.req.raw);
+        })
+        .get("/.well-known/oauth-authorization-server/api/auth", (c) => {
+            const { auth } = c.get("ctx");
+            return createOAuthAuthorizationServerMetadataHandler(auth)(
+                c.req.raw,
+            );
+        })
         .route("/", api)
         .get(
             "/openapi",

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-    entry: ["src/index.ts", "src/types.ts", "src/auth.ts"],
+    entry: ["src/index.ts", "src/types.ts"],
     outDir: "dist",
     dts: {
         enabled: true,

@@ -13,7 +13,7 @@
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
-        "drizzle-orm": "catalog:",
+        "drizzle-orm": "catalog:backend",
         "mysql2": "^3.14.4"
     },
     "devDependencies": {

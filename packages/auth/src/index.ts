@@ -5,9 +5,11 @@ import {
     bearer,
     customSession,
     emailOTP,
+    jwt,
     openAPI,
     username,
 } from "better-auth/plugins";
+import { oauthProvider } from "@better-auth/oauth-provider";
 import { createAuthMiddleware } from "better-auth/api";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "@photon/db/schema";
@@ -24,7 +26,20 @@ import type { RedisClient, QueueManager } from "@photon/core/cache";
 import type { StorageClient } from "./types";
 import { feidePlugin, syncFeideHook } from "./feide";
 import { syncLegacyTokenHook } from "./lepton";
-import { getUserPermissions } from "./rbac/permissions";
+import { hasPermission } from "./rbac/permissions/checker";
+import { loadUserRolesAndGroups } from "./lib/user-claims";
+
+const OAUTH_CLIENT_ACTION_PERMISSION = {
+    create: "oauth-clients:create",
+    read: "oauth-clients:view",
+    list: "oauth-clients:view",
+    update: "oauth-clients:update",
+    rotate: "oauth-clients:update",
+    delete: "oauth-clients:delete",
+} as const satisfies Record<
+    "create" | "read" | "update" | "delete" | "list" | "rotate",
+    string
+>;
 
 /**
  * Context required to create the auth instance.
@@ -38,7 +53,10 @@ export interface AuthCreateContext {
     bucket: StorageClient;
 }
 
-export const createAuth = (ctx: AuthCreateContext) =>
+export const createAuth = (
+    ctx: AuthCreateContext,
+    { isDev = false }: { isDev?: boolean } = {},
+) =>
     betterAuth({
         database: drizzleAdapter(ctx.db, {
             provider: "pg",
@@ -47,7 +65,6 @@ export const createAuth = (ctx: AuthCreateContext) =>
         baseURL: env.ROOT_URL,
         emailAndPassword: {
             enabled: true,
-            disableSignUp: true,
             requireEmailVerification: true,
             sendResetPassword: async ({ url, user }) => {
                 await enqueueEmail(
@@ -63,6 +80,9 @@ export const createAuth = (ctx: AuthCreateContext) =>
         session: {
             expiresIn: 60 * 60 * 24 * 7, // 7 days
             updateAge: 60 * 60 * 24, // 1 day
+            // Required by @better-auth/oauth-provider when secondaryStorage is set.
+            // Sessions are still cached in Redis; this just keeps the DB row too.
+            storeSessionInDatabase: true,
         },
         advanced: {
             crossSubDomainCookies: {
@@ -73,8 +93,13 @@ export const createAuth = (ctx: AuthCreateContext) =>
         trustedOrigins: [
             "https://tihlde.org",
             "https://*.tihlde.org",
-            "localhost:3000",
-            "http://localhost:3000",
+            ...(isDev
+                ? [
+                      "http://localhost:3000",
+                      "http://localhost:4000",
+                      "localhost:3000",
+                  ]
+                : []),
         ],
         user: {
             additionalFields: {
@@ -127,29 +152,60 @@ export const createAuth = (ctx: AuthCreateContext) =>
             admin(),
             bearer(),
             username(),
+            jwt(),
+            oauthProvider({
+                loginPage: "/login",
+                consentPage: "/oauth/consent",
+                signup: { page: "/register" },
+                scopes: [
+                    "openid",
+                    "profile",
+                    "email",
+                    "offline_access",
+                    "groups",
+                    "roles",
+                ],
+                clientPrivileges: async ({ user, action }) => {
+                    if (!user) return false;
+                    const perm = OAUTH_CLIENT_ACTION_PERMISSION[action];
+                    return await hasPermission({ db: ctx.db }, user.id, [
+                        perm,
+                        "oauth-clients:manage",
+                    ]);
+                },
+                customIdTokenClaims: async ({ user, scopes }) => {
+                    const wantsRoles = scopes.includes("roles");
+                    const wantsGroups = scopes.includes("groups");
+                    if (!wantsRoles && !wantsGroups) return {};
+                    const { permissions, groups } =
+                        await loadUserRolesAndGroups({ db: ctx.db }, user.id);
+                    return {
+                        ...(wantsRoles ? { permissions } : {}),
+                        ...(wantsGroups ? { groups } : {}),
+                    };
+                },
+                customUserInfoClaims: async ({ user, scopes }) => {
+                    const wantsRoles = scopes.includes("roles");
+                    const wantsGroups = scopes.includes("groups");
+                    if (!wantsRoles && !wantsGroups) return {};
+                    const { permissions, groups } =
+                        await loadUserRolesAndGroups({ db: ctx.db }, user.id);
+                    return {
+                        ...(wantsRoles ? { permissions } : {}),
+                        ...(wantsGroups ? { groups } : {}),
+                    };
+                },
+            }),
             customSession(async ({ user, session }) => {
-                // TODO cleanup this code, is temprorary while we find out what info is needed
-                // Fetch user settings with allergies
-                const settings = await ctx.db.query.userSettings.findFirst({
-                    where: (s, { eq }) => eq(s.userId, user.id),
-                    with: { allergies: { columns: { allergySlug: true } } },
-                });
+                const [settings, { permissions, groups }] = await Promise.all([
+                    ctx.db.query.userSettings.findFirst({
+                        where: (s, { eq }) => eq(s.userId, user.id),
+                        with: { allergies: { columns: { allergySlug: true } } },
+                    }),
+                    loadUserRolesAndGroups({ db: ctx.db }, user.id),
+                ]);
 
-                // Fetch permissions (from roles + direct grants)
-                const permissions = await getUserPermissions(
-                    { db: ctx.db },
-                    user.id,
-                );
-
-                // Fetch user groups
-                const groups = await ctx.db.query.groupMembership.findMany({
-                    where: (gm, { eq }) => eq(gm.userId, user.id),
-                    with: {
-                        group: true,
-                    },
-                });
-
-                const fullSession = {
+                return {
                     user: {
                         ...user,
                         settings: settings
@@ -162,17 +218,9 @@ export const createAuth = (ctx: AuthCreateContext) =>
                             : null,
                     },
                     session,
-                    permissions: [...new Set(permissions)], // Deduplicated
-                    groups: groups.map((g) => ({
-                        slug: g.groupSlug,
-                        name: g.group.name,
-                        type: g.group.type,
-                        role: g.role,
-                    })),
+                    permissions,
+                    groups,
                 };
-                console.log(fullSession);
-
-                return fullSession;
             }),
         ],
         logger: {
