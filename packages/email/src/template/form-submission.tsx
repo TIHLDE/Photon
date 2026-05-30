@@ -8,21 +8,21 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
 interface FormSubmissionEmailProps {
     formTitle: string;
     submitterName: string;
     groupSlug: string;
+    logoUrl: string;
 }
 
 export const FormSubmissionEmail = ({
     formTitle,
     submitterName,
     groupSlug,
+    logoUrl,
 }: FormSubmissionEmailProps) => {
     return (
         <Html>
@@ -30,7 +30,7 @@ export const FormSubmissionEmail = ({
             <Body style={emailStyles.main}>
                 <Container style={emailStyles.container}>
                     <Img
-                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
+                        src={logoUrl}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"

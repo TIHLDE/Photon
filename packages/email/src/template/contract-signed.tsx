@@ -7,21 +7,21 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
 interface ContractSignedEmailProps {
     memberName: string;
     groupName: string;
     signedAt: string;
+    logoUrl: string;
 }
 
 export const ContractSignedEmail = ({
     memberName,
     groupName,
     signedAt,
+    logoUrl,
 }: ContractSignedEmailProps) => {
     const formattedDate = new Date(signedAt).toLocaleDateString("nb-NO", {
         year: "numeric",
@@ -35,7 +35,7 @@ export const ContractSignedEmail = ({
             <Body style={emailStyles.main}>
                 <Container style={emailStyles.container}>
                     <Img
-                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
+                        src={logoUrl}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"

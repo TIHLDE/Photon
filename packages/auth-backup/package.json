@@ -1,5 +1,5 @@
 {
-    "name": "@photon/auth",
+    "name": "@photon/auth-backup",
     "version": "0.0.0",
     "private": true,
     "type": "module",
@@ -8,8 +8,11 @@
         "./rbac": "./src/rbac/permissions/index.ts",
         "./rbac/registry": "./src/rbac/permissions/registry.ts",
         "./roles": "./src/rbac/roles/index.ts",
+        "./bearer": "./src/bearer.ts",
         "./feide": "./src/feide.ts",
-        "./client": "./src/client.ts"
+        "./client": "./src/client.ts",
+        "./oauth-resource": "./src/oauth-resource.ts",
+        "./well-known": "./src/well-known.ts"
     },
     "scripts": {
         "auth:generate-schema": "bunx auth@latest generate -y --config ./src/cli-auth-instance.ts --output ./src/__db_schema.ts"

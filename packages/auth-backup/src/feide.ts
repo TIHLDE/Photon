@@ -13,6 +13,7 @@ import {
     studyProgramMembership,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
+import type { AuthCreateContext } from "./index";
 
 /**
  * BetterAuth provider ID for Feide

@@ -5,18 +5,23 @@
     "type": "module",
     "exports": {
         ".": "./src/index.ts",
-        "./env": "./src/env.ts",
-        "./cache": "./src/cache/index.ts"
+        "./services": "./src/services/index.ts",
+        "./services/cache": "./src/services/cache/index.ts",
+        "./services/queue": "./src/services/queue/index.ts",
+        "./env": "./src/env.ts"
     },
     "dependencies": {
         "@dotenvx/dotenvx": "^1.49.0",
+        "@photon/email": "workspace:*",
         "bullmq": "catalog:backend",
+        "nodemailer": "^7.0.11",
         "redis": "^5.8.2",
         "zod": "catalog:"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
         "@types/node": "catalog:",
+        "@types/nodemailer": "^7.0.1",
         "typescript": "catalog:"
     }
 }

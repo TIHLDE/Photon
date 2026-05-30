@@ -1,28 +1,19 @@
-import { render } from "@react-email/render";
-import nodemailer, { type Transporter } from "nodemailer";
 import type { ReactElement } from "react";
-import { env } from "@photon/core/env";
-import type { QueueManager } from "@photon/core/cache";
+import { render, toPlainText } from "@react-email/render";
 import { EMAIL_QUEUE_NAME } from "./config";
 
-export type EmailTransporter = Transporter | undefined;
+export { toPlainText };
 
 export const createEmailTransporter = (): EmailTransporter => {
-    if (env.NODE_ENV === "test") {
-        return;
-    }
+    // Sink
+    const transport = nodemailer.createTransport({
+        host: "localhost",
+        port: 1025,
+        secure: false,
+    });
 
-    if (!env.MAIL_HOST) {
-        // Sink
-        const transport = nodemailer.createTransport({
-            host: "localhost",
-            port: 1025,
-            secure: false,
-        });
-
-        console.log("📧 Serving mail inbox at http://localhost:8025");
-        return transport;
-    }
+    console.log("📧 Serving mail inbox at http://localhost:8025");
+    return transport;
 
     // Actual SMTP
     return nodemailer.createTransport({
