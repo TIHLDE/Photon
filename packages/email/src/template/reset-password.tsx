@@ -11,7 +11,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface ResetPasswordEmailProps {
+export interface ResetPasswordEmailProps {
     url: string;
     logoUrl: string;
 }

@@ -4,6 +4,7 @@ import { FormSubmissionEmail } from "@photon/email/templates";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { env } from "~/lib/env";
 import { validateAndCreateSubmission } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -93,7 +94,8 @@ export const createSubmissionRoute = route().post(
                         component: FormSubmissionEmail({
                             formTitle: form.title,
                             submitterName: submitter.name,
-                            groupSlug: groupForm.groupSlug,
+                            formUrl: `${env.ROOT_URL}/grupper/${groupForm.groupSlug}/`,
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                         }),
                     },
                     { queue: ctx.queue },

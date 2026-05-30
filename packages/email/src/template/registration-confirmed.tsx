@@ -11,7 +11,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface RegistrationConfirmedEmailProps {
+export interface RegistrationConfirmedEmailProps {
     eventName: string;
     eventUrl: string;
     logoUrl: string;

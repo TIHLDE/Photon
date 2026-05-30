@@ -11,9 +11,9 @@ integrationTest(
 
         expect(Array.isArray(users)).toBe(true);
 
-        // Use the test Redis instance
-        await ctx.redis.set("test-key", "test-value");
-        const value = await ctx.redis.get("test-key");
+        // Use the test cache instance
+        await ctx.cache.set("test-key", "test-value");
+        const value = await ctx.cache.get("test-key");
 
         expect(value).toBe("test-value");
 

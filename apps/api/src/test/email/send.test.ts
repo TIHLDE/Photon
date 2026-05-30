@@ -1,4 +1,4 @@
-import { EMAIL_QUEUE_NAME } from "@photon/email/config";
+import { EMAIL_QUEUE_NAME } from "@photon/core/services/queue";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 

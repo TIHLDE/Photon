@@ -10,7 +10,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface ContractSignedEmailProps {
+export interface ContractSignedEmailProps {
     memberName: string;
     groupName: string;
     signedAt: string;

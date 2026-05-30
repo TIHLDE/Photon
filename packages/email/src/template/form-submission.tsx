@@ -11,17 +11,17 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface FormSubmissionEmailProps {
+export interface FormSubmissionEmailProps {
     formTitle: string;
     submitterName: string;
-    groupSlug: string;
+    formUrl: string;
     logoUrl: string;
 }
 
 export const FormSubmissionEmail = ({
     formTitle,
     submitterName,
-    groupSlug,
+    formUrl,
     logoUrl,
 }: FormSubmissionEmailProps) => {
     return (
@@ -43,10 +43,7 @@ export const FormSubmissionEmail = ({
                         {submitterName} har besvart spørreskjemaet "{formTitle}
                         ".
                     </Text>
-                    <Button
-                        href={`${env.ROOT_URL}/grupper/${groupSlug}/`}
-                        style={emailStyles.button}
-                    >
+                    <Button href={formUrl} style={emailStyles.button}>
                         Se spørreskjema
                     </Button>
                 </Container>

@@ -10,7 +10,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface RegistrationBlockedEmailProps {
+export interface RegistrationBlockedEmailProps {
     eventName: string;
     reason?: string;
     logoUrl: string;

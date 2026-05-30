@@ -11,7 +11,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface ChangeEmailVerificationProps {
+export interface ChangeEmailVerificationProps {
     url: string;
     logoUrl: string;
 }

@@ -41,9 +41,7 @@
       },
       "devDependencies": {
         "@photon/tsconfig": "workspace:*",
-        "@testcontainers/minio": "^11.8.0",
         "@testcontainers/postgresql": "^11.7.0",
-        "@testcontainers/redis": "^11.7.0",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "@types/node-cron": "^3.0.11",
@@ -153,6 +151,7 @@
       "name": "@photon/core",
       "version": "0.0.0",
       "dependencies": {
+        "@aws-sdk/client-s3": "^3.927.0",
         "@dotenvx/dotenvx": "^1.49.0",
         "@photon/email": "workspace:*",
         "bullmq": "catalog:backend",
@@ -196,9 +195,11 @@
       "devDependencies": {
         "@photon/tsconfig": "workspace:*",
         "@react-email/preview-server": "4.2.8",
+        "@types/node": "catalog:",
         "@types/react": "catalog:frontend",
         "@types/react-dom": "catalog:frontend",
         "react-email": "4.2.8",
+        "tsdown": "^0.21.2",
         "typescript": "catalog:",
       },
     },
@@ -1376,11 +1377,7 @@
 
     "@tanstack/virtual-file-routes": ["@tanstack/virtual-file-routes@1.162.0", "", {}, "sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA=="],
 
-    "@testcontainers/minio": ["@testcontainers/minio@11.14.0", "", { "dependencies": { "testcontainers": "^11.14.0" } }, "sha512-IhoKiUTEHncJMwVHxy1vGK8XDp/wy4uodU1D45zNCBGvTURGp3mgXsDhVaBiVniEEfofyuqKp1HFauDxqDdzBQ=="],
-
     "@testcontainers/postgresql": ["@testcontainers/postgresql@11.14.0", "", { "dependencies": { "testcontainers": "^11.14.0" } }, "sha512-wYbJn8GRTj8qfqzfVubxioYWlHJU/ImIjuzPwyy9C5Qfo6g3GLduPZAj+BifvqTZjgT3gd4gFVLCPhBji7dc1w=="],
-
-    "@testcontainers/redis": ["@testcontainers/redis@11.14.0", "", { "dependencies": { "testcontainers": "^11.14.0" } }, "sha512-WX005slz2JMQPw2avbSjf5awVjpmFhOs5xCxeGSYLcV5ia4W1edv/P6MdOw4dZnvDQDuN5LfqNoV/ut3XGb2pA=="],
 
     "@tihlde/sdk": ["@tihlde/sdk@workspace:packages/sdk"],
 

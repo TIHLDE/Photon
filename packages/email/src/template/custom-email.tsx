@@ -12,7 +12,7 @@ import React from "react";
 import type { EmailContentBlock } from "../schema";
 import { emailStyles } from "./styles";
 
-interface CustomEmailProps {
+export interface CustomEmailProps {
     content: EmailContentBlock[];
     logoUrl: string;
 }

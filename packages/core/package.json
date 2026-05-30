@@ -6,11 +6,14 @@
     "exports": {
         ".": "./src/index.ts",
         "./services": "./src/services/index.ts",
+        "./services/email": "./src/services/email/index.ts",
         "./services/cache": "./src/services/cache/index.ts",
         "./services/queue": "./src/services/queue/index.ts",
+        "./services/storage": "./src/services/storage/index.ts",
         "./env": "./src/env.ts"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.927.0",
         "@dotenvx/dotenvx": "^1.49.0",
         "@photon/email": "workspace:*",
         "bullmq": "catalog:backend",

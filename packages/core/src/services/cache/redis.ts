@@ -1,7 +1,7 @@
 import { createClient } from "redis";
-import { BaseCache } from ".";
+import { BaseCache } from "./base";
 
-async function createNewClient(url: string) {
+export async function createRedisClient(url: string) {
     const client = createClient({ url });
     client.on("error", (err) => {
         console.error("Redis client error:", err);
@@ -11,7 +11,7 @@ async function createNewClient(url: string) {
     return client;
 }
 
-export type RedisClientType = Awaited<ReturnType<typeof createNewClient>>;
+export type RedisClientType = Awaited<ReturnType<typeof createRedisClient>>;
 
 export class RedisCache extends BaseCache {
     #redis: RedisClientType;
@@ -24,11 +24,13 @@ export class RedisCache extends BaseCache {
         return await this.#redis.get(key);
     }
 
-    async set(key: string, value: string, ttl?: number): Promise<void> {
+    async set(key: string, value: unknown, ttl?: number): Promise<void> {
+        const stringValue =
+            typeof value === "object" ? JSON.stringify(value) : String(value);
         if (typeof ttl === "number") {
-            await this.#redis.setEx(key, ttl, value);
+            await this.#redis.setEx(key, ttl, stringValue);
         } else {
-            await this.#redis.set(key, value);
+            await this.#redis.set(key, stringValue);
         }
     }
 
@@ -48,6 +50,6 @@ export class RedisCache extends BaseCache {
     }
 
     static async create(url: string) {
-        return new RedisCache(await createNewClient(url));
+        return new RedisCache(await createRedisClient(url));
     }
 }

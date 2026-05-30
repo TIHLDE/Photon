@@ -3,14 +3,17 @@
     "version": "0.0.0",
     "private": true,
     "type": "module",
+    "types": "./dist/index.d.mts",
     "exports": {
-        ".": "./src/index.ts",
-        "./templates": "./src/template/index.ts",
-        "./schema": "./src/schema.ts",
-        "./worker": "./src/worker.ts",
-        "./config": "./src/config.ts"
+        ".": "./dist/index.mjs",
+        "./schema": "./dist/schema.mjs",
+        "./templates": "./dist/templates.mjs",
+        "./*": "./*"
     },
     "scripts": {
+        "build": "tsdown",
+        "dev": "tsdown --watch",
+        "typecheck": "tsgo --noEmit",
         "email": "email dev --port 4001 --dir src/template"
     },
     "dependencies": {
@@ -23,9 +26,11 @@
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
         "@react-email/preview-server": "4.2.8",
+        "@types/node": "catalog:",
         "@types/react": "catalog:frontend",
         "@types/react-dom": "catalog:frontend",
         "react-email": "4.2.8",
+        "tsdown": "^0.21.2",
         "typescript": "catalog:"
     }
 }

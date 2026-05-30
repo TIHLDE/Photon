@@ -1,25 +1,17 @@
-import { createAuth } from "@photon/auth";
-import { createRedisClient } from "@photon/core/cache";
-import { QueueManager } from "@photon/core/cache";
 import { createDb } from "@photon/db";
-import {
-    MinioContainer,
-    type StartedMinioContainer,
-} from "@testcontainers/minio";
 import {
     PostgreSqlContainer,
     type StartedPostgreSqlContainer,
 } from "@testcontainers/postgresql";
-import {
-    RedisContainer,
-    type StartedRedisContainer,
-} from "@testcontainers/redis";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import { afterAll, test } from "vitest";
 import { createApp } from "~/index";
-import { type AppContext, createAppServices } from "~/lib/ctx";
-import { createStorageClient } from "~/lib/storage";
+import {
+    type AppContext,
+    createAppServices,
+    createTestAppContext as createBaseTestAppContext,
+} from "~/lib/ctx";
 import { createTestUtils } from "./util";
 
 /**
@@ -27,19 +19,9 @@ import { createTestUtils } from "./util";
  */
 export type TestAppContext = AppContext & {
     /**
-     * Running Redis container for direct test-container manipulation
-     */
-    _redisContainer: StartedRedisContainer;
-
-    /**
      * Running Postgres container for direct test-container manipulation
      */
     _postgresContainer: StartedPostgreSqlContainer;
-
-    /**
-     * Running MinIO container for direct test-container manipulation
-     */
-    _minioContainer: StartedMinioContainer;
 
     /**
      * The pool instance that Drizzle uses for low level control
@@ -62,7 +44,8 @@ let sharedTestContext: TestAppContext | null = null;
 const POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME = "after-migration";
 
 async function createPostgres() {
-    // Setup Postgres
+    // TODO(PGLite): Replace this function with a PGLite-backed DbSchema
+    // instance and remove the remaining testcontainer dependency.
     const postgresContainer = await new PostgreSqlContainer(
         "postgres:17.6",
     ).start();
@@ -90,97 +73,22 @@ async function createPostgres() {
     };
 }
 
-async function createRedis() {
-    // Setup Redis
-    const redisContainer = await new RedisContainer("redis:7.4-alpine").start();
-    const redisUrl = redisContainer.getConnectionUrl();
-    const redis = await createRedisClient(redisUrl);
-
-    return {
-        container: redisContainer,
-        redis,
-        redisUrl,
-    };
-}
-
-async function createMinio() {
-    // Setup MinIO
-    const minioContainer = await new MinioContainer(
-        "minio/minio:latest",
-    ).start();
-
-    return {
-        container: minioContainer,
-        endpoint: `${minioContainer.getHost()}:${minioContainer.getPort()}`,
-        accessKeyId: minioContainer.getUsername(),
-        secretAccessKey: minioContainer.getPassword(),
-    };
-}
-
 /**
  * Create a test context with test container instances.
  * This should be called once per test file in beforeAll.
  */
 async function createTestAppContext(): Promise<TestAppContext> {
-    const [postgresVals, redisVals, minioVals] = await Promise.all([
-        createPostgres(),
-        createRedis(),
-        createMinio(),
-    ]);
+    const postgresVals = await createPostgres();
     const {
         container: postgresContainer,
         pool: newPool,
         db: newDb,
     } = postgresVals;
-    const { container: redisContainer, redis, redisUrl } = redisVals;
-    const {
-        container: minioContainer,
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-    } = minioVals;
-
-    // Create storage client with database for file tracking
-    const bucket = await createStorageClient({
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-        bucketName: "test-bucket",
-        useSSL: false,
-        db: newDb,
-    });
-
-    // Setup Bull queues
-    const queue = new QueueManager(redisUrl);
-
-    // Setup auth
-    const auth = createAuth(
-        {
-            db: newDb,
-            redis,
-            queue,
-            mailer: undefined,
-            bucket,
-        },
-        {
-            isDev: true,
-        },
-    );
-
-    const defaultContext: AppContext = {
-        db: newDb,
-        queue,
-        redis,
-        auth,
-        mailer: undefined, // No email sending in tests
-        bucket,
-    };
+    const defaultContext = await createBaseTestAppContext({ db: newDb });
 
     return {
         ...defaultContext,
         _postgresContainer: postgresContainer,
-        _redisContainer: redisContainer,
-        _minioContainer: minioContainer,
         _postgresPool: newPool,
     };
 }
@@ -205,50 +113,8 @@ async function resetDatabase(ctx: TestAppContext): Promise<void> {
 
     // Recreate db instance
     const newDb = createDb({ pool: newPool });
-    ctx.db = newDb;
-
-    // Recreate auth with new db
-    ctx.auth = createAuth(
-        {
-            db: newDb,
-            redis: ctx.redis,
-            queue: ctx.queue,
-            mailer: undefined,
-            bucket: ctx.bucket,
-        },
-        {
-            isDev: true,
-        },
-    );
-}
-
-/**
- * Flush all Redis data.
- * Call this in beforeEach to ensure a fresh Redis for each test.
- */
-async function resetRedis(ctx: TestAppContext): Promise<void> {
-    await ctx.redis.flushAll();
-}
-
-/**
- * Reset MinIO bucket by recreating the storage client with a fresh bucket.
- * Call this in beforeEach to ensure a fresh bucket for each test.
- */
-async function resetBucket(ctx: TestAppContext): Promise<void> {
-    // For now, we'll just recreate the bucket client
-    // In the future, we could delete all objects in the bucket
-    const endpoint = `${ctx._minioContainer.getHost()}:${ctx._minioContainer.getPort()}`;
-    const accessKeyId = ctx._minioContainer.getUsername();
-    const secretAccessKey = ctx._minioContainer.getPassword();
-
-    ctx.bucket = await createStorageClient({
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-        bucketName: "test-bucket",
-        useSSL: false,
-        db: ctx.db,
-    });
+    const refreshedContext = await createBaseTestAppContext({ db: newDb });
+    Object.assign(ctx, refreshedContext);
 }
 
 /**
@@ -258,13 +124,10 @@ async function resetBucket(ctx: TestAppContext): Promise<void> {
 async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
     // Close client connections
     await ctx._postgresPool?.end();
-    ctx.redis.destroy();
 
     // Destroy containers
     await Promise.all([
-        ctx._redisContainer?.stop({ remove: true, timeout: 1000 }),
         ctx._postgresContainer?.stop({ remove: true, timeout: 1000 }),
-        ctx._minioContainer?.stop({ remove: true, timeout: 1000 }),
     ]);
 }
 
@@ -278,27 +141,28 @@ export type IntegrationTestContext = {
 } & AppContext;
 
 /**
- * Extends the base test with file-scoped test containers and per-test database/Redis reset.
+ * Extends the base test with a file-scoped Postgres testcontainer and
+ * per-test service reset.
  *
  * The `ctx` fixture provides:
  * - A hono app instance to perform requests
- * - Common services such as database and redis for direct access
+ * - Common services such as database, cache, queue, email, and storage
  * - Test utilities for common operations
  *
  * Setup and teardown behavior:
- * - beforeAll: Creates containers once per test file (Postgres + Redis)
- * - beforeEach: Truncates all tables and flushes Redis
- * - afterAll: Stops containers and closes connections
+ * - beforeAll: Creates the Postgres container once per test file
+ * - beforeEach: Restores the Postgres snapshot and recreates test services
+ * - afterAll: Stops the Postgres container and closes connections
  *
  * This approach significantly improves performance by:
  * - Reusing containers across tests in the same file
  * - Truncating tables instead of re-migrating
- * - Only flushing Redis instead of recreating containers
+ * - Using in-memory services for cache, queue, email, and storage
  *
  * @example
  * integrationTest.describe('My feature', () => {
  *   integrationTest('should do something', async ({ ctx }) => {
- *     const { db, redis, app, utils } = ctx;
+ *     const { db, cache, app, utils } = ctx;
  *
  *     // Test with fresh database state
  *     const response = await utils.client.get('/api/endpoint');
@@ -331,8 +195,6 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
 
             // Reset state before each test
             await resetDatabase(sharedTestContext);
-            await resetRedis(sharedTestContext);
-            await resetBucket(sharedTestContext);
         },
         { scope: "test", auto: true },
     ],

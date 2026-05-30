@@ -1,4 +1,4 @@
-import { BaseCache } from ".";
+import { BaseCache } from "./base";
 
 export class InMemoryCache extends BaseCache {
     #cache: Map<string, { value: unknown; expires: number }>;

@@ -57,6 +57,7 @@ const envSchema = z
             .string()
             .default("1")
             .transform((val) => Number(val)),
+        AUTH_SECRET: z.string(),
 
         // DATABASE
         DATABASE_URL: z.string().default(""),

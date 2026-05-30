@@ -35,9 +35,7 @@
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
-        "@testcontainers/minio": "^11.8.0",
         "@testcontainers/postgresql": "^11.7.0",
-        "@testcontainers/redis": "^11.7.0",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "@types/node-cron": "^3.0.11",

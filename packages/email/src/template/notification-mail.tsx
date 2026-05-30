@@ -11,7 +11,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface NotificationMailProps {
+export interface NotificationMailProps {
     title: string;
     description: string;
     link?: string;

@@ -10,7 +10,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface FormSubmissionDeletedEmailProps {
+export interface FormSubmissionDeletedEmailProps {
     formTitle: string;
     reason: string;
     logoUrl: string;

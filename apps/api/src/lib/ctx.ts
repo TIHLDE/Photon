@@ -1,11 +1,26 @@
 import { type AuthInstance, createAuth, drizzleAdapter } from "@photon/auth";
-import { QueueManager } from "@photon/core/services/queue";
+import {
+    InMemoryQueueService,
+    QueueManager,
+    type QueueService,
+} from "@photon/core/services/queue";
+import { InMemoryObjectStorageService } from "@photon/core/services/storage";
 import { env } from "@photon/core/env";
 import { type DbSchema, createDb } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type ApiKeyService, createApiKeyService } from "./service/api-key";
-import { type StorageClient, createStorageClient } from "./storage";
-import { CacheService, EmailService } from "@photon/core/services";
+import {
+    DatabaseAssetStorageService,
+    type StorageService,
+    createStorageClient,
+} from "./storage";
+import {
+    ConsoleEmailService,
+    QueuedEmailService,
+    SMTPEmailService,
+    type CacheService,
+    type EmailService,
+} from "@photon/core/services";
 import { RedisCache, InMemoryCache } from "@photon/core/services/cache";
 
 /**
@@ -19,26 +34,29 @@ export interface AppContext {
     /** Cache service instance */
     cache: CacheService;
     /** Queue service instance */
-    queue: QueueManager; // TODO: Rename to QueueService
+    queue: QueueService;
     /** Email service instance */
     email: EmailService;
+    /** Direct email transport used by queue workers */
+    emailDelivery: EmailService;
     /** Storage bucket (S3) service instance */
-    bucket: StorageClient;
+    bucket: StorageService;
 }
 
-export async function createMainAppContext(): Promise<AppContext> {
+export async function createAppContext(): Promise<AppContext> {
     const db = createDb({ connectionString: env.DATABASE_URL });
     const cache = await RedisCache.create(env.REDIS_URL);
-    const queue = new QueueManager();
-    const email = new EmailService();
+    const queue = new QueueManager(env.REDIS_URL);
+    const email = new QueuedEmailService(queue);
+    const emailDelivery = createEmailDeliveryService();
     const bucket = await createStorageClient({ db });
 
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
         services: {
             database: drizzleAdapter(db, { provider: "pg" }),
-            cache: await RedisCache.create(env.REDIS_URL),
-            email: {} as EmailService,
+            cache,
+            email,
         },
         oauth: {
             pages: {
@@ -47,16 +65,13 @@ export async function createMainAppContext(): Promise<AppContext> {
             },
         },
         urls: {
-            // TODO: Do some conditional logic here based on if we're in dev or prod
-            backend: "https://photon.tihlde.org",
-            frontend: "https://tihlde.org",
-            additionalTrusted: [
-                "https://photon.tihlde.org",
-                "https://tihlde.org",
-            ],
+            backend: env.ROOT_URL,
+            frontend: env.WEBSITE_URL,
+            additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
             basePath: "/api/auth",
         },
         secret: env.AUTH_SECRET,
+        DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
     });
     return {
         db,
@@ -64,25 +79,79 @@ export async function createMainAppContext(): Promise<AppContext> {
         cache,
         queue,
         email,
+        emailDelivery,
         bucket,
     };
 }
 
-export async function createTestAppContext(): Promise<AppContext> {
-    // TODO: Replace with test database PGLite
-    const db = createDb({ connectionString: env.DATABASE_URL });
+export const createMainAppContext = createAppContext;
+
+export async function createTestAppContext(options?: {
+    db?: NodePgDatabase<DbSchema>;
+}): Promise<AppContext> {
+    const db = options?.db ?? createDb({ connectionString: env.DATABASE_URL });
+    const cache = new InMemoryCache();
+    const queue = new InMemoryQueueService();
+    const email = new ConsoleEmailService();
+    const bucket = new DatabaseAssetStorageService(
+        new InMemoryObjectStorageService(),
+        db,
+    );
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
         services: {
             database: drizzleAdapter(db, { provider: "pg" }),
-            cache: new InMemoryCache(),
-            email: new EmailService(),
+            cache,
+            email,
         },
+        oauth: {
+            pages: {
+                consent: "/consent",
+                login: "/login",
+            },
+        },
+        urls: {
+            backend: env.ROOT_URL,
+            frontend: env.WEBSITE_URL,
+            additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
+            basePath: "/api/auth",
+        },
+        secret: env.AUTH_SECRET,
+        DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: true,
     });
+
+    return {
+        db,
+        auth,
+        cache,
+        queue,
+        email,
+        emailDelivery: email,
+        bucket,
+    };
 }
 
 export interface AppServices {
     apiKey: ApiKeyService;
+}
+
+function createEmailDeliveryService(): EmailService {
+    if (!env.MAIL_HOST) {
+        return new ConsoleEmailService();
+    }
+
+    return new SMTPEmailService({
+        host: env.MAIL_HOST,
+        port: env.MAIL_PORT,
+        secure: env.MAIL_PORT === 465,
+        auth:
+            env.MAIL_USER && env.MAIL_PASS
+                ? {
+                      user: env.MAIL_USER,
+                      pass: env.MAIL_PASS,
+                  }
+                : undefined,
+    } as ConstructorParameters<typeof SMTPEmailService>[0]);
 }
 
 export function createAppServices(ctx: AppContext): AppServices {

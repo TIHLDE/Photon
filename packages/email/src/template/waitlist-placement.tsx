@@ -12,7 +12,7 @@ import {
 import React from "react";
 import { emailStyles } from "./styles";
 
-interface WaitlistPlacementEmailProps {
+export interface WaitlistPlacementEmailProps {
     eventName: string;
     eventUrl: string;
     position: number;
