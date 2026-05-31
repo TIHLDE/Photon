@@ -1,9 +1,8 @@
 import { schema } from "@photon/db";
-import { enqueueEmail } from "@photon/email";
-import { FormSubmissionDeletedEmail } from "@photon/email/templates";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -57,16 +56,18 @@ export const deleteSubmissionWithReasonRoute = route().delete(
         }
 
         // Send email to submitter
-        await enqueueEmail(
+        await ctx.email.sendEmailTemplate(
             {
+                from: env.MAIL_FROM,
                 to: submission.user.email,
                 subject: "Ditt svar på spørreskjemaet har blitt slettet",
-                component: FormSubmissionDeletedEmail({
-                    formTitle: submission.form.title,
-                    reason: body.reason,
-                }),
             },
-            { queue: ctx.queue },
+            "FormSubmissionDeletedEmail",
+            {
+                formTitle: submission.form.title,
+                reason: body.reason,
+                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+            },
         );
 
         // Delete submission (cascades to answers)

@@ -1308,7 +1308,6 @@ export interface components {
         SendEmailResponse: {
             success: boolean;
             message: string;
-            jobIds: string[];
             recipientCount: number;
         };
         SendCustomEmail: {

@@ -91,7 +91,8 @@ export async function createTestAppContext(options?: {
     const db = options?.db ?? createDb({ connectionString: env.DATABASE_URL });
     const cache = new InMemoryCache();
     const queue = new InMemoryQueueService();
-    const email = new ConsoleEmailService();
+    const email = new QueuedEmailService(queue);
+    const emailDelivery = new ConsoleEmailService();
     const bucket = new DatabaseAssetStorageService(
         new InMemoryObjectStorageService(),
         db,
@@ -124,7 +125,7 @@ export async function createTestAppContext(options?: {
         cache,
         queue,
         email,
-        emailDelivery: email,
+        emailDelivery,
         bucket,
     };
 }

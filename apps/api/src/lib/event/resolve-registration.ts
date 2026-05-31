@@ -1,11 +1,5 @@
 import { schema } from "@photon/db";
 import type { RegistrationStatus } from "@photon/db/schema";
-import {
-    RegistrationBlockedEmail,
-    RegistrationConfirmedEmail,
-    SwappedToWaitlistEmail,
-    WaitlistPlacementEmail,
-} from "@photon/email/templates";
 import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
@@ -135,10 +129,14 @@ export async function resolveRegistrationsForEvent(
                         title: "Påmelding ikke godkjent",
                         description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
                         link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
-                        customEmailTemplate: RegistrationBlockedEmail({
-                            eventName: event.title,
-                            reason,
-                        }),
+                        emailTemplate: {
+                            name: "RegistrationBlockedEmail",
+                            props: {
+                                eventName: event.title,
+                                reason,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
                     txCtx,
                 );
@@ -259,10 +257,14 @@ export async function resolveRegistrationsForEvent(
                         title: `Du er påmeldt ${event.title}!`,
                         description: `Din påmelding til ${event.title} er bekreftet.`,
                         link: eventUrl,
-                        customEmailTemplate: RegistrationConfirmedEmail({
-                            eventName: event.title,
-                            eventUrl,
-                        }),
+                        emailTemplate: {
+                            name: "RegistrationConfirmedEmail",
+                            props: {
+                                eventName: event.title,
+                                eventUrl,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
                     txCtx,
                 );
@@ -273,11 +275,15 @@ export async function resolveRegistrationsForEvent(
                         title: `Du er på venteliste for ${event.title}`,
                         description: `Du er nå på venteliste for ${event.title} (posisjon ${waitlistPosition}).`,
                         link: eventUrl,
-                        customEmailTemplate: WaitlistPlacementEmail({
-                            eventName: event.title,
-                            eventUrl,
-                            position: waitlistPosition,
-                        }),
+                        emailTemplate: {
+                            name: "WaitlistPlacementEmail",
+                            props: {
+                                eventName: event.title,
+                                eventUrl,
+                                position: waitlistPosition,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
                     txCtx,
                 );
@@ -330,11 +336,15 @@ export async function resolveRegistrationsForEvent(
                                 title: `Endring i din påmelding til ${event.title}`,
                                 description: `Din påmelding til ${event.title} har blitt flyttet til venteliste (posisjon ${newPosition}).`,
                                 link: eventUrl,
-                                customEmailTemplate: SwappedToWaitlistEmail({
-                                    eventName: event.title,
-                                    eventUrl,
-                                    position: newPosition,
-                                }),
+                                emailTemplate: {
+                                    name: "SwappedToWaitlistEmail",
+                                    props: {
+                                        eventName: event.title,
+                                        eventUrl,
+                                        position: newPosition,
+                                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                                    },
+                                },
                             },
                             txCtx,
                         );

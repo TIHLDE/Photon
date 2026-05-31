@@ -1,8 +1,7 @@
 import { schema } from "@photon/db";
-import { enqueueEmail } from "@photon/email";
-import { ContractSignedEmail } from "@photon/email/templates";
 import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -35,7 +34,7 @@ export const signContractRoute = route().post(
             });
         }
 
-        const { db, queue } = c.get("ctx");
+        const { db, email } = c.get("ctx");
 
         const activeContract = await db.query.contract.findFirst({
             where: eq(schema.contract.isActive, true),
@@ -112,17 +111,19 @@ export const signContractRoute = route().post(
                 grp.contactEmail ?? leaderEmailByGroup.get(grp.slug) ?? null;
 
             if (notifyEmail) {
-                await enqueueEmail(
+                await email.sendEmailTemplate(
                     {
+                        from: env.MAIL_FROM,
                         to: notifyEmail,
                         subject: `${user.name} har signert frivillighetskontrakten`,
-                        component: ContractSignedEmail({
-                            memberName: user.name,
-                            groupName: grp.name,
-                            signedAt: signature.signedAt.toISOString(),
-                        }),
                     },
-                    { queue },
+                    "ContractSignedEmail",
+                    {
+                        memberName: user.name,
+                        groupName: grp.name,
+                        signedAt: signature.signedAt.toISOString(),
+                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                    },
                 );
             }
         }

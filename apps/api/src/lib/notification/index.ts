@@ -1,8 +1,17 @@
 import { schema } from "@photon/db";
-import { enqueueEmail } from "@photon/email";
-import { NotificationMail } from "@photon/email/templates";
-import type { ReactElement } from "react";
+import type {
+    EmailTemplateName,
+    EmailTemplateOptions,
+} from "@photon/email/templates";
 import type { AppContext } from "../ctx";
+import { env } from "../env";
+
+type EmailTemplateOverride = {
+    [TName in EmailTemplateName]: {
+        name: TName;
+        props: EmailTemplateOptions<TName>;
+    };
+}[EmailTemplateName];
 
 export type SendNotificationOptions = {
     userId: string;
@@ -13,7 +22,7 @@ export type SendNotificationOptions = {
         website?: boolean;
         email?: boolean;
     };
-    customEmailTemplate?: ReactElement;
+    emailTemplate?: EmailTemplateOverride;
 };
 
 /**
@@ -29,7 +38,7 @@ export type SendNotificationOptions = {
  * @param options.description Notification description
  * @param options.link Optional link URL
  * @param options.sendTo Where to send the notification (default: {website: true, email: true})
- * @param options.customEmailTemplate Optional custom email template (if not provided, uses NotificationMail)
+ * @param options.emailTemplate Optional custom email template (if not provided, uses NotificationMail)
  * @param ctx Application context
  * @returns The created notification record (if website notification was created), or null
  */
@@ -43,7 +52,7 @@ export async function sendNotification(
         description,
         link,
         sendTo = { website: true, email: true },
-        customEmailTemplate,
+        emailTemplate,
     } = options;
 
     // Default both to true if not specified
@@ -51,9 +60,9 @@ export async function sendNotification(
     const shouldSendToEmail = sendTo.email ?? true;
 
     // Validate: if email is true, we need either a custom template or valid notification data
-    if (shouldSendToEmail && !customEmailTemplate && (!title || !description)) {
+    if (shouldSendToEmail && !emailTemplate && (!title || !description)) {
         throw new Error(
-            "Either customEmailTemplate or both title and description must be provided for email notifications",
+            "Either emailTemplate or both title and description must be provided for email notifications",
         );
     }
 
@@ -95,22 +104,25 @@ export async function sendNotification(
             throw new Error(`User not found: ${userId}`);
         }
 
-        // Use custom template if provided, otherwise use NotificationMail
-        const emailComponent =
-            customEmailTemplate ??
-            NotificationMail({
+        let template: EmailTemplateOverride | undefined = emailTemplate;
+        template ??= {
+            name: "NotificationMail",
+            props: {
                 title,
                 description,
                 link,
-            });
+                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+            },
+        };
 
-        await enqueueEmail(
+        await ctx.email.sendEmailTemplate(
             {
+                from: env.MAIL_FROM,
                 to: user.email,
                 subject: title,
-                component: emailComponent,
             },
-            ctx,
+            template.name,
+            template.props,
         );
     }
 
