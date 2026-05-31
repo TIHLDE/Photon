@@ -28,7 +28,7 @@
  * })
  */
 
-import type { Session, User } from "@photon/auth";
+import type { AuthSession, AuthUser } from "@photon/auth";
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
@@ -36,8 +36,8 @@ import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
 
 type Variables = {
-    user: User | null;
-    session: Session | null;
+    user: AuthUser | null;
+    session: AuthSession | null;
     ctx: AppContext;
     isResourceOwner?: boolean;
 };

@@ -1,4 +1,3 @@
-import { parseBearer } from "@photon/auth/bearer";
 import { enqueueEmail } from "@photon/email";
 import { CustomEmail } from "@photon/email/templates";
 import type { MiddlewareHandler } from "hono";
@@ -9,6 +8,7 @@ import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { sendCustomEmailInputSchema, sendEmailResponseSchema } from "./schema";
+import { getBearerTokenFromHeader } from "~/lib/auth";
 
 /**
  * Middleware to validate API key from Bearer token
@@ -22,12 +22,14 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
         });
     }
 
-    const result = parseBearer(c.req.header("Authorization"));
-    if (!result.success) {
-        throw new HTTPException(401, { message: result.error });
+    const result = getBearerTokenFromHeader(c.req.header("Authorization"));
+    if (result == null) {
+        throw new HTTPException(401, {
+            message: "Invalid Authorization header format",
+        });
     }
 
-    if (result.token !== apiKey) {
+    if (result !== apiKey) {
         throw new HTTPException(403, {
             message: "Invalid API key",
         });

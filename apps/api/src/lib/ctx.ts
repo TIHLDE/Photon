@@ -6,7 +6,7 @@ import {
 } from "@photon/core/services/queue";
 import { InMemoryObjectStorageService } from "@photon/core/services/storage";
 import { env } from "@photon/core/env";
-import { type DbSchema, createDb } from "@photon/db";
+import { type DbSchema, createDb, schema } from "@photon/db";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { type ApiKeyService, createApiKeyService } from "./service/api-key";
 import {
@@ -54,7 +54,7 @@ export async function createAppContext(): Promise<AppContext> {
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
         services: {
-            database: drizzleAdapter(db, { provider: "pg" }),
+            database: drizzleAdapter(db, { provider: "pg", schema }),
             cache,
             email,
         },
@@ -70,7 +70,6 @@ export async function createAppContext(): Promise<AppContext> {
             additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
             basePath: "/api/auth",
         },
-        secret: env.AUTH_SECRET,
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
     });
     return {
@@ -100,7 +99,7 @@ export async function createTestAppContext(options?: {
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
         services: {
-            database: drizzleAdapter(db, { provider: "pg" }),
+            database: drizzleAdapter(db, { provider: "pg", schema }),
             cache,
             email,
         },
@@ -116,7 +115,6 @@ export async function createTestAppContext(options?: {
             additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
             basePath: "/api/auth",
         },
-        secret: env.AUTH_SECRET,
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: true,
     });
 

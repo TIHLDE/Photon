@@ -9,7 +9,6 @@ import type { EmailService, CacheService } from "@photon/core/services";
 
 export interface CreateAuthOptions {
     isDevMode?: boolean;
-    secret: string;
 
     urls: {
         frontend: string;
@@ -60,7 +59,6 @@ export function createAuth(options: CreateAuthOptions) {
         secondaryStorage: options.services.cache,
 
         basePath: options.urls.basePath,
-        secret: options.secret,
         trustedOrigins: [
             options.urls.backend,
             options.urls.frontend,
@@ -106,6 +104,7 @@ export function createAuth(options: CreateAuthOptions) {
         session: {
             expiresIn: 60 * 60 * 24 * 30, // 30d
             updateAge: 60 * 60 * 24, // 1d
+            storeSessionInDatabase: true,
             cookieCache: { enabled: true, maxAge: 60 * 5 },
         },
 
@@ -124,7 +123,6 @@ export function createAuth(options: CreateAuthOptions) {
         disabledPaths: ["/token"],
 
         plugins: [
-            jwt(),
             admin(),
             openAPI(),
             // TODO: Add feide plugin later

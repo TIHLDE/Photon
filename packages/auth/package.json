@@ -8,6 +8,7 @@
         "./rbac": "./src/rbac/permissions/index.ts",
         "./rbac/registry": "./src/rbac/permissions/registry.ts",
         "./roles": "./src/rbac/roles/index.ts",
+        "./oauth-verify": "./src/oauth-verify.ts",
         "./feide": "./src/feide.ts",
         "./client": "./src/client.ts"
     },
@@ -20,7 +21,9 @@
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
         "better-auth": "catalog:backend",
-        "drizzle-orm": "catalog:backend"
+        "drizzle-orm": "catalog:backend",
+        "jose": "catalog:backend",
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
