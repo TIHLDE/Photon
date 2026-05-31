@@ -33,6 +33,8 @@ export async function resolveRegistrationsForEvent(
 ): Promise<void> {
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
+        const txCtx = { ...ctx, db: tx };
+
         // Step 1: Fetch all pending registrations for this event with FOR UPDATE lock
         // This prevents concurrent processing of the same registrations
         const pendingRegistrations = await tx
@@ -104,11 +106,8 @@ export async function resolveRegistrationsForEvent(
         for (const registration of pendingRegistrations) {
             const { userId, createdAt } = registration;
 
-            // Fetch user data in parallel
-            const [userGroupSlugs, strikeCount] = await Promise.all([
-                getUserGroupSlugs(userId, tx),
-                getUserStrikeCount(userId, tx),
-            ]);
+            const userGroupSlugs = await getUserGroupSlugs(userId, tx);
+            const strikeCount = await getUserStrikeCount(userId, tx);
 
             // Check strike-based timing restriction
             const { allowed, reason } = canRegisterBasedOnStrikes(
@@ -141,7 +140,7 @@ export async function resolveRegistrationsForEvent(
                             reason,
                         }),
                     },
-                    ctx,
+                    txCtx,
                 );
                 console.log(
                     `User ${userId} blocked from registration: ${reason}`,
@@ -265,7 +264,7 @@ export async function resolveRegistrationsForEvent(
                             eventUrl,
                         }),
                     },
-                    ctx,
+                    txCtx,
                 );
             } else if (finalStatus === "waitlisted" && waitlistPosition) {
                 await sendNotification(
@@ -280,7 +279,7 @@ export async function resolveRegistrationsForEvent(
                             position: waitlistPosition,
                         }),
                     },
-                    ctx,
+                    txCtx,
                 );
             }
 
@@ -337,7 +336,7 @@ export async function resolveRegistrationsForEvent(
                                     position: newPosition,
                                 }),
                             },
-                            ctx,
+                            txCtx,
                         );
                     }
                 }

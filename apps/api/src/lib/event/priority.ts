@@ -90,10 +90,8 @@ export async function findSwapTarget(
 
     // Find the first non-prioritized user
     for (const reg of registered) {
-        const [userGroupSlugs, strikeCount] = await Promise.all([
-            getUserGroupSlugs(reg.userId, db),
-            getUserStrikeCount(reg.userId, db),
-        ]);
+        const userGroupSlugs = await getUserGroupSlugs(reg.userId, db);
+        const strikeCount = await getUserStrikeCount(reg.userId, db);
 
         const isPrioritized = isUserPrioritized({
             userGroupSlugs,
@@ -143,10 +141,8 @@ export async function calculateWaitlistPosition(
     const nonPrioritizedList: Registration[] = [];
 
     for (const reg of waitlisted) {
-        const [userGroupSlugs, strikeCount] = await Promise.all([
-            getUserGroupSlugs(reg.userId, db),
-            getUserStrikeCount(reg.userId, db),
-        ]);
+        const userGroupSlugs = await getUserGroupSlugs(reg.userId, db);
+        const strikeCount = await getUserStrikeCount(reg.userId, db);
 
         const isPrioritized = isUserPrioritized({
             userGroupSlugs,
