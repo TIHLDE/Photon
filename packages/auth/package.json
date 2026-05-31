@@ -13,7 +13,7 @@
         "./client": "./src/client.ts"
     },
     "scripts": {
-        "auth:generate-schema": "bunx auth@latest generate -y --config ./src/cli-auth-instance.ts --output ./src/__db_schema.ts"
+        "auth:generate-schema": "bun run scripts/generate-auth-schema.ts"
     },
     "dependencies": {
         "@better-auth/oauth-provider": "catalog:backend",
