@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { EventCard, type EventCardProps } from "#/components/event-card";
 import { NewsCard, type NewsCardProps } from "#/components/news-card";
 import { TihldeLogo } from "#/components/icons/tihlde";
+import { HeroSectionBackground } from "#/components/hero-section";
 
 export const Route = createFileRoute("/_app/")({ component: Home });
 
@@ -125,28 +126,31 @@ function Home() {
 
 function Hero() {
     return (
-        <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-16 text-center">
-            <div className="flex items-center gap-1">
-                {/* TODO: Change color here */}
-                <div className="size-20">
-                    <TihldeLogo />
+        <div className="relative">
+            <HeroSectionBackground className="h-full text-primary dark:opacity-15 opacity-40 -z-50" />
+            <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-50 text-center">
+                <div className="flex items-center gap-1">
+                    {/* TODO: Change color here */}
+                    <div className="size-20">
+                        <TihldeLogo />
+                    </div>
+                    <span className="text-5xl font-stretch-condensed font-extrabold">
+                        TIHLDE
+                    </span>
                 </div>
-                <span className="text-5xl font-stretch-condensed font-extrabold">
-                    TIHLDE
-                </span>
-            </div>
-            <p className="max-w-2xl text-balance">
-                Linjeforeningen for Dataingeniør, Digital infrastruktur og
-                cybersikkerhet, Digital forretningsutvikling, Digital
-                transformasjon og Informasjonsbehandling ved NTNU.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-                <Button size="lg">Logg inn</Button>
-                <Button size="lg" variant="outline">
-                    Opprett bruker
-                </Button>
-            </div>
-        </section>
+                <p className="max-w-2xl text-balance">
+                    Linjeforeningen for Dataingeniør, Digital infrastruktur og
+                    cybersikkerhet, Digital forretningsutvikling, Digital
+                    transformasjon og Informasjonsbehandling ved NTNU.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button size="lg">Logg inn</Button>
+                    <Button size="lg" variant="outline">
+                        Opprett bruker
+                    </Button>
+                </div>
+            </section>
+        </div>
     );
 }
 
