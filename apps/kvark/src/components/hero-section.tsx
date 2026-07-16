@@ -14,6 +14,31 @@ const contentFadeYRadius = svgHeight * 0.42;
 const scrollDurationSeconds = 24;
 const formatCoordinate = (value: number) => value.toFixed(1);
 
+// Heartbeat pulse: a light-blue highlight sweeps across the waves in ~2s,
+// then rests until the next beat — an 8s cycle (2s / 8s = 0.25 keyTime).
+// Electric blue: a saturated theme-primary (navy-500) halo around a bright,
+// near-white blue core line — reads as a neon/electric glow within the theme.
+const pulseGlowColor = "#1B61E4";
+const pulseCoreColor = "#9AC2FF";
+const pulseCycleSeconds = 14;
+const pulseBandWidth = 900;
+// Slow, smooth right-to-left glide (Stripe-like): one soft glow drifts across
+// over ~8s with gentle ease-in-out, then rests off-screen until the next pass.
+const pulseKeyTimes = "0;0.57;1";
+const pulseValues = [
+    `${svgWidth} 0`,
+    `-${pulseBandWidth} 0`,
+    `-${pulseBandWidth} 0`,
+].join(";");
+const pulseKeySplines = "0.42 0 0.58 1;0 0 1 1";
+// Smooth Gaussian falloff for the glow band. Many closely-spaced stops avoid
+// the visible slope-change "bands" (Mach banding) that a few stops produce.
+const pulseStops = Array.from({ length: 25 }, (_, i) => {
+    const offset = i / 24;
+    const opacity = Math.exp(-Math.pow((offset - 0.5) / 0.22, 2));
+    return { offset, opacity };
+});
+
 type WaveConfig = {
     yBase: number;
     amp: number;
@@ -65,6 +90,9 @@ export function HeroSectionBackground({ className }: { className?: string }) {
     const vignetteGradientId = `${fadeId}-vignette-gradient`;
     const contentFadeGradientId = `${fadeId}-content-fade-gradient`;
     const vignetteMaskId = `${fadeId}-vignette-mask`;
+    const pulseGradientId = `${fadeId}-pulse-gradient`;
+    const pulseMaskId = `${fadeId}-pulse-mask`;
+    const pulseGlowId = `${fadeId}-pulse-glow`;
 
     const paths = React.useMemo(
         () =>
@@ -138,8 +166,61 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                         fill={`url(#${contentFadeGradientId})`}
                     />
                 </mask>
+                <linearGradient
+                    id={pulseGradientId}
+                    gradientUnits="userSpaceOnUse"
+                    x1="0"
+                    y1="0"
+                    x2={pulseBandWidth}
+                    y2="0"
+                >
+                    {pulseStops.map((stop) => (
+                        <stop
+                            key={stop.offset}
+                            offset={stop.offset}
+                            stopColor="white"
+                            stopOpacity={stop.opacity}
+                        />
+                    ))}
+                    <animateTransform
+                        attributeName="gradientTransform"
+                        type="translate"
+                        dur={`${pulseCycleSeconds}s`}
+                        keyTimes={pulseKeyTimes}
+                        keySplines={pulseKeySplines}
+                        calcMode="spline"
+                        values={pulseValues}
+                        repeatCount="indefinite"
+                    />
+                </linearGradient>
+                <mask
+                    id={pulseMaskId}
+                    maskUnits="userSpaceOnUse"
+                    x="0"
+                    y="0"
+                    width={svgWidth}
+                    height={svgHeight}
+                >
+                    <rect
+                        width={svgWidth}
+                        height={svgHeight}
+                        fill={`url(#${pulseGradientId})`}
+                    />
+                </mask>
+                <filter
+                    id={pulseGlowId}
+                    x="-20%"
+                    y="-20%"
+                    width="140%"
+                    height="140%"
+                >
+                    <feGaussianBlur stdDeviation="3" />
+                </filter>
             </defs>
-            <g mask={`url(#${vignetteMaskId})`}>
+            <g
+                className="opacity-40 dark:opacity-[0.18]"
+                mask={`url(#${vignetteMaskId})`}
+            >
                 <g>
                     <animateTransform
                         attributeName="transform"
@@ -158,6 +239,40 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                             strokeWidth={0.8}
                         />
                     ))}
+                </g>
+            </g>
+            <g mask={`url(#${pulseMaskId})`}>
+                <g mask={`url(#${vignetteMaskId})`}>
+                    <g>
+                        <animateTransform
+                            attributeName="transform"
+                            dur={`${scrollDurationSeconds}s`}
+                            from="0 0"
+                            repeatCount="indefinite"
+                            to={`-${waveLoopDistance} 0`}
+                            type="translate"
+                        />
+                        {paths.map((path, i) => (
+                            <path
+                                key={`glow-${i}`}
+                                d={path}
+                                fill="none"
+                                stroke={pulseGlowColor}
+                                strokeWidth={7}
+                                strokeOpacity={0.7}
+                                filter={`url(#${pulseGlowId})`}
+                            />
+                        ))}
+                        {paths.map((path, i) => (
+                            <path
+                                key={`beat-${i}`}
+                                d={path}
+                                fill="none"
+                                stroke={pulseCoreColor}
+                                strokeWidth={1.6}
+                            />
+                        ))}
+                    </g>
                 </g>
             </g>
         </svg>
