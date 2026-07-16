@@ -1,0 +1,11 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "name": "kvark",
+            "runtimeExecutable": "bun",
+            "runtimeArgs": ["run", "--filter", "kvark", "dev"],
+            "port": 3000
+        }
+    ]
+}

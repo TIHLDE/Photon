@@ -127,7 +127,7 @@ function Home() {
 function Hero() {
     return (
         <div className="relative">
-            <HeroSectionBackground className="h-full text-primary dark:opacity-15 opacity-40 -z-50" />
+            <HeroSectionBackground className="h-full text-primary -z-50" />
             <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-50 text-center">
                 <div className="flex items-center gap-1">
                     {/* TODO: Change color here */}
