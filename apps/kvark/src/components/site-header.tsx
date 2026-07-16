@@ -113,7 +113,9 @@ export function SiteHeader({ navItems, user }: SiteHeaderProps) {
                 <div className="flex items-center gap-2">
                     <ThemeSwitcher />
                     <Link
-                        to={user ? "/profil/me" : "/login"}
+                        {...(user
+                            ? { to: "/profil/$id", params: { id: "me" } }
+                            : { to: "/login" })}
                         aria-label={user ? "Gå til profil" : "Logg inn"}
                     >
                         <Avatar className="size-8">

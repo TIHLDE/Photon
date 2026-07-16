@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -26,149 +27,21 @@ import type {
 import { CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 
+import { getGroupsQuery, updateGroupMutation } from "#/api/queries/groups";
+import {
+    getGroupSignaturesQuery,
+    revokeSignatureMutation,
+} from "#/api/queries/contracts";
+
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getGroupsQuery(0)),
 });
 
-const MOCK_GROUPS: Group[] = [
-    {
-        slug: "index",
-        name: "Index",
-        description: "Linjeforeningens IT-gruppe",
-        imageUrl: null,
-        contactEmail: "index@tihlde.org",
-        type: "committee",
-        finesInfo: "",
-        finesActivated: false,
-        finesAdminId: null,
-        contractSigningRequired: true,
-        createdAt: "2020-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-01T00:00:00.000Z",
-    },
-    {
-        slug: "drift",
-        name: "Drift",
-        description: "Driftsgruppen",
-        imageUrl: null,
-        contactEmail: "drift@tihlde.org",
-        type: "committee",
-        finesInfo: "",
-        finesActivated: false,
-        finesAdminId: null,
-        contractSigningRequired: false,
-        createdAt: "2020-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-01T00:00:00.000Z",
-    },
-    {
-        slug: "hs",
-        name: "HS",
-        description: "Hovedstyret",
-        imageUrl: null,
-        contactEmail: "hs@tihlde.org",
-        type: "board",
-        finesInfo: "",
-        finesActivated: false,
-        finesAdminId: null,
-        contractSigningRequired: true,
-        createdAt: "2020-01-01T00:00:00.000Z",
-        updatedAt: "2025-01-01T00:00:00.000Z",
-    },
-];
-
-const MOCK_SIGNATURES: Record<string, GroupSignatureList> = {
-    index: {
-        totalMembers: 3,
-        signedCount: 2,
-        members: [
-            {
-                userId: "user-001",
-                userName: "Ola Nordmann",
-                userEmail: "ola@tihlde.org",
-                hasSigned: true,
-                signedAt: "2026-01-15T12:00:00.000Z",
-            },
-            {
-                userId: "user-002",
-                userName: "Kari Hansen",
-                userEmail: "kari@tihlde.org",
-                hasSigned: false,
-                signedAt: null,
-            },
-            {
-                userId: "user-003",
-                userName: "Per Olsen",
-                userEmail: "per@tihlde.org",
-                hasSigned: true,
-                signedAt: "2026-01-20T09:30:00.000Z",
-            },
-        ],
-    },
-    drift: {
-        totalMembers: 1,
-        signedCount: 0,
-        members: [
-            {
-                userId: "user-004",
-                userName: "Anne Andersen",
-                userEmail: "anne@tihlde.org",
-                hasSigned: false,
-                signedAt: null,
-            },
-        ],
-    },
-    hs: {
-        totalMembers: 1,
-        signedCount: 1,
-        members: [
-            {
-                userId: "user-005",
-                userName: "Lars Larsen",
-                userEmail: "lars@tihlde.org",
-                hasSigned: true,
-                signedAt: "2026-01-10T08:00:00.000Z",
-            },
-        ],
-    },
-};
-
 function GrupperAdminPage() {
-    const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
-    const [signatures, setSignatures] =
-        useState<Record<string, GroupSignatureList>>(MOCK_SIGNATURES);
+    const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
     const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-
-    function handleUpdateGroup(
-        slug: string,
-        patch: Pick<Group, "contractSigningRequired">,
-    ) {
-        setGroups((prev) =>
-            prev.map((g) =>
-                g.slug === slug
-                    ? { ...g, ...patch, updatedAt: new Date().toISOString() }
-                    : g,
-            ),
-        );
-    }
-
-    function handleRevoke(groupSlug: string, userId: string) {
-        setSignatures((prev) => {
-            const group = prev[groupSlug];
-            if (!group) return prev;
-            const members = group.members.map((m) =>
-                m.userId === userId
-                    ? { ...m, hasSigned: false, signedAt: null }
-                    : m,
-            );
-            return {
-                ...prev,
-                [groupSlug]: {
-                    ...group,
-                    members,
-                    signedCount: members.filter((m) => m.hasSigned).length,
-                },
-            };
-        });
-    }
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -184,17 +57,12 @@ function GrupperAdminPage() {
                     <GroupCard
                         key={group.slug}
                         group={group}
-                        signatures={signatures[group.slug]}
                         expanded={expandedSlug === group.slug}
                         onToggle={() =>
                             setExpandedSlug(
                                 expandedSlug === group.slug ? null : group.slug,
                             )
                         }
-                        onUpdate={(patch) =>
-                            handleUpdateGroup(group.slug, patch)
-                        }
-                        onRevoke={(userId) => handleRevoke(group.slug, userId)}
                     />
                 ))}
             </div>
@@ -204,22 +72,23 @@ function GrupperAdminPage() {
 
 function GroupCard({
     group,
-    signatures,
     expanded,
     onToggle,
-    onUpdate,
-    onRevoke,
 }: {
     group: Group;
-    signatures: GroupSignatureList | undefined;
     expanded: boolean;
     onToggle: () => void;
-    onUpdate: (patch: Pick<Group, "contractSigningRequired">) => void;
-    onRevoke: (userId: string) => void;
 }) {
     const [requiresSigning, setRequiresSigning] = useState(
         group.contractSigningRequired,
     );
+
+    const updateGroup = useMutation(updateGroupMutation);
+
+    const signaturesQuery = useQuery({
+        ...getGroupSignaturesQuery(group.slug),
+        enabled: expanded && requiresSigning,
+    });
 
     return (
         <Card>
@@ -227,11 +96,16 @@ function GroupCard({
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
                         <CardTitle>{group.name}</CardTitle>
-                        <CardDescription>{group.slug}</CardDescription>
+                        <CardDescription>
+                            {group.slug} · {group.type}
+                        </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
                         {group.contractSigningRequired && (
                             <Badge variant="secondary">Kontrakt påkrevd</Badge>
+                        )}
+                        {group.finesActivated && (
+                            <Badge variant="outline">Bøter aktivert</Badge>
                         )}
                         <Button variant="outline" size="sm" onClick={onToggle}>
                             {expanded ? "Lukk" : "Rediger"}
@@ -257,20 +131,27 @@ function GroupCard({
                     </FieldGroup>
                     <Button
                         className="self-start"
+                        disabled={updateGroup.isPending}
                         onClick={() =>
-                            onUpdate({
-                                contractSigningRequired: requiresSigning,
+                            updateGroup.mutate({
+                                slug: group.slug,
+                                data: {
+                                    contractSigningRequired: requiresSigning,
+                                },
                             })
                         }
                     >
                         Lagre
                     </Button>
-                    {requiresSigning && signatures && (
-                        <MemberSigningTable
-                            signatures={signatures}
-                            onRevoke={onRevoke}
-                        />
-                    )}
+                    {requiresSigning &&
+                        (signaturesQuery.data ? (
+                            <MemberSigningTable
+                                groupSlug={group.slug}
+                                signatures={signaturesQuery.data}
+                            />
+                        ) : (
+                            <p>Laster signeringsstatus…</p>
+                        ))}
                 </CardContent>
             )}
         </Card>
@@ -278,12 +159,14 @@ function GroupCard({
 }
 
 function MemberSigningTable({
+    groupSlug,
     signatures,
-    onRevoke,
 }: {
+    groupSlug: string;
     signatures: GroupSignatureList;
-    onRevoke: (userId: string) => void;
 }) {
+    const revokeSignature = useMutation(revokeSignatureMutation);
+
     if (!signatures.members.length) {
         return <p>Ingen medlemmer i denne gruppen.</p>;
     }
@@ -310,7 +193,13 @@ function MemberSigningTable({
                         <MemberRow
                             key={member.userId}
                             member={member}
-                            onRevoke={onRevoke}
+                            disabled={revokeSignature.isPending}
+                            onRevoke={() =>
+                                revokeSignature.mutate({
+                                    groupSlug,
+                                    userId: member.userId,
+                                })
+                            }
                         />
                     ))}
                 </TableBody>
@@ -321,10 +210,12 @@ function MemberSigningTable({
 
 function MemberRow({
     member,
+    disabled,
     onRevoke,
 }: {
     member: GroupSignatureMember;
-    onRevoke: (userId: string) => void;
+    disabled: boolean;
+    onRevoke: () => void;
 }) {
     return (
         <TableRow>
@@ -357,7 +248,8 @@ function MemberRow({
                     <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => onRevoke(member.userId)}
+                        disabled={disabled}
+                        onClick={onRevoke}
                     >
                         Trekk tilbake
                     </Button>

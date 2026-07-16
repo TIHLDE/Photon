@@ -1,5 +1,7 @@
 import { Outlet, createFileRoute, linkOptions } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
+import { authQueryOptions } from "#/api/auth";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader, type NavItem } from "#/components/site-header";
 import { useMemo } from "react";
@@ -7,13 +9,18 @@ import { useMemo } from "react";
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
 function AppLayout() {
-    // Mock this for now
-    const mockCurrentUser: { name: string; avatarUrl?: string } | null = {
-        name: "Aleksander Hjortkær Sand Evensen",
-        avatarUrl:
-            "https://leptonstoragepro.blob.core.windows.net/imagepng/07cf636a-fa02-41c5-848a-578bddeec94bSCR-20260330-uhro.png",
-    };
-    const isAuthenticated = Boolean(mockCurrentUser);
+    const { data: session } = useQuery(authQueryOptions);
+
+    const currentUser = session?.user
+        ? {
+              name: session.user.name,
+              avatarUrl:
+                  session.user.settings?.imageUrl ??
+                  session.user.image ??
+                  undefined,
+          }
+        : null;
+    const isAuthenticated = Boolean(currentUser);
 
     // Mock this for now
     const isNewStudentTime = false;
@@ -135,7 +142,7 @@ function AppLayout() {
     );
     return (
         <div className="flex min-h-screen flex-col">
-            <SiteHeader navItems={navItems} user={mockCurrentUser} />
+            <SiteHeader navItems={navItems} user={currentUser} />
             <main className="flex flex-1 flex-col">
                 <Outlet />
             </main>

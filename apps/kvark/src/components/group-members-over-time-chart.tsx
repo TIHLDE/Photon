@@ -1,4 +1,5 @@
 import {
+    type ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
@@ -6,13 +7,18 @@ import {
 import { CartesianGrid, Dot, Line, LineChart } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import { MEMBERS_OVER_TIME, membersChartConfig } from "#/mock/group-detail";
+
+type GroupMembersOverTimeChartProps = {
+    className?: string;
+    data: Array<Record<string, unknown>>;
+    config: ChartConfig;
+};
 
 export function GroupMembersOverTimeChart({
     className,
-}: {
-    className?: string;
-}) {
+    data,
+    config,
+}: GroupMembersOverTimeChartProps) {
     return (
         <ChartCard
             className={className}
@@ -20,10 +26,10 @@ export function GroupMembersOverTimeChart({
             description="H22 - V26"
             trend="+4% siste semester"
         >
-            <ChartContainer config={membersChartConfig} className="h-32 w-full">
+            <ChartContainer config={config} className="h-32 w-full">
                 <LineChart
                     accessibilityLayer
-                    data={MEMBERS_OVER_TIME}
+                    data={data}
                     margin={{ top: 24, left: 24, right: 24 }}
                 >
                     <CartesianGrid vertical={false} />

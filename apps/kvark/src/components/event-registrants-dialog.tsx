@@ -11,7 +11,7 @@ import {
 import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
 import type { ReactElement } from "react";
 
-import type { EventRegistrant } from "#/mock/events";
+import type { EventRegistrant } from "#/lib/event";
 
 type EventRegistrantsDialogProps = {
     trigger: ReactElement;
@@ -86,9 +86,18 @@ function RegistrantRow({
             </Avatar>
             <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{registrant.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                    {registrant.studyProgram} · {registrant.classYear}. klasse
-                </span>
+                {registrant.studyProgram || registrant.classYear ? (
+                    <span className="truncate text-xs text-muted-foreground">
+                        {[
+                            registrant.studyProgram,
+                            registrant.classYear
+                                ? `${registrant.classYear}. klasse`
+                                : null,
+                        ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                    </span>
+                ) : null}
             </div>
             {waitlist ? <Badge variant="secondary">Venteliste</Badge> : null}
         </div>

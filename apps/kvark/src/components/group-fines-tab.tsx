@@ -9,10 +9,15 @@ import { GroupFineRow } from "#/components/group-fine-row";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
 import { GroupPageHeader } from "#/components/group-page-header";
 import { TriStateFilter, type TriState } from "#/components/tri-state-filter";
+import type { Fine } from "#/lib/group";
 import { initials } from "#/lib/utils";
-import { FINES, MEMBERS, type Fine } from "#/mock/group-detail";
 
 type GroupingMode = "all" | "per-member";
+
+type GroupFinesTabProps = {
+    fines: Fine[];
+    memberCount: number;
+};
 
 function fineFilterMatches(fine: Fine, approved: TriState, paid: TriState) {
     if (approved === "yes" && !fine.approved) return false;
@@ -22,15 +27,20 @@ function fineFilterMatches(fine: Fine, approved: TriState, paid: TriState) {
     return true;
 }
 
-export function GroupFinesTab() {
+function perMember(value: number, memberCount: number): string {
+    if (memberCount <= 0) return "0.0";
+    return (value / memberCount).toFixed(1);
+}
+
+export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
     const [grouping, setGrouping] = useState<GroupingMode>("all");
     const [approved, setApproved] = useState<TriState>("all");
     const [paid, setPaid] = useState<TriState>("all");
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
     const filtered = useMemo(
-        () => FINES.filter((f) => fineFilterMatches(f, approved, paid)),
-        [approved, paid],
+        () => fines.filter((f) => fineFilterMatches(f, approved, paid)),
+        [fines, approved, paid],
     );
 
     const grouped = useMemo(() => {
@@ -44,21 +54,24 @@ export function GroupFinesTab() {
     }, [filtered]);
 
     const stats = useMemo(() => {
-        const memberCount = MEMBERS.length;
-        const ikkeGodkjent = 59;
-        const godkjentIkkeBetalt = 939;
-        const betalt = 1254;
+        const ikkeGodkjent = fines
+            .filter((f) => !f.approved)
+            .reduce((sum, f) => sum + f.amount, 0);
+        const godkjentIkkeBetalt = fines
+            .filter((f) => f.approved && !f.paid)
+            .reduce((sum, f) => sum + f.amount, 0);
+        const betalt = fines
+            .filter((f) => f.paid)
+            .reduce((sum, f) => sum + f.amount, 0);
         return {
             ikkeGodkjent,
             godkjentIkkeBetalt,
             betalt,
-            avgIkkeGodkjent: (ikkeGodkjent / memberCount).toFixed(1),
-            avgGodkjentIkkeBetalt: (godkjentIkkeBetalt / memberCount).toFixed(
-                1,
-            ),
-            avgBetalt: (betalt / memberCount).toFixed(1),
+            avgIkkeGodkjent: perMember(ikkeGodkjent, memberCount),
+            avgGodkjentIkkeBetalt: perMember(godkjentIkkeBetalt, memberCount),
+            avgBetalt: perMember(betalt, memberCount),
         };
-    }, []);
+    }, [fines, memberCount]);
 
     return (
         <div className="flex flex-col gap-6">

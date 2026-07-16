@@ -1,45 +1,42 @@
-import { Button } from "@tihlde/ui/ui/button";
-
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupMemberRow } from "#/components/group-member-row";
 import { GroupPageHeader } from "#/components/group-page-header";
-import { LEADER, MEMBER_HISTORY, MEMBERS, USERS } from "#/mock/group-detail";
+import type { Member } from "#/lib/group";
 
-export function GroupMembersTab() {
+type GroupMembersTabProps = {
+    leader: Member | null;
+    members: Member[];
+    isAdmin: boolean;
+};
+
+export function GroupMembersTab({
+    leader,
+    members,
+    isAdmin,
+}: GroupMembersTabProps) {
     return (
         <div className="flex flex-col gap-6">
             <GroupPageHeader
                 title="Medlemmer"
-                action={<GroupAddMemberDialog users={USERS} />}
+                action={isAdmin ? <GroupAddMemberDialog users={[]} /> : null}
             />
 
-            <div className="flex flex-col gap-2">
-                <h3 className="text-lg">Leder</h3>
-                <GroupMemberRow member={LEADER} isLeader />
-            </div>
+            {leader ? (
+                <div className="flex flex-col gap-2">
+                    <h3 className="text-lg">Leder</h3>
+                    <GroupMemberRow member={leader} isLeader />
+                </div>
+            ) : null}
 
             <div className="flex flex-col gap-2">
-                <h3 className="text-lg">Medlemmer ({MEMBERS.length})</h3>
+                <h3 className="text-lg">Medlemmer ({members.length})</h3>
                 <ul className="flex flex-col gap-2">
-                    {MEMBERS.map((m) => (
-                        // TODO: replace with a unique id field once wired up to the backend
-                        <li key={m.name}>
+                    {members.map((m) => (
+                        <li key={m.id}>
                             <GroupMemberRow member={m} />
                         </li>
                     ))}
                 </ul>
-            </div>
-
-            <h3 className="text-lg">Medlemshistorikk</h3>
-            <ul className="flex flex-col gap-2">
-                {MEMBER_HISTORY.map((m) => (
-                    <li key={`${m.name}-${m.until ?? ""}`}>
-                        <GroupMemberRow member={m} historic />
-                    </li>
-                ))}
-            </ul>
-            <div className="flex justify-center">
-                <Button variant="outline">Last inn mer</Button>
             </div>
         </div>
     );

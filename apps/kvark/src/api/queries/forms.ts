@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
 
 const FormQueryKeys = {
     listInfinite: ["forms", "list-infinite"] as const,
@@ -31,14 +31,8 @@ export const getFormsQuery = (
 ) =>
     queryOptions({
         queryKey: [...FormQueryKeys.list, page, pageSize, filters],
-        queryFn: () =>
-            apiClient.get("/api/forms", {
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/forms returns the full form array (no pagination).
+        queryFn: () => apiClient.get("/api/forms"),
     });
 
 export const getFormsInfiniteQuery = (
@@ -47,16 +41,10 @@ export const getFormsInfiniteQuery = (
 ) =>
     infiniteQueryOptions({
         queryKey: [...FormQueryKeys.listInfinite, pageSize, filters],
-        queryFn: ({ pageParam }) =>
-            apiClient.get("/api/forms", {
-                searchParams: {
-                    page: pageParam,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/forms is not paginated; the single page holds every form.
+        queryFn: () => apiClient.get("/api/forms"),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => lastPage.nextPage,
+        getNextPageParam: () => undefined,
     });
 
 export const getFormByIdQuery = (formId: string) =>
@@ -159,11 +147,6 @@ export const getFormSubmissionsQuery = (
         queryFn: () =>
             apiClient.get("/api/forms/{formId}/submissions", {
                 params: { formId },
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
             }),
     });
 

@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import { CreateNews, UpdateNews, CreateNewsReaction } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { CreateNews, UpdateNews, CreateNewsReaction } from "@tihlde/sdk";
 
 const NewsQueryKeys = {
     listInfinite: ["news", "list-infinite"] as const,

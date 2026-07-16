@@ -1,6 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 
-import type { Law } from "#/mock/group-detail";
+import type { Law } from "#/lib/group";
 
 type GroupLawItemProps = {
     law: Law;

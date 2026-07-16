@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
@@ -9,17 +9,46 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 
-export const Route = createFileRoute("/_auth/login")({ component: LoginPage });
+import { loginUser } from "#/api/auth";
+
+type LoginSearch = {
+    redirectTo?: string;
+};
+
+export const Route = createFileRoute("/_auth/login")({
+    component: LoginPage,
+    validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+        redirectTo:
+            typeof search.redirectTo === "string"
+                ? search.redirectTo
+                : undefined,
+    }),
+});
 
 function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const navigate = useNavigate();
+    const { redirectTo } = Route.useSearch();
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setError(null);
+        setIsPending(true);
+        try {
+            await loginUser(username, password);
+            await navigate({ to: redirectTo ?? "/" });
+        } catch {
+            setError("Feil brukernavn eller passord.");
+        } finally {
+            setIsPending(false);
+        }
     }
 
     return (
@@ -34,14 +63,16 @@ function LoginPage() {
                 <CardContent>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor="email">E-post</FieldLabel>
+                            <FieldLabel htmlFor="username">
+                                Brukernavn
+                            </FieldLabel>
                             <Input
-                                id="email"
-                                type="email"
-                                autoComplete="email"
+                                id="username"
+                                type="text"
+                                autoComplete="username"
                                 required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
                             />
                         </Field>
                         <Field>
@@ -65,11 +96,16 @@ function LoginPage() {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </Field>
+                        {error ? <FieldError>{error}</FieldError> : null}
                     </FieldGroup>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
-                    <Button type="submit" className="w-full">
-                        Logg inn
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isPending}
+                    >
+                        {isPending ? "Logger inn …" : "Logg inn"}
                     </Button>
                     <p className="text-sm text-muted-foreground">
                         Har du ikke konto?{" "}

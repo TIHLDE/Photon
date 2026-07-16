@@ -4,7 +4,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
 
 const NotificationQueryKeys = {
     listInfinite: ["notifications", "list-infinite"] as const,
@@ -71,9 +71,16 @@ export const deleteNotificationMutation = mutationOptions({
 });
 
 export const markNotificationReadMutation = mutationOptions({
-    mutationFn: ({ notificationId }: { notificationId: string }) =>
+    mutationFn: ({
+        notificationId,
+        isRead = true,
+    }: {
+        notificationId: string;
+        isRead?: boolean;
+    }) =>
         apiClient.patch("/api/notification/{id}/read", {
             params: { id: notificationId },
+            json: { isRead },
         }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({

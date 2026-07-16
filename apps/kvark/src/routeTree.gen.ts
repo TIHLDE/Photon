@@ -269,7 +269,7 @@ const AppProfilIdArrangementerRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/admin': typeof AdminSuperAdminRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/personvern': typeof AppPersonvernRoute

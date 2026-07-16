@@ -10,7 +10,7 @@ import {
 } from "@tihlde/ui/ui/dialog";
 import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
 
-import type { Fine } from "#/mock/group-detail";
+import type { Fine } from "#/lib/group";
 
 type GroupFineDialogProps = {
     fines: Fine[];
@@ -44,7 +44,8 @@ export function GroupFineDialog({
                     <>
                         <DialogHeader>
                             <DialogTitle>
-                                {fine.paragraph} - {fine.title}
+                                {fine.paragraph ? `${fine.paragraph} - ` : ""}
+                                {fine.title}
                             </DialogTitle>
                             <DialogDescription>{fine.user}</DialogDescription>
                         </DialogHeader>

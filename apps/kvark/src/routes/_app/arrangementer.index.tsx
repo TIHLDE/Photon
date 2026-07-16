@@ -1,16 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { getEventsQuery } from "#/api/queries/events";
 import { EventCard } from "#/components/event-card";
 import {
     DEFAULT_EVENT_FILTERS,
     EventFilters,
     type EventFiltersValue,
 } from "#/components/event-filters";
-import { EVENTS } from "#/mock/events";
+import { formatEventDateTime } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getEventsQuery(0)),
 });
 
 const CATEGORIES = [
@@ -26,6 +30,9 @@ function EventsPage() {
     const [filters, setFilters] = useState<EventFiltersValue>(
         DEFAULT_EVENT_FILTERS,
     );
+
+    const { data } = useSuspenseQuery(getEventsQuery(0));
+    const events = data.items;
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -48,21 +55,21 @@ function EventsPage() {
 
                 <section className="flex flex-col gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {EVENTS.length} arrangementer funnet
+                        {data.totalCount} arrangementer funnet
                     </p>
                     <ul className="flex flex-col gap-4 sm:gap-1">
-                        {EVENTS.map((event) => (
-                            <li key={event.slug}>
+                        {events.map((event) => (
+                            <li key={event.id}>
                                 <EventCard
                                     slug={event.slug}
                                     title={event.title}
-                                    startsAt={`${event.start.date}, ${event.start.time}`}
-                                    location={event.location}
-                                    organizer={event.organizer}
-                                    category={event.category}
-                                    imageUrl={event.imageUrl}
-                                    capacity={event.capacity}
-                                    registeredCount={event.registeredCount}
+                                    startsAt={formatEventDateTime(
+                                        event.startTime,
+                                    )}
+                                    location={event.location ?? ""}
+                                    organizer={event.organizer?.name ?? ""}
+                                    category={event.category?.label}
+                                    imageUrl={event.image || undefined}
                                 />
                             </li>
                         ))}

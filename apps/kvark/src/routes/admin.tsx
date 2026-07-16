@@ -35,9 +35,11 @@ import {
 import * as React from "react";
 
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
+import { authClientWithRedirect } from "#/api/auth";
 
 export const Route = createFileRoute("/admin")({
     component: AdminLayout,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
 });
 
 function AdminLayout() {

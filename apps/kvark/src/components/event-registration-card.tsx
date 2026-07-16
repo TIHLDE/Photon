@@ -21,7 +21,7 @@ import type {
     EventDeadline,
     EventPrice,
     EventRegistrationState,
-} from "#/mock/events";
+} from "#/lib/event";
 
 type EventRegistrationCardProps = {
     registrationState: EventRegistrationState;

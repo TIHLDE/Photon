@@ -2,7 +2,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Share2 } from "lucide-react";
 
-import type { Form } from "#/mock/group-detail";
+import type { Form } from "#/lib/group";
 
 type GroupFormRowProps = {
     form: Form;

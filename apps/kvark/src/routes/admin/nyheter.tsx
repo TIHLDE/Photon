@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
+import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
@@ -13,7 +15,9 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { CheckCircle2, XCircle } from "lucide-react";
 
+import { createNewsMutation } from "#/api/queries/news";
 import { richRegistry } from "#/components/markdown/directives/presets";
 
 export const Route = createFileRoute("/admin/nyheter")({
@@ -33,12 +37,27 @@ function NewsAdminPage() {
     const [excerpt, setExcerpt] = useState("");
     const [body, setBody] = useState(INITIAL_BODY);
 
+    const createNews = useMutation(createNewsMutation);
+
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        // Real submission will call a mutation defined in #/api/queries/news
-        // and post { title, excerpt, body } as markdown. For now, log it.
-        // oxlint-disable: no-console
-        console.log("submit news", { title, excerpt, body });
+        createNews.mutate(
+            {
+                data: {
+                    title,
+                    header: excerpt,
+                    body,
+                    emojisAllowed: false,
+                },
+            },
+            {
+                onSuccess() {
+                    setTitle("");
+                    setExcerpt("");
+                    setBody(INITIAL_BODY);
+                },
+            },
+        );
     }
 
     return (
@@ -83,6 +102,7 @@ function NewsAdminPage() {
                                 <Textarea
                                     id="news-excerpt"
                                     rows={2}
+                                    required
                                     value={excerpt}
                                     onChange={(event) =>
                                         setExcerpt(event.target.value)
@@ -113,8 +133,29 @@ function NewsAdminPage() {
                     </CardContent>
                 </Card>
 
+                {createNews.isSuccess && (
+                    <Alert>
+                        <CheckCircle2 className="size-4" />
+                        <AlertTitle>Publisert</AlertTitle>
+                        <AlertDescription>
+                            Nyheten ble opprettet.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {createNews.isError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke publisere</AlertTitle>
+                        <AlertDescription>
+                            {createNews.error.message}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <div className="flex justify-end">
-                    <Button type="submit">Publiser</Button>
+                    <Button type="submit" disabled={createNews.isPending}>
+                        Publiser
+                    </Button>
                 </div>
             </form>
         </div>

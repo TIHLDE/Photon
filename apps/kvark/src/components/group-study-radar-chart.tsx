@@ -1,4 +1,5 @@
 import {
+    type ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
@@ -6,21 +7,27 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import { STUDY_RADAR, radarChartConfig } from "#/mock/group-detail";
 
-export function GroupStudyRadarChart({ className }: { className?: string }) {
+type GroupStudyRadarChartProps = {
+    className?: string;
+    data: Array<Record<string, unknown>>;
+    config: ChartConfig;
+};
+
+export function GroupStudyRadarChart({
+    className,
+    data,
+    config,
+}: GroupStudyRadarChartProps) {
     return (
         <ChartCard
             className={className}
             title="Programfordeling"
             description="V26"
         >
-            <ChartContainer
-                config={radarChartConfig}
-                className="aspect-square w-full"
-            >
+            <ChartContainer config={config} className="aspect-square w-full">
                 <RadarChart
-                    data={STUDY_RADAR}
+                    data={data}
                     margin={{ top: 16, bottom: 16, left: 32, right: 32 }}
                     outerRadius="70%"
                 >

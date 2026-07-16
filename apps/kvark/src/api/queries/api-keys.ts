@@ -4,8 +4,12 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import { CreateApiKey, UpdateApiKey, ValidateApiKeyInput } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type {
+    CreateApiKey,
+    UpdateApiKey,
+    ValidateApiKeyInput,
+} from "@tihlde/sdk";
 
 const ApiKeyQueryKeys = {
     listInfinite: ["api-keys", "list-infinite"] as const,
@@ -27,14 +31,8 @@ export const getApiKeysQuery = (
 ) =>
     queryOptions({
         queryKey: [...ApiKeyQueryKeys.list, page, pageSize, filters],
-        queryFn: () =>
-            apiClient.get("/api/api-keys", {
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/api-keys returns the full array (no pagination).
+        queryFn: () => apiClient.get("/api/api-keys"),
     });
 
 export const getApiKeysInfiniteQuery = (
@@ -43,16 +41,10 @@ export const getApiKeysInfiniteQuery = (
 ) =>
     infiniteQueryOptions({
         queryKey: [...ApiKeyQueryKeys.listInfinite, pageSize, filters],
-        queryFn: ({ pageParam }) =>
-            apiClient.get("/api/api-keys", {
-                searchParams: {
-                    page: pageParam,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/api-keys is not paginated; the single page holds every key.
+        queryFn: () => apiClient.get("/api/api-keys"),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => lastPage.nextPage,
+        getNextPageParam: () => undefined,
     });
 
 export const getApiKeyByIdQuery = (apiKeyId: string) =>

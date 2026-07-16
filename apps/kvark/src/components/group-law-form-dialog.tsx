@@ -11,7 +11,7 @@ import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 
-import type { Law } from "#/mock/group-detail";
+import type { Law } from "#/lib/group";
 
 type GroupLawFormDialogProps = {
     open: boolean;

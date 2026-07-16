@@ -1,4 +1,5 @@
 import {
+    type ChartConfig,
     ChartContainer,
     ChartLegend,
     ChartLegendContent,
@@ -8,9 +9,18 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import { ChartCard } from "#/components/chart-card";
-import { STUDY_OVER_TIME, studyChartConfig } from "#/mock/group-detail";
 
-export function GroupStudyOverTimeChart({ className }: { className?: string }) {
+type GroupStudyOverTimeChartProps = {
+    className?: string;
+    data: Array<Record<string, unknown>>;
+    config: ChartConfig;
+};
+
+export function GroupStudyOverTimeChart({
+    className,
+    data,
+    config,
+}: GroupStudyOverTimeChartProps) {
     return (
         <ChartCard
             className={className}
@@ -18,8 +28,8 @@ export function GroupStudyOverTimeChart({ className }: { className?: string }) {
             description="H22 - V26"
             trend="+12% siste semester"
         >
-            <ChartContainer config={studyChartConfig} className="size-full">
-                <BarChart accessibilityLayer data={STUDY_OVER_TIME}>
+            <ChartContainer config={config} className="size-full">
+                <BarChart accessibilityLayer data={data}>
                     <CartesianGrid vertical={false} />
                     <XAxis
                         dataKey="semester"

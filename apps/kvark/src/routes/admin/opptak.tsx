@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -20,59 +21,25 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import type { Contract } from "@tihlde/sdk";
-import { CheckCircle2, Upload, Zap } from "lucide-react";
+import { CheckCircle2, Upload, XCircle, Zap } from "lucide-react";
 import { useState } from "react";
+
+import { uploadAssetMutation } from "#/api/queries/assets";
+import {
+    activateContractMutation,
+    createContractMutation,
+    getContractListQuery,
+} from "#/api/queries/contracts";
 
 export const Route = createFileRoute("/admin/opptak")({
     component: OpptakAdminPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getContractListQuery()),
 });
 
-const MOCK_CONTRACTS: Contract[] = [
-    {
-        id: "b3f1c2d4-0001-4e5a-9b8c-111111111111",
-        title: "Frivillighetskontrakt 2026",
-        version: "2026.1",
-        fileKey: "contracts/frivillighetskontrakt-2026.pdf",
-        isActive: true,
-        createdAt: "2025-12-01T10:00:00.000Z",
-        updatedAt: "2025-12-01T10:00:00.000Z",
-    },
-    {
-        id: "b3f1c2d4-0002-4e5a-9b8c-222222222222",
-        title: "Frivillighetskontrakt 2025",
-        version: "2025.1",
-        fileKey: "contracts/frivillighetskontrakt-2025.pdf",
-        isActive: false,
-        createdAt: "2024-12-01T10:00:00.000Z",
-        updatedAt: "2024-12-01T10:00:00.000Z",
-    },
-];
-
 function OpptakAdminPage() {
-    const [contracts, setContracts] = useState<Contract[]>(MOCK_CONTRACTS);
-
-    function handleCreate(title: string, version: string) {
-        const next: Contract = {
-            id: crypto.randomUUID(),
-            title,
-            version,
-            fileKey: `contracts/${title.toLowerCase().replace(/\s+/g, "-")}.pdf`,
-            isActive: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-        setContracts((prev) => [next, ...prev]);
-    }
-
-    function handleActivate(id: string) {
-        setContracts((prev) =>
-            prev.map((c) => ({
-                ...c,
-                isActive: c.id === id,
-                updatedAt: c.id === id ? new Date().toISOString() : c.updatedAt,
-            })),
-        );
-    }
+    const { data: contracts } = useSuspenseQuery(getContractListQuery());
+    const activateContract = useMutation(activateContractMutation);
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -80,30 +47,41 @@ function OpptakAdminPage() {
                 <h1>Kontraktstyring</h1>
                 <p>Last opp og administrer frivillighetskontrakter.</p>
             </div>
-            <UploadContractCard onCreate={handleCreate} />
+            <UploadContractCard />
             <ContractListCard
                 contracts={contracts}
-                onActivate={handleActivate}
+                onActivate={(id) => activateContract.mutate({ id })}
             />
         </div>
     );
 }
 
-function UploadContractCard({
-    onCreate,
-}: {
-    onCreate: (title: string, version: string) => void;
-}) {
+function UploadContractCard() {
     const [title, setTitle] = useState("");
     const [version, setVersion] = useState("");
     const [file, setFile] = useState<File | null>(null);
-    const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const uploadAsset = useMutation(uploadAssetMutation);
+    const createContract = useMutation(createContractMutation);
+
+    const isPending = uploadAsset.isPending || createContract.isPending;
+    const errorMessage =
+        uploadAsset.error?.message ?? createContract.error?.message ?? null;
+
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         if (!file) return;
-        onCreate(title, version);
-        setSuccessMsg(`Kontrakt "${title}" v${version} opprettet.`);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const upload = await uploadAsset.mutateAsync({ formData });
+        await createContract.mutateAsync({
+            title,
+            version,
+            fileKey: upload.key,
+        });
+
         setTitle("");
         setVersion("");
         setFile(null);
@@ -162,16 +140,25 @@ function UploadContractCard({
                             />
                         </Field>
                     </FieldGroup>
-                    {successMsg && (
+                    {createContract.isSuccess && (
                         <Alert>
                             <CheckCircle2 className="size-4" />
                             <AlertTitle>Opprettet</AlertTitle>
-                            <AlertDescription>{successMsg}</AlertDescription>
+                            <AlertDescription>
+                                Kontrakten ble opprettet.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {errorMessage && (
+                        <Alert variant="destructive">
+                            <XCircle className="size-4" />
+                            <AlertTitle>Kunne ikke opprette</AlertTitle>
+                            <AlertDescription>{errorMessage}</AlertDescription>
                         </Alert>
                     )}
                     <Button
                         type="submit"
-                        disabled={!file}
+                        disabled={!file || isPending}
                         className="self-start"
                     >
                         <Upload className="size-4" />
