@@ -81,7 +81,7 @@ const GROUP_HANDLES = ["top", "bottom", "left", "right"] as const;
 const SECTION_HANDLES = ["top", "bottom"] as const;
 const JUNCTION_HANDLES = ["top", "bottom", "left", "right"] as const;
 
-export type GroupTreeNodeData = GroupIdentityProps;
+export type GroupTreeNodeData = GroupIdentityProps & { slug: string };
 
 export function GroupTreeNode({ data }: { data: GroupTreeNodeData }) {
     return (

@@ -1,27 +1,30 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { ArrowLeft, CalendarDays, Clock3, PencilLine } from "lucide-react";
 
+import { getNewsByIdQuery } from "#/api/queries/news";
 import { DetailField } from "#/components/detail-field";
 import { DetailHero } from "#/components/detail-hero";
 import { DetailPage } from "#/components/detail-page";
 import { ShareButton } from "#/components/share-button";
 import { richRegistry } from "#/components/markdown/directives/presets";
-import { getNewsBySlug } from "#/mock/news";
+import { formatNewsDate, wasNewsUpdated } from "#/lib/news";
 
 export const Route = createFileRoute("/_app/nyheter/$slug")({
     component: NewsDetailPage,
-    loader: ({ params }) => {
-        const news = getNewsBySlug(params.slug);
-        if (!news) throw notFound();
-        return { news };
-    },
+    loader: ({ context, params }) =>
+        context.queryClient.ensureQueryData(getNewsByIdQuery(params.slug)),
 });
 
 function NewsDetailPage() {
-    const { news } = Route.useLoaderData();
+    const { slug } = Route.useParams();
+
+    const { data: news } = useSuspenseQuery(getNewsByIdQuery(slug));
+
+    const updated = wasNewsUpdated(news.createdAt, news.updatedAt);
 
     return (
         <DetailPage
@@ -37,7 +40,7 @@ function NewsDetailPage() {
                     </Button>
                 </div>
             }
-            hero={<DetailHero imageUrl={news.imageUrl} />}
+            hero={<DetailHero imageUrl={news.imageUrl || undefined} />}
             header={
                 <>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
@@ -45,9 +48,11 @@ function NewsDetailPage() {
                             <h1 className="text-3xl md:text-4xl">
                                 {news.title}
                             </h1>
-                            <p className="text-lg text-muted-foreground">
-                                {news.excerpt}
-                            </p>
+                            {news.header ? (
+                                <p className="text-lg text-muted-foreground">
+                                    {news.header}
+                                </p>
+                            ) : null}
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center gap-2">
                             <Button variant="outline" size="sm">
@@ -61,14 +66,14 @@ function NewsDetailPage() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <DetailField
                             icon={CalendarDays}
-                            value={`Publisert ${news.publishedAtAbsolute}`}
+                            value={`Publisert ${formatNewsDate(news.createdAt)}`}
                         />
-                        {news.updatedAt && (
+                        {updated ? (
                             <DetailField
                                 icon={Clock3}
-                                value={`Oppdatert ${news.updatedAt}`}
+                                value={`Oppdatert ${formatNewsDate(news.updatedAt)}`}
                             />
-                        )}
+                        ) : null}
                     </div>
                 </>
             }

@@ -5,16 +5,18 @@ import { Crown, HandCoins, Mail } from "lucide-react";
 
 import { DetailHeader } from "#/components/detail-layout";
 import { GroupEditDialog } from "#/components/group-edit-dialog";
+import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
-import type { Group } from "#/mock/group-detail";
 
 type GroupDetailHeaderProps = {
     group: Group;
+    isAdmin: boolean;
     onGiveFine: () => void;
 };
 
 export function GroupDetailHeader({
     group,
+    isAdmin,
     onGiveFine,
 }: GroupDetailHeaderProps) {
     return (
@@ -45,32 +47,40 @@ export function GroupDetailHeader({
             }
             badges={
                 <>
-                    <Badge
-                        variant="secondary"
-                        className="hidden gap-1.5 md:flex"
-                    >
-                        <Crown />
-                        <span className="font-medium">Leder</span>
-                        <span className="text-muted-foreground">·</span>
-                        {group.leader}
-                    </Badge>
-                    <Badge
-                        variant="secondary"
-                        className="hidden gap-1.5 md:flex"
-                    >
-                        <Mail />
-                        {group.contactEmail}
-                    </Badge>
+                    {group.leader ? (
+                        <Badge
+                            variant="secondary"
+                            className="hidden gap-1.5 md:flex"
+                        >
+                            <Crown />
+                            <span className="font-medium">Leder</span>
+                            <span className="text-muted-foreground">·</span>
+                            {group.leader}
+                        </Badge>
+                    ) : null}
+                    {group.contactEmail ? (
+                        <Badge
+                            variant="secondary"
+                            className="hidden gap-1.5 md:flex"
+                        >
+                            <Mail />
+                            {group.contactEmail}
+                        </Badge>
+                    ) : null}
                 </>
             }
             actions={
-                <>
-                    <Button onClick={onGiveFine}>
-                        <HandCoins />
-                        Gi bot
-                    </Button>
-                    <GroupEditDialog group={group} />
-                </>
+                isAdmin ? (
+                    <>
+                        {group.finesActivated ? (
+                            <Button onClick={onGiveFine}>
+                                <HandCoins />
+                                Gi bot
+                            </Button>
+                        ) : null}
+                        <GroupEditDialog group={group} />
+                    </>
+                ) : null
             }
         />
     );

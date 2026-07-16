@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import {
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type {
     CreateEventSchema,
     UpdateEventSchema,
     CreatePaymentBody,

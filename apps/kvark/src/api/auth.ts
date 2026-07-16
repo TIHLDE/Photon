@@ -153,7 +153,7 @@ export async function authClientWithRedirect(url: string) {
  */
 export function createLoginRedirectUrl(url: string) {
     return linkOptions({
-        to: "/", // TODO: Replace with auth endpoint
+        to: "/login",
         search: {
             redirectTo: url,
         },

@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import type { ActiveContract, SignatureStatus } from "@tihlde/sdk";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import type { ActiveContract } from "@tihlde/sdk";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
@@ -10,22 +11,22 @@ import {
 } from "@tihlde/ui/ui/card";
 import { useEffect, useRef, useState } from "react";
 
-const MOCK_CONTRACT: ActiveContract = {
-    id: "b3f1c2d4-0001-4e5a-9b8c-111111111111",
-    title: "Frivillighetskontrakt 2026",
-    version: "2026.1",
-    fileKey: "contracts/frivillighetskontrakt-2026.pdf",
-    isActive: true,
-    createdAt: "2025-12-01T10:00:00.000Z",
-    updatedAt: "2025-12-01T10:00:00.000Z",
-    downloadUrl: "",
-};
+import { authQueryOptions } from "#/api/auth";
+import {
+    getActiveContractQuery,
+    getMySignatureQuery,
+    signContractMutation,
+} from "#/api/queries/contracts";
 
 export const Route = createFileRoute("/_app/kontrakt")({
     component: KontraktPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getActiveContractQuery()),
 });
 
 function KontraktPage() {
+    const { data: contract } = useSuspenseQuery(getActiveContractQuery());
+
     return (
         <div className="container mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
             <div className="flex flex-col gap-1">
@@ -35,19 +36,31 @@ function KontraktPage() {
                     frivillighetsavtale.
                 </p>
             </div>
-            <KontraktViewer contract={MOCK_CONTRACT} />
+            {contract ? (
+                <KontraktViewer contract={contract} />
+            ) : (
+                <Card>
+                    <CardContent className="py-8">
+                        <p>Ingen aktiv kontrakt</p>
+                        <p>
+                            Det finnes ingen aktiv frivillighetskontrakt å
+                            signere akkurat nå.
+                        </p>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
 
 function KontraktViewer({ contract }: { contract: ActiveContract }) {
     const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
-    const [signature, setSignature] = useState<SignatureStatus>({
-        hasSigned: false,
-        signedAt: null,
-    });
     const containerRef = useRef<HTMLDivElement>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
+
+    const { data: session } = useQuery(authQueryOptions);
+    const { data: signature } = useQuery(getMySignatureQuery());
+    const signContract = useMutation(signContractMutation);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -65,7 +78,7 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
         return () => observer.disconnect();
     }, []);
 
-    if (signature.hasSigned) {
+    if (signature?.hasSigned) {
         const signedAt = signature.signedAt
             ? new Date(signature.signedAt).toLocaleDateString("nb-NO", {
                   day: "numeric",
@@ -83,6 +96,8 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
             </Card>
         );
     }
+
+    const isLoggedIn = Boolean(session);
 
     return (
         <Card>
@@ -102,7 +117,15 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                     className="w-full overflow-y-auto"
                     style={{ height: "65vh" }}
                 >
-                    <div style={{ height: "200vh" }} />
+                    {contract.downloadUrl ? (
+                        <iframe
+                            src={contract.downloadUrl}
+                            title={contract.title}
+                            className="h-full w-full"
+                        />
+                    ) : (
+                        <div style={{ height: "200vh" }} />
+                    )}
                     <div ref={sentinelRef} style={{ height: "4px" }} />
                 </div>
                 {!hasScrolledToEnd && (
@@ -111,18 +134,28 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                         signeringsknappen.
                     </p>
                 )}
-                <Button
-                    disabled={!hasScrolledToEnd}
-                    onClick={() =>
-                        setSignature({
-                            hasSigned: true,
-                            signedAt: new Date().toISOString(),
-                        })
-                    }
-                    className="w-full"
-                >
-                    Signer kontrakt
-                </Button>
+                {signContract.isError && <p>{signContract.error.message}</p>}
+                {isLoggedIn ? (
+                    <Button
+                        disabled={!hasScrolledToEnd || signContract.isPending}
+                        onClick={() => signContract.mutate(undefined)}
+                        className="w-full"
+                    >
+                        Signer kontrakt
+                    </Button>
+                ) : (
+                    <Button
+                        render={
+                            <Link
+                                to="/login"
+                                search={{ redirectTo: "/kontrakt" }}
+                            />
+                        }
+                        className="w-full"
+                    >
+                        Logg inn for å signere
+                    </Button>
+                )}
             </CardContent>
         </Card>
     );

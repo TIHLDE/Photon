@@ -9,9 +9,27 @@ import type {
 import ky, {
     type Options as KyOptions,
     type BeforeErrorHook,
+    type BeforeRequestHook,
     type KyInstance,
 } from "ky";
 import type { paths } from "@tihlde/sdk";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
+
+// During SSR the request runs on the server, where `credentials: "include"`
+// has no browser cookie jar to draw from. Forward the incoming request's
+// Cookie header so authenticated loaders/queries stay authenticated on the
+// server. On the client this is a no-op (the browser attaches cookies).
+const getServerCookie = createIsomorphicFn()
+    .client(() => undefined as string | undefined)
+    .server(() => new Headers(getRequestHeaders()).get("cookie") ?? undefined);
+
+const forwardServerCookies: BeforeRequestHook = ({ request }) => {
+    const cookie = getServerCookie();
+    if (cookie) {
+        request.headers.set("cookie", cookie);
+    }
+};
 
 // -- Operation type extraction --
 
@@ -125,6 +143,10 @@ class Client<Paths extends object> {
             ...kyOptions,
             hooks: {
                 ...kyHooks,
+                beforeRequest: [
+                    forwardServerCookies,
+                    ...(kyHooks.beforeRequest ?? []),
+                ],
                 beforeError: beforeHTTPError ?? [],
             },
         });

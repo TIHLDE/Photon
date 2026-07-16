@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { getJobsQuery } from "#/api/queries/jobs";
 import { JobCard } from "#/components/job-card";
 import {
     DEFAULT_JOB_FILTERS,
@@ -8,10 +10,12 @@ import {
     type JobFiltersValue,
     type JobType,
 } from "#/components/job-filters";
-import { JOBS } from "#/mock/jobs";
+import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
 
 export const Route = createFileRoute("/_app/annonser/")({
     component: JobsPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getJobsQuery(0)),
 });
 
 const CLASS_LEVELS = [
@@ -32,6 +36,9 @@ const JOB_TYPES: { value: JobType; label: string }[] = [
 function JobsPage() {
     const [filters, setFilters] =
         useState<JobFiltersValue>(DEFAULT_JOB_FILTERS);
+
+    const { data } = useSuspenseQuery(getJobsQuery(0));
+    const jobs = data.items;
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -55,19 +62,25 @@ function JobsPage() {
 
                 <section className="flex flex-col gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {JOBS.length} stillinger funnet
+                        {data.totalCount} stillinger funnet
                     </p>
                     <ul className="flex flex-col gap-4 sm:gap-1">
-                        {JOBS.map((job) => (
-                            <li key={job.slug}>
+                        {jobs.map((job) => (
+                            <li key={job.id}>
                                 <JobCard
-                                    slug={job.slug}
+                                    slug={job.id}
                                     title={job.title}
-                                    jobType={job.jobType}
-                                    classLevels={job.classLevels}
+                                    jobType={formatJobType(job.jobType)}
+                                    classLevels={formatClassRange(
+                                        job.classStart,
+                                        job.classEnd,
+                                    )}
                                     location={job.location}
-                                    deadline={job.deadline}
-                                    imageUrl={job.imageUrl}
+                                    deadline={formatJobDeadline(
+                                        job.deadline,
+                                        job.isContinuouslyHiring,
+                                    )}
+                                    imageUrl={job.imageUrl || undefined}
                                 />
                             </li>
                         ))}

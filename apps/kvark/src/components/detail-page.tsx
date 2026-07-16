@@ -5,7 +5,7 @@ type DetailPageProps = {
     hero?: ReactNode;
     header: ReactNode;
     sidebar?: ReactNode;
-    body: ReactNode;
+    body?: ReactNode;
 };
 
 export function DetailPage({

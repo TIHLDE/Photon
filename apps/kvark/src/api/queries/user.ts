@@ -1,6 +1,6 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { UpdateUserSettingsInput, OnboardUserInput } from "@tihlde/sdk";
+import type { UpdateUserSettingsInput, OnboardUserInput } from "@tihlde/sdk";
 
 const UserQueryKeys = {
     settings: ["user", "settings"] as const,

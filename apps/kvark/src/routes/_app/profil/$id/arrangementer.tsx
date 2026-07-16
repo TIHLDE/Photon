@@ -1,68 +1,75 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { getFavoriteEventsQuery } from "#/api/queries/events";
+import { useQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { Card } from "@tihlde/ui/ui/card";
-import { Separator } from "@tihlde/ui/ui/separator";
-
-type EventRow = { title: string; meta: string };
-
-const KOMMENDE: EventRow[] = [
-    { title: "Bedpres · Bekk", meta: "tor 24. apr · Realfagbygget R2" },
-    { title: "Fagkveld: AI & produksjon", meta: "ons 30. apr · Digs" },
-];
-
-const HAR_VART: EventRow[] = [
-    { title: "Generalforsamling vår 2026", meta: "man 7. apr · KJL2" },
-    { title: "Nyttårsfest 2026", meta: "fre 10. jan · Gløshaugen" },
-];
-
-const APNER_SNART: EventRow[] = [
-    { title: "Sommerfest 2026", meta: "åpner for påmelding om 5 dager" },
-];
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@tihlde/ui/ui/empty";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { CalendarDays, Star } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
     component: RouteComponent,
 });
 
 function RouteComponent() {
+    const { data: favorites, isPending } = useQuery(getFavoriteEventsQuery());
+
     return (
         <div className="flex flex-col gap-6">
-            <EventSection label="Kommende" events={KOMMENDE} />
-            <Separator />
-            <EventSection label="Har vært" events={HAR_VART} />
-            <Separator />
-            <EventSection
-                label="Åpner snart for påmelding"
-                events={APNER_SNART}
-            />
+            <section className="flex flex-col gap-3">
+                <h3>Favoritter</h3>
+                {isPending ? (
+                    <ul className="flex flex-col gap-3">
+                        {[0, 1].map((i) => (
+                            <li key={i}>
+                                <Skeleton className="h-16 w-full" />
+                            </li>
+                        ))}
+                    </ul>
+                ) : favorites && favorites.length > 0 ? (
+                    <ul className="flex flex-col gap-3">
+                        {favorites.map((event) => (
+                            <li key={event.eventId}>
+                                <Card
+                                    size="sm"
+                                    className="flex-row items-center gap-3 px-3"
+                                    render={
+                                        <Link
+                                            to="/arrangementer/$slug"
+                                            params={{ slug: event.slug }}
+                                        />
+                                    }
+                                >
+                                    <div className="flex min-w-0 flex-1 flex-col">
+                                        <span className="truncate font-medium">
+                                            {event.title}
+                                        </span>
+                                    </div>
+                                    <Star className="size-4 shrink-0" />
+                                </Card>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <CalendarDays />
+                            </EmptyMedia>
+                            <EmptyTitle>Ingen favorittarrangementer</EmptyTitle>
+                            <EmptyDescription>
+                                Arrangementer du markerer som favoritt vises
+                                her.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                    </Empty>
+                )}
+            </section>
         </div>
-    );
-}
-
-function EventSection({
-    label,
-    events,
-}: {
-    label: string;
-    events: EventRow[];
-}) {
-    return (
-        <section className="flex flex-col gap-3">
-            <h3>{label}</h3>
-            <ul className="flex flex-col gap-3">
-                {events.map((event) => (
-                    // TODO: replace with a unique id field once wired up to the backend
-                    <li key={event.title}>
-                        <Card
-                            size="sm"
-                            className="flex-row items-center gap-3 px-3"
-                        >
-                            <div className="flex min-w-0 flex-1 flex-col">
-                                <span>{event.title}</span>
-                                <span>{event.meta}</span>
-                            </div>
-                        </Card>
-                    </li>
-                ))}
-            </ul>
-        </section>
     );
 }

@@ -5,7 +5,9 @@ import {
     linkOptions,
     Outlet,
     useMatchRoute,
+    useNavigate,
 } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import {
@@ -19,13 +21,24 @@ import {
     type LucideIcon,
 } from "lucide-react";
 import { Fragment } from "react";
+import {
+    authClientWithRedirect,
+    authQueryOptions,
+    invalidateAuth,
+    logoutUser,
+} from "#/api/auth";
+import { updateUserSettingsMutation } from "#/api/queries/user";
 import { EditBioDialog } from "#/components/edit-bio-dialog";
 import { MembershipQrDialog } from "#/components/membership-qr-dialog";
-import { ProfileHeader } from "#/components/profile-header";
-import { USER } from "#/mock/profile";
+import {
+    ProfileHeader,
+    type ProfileHeaderUser,
+    type ProfileLink,
+} from "#/components/profile-header";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
 });
 
 type ProfileNavItem = {
@@ -40,8 +53,35 @@ type ProfileNavGroup = {
     items: ProfileNavItem[];
 };
 
+function buildProfileLinks(
+    githubUrl?: string | null,
+    linkedinUrl?: string | null,
+): ProfileLink[] {
+    const links: ProfileLink[] = [];
+    if (githubUrl) links.push({ kind: "github", label: "github" });
+    if (linkedinUrl) links.push({ kind: "linkedin", label: "linkedin" });
+    return links;
+}
+
 function RouteComponent() {
     const { id } = Route.useParams();
+    const navigate = useNavigate();
+
+    const { data: session } = useQuery(authQueryOptions);
+    const updateSettings = useMutation(updateUserSettingsMutation);
+
+    const settings = session?.user.settings;
+    const user: ProfileHeaderUser = {
+        name: session?.user.name ?? "",
+        email: session?.user.email ?? "",
+        avatarUrl: settings?.imageUrl ?? session?.user.image ?? undefined,
+        links: buildProfileLinks(settings?.githubUrl, settings?.linkedinUrl),
+    };
+
+    async function handleLogout() {
+        await logoutUser();
+        await navigate({ to: "/" });
+    }
 
     const navGroups: ProfileNavGroup[] = [
         {
@@ -102,16 +142,34 @@ function RouteComponent() {
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <ProfileHeader
-                user={USER}
+                user={user}
                 actions={
                     <>
-                        <MembershipQrDialog name={USER.name} />
-                        <EditBioDialog />
+                        <MembershipQrDialog name={user.name} />
+                        <EditBioDialog
+                            defaultValues={{
+                                bio: settings?.bioDescription ?? "",
+                                github: settings?.githubUrl ?? "",
+                                linkedin: settings?.linkedinUrl ?? "",
+                            }}
+                            onSubmit={async (values) => {
+                                await updateSettings.mutateAsync({
+                                    data: {
+                                        bioDescription: values.bio || undefined,
+                                        githubUrl: values.github || undefined,
+                                        linkedinUrl:
+                                            values.linkedin || undefined,
+                                        allergies: settings?.allergies ?? [],
+                                    },
+                                });
+                                await invalidateAuth();
+                            }}
+                        />
                     </>
                 }
             />
             <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
-                <ProfileNav navGroups={navGroups} />
+                <ProfileNav navGroups={navGroups} onLogout={handleLogout} />
                 <section className="flex min-w-0 flex-col gap-6">
                     <Outlet />
                 </section>
@@ -149,7 +207,13 @@ function NavButton({
     );
 }
 
-function ProfileNav({ navGroups }: { navGroups: ProfileNavGroup[] }) {
+function ProfileNav({
+    navGroups,
+    onLogout,
+}: {
+    navGroups: ProfileNavGroup[];
+    onLogout: () => void;
+}) {
     const flatItems = navGroups.flatMap((g) => g.items);
 
     return (
@@ -184,7 +248,11 @@ function ProfileNav({ navGroups }: { navGroups: ProfileNavGroup[] }) {
                         </Fragment>
                     ))}
                     <Separator className="my-2" />
-                    <Button variant="ghost" className="justify-start">
+                    <Button
+                        variant="ghost"
+                        className="justify-start"
+                        onClick={onLogout}
+                    >
                         <LogOut />
                         Logg ut
                     </Button>

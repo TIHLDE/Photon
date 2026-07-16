@@ -8,7 +8,7 @@ import {
     ComboboxList,
 } from "@tihlde/ui/ui/combobox";
 
-import type { Law } from "#/mock/group-detail";
+import type { Law } from "#/lib/group";
 
 type LawComboboxProps = {
     items: Law[];

@@ -96,7 +96,10 @@ const SECTIONS: CommandSection[] = [
                 label: "Min profil",
                 icon: <User />,
                 keywords: ["profil", "meg"],
-                action: { kind: "navigate", link: { to: "/profil/me" } },
+                action: {
+                    kind: "navigate",
+                    link: { to: "/profil/$id", params: { id: "me" } },
+                },
             },
         ],
     },
