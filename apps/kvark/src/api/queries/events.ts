@@ -41,6 +41,7 @@ export const getEventsQuery = (
                 searchParams: {
                     page,
                     pageSize,
+                    ...filters,
                 },
             }),
     });
@@ -56,6 +57,7 @@ export const getEventsInfiniteQuery = (
                 searchParams: {
                     page: pageParam,
                     pageSize,
+                    ...filters,
                 },
             }),
         initialPageParam: 0,

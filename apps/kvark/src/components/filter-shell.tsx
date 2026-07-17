@@ -14,7 +14,7 @@ import {
     DrawerTitle,
     DrawerTrigger,
 } from "@tihlde/ui/ui/drawer";
-import { FilterX, Search, SlidersHorizontal } from "lucide-react";
+import { FilterX, SlidersHorizontal } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { FilterPillRow, type FilterPill } from "#/components/filter-pill-row";
@@ -24,7 +24,6 @@ type FilterShellProps = {
     fieldsSlot: ReactNode;
     pills: FilterPill[];
     onClearAll: () => void;
-    onSubmit: () => void;
 };
 
 export function FilterShell({
@@ -32,7 +31,6 @@ export function FilterShell({
     fieldsSlot,
     pills,
     onClearAll,
-    onSubmit,
 }: FilterShellProps) {
     return (
         <>
@@ -55,11 +53,9 @@ export function FilterShell({
                             </DrawerHeader>
                             <div className="flex flex-col gap-4 px-4 pb-6">
                                 {fieldsSlot}
+                                {/* Filters apply as they change; this only closes the drawer. */}
                                 <DrawerClose asChild>
-                                    <Button onClick={onSubmit}>
-                                        <Search />
-                                        Bruk filter
-                                    </Button>
+                                    <Button>Ferdig</Button>
                                 </DrawerClose>
                             </div>
                         </DrawerContent>
@@ -87,10 +83,6 @@ export function FilterShell({
                 <CardContent className="flex flex-col gap-4">
                     {searchSlot}
                     {fieldsSlot}
-                    <Button onClick={onSubmit} className="w-full">
-                        <Search />
-                        Søk
-                    </Button>
                 </CardContent>
             </Card>
         </>
