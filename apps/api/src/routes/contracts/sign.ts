@@ -40,6 +40,10 @@ require contract signing.`,
         })
         .badRequest({ description: "Invalid signature image" })
         .response({ statusCode: 409, description: "Already signed" })
+        .response({
+            statusCode: 422,
+            description: "The active contract has no signature field placed",
+        })
         .notFound({ description: "No active contract" })
         .unauthorized()
         .build(),
@@ -63,6 +67,17 @@ require contract signing.`,
         if (!activeContract) {
             throw new HTTPException(404, {
                 message: "No active contract found",
+            });
+        }
+
+        // Without a placement there is nowhere to draw the signature, and the
+        // signed PDF would come back looking unsigned. Refuse rather than hand
+        // the member a hollow document: the contract must be re-uploaded with a
+        // signature field placed on it.
+        if (!activeContract.signaturePlacement) {
+            throw new HTTPException(422, {
+                message:
+                    "The active contract has no signature field placed on it and cannot be signed",
             });
         }
 

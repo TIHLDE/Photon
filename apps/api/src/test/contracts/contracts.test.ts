@@ -156,6 +156,51 @@ describe("contracts", () => {
         );
 
         integrationTest(
+            "refuses to sign a contract with no signature field placed",
+            async ({ ctx }) => {
+                // Contracts created before placement existed have a null
+                // placement. Signing one would produce a PDF with nothing
+                // stamped on it, so it must fail rather than look successful.
+                const admin = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "contracts:create",
+                    "contracts:update",
+                ]);
+
+                const fileKey = "test/contract-unplaced.pdf";
+                await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    originalFilename: "contract.pdf",
+                    contentType: "application/pdf",
+                });
+
+                const created = await adminClient.api.contracts.$post({
+                    json: { title: "Kontrakt", version: "1", fileKey },
+                });
+                const contract = await created.json();
+                await adminClient.api.contracts[":id"].activate.$patch({
+                    param: { id: contract.id },
+                });
+
+                const member = await ctx.utils.createTestUser();
+                const memberClient = await ctx.utils.clientForUser(member);
+
+                const response = await memberClient.api.contracts.sign.$post({
+                    json: {
+                        signedName: "Ola Nordmann",
+                        signatureDataUrl: SIGNATURE_DATA_URL,
+                    },
+                });
+                expect(response.status).toBe(422);
+
+                // Nothing may be recorded when the signature cannot be stamped.
+                const row = await ctx.db.query.contractSignature.findFirst();
+                expect(row).toBeFalsy();
+            },
+            500_000,
+        );
+
+        integrationTest(
             "rejects a signature that is not a PNG data URL",
             async ({ ctx }) => {
                 const admin = await ctx.utils.createTestUser();
