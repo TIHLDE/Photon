@@ -93,21 +93,37 @@ interface FeideGroup {
 }
 
 /**
- * Authentication plugin for Feide using OpenID Connect
+ * Authentication plugin for Feide using OpenID Connect.
+ *
+ * The plugin is always registered so Better Auth's tuple-based `$Infer` (and
+ * therefore the session/user type consumed across the API) stays stable. The
+ * Feide *provider* is gated instead: without credentials the config list is
+ * empty, so `/sign-in/oauth2` for `feide` simply resolves no provider and the
+ * flow cannot start. A conditional spread in the plugins array would instead
+ * widen the tuple and silently drop inferred fields like `banned`.
  */
 export const feidePlugin = () =>
     genericOAuth({
-        config: [
-            {
-                providerId: FEIDE_PROVIDER_ID,
-                clientId: env.FEIDE_CLIENT_ID,
-                clientSecret: env.FEIDE_CLIENT_SECRET,
-                discoveryUrl:
-                    "https://auth.dataporten.no/.well-known/openid-configuration",
-                scopes: ["openid", "userid", "profile", "groups-edu", "email"],
-                getUserInfo,
-            },
-        ],
+        config:
+            env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET
+                ? [
+                      {
+                          providerId: FEIDE_PROVIDER_ID,
+                          clientId: env.FEIDE_CLIENT_ID,
+                          clientSecret: env.FEIDE_CLIENT_SECRET,
+                          discoveryUrl:
+                              "https://auth.dataporten.no/.well-known/openid-configuration",
+                          scopes: [
+                              "openid",
+                              "userid",
+                              "profile",
+                              "groups-edu",
+                              "email",
+                          ],
+                          getUserInfo,
+                      },
+                  ]
+                : [],
     });
 
 /**
@@ -137,10 +153,18 @@ export const syncFeideHook: (
 
         const userId = session.user.id;
 
+        // Must filter by providerId: a user who also has an email/password
+        // account has multiple `account` rows, and only the Feide one carries
+        // the Dataporten access token needed below.
         const feideAccount = await ctx.db
             .select({ accessToken: account.accessToken })
             .from(account)
-            .where(eq(account.userId, userId))
+            .where(
+                and(
+                    eq(account.userId, userId),
+                    eq(account.providerId, FEIDE_PROVIDER_ID),
+                ),
+            )
             .limit(1);
 
         const token = feideAccount[0]?.accessToken;

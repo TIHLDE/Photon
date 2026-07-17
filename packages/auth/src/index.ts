@@ -1,4 +1,5 @@
 import { betterAuth, BetterAuthOptions, DBAdapter } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import {
     admin,
     customSession,
@@ -14,7 +15,37 @@ import {
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import type { EmailService, CacheService } from "@photon/core/services";
+import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
+import { feidePlugin, syncFeideHook } from "./feide";
+
+/**
+ * Feide is a genuine third-party identity provider: it only works once a Feide
+ * client is registered in the Feide Kundeportal and its credentials land in the
+ * environment. Until then the plugin is left out entirely rather than mounted
+ * with an empty client id (which would send users to Dataporten with a broken
+ * `client_id=` and fail confusingly). The frontend hides its Feide button
+ * behind its own flag, so the two sides are enabled independently.
+ */
+const isFeideConfigured = Boolean(
+    env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET,
+);
+
+/**
+ * Self-registration is restricted to NTNU student addresses, and the username
+ * is the local part of that address (`olanor@stud.ntnu.no` -> `olanor`).
+ *
+ * Deliberately scoped to the public `/sign-up/email` endpoint rather than a
+ * `databaseHooks.user.create` hook: every other creation path (dev seeding,
+ * integration tests, admin create-user and the Lepton migration) legitimately
+ * carries other domains, and the migration in particular would silently drop
+ * legacy members whose accounts predate the stud.ntnu.no rule.
+ *
+ * The local part must not be empty and cannot contain a second `@`, so a
+ * plain `endsWith` check is not enough.
+ */
+const STUD_NTNU_EMAIL_PATTERN =
+    /^([a-z0-9]+(?:[._-][a-z0-9]+)*)@stud\.ntnu\.no$/;
 
 export interface CreateAuthOptions {
     isDevMode?: boolean;
@@ -147,14 +178,50 @@ export function createAuth(options: CreateAuthOptions) {
             },
         },
 
+        hooks: {
+            before: createAuthMiddleware(async (ctx) => {
+                if (ctx.path !== "/sign-up/email") return;
+
+                const rawEmail = ctx.body?.email;
+                const email =
+                    typeof rawEmail === "string"
+                        ? rawEmail.trim().toLowerCase()
+                        : "";
+
+                const match = STUD_NTNU_EMAIL_PATTERN.exec(email);
+                if (!match) {
+                    throw new APIError("BAD_REQUEST", {
+                        message:
+                            "Registrering krever en @stud.ntnu.no-adresse.",
+                    });
+                }
+
+                // Username is derived, never taken from the request: a caller
+                // must not be able to pick one that disagrees with their email.
+                return {
+                    context: {
+                        body: { ...ctx.body, email, username: match[1] },
+                    },
+                };
+            }),
+            after: createAuthMiddleware(async (ctx) => {
+                if (!isFeideConfigured) return;
+                // Syncs the user's TIHLDE study-program memberships after a
+                // successful Feide callback; a no-op for every other request.
+                await syncFeideHook(ctx, { db: options.services.db });
+            }),
+        },
+
         // Needed for the JWT plugin to work with oAuth Provider plugin
         disabledPaths: ["/token"],
 
         plugins: [
             admin(),
             openAPI(),
-            // TODO: Add feide plugin later
-            // feidePlugin(),
+            // Always present so the plugins tuple stays stable for `$Infer`;
+            // the Feide provider itself is gated inside feidePlugin() on the
+            // credentials being set.
+            feidePlugin(),
             username(),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
