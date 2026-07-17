@@ -1,7 +1,7 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { HTTPError } from "ky";
 import { apiClient } from "#/api/api-client";
-import type { CreateContract } from "@tihlde/sdk";
+import type { CreateContract, SignContract } from "@tihlde/sdk";
 
 const ContractQueryKeys = {
     active: ["contracts", "active"] as const,
@@ -53,7 +53,8 @@ export const getGroupSignaturesQuery = (groupSlug: string) =>
     });
 
 export const signContractMutation = mutationOptions({
-    mutationFn: () => apiClient.post("/api/contracts/sign"),
+    mutationFn: (data: SignContract) =>
+        apiClient.post("/api/contracts/sign", { json: data }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...ContractQueryKeys.mySignature],

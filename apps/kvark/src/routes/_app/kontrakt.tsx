@@ -9,6 +9,10 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import { Field, FieldLabel } from "@tihlde/ui/ui/field";
+import { Input } from "@tihlde/ui/ui/input";
+import { SignatureInput } from "@tihlde/ui/ui/signature-input";
+import { Download } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { authQueryOptions } from "#/api/auth";
@@ -17,6 +21,14 @@ import {
     getMySignatureQuery,
     signContractMutation,
 } from "#/api/queries/contracts";
+
+// The signed PDF is a private asset streamed by the API, so it is linked
+// directly rather than fetched through the SDK. A top-level navigation carries
+// the session cookie, which is what the route authorizes against.
+const SIGNED_PDF_URL = new URL(
+    "api/contracts/signed-pdf",
+    import.meta.env.VITE_API_URL ?? "https://photon.tihlde.org/",
+).toString();
 
 export const Route = createFileRoute("/_app/kontrakt")({
     component: KontraktPage,
@@ -62,6 +74,17 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
     const { data: signature } = useQuery(getMySignatureQuery());
     const signContract = useMutation(signContractMutation);
 
+    // Pre-filled from the session, but editable: the signer decides what their
+    // signature reads, and it is stored verbatim.
+    const [signedName, setSignedName] = useState("");
+    const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(
+        null,
+    );
+
+    useEffect(() => {
+        if (session?.user?.name) setSignedName(session.user.name);
+    }, [session?.user?.name]);
+
     useEffect(() => {
         const container = containerRef.current;
         const sentinel = sentinelRef.current;
@@ -89,9 +112,23 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
 
         return (
             <Card>
-                <CardContent className="py-8">
-                    <p>Kontrakt signert</p>
-                    {signedAt && <p>Du signerte kontrakten {signedAt}.</p>}
+                <CardContent className="flex flex-col items-start gap-4 py-8">
+                    <div className="flex flex-col gap-1">
+                        <p>Kontrakt signert</p>
+                        {signedAt && <p>Du signerte kontrakten {signedAt}.</p>}
+                    </div>
+                    <Button
+                        render={
+                            <a
+                                href={SIGNED_PDF_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                            />
+                        }
+                    >
+                        <Download className="mr-1.5 size-4" />
+                        Last ned signert kontrakt
+                    </Button>
                 </CardContent>
             </Card>
         );
@@ -136,13 +173,41 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                 )}
                 {signContract.isError && <p>{signContract.error.message}</p>}
                 {isLoggedIn ? (
-                    <Button
-                        disabled={!hasScrolledToEnd || signContract.isPending}
-                        onClick={() => signContract.mutate(undefined)}
-                        className="w-full"
-                    >
-                        Signer kontrakt
-                    </Button>
+                    <>
+                        <Field>
+                            <FieldLabel htmlFor="signed-name">
+                                Fullt navn
+                            </FieldLabel>
+                            <Input
+                                id="signed-name"
+                                value={signedName}
+                                onChange={(e) => setSignedName(e.target.value)}
+                                autoComplete="name"
+                            />
+                        </Field>
+                        <SignatureInput
+                            name={signedName}
+                            onChange={setSignatureDataUrl}
+                        />
+                        <Button
+                            disabled={
+                                !hasScrolledToEnd ||
+                                !signedName.trim() ||
+                                !signatureDataUrl ||
+                                signContract.isPending
+                            }
+                            onClick={() =>
+                                signatureDataUrl &&
+                                signContract.mutate({
+                                    signedName: signedName.trim(),
+                                    signatureDataUrl,
+                                })
+                            }
+                            className="w-full"
+                        >
+                            Signer kontrakt
+                        </Button>
+                    </>
                 ) : (
                     <Button
                         render={

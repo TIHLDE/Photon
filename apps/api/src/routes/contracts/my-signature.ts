@@ -38,7 +38,10 @@ export const mySignatureRoute = route().get(
         });
 
         if (!activeContract) {
-            return c.json({ hasSigned: false, signedAt: null }, 200);
+            return c.json(
+                { hasSigned: false, signedAt: null, signedName: null },
+                200,
+            );
         }
 
         const signature = await db.query.contractSignature.findFirst({
@@ -52,6 +55,7 @@ export const mySignatureRoute = route().get(
             {
                 hasSigned: !!signature,
                 signedAt: signature?.signedAt?.toISOString() ?? null,
+                signedName: signature?.signedName ?? null,
             },
             200,
         );

@@ -44,9 +44,10 @@ const userFromClaims = (
  * Middleware that requires one of:
  * - A valid JWT (first-party from `/api/auth/token` or OAuth access token)
  * - A valid Photon API key (`Authorization: Bearer photon_...`)
+ * - A Better Auth session cookie
  *
  * On success, exactly one of `user`+(optionally `oauthClient`) or `apiKey`
- * will be set on the context. If neither succeeds, 401.
+ * will be set on the context. If none succeeds, 401.
  */
 export const requireAuthOrApiKey = describeMiddleware(
     createMiddleware<{ Variables: AuthOrApiKeyVariables }>(async (c, next) => {
@@ -77,6 +78,17 @@ export const requireAuthOrApiKey = describeMiddleware(
                 await next();
                 return;
             }
+        }
+
+        // 3. Better Auth session cookie. The web client authenticates with
+        // cookies only — without this it could never reach these routes.
+        const session = await auth.api.getSession({
+            headers: c.req.raw.headers,
+        });
+        if (session) {
+            c.set("user", session.user as AuthUser);
+            await next();
+            return;
         }
 
         throw HTTPAppException.Unauthorized("Authentication required");
