@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { initials } from "#/lib/utils";
-import type { Member } from "#/mock/group-detail";
+import type { Member } from "#/lib/group";
 
 type GroupMemberRowProps = {
     member: Member;
@@ -36,7 +36,7 @@ export function GroupMemberRow({
         <Card size="sm" className="flex-row items-center gap-1 py-2 pr-2 pl-3">
             <Link
                 to="/profil/$id"
-                params={{ id: member.name }}
+                params={{ id: member.id }}
                 className="flex min-w-0 flex-1 items-center gap-3"
             >
                 <Avatar className="size-10">
@@ -88,7 +88,7 @@ function MemberRowMenu({
             <DropdownMenuContent align="end" className="w-auto min-w-48">
                 <DropdownMenuItem
                     render={
-                        <Link to="/profil/$id" params={{ id: member.name }} />
+                        <Link to="/profil/$id" params={{ id: member.id }} />
                     }
                 >
                     <UserRound />

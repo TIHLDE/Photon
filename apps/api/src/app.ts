@@ -92,7 +92,14 @@ export const createApp = async (variables?: Variables) => {
             cors({
                 origin: "http://localhost:3000",
                 allowHeaders: ["Content-Type", "Authorization"],
-                allowMethods: ["POST", "GET", "OPTIONS"],
+                allowMethods: [
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS",
+                ],
                 exposeHeaders: ["Content-Length"],
                 maxAge: 600,
                 credentials: true,

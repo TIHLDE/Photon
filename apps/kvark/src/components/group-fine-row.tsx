@@ -2,7 +2,7 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
 import { ChevronRight, HandCoins } from "lucide-react";
 
-import type { Fine } from "#/mock/group-detail";
+import type { Fine } from "#/lib/group";
 
 type GroupFineRowProps = {
     fine: Fine;
@@ -33,7 +33,8 @@ export function GroupFineRow({ fine, index, onOpen }: GroupFineRowProps) {
                     ) : null}
                 </span>
                 <span className="truncate text-sm text-muted-foreground">
-                    {fine.paragraph} - {fine.title}
+                    {fine.paragraph ? `${fine.paragraph} - ` : ""}
+                    {fine.title}
                 </span>
             </div>
             <ChevronRight />

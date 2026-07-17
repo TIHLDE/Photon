@@ -11,12 +11,14 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { useSidebar } from "@tihlde/ui/ui/sidebar";
 import { PanelLeftIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import React, { useMemo } from "react";
+import { authQueryOptions } from "#/api/auth";
 import { ThemeSwitcher } from "./theme-switcher";
 
 export function AdminLayoutHeader() {
-    // const { auth } = useAuth(); -- Add auth later
-    const auth = null;
+    const { data: session } = useQuery(authQueryOptions);
+    const user = session?.user ?? null;
     const { toggleSidebar } = useSidebar();
     const matches = useMatches();
 
@@ -74,15 +76,22 @@ export function AdminLayoutHeader() {
                 </Breadcrumb>
                 <div className="ml-auto flex items-center gap-4">
                     <ThemeSwitcher />
-                    <Link to="/profil/me">
+                    <Link to="/profil/$id" params={{ id: "me" }}>
                         <Avatar>
                             <AvatarImage
-                                alt={auth?.user?.firstName}
-                                src={auth?.user?.image ?? ""}
+                                alt={user?.name ?? ""}
+                                src={
+                                    user?.settings?.imageUrl ??
+                                    user?.image ??
+                                    ""
+                                }
                             />
                             <AvatarFallback>
-                                {auth?.user?.firstName?.charAt(0)}
-                                {auth?.user?.lastName?.charAt(0)}
+                                {user?.name
+                                    ?.split(/\s+/)
+                                    .slice(0, 2)
+                                    .map((part) => part.charAt(0))
+                                    .join("")}
                             </AvatarFallback>
                         </Avatar>
                     </Link>

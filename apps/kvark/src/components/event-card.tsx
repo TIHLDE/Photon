@@ -11,8 +11,8 @@ export type EventCardProps = {
     organizer: string;
     category?: string;
     imageUrl?: string;
-    capacity: number | null;
-    registeredCount: number;
+    capacity?: number | null;
+    registeredCount?: number;
 };
 
 export function EventCard({
@@ -25,20 +25,29 @@ export function EventCard({
     capacity,
     registeredCount,
 }: EventCardProps) {
+    const meta = [
+        { icon: CalendarDays, text: startsAt },
+        { icon: MapPin, text: location },
+    ];
+
+    if (registeredCount !== undefined) {
+        meta.push({
+            icon: UsersRound,
+            text: `${registeredCount}${
+                capacity !== null && capacity !== undefined
+                    ? `/${capacity}`
+                    : ""
+            }`,
+        });
+    }
+
     return (
         <ListCard
             render={<Link to="/arrangementer/$slug" params={{ slug }} />}
             title={title}
             imageUrl={imageUrl}
             imageBadge={organizer}
-            meta={[
-                { icon: CalendarDays, text: startsAt },
-                { icon: MapPin, text: location },
-                {
-                    icon: UsersRound,
-                    text: `${registeredCount}${capacity !== null ? `/${capacity}` : ""}`,
-                },
-            ]}
+            meta={meta}
         />
     );
 }

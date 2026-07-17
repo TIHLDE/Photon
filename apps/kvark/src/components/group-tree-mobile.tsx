@@ -7,7 +7,6 @@ import type {
     GroupTreeInput,
     SimpleSection,
 } from "#/lib/build-group-tree";
-import { nameToSlug } from "#/lib/utils";
 
 function flattenBranches(branches: Branch[]): SimpleSection[] {
     return branches.flatMap((branch) => {
@@ -29,10 +28,10 @@ export function GroupTreeMobile({ tree }: { tree: GroupTreeInput }) {
                     <div className="grid gap-2 sm:grid-cols-2">
                         {section.items.map((item) => (
                             <Link
-                                key={item.name}
+                                key={item.slug}
                                 className="block cursor-pointer"
                                 to="/grupper/$slug"
-                                params={{ slug: nameToSlug(item.name) }}
+                                params={{ slug: item.slug }}
                             >
                                 <Card size="sm" className="cursor-pointer">
                                     <CardContent className="flex items-center gap-3">

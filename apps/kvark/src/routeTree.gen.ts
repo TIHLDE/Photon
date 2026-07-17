@@ -30,6 +30,7 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
+import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
@@ -154,6 +155,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
 const AppToddelRoute = AppToddelRouteImport.update({
   id: '/toddel',
   path: '/toddel',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPersonvernRoute = AppPersonvernRouteImport.update({
+  id: '/personvern',
+  path: '/personvern',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKontraktRoute = AppKontraktRouteImport.update({
@@ -282,9 +288,10 @@ const AppProfilIdArrangementerRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/admin': typeof AdminSuperAdminRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
+  '/personvern': typeof AppPersonvernRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
+  '/personvern': typeof AppPersonvernRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
+  '/_app/personvern': typeof AppPersonvernRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/kokebok'
     | '/kontrakt'
+    | '/personvern'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
     | '/'
     | '/kokebok'
     | '/kontrakt'
+    | '/personvern'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/_app/kokebok'
     | '/_app/kontrakt'
+    | '/_app/personvern'
     | '/_app/toddel'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -702,6 +714,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppToddelRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/personvern': {
+      id: '/_app/personvern'
+      path: '/personvern'
+      fullPath: '/personvern'
+      preLoaderRoute: typeof AppPersonvernRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/kontrakt': {
       id: '/_app/kontrakt'
       path: '/kontrakt'
@@ -896,6 +915,7 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 interface AppRouteChildren {
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
+  AppPersonvernRoute: typeof AppPersonvernRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
@@ -915,6 +935,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
+  AppPersonvernRoute: AppPersonvernRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,

@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { ReactFlow, type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
+import { getGroupsQuery } from "#/api/queries/groups";
 import { GroupTreeMobile } from "#/components/group-tree-mobile";
 import {
     GroupTreeJunctionNode,
@@ -12,13 +14,11 @@ import {
     NODE_TYPE,
 } from "#/components/group-tree-node";
 import { useTheme } from "#/integrations/theme";
-import { buildGroupTree } from "#/lib/build-group-tree";
-import { nameToSlug } from "#/lib/utils";
-
-import { TREE_MOCK } from "#/mock/groups";
-
-const { nodes, edges, width, height } = buildGroupTree(TREE_MOCK);
-const CHART_ASPECT = `${width} / ${height}`;
+import {
+    buildGroupTree,
+    type GroupTreeInput,
+    type SimpleSection,
+} from "#/lib/build-group-tree";
 
 const NODE_TYPES = {
     [NODE_TYPE.group]: GroupTreeNode,
@@ -36,11 +36,69 @@ const FIT_VIEW_OPTIONS = { padding: 0.05 };
 
 export const Route = createFileRoute("/_app/grupper/")({
     component: GroupsPage,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(getGroupsQuery(0)),
 });
+
+type ApiGroup = {
+    name: string;
+    slug: string;
+    type: string;
+    contactEmail: string | null;
+};
+
+function sectionFrom(
+    id: string,
+    label: string,
+    cols: SimpleSection["cols"],
+    groups: ApiGroup[],
+    type: string,
+): SimpleSection {
+    return {
+        id,
+        label,
+        cols,
+        items: groups
+            .filter((g) => g.type === type)
+            .map((g) => ({
+                name: g.name,
+                slug: g.slug,
+                email: g.contactEmail ?? undefined,
+            })),
+    };
+}
+
+function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
+    return {
+        main: [
+            sectionFrom("hovedorgan", "Hovedorgan", 2, groups, "BOARD"),
+            sectionFrom("undergrupper", "Undergrupper", 3, groups, "SUBGROUP"),
+            sectionFrom("komiteer", "Komitéer", 3, groups, "COMMITTEE"),
+        ],
+        branches: [
+            sectionFrom(
+                "interessegrupper",
+                "Interessegrupper",
+                3,
+                groups,
+                "INTERESTGROUP",
+            ),
+        ],
+    };
+}
 
 function GroupsPage() {
     const { theme } = useTheme();
     const navigate = useNavigate();
+
+    const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+
+    const tree = useMemo(() => buildTreeInput(groups as ApiGroup[]), [groups]);
+    const { nodes, edges, width, height } = useMemo(
+        () => buildGroupTree(tree),
+        [tree],
+    );
+    const chartAspect = `${width} / ${height}`;
 
     const onNodeClick = useCallback(
         (_: React.MouseEvent, node: Node) => {
@@ -48,7 +106,7 @@ function GroupsPage() {
             const data = node.data as GroupTreeNodeData;
             navigate({
                 to: "/grupper/$slug",
-                params: { slug: nameToSlug(data.name) },
+                params: { slug: data.slug },
             });
         },
         [navigate],
@@ -59,12 +117,12 @@ function GroupsPage() {
             <h1 className="text-center text-2xl">Gruppeoversikt</h1>
 
             <div className="md:hidden">
-                <GroupTreeMobile tree={TREE_MOCK} />
+                <GroupTreeMobile tree={tree} />
             </div>
 
             <div
                 className="hidden w-full md:block"
-                style={{ aspectRatio: CHART_ASPECT }}
+                style={{ aspectRatio: chartAspect }}
             >
                 <ReactFlow
                     colorMode={theme}

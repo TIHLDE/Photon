@@ -13,9 +13,9 @@ export type ProfileLink = {
 
 export type ProfileHeaderUser = {
     name: string;
-    username: string;
+    username?: string;
     email: string;
-    programme: string;
+    programme?: string;
     avatarUrl?: string;
     links: ProfileLink[];
 };
@@ -52,9 +52,13 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
             }
             subtitle={
                 <p className="text-sm text-muted-foreground">
-                    <span className="md:hidden">{user.programme}</span>
+                    <span className="md:hidden">
+                        {user.programme ?? user.email}
+                    </span>
                     <span className="hidden md:inline">
-                        {user.username} · {user.email} · {user.programme}
+                        {[user.username, user.email, user.programme]
+                            .filter(Boolean)
+                            .join(" · ")}
                     </span>
                 </p>
             }

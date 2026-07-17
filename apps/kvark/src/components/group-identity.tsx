@@ -2,8 +2,8 @@ import { Mail, User } from "lucide-react";
 
 export type GroupIdentityProps = {
     name: string;
-    leader: string;
-    email: string;
+    leader?: string;
+    email?: string;
     logoUrl?: string;
 };
 
@@ -28,14 +28,18 @@ export function GroupIdentity({
             )}
             <div className="flex min-w-0 flex-1 flex-col text-left">
                 <span className="truncate font-medium">{name}</span>
-                <span className="flex items-center gap-1 truncate text-muted-foreground">
-                    <User className="size-3 shrink-0" />
-                    <span className="truncate">{leader}</span>
-                </span>
-                <span className="flex items-center gap-1 truncate text-muted-foreground">
-                    <Mail className="size-3 shrink-0" />
-                    <span className="truncate">{email}</span>
-                </span>
+                {leader ? (
+                    <span className="flex items-center gap-1 truncate text-muted-foreground">
+                        <User className="size-3 shrink-0" />
+                        <span className="truncate">{leader}</span>
+                    </span>
+                ) : null}
+                {email ? (
+                    <span className="flex items-center gap-1 truncate text-muted-foreground">
+                        <Mail className="size-3 shrink-0" />
+                        <span className="truncate">{email}</span>
+                    </span>
+                ) : null}
             </div>
         </>
     );

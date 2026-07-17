@@ -1,4 +1,5 @@
-import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
@@ -20,6 +21,7 @@ import {
     PencilLine,
 } from "lucide-react";
 
+import { getJobByIdQuery } from "#/api/queries/jobs";
 import { DetailField } from "#/components/detail-field";
 import { DetailHero } from "#/components/detail-hero";
 import { DetailIdentity } from "#/components/detail-identity";
@@ -28,19 +30,26 @@ import { DetailsCard } from "#/components/details-card";
 import { IconActionButton } from "#/components/icon-action-button";
 import { ShareButton } from "#/components/share-button";
 import { richRegistry } from "#/components/markdown/directives/presets";
-import { getJobBySlug } from "#/mock/jobs";
+import {
+    formatClassRange,
+    formatJobDate,
+    formatJobDeadline,
+    formatJobType,
+} from "#/lib/job";
 
 export const Route = createFileRoute("/_app/annonser/$slug")({
     component: JobDetailPage,
-    loader: ({ params }) => {
-        const job = getJobBySlug(params.slug);
-        if (!job) throw notFound();
-        return { job };
-    },
+    loader: ({ context, params }) =>
+        context.queryClient.ensureQueryData(getJobByIdQuery(params.slug)),
 });
 
 function JobDetailPage() {
-    const { job } = Route.useLoaderData();
+    const { slug } = Route.useParams();
+
+    const { data: job } = useSuspenseQuery(getJobByIdQuery(slug));
+
+    const applyUrl =
+        job.link || (job.email ? `mailto:${job.email}` : undefined);
 
     return (
         <DetailPage
@@ -56,14 +65,11 @@ function JobDetailPage() {
                     </Button>
                 </div>
             }
-            hero={<DetailHero imageUrl={job.imageUrl} />}
+            hero={<DetailHero imageUrl={job.imageUrl || undefined} />}
             header={
                 <>
                     <div className="flex items-center justify-between gap-2">
-                        <DetailIdentity
-                            name={job.company}
-                            logoUrl={job.companyLogoUrl}
-                        />
+                        <DetailIdentity name={job.company} />
                         <div className="flex items-center gap-1">
                             <ShareButton label="Del stilling" />
                             <IconActionButton
@@ -75,7 +81,7 @@ function JobDetailPage() {
                     <h1 className="text-3xl md:text-4xl">{job.title}</h1>
                     <DetailField
                         icon={CalendarDays}
-                        value={`Publisert ${job.publishedAt}`}
+                        value={`Publisert ${formatJobDate(job.createdAt)}`}
                     />
                 </>
             }
@@ -87,19 +93,26 @@ function JobDetailPage() {
                             <CardDescription>
                                 <span className="flex items-center gap-1.5">
                                     <CalendarX className="size-4" />
-                                    Frist {job.deadlineAbsolute}
+                                    Frist{" "}
+                                    {formatJobDeadline(
+                                        job.deadline,
+                                        job.isContinuouslyHiring,
+                                    )}
                                 </span>
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Button
                                 className="w-full"
+                                disabled={!applyUrl}
                                 render={
-                                    <a
-                                        href={job.applyUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    />
+                                    applyUrl ? (
+                                        <a
+                                            href={applyUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        />
+                                    ) : undefined
                                 }
                             >
                                 Søk på stilling
@@ -114,12 +127,15 @@ function JobDetailPage() {
                             <DetailField
                                 icon={GraduationCap}
                                 label="Årstrinn"
-                                value={job.classLevels}
+                                value={formatClassRange(
+                                    job.classStart,
+                                    job.classEnd,
+                                )}
                             />,
                             <DetailField
                                 icon={Briefcase}
                                 label="Type"
-                                value={job.jobType}
+                                value={formatJobType(job.jobType)}
                             />,
                             <DetailField
                                 icon={MapPin}

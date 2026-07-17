@@ -1,4 +1,5 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { HTTPError } from "ky";
 import { apiClient } from "#/api/api-client";
 import type { CreateContract } from "@tihlde/sdk";
 
@@ -12,7 +13,21 @@ const ContractQueryKeys = {
 export const getActiveContractQuery = () =>
     queryOptions({
         queryKey: [...ContractQueryKeys.active],
-        queryFn: () => apiClient.get("/api/contracts/active"),
+        // Returns null (instead of throwing) when there is no active contract,
+        // so callers can render an empty state rather than an error boundary.
+        queryFn: async () => {
+            try {
+                return await apiClient.get("/api/contracts/active");
+            } catch (error) {
+                if (
+                    error instanceof HTTPError &&
+                    error.response.status === 404
+                ) {
+                    return null;
+                }
+                throw error;
+            }
+        },
     });
 
 export const getMySignatureQuery = () =>

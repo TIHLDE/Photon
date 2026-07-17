@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import {
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type {
     CreateGroup,
     UpdateGroup,
     AddGroupMember,
@@ -41,14 +41,8 @@ export const getGroupsQuery = (
 ) =>
     queryOptions({
         queryKey: [...GroupQueryKeys.list, page, pageSize, filters],
-        queryFn: () =>
-            apiClient.get("/api/groups", {
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/groups returns the full group array (no pagination).
+        queryFn: () => apiClient.get("/api/groups"),
     });
 
 export const getGroupsInfiniteQuery = (
@@ -57,16 +51,10 @@ export const getGroupsInfiniteQuery = (
 ) =>
     infiniteQueryOptions({
         queryKey: [...GroupQueryKeys.listInfinite, pageSize, filters],
-        queryFn: ({ pageParam }) =>
-            apiClient.get("/api/groups", {
-                searchParams: {
-                    page: pageParam,
-                    pageSize,
-                    ...filters,
-                },
-            }),
+        // GET /api/groups is not paginated; the single page holds every group.
+        queryFn: () => apiClient.get("/api/groups"),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => lastPage.nextPage,
+        getNextPageParam: () => undefined,
     });
 
 export const getMyGroupsQuery = () =>
@@ -170,11 +158,6 @@ export const getGroupMembersQuery = (
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/members", {
                 params: { groupSlug },
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
             }),
     });
 
@@ -257,11 +240,6 @@ export const getGroupFinesQuery = (
         queryFn: () =>
             apiClient.get("/api/groups/{groupSlug}/fines", {
                 params: { groupSlug },
-                searchParams: {
-                    page,
-                    pageSize,
-                    ...filters,
-                },
             }),
     });
 

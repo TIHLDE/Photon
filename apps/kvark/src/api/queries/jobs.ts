@@ -4,8 +4,8 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
-import { QueryParamsHelper } from "@tihlde/sdk/types";
-import { CreateJob, UpdateJob } from "@tihlde/sdk";
+import type { QueryParamsHelper } from "@tihlde/sdk/types";
+import type { CreateJob, UpdateJob } from "@tihlde/sdk";
 
 const JobQueryKeys = {
     listInfinite: ["jobs", "list-infinite"] as const,
