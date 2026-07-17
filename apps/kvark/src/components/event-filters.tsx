@@ -33,14 +33,12 @@ type EventFiltersProps = {
     value: EventFiltersValue;
     categories: Category[];
     onChange: (next: EventFiltersValue) => void;
-    onSubmit: () => void;
 };
 
 export function EventFilters({
     value,
     categories,
     onChange,
-    onSubmit,
 }: EventFiltersProps) {
     const pills = useMemo<FilterPill[]>(() => {
         const next: FilterPill[] = [];
@@ -92,6 +90,7 @@ export function EventFilters({
                     <div className="flex flex-col gap-2">
                         <Label>Kategori</Label>
                         <Select
+                            items={categories}
                             value={value.category}
                             onValueChange={(category) =>
                                 onChange({ ...value, category: category ?? "" })
@@ -114,7 +113,7 @@ export function EventFilters({
                         <span className="text-sm">Alternativer</span>
                         <FilterCheckboxOption
                             title="Tidligere"
-                            description="Vis tidligere arrangementer"
+                            description="Vis kun tidligere arrangementer"
                             checked={value.showPast}
                             onCheckedChange={(showPast) =>
                                 onChange({ ...value, showPast })
@@ -133,7 +132,6 @@ export function EventFilters({
             }
             pills={pills}
             onClearAll={() => onChange(DEFAULT_EVENT_FILTERS)}
-            onSubmit={onSubmit}
         />
     );
 }

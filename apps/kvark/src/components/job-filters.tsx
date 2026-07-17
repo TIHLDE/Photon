@@ -28,7 +28,6 @@ type JobFiltersProps = {
     classLevelOptions: Option<number>[];
     jobTypeOptions: Option<JobType>[];
     onChange: (next: JobFiltersValue) => void;
-    onSubmit: () => void;
 };
 
 export function JobFilters({
@@ -36,7 +35,6 @@ export function JobFilters({
     classLevelOptions,
     jobTypeOptions,
     onChange,
-    onSubmit,
 }: JobFiltersProps) {
     const toggleClassLevel = (level: number, checked: boolean) => {
         const next = checked
@@ -137,7 +135,6 @@ export function JobFilters({
             }
             pills={pills}
             onClearAll={() => onChange(DEFAULT_JOB_FILTERS)}
-            onSubmit={onSubmit}
         />
     );
 }

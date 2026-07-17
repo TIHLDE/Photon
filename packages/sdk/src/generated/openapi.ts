@@ -3248,7 +3248,9 @@ export interface operations {
                 page?: number;
                 /** @description Search term to filter events by title */
                 search?: string;
-                /** @description Whether to include expired events or not */
+                /** @description Only return events in these category slugs. Omit to return every category. */
+                category?: string[];
+                /** @description Filter on whether the event has already ended. True returns only past events, false only upcoming ones. Omit to return both. */
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;

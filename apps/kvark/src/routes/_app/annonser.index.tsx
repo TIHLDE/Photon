@@ -56,7 +56,6 @@ function JobsPage() {
                         classLevelOptions={CLASS_LEVELS}
                         jobTypeOptions={JOB_TYPES}
                         onChange={setFilters}
-                        onSubmit={() => {}}
                     />
                 </aside>
 

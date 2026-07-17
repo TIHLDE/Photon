@@ -172,6 +172,10 @@ function EventAdminPage() {
                                     Arrangørgruppe
                                 </FieldLabel>
                                 <Select
+                                    items={groups.map((group) => ({
+                                        value: group.slug,
+                                        label: group.name,
+                                    }))}
                                     value={organizerGroupSlug}
                                     onValueChange={(value) =>
                                         setOrganizerGroupSlug(value ?? "")
