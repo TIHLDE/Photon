@@ -218,7 +218,10 @@ export function createAuth(options: CreateAuthOptions) {
         plugins: [
             admin(),
             openAPI(),
-            ...(isFeideConfigured ? [feidePlugin()] : []),
+            // Always present so the plugins tuple stays stable for `$Infer`;
+            // the Feide provider itself is gated inside feidePlugin() on the
+            // credentials being set.
+            feidePlugin(),
             username(),
             jwt({
                 // Recommended by better-auth docs when using with OAuth Provider plugin
