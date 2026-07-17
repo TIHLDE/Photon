@@ -39,8 +39,6 @@ export async function verifyJWTAccessToken(
 
         const { payload } = await jwtVerify(token, jwksSet);
 
-        console.log("JWT payload:", payload);
-
         const schema = accessTokenPayloadSchema.safeParse(payload);
         if (!schema.success) return null;
 

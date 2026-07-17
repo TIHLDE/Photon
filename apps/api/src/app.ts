@@ -90,7 +90,17 @@ export const createApp = async (variables?: Variables) => {
         .use(
             "*",
             cors({
-                origin: "http://localhost:3000",
+                // Credentialed requests need an explicit origin — never "*".
+                // Outside production, keep localhost usable even when
+                // WEBSITE_URL points somewhere else (an ngrok tunnel, say).
+                origin: [
+                    ...new Set([
+                        env.WEBSITE_URL,
+                        ...(env.NODE_ENV === "production"
+                            ? []
+                            : ["http://localhost:3000"]),
+                    ]),
+                ],
                 allowHeaders: ["Content-Type", "Authorization"],
                 allowMethods: [
                     "GET",
