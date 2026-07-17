@@ -35,10 +35,17 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
+import { authClientWithRedirect } from "#/api/auth";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 
 export const Route = createFileRoute("/admin")({
     component: AdminLayout,
+    async beforeLoad({ location }) {
+        // Baseline: you must be signed in to reach the admin shell at all.
+        // Each section still relies on the API enforcing its own permission.
+        const auth = await authClientWithRedirect(location.href);
+        return { auth };
+    },
 });
 
 function AdminLayout() {

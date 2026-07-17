@@ -12,7 +12,7 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { signInEmailMutationOptions } from "#/api/auth";
+import { sanitizeRedirectTo, signInEmailMutationOptions } from "#/api/auth";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
 // Keep extra search params (sig, exp, client_id, scope…) so the
@@ -61,7 +61,8 @@ function LoginPage() {
             }
 
             // Hard navigation so the search params (and any stale state) are dropped.
-            window.location.href = redirectTo ?? "/";
+            // Sanitized: redirectTo is attacker-controllable via the URL.
+            window.location.href = sanitizeRedirectTo(redirectTo);
         },
     });
 

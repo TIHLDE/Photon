@@ -104,30 +104,56 @@ export async function invalidateAuth() {
     await getQueryClient().invalidateQueries(authQueryOptions);
 }
 
-// /**
-//  * Checks if the user has write permission for the given app(s)
-//  * @param permissions the user permissions
-//  * @param app the app(s) to check agains
-//  * @param some if true, the user must only have write permission for one of the apps
-//  * @returns if the user has write or write_all permission
-//  */
-// export function userHasWritePermission(
-//     permissions: Record<string, Permissions>,
-//     app: PermissionApp | PermissionApp[],
-//     some: boolean = false,
-// ): boolean {
-//     if (!Array.isArray(app)) {
-//         const perm = permissions[app];
-//         if (!perm) {
-//             return false;
-//         }
-//         return Boolean(perm.write) || Boolean(perm.write_all);
-//     }
-//     if (some) {
-//         return app.some((p) => userHasWritePermission(permissions, p));
-//     }
-//     return app.every((p) => userHasWritePermission(permissions, p));
-// }
+const GLOBAL_SCOPE = "*";
+
+/**
+ * Session permissions arrive as `"events:create"` (global) or
+ * `"events:create@group:fotball"` (scoped).
+ */
+function parsePermission(raw: string): { permission: string; scope: string } {
+    const at = raw.indexOf("@");
+    if (at === -1) return { permission: raw, scope: GLOBAL_SCOPE };
+    return { permission: raw.slice(0, at), scope: raw.slice(at + 1) };
+}
+
+/**
+ * Whether the session holds a permission GLOBALLY. Returns true if any of
+ * `required` matches. `"root"` grants everything.
+ *
+ * Mirrors `hasPermission` in @photon/auth/rbac: a scoped grant such as
+ * `events:create@group:fotball` does NOT satisfy a global check. Keep the two
+ * in step — this guard must never be more permissive than the server, which
+ * remains the actual enforcement point.
+ */
+export function sessionHasPermission(
+    permissions: string[] | undefined,
+    required: string | string[],
+): boolean {
+    if (!permissions) return false;
+
+    const names = Array.isArray(required) ? required : [required];
+    if (names.length === 0) return false;
+
+    if (permissions.includes("root")) return true;
+
+    return names.some((name) =>
+        permissions.some((raw) => {
+            const parsed = parsePermission(raw);
+            return parsed.permission === name && parsed.scope === GLOBAL_SCOPE;
+        }),
+    );
+}
+
+/**
+ * Only allow redirecting back to a path on this site. Without this, a crafted
+ * `?redirectTo=https://evil.example` would bounce the user off-site after login.
+ */
+export function sanitizeRedirectTo(url: unknown): string {
+    if (typeof url !== "string") return "/";
+    // Reject protocol-relative ("//evil.com") and absolute URLs.
+    if (!url.startsWith("/") || url.startsWith("//")) return "/";
+    return url;
+}
 
 /**
  * Attempts to authenticate the user and redirects to the login page if not authenticated
@@ -150,11 +176,34 @@ export async function authClientWithRedirect(url: string) {
  */
 export function createLoginRedirectUrl(url: string) {
     return linkOptions({
-        to: "/", // TODO: Replace with auth endpoint
+        to: "/login",
         search: {
-            redirectTo: url,
+            redirectTo: sanitizeRedirectTo(url),
         },
     });
+}
+
+/**
+ * Requires an authenticated session that holds `permission` globally.
+ *
+ * Unauthenticated visitors are sent to the login page and back afterwards.
+ * A signed-in user without the permission is sent to the front page rather
+ * than the login page — re-authenticating would not help them.
+ *
+ * This gates the UI only. The API enforces the same permissions server-side
+ * via `requireAccess`, and that is what actually protects the data.
+ */
+export async function authClientWithPermission(
+    url: string,
+    permission: string | string[],
+) {
+    const auth = await authClientWithRedirect(url);
+
+    if (!sessionHasPermission(auth.permissions, permission)) {
+        throw redirect({ to: "/" });
+    }
+
+    return auth;
 }
 
 export async function logoutUser() {
