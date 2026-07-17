@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
     boolean,
     integer,
+    jsonb,
     pgTableCreator,
     primaryKey,
     serial,
@@ -181,12 +182,33 @@ export const fine = pgTable("fine", {
     ...timestamps,
 });
 
+/**
+ * Where a signature is drawn on the contract PDF.
+ *
+ * Normalized to 0..1 of each page's dimensions with a top-left origin, matching
+ * how the browser places the field. pdf-lib uses a bottom-left origin, so `y` is
+ * flipped at stamping time.
+ */
+export type SignaturePlacement = {
+    page: number;
+    xPct: number;
+    yPct: number;
+    wPct: number;
+    hPct: number;
+};
+
 export const contract = pgTable("contract", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 256 }).notNull(),
     fileKey: varchar("file_key", { length: 600 }).notNull(),
     version: varchar("version", { length: 64 }).notNull(),
     isActive: boolean("is_active").notNull().default(false),
+    /** Where the member's signature image is stamped. Null until placed. */
+    signaturePlacement: jsonb(
+        "signature_placement",
+    ).$type<SignaturePlacement>(),
+    /** Optional "sted og dato" line, placed next to the signature. */
+    namePlacement: jsonb("name_placement").$type<SignaturePlacement>(),
     createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
         () => user.id,
         { onDelete: "set null" },
@@ -205,6 +227,22 @@ export const contractSignature = pgTable(
             .notNull()
             .references(() => user.id, { onDelete: "cascade" }),
         signedAt: timestamp("signed_at").defaultNow().notNull(),
+        /** Name the signer typed, kept verbatim even if they later rename. */
+        signedName: varchar("signed_name", { length: 256 }).notNull(),
+        /**
+         * The contract PDF with the signature stamped in, frozen at signing time
+         * so the signed document stays a fixed artifact. Private: reachable only
+         * via GET /api/contracts/signed-pdf, never the public asset route.
+         */
+        signedPdfKey: varchar("signed_pdf_key", { length: 600 }).notNull(),
+        /** SHA-256 of the stamped PDF, to prove it has not been altered since. */
+        signedPdfHash: varchar("signed_pdf_hash", { length: 64 }).notNull(),
+        /** Raw signature PNG, retained so stamped PDFs can be regenerated. */
+        signatureFileKey: varchar("signature_file_key", {
+            length: 600,
+        }).notNull(),
+        signerIp: varchar("signer_ip", { length: 45 }),
+        signerUa: text("signer_ua"),
         ...timestamps,
     },
     (t) => [

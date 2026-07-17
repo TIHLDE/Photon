@@ -89,6 +89,9 @@ export default async ({ db }: AppContext) => {
         },
     ] as const;
 
+    // Groups that auto-assign an RBAC role to their members (see group.roleId).
+    const groupRoles: Record<string, string> = { hs: "hs" };
+
     for (const group of groups) {
         const exists = await db
             .select()
@@ -96,6 +99,16 @@ export default async ({ db }: AppContext) => {
             .where(eq(schema.group.slug, group.slug))
             .limit(1);
         if (!exists.length) {
+            const roleName = groupRoles[group.slug];
+            const linkedRole = roleName
+                ? await db
+                      .select({ id: schema.role.id })
+                      .from(schema.role)
+                      .where(eq(schema.role.name, roleName))
+                      .limit(1)
+                      .then((rows) => rows[0])
+                : undefined;
+
             const newGroup: InferInsertModel<DbSchema["group"]> = {
                 name: group.name,
                 slug: group.slug,
@@ -108,6 +121,7 @@ export default async ({ db }: AppContext) => {
                 updatedAt: new Date(group.updated_at),
                 imageUrl: group.image,
                 finesAdminId: null,
+                roleId: linkedRole?.id ?? null,
             };
 
             await db.insert(schema.group).values(newGroup);

@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { removeUserFromGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -26,7 +27,8 @@ export const removeMemberRoute = route().delete(
     async (c) => {
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         // Validate group exists
         const group = await db
@@ -61,15 +63,9 @@ export const removeMemberRoute = route().delete(
             });
         }
 
-        // Remove membership
-        await db
-            .delete(schema.groupMembership)
-            .where(
-                and(
-                    eq(schema.groupMembership.userId, userId),
-                    eq(schema.groupMembership.groupSlug, groupSlug),
-                ),
-            );
+        // Remove membership. Goes through the helper so the group's associated
+        // RBAC role (group.roleId) is revoked along with it.
+        await removeUserFromGroup(ctx, userId, groupSlug);
 
         return c.body(null, 204);
     },

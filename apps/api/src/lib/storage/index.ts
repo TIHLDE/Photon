@@ -11,6 +11,11 @@ export interface UploadMetadata {
     originalFilename: string;
     contentType?: string;
     uploadedById?: string;
+    /**
+     * Whether GET /api/assets/:key may serve this asset. Defaults to "public".
+     * Use "private" for anything that must go through its own authorization.
+     */
+    visibility?: "public" | "private";
 }
 
 export interface AssetStorageService {
@@ -65,6 +70,7 @@ export class DatabaseAssetStorageService implements AssetStorageService {
                 contentType: metadata.contentType,
                 size: bodyBuffer.length,
                 uploadedById: metadata.uploadedById,
+                visibility: metadata.visibility ?? "public",
             })
             .onConflictDoUpdate({
                 target: schema.asset.key,
@@ -73,6 +79,7 @@ export class DatabaseAssetStorageService implements AssetStorageService {
                     contentType: metadata.contentType,
                     size: bodyBuffer.length,
                     uploadedById: metadata.uploadedById,
+                    visibility: metadata.visibility ?? "public",
                     updatedAt: new Date(),
                 },
             });

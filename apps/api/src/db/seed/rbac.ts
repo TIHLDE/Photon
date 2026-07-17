@@ -34,6 +34,23 @@ export default async ({ db }: AppContext) => {
         })
         .onConflictDoNothing();
 
+    // Hovedstyret role (position 3)
+    // Auto-assigned to members of the "hs" group via group.roleId, so HS can
+    // manage the volunteer contract without holding the blanket admin role.
+    await db
+        .insert(schema.role)
+        .values({
+            name: "hs",
+            description: "Hovedstyret - manages the volunteer contract",
+            position: 3, // Below admin, above moderator
+            permissions: [
+                "contracts:view",
+                "contracts:create",
+                "contracts:update",
+            ],
+        })
+        .onConflictDoNothing();
+
     // Moderator role (position 2)
     await db
         .insert(schema.role)

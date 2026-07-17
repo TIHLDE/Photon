@@ -1,5 +1,30 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+
+/* Handwriting faces for the typed signature (SignatureInput). Self-hosted from
+   the consuming app's /fonts, and given stable family names so they can be
+   referenced from a canvas ctx.font and document.fonts.load(). OFL-licensed. */
+@font-face {
+    font-family: "Great Vibes";
+    src: url("/fonts/great-vibes.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Dancing Script";
+    src: url("/fonts/dancing-script.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Caveat";
+    src: url("/fonts/caveat.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
 @plugin '@tailwindcss/typography';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";

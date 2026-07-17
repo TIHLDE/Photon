@@ -3,6 +3,21 @@ import { Schema } from "~/lib/openapi";
 
 // ===== INPUT SCHEMAS =====
 
+/**
+ * Where an element is drawn on the PDF, normalized to 0..1 of the page's size
+ * with a top-left origin (as the browser places it).
+ */
+export const placementSchema = Schema(
+    "SignaturePlacement",
+    z.object({
+        page: z.number().int().nonnegative(),
+        xPct: z.number().min(0).max(1),
+        yPct: z.number().min(0).max(1),
+        wPct: z.number().positive().max(1),
+        hPct: z.number().positive().max(1),
+    }),
+);
+
 export const createContractSchema = Schema(
     "CreateContract",
     z.object({
@@ -21,6 +36,31 @@ export const createContractSchema = Schema(
             .min(1)
             .max(600)
             .meta({ description: "Asset key from POST /api/assets" }),
+        signaturePlacement: placementSchema.nullish().meta({
+            description: "Where the member's signature is stamped on the PDF",
+        }),
+        namePlacement: placementSchema.nullish().meta({
+            description: "Where the signer's name and date are written",
+        }),
+    }),
+);
+
+export const signContractSchema = Schema(
+    "SignContract",
+    z.object({
+        signedName: z.string().trim().min(1).max(256).meta({
+            description: "Full name the member signed with",
+        }),
+        signatureDataUrl: z
+            .string()
+            .regex(
+                /^data:image\/png;base64,/,
+                "Signature must be a base64-encoded PNG data URL",
+            )
+            .meta({
+                description:
+                    "Signature as a PNG data URL, produced by the signature pad",
+            }),
     }),
 );
 
@@ -34,6 +74,8 @@ export const contractSchema = Schema(
         version: z.string(),
         fileKey: z.string(),
         isActive: z.boolean(),
+        signaturePlacement: placementSchema.nullable(),
+        namePlacement: placementSchema.nullable(),
         createdAt: z.string(),
         updatedAt: z.string(),
     }),
@@ -58,6 +100,7 @@ export const signatureStatusSchema = Schema(
     z.object({
         hasSigned: z.boolean(),
         signedAt: z.string().nullable(),
+        signedName: z.string().nullable(),
     }),
 );
 

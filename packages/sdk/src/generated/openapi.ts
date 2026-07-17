@@ -159,6 +159,9 @@ export interface paths {
          * @description Download a file by its key. No authentication required.
          *
          *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
+         *
+         *     Private assets (e.g. contract signatures) are never served here — they are only
+         *     reachable through routes that perform their own authorization.
          */
         get: operations["downloadAsset"];
         put?: never;
@@ -872,9 +875,57 @@ export interface paths {
         put?: never;
         /**
          * Sign the active contract
-         * @description Signs the active volunteer contract for the authenticated user. Sends email to notification contacts of all groups the user belongs to that require contract signing.
+         * @description Signs the active volunteer contract for the authenticated user.
+         *
+         *     The signature PNG is stamped onto the contract at the placement chosen when the
+         *     contract was uploaded, and the resulting PDF is stored as the signed document.
+         *     Both the signature and the signed PDF are private assets — fetch the signed PDF
+         *     via GET /api/contracts/signed-pdf, never the public asset route.
+         *
+         *     Sends email to notification contacts of all groups the user belongs to that
+         *     require contract signing.
          */
         post: operations["signContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/signed-pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download my signed contract
+         * @description Streams the authenticated user's signed copy of the active contract, with their signature stamped in.
+         */
+        get: operations["getMySignedContractPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/signed-pdf/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a member's signed contract
+         * @description Streams a member's signed copy of the active contract. Requires 'contracts:manage' permission.
+         */
+        get: operations["getUserSignedContractPdf"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2360,6 +2411,13 @@ export interface components {
             created_at: string;
             updated_at: string;
         }[];
+        SignaturePlacement: {
+            page: number;
+            xPct: number;
+            yPct: number;
+            wPct: number;
+            hPct: number;
+        };
         ActiveContract: {
             /** Format: uuid */
             id: string;
@@ -2367,6 +2425,8 @@ export interface components {
             version: string;
             fileKey: string;
             isActive: boolean;
+            signaturePlacement: components["schemas"]["SignaturePlacement"] | null;
+            namePlacement: components["schemas"]["SignaturePlacement"] | null;
             createdAt: string;
             updatedAt: string;
             /** @description Direct URL to stream the PDF */
@@ -2375,10 +2435,17 @@ export interface components {
         SignatureStatus: {
             hasSigned: boolean;
             signedAt: string | null;
+            signedName: string | null;
         };
         SignContractResponse: {
             message: string;
             signedAt: string;
+        };
+        SignContract: {
+            /** @description Full name the member signed with */
+            signedName: string;
+            /** @description Signature as a PNG data URL, produced by the signature pad */
+            signatureDataUrl: string;
         };
         Contract: {
             /** Format: uuid */
@@ -2387,6 +2454,8 @@ export interface components {
             version: string;
             fileKey: string;
             isActive: boolean;
+            signaturePlacement: components["schemas"]["SignaturePlacement"] | null;
+            namePlacement: components["schemas"]["SignaturePlacement"] | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -2398,6 +2467,10 @@ export interface components {
             version: string;
             /** @description Asset key from POST /api/assets */
             fileKey: string;
+            /** @description Where the member's signature is stamped on the PDF */
+            signaturePlacement?: components["schemas"]["SignaturePlacement"] | null;
+            /** @description Where the signer's name and date are written */
+            namePlacement?: components["schemas"]["SignaturePlacement"] | null;
         };
         ActivateContractResponse: {
             message: string;
@@ -5196,7 +5269,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignContract"];
+            };
+        };
         responses: {
             /** @description Contract signed */
             201: {
@@ -5206,6 +5283,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SignContractResponse"];
                 };
+            };
+            /** @description Bad Request - Invalid signature image */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {
@@ -5225,6 +5309,83 @@ export interface operations {
             };
             /** @description Already signed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMySignedContractPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signed contract PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract, or not signed yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserSignedContractPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signed contract PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - No active contract, or not signed yet */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
