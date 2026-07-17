@@ -1,5 +1,9 @@
 import { toPlainText } from "@photon/email";
-import { BaseEmailService, type ContentOptions, type SendOptions } from "./base";
+import {
+    BaseEmailService,
+    type ContentOptions,
+    type SendOptions,
+} from "./base";
 
 export class ConsoleEmailService extends BaseEmailService {
     async sendRawEmail(

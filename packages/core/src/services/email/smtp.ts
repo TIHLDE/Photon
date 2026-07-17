@@ -1,5 +1,9 @@
 import { createTransport, type Transporter } from "nodemailer";
-import { BaseEmailService, type ContentOptions, type SendOptions } from "./base";
+import {
+    BaseEmailService,
+    type ContentOptions,
+    type SendOptions,
+} from "./base";
 
 export class SMTPEmailService extends BaseEmailService {
     #smtpTransport: Transporter;

@@ -60,6 +60,10 @@ const envSchema = z
             .default("1")
             .transform((val) => Number(val)),
 
+        // AUTH
+        /** Better Auth signing secret. Must be set in production; createAuth throws if it isn't. */
+        AUTH_SECRET: z.string().default(""),
+
         // DATABASE
         DATABASE_URL: z.string().default(""),
         SEED_DB: z

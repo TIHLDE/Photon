@@ -13,7 +13,7 @@
     "scripts": {
         "build": "tsdown",
         "dev": "tsdown --watch",
-        "typecheck": "tsgo --noEmit",
+        "typecheck": "tsc --noEmit",
         "email": "email dev --port 4001 --dir src/template"
     },
     "dependencies": {

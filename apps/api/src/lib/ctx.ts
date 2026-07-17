@@ -53,8 +53,10 @@ export async function createAppContext(): Promise<AppContext> {
 
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
+        secret: env.AUTH_SECRET,
         services: {
             database: drizzleAdapter(db, { provider: "pg", schema }),
+            db,
             cache,
             email,
         },
@@ -99,8 +101,10 @@ export async function createTestAppContext(options?: {
     );
     const auth = createAuth({
         isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
+        secret: env.AUTH_SECRET,
         services: {
             database: drizzleAdapter(db, { provider: "pg", schema }),
+            db,
             cache,
             email,
         },

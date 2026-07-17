@@ -1,14 +1,29 @@
 import { betterAuth, BetterAuthOptions, DBAdapter } from "better-auth";
-import { admin, jwt, openAPI, username } from "better-auth/plugins";
+import {
+    admin,
+    customSession,
+    jwt,
+    openAPI,
+    username,
+} from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import {
     oauthProviderAuthServerMetadata,
     oauthProviderOpenIdConfigMetadata,
 } from "@better-auth/oauth-provider";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DbSchema } from "@photon/db";
 import type { EmailService, CacheService } from "@photon/core/services";
+import { getUserPermissions } from "./rbac/permissions";
 
 export interface CreateAuthOptions {
     isDevMode?: boolean;
+
+    /**
+     * Signing secret for sessions and tokens. Required in production —
+     * `createAuth` throws if it is missing there.
+     */
+    secret: string;
 
     urls: {
         frontend: string;
@@ -19,6 +34,12 @@ export interface CreateAuthOptions {
 
     services: {
         database: (options: BetterAuthOptions) => DBAdapter<BetterAuthOptions>;
+        /**
+         * Raw Drizzle handle used by `customSession` to enrich the session with
+         * settings, permissions and groups. `database` above is Better Auth's
+         * own adapter and cannot answer these queries.
+         */
+        db: NodePgDatabase<DbSchema>;
         email: EmailService;
         cache: CacheService;
     };
@@ -43,8 +64,15 @@ export function createAuth(options: CreateAuthOptions) {
         );
     }
 
+    if (isProd && !options.secret) {
+        throw new Error(
+            "AUTH_SECRET must be set in production; refusing to start with an unsigned auth instance",
+        );
+    }
+
     return betterAuth({
         appName: "Photon, TIHLDE Backend",
+        secret: options.secret || undefined,
         database: options.services.database,
         baseURL: {
             allowedHosts: [
@@ -164,6 +192,46 @@ export function createAuth(options: CreateAuthOptions) {
                     refreshToken: "tihlde_rt_",
                 },
             }),
+
+            // Must stay last: it wraps the session shape produced by the
+            // plugins above, and `ExtendedSession` is inferred from the result.
+            customSession(async ({ user, session }) => {
+                const db = options.services.db;
+
+                const [settings, permissions, groups] = await Promise.all([
+                    db.query.userSettings.findFirst({
+                        where: (s, { eq }) => eq(s.userId, user.id),
+                        with: { allergies: { columns: { allergySlug: true } } },
+                    }),
+                    getUserPermissions({ db }, user.id),
+                    db.query.groupMembership.findMany({
+                        where: (gm, { eq }) => eq(gm.userId, user.id),
+                        with: { group: true },
+                    }),
+                ]);
+
+                return {
+                    user: {
+                        ...user,
+                        settings: settings
+                            ? {
+                                  ...settings,
+                                  allergies: settings.allergies.map(
+                                      (a) => a.allergySlug,
+                                  ),
+                              }
+                            : null,
+                    },
+                    session,
+                    permissions: [...new Set(permissions)],
+                    groups: groups.map((g) => ({
+                        slug: g.groupSlug,
+                        name: g.group.name,
+                        type: g.group.type,
+                        role: g.role,
+                    })),
+                };
+            }),
         ],
     });
 }
@@ -171,6 +239,12 @@ export function createAuth(options: CreateAuthOptions) {
 export type AuthInstance = ReturnType<typeof createAuth>;
 export type AuthSession = AuthInstance["$Infer"]["Session"]["session"];
 export type AuthUser = AuthInstance["$Infer"]["Session"]["user"];
+
+/**
+ * Full session returned by get-session: user + settings, permissions and groups.
+ * Source of truth for the SDK's generated `session-types.ts`.
+ */
+export type ExtendedSession = AuthInstance["$Infer"]["Session"];
 
 export function createOAuthServerMetadata(auth: AuthInstance) {
     return oauthProviderAuthServerMetadata(auth, {

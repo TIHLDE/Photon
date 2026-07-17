@@ -33,13 +33,29 @@ async function sessionFromVerifiedToken(
     if (!session || session.userId !== verified.sub) return null;
     if (session.expiresAt <= new Date()) return null;
 
-    const user = await ctx.db.query.user.findFirst({
-        where: eq(schema.user.id, verified.sub),
-    });
+    const [user, settings] = await Promise.all([
+        ctx.db.query.user.findFirst({
+            where: eq(schema.user.id, verified.sub),
+        }),
+        ctx.db.query.userSettings.findFirst({
+            where: eq(schema.userSettings.userId, verified.sub),
+            with: { allergies: { columns: { allergySlug: true } } },
+        }),
+    ]);
     if (!user) return null;
 
+    // Mirror the shape `customSession` builds, so bearer- and cookie-authenticated
+    // requests see the same user object.
     return {
-        user: user as AuthUser,
+        user: {
+            ...user,
+            settings: settings
+                ? {
+                      ...settings,
+                      allergies: settings.allergies.map((a) => a.allergySlug),
+                  }
+                : null,
+        } as AuthUser,
         session: session as AuthSession,
     };
 }

@@ -6,13 +6,22 @@ import type {
     OAuth2UserInfo,
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DbSchema } from "@photon/db";
 import {
     account,
     studyProgram,
     studyProgramMembership,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
+
+/**
+ * Database access required by the Feide sync hook.
+ */
+export type AuthCreateContext = {
+    db: NodePgDatabase<DbSchema>;
+};
 
 /**
  * BetterAuth provider ID for Feide
@@ -167,11 +176,13 @@ export const syncFeideHook: (
                     })
                     .from(studyProgramMembership)
                     .where(
-                        eq(studyProgramMembership.userId, userId) &&
+                        and(
+                            eq(studyProgramMembership.userId, userId),
                             eq(
                                 studyProgramMembership.studyProgramId,
                                 studyProgramId,
                             ),
+                        ),
                     )
                     .limit(1);
 
