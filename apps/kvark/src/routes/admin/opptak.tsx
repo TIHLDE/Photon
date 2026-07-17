@@ -21,8 +21,10 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import type { Contract } from "@tihlde/sdk";
+import type { PlacementFields } from "@tihlde/ui/complex/pdf-placement";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CheckCircle2, Upload, XCircle, Zap } from "lucide-react";
-import { useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 
 import { uploadAssetMutation } from "#/api/queries/assets";
 import {
@@ -30,6 +32,12 @@ import {
     createContractMutation,
     getContractListQuery,
 } from "#/api/queries/contracts";
+
+// react-pdf needs canvas and a worker, so it must never load during SSR. It is
+// only rendered once a file is picked, which is necessarily client-side.
+const PdfPlacement = lazy(async () => ({
+    default: (await import("@tihlde/ui/complex/pdf-placement")).PdfPlacement,
+}));
 
 export const Route = createFileRoute("/admin/opptak")({
     component: OpptakAdminPage,
@@ -60,6 +68,23 @@ function UploadContractCard() {
     const [title, setTitle] = useState("");
     const [version, setVersion] = useState("");
     const [file, setFile] = useState<File | null>(null);
+    const [fields, setFields] = useState<PlacementFields>({
+        signature: null,
+        name: null,
+    });
+
+    // Render the chosen file straight from memory; it is not uploaded until
+    // submit, so placement happens before the asset exists.
+    const [fileUrl, setFileUrl] = useState<string | null>(null);
+    useEffect(() => {
+        if (!file) {
+            setFileUrl(null);
+            return;
+        }
+        const url = URL.createObjectURL(file);
+        setFileUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [file]);
 
     const uploadAsset = useMutation(uploadAssetMutation);
     const createContract = useMutation(createContractMutation);
@@ -70,7 +95,7 @@ function UploadContractCard() {
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        if (!file) return;
+        if (!file || !fields.signature) return;
 
         const formData = new FormData();
         formData.append("file", file);
@@ -80,11 +105,14 @@ function UploadContractCard() {
             title,
             version,
             fileKey: upload.key,
+            signaturePlacement: fields.signature,
+            namePlacement: fields.name,
         });
 
         setTitle("");
         setVersion("");
         setFile(null);
+        setFields({ signature: null, name: null });
     }
 
     return (
@@ -92,8 +120,9 @@ function UploadContractCard() {
             <CardHeader>
                 <CardTitle>Last opp ny kontrakt</CardTitle>
                 <CardDescription>
-                    Last opp PDF-filen til assets-tjenesten, fyll inn metadata,
-                    og lagre. Kontrakten er inaktiv til den aktiveres.
+                    Fyll inn metadata, velg PDF-en og plasser signaturfeltet der
+                    signaturen skal stemples. Kontrakten er inaktiv til den
+                    aktiveres.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -140,6 +169,28 @@ function UploadContractCard() {
                             />
                         </Field>
                     </FieldGroup>
+                    {fileUrl && (
+                        <Suspense
+                            fallback={<Skeleton className="h-96 w-full" />}
+                        >
+                            <PdfPlacement
+                                fileUrl={fileUrl}
+                                fields={fields}
+                                onChange={setFields}
+                            />
+                        </Suspense>
+                    )}
+                    {file && !fields.signature && (
+                        <Alert>
+                            <XCircle className="size-4" />
+                            <AlertTitle>Mangler signaturfelt</AlertTitle>
+                            <AlertDescription>
+                                Plasser signaturfeltet på dokumentet før du
+                                lagrer, ellers vet vi ikke hvor signaturen skal
+                                stemples.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     {createContract.isSuccess && (
                         <Alert>
                             <CheckCircle2 className="size-4" />
@@ -158,7 +209,7 @@ function UploadContractCard() {
                     )}
                     <Button
                         type="submit"
-                        disabled={!file || isPending}
+                        disabled={!file || !fields.signature || isPending}
                         className="self-start"
                     >
                         <Upload className="size-4" />
