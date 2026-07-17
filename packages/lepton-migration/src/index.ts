@@ -119,7 +119,10 @@ async function main() {
     const redis = await createRedisClient(env.REDIS_URL);
     const queue = new QueueManager(env.REDIS_URL);
     const mailer = createEmailTransporter();
-    const auth = createAuth({ db, redis, mailer, queue, bucket: null as any });
+    const auth = createAuth(
+        { db, redis, mailer, queue, bucket: null as any },
+        { isDev: true },
+    );
 
     const startTime = Date.now();
 

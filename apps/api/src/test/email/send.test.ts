@@ -1,4 +1,5 @@
-import { EMAIL_QUEUE_NAME } from "@photon/email/config";
+import type { EmailQueueJobData } from "@photon/core/services/email";
+import { EMAIL_QUEUE_NAME } from "@photon/core/services/queue";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -37,20 +38,26 @@ describe("send email endpoint", () => {
                 message: "Email queued successfully",
                 recipientCount: 1,
             });
-            expect(json.jobIds).toHaveLength(1);
-            expect(typeof json.jobIds[0]).toBe("string");
 
             // Verify Redis queue has the job
-            const emailQueue = ctx.queue.getQueue(EMAIL_QUEUE_NAME);
+            const emailQueue =
+                ctx.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME);
             const jobs = await emailQueue.getJobs(["waiting", "active"]);
 
             expect(jobs).toHaveLength(1);
             expect(jobs[0]?.data).toMatchObject({
-                to: "test@example.com",
-                subject: "Test Email",
+                options: {
+                    to: "test@example.com",
+                    subject: "Test Email",
+                },
             });
-            expect(jobs[0]?.data.html).toContain("Welcome!");
-            expect(jobs[0]?.data.html).toContain("This is a test email.");
+            const content = jobs[0]?.data.content;
+            expect(content?.type).toBe("html");
+            if (!content || content.type !== "html") {
+                throw new Error("Expected queued email content to be HTML");
+            }
+            expect(content.html).toContain("Welcome!");
+            expect(content.html).toContain("This is a test email.");
         },
         500_000,
     );
@@ -101,30 +108,34 @@ describe("send email endpoint", () => {
                 message: "Emails queued successfully",
                 recipientCount: 3,
             });
-            expect(json.jobIds).toHaveLength(3);
-            for (const jobId of json.jobIds) {
-                expect(typeof jobId).toBe("string");
-            }
 
             // Verify Redis queue has all the jobs
-            const emailQueue = ctx.queue.getQueue(EMAIL_QUEUE_NAME);
+            const emailQueue =
+                ctx.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME);
             const jobs = await emailQueue.getJobs(["waiting", "active"]);
 
             expect(jobs).toHaveLength(3);
 
             // Verify each job has the correct recipient
-            const jobRecipients = jobs.map((job) => job?.data.to).sort();
+            const jobRecipients = jobs
+                .map((job) => job?.data.options.to)
+                .sort();
             expect(jobRecipients).toEqual(recipients.sort());
 
             // Verify all jobs have the same subject and content
             for (const job of jobs) {
-                expect(job?.data.subject).toBe("Multi-Recipient Test");
-                expect(job?.data.html).toContain("Announcement");
-                expect(job?.data.html).toContain(
+                expect(job?.data.options.subject).toBe("Multi-Recipient Test");
+                const content = job?.data.content;
+                expect(content?.type).toBe("html");
+                if (!content || content.type !== "html") {
+                    throw new Error("Expected queued email content to be HTML");
+                }
+                expect(content.html).toContain("Announcement");
+                expect(content.html).toContain(
                     "This email is sent to multiple recipients.",
                 );
-                expect(job?.data.html).toContain("Click Here");
-                expect(job?.data.html).toContain("https://example.com");
+                expect(content.html).toContain("Click Here");
+                expect(content.html).toContain("https://example.com");
             }
         },
         500_000,

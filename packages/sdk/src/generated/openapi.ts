@@ -1308,7 +1308,6 @@ export interface components {
         SendEmailResponse: {
             success: boolean;
             message: string;
-            jobIds: string[];
             recipientCount: number;
         };
         SendCustomEmail: {
@@ -2397,7 +2396,7 @@ export interface components {
             title: string;
             /** @description Version identifier e.g. '2026-01' */
             version: string;
-            /** @description MinIO asset key from POST /api/assets */
+            /** @description Asset key from POST /api/assets */
             fileKey: string;
         };
         ActivateContractResponse: {

@@ -24,6 +24,7 @@ import {
     Textarea,
     TimePicker,
 } from "#/components/form/field";
+import { InputField, PasswordField } from "#/components/form/basic-fields";
 import { FormErrors } from "#/components/form/form-errors";
 import { SubmitButton } from "#/components/form/submit-button";
 
@@ -72,6 +73,8 @@ const {
         Field,
         Label,
         Input,
+        InputField,
+        PasswordField,
         Password,
         Textarea,
         Number,

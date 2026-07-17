@@ -14,7 +14,6 @@ export const sendEmailResponseSchema = Schema(
     z.object({
         success: z.boolean(),
         message: z.string(),
-        jobIds: z.array(z.string()),
         recipientCount: z.number(),
     }),
 );

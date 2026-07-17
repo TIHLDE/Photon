@@ -17,15 +17,15 @@
         "db:check": "drizzle-kit check"
     },
     "dependencies": {
-        "drizzle-orm": "catalog:",
-        "drizzle-seed": "catalog:",
-        "pg": "catalog:"
+        "drizzle-orm": "catalog:backend",
+        "drizzle-seed": "catalog:backend",
+        "pg": "catalog:backend"
     },
     "devDependencies": {
         "@photon/core": "workspace:*",
         "@photon/tsconfig": "workspace:*",
-        "@types/pg": "catalog:",
-        "drizzle-kit": "^0.31.4",
+        "@types/pg": "catalog:backend",
+        "drizzle-kit": "catalog:backend",
         "typescript": "catalog:"
     }
 }

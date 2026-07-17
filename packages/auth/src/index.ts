@@ -1,155 +1,216 @@
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { betterAuth, BetterAuthOptions, DBAdapter } from "better-auth";
 import {
     admin,
-    bearer,
     customSession,
-    emailOTP,
+    jwt,
     openAPI,
     username,
 } from "better-auth/plugins";
-import { createAuthMiddleware } from "better-auth/api";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import * as schema from "@photon/db/schema";
-import type { DbSchema } from "@photon/db";
-import { enqueueEmail } from "@photon/email";
-import type { EmailTransporter } from "@photon/email";
+import { oauthProvider } from "@better-auth/oauth-provider";
 import {
-    ChangeEmailVerificationEmail,
-    OtpSignInEmail,
-    ResetPasswordEmail,
-} from "@photon/email/templates";
-import { env } from "@photon/core/env";
-import type { RedisClient, QueueManager } from "@photon/core/cache";
-import type { StorageClient } from "./types";
-import { feidePlugin, syncFeideHook } from "./feide";
-import { syncLegacyTokenHook } from "./lepton";
+    oauthProviderAuthServerMetadata,
+    oauthProviderOpenIdConfigMetadata,
+} from "@better-auth/oauth-provider";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { DbSchema } from "@photon/db";
+import type { EmailService, CacheService } from "@photon/core/services";
 import { getUserPermissions } from "./rbac/permissions";
 
-/**
- * Context required to create the auth instance.
- * Uses narrow types instead of full AppContext.
- */
-export interface AuthCreateContext {
-    db: NodePgDatabase<DbSchema>;
-    redis: RedisClient;
-    mailer: EmailTransporter;
-    queue: QueueManager;
-    bucket: StorageClient;
+export interface CreateAuthOptions {
+    isDevMode?: boolean;
+
+    /**
+     * Signing secret for sessions and tokens. Required in production —
+     * `createAuth` throws if it is missing there.
+     */
+    secret: string;
+
+    urls: {
+        frontend: string;
+        backend: string;
+        basePath: string;
+        additionalTrusted: string[];
+    };
+
+    services: {
+        database: (options: BetterAuthOptions) => DBAdapter<BetterAuthOptions>;
+        /**
+         * Raw Drizzle handle used by `customSession` to enrich the session with
+         * settings, permissions and groups. `database` above is Better Auth's
+         * own adapter and cannot answer these queries.
+         */
+        db: NodePgDatabase<DbSchema>;
+        email: EmailService;
+        cache: CacheService;
+    };
+
+    oauth: {
+        pages: {
+            login: string;
+            consent: string;
+        };
+    };
+
+    /// Used only for tests to make them not use expensive hashing algorithms
+    DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: boolean;
 }
 
-export const createAuth = (ctx: AuthCreateContext) =>
-    betterAuth({
-        database: drizzleAdapter(ctx.db, {
-            provider: "pg",
-            schema,
-        }),
-        baseURL: env.ROOT_URL,
+export function createAuth(options: CreateAuthOptions) {
+    const isProd = options.isDevMode !== true;
+
+    if (isProd && options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM === true) {
+        throw new Error(
+            `DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM was enabled in production environment`,
+        );
+    }
+
+    if (isProd && !options.secret) {
+        throw new Error(
+            "AUTH_SECRET must be set in production; refusing to start with an unsigned auth instance",
+        );
+    }
+
+    return betterAuth({
+        appName: "Photon, TIHLDE Backend",
+        secret: options.secret || undefined,
+        database: options.services.database,
+        baseURL: {
+            allowedHosts: [
+                options.urls.frontend,
+                options.urls.backend,
+                ...(options.isDevMode ? ["*localhost*"] : []),
+            ],
+            protocol: isProd ? "https" : "http",
+            fallback: options.urls.backend,
+        },
+
+        secondaryStorage: options.services.cache,
+
+        basePath: options.urls.basePath,
+        trustedOrigins: [
+            options.urls.backend,
+            options.urls.frontend,
+            ...options.urls.additionalTrusted,
+        ],
+
         emailAndPassword: {
             enabled: true,
-            disableSignUp: true,
             requireEmailVerification: true,
-            sendResetPassword: async ({ url, user }) => {
-                await enqueueEmail(
-                    {
-                        component: ResetPasswordEmail({ url }),
-                        subject: "Tilbakestill ditt passord",
-                        to: user.email,
-                    },
-                    ctx,
-                );
+            autoSignIn: true,
+            async sendResetPassword({ user: u, url }) {
+                await options.services.email.sendPasswordResetMail({
+                    to: u.email,
+                    url,
+                });
+            },
+            ...(options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM && !isProd
+                ? {
+                      password: {
+                          async hash(password: string) {
+                              return password;
+                          },
+                          async verify({ hash, password }) {
+                              if (hash === password) return true;
+                              return false;
+                          },
+                      },
+                  }
+                : {}),
+        },
+
+        emailVerification: {
+            sendOnSignUp: true,
+            autoSignInAfterVerification: true,
+            sendVerificationEmail: async ({ user: u, url }) => {
+                await options.services.email.sendVerifyEmailMail({
+                    to: u.email,
+                    url,
+                });
             },
         },
+
         session: {
-            expiresIn: 60 * 60 * 24 * 7, // 7 days
-            updateAge: 60 * 60 * 24, // 1 day
+            expiresIn: 60 * 60 * 24 * 30, // 30d
+            updateAge: 60 * 60 * 24, // 1d
+            storeSessionInDatabase: true,
+            cookieCache: { enabled: true, maxAge: 60 * 5 },
         },
+
         advanced: {
-            crossSubDomainCookies: {
-                enabled: true,
-            },
-            cookiePrefix: "photon",
-        },
-        trustedOrigins: [
-            "https://tihlde.org",
-            "https://*.tihlde.org",
-            "localhost:3000",
-            "http://localhost:3000",
-        ],
-        user: {
-            additionalFields: {
-                /**
-                 * @deprecated Backwards-compatibility from Lepton auth system
-                 *
-                 * Legacy token is a never-changing(!) token that is used to authenticate against Lepton.
-                 * Until that API is fully removed, we keep this stored and send as cookie on sign-in
-                 * to keep the old endpoints working from the browser.
-                 */
-                legacyToken: {
-                    type: "string",
-                    required: false,
-                    unique: false,
-                    input: false,
-                },
-            },
-            changeEmail: {
-                enabled: true,
-                async sendChangeEmailConfirmation({ newEmail, url }) {
-                    await enqueueEmail(
-                        {
-                            component: ChangeEmailVerificationEmail({ url }),
-                            subject: "Verifiser din nye e-postadresse",
-                            to: newEmail,
-                        },
-                        ctx,
-                    );
-                },
+            cookiePrefix: "tihlde",
+            useSecureCookies: isProd,
+            crossSubDomainCookies: { enabled: false },
+            defaultCookieAttributes: {
+                httpOnly: true,
+                sameSite: "lax",
+                secure: isProd,
             },
         },
+
+        // Needed for the JWT plugin to work with oAuth Provider plugin
+        disabledPaths: ["/token"],
+
         plugins: [
-            feidePlugin(),
+            admin(),
             openAPI(),
-            emailOTP({
-                // Disable sign-up in production
-                // Users should only sign up via Feide (or be migrated from Lepton)
-                disableSignUp: env.NODE_ENV === "production",
-                sendVerificationOTP: async ({ email, otp, type }) => {
-                    await enqueueEmail(
-                        {
-                            component: OtpSignInEmail({ otp }),
-                            subject: "Din engangskode",
-                            to: email,
-                        },
-                        ctx,
-                    );
+            // TODO: Add feide plugin later
+            // feidePlugin(),
+            username(),
+            jwt({
+                // Recommended by better-auth docs when using with OAuth Provider plugin
+                disableSettingJwtHeader: true,
+            }),
+
+            oauthProvider({
+                loginPage: options.oauth.pages.login,
+                consentPage: options.oauth.pages.consent,
+
+                // TOOD: Add custom scopes in the future
+                // scopes: []
+
+                // Q9 decision: roles + groups embedded in JWT access tokens.
+                // 15-minute staleness window is accepted; document it for admins.
+                customAccessTokenClaims: async ({ user: u }) => {
+                    if (!u) return {};
+
+                    // TODO: Enrich the access token claims with more information
+                    // const [roles, groups] = await Promise.all([
+                    //     loadRoles(u.id),
+                    //     loadGroups(u.id),
+                    // ]);
+
+                    return {};
+                },
+                customIdTokenClaims: () => ({}),
+                customUserInfoClaims: () => ({}),
+
+                prefix: {
+                    clientSecret: "tihlde_cs_",
+                    accessToken: "tihlde_at_",
+                    idToken: "tihlde_idt_",
+                    opaqueAccessToken: "tihlde_oat_",
+                    refreshToken: "tihlde_rt_",
                 },
             }),
-            admin(),
-            bearer(),
-            username(),
+
+            // Must stay last: it wraps the session shape produced by the
+            // plugins above, and `ExtendedSession` is inferred from the result.
             customSession(async ({ user, session }) => {
-                // TODO cleanup this code, is temprorary while we find out what info is needed
-                // Fetch user settings with allergies
-                const settings = await ctx.db.query.userSettings.findFirst({
-                    where: (s, { eq }) => eq(s.userId, user.id),
-                    with: { allergies: { columns: { allergySlug: true } } },
-                });
+                const db = options.services.db;
 
-                // Fetch permissions (from roles + direct grants)
-                const permissions = await getUserPermissions(
-                    { db: ctx.db },
-                    user.id,
-                );
+                const [settings, permissions, groups] = await Promise.all([
+                    db.query.userSettings.findFirst({
+                        where: (s, { eq }) => eq(s.userId, user.id),
+                        with: { allergies: { columns: { allergySlug: true } } },
+                    }),
+                    getUserPermissions({ db }, user.id),
+                    db.query.groupMembership.findMany({
+                        where: (gm, { eq }) => eq(gm.userId, user.id),
+                        with: { group: true },
+                    }),
+                ]);
 
-                // Fetch user groups
-                const groups = await ctx.db.query.groupMembership.findMany({
-                    where: (gm, { eq }) => eq(gm.userId, user.id),
-                    with: {
-                        group: true,
-                    },
-                });
-
-                const fullSession = {
+                return {
                     user: {
                         ...user,
                         settings: settings
@@ -162,7 +223,7 @@ export const createAuth = (ctx: AuthCreateContext) =>
                             : null,
                     },
                     session,
-                    permissions: [...new Set(permissions)], // Deduplicated
+                    permissions: [...new Set(permissions)],
                     groups: groups.map((g) => ({
                         slug: g.groupSlug,
                         name: g.group.name,
@@ -170,56 +231,37 @@ export const createAuth = (ctx: AuthCreateContext) =>
                         role: g.role,
                     })),
                 };
-                console.log(fullSession);
-
-                return fullSession;
             }),
         ],
-        logger: {
-            disabled: false,
-            level: "debug",
-            log: (level, message, ...args) => {
-                // Custom logging implementation
-                console.log(`[${level}] ${message}`, ...args);
-            },
-        },
-        hooks: {
-            after: createAuthMiddleware(async (middlewareCtx) => {
-                await syncFeideHook(middlewareCtx, ctx);
-                await syncLegacyTokenHook(middlewareCtx, ctx);
-            }),
-        },
-        secondaryStorage: {
-            get: async (key) => {
-                return await ctx.redis.get(key);
-            },
-            set: async (key, value, ttl) => {
-                if (ttl) await ctx.redis.set(key, value, { EX: ttl });
-                else await ctx.redis.set(key, value);
-            },
-            delete: async (key) => {
-                await ctx.redis.del(key);
-            },
-        },
     });
+}
 
-/**
- * The type of the BetterAuth instance
- */
 export type AuthInstance = ReturnType<typeof createAuth>;
+export type AuthSession = AuthInstance["$Infer"]["Session"]["session"];
+export type AuthUser = AuthInstance["$Infer"]["Session"]["user"];
 
 /**
- * A user session
- */
-export type Session = AuthInstance["$Infer"]["Session"]["session"];
-
-/**
- * User data
- */
-export type User = AuthInstance["$Infer"]["Session"]["user"];
-
-/**
- * Extended session response from get-session endpoint.
- * Includes user with settings and computed permissions.
+ * Full session returned by get-session: user + settings, permissions and groups.
+ * Source of truth for the SDK's generated `session-types.ts`.
  */
 export type ExtendedSession = AuthInstance["$Infer"]["Session"];
+
+export function createOAuthServerMetadata(auth: AuthInstance) {
+    return oauthProviderAuthServerMetadata(auth, {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET",
+        },
+    });
+}
+
+export function createOAuthOpenIDConfigMetadata(auth: AuthInstance) {
+    return oauthProviderOpenIdConfigMetadata(auth, {
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET",
+        },
+    });
+}
+
+export { drizzleAdapter } from "better-auth/adapters/drizzle";

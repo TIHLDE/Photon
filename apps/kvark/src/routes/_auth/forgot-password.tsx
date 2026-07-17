@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Button } from "@tihlde/ui/ui/button";
+import { useMutation } from "@tanstack/react-query";
+import { z } from "zod";
 import {
     Card,
     CardContent,
@@ -9,18 +9,69 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
-import { Input } from "@tihlde/ui/ui/input";
+import { FieldGroup } from "@tihlde/ui/ui/field";
+import { Spinner } from "@tihlde/ui/ui/spinner";
+
+import { requestPasswordResetMutationOptions } from "#/api/auth";
+import { formHandlers, useAppForm } from "#/hooks/form";
 
 export const Route = createFileRoute("/_auth/forgot-password")({
     component: ForgotPasswordPage,
 });
 
-function ForgotPasswordPage() {
-    const [email, setEmail] = useState("");
+const forgotPasswordSchema = z.object({
+    email: z.email({ error: "Ugyldig e-post" }),
+});
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault();
+function ForgotPasswordPage() {
+    const requestResetMutation = useMutation(
+        requestPasswordResetMutationOptions,
+    );
+
+    const form = useAppForm({
+        validators: {
+            onChange: forgotPasswordSchema,
+            onSubmit: forgotPasswordSchema,
+        },
+        defaultValues: {
+            email: "",
+        },
+        async onSubmit({ value }) {
+            // redirectTo must be an absolute URL — Better Auth's originCheck
+            // validates it against trustedOrigins.
+            const redirectTo =
+                typeof window !== "undefined"
+                    ? `${window.location.origin}/reset-password`
+                    : "/reset-password";
+
+            await requestResetMutation.mutateAsync({
+                email: value.email,
+                redirectTo,
+            });
+        },
+    });
+
+    if (requestResetMutation.isSuccess) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Sjekk e-posten din</CardTitle>
+                    <CardDescription>
+                        Hvis kontoen finnes har vi sendt en
+                        tilbakestillingslenke til {form.state.values.email}.
+                        Lenken er gyldig i en kort periode.
+                    </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                    <Link
+                        to="/login"
+                        className="text-sm underline underline-offset-4"
+                    >
+                        Tilbake til innlogging
+                    </Link>
+                </CardFooter>
+            </Card>
+        );
     }
 
     return (
@@ -32,26 +83,39 @@ function ForgotPasswordPage() {
                     tilbakestille passordet.
                 </CardDescription>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
+            <form {...formHandlers(form)}>
                 <CardContent>
                     <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="email">E-post</FieldLabel>
-                            <Input
-                                id="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </Field>
+                        <form.AppField name="email">
+                            {(field) => (
+                                <field.InputField
+                                    label="E-post"
+                                    type="email"
+                                    autoComplete="email"
+                                    required
+                                />
+                            )}
+                        </form.AppField>
                     </FieldGroup>
+
+                    <form.AppForm>
+                        <form.FormErrors />
+                    </form.AppForm>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-3">
-                    <Button type="submit" className="w-full">
-                        Send lenke
-                    </Button>
+                    <form.AppForm>
+                        <form.SubmitButton
+                            className="w-full"
+                            loading={
+                                <>
+                                    <Spinner />
+                                    <span>Sender...</span>
+                                </>
+                            }
+                        >
+                            Send lenke
+                        </form.SubmitButton>
+                    </form.AppForm>
                     <p className="text-sm text-muted-foreground">
                         <Link
                             to="/login"

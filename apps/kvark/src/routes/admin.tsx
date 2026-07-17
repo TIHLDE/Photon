@@ -29,17 +29,23 @@ import {
     LogsIcon,
     type LucideIcon,
     NewspaperIcon,
+    ShieldCheckIcon,
     UserIcon,
     Users2Icon,
 } from "lucide-react";
 import * as React from "react";
 
-import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 import { authClientWithRedirect } from "#/api/auth";
+import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 
 export const Route = createFileRoute("/admin")({
     component: AdminLayout,
-    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
+    async beforeLoad({ location }) {
+        // Baseline: you must be signed in to reach the admin shell at all.
+        // Each section still relies on the API enforcing its own permission.
+        const auth = await authClientWithRedirect(location.href);
+        return { auth };
+    },
 });
 
 function AdminLayout() {
@@ -144,6 +150,11 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "API Nøkler",
                 icon: KeyIcon,
                 link: linkOptions({ to: "/admin/api-keys" }),
+            },
+            {
+                label: "OAuth-klienter",
+                icon: ShieldCheckIcon,
+                link: linkOptions({ to: "/admin/oauth-clients" }),
             },
             {
                 label: "Database Viewer",

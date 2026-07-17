@@ -20,7 +20,7 @@ export const createContractSchema = Schema(
             .string()
             .min(1)
             .max(600)
-            .meta({ description: "MinIO asset key from POST /api/assets" }),
+            .meta({ description: "Asset key from POST /api/assets" }),
     }),
 );
 

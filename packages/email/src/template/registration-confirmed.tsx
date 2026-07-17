@@ -8,19 +8,19 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface RegistrationConfirmedEmailProps {
+export interface RegistrationConfirmedEmailProps {
     eventName: string;
     eventUrl: string;
+    logoUrl: string;
 }
 
 export const RegistrationConfirmedEmail = ({
     eventName = "Eksempel arrangement",
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
+    logoUrl,
 }: RegistrationConfirmedEmailProps) => {
     return (
         <Html>
@@ -28,7 +28,7 @@ export const RegistrationConfirmedEmail = ({
             <Body style={emailStyles.main}>
                 <Container style={emailStyles.container}>
                     <Img
-                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
+                        src={logoUrl}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"

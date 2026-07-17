@@ -2,6 +2,12 @@
     "version": "0.0.1",
     "configurations": [
         {
+            "name": "api",
+            "runtimeExecutable": "bun",
+            "runtimeArgs": ["run", "--filter", "@photon/api", "dev"],
+            "port": 4000
+        },
+        {
             "name": "kvark",
             "runtimeExecutable": "bun",
             "runtimeArgs": ["run", "--filter", "kvark", "dev"],

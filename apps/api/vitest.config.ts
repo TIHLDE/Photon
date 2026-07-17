@@ -1,10 +1,9 @@
 import path from "node:path";
-import { config } from "@dotenvx/dotenvx";
 import { defineConfig } from "vitest/config";
-config({ path: "../../.env" });
 
 export default defineConfig({
     test: {
+        setupFiles: ["./src/test/setup-env.ts"],
         coverage: {
             provider: "v8",
         },
