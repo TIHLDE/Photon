@@ -218,7 +218,7 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                 </filter>
             </defs>
             <g
-                className="opacity-40 dark:opacity-[0.18]"
+                className="opacity-40 dark:opacity-[0.28]"
                 mask={`url(#${vignetteMaskId})`}
             >
                 <g>

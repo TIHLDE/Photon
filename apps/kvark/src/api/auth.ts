@@ -206,6 +206,32 @@ export async function authClientWithPermission(
     return auth;
 }
 
+/**
+ * Starts the Feide (Dataporten) OAuth flow. This hands the browser off to
+ * Feide, which redirects back to the backend callback and finally to
+ * `callbackURL` on success. Provider id must match `feidePlugin` in
+ * @photon/auth. Requires the backend Feide client to be configured.
+ */
+export async function signInWithFeide(callbackURL: string) {
+    const result = await clientAuthInstance.signIn.oauth2({
+        providerId: "feide",
+        callbackURL: sanitizeRedirectTo(callbackURL),
+    });
+
+    if (result.error) {
+        throw new Error(
+            result.error.message ?? "Kunne ikke starte Feide-innlogging",
+        );
+    }
+
+    // The endpoint returns the Dataporten authorization URL to redirect to.
+    if (result.data && "url" in result.data && result.data.url) {
+        window.location.href = result.data.url;
+    }
+
+    return result.data;
+}
+
 export async function logoutUser() {
     await clientAuthInstance.signOut();
     await invalidateAuth();
@@ -246,6 +272,25 @@ export const signInEmailMutationOptions = mutationOptions({
     }) => {
         const result = await clientAuthInstance.signIn.email({
             email,
+            password,
+        });
+        if (result.error) {
+            throw new Error(result.error.message ?? "Innlogging feilet");
+        }
+        return result.data as SignInEmailResult;
+    },
+});
+
+export const signInUsernameMutationOptions = mutationOptions({
+    mutationFn: async ({
+        username,
+        password,
+    }: {
+        username: string;
+        password: string;
+    }) => {
+        const result = await clientAuthInstance.signIn.username({
+            username,
             password,
         });
         if (result.error) {

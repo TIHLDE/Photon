@@ -137,10 +137,18 @@ export const syncFeideHook: (
 
         const userId = session.user.id;
 
+        // Must filter by providerId: a user who also has an email/password
+        // account has multiple `account` rows, and only the Feide one carries
+        // the Dataporten access token needed below.
         const feideAccount = await ctx.db
             .select({ accessToken: account.accessToken })
             .from(account)
-            .where(eq(account.userId, userId))
+            .where(
+                and(
+                    eq(account.userId, userId),
+                    eq(account.providerId, FEIDE_PROVIDER_ID),
+                ),
+            )
             .limit(1);
 
         const token = feideAccount[0]?.accessToken;

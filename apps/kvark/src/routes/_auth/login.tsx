@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { z } from "zod";
 import {
     Card,
@@ -12,7 +13,13 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { sanitizeRedirectTo, signInEmailMutationOptions } from "#/api/auth";
+import {
+    sanitizeRedirectTo,
+    signInUsernameMutationOptions,
+    signInWithFeide,
+} from "#/api/auth";
+import { FeideSignInButton } from "#/components/feide-sign-in-button";
+import { env } from "#/env";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
 // Keep extra search params (sig, exp, client_id, scope…) so the
@@ -29,14 +36,26 @@ export const Route = createFileRoute("/_auth/login")({
 });
 
 const loginSchema = z.object({
-    email: z.email({ error: "Ugyldig e-post" }),
+    username: z.string().min(1, { error: "Brukernavn kan ikke være tomt" }),
     password: z.string().min(1, { error: "Passord kan ikke være tom" }),
 });
 
 function LoginPage() {
     const { redirectTo } = Route.useSearch();
 
-    const signInMutation = useMutation(signInEmailMutationOptions);
+    const [feideLoading, setFeideLoading] = useState(false);
+
+    async function handleFeideSignIn() {
+        setFeideLoading(true);
+        try {
+            await signInWithFeide(sanitizeRedirectTo(redirectTo));
+        } catch {
+            // Reaching here means the redirect never happened; let the user retry.
+            setFeideLoading(false);
+        }
+    }
+
+    const signInMutation = useMutation(signInUsernameMutationOptions);
 
     const form = useAppForm({
         validators: {
@@ -44,12 +63,12 @@ function LoginPage() {
             onSubmit: loginSchema,
         },
         defaultValues: {
-            email: "",
+            username: "",
             password: "",
         },
         async onSubmit({ value }) {
             const data = await signInMutation.mutateAsync({
-                email: value.email,
+                username: value.username,
                 password: value.password,
             });
 
@@ -77,12 +96,12 @@ function LoginPage() {
             <form {...formHandlers(form)}>
                 <CardContent>
                     <FieldGroup>
-                        <form.AppField name="email">
+                        <form.AppField name="username">
                             {(field) => (
                                 <field.InputField
-                                    label="E-post"
-                                    type="email"
-                                    autoComplete="email"
+                                    label="Brukernavn"
+                                    type="text"
+                                    autoComplete="username"
                                     required
                                 />
                             )}
@@ -116,6 +135,12 @@ function LoginPage() {
                             Logg inn
                         </form.SubmitButton>
                     </form.AppForm>
+                    {env.VITE_FEIDE_ENABLED && (
+                        <FeideSignInButton
+                            onSignIn={handleFeideSignIn}
+                            loading={feideLoading}
+                        />
+                    )}
                     <p className="text-sm text-muted-foreground">
                         Har du ikke konto?{" "}
                         <Link

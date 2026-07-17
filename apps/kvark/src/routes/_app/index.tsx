@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
@@ -144,7 +144,13 @@ function Hero() {
                     transformasjon og Informasjonsbehandling ved NTNU.
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button size="lg">Logg inn</Button>
+                    <Button
+                        size="lg"
+                        nativeButton={false}
+                        render={<Link to="/login" />}
+                    >
+                        Logg inn
+                    </Button>
                     <Button size="lg" variant="outline">
                         Opprett bruker
                     </Button>
