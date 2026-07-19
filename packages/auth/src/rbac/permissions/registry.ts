@@ -31,6 +31,9 @@ export const PERMISSION_REGISTRY = {
     "api-keys": {
         actions: ["view", "create", "update", "delete"],
     },
+    "oauth-clients": {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
 
     // Event permissions
     events: {
@@ -51,6 +54,9 @@ export const PERMISSION_REGISTRY = {
         actions: ["view", "create", "update", "delete", "manage"],
     },
     fines: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
+    contracts: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
     forms: {

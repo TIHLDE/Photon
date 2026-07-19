@@ -1,49 +1,74 @@
-import type { Session, User } from "@photon/auth";
-import { parseBearerOptional } from "@photon/auth/bearer";
+import type { AuthUser } from "@photon/auth";
+import { verifyJWTAccessToken } from "@photon/auth/oauth-verify";
 import { createMiddleware } from "hono/factory";
+import { getBearerTokenFromHeader } from "~/lib/auth";
 import type { AppContext, AppServices } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 import { describeMiddleware, describeMiddlewareRoute } from "~/lib/openapi";
 import type { ApiKey } from "~/lib/service/api-key";
 
 type AuthOrApiKeyVariables = {
-    user?: User;
-    session?: Session;
+    user?: AuthUser;
     apiKey?: ApiKey;
+    /** Set when the request was authenticated via an OAuth access token. */
+    oauthClient?: { clientId: string; scopes: string[] };
     ctx: AppContext;
     service: AppServices;
 };
 
+const userFromClaims = (
+    sub: string,
+    payload: Record<string, unknown>,
+): AuthUser => {
+    const now = new Date(0);
+    return {
+        id: sub,
+        email: typeof payload.email === "string" ? payload.email : "",
+        name: typeof payload.name === "string" ? payload.name : "",
+        emailVerified: false,
+        role: null,
+        image: null,
+        username: null,
+        displayUsername: null,
+        legacyToken: null,
+        banned: null,
+        banReason: null,
+        banExpires: null,
+        settings: null,
+        createdAt: now,
+        updatedAt: now,
+    } as unknown as AuthUser;
+};
+
 /**
- * Middleware that requires either:
- * - A valid session (user authentication), OR
- * - A valid API key via Authorization header
+ * Middleware that requires one of:
+ * - A valid JWT (first-party from `/api/auth/token` or OAuth access token)
+ * - A valid Photon API key (`Authorization: Bearer photon_...`)
+ * - A Better Auth session cookie
  *
- * If session auth succeeds, `user` and `session` will be available.
- * If API key auth succeeds, `apiKey` will be available.
- * If neither succeeds, a 401 Unauthorized error is thrown.
- *
- * Expected API key format: `Authorization: Bearer photon_...`
+ * On success, exactly one of `user`+(optionally `oauthClient`) or `apiKey`
+ * will be set on the context. If none succeeds, 401.
  */
 export const requireAuthOrApiKey = describeMiddleware(
     createMiddleware<{ Variables: AuthOrApiKeyVariables }>(async (c, next) => {
         const { auth } = c.get("ctx");
+        const token = getBearerTokenFromHeader(c.req.header("Authorization"));
 
-        // Try session auth first
-        const session = await auth.api.getSession({
-            headers: c.req.raw.headers,
-        });
-
-        if (session) {
-            c.set("user", session.user);
-            c.set("session", session.session);
+        // 1. JWT (first-party or OAuth access token).
+        const verified = await verifyJWTAccessToken(auth, token ?? undefined);
+        if (verified) {
+            c.set("user", userFromClaims(verified.sub, verified.payload));
+            if (verified.clientId) {
+                c.set("oauthClient", {
+                    clientId: verified.clientId,
+                    scopes: verified.scopes,
+                });
+            }
             await next();
             return;
         }
 
-        // Try API key auth
-        const token = parseBearerOptional(c.req.header("Authorization"));
-
+        // 2. Photon API key.
         if (token) {
             const apiKeyService = c.get("service").apiKey;
             const result = await apiKeyService.validate(token);
@@ -53,6 +78,17 @@ export const requireAuthOrApiKey = describeMiddleware(
                 await next();
                 return;
             }
+        }
+
+        // 3. Better Auth session cookie. The web client authenticates with
+        // cookies only — without this it could never reach these routes.
+        const session = await auth.api.getSession({
+            headers: c.req.raw.headers,
+        });
+        if (session) {
+            c.set("user", session.user as AuthUser);
+            await next();
+            return;
         }
 
         throw HTTPAppException.Unauthorized("Authentication required");

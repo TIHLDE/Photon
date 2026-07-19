@@ -1,6 +1,6 @@
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
-import { eq, sum } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 /**
@@ -10,15 +10,12 @@ export async function getUserStrikeCount(
     userId: string,
     db: NodePgDatabase<DbSchema>,
 ): Promise<number> {
-    const result = await db
-        .select({ total: sum(schema.eventStrike.count) })
+    const rows = await db
+        .select({ count: schema.eventStrike.count })
         .from(schema.eventStrike)
         .where(eq(schema.eventStrike.userId, userId));
 
-    const total = result[0]?.total;
-
-    // sum() returns string | null, so we need to parse it
-    return total ? Number.parseInt(total, 10) : 0;
+    return rows.reduce((total, row) => total + row.count, 0);
 }
 
 interface CanRegisterResult {
@@ -42,11 +39,13 @@ export function canRegisterBasedOnStrikes(
     }
 
     const hoursToWait = strikeCount === 1 ? 3 : 12;
+    const registrationStartDate = new Date(registrationStart);
+    const pendingCreatedAtDate = new Date(pendingCreatedAt);
     const allowedTime = new Date(
-        registrationStart.getTime() + hoursToWait * 60 * 60 * 1000,
+        registrationStartDate.getTime() + hoursToWait * 60 * 60 * 1000,
     );
 
-    if (pendingCreatedAt < allowedTime) {
+    if (pendingCreatedAtDate < allowedTime) {
         return {
             allowed: false,
             reason: `Du har ${strikeCount} prikk${strikeCount > 1 ? "er" : ""} og må vente ${hoursToWait} timer etter påmeldingsstart før du kan melde deg på.`,

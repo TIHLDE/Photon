@@ -1,4 +1,7 @@
-import { type RedisClient, createRedisClient } from "@photon/core/cache";
+import {
+    type RedisClient,
+    createRedisClient,
+} from "@photon/core/services/cache";
 import { env } from "./env";
 
 let redisInstance: RedisClient | null = null;

@@ -1,11 +1,5 @@
 import { schema } from "@photon/db";
 import type { RegistrationStatus } from "@photon/db/schema";
-import {
-    RegistrationBlockedEmail,
-    RegistrationConfirmedEmail,
-    SwappedToWaitlistEmail,
-    WaitlistPlacementEmail,
-} from "@photon/email/templates";
 import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
@@ -33,6 +27,8 @@ export async function resolveRegistrationsForEvent(
 ): Promise<void> {
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
+        const txCtx = { ...ctx, db: tx };
+
         // Step 1: Fetch all pending registrations for this event with FOR UPDATE lock
         // This prevents concurrent processing of the same registrations
         const pendingRegistrations = await tx
@@ -104,11 +100,8 @@ export async function resolveRegistrationsForEvent(
         for (const registration of pendingRegistrations) {
             const { userId, createdAt } = registration;
 
-            // Fetch user data in parallel
-            const [userGroupSlugs, strikeCount] = await Promise.all([
-                getUserGroupSlugs(userId, tx),
-                getUserStrikeCount(userId, tx),
-            ]);
+            const userGroupSlugs = await getUserGroupSlugs(userId, tx);
+            const strikeCount = await getUserStrikeCount(userId, tx);
 
             // Check strike-based timing restriction
             const { allowed, reason } = canRegisterBasedOnStrikes(
@@ -136,12 +129,16 @@ export async function resolveRegistrationsForEvent(
                         title: "Påmelding ikke godkjent",
                         description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
                         link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
-                        customEmailTemplate: RegistrationBlockedEmail({
-                            eventName: event.title,
-                            reason,
-                        }),
+                        emailTemplate: {
+                            name: "RegistrationBlockedEmail",
+                            props: {
+                                eventName: event.title,
+                                reason,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
-                    ctx,
+                    txCtx,
                 );
                 console.log(
                     `User ${userId} blocked from registration: ${reason}`,
@@ -260,12 +257,16 @@ export async function resolveRegistrationsForEvent(
                         title: `Du er påmeldt ${event.title}!`,
                         description: `Din påmelding til ${event.title} er bekreftet.`,
                         link: eventUrl,
-                        customEmailTemplate: RegistrationConfirmedEmail({
-                            eventName: event.title,
-                            eventUrl,
-                        }),
+                        emailTemplate: {
+                            name: "RegistrationConfirmedEmail",
+                            props: {
+                                eventName: event.title,
+                                eventUrl,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
-                    ctx,
+                    txCtx,
                 );
             } else if (finalStatus === "waitlisted" && waitlistPosition) {
                 await sendNotification(
@@ -274,13 +275,17 @@ export async function resolveRegistrationsForEvent(
                         title: `Du er på venteliste for ${event.title}`,
                         description: `Du er nå på venteliste for ${event.title} (posisjon ${waitlistPosition}).`,
                         link: eventUrl,
-                        customEmailTemplate: WaitlistPlacementEmail({
-                            eventName: event.title,
-                            eventUrl,
-                            position: waitlistPosition,
-                        }),
+                        emailTemplate: {
+                            name: "WaitlistPlacementEmail",
+                            props: {
+                                eventName: event.title,
+                                eventUrl,
+                                position: waitlistPosition,
+                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                            },
+                        },
                     },
-                    ctx,
+                    txCtx,
                 );
             }
 
@@ -331,13 +336,17 @@ export async function resolveRegistrationsForEvent(
                                 title: `Endring i din påmelding til ${event.title}`,
                                 description: `Din påmelding til ${event.title} har blitt flyttet til venteliste (posisjon ${newPosition}).`,
                                 link: eventUrl,
-                                customEmailTemplate: SwappedToWaitlistEmail({
-                                    eventName: event.title,
-                                    eventUrl,
-                                    position: newPosition,
-                                }),
+                                emailTemplate: {
+                                    name: "SwappedToWaitlistEmail",
+                                    props: {
+                                        eventName: event.title,
+                                        eventUrl,
+                                        position: newPosition,
+                                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                                    },
+                                },
                             },
-                            ctx,
+                            txCtx,
                         );
                     }
                 }

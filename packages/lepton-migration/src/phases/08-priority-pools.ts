@@ -88,6 +88,8 @@ export async function migratePriorityPools(
             .onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${poolRecords.length} pools, ${poolGroupRecords.length} pool-groups (${skipped} skipped)`);
+    console.log(
+        `  Inserted ${poolRecords.length} pools, ${poolGroupRecords.length} pool-groups (${skipped} skipped)`,
+    );
     console.log("  Phase 8 complete");
 }

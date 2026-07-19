@@ -381,10 +381,35 @@ export const eventListFilterSchema = PaginationSchema.extend({
     search: z.string().optional().meta({
         description: "Search term to filter events by title",
     }),
-    expired: z.coerce.boolean().optional().meta({
-        description: "Whether to include expired events or not",
+    // Accepts both "?category=a,b" and "?category=a&category=b": Hono hands a
+    // repeated param over as an array, while clients that serialise a list into
+    // a single param send it comma-joined. preprocess (rather than a union)
+    // keeps the documented type a plain string array.
+    category: z
+        .preprocess((value) => {
+            if (value === undefined) return undefined;
+            const slugs = (
+                Array.isArray(value) ? value : String(value).split(",")
+            )
+                .map((slug) => String(slug).trim())
+                .filter(Boolean);
+            return slugs.length > 0 ? slugs : undefined;
+        }, z.array(z.string()).optional())
+        .meta({
+            type: "array",
+            items: { type: "string" },
+            description:
+                "Only return events in these category slugs. Omit to return every category.",
+        }),
+    // stringbool parses the "true"/"false" a query string actually carries;
+    // the meta type keeps it a boolean in OpenAPI, where that encoding is implied.
+    expired: z.stringbool().optional().meta({
+        type: "boolean",
+        description:
+            "Filter on whether the event has already ended. True returns only past events, false only upcoming ones. Omit to return both.",
     }),
-    openSignUp: z.coerce.boolean().optional().meta({
+    openSignUp: z.stringbool().optional().meta({
+        type: "boolean",
         description: "Whether to include only events with open sign-ups",
     }),
 });

@@ -1,7 +1,7 @@
 import { type DbSchema, schema } from "@photon/db";
 import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { StorageClient } from "~/lib/storage";
+import type { StorageService } from "~/lib/storage";
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -44,7 +44,7 @@ export async function getStagedAssetsForCleanup(
  * Delete an asset from both storage and database
  */
 export async function deleteAsset(
-    bucket: StorageClient,
+    bucket: StorageService,
     key: string,
 ): Promise<void> {
     await bucket.delete(key);

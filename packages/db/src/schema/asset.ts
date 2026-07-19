@@ -19,6 +19,18 @@ import { user } from "./auth";
 export const assetStatusVariants = ["staged", "ready"] as const;
 export const assetStatus = pgEnum("asset_status", assetStatusVariants);
 
+/**
+ * Who may fetch an asset.
+ * - public: served by GET /api/assets/:key with no authentication
+ * - private: never served by that route; only reachable through a route that
+ *   does its own authorization (e.g. contract signatures)
+ */
+export const assetVisibilityVariants = ["public", "private"] as const;
+export const assetVisibility = pgEnum(
+    "asset_visibility",
+    assetVisibilityVariants,
+);
+
 const pgTable = pgTableCreator((name) => `asset_${name}`);
 
 /**
@@ -61,6 +73,12 @@ export const asset = pgTable("file", {
      * - ready: Promoted and attached to a resource
      */
     status: assetStatus("status").notNull().default("staged"),
+
+    /**
+     * Whether the open download route may serve this asset.
+     * Defaults to public — only assets that opt in are gated.
+     */
+    visibility: assetVisibility("visibility").notNull().default("public"),
 
     /**
      * Timestamp when the asset was promoted from staged to ready

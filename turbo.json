@@ -18,11 +18,22 @@
             "dependsOn": ["^build"],
             "outputs": ["dist/**"]
         },
+        "kvark#build": {
+            "dependsOn": ["^build"],
+            // Nitro writes the Build Output API v3 tree to .vercel/output on
+            // Vercel, and .output locally. Both must be declared: on a cache
+            // hit Turbo only restores what it captured, and Vercel then fails
+            // with "No Output Directory named dist found".
+            "outputs": [".vercel/output/**", ".output/**", "dist/**"],
+            // Vite inlines these at build time, so they belong to the cache
+            // key. Turbo's strict env mode also withholds anything undeclared.
+            "env": ["SERVER_URL", "VITE_*"]
+        },
         "start": {
             "dependsOn": ["build"],
             "persistent": true
         },
-        "typecheck": { "dependsOn": ["^typecheck"] },
+        "typecheck": { "dependsOn": ["^typecheck", "^build"] },
         "//#quality": {
             "dependsOn": ["//#lint", "//#format"]
         },

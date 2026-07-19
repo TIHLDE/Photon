@@ -40,7 +40,9 @@ export async function migrateReactions(
         }
     }
 
-    console.log(`  Content type IDs - event: ${eventContentTypeId}, news: ${newsContentTypeId}`);
+    console.log(
+        `  Content type IDs - event: ${eventContentTypeId}, news: ${newsContentTypeId}`,
+    );
 
     const reactions = await query<LeptonReaction>(
         "SELECT * FROM emoji_reaction",
@@ -115,6 +117,8 @@ export async function migrateReactions(
             .onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${eventReactions.length} event reactions, ${newsReactions.length} news reactions (${skipped} skipped)`);
+    console.log(
+        `  Inserted ${eventReactions.length} event reactions, ${newsReactions.length} news reactions (${skipped} skipped)`,
+    );
     console.log("  Phase 12 complete");
 }

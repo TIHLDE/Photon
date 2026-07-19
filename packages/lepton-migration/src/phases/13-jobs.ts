@@ -24,9 +24,7 @@ interface LeptonJobPost {
     updated_at: Date;
 }
 
-export async function migrateJobs(
-    db: NodePgDatabase<DbSchema>,
-): Promise<void> {
+export async function migrateJobs(db: NodePgDatabase<DbSchema>): Promise<void> {
     console.log("\n=== Phase 13: Job Posts ===");
 
     const jobs = await query<LeptonJobPost>("SELECT * FROM career_jobpost");

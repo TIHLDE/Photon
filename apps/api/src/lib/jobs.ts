@@ -1,4 +1,4 @@
-import { startEmailWorker } from "@photon/email/worker";
+import { startQueuedEmailWorker } from "@photon/core/services/email";
 import cron from "node-cron";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
@@ -50,7 +50,7 @@ function startRegistrationResolverCron(ctx: AppContext): void {
  */
 export function startBackgroundJobs(ctx: AppContext): void {
     // Start email worker
-    startEmailWorker(ctx);
+    startQueuedEmailWorker(ctx.queue, ctx.emailDelivery);
 
     // Start registration resolver cron
     startRegistrationResolverCron(ctx);

@@ -66,7 +66,9 @@ export async function migrateGroups(
         type: g.type,
         finesInfo: g.fine_info,
         finesActivated: Boolean(g.fines_activated),
-        finesAdminId: g.fines_admin_id ? (userIdMap.get(g.fines_admin_id) ?? null) : null,
+        finesAdminId: g.fines_admin_id
+            ? (userIdMap.get(g.fines_admin_id) ?? null)
+            : null,
         permissionMode: "leader_only" as const,
     }));
 

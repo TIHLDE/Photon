@@ -91,6 +91,10 @@ export const updateGroupSchema = Schema(
             .optional()
             .nullable()
             .meta({ description: "User ID of the fines administrator" }),
+        contractSigningRequired: z.boolean().optional().meta({
+            description:
+                "Whether contract signing is required for group members",
+        }),
     }),
 );
 
@@ -145,6 +149,9 @@ export const groupSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "Group fines admin ID" }),
+        contractSigningRequired: z.boolean().meta({
+            description: "Whether contract signing is required",
+        }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
     }),

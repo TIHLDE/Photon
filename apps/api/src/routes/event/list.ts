@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, inArray, lt, lte, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -29,15 +29,19 @@ export const listRoute = route().get(
     validator("query", eventListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
-        const { page, pageSize, search, expired, openSignUp } =
+        const { page, pageSize, search, expired, openSignUp, category } =
             c.req.valid("query");
 
         const filters = and(
             ...[
                 search ? ilike(schema.event.title, `%${search}%`) : undefined,
-                // TODO: Test if works :)
+                category
+                    ? inArray(schema.event.categorySlug, category)
+                    : undefined,
                 expired != null
-                    ? eq(sql`NOW() > ${schema.event.end}`, expired)
+                    ? expired
+                        ? lt(schema.event.end, sql`NOW()`)
+                        : gte(schema.event.end, sql`NOW()`)
                     : undefined,
                 // TODO: Test if works :)
                 openSignUp === true
@@ -56,7 +60,9 @@ export const listRoute = route().get(
         const totalPages = getTotalPages(eventCount, pageSize);
 
         const events = await db.query.event.findMany({
-            orderBy: (event, { desc }) => [desc(event.start)],
+            // Upcoming events read best soonest-first; past events most-recent-first.
+            orderBy: (event, { asc, desc }) =>
+                expired === false ? [asc(event.start)] : [desc(event.start)],
             with: {
                 organizer: true,
                 category: true,

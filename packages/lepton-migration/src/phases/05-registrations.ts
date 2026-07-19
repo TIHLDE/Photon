@@ -66,6 +66,8 @@ export async function migrateRegistrations(
             .onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${records.length} registrations (${skipped} skipped)`);
+    console.log(
+        `  Inserted ${records.length} registrations (${skipped} skipped)`,
+    );
     console.log("  Phase 5 complete");
 }

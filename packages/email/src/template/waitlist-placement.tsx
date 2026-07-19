@@ -9,21 +9,21 @@ import {
     Section,
     Text,
 } from "@react-email/components";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface WaitlistPlacementEmailProps {
+export interface WaitlistPlacementEmailProps {
     eventName: string;
     eventUrl: string;
     position: number;
+    logoUrl: string;
 }
 
 export const WaitlistPlacementEmail = ({
     eventName = "Eksempel arrangement",
     eventUrl = "https://tihlde.org/arrangementer/eksempel",
     position = 5,
+    logoUrl,
 }: WaitlistPlacementEmailProps) => {
     return (
         <Html>
@@ -31,7 +31,7 @@ export const WaitlistPlacementEmail = ({
             <Body style={emailStyles.main}>
                 <Container style={emailStyles.container}>
                     <Img
-                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
+                        src={logoUrl}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"
