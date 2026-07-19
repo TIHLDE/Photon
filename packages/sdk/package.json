@@ -32,7 +32,7 @@
         "dev": "tsdown --watch",
         "codegen": "bun scripts/generate-openapi.ts",
         "typecheck": "tsc --noEmit",
-        "postinstall": "node scripts/postinstall.mjs"
+        "postinstall": "node scripts/postinstall.mjs || true"
     },
     "dependencies": {
         "@photon/api": "workspace:*"

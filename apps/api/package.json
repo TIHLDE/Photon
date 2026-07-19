@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "bun --watch src/index.ts",
-        "build": "bun build src/index.ts --outdir dist --target bun --sourcemap",
+        "build": "bun build src/index.ts src/migrate.ts --outdir dist --target bun --sourcemap",
         "start": "bun dist/index.js",
         "test": "vitest run",
         "test:watch": "vitest",
