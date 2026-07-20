@@ -1,4 +1,5 @@
 import ChangeEmailVerificationEmail from "./change-email-verification";
+import CompanyContactEmail from "./company-contact";
 import CustomEmail from "./custom-email";
 import FormSubmissionDeletedEmail from "./form-submission-deleted";
 import FormSubmissionEmail from "./form-submission";
@@ -17,6 +18,7 @@ type EmailTemplateComponent<TProps> = (props: TProps) => ReactElement;
 
 const EMAIL_TEMPLATES = {
     ChangeEmailVerificationEmail,
+    CompanyContactEmail,
     CustomEmail,
     FormSubmissionDeletedEmail,
     FormSubmissionEmail,
@@ -47,6 +49,7 @@ export async function renderEmailTemplate<TName extends EmailTemplateName>(
 
 export {
     ChangeEmailVerificationEmail,
+    CompanyContactEmail,
     ContractSignedEmail,
     CustomEmail,
     FormSubmissionDeletedEmail,

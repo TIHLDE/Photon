@@ -36,6 +36,7 @@ import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
+import { Route as AppBedriftIndexRouteImport } from './routes/_app/bedrift.index'
 import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
 import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
@@ -48,6 +49,8 @@ import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playgro
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
+import { Route as AppBedriftStudieneRouteImport } from './routes/_app/bedrift.studiene'
+import { Route as AppBedriftKontaktRouteImport } from './routes/_app/bedrift.kontakt'
 import { Route as AppArrangementerSlugRouteImport } from './routes/_app/arrangementer.$slug'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
@@ -187,6 +190,11 @@ const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
   path: '/galleri/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBedriftIndexRoute = AppBedriftIndexRouteImport.update({
+  id: '/bedrift/',
+  path: '/bedrift/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppArrangementerIndexRoute = AppArrangementerIndexRouteImport.update({
   id: '/arrangementer/',
   path: '/arrangementer/',
@@ -246,6 +254,16 @@ const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
 const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
   id: '/galleri/$slug',
   path: '/galleri/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBedriftStudieneRoute = AppBedriftStudieneRouteImport.update({
+  id: '/bedrift/studiene',
+  path: '/bedrift/studiene',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBedriftKontaktRoute = AppBedriftKontaktRouteImport.update({
+  id: '/bedrift/kontakt',
+  path: '/bedrift/kontakt',
   getParentRoute: () => AppRoute,
 } as any)
 const AppArrangementerSlugRoute = AppArrangementerSlugRouteImport.update({
@@ -309,6 +327,8 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
+  '/bedrift/kontakt': typeof AppBedriftKontaktRoute
+  '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/nyheter/$slug': typeof AppNyheterSlugRoute
@@ -321,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/annonser/': typeof AppAnnonserIndexRoute
   '/arrangementer/': typeof AppArrangementerIndexRoute
+  '/bedrift/': typeof AppBedriftIndexRoute
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
@@ -352,6 +373,8 @@ export interface FileRoutesByTo {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
+  '/bedrift/kontakt': typeof AppBedriftKontaktRoute
+  '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
   '/nyheter/$slug': typeof AppNyheterSlugRoute
@@ -363,6 +386,7 @@ export interface FileRoutesByTo {
   '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/annonser': typeof AppAnnonserIndexRoute
   '/arrangementer': typeof AppArrangementerIndexRoute
+  '/bedrift': typeof AppBedriftIndexRoute
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
@@ -400,6 +424,8 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
   '/_app/arrangementer/$slug': typeof AppArrangementerSlugRoute
+  '/_app/bedrift/kontakt': typeof AppBedriftKontaktRoute
+  '/_app/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRoute
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
   '/_app/nyheter/$slug': typeof AppNyheterSlugRoute
@@ -412,6 +438,7 @@ export interface FileRoutesById {
   '/admin/_super-admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
   '/_app/annonser/': typeof AppAnnonserIndexRoute
   '/_app/arrangementer/': typeof AppArrangementerIndexRoute
+  '/_app/bedrift/': typeof AppBedriftIndexRoute
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
@@ -446,6 +473,8 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
+    | '/bedrift/kontakt'
+    | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/nyheter/$slug'
@@ -458,6 +487,7 @@ export interface FileRouteTypes {
     | '/admin/oauth-clients'
     | '/annonser/'
     | '/arrangementer/'
+    | '/bedrift/'
     | '/galleri/'
     | '/grupper/'
     | '/nyheter/'
@@ -489,6 +519,8 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
+    | '/bedrift/kontakt'
+    | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
     | '/nyheter/$slug'
@@ -500,6 +532,7 @@ export interface FileRouteTypes {
     | '/admin/oauth-clients'
     | '/annonser'
     | '/arrangementer'
+    | '/bedrift'
     | '/galleri'
     | '/grupper'
     | '/nyheter'
@@ -536,6 +569,8 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_app/annonser/$slug'
     | '/_app/arrangementer/$slug'
+    | '/_app/bedrift/kontakt'
+    | '/_app/bedrift/studiene'
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
     | '/_app/nyheter/$slug'
@@ -548,6 +583,7 @@ export interface FileRouteTypes {
     | '/admin/_super-admin/oauth-clients'
     | '/_app/annonser/'
     | '/_app/arrangementer/'
+    | '/_app/bedrift/'
     | '/_app/galleri/'
     | '/_app/grupper/'
     | '/_app/nyheter/'
@@ -756,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGalleriIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/bedrift/': {
+      id: '/_app/bedrift/'
+      path: '/bedrift'
+      fullPath: '/bedrift/'
+      preLoaderRoute: typeof AppBedriftIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/arrangementer/': {
       id: '/_app/arrangementer/'
       path: '/arrangementer'
@@ -840,6 +883,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGalleriSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/bedrift/studiene': {
+      id: '/_app/bedrift/studiene'
+      path: '/bedrift/studiene'
+      fullPath: '/bedrift/studiene'
+      preLoaderRoute: typeof AppBedriftStudieneRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/bedrift/kontakt': {
+      id: '/_app/bedrift/kontakt'
+      path: '/bedrift/kontakt'
+      fullPath: '/bedrift/kontakt'
+      preLoaderRoute: typeof AppBedriftKontaktRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/arrangementer/$slug': {
       id: '/_app/arrangementer/$slug'
       path: '/arrangementer/$slug'
@@ -920,6 +977,8 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
   AppArrangementerSlugRoute: typeof AppArrangementerSlugRoute
+  AppBedriftKontaktRoute: typeof AppBedriftKontaktRoute
+  AppBedriftStudieneRoute: typeof AppBedriftStudieneRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRoute
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
   AppNyheterSlugRoute: typeof AppNyheterSlugRoute
@@ -927,6 +986,7 @@ interface AppRouteChildren {
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
   AppAnnonserIndexRoute: typeof AppAnnonserIndexRoute
   AppArrangementerIndexRoute: typeof AppArrangementerIndexRoute
+  AppBedriftIndexRoute: typeof AppBedriftIndexRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
@@ -940,6 +1000,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,
   AppArrangementerSlugRoute: AppArrangementerSlugRoute,
+  AppBedriftKontaktRoute: AppBedriftKontaktRoute,
+  AppBedriftStudieneRoute: AppBedriftStudieneRoute,
   AppGalleriSlugRoute: AppGalleriSlugRoute,
   AppGrupperSlugRoute: AppGrupperSlugRoute,
   AppNyheterSlugRoute: AppNyheterSlugRoute,
@@ -947,6 +1009,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
   AppAnnonserIndexRoute: AppAnnonserIndexRoute,
   AppArrangementerIndexRoute: AppArrangementerIndexRoute,
+  AppBedriftIndexRoute: AppBedriftIndexRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,

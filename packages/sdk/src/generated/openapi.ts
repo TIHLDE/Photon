@@ -172,6 +172,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/company/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit company contact form
+         * @description Public endpoint used by the company landing page. Emails the submission to TIHLDE's business contact. Rate limited per client.
+         */
+        post: operations["submitCompanyContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/email/send": {
         parameters: {
             query?: never;
@@ -1355,6 +1375,30 @@ export interface components {
              * @description When the asset was created
              */
             createdAt: string;
+        };
+        CompanyContactResponse: {
+            success: boolean;
+            message: string;
+        };
+        CompanyContact: {
+            /** @description Name of the company reaching out */
+            company: string;
+            /** @description Name of the person to reply to */
+            contactName: string;
+            /**
+             * Format: email
+             * @description Email address to reply to
+             */
+            contactEmail: string;
+            /** @description Event formats the company is interested in */
+            eventTypes: string[];
+            /** @description Semesters the company is available in */
+            semesters: string[];
+            /**
+             * @description Free-text message from the company
+             * @default
+             */
+            comment: string;
         };
         SendEmailResponse: {
             success: boolean;
@@ -3260,6 +3304,44 @@ export interface operations {
             };
             /** @description Not Found - Asset not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitCompanyContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyContact"];
+            };
+        };
+        responses: {
+            /** @description Submission queued for delivery */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyContactResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many submissions from this client */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5309,6 +5391,13 @@ export interface operations {
             };
             /** @description Already signed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The active contract has no signature field placed */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
