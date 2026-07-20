@@ -6,12 +6,10 @@ node_modules
 .pnp
 .pnp.js
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Local env files — every variant, so a new one can't be committed by accident.
+# .env.example is the checked-in template and stays tracked.
+.env*
+!.env.example
 
 # Testing
 coverage
