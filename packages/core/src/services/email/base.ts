@@ -14,6 +14,7 @@ export type SendOptions = {
 
     cc?: string | string[];
     bcc?: string | string[];
+    replyTo?: string;
     attachments?: Attachment[];
 };
 

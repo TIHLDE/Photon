@@ -89,9 +89,9 @@ function AppLayout() {
                 ...(!isAuthenticated
                     ? [
                           {
-                              kind: "external",
+                              kind: "internal",
                               label: "For Bedrifter",
-                              href: "https://bedrift.tihlde.org",
+                              link: linkOptions({ to: "/bedrift" }),
                           },
                       ]
                     : []),

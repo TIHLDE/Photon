@@ -101,6 +101,10 @@ const envSchema = z
         MAIL_PASS: z.string().optional(),
         MAIL_FROM: z.string().default("no-reply@tihlde.org"),
         EMAIL_API_KEY: z.string().default("test-email-api-key"),
+        /** Where the "for bedrifter" contact form delivers its submissions */
+        COMPANY_CONTACT_EMAIL: z
+            .string()
+            .default("naeringslivsminister@tihlde.org"),
         EMAIL_PROXY_URL: z.string().optional(),
         EMAIL_PROXY_KEY: z.string().optional(),
 
