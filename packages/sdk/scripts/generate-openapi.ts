@@ -34,7 +34,9 @@ const app = await createApp({
 const response = await app.request("/openapi");
 if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Failed to fetch OpenAPI spec: ${response.status}\n${body}`);
+    throw new Error(
+        `Failed to fetch OpenAPI spec: ${response.status}\n${body}`,
+    );
 }
 
 const openapiSpec = await response.json();
@@ -47,8 +49,8 @@ await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, generatedTypes);
 
 const schemaKeys = Object.keys(
-    (openapiSpec as { components?: { schemas?: Record<string, unknown> } }).components
-        ?.schemas ?? {},
+    (openapiSpec as { components?: { schemas?: Record<string, unknown> } })
+        .components?.schemas ?? {},
 ).sort((a, b) => a.localeCompare(b));
 
 const usedNames = new Set<string>();
@@ -69,12 +71,7 @@ const schemasFile = `${GENERATED_HEADER}import type { components } from "./opena
 export type Schemas = components["schemas"];
 export type SchemaNames = keyof Schemas;
 export type SchemaOf<TName extends SchemaNames> = Schemas[TName];
-${schemaAliases
-    .map(
-        ({ alias, schemaKey }) =>
-            `\nexport type ${alias} = Schemas[${JSON.stringify(schemaKey)}];`,
-    )
-    .join("")}
+${schemaAliases.map(({ alias, schemaKey }) => `\nexport type ${alias} = Schemas[${JSON.stringify(schemaKey)}];`).join("")}
 `;
 await writeFile(resolve(generatedDir, "schemas.ts"), schemasFile);
 

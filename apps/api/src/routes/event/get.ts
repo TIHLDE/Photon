@@ -22,8 +22,17 @@ export const getRoute = route().get(
     captureAuth,
     async (c) => {
         const { db } = c.get("ctx");
+        const identifier = c.req.param("eventId");
+        // The public frontend routes events by slug, while other clients use
+        // the UUID. Accept either: match by id when the param is a UUID,
+        // otherwise fall back to the slug.
+        const isUuid =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                identifier,
+            );
         const event = await db.query.event.findFirst({
-            where: (event, { eq }) => eq(event.id, c.req.param("eventId")),
+            where: (event, { eq }) =>
+                isUuid ? eq(event.id, identifier) : eq(event.slug, identifier),
             with: {
                 category: true,
                 organizer: true,
@@ -50,6 +59,10 @@ export const getRoute = route().get(
             },
         });
 
+        if (!event) {
+            return c.json("The event was not found", 404);
+        }
+
         const user = c.get("user");
 
         let registration: z.infer<typeof eventDetailSchema>["registration"] =
@@ -57,8 +70,11 @@ export const getRoute = route().get(
 
         if (user) {
             const dbRegistration = await db.query.eventRegistration.findFirst({
-                where: (registration, { eq }) =>
-                    eq(registration.userId, user.id),
+                where: (registration, { eq, and }) =>
+                    and(
+                        eq(registration.userId, user.id),
+                        eq(registration.eventId, event.id),
+                    ),
             });
 
             if (dbRegistration) {
@@ -71,10 +87,6 @@ export const getRoute = route().get(
                     waitlistPosition: dbRegistration.waitlistPosition,
                 };
             }
-        }
-
-        if (!event) {
-            return c.json("The event was not found", 404);
         }
 
         const organizer = event.organizer

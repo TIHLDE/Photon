@@ -1,25 +1,19 @@
-import { createAuth } from "@photon/auth";
-import { createRedisClient } from "@photon/core/cache";
-import { QueueManager } from "@photon/core/cache";
-import { createDb } from "@photon/db";
-import {
-    MinioContainer,
-    type StartedMinioContainer,
-} from "@testcontainers/minio";
-import {
-    PostgreSqlContainer,
-    type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import {
-    RedisContainer,
-    type StartedRedisContainer,
-} from "@testcontainers/redis";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
-import { afterAll, test } from "vitest";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { PGlite } from "@electric-sql/pglite";
+import { type DbSchema, schema } from "@photon/db";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { test } from "vitest";
 import { createApp } from "~/index";
-import { type AppContext, createAppServices } from "~/lib/ctx";
-import { createStorageClient } from "~/lib/storage";
+import {
+    type AppContext,
+    createAppServices,
+    createTestAppContext as createBaseTestAppContext,
+} from "~/lib/ctx";
 import { createTestUtils } from "./util";
 
 /**
@@ -27,235 +21,105 @@ import { createTestUtils } from "./util";
  */
 export type TestAppContext = AppContext & {
     /**
-     * Running Redis container for direct test-container manipulation
+     * Running in-memory PGlite database for this test.
      */
-    _redisContainer: StartedRedisContainer;
-
-    /**
-     * Running Postgres container for direct test-container manipulation
-     */
-    _postgresContainer: StartedPostgreSqlContainer;
-
-    /**
-     * Running MinIO container for direct test-container manipulation
-     */
-    _minioContainer: StartedMinioContainer;
-
-    /**
-     * The pool instance that Drizzle uses for low level control
-     */
-    _postgresPool: Pool;
+    _pglite: PGlite;
 };
 
 /**
- * File-scoped shared test context and containers.
- * These are initialized once per test file in beforeAll.
- *
- * IMPORTANT: This approach relies on Vitest's default thread pool behavior where
- * each test file runs in its own worker thread with isolated module scope.
- * If you change Vitest config to use `fileParallelism: false` or `singleThread: true`,
- * test files may share this variable causing conflicts. In that case, refactor to use
- * WeakMap or suite-level hooks instead.
+ * Cache key version for the migrated PGlite baseline format.
+ * Increment this if the PGlite setup logic changes in a way that should rebuild
+ * the cached baseline even when migration files are unchanged.
  */
-let sharedTestContext: TestAppContext | null = null;
+const PGLITE_BASELINE_CACHE_VERSION = "v1";
 
-const POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME = "after-migration";
+const migrationsFolder = resolve(process.cwd(), "../../packages/db/drizzle");
 
-async function createPostgres() {
-    // Setup Postgres
-    const postgresContainer = await new PostgreSqlContainer(
-        "postgres:17.6",
-    ).start();
-    const postgresUrl = postgresContainer.getConnectionUri();
-    const postgresPool = new Pool({
-        connectionString: postgresUrl,
-    });
+async function getMigratedBaselinePath(): Promise<string> {
+    const hash = createHash("sha256");
+    hash.update(PGLITE_BASELINE_CACHE_VERSION);
 
-    // Migrate Postgres
-    const db = createDb({ pool: postgresPool });
-    await migrate(db, { migrationsFolder: "../../packages/db/drizzle" });
+    const entries = await readdir(migrationsFolder, { withFileTypes: true });
+    const migrationFiles = entries
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
+        .map((entry) => entry.name)
+        .sort();
 
-    // Close pool before taking snapshot to avoid "database is being accessed" error
-    await postgresPool.end();
-    await postgresContainer.snapshot(POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME);
+    for (const file of migrationFiles) {
+        hash.update(file);
+        hash.update(await readFile(join(migrationsFolder, file)));
+    }
 
-    // Reconnect after snapshot
-    const newPool = new Pool({ connectionString: postgresUrl });
-    const newDb = createDb({ pool: newPool });
+    const baselineDir = join(tmpdir(), "photon-api-pglite");
+    const baselinePath = join(baselineDir, `${hash.digest("hex")}.tar`);
 
-    return {
-        container: postgresContainer,
-        pool: newPool,
-        db: newDb,
-    };
-}
+    try {
+        await readFile(baselinePath);
+        return baselinePath;
+    } catch {
+        await mkdir(baselineDir, { recursive: true });
+    }
 
-async function createRedis() {
-    // Setup Redis
-    const redisContainer = await new RedisContainer("redis:7.4-alpine").start();
-    const redisUrl = redisContainer.getConnectionUrl();
-    const redis = await createRedisClient(redisUrl);
+    const pglite = new PGlite();
+    try {
+        const db = drizzle({
+            client: pglite,
+            casing: "snake_case",
+            schema,
+        });
 
-    return {
-        container: redisContainer,
-        redis,
-        redisUrl,
-    };
-}
+        await migrate(db, { migrationsFolder });
 
-async function createMinio() {
-    // Setup MinIO
-    const minioContainer = await new MinioContainer(
-        "minio/minio:latest",
-    ).start();
+        const baseline = await pglite.dumpDataDir();
+        const baselineBuffer = Buffer.from(await baseline.arrayBuffer());
+        const temporaryPath = `${baselinePath}.${process.pid}.tmp`;
 
-    return {
-        container: minioContainer,
-        endpoint: `${minioContainer.getHost()}:${minioContainer.getPort()}`,
-        accessKeyId: minioContainer.getUsername(),
-        secretAccessKey: minioContainer.getPassword(),
-    };
+        await writeFile(temporaryPath, baselineBuffer);
+        await rename(temporaryPath, baselinePath);
+
+        return baselinePath;
+    } finally {
+        await pglite.close();
+    }
 }
 
 /**
- * Create a test context with test container instances.
- * This should be called once per test file in beforeAll.
+ * Creates a fresh in-memory PGlite database from the migrated baseline.
+ *
+ * Each test gets its own database instance, so database writes cannot leak
+ * between tests. The baseline is cached on disk and is invalidated whenever
+ * migration SQL changes.
  */
 async function createTestAppContext(): Promise<TestAppContext> {
-    const [postgresVals, redisVals, minioVals] = await Promise.all([
-        createPostgres(),
-        createRedis(),
-        createMinio(),
-    ]);
-    const {
-        container: postgresContainer,
-        pool: newPool,
-        db: newDb,
-    } = postgresVals;
-    const { container: redisContainer, redis, redisUrl } = redisVals;
-    const {
-        container: minioContainer,
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-    } = minioVals;
-
-    // Create storage client with database for file tracking
-    const bucket = await createStorageClient({
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-        bucketName: "test-bucket",
-        useSSL: false,
-        db: newDb,
+    const baselinePath = await getMigratedBaselinePath();
+    const baselineBuffer = await readFile(baselinePath);
+    const pglite = new PGlite({
+        loadDataDir: new Blob([new Uint8Array(baselineBuffer)]),
     });
 
-    // Setup Bull queues
-    const queue = new QueueManager(redisUrl);
+    await pglite.waitReady;
 
-    // Setup auth
-    const auth = createAuth({
-        db: newDb,
-        redis,
-        queue,
-        mailer: undefined,
-        bucket,
+    const db = drizzle({
+        client: pglite,
+        casing: "snake_case",
+        schema,
     });
 
-    const defaultContext: AppContext = {
-        db: newDb,
-        queue,
-        redis,
-        auth,
-        mailer: undefined, // No email sending in tests
-        bucket,
-    };
+    const defaultContext = await createBaseTestAppContext({
+        db: db as unknown as NodePgDatabase<DbSchema>,
+    });
 
     return {
         ...defaultContext,
-        _postgresContainer: postgresContainer,
-        _redisContainer: redisContainer,
-        _minioContainer: minioContainer,
-        _postgresPool: newPool,
+        _pglite: pglite,
     };
 }
 
 /**
- * Reset the database by truncating all tables.
- * Call this in beforeEach to ensure a fresh DB for each test.
- */
-async function resetDatabase(ctx: TestAppContext): Promise<void> {
-    // Close existing connections before restoring snapshot
-    await ctx._postgresPool.end();
-
-    // Restore snapshot
-    await ctx._postgresContainer.restoreSnapshot(
-        POSTGRES_AFTER_MIGRATION_SNAPSHOT_NAME,
-    );
-
-    // Reconnect with new pool
-    const postgresUrl = ctx._postgresContainer.getConnectionUri();
-    const newPool = new Pool({ connectionString: postgresUrl });
-    ctx._postgresPool = newPool;
-
-    // Recreate db instance
-    const newDb = createDb({ pool: newPool });
-    ctx.db = newDb;
-
-    // Recreate auth with new db
-    ctx.auth = createAuth({
-        db: newDb,
-        redis: ctx.redis,
-        queue: ctx.queue,
-        mailer: undefined,
-        bucket: ctx.bucket,
-    });
-}
-
-/**
- * Flush all Redis data.
- * Call this in beforeEach to ensure a fresh Redis for each test.
- */
-async function resetRedis(ctx: TestAppContext): Promise<void> {
-    await ctx.redis.flushAll();
-}
-
-/**
- * Reset MinIO bucket by recreating the storage client with a fresh bucket.
- * Call this in beforeEach to ensure a fresh bucket for each test.
- */
-async function resetBucket(ctx: TestAppContext): Promise<void> {
-    // For now, we'll just recreate the bucket client
-    // In the future, we could delete all objects in the bucket
-    const endpoint = `${ctx._minioContainer.getHost()}:${ctx._minioContainer.getPort()}`;
-    const accessKeyId = ctx._minioContainer.getUsername();
-    const secretAccessKey = ctx._minioContainer.getPassword();
-
-    ctx.bucket = await createStorageClient({
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-        bucketName: "test-bucket",
-        useSSL: false,
-        db: ctx.db,
-    });
-}
-
-/**
- * Cleanup function to close all connections and stop containers.
- * Call this in afterAll hooks when shutting down the test file.
+ * Cleanup function to close the in-memory database for a test.
  */
 async function closeTestAppContext(ctx: TestAppContext): Promise<void> {
-    // Close client connections
-    await ctx._postgresPool?.end();
-    ctx.redis.destroy();
-
-    // Destroy containers
-    await Promise.all([
-        ctx._redisContainer?.stop({ remove: true, timeout: 1000 }),
-        ctx._postgresContainer?.stop({ remove: true, timeout: 1000 }),
-        ctx._minioContainer?.stop({ remove: true, timeout: 1000 }),
-    ]);
+    await ctx._pglite.close();
 }
 
 /**
@@ -268,27 +132,29 @@ export type IntegrationTestContext = {
 } & AppContext;
 
 /**
- * Extends the base test with file-scoped test containers and per-test database/Redis reset.
+ * Extends the base test with a fresh in-memory PGlite database and fresh
+ * app services per test.
  *
  * The `ctx` fixture provides:
  * - A hono app instance to perform requests
- * - Common services such as database and redis for direct access
+ * - Common services such as database, cache, queue, email, and storage
  * - Test utilities for common operations
  *
  * Setup and teardown behavior:
- * - beforeAll: Creates containers once per test file (Postgres + Redis)
- * - beforeEach: Truncates all tables and flushes Redis
- * - afterAll: Stops containers and closes connections
+ * - once per migration set: Builds a migrated PGlite baseline in tmpdir
+ * - beforeEach: Creates a fresh in-memory PGlite database from that baseline
+ * - afterEach: Closes the PGlite database
  *
- * This approach significantly improves performance by:
- * - Reusing containers across tests in the same file
- * - Truncating tables instead of re-migrating
- * - Only flushing Redis instead of recreating containers
+ * This approach keeps test isolation while avoiding Docker/Testcontainers in
+ * the default integration suite:
+ * - Each test gets a separate database instance
+ * - The migrated baseline is reused instead of re-running migrations
+ * - Using in-memory services for cache, queue, email, and storage
  *
  * @example
  * integrationTest.describe('My feature', () => {
  *   integrationTest('should do something', async ({ ctx }) => {
- *     const { db, redis, app, utils } = ctx;
+ *     const { db, cache, app, utils } = ctx;
  *
  *     // Test with fresh database state
  *     const response = await utils.client.get('/api/endpoint');
@@ -301,37 +167,23 @@ export const integrationTest = test.extend<{ ctx: IntegrationTestContext }>({
     ctx: [
         // biome-ignore lint/correctness/noEmptyPattern: Destructing pattern required here but is empty
         async ({}, use) => {
-            // Initialize shared context once per file
-            if (!sharedTestContext) {
-                sharedTestContext = await createTestAppContext();
-            }
+            const testContext = await createTestAppContext();
 
-            // Create fresh app instance for this test
             const app = await createApp({
-                ctx: sharedTestContext,
-                service: createAppServices(sharedTestContext),
+                ctx: testContext,
+                service: createAppServices(testContext),
             });
 
-            // Execute test
-            await use({
-                ...sharedTestContext,
-                app,
-                utils: createTestUtils({ ...sharedTestContext, app }),
-            });
-
-            // Reset state before each test
-            await resetDatabase(sharedTestContext);
-            await resetRedis(sharedTestContext);
-            await resetBucket(sharedTestContext);
+            try {
+                await use({
+                    ...testContext,
+                    app,
+                    utils: createTestUtils({ ...testContext, app }),
+                });
+            } finally {
+                await closeTestAppContext(testContext);
+            }
         },
         { scope: "test", auto: true },
     ],
-});
-
-// Setup afterAll cleanup hook
-afterAll(async () => {
-    if (sharedTestContext) {
-        await closeTestAppContext(sharedTestContext);
-        sharedTestContext = null;
-    }
 });

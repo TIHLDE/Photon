@@ -12,9 +12,9 @@
 
 - [#126](https://github.com/TIHLDE/Photon/pull/126) [`b695a7e`](https://github.com/TIHLDE/Photon/commit/b695a7e31ae44fbd703137e60ef3edf7bd0ac6d2) Thanks [@ConradOsvik](https://github.com/ConradOsvik)! - Moved away from @hey-api in favour of openapi-ts.
 
-  Simplified the SDK to use openapi-fetch.
+    Simplified the SDK to use openapi-fetch.
 
-  Fixed (hopefully) the postinstall script
+    Fixed (hopefully) the postinstall script
 
 ## 0.0.3
 

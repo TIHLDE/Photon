@@ -171,9 +171,8 @@ describe("Asset Upload/Download System", () => {
             await ctx.utils.giveUserPermissions(testUser, ["api-keys:create"]);
 
             // Create an API key directly in database for testing
-            const { createApiKeyService } = await import(
-                "~/lib/service/api-key"
-            );
+            const { createApiKeyService } =
+                await import("~/lib/service/api-key");
             const apiKeyService = createApiKeyService(ctx);
             const apiKeyResult = await apiKeyService.create({
                 name: "Test Upload Key",
@@ -225,9 +224,8 @@ describe("Asset Upload/Download System", () => {
 
             // Create API key for auth
             const testUser = await ctx.utils.createTestUser();
-            const { createApiKeyService } = await import(
-                "~/lib/service/api-key"
-            );
+            const { createApiKeyService } =
+                await import("~/lib/service/api-key");
             const apiKeyService = createApiKeyService(ctx);
             const apiKeyResult = await apiKeyService.create({
                 name: "Test Validation Key",

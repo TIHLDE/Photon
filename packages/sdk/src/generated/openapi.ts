@@ -159,10 +159,33 @@ export interface paths {
          * @description Download a file by its key. No authentication required.
          *
          *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
+         *
+         *     Private assets (e.g. contract signatures) are never served here — they are only
+         *     reachable through routes that perform their own authorization.
          */
         get: operations["downloadAsset"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit company contact form
+         * @description Public endpoint used by the company landing page. Emails the submission to TIHLDE's business contact. Rate limited per client.
+         */
+        post: operations["submitCompanyContact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -821,6 +844,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/contracts/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get active contract
+         * @description Returns the currently active volunteer contract with a direct download URL for the PDF.
+         */
+        get: operations["getActiveContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/my-signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my signature status
+         * @description Returns whether the authenticated user has signed the currently active contract.
+         */
+        get: operations["getMySignatureStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign the active contract
+         * @description Signs the active volunteer contract for the authenticated user.
+         *
+         *     The signature PNG is stamped onto the contract at the placement chosen when the
+         *     contract was uploaded, and the resulting PDF is stored as the signed document.
+         *     Both the signature and the signed PDF are private assets — fetch the signed PDF
+         *     via GET /api/contracts/signed-pdf, never the public asset route.
+         *
+         *     Sends email to notification contacts of all groups the user belongs to that
+         *     require contract signing.
+         */
+        post: operations["signContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/signed-pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download my signed contract
+         * @description Streams the authenticated user's signed copy of the active contract, with their signature stamped in.
+         */
+        get: operations["getMySignedContractPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/signed-pdf/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a member's signed contract
+         * @description Streams a member's signed copy of the active contract. Requires 'contracts:manage' permission.
+         */
+        get: operations["getUserSignedContractPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all contract versions
+         * @description Returns all contract versions newest first. Requires 'contracts:view' permission.
+         */
+        get: operations["listContracts"];
+        put?: never;
+        /**
+         * Create a new contract version
+         * @description Registers a new contract version. Does not auto-activate. Upload the PDF via POST /api/assets first, then pass the returned fileKey here. Requires 'contracts:create' permission.
+         */
+        post: operations["createContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Activate a contract version
+         * @description Sets the specified contract as active; deactivates all others. Requires 'contracts:update' permission.
+         */
+        patch: operations["activateContract"];
+        trace?: never;
+    };
+    "/api/contracts/groups/{groupSlug}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get member signing status for a group
+         * @description Returns all group members with their signing status for the active contract. Requires being a group leader or 'contracts:view' permission.
+         */
+        get: operations["getGroupContractSignatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/contracts/groups/{groupSlug}/signatures/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a member's contract signature
+         * @description Removes a member's signature from the active contract. Requires being a group leader or 'contracts:manage' permission.
+         */
+        delete: operations["revokeContractSignature"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/news": {
         parameters: {
             query?: never;
@@ -1047,6 +1262,18 @@ export interface components {
             /** @description Additional metadata about the error */
             meta?: unknown;
         };
+        CreateApiKey: {
+            /** @description Name for the API key */
+            name: string;
+            /** @description Detailed description of the API key's purpose */
+            description: string;
+            /** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
+            permissions: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         /** @description The API key details and permissions if valid. Undefined if invalid. */
         ApiKey: {
             /**
@@ -1082,6 +1309,18 @@ export interface components {
             updatedAt: string;
         };
         ApiKeyList: components["schemas"]["ApiKey"][];
+        UpdateApiKey: {
+            /** @description Name for the API key */
+            name?: string;
+            /** @description Detailed description of the API key's purpose */
+            description?: string;
+            /** @description Array of permissions granted to this API key */
+            permissions?: string[];
+            /** @description Optional metadata as key-value pairs */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         DeleteApiKeyResponse: {
             /** @description Success message */
             message: string;
@@ -1090,6 +1329,10 @@ export interface components {
             /** @description Whether the API key is valid */
             valid: boolean;
             apiKey?: components["schemas"]["ApiKey"];
+        };
+        ValidateApiKeyInput: {
+            /** @description The API key to validate */
+            key: string;
         };
         UploadResponse: {
             /** @description The unique key to reference this asset */
@@ -1133,15 +1376,137 @@ export interface components {
              */
             createdAt: string;
         };
+        CompanyContactResponse: {
+            success: boolean;
+            message: string;
+        };
+        CompanyContact: {
+            /** @description Name of the company reaching out */
+            company: string;
+            /** @description Name of the person to reply to */
+            contactName: string;
+            /**
+             * Format: email
+             * @description Email address to reply to
+             */
+            contactEmail: string;
+            /** @description Event formats the company is interested in */
+            eventTypes: string[];
+            /** @description Semesters the company is available in */
+            semesters: string[];
+            /**
+             * @description Free-text message from the company
+             * @default
+             */
+            comment: string;
+        };
         SendEmailResponse: {
             success: boolean;
             message: string;
-            jobIds: string[];
             recipientCount: number;
+        };
+        SendCustomEmail: {
+            /** @description Recipient email address (string) or list of recipient email addresses (array) */
+            to: string | string[];
+            /** @description Email subject line */
+            subject: string;
+            /** @description Array of content blocks (title, text, or button) to render in the email */
+            content: ({
+                /**
+                 * @description Content block type
+                 * @constant
+                 */
+                type: "title";
+                /** @description The title text to display */
+                content: string;
+            } | {
+                /**
+                 * @description Content block type
+                 * @constant
+                 */
+                type: "text";
+                /** @description The paragraph text to display */
+                content: string;
+            } | {
+                /**
+                 * @description Content block type
+                 * @constant
+                 */
+                type: "button";
+                /** @description The button label text */
+                text: string;
+                /**
+                 * Format: uri
+                 * @description The URL the button links to
+                 */
+                url: string;
+            })[];
         };
         CreateEventResponse: {
             /** Format: uuid */
             eventId: string;
+        };
+        CreateEventSchema: {
+            /** @description Short title of the event */
+            title: string;
+            /** @description Description of the event */
+            description: string;
+            /** @description Category slug for the event */
+            categorySlug: string;
+            /** @description Slug of the group organizing the event */
+            organizerGroupSlug: string;
+            /** @description Location of the event (physical or online) */
+            location: string;
+            /** @description Main image to display for the event */
+            imageUrl: string | null;
+            /**
+             * Format: date-time
+             * @description When the event starts
+             */
+            start: string;
+            /**
+             * Format: date-time
+             * @description When the event ends
+             */
+            end: string;
+            /** @description Timestamp for when registrations open. If null, open immediately. */
+            registrationStart: string | null;
+            /**
+             * Format: date-time
+             * @description When the registration for the event ends. After this time, users cannot sign up.
+             */
+            registrationEnd: string;
+            /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
+            cancellationDeadline: string | null;
+            /** @description Maximum number of participants allowed. If null, no capacity limit. */
+            capacity: number | null;
+            /** @description Is the event closed for new registrations? This overrides registrationStart/End */
+            isRegistrationClosed: boolean;
+            /** @description Do users need to sign up to attend the event? */
+            requiresSigningUp: boolean;
+            /** @description Should users be allowed to join a waitlist if the event is full? */
+            allowWaitlist: boolean;
+            /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+            priorityPools: {
+                /** @description Group slugs in this pool */
+                groups: string[];
+            }[] | null;
+            /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+            onlyAllowPrioritized: boolean;
+            /** @description Can this event give strike penalties to users? */
+            canCauseStrikes: boolean;
+            /** @description Should the system enforce strike rules for this event? */
+            enforcesPreviousStrikes: boolean;
+            /** @description Is this a paid event? */
+            isPaidEvent: boolean;
+            /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
+            price: number | null;
+            /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
+            paymentGracePeriodMinutes: number | null;
+            /** @description User ID of the primary contact person for the event */
+            contactPersonUserId: string | null;
+            /** @description Should users be able to react to this event with emojis? */
+            reactionsAllowed: boolean;
         };
         EventListItem: {
             /**
@@ -1205,6 +1570,68 @@ export interface components {
             nextPage: number | null;
             /** @description List of events */
             items: components["schemas"]["EventListItem"][];
+        };
+        UpdateEventSchema: {
+            /** @description Short title of the event */
+            title?: string;
+            /** @description Description of the event */
+            description?: string;
+            /** @description Category slug for the event */
+            categorySlug?: string;
+            /** @description Slug of the group organizing the event */
+            organizerGroupSlug?: string;
+            /** @description Location of the event (physical or online) */
+            location?: string;
+            /** @description Main image to display for the event */
+            imageUrl?: string | null;
+            /**
+             * Format: date-time
+             * @description When the event starts
+             */
+            start?: string;
+            /**
+             * Format: date-time
+             * @description When the event ends
+             */
+            end?: string;
+            /** @description Timestamp for when registrations open. If null, open immediately. */
+            registrationStart?: string | null;
+            /**
+             * Format: date-time
+             * @description When the registration for the event ends. After this time, users cannot sign up.
+             */
+            registrationEnd?: string;
+            /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
+            cancellationDeadline?: string | null;
+            /** @description Maximum number of participants allowed. If null, no capacity limit. */
+            capacity?: number | null;
+            /** @description Is the event closed for new registrations? This overrides registrationStart/End */
+            isRegistrationClosed?: boolean;
+            /** @description Do users need to sign up to attend the event? */
+            requiresSigningUp?: boolean;
+            /** @description Should users be allowed to join a waitlist if the event is full? */
+            allowWaitlist?: boolean;
+            /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+            priorityPools?: {
+                /** @description Group slugs in this pool */
+                groups: string[];
+            }[] | null;
+            /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+            onlyAllowPrioritized?: boolean;
+            /** @description Can this event give strike penalties to users? */
+            canCauseStrikes?: boolean;
+            /** @description Should the system enforce strike rules for this event? */
+            enforcesPreviousStrikes?: boolean;
+            /** @description Is this a paid event? */
+            isPaidEvent?: boolean;
+            /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
+            price?: number | null;
+            /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
+            paymentGracePeriodMinutes?: number | null;
+            /** @description User ID of the primary contact person for the event */
+            contactPersonUserId?: string | null;
+            /** @description Should users be able to react to this event with emojis? */
+            reactionsAllowed?: boolean;
         };
         DeleteEventResponse: {
             message: string;
@@ -1318,6 +1745,10 @@ export interface components {
         UpdateFavoriteResponse: {
             success: boolean;
         };
+        UpdateFavoriteEvent: {
+            /** @description Is favorite */
+            isFavorite: boolean;
+        };
         FavoriteEvents: {
             /** @description Event ID */
             eventId: string;
@@ -1366,6 +1797,19 @@ export interface components {
             amount: number;
             currency: string;
         };
+        CreatePaymentBody: {
+            /**
+             * Format: uri
+             * @description URL to redirect user after payment
+             */
+            returnUrl: string;
+            /**
+             * @description User flow type for payment
+             * @default WEB_REDIRECT
+             * @enum {string}
+             */
+            userFlow: "WEB_REDIRECT" | "NATIVE_REDIRECT";
+        };
         CreateEventFormResponse: {
             /** Format: uuid */
             id?: string;
@@ -1391,6 +1835,31 @@ export interface components {
                     order: number;
                 }[];
             }[];
+        };
+        CreateEventForm: {
+            title: string;
+            description?: string;
+            /** @default false */
+            template: boolean;
+            /** @default [] */
+            fields: {
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                /** @default false */
+                required: boolean;
+                /** @default 0 */
+                order: number;
+                options?: {
+                    title: string;
+                    /** @default 0 */
+                    order: number;
+                }[];
+            }[];
+            /** Format: uuid */
+            event: string;
+            /** @enum {string} */
+            type: "survey" | "evaluation";
         };
         EventFormList: {
             /** Format: uuid */
@@ -1440,6 +1909,27 @@ export interface components {
             template: boolean;
             created_at: string;
             updated_at: string;
+        };
+        CreateForm: {
+            title: string;
+            description?: string;
+            /** @default false */
+            template: boolean;
+            /** @default [] */
+            fields: {
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                /** @default false */
+                required: boolean;
+                /** @default 0 */
+                order: number;
+                options?: {
+                    title: string;
+                    /** @default 0 */
+                    order: number;
+                }[];
+            }[];
         };
         FormList: {
             /** Format: uuid */
@@ -1503,6 +1993,29 @@ export interface components {
                 }[];
             }[];
         };
+        UpdateForm: {
+            title?: string;
+            description?: string;
+            template?: boolean;
+            fields?: {
+                /** Format: uuid */
+                id?: string;
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                /** @default false */
+                required: boolean;
+                /** @default 0 */
+                order: number;
+                options?: {
+                    /** Format: uuid */
+                    id?: string;
+                    title: string;
+                    /** @default 0 */
+                    order: number;
+                }[];
+            }[];
+        };
         DeleteFormResponse: {
             detail: string;
         };
@@ -1530,6 +2043,19 @@ export interface components {
         CreateSubmissionResponse: {
             id: string;
             message: string;
+        };
+        CreateSubmission: {
+            answers: {
+                field: {
+                    /** Format: uuid */
+                    id: string;
+                };
+                answer_text?: string;
+                selected_options?: {
+                    /** Format: uuid */
+                    id: string;
+                }[];
+            }[];
         };
         SubmissionList: {
             /** Format: uuid */
@@ -1577,6 +2103,9 @@ export interface components {
         };
         DeleteSubmissionResponse: {
             detail: string;
+        };
+        DeleteSubmissionWithReason: {
+            reason: string;
         };
         Notification: {
             /** @description Notification ID */
@@ -1627,6 +2156,10 @@ export interface components {
              */
             updatedAt: string;
         };
+        MarkNotificationRead: {
+            /** @description Whether notification should be marked as read */
+            isRead: boolean;
+        };
         Group: {
             /** @description Group slug */
             slug: string;
@@ -1646,6 +2179,8 @@ export interface components {
             finesActivated: boolean;
             /** @description Group fines admin ID */
             finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -1671,6 +2206,8 @@ export interface components {
             finesActivated: boolean;
             /** @description Group fines admin ID */
             finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
             /** @description Creation timestamp */
             createdAt: string;
             /** @description Last update timestamp */
@@ -1683,8 +2220,63 @@ export interface components {
             };
         };
         MyGroupList: components["schemas"]["MyGroup"][];
+        CreateGroup: {
+            /** @description Unique group slug identifier */
+            slug: string;
+            /**
+             * Format: uri
+             * @description Group image URL
+             */
+            imageUrl?: string;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description?: string;
+            /**
+             * Format: email
+             * @description Group contact email
+             */
+            contactEmail?: string;
+            /** @description Group type (e.g., committee, study, interestgroup) */
+            type: string;
+            /**
+             * @description Information about group fines policy
+             * @default
+             */
+            finesInfo: string;
+            /**
+             * @description Whether fines are activated for this group
+             * @default false
+             */
+            finesActivated: boolean;
+            /** @description User ID of the fines administrator */
+            finesAdminId?: string;
+        };
         UpdateGroupResponse: {
             message: string;
+        };
+        UpdateGroup: {
+            /**
+             * Format: uri
+             * @description Group image URL
+             */
+            imageUrl?: string;
+            /** @description Group name */
+            name?: string;
+            /** @description Group description */
+            description?: string | null;
+            /** @description Group contact email */
+            contactEmail?: string | null;
+            /** @description Group type */
+            type?: string;
+            /** @description Information about group fines policy */
+            finesInfo?: string;
+            /** @description Whether fines are activated for this group */
+            finesActivated?: boolean;
+            /** @description User ID of the fines administrator */
+            finesAdminId?: string | null;
+            /** @description Whether contract signing is required for group members */
+            contractSigningRequired?: boolean;
         };
         Fine: {
             /** @description Fine ID */
@@ -1715,8 +2307,31 @@ export interface components {
             updatedAt: string;
         };
         FineList: components["schemas"]["Fine"][];
+        CreateFine: {
+            /** @description User ID who receives the fine */
+            userId: string;
+            /** @description Group slug that issues the fine */
+            groupSlug: string;
+            /** @description Reason for the fine */
+            reason: string;
+            /** @description Fine amount in NOK */
+            amount: number;
+            /** @description User's defense text */
+            defense?: string;
+        };
         UpdateFineResponse: {
             message: string;
+        };
+        UpdateFine: {
+            /** @description User's defense text */
+            defense?: string;
+            /**
+             * @description Fine status
+             * @enum {string}
+             */
+            status?: "pending" | "approved" | "paid" | "rejected";
+            /** @description User who approved the fine */
+            approvedByUserId?: string;
         };
         GroupMember: {
             /** @description User ID */
@@ -1746,8 +2361,25 @@ export interface components {
             /** @description Membership update timestamp */
             updatedAt: string;
         };
+        AddGroupMember: {
+            /** @description User ID to add as member */
+            userId: string;
+            /**
+             * @description Membership role
+             * @default member
+             * @enum {string}
+             */
+            role: "member" | "leader";
+        };
         UpdateMemberRoleResponse: {
             message: string;
+        };
+        UpdateGroupMemberRole: {
+            /**
+             * @description Membership role
+             * @enum {string}
+             */
+            role: "member" | "leader";
         };
         CreateGroupFormResponse: {
             /** Format: uuid */
@@ -1778,6 +2410,36 @@ export interface components {
                 }[];
             }[];
         };
+        CreateGroupForm: {
+            title: string;
+            description?: string;
+            /** @default false */
+            template: boolean;
+            /** @default [] */
+            fields: {
+                title: string;
+                /** @enum {string} */
+                type: "text_answer" | "multiple_select" | "single_select";
+                /** @default false */
+                required: boolean;
+                /** @default 0 */
+                order: number;
+                options?: {
+                    title: string;
+                    /** @default 0 */
+                    order: number;
+                }[];
+            }[];
+            group: string;
+            /** Format: email */
+            email_receiver_on_submit?: string;
+            /** @default true */
+            can_submit_multiple: boolean;
+            /** @default false */
+            is_open_for_submissions: boolean;
+            /** @default false */
+            only_for_group_members: boolean;
+        };
         GroupFormList: {
             /** Format: uuid */
             id: string;
@@ -1793,6 +2455,87 @@ export interface components {
             created_at: string;
             updated_at: string;
         }[];
+        SignaturePlacement: {
+            page: number;
+            xPct: number;
+            yPct: number;
+            wPct: number;
+            hPct: number;
+        };
+        ActiveContract: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            version: string;
+            fileKey: string;
+            isActive: boolean;
+            signaturePlacement: components["schemas"]["SignaturePlacement"] | null;
+            namePlacement: components["schemas"]["SignaturePlacement"] | null;
+            createdAt: string;
+            updatedAt: string;
+            /** @description Direct URL to stream the PDF */
+            downloadUrl: string;
+        };
+        SignatureStatus: {
+            hasSigned: boolean;
+            signedAt: string | null;
+            signedName: string | null;
+        };
+        SignContractResponse: {
+            message: string;
+            signedAt: string;
+        };
+        SignContract: {
+            /** @description Full name the member signed with */
+            signedName: string;
+            /** @description Signature as a PNG data URL, produced by the signature pad */
+            signatureDataUrl: string;
+        };
+        Contract: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            version: string;
+            fileKey: string;
+            isActive: boolean;
+            signaturePlacement: components["schemas"]["SignaturePlacement"] | null;
+            namePlacement: components["schemas"]["SignaturePlacement"] | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        ContractList: components["schemas"]["Contract"][];
+        CreateContract: {
+            /** @description Contract title */
+            title: string;
+            /** @description Version identifier e.g. '2026-01' */
+            version: string;
+            /** @description Asset key from POST /api/assets */
+            fileKey: string;
+            /** @description Where the member's signature is stamped on the PDF */
+            signaturePlacement?: components["schemas"]["SignaturePlacement"] | null;
+            /** @description Where the signer's name and date are written */
+            namePlacement?: components["schemas"]["SignaturePlacement"] | null;
+        };
+        ActivateContractResponse: {
+            message: string;
+        };
+        GroupSignatureMember: {
+            userId: string;
+            /** @description User's display name */
+            userName: string;
+            /** @description User's email address */
+            userEmail: string;
+            hasSigned: boolean;
+            signedAt: string | null;
+        };
+        GroupSignatureList: {
+            members: components["schemas"]["GroupSignatureMember"][];
+            totalMembers: number;
+            signedCount: number;
+        };
+        RevokeSignatureResponse: {
+            message: string;
+        };
         NewsArticle: {
             /**
              * Format: uuid
@@ -1835,6 +2578,26 @@ export interface components {
                 };
             }[];
         };
+        CreateNews: {
+            /** @description News article title */
+            title: string;
+            /** @description News article subtitle/ingress */
+            header: string;
+            /** @description Main content of the news */
+            body: string;
+            /**
+             * Format: uri
+             * @description Optional image URL
+             */
+            imageUrl?: string;
+            /** @description Alt text for the image */
+            imageAlt?: string;
+            /**
+             * @description Whether reactions are enabled
+             * @default false
+             */
+            emojisAllowed: boolean;
+        };
         NewsListItem: {
             /**
              * Format: uuid
@@ -1874,6 +2637,14 @@ export interface components {
             /** @description List of news articles */
             items: components["schemas"]["NewsListItem"][];
         };
+        UpdateNews: {
+            title?: string;
+            header?: string;
+            body?: string;
+            imageUrl?: string | null;
+            imageAlt?: string | null;
+            emojisAllowed?: boolean;
+        };
         DeleteNewsResponse: {
             message: string;
         };
@@ -1889,6 +2660,10 @@ export interface components {
             emoji: string;
             /** @description Reaction creation time (ISO 8601) */
             createdAt: string;
+        };
+        CreateNewsReaction: {
+            /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
+            emoji: string;
         };
         DeleteNewsReactionResponse: {
             message: string;
@@ -1950,6 +2725,69 @@ export interface components {
             } | null;
             /** @description Whether the job posting has expired */
             expired: boolean;
+        };
+        CreateJob: {
+            /** @description Job posting title */
+            title: string;
+            /**
+             * @description Short description/summary
+             * @default
+             */
+            ingress: string;
+            /**
+             * @description Full job description
+             * @default
+             */
+            body: string;
+            /** @description Company name */
+            company: string;
+            /** @description Job location */
+            location: string;
+            /**
+             * Format: date-time
+             * @description Application deadline
+             */
+            deadline?: string;
+            /**
+             * @description Whether hiring is ongoing
+             * @default false
+             */
+            isContinuouslyHiring: boolean;
+            /**
+             * @description Type of employment
+             * @default other
+             * @enum {string}
+             */
+            jobType: "full_time" | "part_time" | "summer_job" | "other";
+            /**
+             * Format: email
+             * @description Contact email
+             */
+            email?: string;
+            /**
+             * Format: uri
+             * @description Application or company URL
+             */
+            link?: string;
+            /**
+             * @description Target class start
+             * @default first
+             * @enum {string}
+             */
+            classStart: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /**
+             * @description Target class end
+             * @default fifth
+             * @enum {string}
+             */
+            classEnd: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /**
+             * Format: uri
+             * @description Company logo
+             */
+            imageUrl?: string;
+            /** @description Logo alt text */
+            imageAlt?: string;
         };
         JobListItem: {
             /**
@@ -2013,6 +2851,25 @@ export interface components {
             /** @description List of job postings */
             items: components["schemas"]["JobListItem"][];
         };
+        UpdateJob: {
+            title?: string;
+            ingress?: string;
+            body?: string;
+            company?: string;
+            location?: string;
+            deadline?: string | null;
+            isContinuouslyHiring?: boolean;
+            /** @enum {string} */
+            jobType?: "full_time" | "part_time" | "summer_job" | "other";
+            email?: string | null;
+            link?: string | null;
+            /** @enum {string} */
+            classStart?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            /** @enum {string} */
+            classEnd?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
+            imageUrl?: string | null;
+            imageAlt?: string | null;
+        };
         DeleteJobResponse: {
             message: string;
         };
@@ -2050,7 +2907,39 @@ export interface components {
             /** @default [] */
             allergies: string[];
         };
+        OnboardUserInput: {
+            /** @enum {string} */
+            gender: "male" | "female" | "other";
+            allowsPhotosByDefault: boolean;
+            acceptsEventRules: boolean;
+            /** Format: uri */
+            imageUrl?: string;
+            bioDescription?: string;
+            /** Format: uri */
+            githubUrl?: string;
+            /** Format: uri */
+            linkedinUrl?: string;
+            receiveMailCommunication: boolean;
+            /** @default [] */
+            allergies: string[];
+        };
         UpdateUserSettings: {
+            /** @enum {string} */
+            gender?: "male" | "female" | "other";
+            allowsPhotosByDefault?: boolean;
+            acceptsEventRules?: boolean;
+            /** Format: uri */
+            imageUrl?: string;
+            bioDescription?: string;
+            /** Format: uri */
+            githubUrl?: string;
+            /** Format: uri */
+            linkedinUrl?: string;
+            receiveMailCommunication?: boolean;
+            /** @default [] */
+            allergies: string[];
+        };
+        UpdateUserSettingsInput: {
             /** @enum {string} */
             gender?: "male" | "female" | "other";
             allowsPhotosByDefault?: boolean;
@@ -2120,20 +3009,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Name for the API key */
-                    name: string;
-                    /** @description Detailed description of the API key's purpose */
-                    description: string;
-                    /** @description Array of permissions granted to this API key (e.g., ['email:send', 'news:create']). Service validates against allowed permissions. */
-                    permissions: string[];
-                    /** @description Optional metadata as key-value pairs */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
+                "application/json": components["schemas"]["CreateApiKey"];
             };
         };
         responses: {
@@ -2245,20 +3123,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Name for the API key */
-                    name?: string;
-                    /** @description Detailed description of the API key's purpose */
-                    description?: string;
-                    /** @description Array of permissions granted to this API key */
-                    permissions?: string[];
-                    /** @description Optional metadata as key-value pairs */
-                    metadata?: {
-                        [key: string]: unknown;
-                    };
-                };
+                "application/json": components["schemas"]["UpdateApiKey"];
             };
         };
         responses: {
@@ -2335,12 +3202,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description The API key to validate */
-                    key: string;
-                };
+                "application/json": components["schemas"]["ValidateApiKeyInput"];
             };
         };
         responses: {
@@ -2447,6 +3311,44 @@ export interface operations {
             };
         };
     };
+    submitCompanyContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyContact"];
+            };
+        };
+        responses: {
+            /** @description Submission queued for delivery */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyContactResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many submissions from this client */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     sendCustomEmail: {
         parameters: {
             query?: never;
@@ -2454,45 +3356,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Recipient email address (string) or list of recipient email addresses (array) */
-                    to: string | string[];
-                    /** @description Email subject line */
-                    subject: string;
-                    /** @description Array of content blocks (title, text, or button) to render in the email */
-                    content: ({
-                        /**
-                         * @description Content block type
-                         * @constant
-                         */
-                        type: "title";
-                        /** @description The title text to display */
-                        content: string;
-                    } | {
-                        /**
-                         * @description Content block type
-                         * @constant
-                         */
-                        type: "text";
-                        /** @description The paragraph text to display */
-                        content: string;
-                    } | {
-                        /**
-                         * @description Content block type
-                         * @constant
-                         */
-                        type: "button";
-                        /** @description The button label text */
-                        text: string;
-                        /**
-                         * Format: uri
-                         * @description The URL the button links to
-                         */
-                        url: string;
-                    })[];
-                };
+                "application/json": components["schemas"]["SendCustomEmail"];
             };
         };
         responses: {
@@ -2537,7 +3403,9 @@ export interface operations {
                 page?: number;
                 /** @description Search term to filter events by title */
                 search?: string;
-                /** @description Whether to include expired events or not */
+                /** @description Only return events in these category slugs. Omit to return every category. */
+                category?: string[];
+                /** @description Filter on whether the event has already ended. True returns only past events, false only upcoming ones. Omit to return both. */
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;
@@ -2566,70 +3434,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Short title of the event */
-                    title: string;
-                    /** @description Description of the event */
-                    description: string;
-                    /** @description Category slug for the event */
-                    categorySlug: string;
-                    /** @description Slug of the group organizing the event */
-                    organizerGroupSlug: string;
-                    /** @description Location of the event (physical or online) */
-                    location: string;
-                    /** @description Main image to display for the event */
-                    imageUrl: string | null;
-                    /**
-                     * Format: date-time
-                     * @description When the event starts
-                     */
-                    start: string;
-                    /**
-                     * Format: date-time
-                     * @description When the event ends
-                     */
-                    end: string;
-                    /** @description Timestamp for when registrations open. If null, open immediately. */
-                    registrationStart: string | null;
-                    /**
-                     * Format: date-time
-                     * @description When the registration for the event ends. After this time, users cannot sign up.
-                     */
-                    registrationEnd: string;
-                    /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
-                    cancellationDeadline: string | null;
-                    /** @description Maximum number of participants allowed. If null, no capacity limit. */
-                    capacity: number | null;
-                    /** @description Is the event closed for new registrations? This overrides registrationStart/End */
-                    isRegistrationClosed: boolean;
-                    /** @description Do users need to sign up to attend the event? */
-                    requiresSigningUp: boolean;
-                    /** @description Should users be allowed to join a waitlist if the event is full? */
-                    allowWaitlist: boolean;
-                    /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
-                    priorityPools: {
-                        /** @description Group slugs in this pool */
-                        groups: string[];
-                    }[] | null;
-                    /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
-                    onlyAllowPrioritized: boolean;
-                    /** @description Can this event give strike penalties to users? */
-                    canCauseStrikes: boolean;
-                    /** @description Should the system enforce strike rules for this event? */
-                    enforcesPreviousStrikes: boolean;
-                    /** @description Is this a paid event? */
-                    isPaidEvent: boolean;
-                    /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
-                    price: number | null;
-                    /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-                    paymentGracePeriodMinutes: number | null;
-                    /** @description User ID of the primary contact person for the event */
-                    contactPersonUserId: string | null;
-                    /** @description Should users be able to react to this event with emojis? */
-                    reactionsAllowed: boolean;
-                };
+                "application/json": components["schemas"]["CreateEventSchema"];
             };
         };
         responses: {
@@ -2669,70 +3476,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Short title of the event */
-                    title?: string;
-                    /** @description Description of the event */
-                    description?: string;
-                    /** @description Category slug for the event */
-                    categorySlug?: string;
-                    /** @description Slug of the group organizing the event */
-                    organizerGroupSlug?: string;
-                    /** @description Location of the event (physical or online) */
-                    location?: string;
-                    /** @description Main image to display for the event */
-                    imageUrl?: string | null;
-                    /**
-                     * Format: date-time
-                     * @description When the event starts
-                     */
-                    start?: string;
-                    /**
-                     * Format: date-time
-                     * @description When the event ends
-                     */
-                    end?: string;
-                    /** @description Timestamp for when registrations open. If null, open immediately. */
-                    registrationStart?: string | null;
-                    /**
-                     * Format: date-time
-                     * @description When the registration for the event ends. After this time, users cannot sign up.
-                     */
-                    registrationEnd?: string;
-                    /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
-                    cancellationDeadline?: string | null;
-                    /** @description Maximum number of participants allowed. If null, no capacity limit. */
-                    capacity?: number | null;
-                    /** @description Is the event closed for new registrations? This overrides registrationStart/End */
-                    isRegistrationClosed?: boolean;
-                    /** @description Do users need to sign up to attend the event? */
-                    requiresSigningUp?: boolean;
-                    /** @description Should users be allowed to join a waitlist if the event is full? */
-                    allowWaitlist?: boolean;
-                    /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
-                    priorityPools?: {
-                        /** @description Group slugs in this pool */
-                        groups: string[];
-                    }[] | null;
-                    /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
-                    onlyAllowPrioritized?: boolean;
-                    /** @description Can this event give strike penalties to users? */
-                    canCauseStrikes?: boolean;
-                    /** @description Should the system enforce strike rules for this event? */
-                    enforcesPreviousStrikes?: boolean;
-                    /** @description Is this a paid event? */
-                    isPaidEvent?: boolean;
-                    /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
-                    price?: number | null;
-                    /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-                    paymentGracePeriodMinutes?: number | null;
-                    /** @description User ID of the primary contact person for the event */
-                    contactPersonUserId?: string | null;
-                    /** @description Should users be able to react to this event with emojis? */
-                    reactionsAllowed?: boolean;
-                };
+                "application/json": components["schemas"]["UpdateEventSchema"];
             };
         };
         responses: {
@@ -2844,12 +3590,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Is favorite */
-                    isFavorite: boolean;
-                };
+                "application/json": components["schemas"]["UpdateFavoriteEvent"];
             };
         };
         responses: {
@@ -3019,21 +3762,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /**
-                     * Format: uri
-                     * @description URL to redirect user after payment
-                     */
-                    returnUrl: string;
-                    /**
-                     * @description User flow type for payment
-                     * @default WEB_REDIRECT
-                     * @enum {string}
-                     */
-                    userFlow?: "WEB_REDIRECT" | "NATIVE_REDIRECT";
-                };
+                "application/json": components["schemas"]["CreatePaymentBody"];
             };
         };
         responses: {
@@ -3157,33 +3888,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title: string;
-                    description?: string;
-                    /** @default false */
-                    template?: boolean;
-                    /** @default [] */
-                    fields?: {
-                        title: string;
-                        /** @enum {string} */
-                        type: "text_answer" | "multiple_select" | "single_select";
-                        /** @default false */
-                        required?: boolean;
-                        /** @default 0 */
-                        order?: number;
-                        options?: {
-                            title: string;
-                            /** @default 0 */
-                            order?: number;
-                        }[];
-                    }[];
-                    /** Format: uuid */
-                    event: string;
-                    /** @enum {string} */
-                    type: "survey" | "evaluation";
-                };
+                "application/json": components["schemas"]["CreateEventForm"];
             };
         };
         responses: {
@@ -3310,29 +4017,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title: string;
-                    description?: string;
-                    /** @default false */
-                    template?: boolean;
-                    /** @default [] */
-                    fields?: {
-                        title: string;
-                        /** @enum {string} */
-                        type: "text_answer" | "multiple_select" | "single_select";
-                        /** @default false */
-                        required?: boolean;
-                        /** @default 0 */
-                        order?: number;
-                        options?: {
-                            title: string;
-                            /** @default 0 */
-                            order?: number;
-                        }[];
-                    }[];
-                };
+                "application/json": components["schemas"]["CreateForm"];
             };
         };
         responses: {
@@ -3448,31 +4135,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title?: string;
-                    description?: string;
-                    template?: boolean;
-                    fields?: {
-                        /** Format: uuid */
-                        id?: string;
-                        title: string;
-                        /** @enum {string} */
-                        type: "text_answer" | "multiple_select" | "single_select";
-                        /** @default false */
-                        required?: boolean;
-                        /** @default 0 */
-                        order?: number;
-                        options?: {
-                            /** Format: uuid */
-                            id?: string;
-                            title: string;
-                            /** @default 0 */
-                            order?: number;
-                        }[];
-                    }[];
-                };
+                "application/json": components["schemas"]["UpdateForm"];
             };
         };
         responses: {
@@ -3609,21 +4274,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    answers: {
-                        field: {
-                            /** Format: uuid */
-                            id: string;
-                        };
-                        answer_text?: string;
-                        selected_options?: {
-                            /** Format: uuid */
-                            id: string;
-                        }[];
-                    }[];
-                };
+                "application/json": components["schemas"]["CreateSubmission"];
             };
         };
         responses: {
@@ -3769,11 +4422,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    reason: string;
-                };
+                "application/json": components["schemas"]["DeleteSubmissionWithReason"];
             };
         };
         responses: {
@@ -3885,12 +4536,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Whether notification should be marked as read */
-                    isRead: boolean;
-                };
+                "application/json": components["schemas"]["MarkNotificationRead"];
             };
         };
         responses: {
@@ -3948,40 +4596,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Unique group slug identifier */
-                    slug: string;
-                    /**
-                     * Format: uri
-                     * @description Group image URL
-                     */
-                    imageUrl?: string;
-                    /** @description Group name */
-                    name: string;
-                    /** @description Group description */
-                    description?: string;
-                    /**
-                     * Format: email
-                     * @description Group contact email
-                     */
-                    contactEmail?: string;
-                    /** @description Group type (e.g., committee, study, interestgroup) */
-                    type: string;
-                    /**
-                     * @description Information about group fines policy
-                     * @default
-                     */
-                    finesInfo?: string;
-                    /**
-                     * @description Whether fines are activated for this group
-                     * @default false
-                     */
-                    finesActivated?: boolean;
-                    /** @description User ID of the fines administrator */
-                    finesAdminId?: string;
-                };
+                "application/json": components["schemas"]["CreateGroup"];
             };
         };
         responses: {
@@ -4122,29 +4739,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /**
-                     * Format: uri
-                     * @description Group image URL
-                     */
-                    imageUrl?: string;
-                    /** @description Group name */
-                    name?: string;
-                    /** @description Group description */
-                    description?: string | null;
-                    /** @description Group contact email */
-                    contactEmail?: string | null;
-                    /** @description Group type */
-                    type?: string;
-                    /** @description Information about group fines policy */
-                    finesInfo?: string;
-                    /** @description Whether fines are activated for this group */
-                    finesActivated?: boolean;
-                    /** @description User ID of the fines administrator */
-                    finesAdminId?: string | null;
-                };
+                "application/json": components["schemas"]["UpdateGroup"];
             };
         };
         responses: {
@@ -4243,20 +4840,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description User ID who receives the fine */
-                    userId: string;
-                    /** @description Group slug that issues the fine */
-                    groupSlug: string;
-                    /** @description Reason for the fine */
-                    reason: string;
-                    /** @description Fine amount in NOK */
-                    amount: number;
-                    /** @description User's defense text */
-                    defense?: string;
-                };
+                "application/json": components["schemas"]["CreateFine"];
             };
         };
         responses: {
@@ -4401,19 +4987,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description User's defense text */
-                    defense?: string;
-                    /**
-                     * @description Fine status
-                     * @enum {string}
-                     */
-                    status?: "pending" | "approved" | "paid" | "rejected";
-                    /** @description User who approved the fine */
-                    approvedByUserId?: string;
-                };
+                "application/json": components["schemas"]["UpdateFine"];
             };
         };
         responses: {
@@ -4496,18 +5072,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description User ID to add as member */
-                    userId: string;
-                    /**
-                     * @description Membership role
-                     * @default member
-                     * @enum {string}
-                     */
-                    role?: "member" | "leader";
-                };
+                "application/json": components["schemas"]["AddGroupMember"];
             };
         };
         responses: {
@@ -4592,15 +5159,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /**
-                     * @description Membership role
-                     * @enum {string}
-                     */
-                    role: "member" | "leader";
-                };
+                "application/json": components["schemas"]["UpdateGroupMemberRole"];
             };
         };
         responses: {
@@ -4678,38 +5239,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title: string;
-                    description?: string;
-                    /** @default false */
-                    template?: boolean;
-                    /** @default [] */
-                    fields?: {
-                        title: string;
-                        /** @enum {string} */
-                        type: "text_answer" | "multiple_select" | "single_select";
-                        /** @default false */
-                        required?: boolean;
-                        /** @default 0 */
-                        order?: number;
-                        options?: {
-                            title: string;
-                            /** @default 0 */
-                            order?: number;
-                        }[];
-                    }[];
-                    group: string;
-                    /** Format: email */
-                    email_receiver_on_submit?: string;
-                    /** @default true */
-                    can_submit_multiple?: boolean;
-                    /** @default false */
-                    is_open_for_submissions?: boolean;
-                    /** @default false */
-                    only_for_group_members?: boolean;
-                };
+                "application/json": components["schemas"]["CreateGroupForm"];
             };
         };
         responses: {
@@ -4739,6 +5271,428 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getActiveContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active contract */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveContract"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMySignatureStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signature status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignatureStatus"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    signContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignContract"];
+            };
+        };
+        responses: {
+            /** @description Contract signed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignContractResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid signature image */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already signed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The active contract has no signature field placed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMySignedContractPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signed contract PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - No active contract, or not signed yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserSignedContractPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signed contract PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - No active contract, or not signed yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listContracts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of contracts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContract"];
+            };
+        };
+        responses: {
+            /** @description Contract created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contract"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activateContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Contract activated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivateContractResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Contract not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGroupContractSignatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member signing status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupSignatureList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    revokeContractSignature: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signature revoked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeSignatureResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Signature not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4779,28 +5733,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description News article title */
-                    title: string;
-                    /** @description News article subtitle/ingress */
-                    header: string;
-                    /** @description Main content of the news */
-                    body: string;
-                    /**
-                     * Format: uri
-                     * @description Optional image URL
-                     */
-                    imageUrl?: string;
-                    /** @description Alt text for the image */
-                    imageAlt?: string;
-                    /**
-                     * @description Whether reactions are enabled
-                     * @default false
-                     */
-                    emojisAllowed?: boolean;
-                };
+                "application/json": components["schemas"]["CreateNews"];
             };
         };
         responses: {
@@ -4907,16 +5842,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title?: string;
-                    header?: string;
-                    body?: string;
-                    imageUrl?: string | null;
-                    imageAlt?: string | null;
-                    emojisAllowed?: boolean;
-                };
+                "application/json": components["schemas"]["UpdateNews"];
             };
         };
         responses: {
@@ -4963,12 +5891,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Emoji reaction (e.g., 👍, ❤️, 😂) */
-                    emoji: string;
-                };
+                "application/json": components["schemas"]["CreateNewsReaction"];
             };
         };
         responses: {
@@ -5084,71 +6009,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @description Job posting title */
-                    title: string;
-                    /**
-                     * @description Short description/summary
-                     * @default
-                     */
-                    ingress?: string;
-                    /**
-                     * @description Full job description
-                     * @default
-                     */
-                    body?: string;
-                    /** @description Company name */
-                    company: string;
-                    /** @description Job location */
-                    location: string;
-                    /**
-                     * Format: date-time
-                     * @description Application deadline
-                     */
-                    deadline?: string;
-                    /**
-                     * @description Whether hiring is ongoing
-                     * @default false
-                     */
-                    isContinuouslyHiring?: boolean;
-                    /**
-                     * @description Type of employment
-                     * @default other
-                     * @enum {string}
-                     */
-                    jobType?: "full_time" | "part_time" | "summer_job" | "other";
-                    /**
-                     * Format: email
-                     * @description Contact email
-                     */
-                    email?: string;
-                    /**
-                     * Format: uri
-                     * @description Application or company URL
-                     */
-                    link?: string;
-                    /**
-                     * @description Target class start
-                     * @default first
-                     * @enum {string}
-                     */
-                    classStart?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-                    /**
-                     * @description Target class end
-                     * @default fifth
-                     * @enum {string}
-                     */
-                    classEnd?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-                    /**
-                     * Format: uri
-                     * @description Company logo
-                     */
-                    imageUrl?: string;
-                    /** @description Logo alt text */
-                    imageAlt?: string;
-                };
+                "application/json": components["schemas"]["CreateJob"];
             };
         };
         responses: {
@@ -5262,27 +6125,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    title?: string;
-                    ingress?: string;
-                    body?: string;
-                    company?: string;
-                    location?: string;
-                    deadline?: string | null;
-                    isContinuouslyHiring?: boolean;
-                    /** @enum {string} */
-                    jobType?: "full_time" | "part_time" | "summer_job" | "other";
-                    email?: string | null;
-                    link?: string | null;
-                    /** @enum {string} */
-                    classStart?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-                    /** @enum {string} */
-                    classEnd?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
-                    imageUrl?: string | null;
-                    imageAlt?: string | null;
-                };
+                "application/json": components["schemas"]["UpdateJob"];
             };
         };
         responses: {
@@ -5363,24 +6208,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @enum {string} */
-                    gender: "male" | "female" | "other";
-                    allowsPhotosByDefault: boolean;
-                    acceptsEventRules: boolean;
-                    /** Format: uri */
-                    imageUrl?: string;
-                    bioDescription?: string;
-                    /** Format: uri */
-                    githubUrl?: string;
-                    /** Format: uri */
-                    linkedinUrl?: string;
-                    receiveMailCommunication: boolean;
-                    /** @default [] */
-                    allergies?: string[];
-                };
+                "application/json": components["schemas"]["OnboardUserInput"];
             };
         };
         responses: {
@@ -5418,24 +6248,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": {
-                    /** @enum {string} */
-                    gender?: "male" | "female" | "other";
-                    allowsPhotosByDefault?: boolean;
-                    acceptsEventRules?: boolean;
-                    /** Format: uri */
-                    imageUrl?: string;
-                    bioDescription?: string;
-                    /** Format: uri */
-                    githubUrl?: string;
-                    /** Format: uri */
-                    linkedinUrl?: string;
-                    receiveMailCommunication?: boolean;
-                    /** @default [] */
-                    allergies?: string[];
-                };
+                "application/json": components["schemas"]["UpdateUserSettingsInput"];
             };
         };
         responses: {

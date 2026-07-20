@@ -1,15 +1,11 @@
-import { parseBearer } from "@photon/auth/bearer";
-import { enqueueEmail } from "@photon/email";
-import { sendCustomEmailSchema } from "@photon/email/schema";
-import { CustomEmail } from "@photon/email/templates";
 import type { MiddlewareHandler } from "hono";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import React from "react";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { sendEmailResponseSchema } from "./schema";
+import { sendCustomEmailInputSchema, sendEmailResponseSchema } from "./schema";
+import { getBearerTokenFromHeader } from "~/lib/auth";
 
 /**
  * Middleware to validate API key from Bearer token
@@ -23,12 +19,14 @@ const requireEmailApiKey: MiddlewareHandler = async (c, next) => {
         });
     }
 
-    const result = parseBearer(c.req.header("Authorization"));
-    if (!result.success) {
-        throw new HTTPException(401, { message: result.error });
+    const result = getBearerTokenFromHeader(c.req.header("Authorization"));
+    if (result == null) {
+        throw new HTTPException(401, {
+            message: "Invalid Authorization header format",
+        });
     }
 
-    if (result.token !== apiKey) {
+    if (result !== apiKey) {
         throw new HTTPException(403, {
             message: "Invalid API key",
         });
@@ -58,7 +56,7 @@ export const sendEmailRoute = route().post(
         .response({ statusCode: 503, description: "Email API not configured" })
         .build(),
     requireEmailApiKey,
-    validator("json", sendCustomEmailSchema),
+    validator("json", sendCustomEmailInputSchema),
     async (c) => {
         const body = c.req.valid("json");
         const { ctx } = c.var;
@@ -67,32 +65,27 @@ export const sendEmailRoute = route().post(
             // Normalize 'to' field to always be an array
             const recipients = Array.isArray(body.to) ? body.to : [body.to];
 
-            // Create the email component
-            const emailComponent = React.createElement(CustomEmail, {
-                content: body.content,
-            });
-
-            // Queue one email job for each recipient
-            const jobs = await Promise.all(
+            await Promise.all(
                 recipients.map((recipient) =>
-                    enqueueEmail(
+                    ctx.email.sendEmailTemplate(
                         {
+                            from: env.MAIL_FROM,
                             to: recipient,
                             subject: body.subject,
-                            component: emailComponent,
                         },
-                        ctx,
+                        "CustomEmail",
+                        {
+                            content: body.content,
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                        },
                     ),
                 ),
             );
-
-            const jobIds = jobs.map((job) => job.id);
 
             return c.json(
                 {
                     success: true,
                     message: `Email${recipients.length > 1 ? "s" : ""} queued successfully`,
-                    jobIds,
                     recipientCount: recipients.length,
                 },
                 200,

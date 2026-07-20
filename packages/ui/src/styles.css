@@ -1,0 +1,194 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+/* Handwriting faces for the typed signature (SignatureInput). Self-hosted from
+   the consuming app's /fonts, and given stable family names so they can be
+   referenced from a canvas ctx.font and document.fonts.load(). OFL-licensed. */
+@font-face {
+    font-family: "Great Vibes";
+    src: url("/fonts/great-vibes.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Dancing Script";
+    src: url("/fonts/dancing-script.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Caveat";
+    src: url("/fonts/caveat.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@plugin '@tailwindcss/typography';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    /* TIHLDE brand blue — the logo colour in light mode, and the CTA colour it
+       drives via --primary / --sidebar-primary / --ring. Dark mode overrides
+       all of these with the lighter navy-palette blue. */
+    --logo: #1c458a;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0 0);
+    --primary: var(--logo);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0 0);
+    --secondary-foreground: oklch(0.205 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.97 0 0);
+    --accent-foreground: oklch(0.205 0 0);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.577 0.245 27.325);
+    --border: oklch(0.922 0 0);
+    --input: oklch(0.922 0 0);
+    --ring: var(--logo);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: var(--logo);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: var(--logo);
+}
+
+.dark {
+    /* Navy palette generated from A (#030B1A) — hsl(219°) scale */
+    --background: #030b1a;
+    --foreground: #f5f7f9;
+    --card: #091f49;
+    --card-foreground: #f5f7f9;
+    --popover: #091f49;
+    --popover-foreground: #f5f7f9;
+    --primary: #1b61e4;
+    --primary-foreground: #ffffff;
+    --secondary: #0d3172;
+    --secondary-foreground: #f5f7f9;
+    --muted: #0d3172;
+    --muted-foreground: #5d8bdf;
+    --accent: #0d3172;
+    --accent-foreground: #f5f7f9;
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.637 0.237 25.331);
+    --border: #0d3172;
+    --input: #0d3172;
+    --ring: #1b61e4;
+    --chart-1: #5d8bdf;
+    --chart-2: #1b61e4;
+    --chart-3: #1652c0;
+    --chart-4: #124097;
+    --chart-5: #0d3172;
+    --sidebar: #091f49;
+    --sidebar-foreground: #f5f7f9;
+    --sidebar-primary: #1b61e4;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #0d3172;
+    --sidebar-accent-foreground: #f5f7f9;
+    --sidebar-border: #0d3172;
+    --sidebar-ring: #1b61e4;
+    /* On the dark navy background the logo stays light for contrast */
+    --logo: var(--foreground);
+}
+
+@theme inline {
+    --font-sans: "Inter Variable", sans-serif;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-logo: var(--logo);
+    --font-heading: var(--font-sans);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        background-color: var(--background);
+        color: var(--foreground);
+        @apply bg-background text-foreground;
+    }
+    html {
+        @apply font-sans;
+    }
+}
+
+/* Map @tailwindcss/typography to the project's theme tokens so prose
+ * follows light/dark via the same `--foreground` etc. variables that
+ * everything else uses. Kept unlayered so it overrides the plugin's
+ * own `.prose` defaults (which live in Tailwind's components layer). */
+.prose {
+    --tw-prose-body: var(--foreground);
+    --tw-prose-headings: var(--foreground);
+    --tw-prose-lead: var(--muted-foreground);
+    --tw-prose-links: var(--primary);
+    --tw-prose-bold: var(--foreground);
+    --tw-prose-counters: var(--muted-foreground);
+    --tw-prose-bullets: var(--muted-foreground);
+    --tw-prose-hr: var(--border);
+    --tw-prose-quotes: var(--foreground);
+    --tw-prose-quote-borders: var(--border);
+    --tw-prose-captions: var(--muted-foreground);
+    --tw-prose-code: var(--foreground);
+    --tw-prose-pre-code: var(--card-foreground);
+    --tw-prose-pre-bg: var(--muted);
+    --tw-prose-th-borders: var(--border);
+    --tw-prose-td-borders: var(--border);
+    --tw-prose-kbd: var(--foreground);
+}

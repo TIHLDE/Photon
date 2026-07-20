@@ -8,122 +8,79 @@ import {
 
 // ===== INPUT SCHEMAS =====
 
-export const createJobSchema = z
-    .object({
-        title: z
-            .string()
-            .min(1)
-            .max(200)
-            .meta({ description: "Job posting title" }),
-        ingress: z
-            .string()
-            .max(800)
-            .default("")
-            .meta({ description: "Short description/summary" }),
-        body: z
-            .string()
-            .default("")
-            .meta({ description: "Full job description" }),
-        company: z
-            .string()
-            .min(1)
-            .max(200)
-            .meta({ description: "Company name" }),
-        location: z
-            .string()
-            .min(1)
-            .max(200)
-            .meta({ description: "Job location" }),
-        deadline: z
-            .string()
-            .datetime()
-            .optional()
-            .meta({ description: "Application deadline" }),
-        isContinuouslyHiring: z
-            .boolean()
-            .default(false)
-            .meta({ description: "Whether hiring is ongoing" }),
-        jobType: z
-            .enum(["full_time", "part_time", "summer_job", "other"])
-            .default("other")
-            .meta({ description: "Type of employment" }),
-        email: z
-            .string()
-            .email()
-            .max(320)
-            .optional()
-            .meta({ description: "Contact email" }),
-        link: z
-            .string()
-            .url()
-            .optional()
-            .meta({ description: "Application or company URL" }),
-        classStart: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .default("first")
-            .meta({ description: "Target class start" }),
-        classEnd: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .default("fifth")
-            .meta({ description: "Target class end" }),
-        imageUrl: z
-            .string()
-            .url()
-            .optional()
-            .meta({ description: "Company logo" }),
-        imageAlt: z
-            .string()
-            .max(255)
-            .optional()
-            .meta({ description: "Logo alt text" }),
-    })
-    .refine(
-        (data) => {
-            const classOrder = [
-                "first",
-                "second",
-                "third",
-                "fourth",
-                "fifth",
-                "alumni",
-            ];
-            return (
-                classOrder.indexOf(data.classStart) <=
-                classOrder.indexOf(data.classEnd)
-            );
-        },
-        {
-            message: "classStart must be less than or equal to classEnd",
-            path: ["classStart"],
-        },
-    );
-
-export const updateJobSchema = z
-    .object({
-        title: z.string().min(1).max(200).optional(),
-        ingress: z.string().max(800).optional(),
-        body: z.string().optional(),
-        company: z.string().min(1).max(200).optional(),
-        location: z.string().min(1).max(200).optional(),
-        deadline: z.string().datetime().optional().nullable(),
-        isContinuouslyHiring: z.boolean().optional(),
-        jobType: z
-            .enum(["full_time", "part_time", "summer_job", "other"])
-            .optional(),
-        email: z.string().email().max(320).optional().nullable(),
-        link: z.url().optional().nullable(),
-        classStart: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .optional(),
-        classEnd: z
-            .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
-            .optional(),
-        imageUrl: z.url().optional().nullable(),
-        imageAlt: z.string().max(255).optional().nullable(),
-    })
-    .refine(
-        (data) => {
-            if (data.classStart && data.classEnd) {
+export const createJobSchema = Schema(
+    "CreateJob",
+    z
+        .object({
+            title: z
+                .string()
+                .min(1)
+                .max(200)
+                .meta({ description: "Job posting title" }),
+            ingress: z
+                .string()
+                .max(800)
+                .default("")
+                .meta({ description: "Short description/summary" }),
+            body: z
+                .string()
+                .default("")
+                .meta({ description: "Full job description" }),
+            company: z
+                .string()
+                .min(1)
+                .max(200)
+                .meta({ description: "Company name" }),
+            location: z
+                .string()
+                .min(1)
+                .max(200)
+                .meta({ description: "Job location" }),
+            deadline: z
+                .string()
+                .datetime()
+                .optional()
+                .meta({ description: "Application deadline" }),
+            isContinuouslyHiring: z
+                .boolean()
+                .default(false)
+                .meta({ description: "Whether hiring is ongoing" }),
+            jobType: z
+                .enum(["full_time", "part_time", "summer_job", "other"])
+                .default("other")
+                .meta({ description: "Type of employment" }),
+            email: z
+                .string()
+                .email()
+                .max(320)
+                .optional()
+                .meta({ description: "Contact email" }),
+            link: z
+                .string()
+                .url()
+                .optional()
+                .meta({ description: "Application or company URL" }),
+            classStart: z
+                .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
+                .default("first")
+                .meta({ description: "Target class start" }),
+            classEnd: z
+                .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
+                .default("fifth")
+                .meta({ description: "Target class end" }),
+            imageUrl: z
+                .string()
+                .url()
+                .optional()
+                .meta({ description: "Company logo" }),
+            imageAlt: z
+                .string()
+                .max(255)
+                .optional()
+                .meta({ description: "Logo alt text" }),
+        })
+        .refine(
+            (data) => {
                 const classOrder = [
                     "first",
                     "second",
@@ -136,14 +93,63 @@ export const updateJobSchema = z
                     classOrder.indexOf(data.classStart) <=
                     classOrder.indexOf(data.classEnd)
                 );
-            }
-            return true;
-        },
-        {
-            message: "classStart must be less than or equal to classEnd",
-            path: ["classStart"],
-        },
-    );
+            },
+            {
+                message: "classStart must be less than or equal to classEnd",
+                path: ["classStart"],
+            },
+        ),
+);
+
+export const updateJobSchema = Schema(
+    "UpdateJob",
+    z
+        .object({
+            title: z.string().min(1).max(200).optional(),
+            ingress: z.string().max(800).optional(),
+            body: z.string().optional(),
+            company: z.string().min(1).max(200).optional(),
+            location: z.string().min(1).max(200).optional(),
+            deadline: z.string().datetime().optional().nullable(),
+            isContinuouslyHiring: z.boolean().optional(),
+            jobType: z
+                .enum(["full_time", "part_time", "summer_job", "other"])
+                .optional(),
+            email: z.string().email().max(320).optional().nullable(),
+            link: z.url().optional().nullable(),
+            classStart: z
+                .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
+                .optional(),
+            classEnd: z
+                .enum(["first", "second", "third", "fourth", "fifth", "alumni"])
+                .optional(),
+            imageUrl: z.url().optional().nullable(),
+            imageAlt: z.string().max(255).optional().nullable(),
+        })
+        .refine(
+            (data) => {
+                if (data.classStart && data.classEnd) {
+                    const classOrder = [
+                        "first",
+                        "second",
+                        "third",
+                        "fourth",
+                        "fifth",
+                        "alumni",
+                    ];
+                    return (
+                        classOrder.indexOf(data.classStart) <=
+                        classOrder.indexOf(data.classEnd)
+                    );
+                }
+                return true;
+            },
+            {
+                message: "classStart must be less than or equal to classEnd",
+                path: ["classStart"],
+            },
+        ),
+);
 
 export const jobListFilterSchema = PaginationSchema.extend({
     search: z.string().optional().meta({

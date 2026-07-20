@@ -14,8 +14,8 @@ import {
     getRoleById,
     removeUserRole,
 } from "@photon/auth/roles";
-import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { type DbSchema, schema } from "@photon/db";
+import { type InferSelectModel, and, eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -87,13 +87,14 @@ export async function getGroup(ctx: AppContext, groupSlug: string) {
  * @param userId - User to add to the group
  * @param groupSlug - Group slug
  * @param role - Group role (member or leader), defaults to "member"
+ * @returns The membership, whether newly created or already present
  */
 export async function addUserToGroup(
     ctx: AppContext,
     userId: string,
     groupSlug: string,
     role: "member" | "leader" = "member",
-): Promise<void> {
+): Promise<InferSelectModel<DbSchema["groupMembership"]>> {
     const db = ctx.db;
 
     // Get the group to check if it has an associated role
@@ -103,14 +104,30 @@ export async function addUserToGroup(
     }
 
     // Add user to group
-    await db
+    const [inserted] = await db
         .insert(schema.groupMembership)
         .values({
             userId,
             groupSlug,
             role,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
+
+    // onConflictDoNothing returns nothing when the membership already exists,
+    // so fall back to reading it — callers still need a membership back.
+    const membership =
+        inserted ??
+        (await db.query.groupMembership.findFirst({
+            where: and(
+                eq(schema.groupMembership.userId, userId),
+                eq(schema.groupMembership.groupSlug, groupSlug),
+            ),
+        }));
+
+    if (!membership) {
+        throw new Error(`Failed to add user ${userId} to group ${groupSlug}`);
+    }
 
     // If group has an associated role, auto-assign it
     if (group.roleId) {
@@ -119,6 +136,8 @@ export async function addUserToGroup(
             await assignUserRole(ctx, userId, rbacRole.name);
         }
     }
+
+    return membership;
 }
 
 /**

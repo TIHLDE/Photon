@@ -1,0 +1,12 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "useTabs": false,
+    "endOfLine": "lf",
+    "ignorePatterns": [
+        "**/drizzle/**",
+        "**/dist/**",
+        "**/generated/**",
+        ".claude/**/*",
+        "**/routeTree.gen.ts"
+    ]
+}

@@ -1,0 +1,74 @@
+{
+    "name": "kvark",
+    "private": true,
+    "type": "module",
+    "imports": {
+        "#/*": "./src/*"
+    },
+    "scripts": {
+        "dev": "vite dev --port 3000",
+        "build": "vite build",
+        "preview": "vite preview",
+        "format": "oxfmt .",
+        "lint": "oxlint .",
+        "lint:fix": "oxlint --fix ."
+    },
+    "dependencies": {
+        "@better-auth/oauth-provider": "catalog:backend",
+        "@photon/auth": "workspace:*",
+        "@posthog/react": "^1.7.0",
+        "@t3-oss/env-core": "^0.13.10",
+        "@tailwindcss/vite": "catalog:frontend",
+        "@tanstack/match-sorter-utils": "latest",
+        "@tanstack/react-devtools": "latest",
+        "@tanstack/react-form": "latest",
+        "@tanstack/react-hotkeys": "^0.9.1",
+        "@tanstack/react-query": "latest",
+        "@tanstack/react-query-devtools": "latest",
+        "@tanstack/react-router": "latest",
+        "@tanstack/react-router-devtools": "latest",
+        "@tanstack/react-router-ssr-query": "latest",
+        "@tanstack/react-start": "latest",
+        "@tanstack/react-table": "latest",
+        "@tanstack/router-plugin": "^1.132.0",
+        "@tihlde/sdk": "workspace:*",
+        "@tihlde/ui": "workspace:*",
+        "@tiptap/react": "^3.22.4",
+        "@xyflow/react": "^12.10.2",
+        "better-auth": "catalog:backend",
+        "class-variance-authority": "catalog:frontend",
+        "clsx": "^2.1.1",
+        "date-fns": "^4.1.0",
+        "ky": "^2.0.2",
+        "lucide-react": "^0.577.0",
+        "nitro": "latest",
+        "openapi-typescript-helpers": "^0.1.0",
+        "posthog-js": "^1.358.1",
+        "react": "catalog:frontend",
+        "react-dom": "catalog:frontend",
+        "recharts": "3.8.0",
+        "tailwind-merge": "catalog:frontend",
+        "tailwindcss": "catalog:frontend",
+        "tw-animate-css": "catalog:frontend",
+        "universal-cookie": "^8.1.0",
+        "zod": "catalog:"
+    },
+    "devDependencies": {
+        "@tailwindcss/typography": "catalog:frontend",
+        "@tanstack/devtools-vite": "latest",
+        "@types/node": "catalog:",
+        "@types/react": "catalog:frontend",
+        "@types/react-dom": "catalog:frontend",
+        "@vitejs/plugin-react": "^6.0.1",
+        "oxfmt": "catalog:",
+        "oxlint": "catalog:",
+        "typescript": "catalog:",
+        "vite": "^8.0.0"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "esbuild",
+            "lightningcss"
+        ]
+    }
+}

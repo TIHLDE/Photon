@@ -33,9 +33,14 @@ RUN bun run build --filter=@photon/api
 FROM oven/bun:1-slim AS release
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/apps/api/dist ./dist
+# Migration SQL, applied by dist/migrate.js on boot — the deploy pipeline only
+# ships a new image and never migrates, so the app has to do it itself.
+COPY --from=build /usr/src/app/packages/db/drizzle ./drizzle
 COPY --from=install /usr/src/app/node_modules ./node_modules
 
 USER bun
 EXPOSE 4000/tcp
-ENTRYPOINT ["bun", "run", "./dist/index.js"]
+# Migrate before serving. `&&` aborts the boot when a migration fails instead of
+# starting the API against a schema it no longer matches.
+ENTRYPOINT ["sh", "-c", "bun run ./dist/migrate.js && bun run ./dist/index.js"]
 

@@ -2,21 +2,23 @@
     "name": "@photon/lepton-migration",
     "version": "0.0.0",
     "private": true,
-    "type": "module",
     "license": "MIT",
+    "type": "module",
     "scripts": {
-        "execute": "bun src/index.ts"
-    },
-    "devDependencies": {
-        "@photon/tsconfig": "workspace:*",
-        "@types/node": "catalog:",
-        "typescript": "catalog:"
+        "migrate": "bun src/index.ts",
+        "verify": "bun src/index.ts --verify-only"
     },
     "dependencies": {
         "@photon/auth": "workspace:*",
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
+        "drizzle-orm": "catalog:backend",
         "mysql2": "^3.14.4"
+    },
+    "devDependencies": {
+        "@photon/tsconfig": "workspace:*",
+        "@types/node": "catalog:",
+        "typescript": "catalog:"
     }
 }

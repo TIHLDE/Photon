@@ -1,4 +1,8 @@
 import { env } from "@photon/core/env";
+import {
+    createOAuthOpenIDConfigMetadata,
+    createOAuthServerMetadata,
+} from "@photon/auth";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
@@ -16,6 +20,8 @@ import { formRoutes } from "~/routes/form";
 import { pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
 import { assetRoutes } from "./routes/asset";
+import { companyRoutes } from "./routes/company";
+import { contractsRoutes } from "./routes/contracts";
 import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
 import { newsRoutes } from "./routes/news";
@@ -64,11 +70,13 @@ export const createApp = async (variables?: Variables) => {
         })
         .route("/api-keys", apiKeyRoutes)
         .route("/assets", assetRoutes)
+        .route("/company", companyRoutes)
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)
         .route("/forms", formRoutes)
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
+        .route("/contracts", contractsRoutes)
         .route("/news", newsRoutes)
         .route("/jobs", jobRoutes)
         .route("/user", userRoutes)
@@ -84,14 +92,43 @@ export const createApp = async (variables?: Variables) => {
         .use(
             "*",
             cors({
-                origin: "http://localhost:3000",
+                // Credentialed requests need an explicit origin — never "*".
+                // Outside production, keep localhost usable even when
+                // WEBSITE_URL points somewhere else (an ngrok tunnel, say).
+                origin: [
+                    ...new Set([
+                        env.WEBSITE_URL,
+                        ...(env.NODE_ENV === "production"
+                            ? []
+                            : ["http://localhost:3000"]),
+                    ]),
+                ],
                 allowHeaders: ["Content-Type", "Authorization"],
-                allowMethods: ["POST", "GET", "OPTIONS"],
+                allowMethods: [
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS",
+                ],
                 exposeHeaders: ["Content-Length"],
                 maxAge: 600,
                 credentials: true,
             }),
         )
+        .get("/api/auth/.well-known/openid-configuration", (c) => {
+            const { auth } = c.get("ctx");
+            return createOAuthOpenIDConfigMetadata(auth)(c.req.raw);
+        })
+        .get("/.well-known/openid-configuration", (c) => {
+            const { auth } = c.get("ctx");
+            return createOAuthOpenIDConfigMetadata(auth)(c.req.raw);
+        })
+        .get("/.well-known/oauth-authorization-server/api/auth", (c) => {
+            const { auth } = c.get("ctx");
+            return createOAuthServerMetadata(auth)(c.req.raw);
+        })
         .route("/", api)
         .get(
             "/openapi",

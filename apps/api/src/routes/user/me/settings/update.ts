@@ -2,13 +2,12 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import {
-    UpdateUserSettingsSchema,
-    getUserSettings,
-    updateUserSettings,
-} from "~/lib/user/settings";
+import { getUserSettings, updateUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
-import { updateUserSettingsResponseSchema } from "../../schema";
+import {
+    updateUserSettingsInputSchema,
+    updateUserSettingsResponseSchema,
+} from "../../schema";
 
 export const updateSettingsRoute = route().patch(
     "/",
@@ -31,7 +30,7 @@ export const updateSettingsRoute = route().patch(
         })
         .build(),
     requireAuth,
-    validator("json", UpdateUserSettingsSchema),
+    validator("json", updateUserSettingsInputSchema),
     async (c) => {
         const userId = c.get("user").id;
         const body = c.req.valid("json");

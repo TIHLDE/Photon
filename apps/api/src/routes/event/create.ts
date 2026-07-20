@@ -114,7 +114,7 @@ export const createRoute = route().post(
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
             };
 
-            const [event] = await db
+            const [event] = await tx
                 .insert(schema.event)
                 .values(newEvent)
                 .returning({ eventId: schema.event.id });

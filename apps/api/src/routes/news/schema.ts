@@ -4,50 +4,62 @@ import { PagniationResponseSchema } from "~/middleware/pagination";
 
 // ===== INPUT SCHEMAS =====
 
-export const createNewsSchema = z.object({
-    title: z
-        .string()
-        .min(1)
-        .max(200)
-        .meta({ description: "News article title" }),
-    header: z
-        .string()
-        .min(1)
-        .max(200)
-        .meta({ description: "News article subtitle/ingress" }),
-    body: z.string().min(1).meta({ description: "Main content of the news" }),
-    imageUrl: z
-        .string()
-        .url()
-        .optional()
-        .meta({ description: "Optional image URL" }),
-    imageAlt: z
-        .string()
-        .max(255)
-        .optional()
-        .meta({ description: "Alt text for the image" }),
-    emojisAllowed: z
-        .boolean()
-        .default(false)
-        .meta({ description: "Whether reactions are enabled" }),
-});
+export const createNewsSchema = Schema(
+    "CreateNews",
+    z.object({
+        title: z
+            .string()
+            .min(1)
+            .max(200)
+            .meta({ description: "News article title" }),
+        header: z
+            .string()
+            .min(1)
+            .max(200)
+            .meta({ description: "News article subtitle/ingress" }),
+        body: z
+            .string()
+            .min(1)
+            .meta({ description: "Main content of the news" }),
+        imageUrl: z
+            .string()
+            .url()
+            .optional()
+            .meta({ description: "Optional image URL" }),
+        imageAlt: z
+            .string()
+            .max(255)
+            .optional()
+            .meta({ description: "Alt text for the image" }),
+        emojisAllowed: z
+            .boolean()
+            .default(false)
+            .meta({ description: "Whether reactions are enabled" }),
+    }),
+);
 
-export const updateNewsSchema = z.object({
-    title: z.string().min(1).max(200).optional(),
-    header: z.string().min(1).max(200).optional(),
-    body: z.string().min(1).optional(),
-    imageUrl: z.url().optional().nullable(),
-    imageAlt: z.string().max(255).optional().nullable(),
-    emojisAllowed: z.boolean().optional(),
-});
+export const updateNewsSchema = Schema(
+    "UpdateNews",
+    z.object({
+        title: z.string().min(1).max(200).optional(),
+        header: z.string().min(1).max(200).optional(),
+        body: z.string().min(1).optional(),
+        imageUrl: z.url().optional().nullable(),
+        imageAlt: z.string().max(255).optional().nullable(),
+        emojisAllowed: z.boolean().optional(),
+    }),
+);
 
-export const createReactionSchema = z.object({
-    emoji: z
-        .string()
-        .min(1)
-        .max(32)
-        .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
-});
+export const createReactionSchema = Schema(
+    "CreateNewsReaction",
+    z.object({
+        emoji: z
+            .string()
+            .min(1)
+            .max(32)
+            .meta({ description: "Emoji reaction (e.g., 👍, ❤️, 😂)" }),
+    }),
+);
 
 // ===== RESPONSE SCHEMAS =====
 

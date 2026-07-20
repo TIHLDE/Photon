@@ -17,17 +17,19 @@ function findEnvFile(): string | undefined {
     }
 }
 
-try {
-    const envPath = findEnvFile();
-    if (envPath) {
-        config({
-            path: envPath,
-            ignore: ["MISSING_ENV_FILE"],
-            quiet: true,
-        });
+if (process.env.NODE_ENV !== "test") {
+    try {
+        const envPath = findEnvFile();
+        if (envPath) {
+            config({
+                path: envPath,
+                ignore: ["MISSING_ENV_FILE"],
+                quiet: true,
+            });
+        }
+    } catch (e) {
+        console.warn("⚠️ Could not load .env file, proceeding without it.");
     }
-} catch (e) {
-    console.warn("⚠️ Could not load .env file, proceeding without it.");
 }
 
 const toBoolean =
@@ -57,6 +59,10 @@ const envSchema = z
             .string()
             .default("1")
             .transform((val) => Number(val)),
+
+        // AUTH
+        /** Better Auth signing secret. Must be set in production; createAuth throws if it isn't. */
+        AUTH_SECRET: z.string().default(""),
 
         // DATABASE
         DATABASE_URL: z.string().default(""),
@@ -95,6 +101,10 @@ const envSchema = z
         MAIL_PASS: z.string().optional(),
         MAIL_FROM: z.string().default("no-reply@tihlde.org"),
         EMAIL_API_KEY: z.string().default("test-email-api-key"),
+        /** Where the "for bedrifter" contact form delivers its submissions */
+        COMPANY_CONTACT_EMAIL: z
+            .string()
+            .default("naeringslivsminister@tihlde.org"),
         EMAIL_PROXY_URL: z.string().optional(),
         EMAIL_PROXY_KEY: z.string().optional(),
 
@@ -122,6 +132,7 @@ const envSchema = z
     });
 
 type Env = z.infer<typeof envSchema>;
+type EnvInput = z.input<typeof envSchema>;
 
 let _env: Env | undefined;
 
@@ -148,4 +159,4 @@ export const env: Env = new Proxy({} as Env, {
     },
 });
 
-export type { Env };
+export type { Env, EnvInput };

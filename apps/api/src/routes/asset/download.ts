@@ -10,7 +10,10 @@ export const downloadRoute = route().get(
         operationId: "downloadAsset",
         description: `Download a file by its key. No authentication required.
 
-The key is the full path returned when uploading, e.g., \`uploads/2024/01/uuid_filename.jpg\``,
+The key is the full path returned when uploading, e.g., \`uploads/2024/01/uuid_filename.jpg\`
+
+Private assets (e.g. contract signatures) are never served here — they are only
+reachable through routes that perform their own authorization.`,
     })
         .response({
             statusCode: 200,
@@ -26,6 +29,13 @@ The key is the full path returned when uploading, e.g., \`uploads/2024/01/uuid_f
         const asset = await bucket.getAsset(key);
 
         if (!asset) {
+            throw HTTPAppException.NotFound("Asset");
+        }
+
+        // Private assets must go through a route that authorizes the caller.
+        // Report them as missing rather than forbidden, so this route does not
+        // confirm which keys exist.
+        if (asset.visibility === "private") {
             throw HTTPAppException.NotFound("Asset");
         }
 

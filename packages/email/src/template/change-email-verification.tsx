@@ -8,17 +8,17 @@ import {
     Img,
     Text,
 } from "@react-email/components";
-// biome-ignore lint/correctness/noUnusedImports: <explanation>
 import React from "react";
-import { env } from "@photon/core/env";
 import { emailStyles } from "./styles";
 
-interface ChangeEmailVerificationProps {
+export interface ChangeEmailVerificationProps {
     url: string;
+    logoUrl: string;
 }
 
 export const ChangeEmailVerificationEmail = ({
-    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    url,
+    logoUrl,
 }: ChangeEmailVerificationProps) => {
     return (
         <Html>
@@ -26,7 +26,7 @@ export const ChangeEmailVerificationEmail = ({
             <Body style={emailStyles.main}>
                 <Container style={emailStyles.container}>
                     <Img
-                        src={`${env.ROOT_URL}/static/logomark.jpeg`}
+                        src={logoUrl}
                         width="100"
                         height="100"
                         alt="TIHLDE Logomark"

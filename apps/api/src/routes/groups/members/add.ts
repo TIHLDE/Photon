@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { addUserToGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -31,7 +32,8 @@ export const addMemberRoute = route().post(
     async (c) => {
         const body = c.req.valid("json");
         const groupSlug = c.req.param("groupSlug");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         // Validate group exists
         const group = await db
@@ -79,15 +81,14 @@ export const addMemberRoute = route().post(
             });
         }
 
-        // Add membership
-        const [membership] = await db
-            .insert(schema.groupMembership)
-            .values({
-                userId: body.userId,
-                groupSlug: groupSlug,
-                role: body.role,
-            })
-            .returning();
+        // Add membership. Goes through the helper so the group's associated RBAC
+        // role (group.roleId) is auto-assigned along with it.
+        const membership = await addUserToGroup(
+            ctx,
+            body.userId,
+            groupSlug,
+            body.role,
+        );
 
         return c.json(membership, 201);
     },

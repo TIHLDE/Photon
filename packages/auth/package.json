@@ -8,18 +8,26 @@
         "./rbac": "./src/rbac/permissions/index.ts",
         "./rbac/registry": "./src/rbac/permissions/registry.ts",
         "./roles": "./src/rbac/roles/index.ts",
-        "./bearer": "./src/bearer.ts",
-        "./feide": "./src/feide.ts"
+        "./oauth-verify": "./src/oauth-verify.ts",
+        "./feide": "./src/feide.ts",
+        "./client": "./src/client.ts"
+    },
+    "scripts": {
+        "auth:generate-schema": "bun run scripts/generate-auth-schema.ts"
     },
     "dependencies": {
+        "@better-auth/oauth-provider": "catalog:backend",
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
-        "better-auth": "catalog:",
-        "drizzle-orm": "catalog:"
+        "better-auth": "catalog:backend",
+        "drizzle-orm": "catalog:backend",
+        "jose": "catalog:backend",
+        "zod": "catalog:"
     },
     "devDependencies": {
         "@photon/tsconfig": "workspace:*",
+        "@types/node": "catalog:",
         "typescript": "catalog:"
     }
 }
