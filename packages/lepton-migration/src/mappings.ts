@@ -2,6 +2,7 @@
  * In-memory ID mapping stores and transformation utilities
  * for migrating from Lepton (MySQL) to Photon (PostgreSQL).
  */
+import { slugifyText } from "@photon/core/slug";
 
 // ===== ID MAPS =====
 
@@ -46,15 +47,16 @@ export function char32ToUuid(hex: string): string {
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
-/** Generate a URL-safe slug from a string */
+/**
+ * Generate a URL-safe slug from a string.
+ *
+ * Delegates to the shared implementation so migrated rows and rows the API
+ * writes later cannot end up with different rules. The local copy this replaced
+ * stripped combining marks only, which left `\u00f8` and `\u00e6` to become hyphens \u2014
+ * "S\u00f8ndagsplask" migrated as `s-ndagsplask`.
+ */
 export function slugify(text: string): string {
-    return text
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // strip accents
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 200);
+    return slugifyText(text).slice(0, 200);
 }
 
 /** Map old gender int to new gender enum */
