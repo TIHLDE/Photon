@@ -36,6 +36,8 @@ type GroupAdmissionCardProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     status: AdmissionStatus;
+    /** The admission form to answer, when the group has an open one. */
+    formId?: string;
 };
 
 /**
@@ -47,6 +49,7 @@ export function GroupAdmissionCard({
     open,
     onOpenChange,
     status,
+    formId,
 }: GroupAdmissionCardProps) {
     return (
         <Card size="sm" className="h-full">
@@ -69,7 +72,11 @@ export function GroupAdmissionCard({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                     <CardContent className="flex flex-col gap-2 px-0 pt-4">
-                        <AdmissionAction group={group} status={status} />
+                        <AdmissionAction
+                            group={group}
+                            status={status}
+                            formId={formId}
+                        />
                         <Button
                             variant="ghost"
                             className="w-full"
@@ -94,9 +101,11 @@ export function GroupAdmissionCard({
 function AdmissionAction({
     group,
     status,
+    formId,
 }: {
     group: AdmissionGroup;
     status: AdmissionStatus;
+    formId?: string;
 }) {
     switch (status) {
         case "unauthenticated":
@@ -137,10 +146,17 @@ function AdmissionAction({
                     className="w-full"
                     nativeButton={false}
                     render={
-                        <Link
-                            to="/grupper/$slug"
-                            params={{ slug: group.slug }}
-                        />
+                        formId ? (
+                            <Link
+                                to="/sporreskjema/$id"
+                                params={{ id: formId }}
+                            />
+                        ) : (
+                            <Link
+                                to="/grupper/$slug"
+                                params={{ slug: group.slug }}
+                            />
+                        )
                     }
                 >
                     Søk nå

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Share2 } from "lucide-react";
@@ -26,7 +27,17 @@ export function GroupFormRow({ form }: GroupFormRowProps) {
                     <Button variant="outline" size="sm">
                         Administrer
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        nativeButton={false}
+                        render={
+                            <Link
+                                to="/sporreskjema/$id"
+                                params={{ id: form.id }}
+                            />
+                        }
+                    >
                         Svar på/se skjema
                     </Button>
                     <Button variant="outline" size="sm">
