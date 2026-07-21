@@ -104,7 +104,7 @@ function AppLayout() {
                                   {
                                       kind: "internal",
                                       label: "Opptak",
-                                      link: linkOptions({ to: "/" }),
+                                      link: linkOptions({ to: "/opptak" }),
                                       description: "Søk verv hos TIHLDE",
                                   },
                                   {
