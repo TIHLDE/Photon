@@ -44,8 +44,30 @@ export const slugifyText = (text: string): string =>
         // collapse multiple hyphens
         .replace(/-{2,}/g, "-");
 
-/** The start date as `2026-11-14`. */
-const isoDate = (date: Date): string => date.toISOString().slice(0, 10);
+/** The timezone every TIHLDE event's wall-clock time is expressed in. */
+const EVENT_TIMEZONE = "Europe/Oslo";
+
+const OSLO_DATE_FORMAT = new Intl.DateTimeFormat("en-CA", {
+    timeZone: EVENT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+});
+
+/**
+ * The date an event falls on in Norway, as `2026-11-14`.
+ *
+ * Deliberately not `toISOString()`, which yields the UTC date. Events are
+ * stored as `timestamp without time zone` — wall-clock time in Oslo — and 22 of
+ * TIHLDE's historical events start at midnight, so their UTC date is the day
+ * before. "TIHLDE TIL ÅRE 2026" starts on 15 January and would have slugged as
+ * `2026-01-14`.
+ *
+ * Pinning the zone also keeps the slug independent of the server's clock: the
+ * production container runs UTC while a developer's machine does not, and both
+ * must produce the same slug for the same event.
+ */
+const eventDate = (date: Date): string => OSLO_DATE_FORMAT.format(date);
 
 /**
  * The stem of an event slug: title plus start date, before any uniqueness
@@ -59,5 +81,5 @@ const isoDate = (date: Date): string => date.toISOString().slice(0, 10);
  */
 export const buildEventSlugBase = (title: string, startDate: Date): string => {
     const stem = slugifyText(title) || "event";
-    return `${stem}-${isoDate(startDate)}`;
+    return `${stem}-${eventDate(startDate)}`;
 };
