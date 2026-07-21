@@ -1,67 +1,33 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
+import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
+import { Suspense } from "react";
 
-import { EventCard, type EventCardProps } from "#/components/event-card";
+import { getEventsQuery } from "#/api/queries/events";
+import { EventCard } from "#/components/event-card";
 import { NewsCard, type NewsCardProps } from "#/components/news-card";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
+import { formatEventDateTime } from "#/lib/event";
 
-export const Route = createFileRoute("/_app/")({ component: Home });
+/** Enough events to fill a month in the calendar; the list shows a slice. */
+const EVENTS_PAGE_SIZE = 50;
 
-const EVENTS: EventCardProps[] = [
-    {
-        slug: "lightning-talks",
-        title: "Lightning Talks",
-        startsAt: "Ons 22. apr 17:00",
-        location: "Realfagbygget, Aud. S1",
-        organizer: "TIHLDE Promo",
-        category: "Sosialt",
-        capacity: 60,
-        registeredCount: 42,
-    },
-    {
-        slug: "generalforsamling-utveksling",
-        title: "Generalforsamling med TIHLDE",
-        startsAt: "Man 27. apr 18:00",
-        location: "Gjøvik, A-bygget",
-        organizer: "TIHLDE Hovedstyret",
-        category: "Foreningen",
-        capacity: 200,
-        registeredCount: 87,
-    },
-    {
-        slug: "spillkveld",
-        title: "Spillkveld!",
-        startsAt: "Fre 24. apr 19:00",
-        location: "Hangaren",
-        organizer: "TIHLDE Sosialt",
-        category: "Sosialt",
-        capacity: null,
-        registeredCount: 24,
-    },
-    {
-        slug: "jentelunsj-spillkveld",
-        title: "Jentelunsj arrangerer spillkveld",
-        startsAt: "Lør 25. apr 18:00",
-        location: "Hangaren",
-        organizer: "Jentelunsj",
-        category: "Jentelunsj",
-        capacity: 40,
-        registeredCount: 12,
-    },
-    {
-        slug: "toddelmaga",
-        title: "Tøddelmåga!",
-        startsAt: "Tor 30. apr 20:00",
-        location: "Hybrid / Trondheim",
-        organizer: "TÖDDEL",
-        category: "Sosialt",
-        capacity: 80,
-        registeredCount: 56,
-    },
-];
+/** Upcoming events, ordered by start time by the API. */
+const upcomingEventsQuery = () =>
+    getEventsQuery(0, { expired: false }, EVENTS_PAGE_SIZE);
+
+const LIST_PREVIEW_COUNT = 4;
+
+export const Route = createFileRoute("/_app/")({
+    component: Home,
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(upcomingEventsQuery()),
+});
 
 const NEWS: NewsCardProps[] = [
     {
@@ -90,25 +56,9 @@ function Home() {
                     title="Arrangementer"
                     actionLabel="Nytt arrangement"
                 />
-                <Tabs defaultValue="list" className="mt-4">
-                    <TabsList>
-                        <TabsTrigger value="list">Liste</TabsTrigger>
-                        <TabsTrigger value="calendar">Kalender</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="list">
-                        <div className="grid gap-4 md:grid-cols-2">
-                            {EVENTS.map((event) => (
-                                // TODO: replace with a unique id field once wired up to the backend
-                                <EventCard key={event.title} {...event} />
-                            ))}
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="calendar">
-                        <div className="flex min-h-60 items-center justify-center">
-                            <p>Kalendervisning kommer</p>
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                <Suspense fallback={<EventsSkeleton />}>
+                    <EventsSection />
+                </Suspense>
             </section>
 
             <section className="container mx-auto w-full px-4 py-8">
@@ -121,6 +71,64 @@ function Home() {
                 </div>
             </section>
         </>
+    );
+}
+
+function EventsSection() {
+    const { data } = useSuspenseQuery(upcomingEventsQuery());
+    const events = data.items;
+
+    return (
+        <Tabs defaultValue="list" className="mt-4">
+            <TabsList>
+                <TabsTrigger value="list">Liste</TabsTrigger>
+                <TabsTrigger value="calendar">Kalender</TabsTrigger>
+            </TabsList>
+            <TabsContent value="list">
+                <div className="grid gap-4 md:grid-cols-2">
+                    {events.slice(0, LIST_PREVIEW_COUNT).map((event) => (
+                        <EventCard
+                            key={event.id}
+                            slug={event.slug}
+                            title={event.title}
+                            startsAt={formatEventDateTime(event.startTime)}
+                            location={event.location ?? ""}
+                            organizer={event.organizer?.name ?? ""}
+                            category={event.category?.label}
+                            imageUrl={event.image || undefined}
+                        />
+                    ))}
+                </div>
+            </TabsContent>
+            <TabsContent value="calendar">
+                <EventCalendar
+                    events={events.map((event) => ({
+                        id: event.id,
+                        title: event.title,
+                        start: event.startTime,
+                        render: (
+                            <Link
+                                to="/arrangementer/$slug"
+                                params={{ slug: event.slug }}
+                            />
+                        ),
+                    }))}
+                />
+            </TabsContent>
+        </Tabs>
+    );
+}
+
+function EventsSkeleton() {
+    return (
+        <div className="mt-4 flex flex-col gap-4">
+            <Skeleton className="h-9 w-48" />
+            <div className="grid gap-4 md:grid-cols-2">
+                {Array.from({ length: LIST_PREVIEW_COUNT }, (_, i) => (
+                    <Skeleton key={i} className="h-32 w-full" />
+                ))}
+            </div>
+        </div>
     );
 }
 
