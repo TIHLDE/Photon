@@ -104,7 +104,7 @@ function AppLayout() {
                                   {
                                       kind: "internal",
                                       label: "Opptak",
-                                      link: linkOptions({ to: "/" }),
+                                      link: linkOptions({ to: "/opptak" }),
                                       description: "Søk verv hos TIHLDE",
                                   },
                                   {
@@ -116,7 +116,7 @@ function AppLayout() {
                                   {
                                       kind: "internal",
                                       label: "QR koder",
-                                      link: linkOptions({ to: "/" }),
+                                      link: linkOptions({ to: "/qr-koder" }),
                                       description: "Generer dine egne QR koder",
                                   },
                                   {

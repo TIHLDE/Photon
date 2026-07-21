@@ -27,6 +27,7 @@ const tags = [
     "news",
     "notifications",
     "payments",
+    "qr-codes",
     "toddel",
     "users",
     "webhooks",

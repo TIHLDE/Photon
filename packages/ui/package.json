@@ -44,6 +44,7 @@
         "mdast-util-directive": "^3.1.0",
         "next-themes": "^0.4.6",
         "pdfjs-dist": "5.4.296",
+        "qrcode.react": "^4.2.0",
         "react-day-picker": "^9.14.0",
         "react-dropzone": "^15.0.0",
         "react-markdown": "^10.1.0",

@@ -1132,6 +1132,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/qr-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your QR codes
+         * @description Every QR code the authenticated member has created, newest first. A member only ever sees their own codes, so there is nothing to page through.
+         */
+        get: operations["listQRCodes"];
+        put?: never;
+        /**
+         * Create a QR code
+         * @description Create a QR code owned by the authenticated member. The code itself is rendered client side from the stored content.
+         */
+        post: operations["createQRCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/qr-codes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a QR code
+         * @description Delete one of your own QR codes. Someone else's code reads as not found rather than forbidden, so the endpoint does not confirm that an id exists.
+         */
+        delete: operations["deleteQRCode"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs": {
         parameters: {
             query?: never;
@@ -2705,6 +2749,39 @@ export interface components {
         };
         /** @description Every issue, newest first */
         ToddelList: components["schemas"]["ToddelIssue"][];
+        QRCode: {
+            /**
+             * Format: uuid
+             * @description QR code ID
+             */
+            id: string;
+            /** @description Name shown above the code */
+            name: string;
+            /** @description The payload the code encodes */
+            content: string;
+            /**
+             * Format: date-time
+             * @description When the code was created
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When the code was last updated
+             */
+            updatedAt: string;
+        };
+        /** @description The caller's QR codes, newest first */
+        QRCodeList: components["schemas"]["QRCode"][];
+        CreateQRCode: {
+            /** @description Name shown above the code */
+            name: string;
+            /** @description The payload the code encodes — a URL or plain text */
+            content: string;
+        };
+        DeleteQRCodeResponse: {
+            /** @description Success message */
+            message: string;
+        };
         JobDetail: {
             /**
              * Format: uuid
@@ -6023,6 +6100,107 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ToddelList"];
                 };
+            };
+        };
+    };
+    listQRCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QRCodeList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createQRCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateQRCode"];
+            };
+        };
+        responses: {
+            /** @description QR code created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QRCode"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    deleteQRCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description QR code ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description QR code deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteQRCodeResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - QR code not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
