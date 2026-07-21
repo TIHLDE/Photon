@@ -9,164 +9,76 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as DevRouteImport } from './routes/_dev'
-import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as DevRouteImport } from './routes/_dev'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
-import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
-import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
-import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
-import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
-import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
-import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
-import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
-import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
-import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
-import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
-import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
-import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
-import { Route as AppToddelRouteImport } from './routes/_app/toddel'
-import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
-import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
-import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
-import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
-import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
-import { Route as AppBedriftIndexRouteImport } from './routes/_app/bedrift.index'
-import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
+import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
+import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
+import { Route as AppQrKoderRouteImport } from './routes/_app/qr-koder'
+import { Route as AppToddelRouteImport } from './routes/_app/toddel'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
+import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
+import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
+import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
+import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
+import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
+import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
+import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
+import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
+import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
+import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
-import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
-import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
-import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
-import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
-import { Route as AuthOauthConsentRouteImport } from './routes/_auth/oauth/consent'
-import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
-import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
-import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
-import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
-import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
-import { Route as AppBedriftStudieneRouteImport } from './routes/_app/bedrift.studiene'
-import { Route as AppArrangementerSlugRouteImport } from './routes/_app/arrangementer.$slug'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
+import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
+import { Route as AppArrangementerSlugRouteImport } from './routes/_app/arrangementer.$slug'
+import { Route as AppBedriftIndexRouteImport } from './routes/_app/bedrift.index'
+import { Route as AppBedriftStudieneRouteImport } from './routes/_app/bedrift.studiene'
+import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index'
+import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
+import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
+import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
+import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
+import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
+import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
+import { Route as AppProfilIdRouteImport } from './routes/_app/profil/$id'
+import { Route as AuthOauthConsentRouteImport } from './routes/_auth/oauth/consent'
+import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_super-admin/api-keys'
+import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
+import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
+import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
-import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
-import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
-import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
+import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
+import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
+import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevRoute = DevRouteImport.update({
-  id: '/_dev',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const DevRoute = DevRouteImport.update({
+  id: '/_dev',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AdminPrikkerRoute = AdminPrikkerRouteImport.update({
-  id: '/prikker',
-  path: '/prikker',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOpptakRoute = AdminOpptakRouteImport.update({
-  id: '/opptak',
-  path: '/opptak',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNyheterRoute = AdminNyheterRouteImport.update({
-  id: '/nyheter',
-  path: '/nyheter',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGrupperRoute = AdminGrupperRouteImport.update({
-  id: '/grupper',
-  path: '/grupper',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBrukereRoute = AdminBrukereRouteImport.update({
-  id: '/brukere',
-  path: '/brukere',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBannereRoute = AdminBannereRouteImport.update({
-  id: '/bannere',
-  path: '/bannere',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminArrangementerRoute = AdminArrangementerRouteImport.update({
-  id: '/arrangementer',
-  path: '/arrangementer',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAnnonserRoute = AdminAnnonserRouteImport.update({
-  id: '/annonser',
-  path: '/annonser',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSuperAdminRoute = AdminSuperAdminRouteImport.update({
-  id: '/_super-admin',
-  getParentRoute: () => AdminRoute,
-} as any)
-const DevFormTestRoute = DevFormTestRouteImport.update({
-  id: '/form-test',
-  path: '/form-test',
-  getParentRoute: () => DevRoute,
-} as any)
-const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AppToddelRoute = AppToddelRouteImport.update({
-  id: '/toddel',
-  path: '/toddel',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPersonvernRoute = AppPersonvernRouteImport.update({
-  id: '/personvern',
-  path: '/personvern',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppKontraktRoute = AppKontraktRouteImport.update({
-  id: '/kontrakt',
-  path: '/kontrakt',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
@@ -174,95 +86,103 @@ const AppKokebokRoute = AppKokebokRouteImport.update({
   path: '/kokebok',
   getParentRoute: () => AppRoute,
 } as any)
-const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
-  id: '/nyheter/',
-  path: '/nyheter/',
+const AppKontraktRoute = AppKontraktRouteImport.update({
+  id: '/kontrakt',
+  path: '/kontrakt',
   getParentRoute: () => AppRoute,
 } as any)
-const AppGrupperIndexRoute = AppGrupperIndexRouteImport.update({
-  id: '/grupper/',
-  path: '/grupper/',
+const AppPersonvernRoute = AppPersonvernRouteImport.update({
+  id: '/personvern',
+  path: '/personvern',
   getParentRoute: () => AppRoute,
 } as any)
-const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
-  id: '/galleri/',
-  path: '/galleri/',
+const AppQrKoderRoute = AppQrKoderRouteImport.update({
+  id: '/qr-koder',
+  path: '/qr-koder',
   getParentRoute: () => AppRoute,
 } as any)
-const AppBedriftIndexRoute = AppBedriftIndexRouteImport.update({
-  id: '/bedrift/',
-  path: '/bedrift/',
+const AppToddelRoute = AppToddelRouteImport.update({
+  id: '/toddel',
+  path: '/toddel',
   getParentRoute: () => AppRoute,
 } as any)
-const AppArrangementerIndexRoute = AppArrangementerIndexRouteImport.update({
-  id: '/arrangementer/',
-  path: '/arrangementer/',
-  getParentRoute: () => AppRoute,
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const DevFormTestRoute = DevFormTestRouteImport.update({
+  id: '/form-test',
+  path: '/form-test',
+  getParentRoute: () => DevRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSuperAdminRoute = AdminSuperAdminRouteImport.update({
+  id: '/_super-admin',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnnonserRoute = AdminAnnonserRouteImport.update({
+  id: '/annonser',
+  path: '/annonser',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminArrangementerRoute = AdminArrangementerRouteImport.update({
+  id: '/arrangementer',
+  path: '/arrangementer',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBannereRoute = AdminBannereRouteImport.update({
+  id: '/bannere',
+  path: '/bannere',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBrukereRoute = AdminBrukereRouteImport.update({
+  id: '/brukere',
+  path: '/brukere',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGrupperRoute = AdminGrupperRouteImport.update({
+  id: '/grupper',
+  path: '/grupper',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNyheterRoute = AdminNyheterRouteImport.update({
+  id: '/nyheter',
+  path: '/nyheter',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOpptakRoute = AdminOpptakRouteImport.update({
+  id: '/opptak',
+  path: '/opptak',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPrikkerRoute = AdminPrikkerRouteImport.update({
+  id: '/prikker',
+  path: '/prikker',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
   id: '/annonser/',
   path: '/annonser/',
-  getParentRoute: () => AppRoute,
-} as any)
-const AdminSuperAdminOauthClientsRoute =
-  AdminSuperAdminOauthClientsRouteImport.update({
-    id: '/oauth-clients',
-    path: '/oauth-clients',
-    getParentRoute: () => AdminSuperAdminRoute,
-  } as any)
-const AdminSuperAdminLogsRoute = AdminSuperAdminLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => AdminSuperAdminRoute,
-} as any)
-const AdminSuperAdminDatabaseRoute = AdminSuperAdminDatabaseRouteImport.update({
-  id: '/database',
-  path: '/database',
-  getParentRoute: () => AdminSuperAdminRoute,
-} as any)
-const AdminSuperAdminApiKeysRoute = AdminSuperAdminApiKeysRouteImport.update({
-  id: '/api-keys',
-  path: '/api-keys',
-  getParentRoute: () => AdminSuperAdminRoute,
-} as any)
-const AuthOauthConsentRoute = AuthOauthConsentRouteImport.update({
-  id: '/oauth/consent',
-  path: '/oauth/consent',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AppProfilIdRoute = AppProfilIdRouteImport.update({
-  id: '/profil/$id',
-  path: '/profil/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPlaygroundMarkdownRoute = AppPlaygroundMarkdownRouteImport.update({
-  id: '/playground/markdown',
-  path: '/playground/markdown',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppNyheterSlugRoute = AppNyheterSlugRouteImport.update({
-  id: '/nyheter/$slug',
-  path: '/nyheter/$slug',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
-  id: '/grupper/$slug',
-  path: '/grupper/$slug',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
-  id: '/galleri/$slug',
-  path: '/galleri/$slug',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppBedriftStudieneRoute = AppBedriftStudieneRouteImport.update({
-  id: '/bedrift/studiene',
-  path: '/bedrift/studiene',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppArrangementerSlugRoute = AppArrangementerSlugRouteImport.update({
-  id: '/arrangementer/$slug',
-  path: '/arrangementer/$slug',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAnnonserSlugRoute = AppAnnonserSlugRouteImport.update({
@@ -270,31 +190,117 @@ const AppAnnonserSlugRoute = AppAnnonserSlugRouteImport.update({
   path: '/annonser/$slug',
   getParentRoute: () => AppRoute,
 } as any)
+const AppArrangementerIndexRoute = AppArrangementerIndexRouteImport.update({
+  id: '/arrangementer/',
+  path: '/arrangementer/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppArrangementerSlugRoute = AppArrangementerSlugRouteImport.update({
+  id: '/arrangementer/$slug',
+  path: '/arrangementer/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBedriftIndexRoute = AppBedriftIndexRouteImport.update({
+  id: '/bedrift/',
+  path: '/bedrift/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBedriftStudieneRoute = AppBedriftStudieneRouteImport.update({
+  id: '/bedrift/studiene',
+  path: '/bedrift/studiene',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
+  id: '/galleri/',
+  path: '/galleri/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
+  id: '/galleri/$slug',
+  path: '/galleri/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGrupperIndexRoute = AppGrupperIndexRouteImport.update({
+  id: '/grupper/',
+  path: '/grupper/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
+  id: '/grupper/$slug',
+  path: '/grupper/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
+  id: '/nyheter/',
+  path: '/nyheter/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNyheterSlugRoute = AppNyheterSlugRouteImport.update({
+  id: '/nyheter/$slug',
+  path: '/nyheter/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlaygroundMarkdownRoute = AppPlaygroundMarkdownRouteImport.update({
+  id: '/playground/markdown',
+  path: '/playground/markdown',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProfilIdRoute = AppProfilIdRouteImport.update({
+  id: '/profil/$id',
+  path: '/profil/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthOauthConsentRoute = AuthOauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AdminSuperAdminApiKeysRoute = AdminSuperAdminApiKeysRouteImport.update({
+  id: '/api-keys',
+  path: '/api-keys',
+  getParentRoute: () => AdminSuperAdminRoute,
+} as any)
+const AdminSuperAdminDatabaseRoute = AdminSuperAdminDatabaseRouteImport.update({
+  id: '/database',
+  path: '/database',
+  getParentRoute: () => AdminSuperAdminRoute,
+} as any)
+const AdminSuperAdminLogsRoute = AdminSuperAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AdminSuperAdminRoute,
+} as any)
+const AdminSuperAdminOauthClientsRoute =
+  AdminSuperAdminOauthClientsRouteImport.update({
+    id: '/oauth-clients',
+    path: '/oauth-clients',
+    getParentRoute: () => AdminSuperAdminRoute,
+  } as any)
 const AppProfilIdIndexRoute = AppProfilIdIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppProfilIdRoute,
-} as any)
-const AppProfilIdSporreskjemaerRoute =
-  AppProfilIdSporreskjemaerRouteImport.update({
-    id: '/sporreskjemaer',
-    path: '/sporreskjemaer',
-    getParentRoute: () => AppProfilIdRoute,
-  } as any)
-const AppProfilIdPrikkerRoute = AppProfilIdPrikkerRouteImport.update({
-  id: '/prikker',
-  path: '/prikker',
-  getParentRoute: () => AppProfilIdRoute,
-} as any)
-const AppProfilIdMedlemskapRoute = AppProfilIdMedlemskapRouteImport.update({
-  id: '/medlemskap',
-  path: '/medlemskap',
   getParentRoute: () => AppProfilIdRoute,
 } as any)
 const AppProfilIdArrangementerRoute =
   AppProfilIdArrangementerRouteImport.update({
     id: '/arrangementer',
     path: '/arrangementer',
+    getParentRoute: () => AppProfilIdRoute,
+  } as any)
+const AppProfilIdMedlemskapRoute = AppProfilIdMedlemskapRouteImport.update({
+  id: '/medlemskap',
+  path: '/medlemskap',
+  getParentRoute: () => AppProfilIdRoute,
+} as any)
+const AppProfilIdPrikkerRoute = AppProfilIdPrikkerRouteImport.update({
+  id: '/prikker',
+  path: '/prikker',
+  getParentRoute: () => AppProfilIdRoute,
+} as any)
+const AppProfilIdSporreskjemaerRoute =
+  AppProfilIdSporreskjemaerRouteImport.update({
+    id: '/sporreskjemaer',
+    path: '/sporreskjemaer',
     getParentRoute: () => AppProfilIdRoute,
   } as any)
 
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/personvern': typeof AppPersonvernRoute
+  '/qr-koder': typeof AppQrKoderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByTo {
   '/kokebok': typeof AppKokebokRoute
   '/kontrakt': typeof AppKontraktRoute
   '/personvern': typeof AppPersonvernRoute
+  '/qr-koder': typeof AppQrKoderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -397,6 +405,7 @@ export interface FileRoutesById {
   '/_app/kokebok': typeof AppKokebokRoute
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/personvern': typeof AppPersonvernRoute
+  '/_app/qr-koder': typeof AppQrKoderRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/kokebok'
     | '/kontrakt'
     | '/personvern'
+    | '/qr-koder'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/kokebok'
     | '/kontrakt'
     | '/personvern'
+    | '/qr-koder'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/personvern'
+    | '/_app/qr-koder'
     | '/_app/toddel'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -591,18 +603,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_dev': {
-      id: '/_dev'
+    '/_app': {
+      id: '/_app'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof DevRouteImport
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -612,144 +617,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app': {
-      id: '/_app'
+    '/_dev': {
+      id: '/_dev'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+      preLoaderRoute: typeof DevRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/': {
       id: '/_app/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/admin/prikker': {
-      id: '/admin/prikker'
-      path: '/prikker'
-      fullPath: '/admin/prikker'
-      preLoaderRoute: typeof AdminPrikkerRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/opptak': {
-      id: '/admin/opptak'
-      path: '/opptak'
-      fullPath: '/admin/opptak'
-      preLoaderRoute: typeof AdminOpptakRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/nyheter': {
-      id: '/admin/nyheter'
-      path: '/nyheter'
-      fullPath: '/admin/nyheter'
-      preLoaderRoute: typeof AdminNyheterRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/grupper': {
-      id: '/admin/grupper'
-      path: '/grupper'
-      fullPath: '/admin/grupper'
-      preLoaderRoute: typeof AdminGrupperRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/brukere': {
-      id: '/admin/brukere'
-      path: '/brukere'
-      fullPath: '/admin/brukere'
-      preLoaderRoute: typeof AdminBrukereRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/bannere': {
-      id: '/admin/bannere'
-      path: '/bannere'
-      fullPath: '/admin/bannere'
-      preLoaderRoute: typeof AdminBannereRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/arrangementer': {
-      id: '/admin/arrangementer'
-      path: '/arrangementer'
-      fullPath: '/admin/arrangementer'
-      preLoaderRoute: typeof AdminArrangementerRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/annonser': {
-      id: '/admin/annonser'
-      path: '/annonser'
-      fullPath: '/admin/annonser'
-      preLoaderRoute: typeof AdminAnnonserRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/_super-admin': {
-      id: '/admin/_super-admin'
-      path: ''
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminSuperAdminRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_dev/form-test': {
-      id: '/_dev/form-test'
-      path: '/form-test'
-      fullPath: '/form-test'
-      preLoaderRoute: typeof DevFormTestRouteImport
-      parentRoute: typeof DevRoute
-    }
-    '/_auth/reset-password': {
-      id: '/_auth/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof AuthResetPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/register': {
-      id: '/_auth/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/forgot-password': {
-      id: '/_auth/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_app/toddel': {
-      id: '/_app/toddel'
-      path: '/toddel'
-      fullPath: '/toddel'
-      preLoaderRoute: typeof AppToddelRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/personvern': {
-      id: '/_app/personvern'
-      path: '/personvern'
-      fullPath: '/personvern'
-      preLoaderRoute: typeof AppPersonvernRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/kontrakt': {
-      id: '/_app/kontrakt'
-      path: '/kontrakt'
-      fullPath: '/kontrakt'
-      preLoaderRoute: typeof AppKontraktRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kokebok': {
@@ -759,130 +645,144 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppKokebokRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/nyheter/': {
-      id: '/_app/nyheter/'
-      path: '/nyheter'
-      fullPath: '/nyheter/'
-      preLoaderRoute: typeof AppNyheterIndexRouteImport
+    '/_app/kontrakt': {
+      id: '/_app/kontrakt'
+      path: '/kontrakt'
+      fullPath: '/kontrakt'
+      preLoaderRoute: typeof AppKontraktRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/grupper/': {
-      id: '/_app/grupper/'
-      path: '/grupper'
-      fullPath: '/grupper/'
-      preLoaderRoute: typeof AppGrupperIndexRouteImport
+    '/_app/personvern': {
+      id: '/_app/personvern'
+      path: '/personvern'
+      fullPath: '/personvern'
+      preLoaderRoute: typeof AppPersonvernRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/galleri/': {
-      id: '/_app/galleri/'
-      path: '/galleri'
-      fullPath: '/galleri/'
-      preLoaderRoute: typeof AppGalleriIndexRouteImport
+    '/_app/qr-koder': {
+      id: '/_app/qr-koder'
+      path: '/qr-koder'
+      fullPath: '/qr-koder'
+      preLoaderRoute: typeof AppQrKoderRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/bedrift/': {
-      id: '/_app/bedrift/'
-      path: '/bedrift'
-      fullPath: '/bedrift/'
-      preLoaderRoute: typeof AppBedriftIndexRouteImport
+    '/_app/toddel': {
+      id: '/_app/toddel'
+      path: '/toddel'
+      fullPath: '/toddel'
+      preLoaderRoute: typeof AppToddelRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/arrangementer/': {
-      id: '/_app/arrangementer/'
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/register': {
+      id: '/_auth/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/reset-password': {
+      id: '/_auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_dev/form-test': {
+      id: '/_dev/form-test'
+      path: '/form-test'
+      fullPath: '/form-test'
+      preLoaderRoute: typeof DevFormTestRouteImport
+      parentRoute: typeof DevRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/_super-admin': {
+      id: '/admin/_super-admin'
+      path: ''
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminSuperAdminRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/annonser': {
+      id: '/admin/annonser'
+      path: '/annonser'
+      fullPath: '/admin/annonser'
+      preLoaderRoute: typeof AdminAnnonserRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/arrangementer': {
+      id: '/admin/arrangementer'
       path: '/arrangementer'
-      fullPath: '/arrangementer/'
-      preLoaderRoute: typeof AppArrangementerIndexRouteImport
-      parentRoute: typeof AppRoute
+      fullPath: '/admin/arrangementer'
+      preLoaderRoute: typeof AdminArrangementerRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/bannere': {
+      id: '/admin/bannere'
+      path: '/bannere'
+      fullPath: '/admin/bannere'
+      preLoaderRoute: typeof AdminBannereRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/brukere': {
+      id: '/admin/brukere'
+      path: '/brukere'
+      fullPath: '/admin/brukere'
+      preLoaderRoute: typeof AdminBrukereRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/grupper': {
+      id: '/admin/grupper'
+      path: '/grupper'
+      fullPath: '/admin/grupper'
+      preLoaderRoute: typeof AdminGrupperRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/nyheter': {
+      id: '/admin/nyheter'
+      path: '/nyheter'
+      fullPath: '/admin/nyheter'
+      preLoaderRoute: typeof AdminNyheterRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/opptak': {
+      id: '/admin/opptak'
+      path: '/opptak'
+      fullPath: '/admin/opptak'
+      preLoaderRoute: typeof AdminOpptakRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/prikker': {
+      id: '/admin/prikker'
+      path: '/prikker'
+      fullPath: '/admin/prikker'
+      preLoaderRoute: typeof AdminPrikkerRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_app/annonser/': {
       id: '/_app/annonser/'
       path: '/annonser'
       fullPath: '/annonser/'
       preLoaderRoute: typeof AppAnnonserIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/admin/_super-admin/oauth-clients': {
-      id: '/admin/_super-admin/oauth-clients'
-      path: '/oauth-clients'
-      fullPath: '/admin/oauth-clients'
-      preLoaderRoute: typeof AdminSuperAdminOauthClientsRouteImport
-      parentRoute: typeof AdminSuperAdminRoute
-    }
-    '/admin/_super-admin/logs': {
-      id: '/admin/_super-admin/logs'
-      path: '/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof AdminSuperAdminLogsRouteImport
-      parentRoute: typeof AdminSuperAdminRoute
-    }
-    '/admin/_super-admin/database': {
-      id: '/admin/_super-admin/database'
-      path: '/database'
-      fullPath: '/admin/database'
-      preLoaderRoute: typeof AdminSuperAdminDatabaseRouteImport
-      parentRoute: typeof AdminSuperAdminRoute
-    }
-    '/admin/_super-admin/api-keys': {
-      id: '/admin/_super-admin/api-keys'
-      path: '/api-keys'
-      fullPath: '/admin/api-keys'
-      preLoaderRoute: typeof AdminSuperAdminApiKeysRouteImport
-      parentRoute: typeof AdminSuperAdminRoute
-    }
-    '/_auth/oauth/consent': {
-      id: '/_auth/oauth/consent'
-      path: '/oauth/consent'
-      fullPath: '/oauth/consent'
-      preLoaderRoute: typeof AuthOauthConsentRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_app/profil/$id': {
-      id: '/_app/profil/$id'
-      path: '/profil/$id'
-      fullPath: '/profil/$id'
-      preLoaderRoute: typeof AppProfilIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/playground/markdown': {
-      id: '/_app/playground/markdown'
-      path: '/playground/markdown'
-      fullPath: '/playground/markdown'
-      preLoaderRoute: typeof AppPlaygroundMarkdownRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/nyheter/$slug': {
-      id: '/_app/nyheter/$slug'
-      path: '/nyheter/$slug'
-      fullPath: '/nyheter/$slug'
-      preLoaderRoute: typeof AppNyheterSlugRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/grupper/$slug': {
-      id: '/_app/grupper/$slug'
-      path: '/grupper/$slug'
-      fullPath: '/grupper/$slug'
-      preLoaderRoute: typeof AppGrupperSlugRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/galleri/$slug': {
-      id: '/_app/galleri/$slug'
-      path: '/galleri/$slug'
-      fullPath: '/galleri/$slug'
-      preLoaderRoute: typeof AppGalleriSlugRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/bedrift/studiene': {
-      id: '/_app/bedrift/studiene'
-      path: '/bedrift/studiene'
-      fullPath: '/bedrift/studiene'
-      preLoaderRoute: typeof AppBedriftStudieneRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/arrangementer/$slug': {
-      id: '/_app/arrangementer/$slug'
-      path: '/arrangementer/$slug'
-      fullPath: '/arrangementer/$slug'
-      preLoaderRoute: typeof AppArrangementerSlugRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/annonser/$slug': {
@@ -892,6 +792,125 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnnonserSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/arrangementer/': {
+      id: '/_app/arrangementer/'
+      path: '/arrangementer'
+      fullPath: '/arrangementer/'
+      preLoaderRoute: typeof AppArrangementerIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/arrangementer/$slug': {
+      id: '/_app/arrangementer/$slug'
+      path: '/arrangementer/$slug'
+      fullPath: '/arrangementer/$slug'
+      preLoaderRoute: typeof AppArrangementerSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/bedrift/': {
+      id: '/_app/bedrift/'
+      path: '/bedrift'
+      fullPath: '/bedrift/'
+      preLoaderRoute: typeof AppBedriftIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/bedrift/studiene': {
+      id: '/_app/bedrift/studiene'
+      path: '/bedrift/studiene'
+      fullPath: '/bedrift/studiene'
+      preLoaderRoute: typeof AppBedriftStudieneRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/galleri/': {
+      id: '/_app/galleri/'
+      path: '/galleri'
+      fullPath: '/galleri/'
+      preLoaderRoute: typeof AppGalleriIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/galleri/$slug': {
+      id: '/_app/galleri/$slug'
+      path: '/galleri/$slug'
+      fullPath: '/galleri/$slug'
+      preLoaderRoute: typeof AppGalleriSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/grupper/': {
+      id: '/_app/grupper/'
+      path: '/grupper'
+      fullPath: '/grupper/'
+      preLoaderRoute: typeof AppGrupperIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/grupper/$slug': {
+      id: '/_app/grupper/$slug'
+      path: '/grupper/$slug'
+      fullPath: '/grupper/$slug'
+      preLoaderRoute: typeof AppGrupperSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/nyheter/': {
+      id: '/_app/nyheter/'
+      path: '/nyheter'
+      fullPath: '/nyheter/'
+      preLoaderRoute: typeof AppNyheterIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/nyheter/$slug': {
+      id: '/_app/nyheter/$slug'
+      path: '/nyheter/$slug'
+      fullPath: '/nyheter/$slug'
+      preLoaderRoute: typeof AppNyheterSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/playground/markdown': {
+      id: '/_app/playground/markdown'
+      path: '/playground/markdown'
+      fullPath: '/playground/markdown'
+      preLoaderRoute: typeof AppPlaygroundMarkdownRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profil/$id': {
+      id: '/_app/profil/$id'
+      path: '/profil/$id'
+      fullPath: '/profil/$id'
+      preLoaderRoute: typeof AppProfilIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_auth/oauth/consent': {
+      id: '/_auth/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof AuthOauthConsentRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/admin/_super-admin/api-keys': {
+      id: '/admin/_super-admin/api-keys'
+      path: '/api-keys'
+      fullPath: '/admin/api-keys'
+      preLoaderRoute: typeof AdminSuperAdminApiKeysRouteImport
+      parentRoute: typeof AdminSuperAdminRoute
+    }
+    '/admin/_super-admin/database': {
+      id: '/admin/_super-admin/database'
+      path: '/database'
+      fullPath: '/admin/database'
+      preLoaderRoute: typeof AdminSuperAdminDatabaseRouteImport
+      parentRoute: typeof AdminSuperAdminRoute
+    }
+    '/admin/_super-admin/logs': {
+      id: '/admin/_super-admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminSuperAdminLogsRouteImport
+      parentRoute: typeof AdminSuperAdminRoute
+    }
+    '/admin/_super-admin/oauth-clients': {
+      id: '/admin/_super-admin/oauth-clients'
+      path: '/oauth-clients'
+      fullPath: '/admin/oauth-clients'
+      preLoaderRoute: typeof AdminSuperAdminOauthClientsRouteImport
+      parentRoute: typeof AdminSuperAdminRoute
+    }
     '/_app/profil/$id/': {
       id: '/_app/profil/$id/'
       path: '/'
@@ -899,18 +918,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdIndexRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
-    '/_app/profil/$id/sporreskjemaer': {
-      id: '/_app/profil/$id/sporreskjemaer'
-      path: '/sporreskjemaer'
-      fullPath: '/profil/$id/sporreskjemaer'
-      preLoaderRoute: typeof AppProfilIdSporreskjemaerRouteImport
-      parentRoute: typeof AppProfilIdRoute
-    }
-    '/_app/profil/$id/prikker': {
-      id: '/_app/profil/$id/prikker'
-      path: '/prikker'
-      fullPath: '/profil/$id/prikker'
-      preLoaderRoute: typeof AppProfilIdPrikkerRouteImport
+    '/_app/profil/$id/arrangementer': {
+      id: '/_app/profil/$id/arrangementer'
+      path: '/arrangementer'
+      fullPath: '/profil/$id/arrangementer'
+      preLoaderRoute: typeof AppProfilIdArrangementerRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
     '/_app/profil/$id/medlemskap': {
@@ -920,11 +932,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdMedlemskapRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
-    '/_app/profil/$id/arrangementer': {
-      id: '/_app/profil/$id/arrangementer'
-      path: '/arrangementer'
-      fullPath: '/profil/$id/arrangementer'
-      preLoaderRoute: typeof AppProfilIdArrangementerRouteImport
+    '/_app/profil/$id/prikker': {
+      id: '/_app/profil/$id/prikker'
+      path: '/prikker'
+      fullPath: '/profil/$id/prikker'
+      preLoaderRoute: typeof AppProfilIdPrikkerRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
+    '/_app/profil/$id/sporreskjemaer': {
+      id: '/_app/profil/$id/sporreskjemaer'
+      path: '/sporreskjemaer'
+      fullPath: '/profil/$id/sporreskjemaer'
+      preLoaderRoute: typeof AppProfilIdSporreskjemaerRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
   }
@@ -954,6 +973,7 @@ interface AppRouteChildren {
   AppKokebokRoute: typeof AppKokebokRoute
   AppKontraktRoute: typeof AppKontraktRoute
   AppPersonvernRoute: typeof AppPersonvernRoute
+  AppQrKoderRoute: typeof AppQrKoderRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
@@ -976,6 +996,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppKokebokRoute: AppKokebokRoute,
   AppKontraktRoute: AppKontraktRoute,
   AppPersonvernRoute: AppPersonvernRoute,
+  AppQrKoderRoute: AppQrKoderRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,
