@@ -1,5 +1,7 @@
 import { Card, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 
+import { DEFAULT_COVER_IMAGE } from "#/lib/image";
+
 export type IssueCardProps = {
     title: string;
     edition: string;
@@ -21,20 +23,12 @@ export function IssueCard({
              * so wrapping it in an aspect-ratio div left a band of card above
              * the image. The ratio goes on the image itself instead.
              */}
-            {coverUrl ? (
-                <img
-                    src={coverUrl}
-                    alt={title}
-                    className="aspect-[3/4] w-full object-cover"
-                    loading="lazy"
-                />
-            ) : (
-                <div
-                    data-slot="card-media"
-                    className="aspect-[3/4] w-full bg-muted"
-                    aria-hidden
-                />
-            )}
+            <img
+                src={coverUrl || DEFAULT_COVER_IMAGE}
+                alt={title}
+                className="aspect-[3/4] w-full object-cover"
+                loading="lazy"
+            />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 <p className="text-muted-foreground">{edition}</p>
