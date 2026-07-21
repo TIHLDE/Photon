@@ -35,7 +35,11 @@ export const createRoute = route().post(
         let createdEventId: string | undefined;
 
         await db.transaction(async (tx) => {
-            const slug = await generateUniqueEventSlug(body.title, tx);
+            const slug = await generateUniqueEventSlug(
+                body.title,
+                new Date(body.start),
+                tx,
+            );
             if (slug.length > 256) {
                 throw new HTTPException(400, {
                     message:

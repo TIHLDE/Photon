@@ -46,7 +46,8 @@ const envSchema = z
     .object({
         // CONFIG
         ROOT_URL: z.string().default("http://localhost:4000"),
-        WEBSITE_URL: z.string().default("http://localhost:3000"),
+        /** Frontend origin. Defaulted per NODE_ENV below, not here. */
+        WEBSITE_URL: z.string().optional(),
         PORT: z
             .string()
             .default("4000")
@@ -123,12 +124,24 @@ const envSchema = z
             .transform(toBoolean({ defaultVal: false })),
     })
     .transform((vals) => {
-        if (!vals.WEBHOOK_URL) {
-            return { ...vals, WEBHOOK_URL: vals.ROOT_URL };
+        const resolved = {
+            ...vals,
+            // A localhost frontend in production is never right: WEBSITE_URL is
+            // the sole allowed CORS origin there (see app.ts), so falling back
+            // to the dev default would block the real site from its own API.
+            WEBSITE_URL:
+                vals.WEBSITE_URL ||
+                (vals.NODE_ENV === "production"
+                    ? "https://new.tihlde.org"
+                    : "http://localhost:3000"),
+        };
+
+        if (!resolved.WEBHOOK_URL) {
+            return { ...resolved, WEBHOOK_URL: resolved.ROOT_URL };
         }
 
-        console.warn(`🪝 Using custom webhook URL: ${vals.WEBHOOK_URL}`);
-        return vals;
+        console.warn(`🪝 Using custom webhook URL: ${resolved.WEBHOOK_URL}`);
+        return resolved;
     });
 
 type Env = z.infer<typeof envSchema>;
@@ -136,9 +149,38 @@ type EnvInput = z.input<typeof envSchema>;
 
 let _env: Env | undefined;
 
+/**
+ * Retired env var names, mapped to the name that replaced them.
+ *
+ * Deployments outlive renames. Production still defines BETTER_AUTH_SECRET and
+ * its environment is not ours to edit, so a rename that lands only in code
+ * takes the API down on the next boot — `createAuth` refuses to start without a
+ * secret. Reading the old name keeps those deployments alive until every
+ * environment has caught up.
+ */
+const LEGACY_ENV_ALIASES: Record<string, string> = {
+    AUTH_SECRET: "BETTER_AUTH_SECRET",
+};
+
+/** Fills in any current name that is unset but whose retired name still is. */
+function withLegacyAliases(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+    const resolved = { ...source };
+
+    for (const [current, legacy] of Object.entries(LEGACY_ENV_ALIASES)) {
+        if (!resolved[current] && source[legacy]) {
+            resolved[current] = source[legacy];
+            console.warn(
+                `⚠️ ${legacy} is deprecated — rename it to ${current}.`,
+            );
+        }
+    }
+
+    return resolved;
+}
+
 function getEnv(): Env {
     if (!_env) {
-        _env = envSchema.parse(process.env);
+        _env = envSchema.parse(withLegacyAliases(process.env));
     }
     return _env;
 }

@@ -2,11 +2,11 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { query } from "../mysql";
+import { buildEventSlugBase } from "@photon/core/slug";
 import {
     userIdMap,
     eventIdMap,
     categoryIdMap,
-    slugify,
     timeToMinutes,
     batchInsert,
 } from "../mappings";
@@ -59,10 +59,18 @@ export async function migrateEvents(
         const newId = crypto.randomUUID();
         eventIdMap.set(e.id, newId);
 
-        let slug = slugify(e.title);
-        if (!slug) slug = "event";
-        slug = `${slug}-${e.id}`;
-        if (usedSlugs.has(slug)) slug = `${slug}-${Date.now()}`;
+        // Same stem the API uses for events created after the migration, so
+        // historical and new events share one url format. Collisions resolve
+        // in memory rather than against the database: these rows are batch
+        // inserted after the loop, so nothing is queryable yet. Counting up
+        // keeps a re-run producing the same slugs instead of new ones.
+        const slugBase = buildEventSlugBase(e.title, e.start_date);
+        let slug = slugBase;
+        let attempt = 1;
+        while (usedSlugs.has(slug)) {
+            attempt += 1;
+            slug = `${slugBase}-${attempt}`;
+        }
         usedSlugs.add(slug);
 
         const categorySlug = e.category_id
