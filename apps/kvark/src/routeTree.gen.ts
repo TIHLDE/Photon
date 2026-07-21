@@ -50,7 +50,6 @@ import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 import { Route as AppBedriftStudieneRouteImport } from './routes/_app/bedrift.studiene'
-import { Route as AppBedriftKontaktRouteImport } from './routes/_app/bedrift.kontakt'
 import { Route as AppArrangementerSlugRouteImport } from './routes/_app/arrangementer.$slug'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
@@ -261,11 +260,6 @@ const AppBedriftStudieneRoute = AppBedriftStudieneRouteImport.update({
   path: '/bedrift/studiene',
   getParentRoute: () => AppRoute,
 } as any)
-const AppBedriftKontaktRoute = AppBedriftKontaktRouteImport.update({
-  id: '/bedrift/kontakt',
-  path: '/bedrift/kontakt',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppArrangementerSlugRoute = AppArrangementerSlugRouteImport.update({
   id: '/arrangementer/$slug',
   path: '/arrangementer/$slug',
@@ -327,7 +321,6 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
-  '/bedrift/kontakt': typeof AppBedriftKontaktRoute
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
@@ -373,7 +366,6 @@ export interface FileRoutesByTo {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
-  '/bedrift/kontakt': typeof AppBedriftKontaktRoute
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
@@ -424,7 +416,6 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
   '/_app/arrangementer/$slug': typeof AppArrangementerSlugRoute
-  '/_app/bedrift/kontakt': typeof AppBedriftKontaktRoute
   '/_app/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRoute
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
@@ -473,7 +464,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
-    | '/bedrift/kontakt'
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
@@ -519,7 +509,6 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
-    | '/bedrift/kontakt'
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
@@ -569,7 +558,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/_app/annonser/$slug'
     | '/_app/arrangementer/$slug'
-    | '/_app/bedrift/kontakt'
     | '/_app/bedrift/studiene'
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
@@ -890,13 +878,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBedriftStudieneRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/bedrift/kontakt': {
-      id: '/_app/bedrift/kontakt'
-      path: '/bedrift/kontakt'
-      fullPath: '/bedrift/kontakt'
-      preLoaderRoute: typeof AppBedriftKontaktRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/arrangementer/$slug': {
       id: '/_app/arrangementer/$slug'
       path: '/arrangementer/$slug'
@@ -977,7 +958,6 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
   AppArrangementerSlugRoute: typeof AppArrangementerSlugRoute
-  AppBedriftKontaktRoute: typeof AppBedriftKontaktRoute
   AppBedriftStudieneRoute: typeof AppBedriftStudieneRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRoute
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
@@ -1000,7 +980,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,
   AppArrangementerSlugRoute: AppArrangementerSlugRoute,
-  AppBedriftKontaktRoute: AppBedriftKontaktRoute,
   AppBedriftStudieneRoute: AppBedriftStudieneRoute,
   AppGalleriSlugRoute: AppGalleriSlugRoute,
   AppGrupperSlugRoute: AppGrupperSlugRoute,
