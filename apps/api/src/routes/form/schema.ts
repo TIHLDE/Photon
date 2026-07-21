@@ -153,6 +153,19 @@ const formFieldResponseSchema = z.object({
 
 // ===== RESPONSE SCHEMAS =====
 
+const formEventContextSchema = z.object({
+    id: z.uuid(),
+    title: z.string(),
+    slug: z.string().nullable(),
+    start_date: z.string(),
+    location: z.string().nullable(),
+});
+
+const formGroupContextSchema = z.object({
+    slug: z.string(),
+    name: z.string(),
+});
+
 export const formDetailSchema = Schema(
     "FormDetail",
     z.object({
@@ -160,12 +173,20 @@ export const formDetailSchema = Schema(
         title: z.string(),
         description: z.string().nullable(),
         template: z.boolean(),
-        resource_type: z.string(),
+        resource_type: z.enum(["Form", "EventForm", "GroupForm"]),
         viewer_has_answered: z.boolean(),
         website_url: z.string(),
         created_at: z.string(),
         updated_at: z.string(),
         fields: z.array(formFieldResponseSchema),
+        // Only set when resource_type is "EventForm".
+        type: z.enum(["survey", "evaluation"]).nullable(),
+        event: formEventContextSchema.nullable(),
+        // Only set when resource_type is "GroupForm".
+        group: formGroupContextSchema.nullable(),
+        can_submit_multiple: z.boolean().nullable(),
+        is_open_for_submissions: z.boolean().nullable(),
+        only_for_group_members: z.boolean().nullable(),
     }),
 );
 

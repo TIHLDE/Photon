@@ -190,20 +190,25 @@ function AdmissionCardContainer({
         enabled: open && isAuthenticated,
     });
 
+    const admissionForm = useMemo(
+        () => forms?.find((f) => f.title.toLowerCase().includes("opptak")),
+        [forms],
+    );
+
     const status = useMemo<AdmissionStatus>(() => {
         if (!isAuthenticated) return "unauthenticated";
         if (isLoading || !forms) return "loading";
 
-        const form = forms.find((f) =>
-            f.title.toLowerCase().includes("opptak"),
-        );
-        if (!form) return "missing";
-        if (!form.is_open_for_submissions) return "closed";
-        if (!form.can_submit_multiple && form.viewer_has_answered) {
+        if (!admissionForm) return "missing";
+        if (!admissionForm.is_open_for_submissions) return "closed";
+        if (
+            !admissionForm.can_submit_multiple &&
+            admissionForm.viewer_has_answered
+        ) {
             return "answered";
         }
         return "open";
-    }, [forms, isAuthenticated, isLoading]);
+    }, [admissionForm, forms, isAuthenticated, isLoading]);
 
     return (
         <GroupAdmissionCard
@@ -211,6 +216,7 @@ function AdmissionCardContainer({
             open={open}
             onOpenChange={setOpen}
             status={status}
+            formId={admissionForm?.id}
         />
     );
 }
