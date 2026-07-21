@@ -24,14 +24,17 @@ export function GalleryCard({
             className="h-full"
             render={<Link to="/galleri/$slug" params={{ slug }} />}
         >
-            <div className="aspect-video w-full overflow-hidden">
-                <img
-                    src={imageUrl}
-                    alt=""
-                    loading="lazy"
-                    className="size-full object-cover"
-                />
-            </div>
+            {/*
+             * Direct child, not wrapped: Card drops its top padding and rounds
+             * the top corners only for an `img:first-child`, so a ratio wrapper
+             * leaves a strip of card above the image. The ratio goes here.
+             */}
+            <img
+                src={imageUrl}
+                alt=""
+                loading="lazy"
+                className="aspect-video w-full object-cover"
+            />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 {description && (
