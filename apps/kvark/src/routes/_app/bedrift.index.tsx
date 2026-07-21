@@ -1,19 +1,37 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
-import { ArrowRight, Megaphone } from "lucide-react";
-import { Suspense } from "react";
+import {
+    ArrowRight,
+    CheckCircle2,
+    Megaphone,
+    TriangleAlert,
+} from "lucide-react";
+import { Suspense, useMemo } from "react";
 
 import { getJobsQuery } from "#/api/queries/jobs";
+import { sendCompanyContactMutation } from "#/api/queries/company";
+import { CompanyContactForm } from "#/components/company-contact-form";
 import { CompanyOfferCard } from "#/components/company-offer-card";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { JobCard } from "#/components/job-card";
 import { StudyProgrammeCard } from "#/components/study-programme-card";
-import { COMPANY_OFFERS, STUDY_PROGRAMMES_SHORT } from "#/data/company";
+import {
+    COMPANY_EVENT_TYPES,
+    COMPANY_OFFERS,
+    STUDY_PROGRAMMES_SHORT,
+    upcomingSemesters,
+} from "#/data/company";
 import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
 
 const JOB_PREVIEW_COUNT = 4;
+
+const EVENT_TYPE_OPTIONS = COMPANY_EVENT_TYPES.map((type) => ({
+    value: type,
+    label: type,
+}));
 
 export const Route = createFileRoute("/_app/bedrift/")({
     component: CompanyLandingPage,
@@ -45,7 +63,7 @@ function CompanyLandingPage() {
                         size="lg"
                         className="mt-4"
                         nativeButton={false}
-                        render={<Link to="/bedrift/kontakt" />}
+                        render={<Link to="/bedrift" hash="kontakt" />}
                     >
                         Meld interesse
                         <Megaphone />
@@ -102,22 +120,80 @@ function CompanyLandingPage() {
                 </div>
             </section>
 
-            <section className="container mx-auto flex max-w-5xl flex-col items-center gap-4 px-4 py-16 text-center">
-                <h2 className="text-3xl md:text-4xl">Ta kontakt med oss</h2>
-                <p className="max-w-xl text-muted-foreground">
-                    Bedrifter kan ta kontakt med oss for å få mer informasjon om
-                    hva vi tilbyr og hvordan vi kan hjelpe dem med å nå ut til
-                    våre medlemmer.
-                </p>
-                <Button
-                    size="lg"
-                    className="mt-2"
-                    nativeButton={false}
-                    render={<Link to="/bedrift/kontakt" />}
-                >
-                    Ta kontakt
-                </Button>
+            <section
+                id="kontakt"
+                className="container mx-auto flex w-full max-w-4xl scroll-mt-24 flex-col gap-8 px-4 py-16"
+            >
+                <div className="flex flex-col items-center gap-3 text-center">
+                    <p className="text-muted-foreground">
+                        Møt morgendagens IT-talenter!
+                    </p>
+                    <h2 className="text-3xl md:text-4xl">
+                        Send oss en melding
+                    </h2>
+                    <p className="max-w-2xl text-muted-foreground">
+                        Ta direkte kontakt med Næringsliv og kurs for å
+                        diskutere hva som passer deres bedrift best. Vi hjelper
+                        dere med å få ut informasjon om deres bedrift!
+                    </p>
+                </div>
+
+                <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+                    <CompanyContactSection />
+                </Suspense>
             </section>
+        </div>
+    );
+}
+
+function CompanyContactSection() {
+    const mutation = useMutation(sendCompanyContactMutation);
+
+    const semesterOptions = useMemo(
+        () =>
+            upcomingSemesters().map((semester) => ({
+                value: semester,
+                label: semester,
+            })),
+        [],
+    );
+
+    return (
+        <div className="flex flex-col gap-8">
+            {mutation.isSuccess && (
+                <Alert>
+                    <CheckCircle2 />
+                    <AlertTitle>Henvendelsen er sendt</AlertTitle>
+                    <AlertDescription>
+                        Takk for interessen! Næringsliv og kurs tar kontakt på
+                        e-postadressen du oppga.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {mutation.isError && (
+                <Alert variant="destructive">
+                    <TriangleAlert />
+                    <AlertTitle>Klarte ikke å sende henvendelsen</AlertTitle>
+                    <AlertDescription>
+                        Prøv igjen om litt, eller send en e-post direkte til
+                        naeringslivsminister@tihlde.org.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <CompanyContactForm
+                eventTypeOptions={EVENT_TYPE_OPTIONS}
+                semesterOptions={semesterOptions}
+                onSubmit={async (values, { reset }) => {
+                    try {
+                        await mutation.mutateAsync({ data: values });
+                        reset();
+                    } catch {
+                        // Surfaced through `mutation.isError` above
+                    }
+                }}
+            />
         </div>
     );
 }
