@@ -1,4 +1,4 @@
-import { paths } from "./generated/openapi";
+import type { paths } from "./generated/openapi";
 
 type HTTPMethods =
     | "get"
