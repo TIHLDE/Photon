@@ -44,6 +44,36 @@ type SourceIssue = {
     publishedAt: string;
 };
 
+/**
+ * Issues whose stored PDF url is wrong rather than whose file is missing.
+ *
+ * Both 404 from Lepton, which reads as "the archive has holes" — but the
+ * blobs are still in Azure under a url the database never caught up with, and
+ * this is the last chance to fetch them.
+ *
+ * - Edition 9 is recorded against `tihldestorage` while the file sits in
+ *   `leptonstoragepro` under the same key.
+ * - Edition 12 has two uuids concatenated in front of the filename; only the
+ *   second one addresses a real blob.
+ *
+ * Both recovered files carry a PDF creation date matching their publication
+ * (2023-03-25 for an issue published 2023-03-20; 2023-11-20 for 2023-11-24),
+ * and edition 9's opens on its masthead, so they are the right documents.
+ *
+ * Edition 15 stays lost: both storage accounts, five filename spellings, five
+ * containers, the cover's uuid and the Wayback Machine all come up empty.
+ */
+const RECOVERED_PDF_URLS = new Map<number, string>([
+    [
+        9,
+        "https://leptonstoragepro.blob.core.windows.net/applicationpdf/763fa2f4-0be5-417d-99c7-b644ba4afdd2toddelh23v2_master.pdf",
+    ],
+    [
+        12,
+        "https://leptonstoragepro.blob.core.windows.net/applicationpdf/1bc5df5e-8173-419a-87a5-b1644d49bfb5toddelH23V2Digital%20%281%29.pdf",
+    ],
+]);
+
 const commit = process.argv.includes("--commit");
 const rootUrl = process.env.ROOT_URL ?? "https://photon.tihlde.org";
 const leptonUrl =
@@ -79,7 +109,7 @@ const issues: SourceIssue[] = leptonIssues.map((issue) => ({
     edition: issue.edition,
     title: issue.title,
     sourceImageUrl: issue.image || null,
-    sourcePdfUrl: issue.pdf,
+    sourcePdfUrl: RECOVERED_PDF_URLS.get(issue.edition) ?? issue.pdf,
     // Lepton stores edition 14 as `0024-04-19`. A four-digit year starting
     // "00" is a typo for the 2000s, not a date in antiquity.
     publishedAt: issue.published_at.startsWith("00")
