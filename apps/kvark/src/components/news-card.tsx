@@ -27,17 +27,24 @@ export function NewsCard({
             className="h-full"
             render={<Link to="/nyheter/$slug" params={{ slug }} />}
         >
-            <div className="aspect-[16/7] w-full overflow-hidden">
-                {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt=""
-                        className="size-full object-cover"
-                    />
-                ) : (
-                    <div className="size-full bg-muted" aria-hidden />
-                )}
-            </div>
+            {/*
+             * Direct child, not wrapped: Card drops its top padding and rounds
+             * the top corners only for an `img:first-child`, so a ratio wrapper
+             * leaves a strip of card above the image. The ratio goes here.
+             */}
+            {imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt=""
+                    className="aspect-[16/7] w-full object-cover"
+                />
+            ) : (
+                <div
+                    data-slot="card-media"
+                    className="aspect-[16/7] w-full bg-muted"
+                    aria-hidden
+                />
+            )}
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{publishedAt}</CardDescription>
