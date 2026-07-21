@@ -1,6 +1,11 @@
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 
+/**
+ * Fallback cover image used for events and activities without their own image.
+ */
+export const DEFAULT_EVENT_IMAGE = "/browser-icons/cover-image.jpg";
+
 // -- Shared display types (previously in mock/events) --
 
 export type EventRegistrationState =
