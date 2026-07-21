@@ -66,7 +66,7 @@ function AppLayout() {
                           {
                               kind: "internal",
                               label: "Ny student",
-                              link: linkOptions({ to: "/" }),
+                              link: linkOptions({ to: "/ny-student" }),
                           },
                       ]
                     : []),

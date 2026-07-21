@@ -52,13 +52,53 @@ export const getRoute = route().get(
             ? await userHasSubmitted(db, form.id, user.id)
             : false;
 
+        // A form is either standalone, attached to an event, or owned by a
+        // group. The client needs to know which, plus the owner's submission
+        // rules, to decide how to present and gate the form.
+        const eventForm = await db.query.formEventForm.findFirst({
+            where: eq(schema.formEventForm.formId, form.id),
+            with: { event: true },
+        });
+
+        const groupForm = eventForm
+            ? undefined
+            : await db.query.formGroupForm.findFirst({
+                  where: eq(schema.formGroupForm.formId, form.id),
+                  with: { group: true },
+              });
+
+        const resourceType = eventForm
+            ? "EventForm"
+            : groupForm
+              ? "GroupForm"
+              : "Form";
+
         return c.json({
             id: form.id,
             title: form.title,
             description: form.description,
             template: form.isTemplate,
-            resource_type: "Form",
+            resource_type: resourceType,
             viewer_has_answered: hasAnswered,
+            type: eventForm?.type ?? null,
+            event: eventForm
+                ? {
+                      id: eventForm.event.id,
+                      title: eventForm.event.title,
+                      slug: eventForm.event.slug,
+                      start_date: eventForm.event.start.toISOString(),
+                      location: eventForm.event.location,
+                  }
+                : null,
+            group: groupForm
+                ? {
+                      slug: groupForm.group.slug,
+                      name: groupForm.group.name,
+                  }
+                : null,
+            can_submit_multiple: groupForm?.canSubmitMultiple ?? null,
+            is_open_for_submissions: groupForm?.isOpenForSubmissions ?? null,
+            only_for_group_members: groupForm?.onlyForGroupMembers ?? null,
             website_url: `/sporreskjema/${form.id}/`,
             created_at: form.createdAt.toISOString(),
             updated_at: form.updatedAt.toISOString(),

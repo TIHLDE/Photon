@@ -1,4 +1,8 @@
-import { betterAuth, BetterAuthOptions, DBAdapter } from "better-auth";
+import {
+    betterAuth,
+    type BetterAuthOptions,
+    type DBAdapter,
+} from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import {
     admin,

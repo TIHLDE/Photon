@@ -238,6 +238,23 @@ describe("Forms System", () => {
             expect(groupForm.resource_type).toBe("GroupForm");
             expect(groupForm.fields).toBeDefined();
 
+            // The generic form detail endpoint resolves the owner too, so the
+            // /sporreskjema page can gate on the group's submission rules.
+            const groupFormDetailResponse = await leaderClient.api.forms[
+                ":id"
+            ].$get({
+                param: { id: groupForm.id! },
+            });
+
+            expect(groupFormDetailResponse.status).toBe(200);
+            const groupFormDetail = await groupFormDetailResponse.json();
+            expect(groupFormDetail.resource_type).toBe("GroupForm");
+            expect(groupFormDetail.group?.slug).toBe("index");
+            expect(groupFormDetail.can_submit_multiple).toBe(false);
+            expect(groupFormDetail.is_open_for_submissions).toBe(true);
+            expect(groupFormDetail.only_for_group_members).toBe(true);
+            expect(groupFormDetail.event).toBeNull();
+
             // Non-member cannot submit to member-only form
             const nonMemberSubmitResponse = await userClient.api.forms[
                 ":formId"

@@ -5,7 +5,11 @@
         "jsx": "react-jsx",
         "module": "ESNext",
         "paths": {
-            "#/*": ["./src/*"]
+            // Workspace packages (@tihlde/ui) are consumed as source, and their
+            // own `#/...` self-imports are resolved by this same map — tsconfig
+            // paths are program-wide, not per-package. Listing their src roots
+            // as fallbacks keeps cross-package type resolution working.
+            "#/*": ["./src/*", "../../packages/ui/src/*"]
         },
         "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "types": ["vite/client"],

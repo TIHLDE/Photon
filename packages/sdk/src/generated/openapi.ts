@@ -2012,7 +2012,8 @@ export interface components {
             title: string;
             description: string | null;
             template: boolean;
-            resource_type: string;
+            /** @enum {string} */
+            resource_type: "Form" | "EventForm" | "GroupForm";
             viewer_has_answered: boolean;
             website_url: string;
             created_at: string;
@@ -2032,6 +2033,22 @@ export interface components {
                     order: number;
                 }[];
             }[];
+            type: ("survey" | "evaluation") | null;
+            event: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                slug: string | null;
+                start_date: string;
+                location: string | null;
+            } | null;
+            group: {
+                slug: string;
+                name: string;
+            } | null;
+            can_submit_multiple: boolean | null;
+            is_open_for_submissions: boolean | null;
+            only_for_group_members: boolean | null;
         };
         UpdateFormResponse: {
             /** Format: uuid */
