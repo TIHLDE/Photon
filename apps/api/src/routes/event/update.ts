@@ -95,10 +95,15 @@ export const updateRoute = route().put(
                 }
             }
 
-            // If title is updated, generate new slug
+            // If title is updated, generate new slug. A date change alone keeps
+            // the existing slug — rewriting it would break links already shared.
             let slug = event.slug;
             if (body.title && body.title !== event.title) {
-                slug = await generateUniqueEventSlug(body.title, tx);
+                slug = await generateUniqueEventSlug(
+                    body.title,
+                    body.start ? new Date(body.start) : event.start,
+                    tx,
+                );
                 if (slug.length > 256) {
                     throw new HTTPException(400, {
                         message:

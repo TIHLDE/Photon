@@ -10,7 +10,8 @@
         "./services/cache": "./src/services/cache/index.ts",
         "./services/queue": "./src/services/queue/index.ts",
         "./services/storage": "./src/services/storage/index.ts",
-        "./env": "./src/env.ts"
+        "./env": "./src/env.ts",
+        "./slug": "./src/slug.ts"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.927.0",
