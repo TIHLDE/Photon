@@ -1112,6 +1112,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/toddel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List TÖDDEL issues
+         * @description Every issue of the student magazine, newest first. Public endpoint. The archive is small and rarely changes, so it is returned unpaginated.
+         */
+        get: operations["listToddel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/jobs": {
         parameters: {
             query?: never;
@@ -2668,6 +2688,23 @@ export interface components {
         DeleteNewsReactionResponse: {
             message: string;
         };
+        ToddelIssue: {
+            /** @description Lepton's running count, not the number on the cover */
+            edition: number;
+            /** @description Title of the issue */
+            title: string;
+            /** @description Cover image, if one was published */
+            imageUrl: string | null;
+            /** @description The issue itself, as a PDF */
+            pdfUrl: string;
+            /**
+             * Format: date
+             * @description Publication date (ISO 8601)
+             */
+            publishedAt: string;
+        };
+        /** @description Every issue, newest first */
+        ToddelList: components["schemas"]["ToddelIssue"][];
         JobDetail: {
             /**
              * Format: uuid
@@ -5966,6 +6003,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToddelList"];
+                };
             };
         };
     };

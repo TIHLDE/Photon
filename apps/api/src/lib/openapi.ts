@@ -27,6 +27,7 @@ const tags = [
     "news",
     "notifications",
     "payments",
+    "toddel",
     "users",
     "webhooks",
 ] as const;
