@@ -9,6 +9,8 @@ import {
     mapFineStatus,
     char32ToUuid,
     batchInsert,
+    isDroppedGroup,
+    resolveGroupSlug,
 } from "../mappings";
 
 interface LeptonGroup {
@@ -57,20 +59,31 @@ export async function migrateGroups(
     const groups = await query<LeptonGroup>("SELECT * FROM group_group");
     console.log(`  Found ${groups.length} groups`);
 
-    const groupRecords = groups.map((g) => ({
-        slug: g.slug,
-        name: g.name.slice(0, 128),
-        description: g.description,
-        imageUrl: g.image?.slice(0, 600) ?? null,
-        contactEmail: g.contact_email?.slice(0, 200) ?? null,
-        type: g.type,
-        finesInfo: g.fine_info,
-        finesActivated: Boolean(g.fines_activated),
-        finesAdminId: g.fines_admin_id
-            ? (userIdMap.get(g.fines_admin_id) ?? null)
-            : null,
-        permissionMode: "leader_only" as const,
-    }));
+    const droppedGroups = groups.filter((g) => isDroppedGroup(g.slug));
+    if (droppedGroups.length > 0) {
+        console.log(
+            `  Not modelled as groups in Photon: ${droppedGroups
+                .map((g) => g.slug)
+                .join(", ")}`,
+        );
+    }
+
+    const groupRecords = groups
+        .filter((g) => !isDroppedGroup(g.slug))
+        .map((g) => ({
+            slug: g.slug,
+            name: g.name.slice(0, 128),
+            description: g.description,
+            imageUrl: g.image?.slice(0, 600) ?? null,
+            contactEmail: g.contact_email?.slice(0, 200) ?? null,
+            type: g.type,
+            finesInfo: g.fine_info,
+            finesActivated: Boolean(g.fines_activated),
+            finesAdminId: g.fines_admin_id
+                ? (userIdMap.get(g.fines_admin_id) ?? null)
+                : null,
+            permissionMode: "leader_only" as const,
+        }));
 
     await batchInsert(groupRecords, 500, async (batch) => {
         await db.insert(schema.group).values(batch).onConflictDoNothing();
@@ -89,15 +102,34 @@ export async function migrateGroups(
         role: "member" | "leader";
     }> = [];
 
+    /**
+     * Study and cohort memberships are still seeded from Lepton rather than
+     * left to Feide alone: only a Feide login produces them, so alumni without
+     * an active Feide account would otherwise lose their programme and year
+     * outright. Feide refreshes them additively from there.
+     */
+    let droppedMemberships = 0;
     for (const m of memberships) {
         const newUserId = userIdMap.get(m.user_id);
         if (!newUserId) continue;
 
+        const groupSlug = resolveGroupSlug(m.group_id);
+        if (!groupSlug) {
+            droppedMemberships++;
+            continue;
+        }
+
         membershipRecords.push({
             userId: newUserId,
-            groupSlug: m.group_id,
+            groupSlug,
             role: mapMembershipRole(m.membership_type),
         });
+    }
+
+    if (droppedMemberships > 0) {
+        console.log(
+            `  Skipped ${droppedMemberships} memberships in groups Photon does not model`,
+        );
     }
 
     await batchInsert(membershipRecords, 500, async (batch) => {
@@ -131,12 +163,17 @@ export async function migrateGroups(
         const newUserId = userIdMap.get(f.user_id);
         if (!newUserId) continue;
 
+        // A fine has to hang off a group that still exists, or the insert
+        // trips the foreign key and takes the whole batch down with it.
+        const groupSlug = resolveGroupSlug(f.group_id);
+        if (!groupSlug) continue;
+
         const status = mapFineStatus(f.approved, f.payed);
 
         fineRecords.push({
             id: char32ToUuid(f.id),
             userId: newUserId,
-            groupSlug: f.group_id,
+            groupSlug,
             reason: f.reason || f.description,
             amount: f.amount,
             defense: f.defense || null,

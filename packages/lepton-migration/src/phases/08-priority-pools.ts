@@ -2,7 +2,12 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { query } from "../mysql";
-import { eventIdMap, priorityPoolIdMap, batchInsert } from "../mappings";
+import {
+    eventIdMap,
+    priorityPoolIdMap,
+    batchInsert,
+    resolveGroupSlug,
+} from "../mappings";
 
 interface LeptonPriorityPool {
     id: number;
@@ -75,9 +80,15 @@ export async function migratePriorityPools(
         const newPoolId = priorityPoolIdMap.get(pg.prioritypool_id);
         if (!newPoolId) continue;
 
+        // Registration priority is what these pools decide, so a pool pointing
+        // at a group Photon dropped must follow that group's replacement
+        // rather than quietly disappear.
+        const groupSlug = resolveGroupSlug(pg.group_id);
+        if (!groupSlug) continue;
+
         poolGroupRecords.push({
             priorityPoolId: newPoolId,
-            groupSlug: pg.group_id,
+            groupSlug,
         });
     }
 

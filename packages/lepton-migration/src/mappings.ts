@@ -163,6 +163,41 @@ export function timeToMinutes(time: string | null): number | null {
     return Number(parts[0]) * 60 + Number(parts[1]);
 }
 
+/**
+ * Groups Lepton carried that Photon deliberately does not model as groups.
+ *
+ * `tihlde` held 1663 memberships that only restated "is a user" — and did so
+ * inconsistently, since 75 of the 1738 members were missing from it. Photon
+ * treats belonging to TIHLDE as implicit, so the group and its memberships are
+ * dropped rather than migrated. No priority pool referenced it.
+ */
+const EXCLUDED_GROUP_SLUGS = new Set(["tihlde"]);
+
+/**
+ * Groups Lepton mis-modelled, pointed at the one that actually exists.
+ *
+ * `fondsforvalter` is a role title — the leader of Forvaltningsgruppen — that
+ * was created as a STUDY group with a single member. Its one priority pool is
+ * moved to the real board group instead of being dropped on the floor.
+ */
+const REMAPPED_GROUP_SLUGS = new Map([
+    ["fondsforvalter", "forvaltningsgruppen"],
+]);
+
+/**
+ * Resolve a Lepton group slug to the Photon one, or `null` when Photon does
+ * not model that group at all and the row should be skipped.
+ */
+export function resolveGroupSlug(slug: string): string | null {
+    if (EXCLUDED_GROUP_SLUGS.has(slug)) return null;
+    return REMAPPED_GROUP_SLUGS.get(slug) ?? slug;
+}
+
+/** True when the group itself should not be created in Photon. */
+export function isDroppedGroup(slug: string): boolean {
+    return EXCLUDED_GROUP_SLUGS.has(slug) || REMAPPED_GROUP_SLUGS.has(slug);
+}
+
 /** Insert records in batches */
 export async function batchInsert<T>(
     records: T[],
