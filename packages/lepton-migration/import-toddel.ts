@@ -3,8 +3,12 @@
  *
  * Standalone rather than a phase of the main migration: an issue references no
  * users, groups or events, so it needs none of the in-memory id maps the other
- * phases share. It reads `data/toddel-issues.json`, extracted from the Lepton
- * dump, so it does not need MySQL access either.
+ * phases share, and none of Lepton's MySQL either — the archive is public, so
+ * it is read straight from Lepton's REST API.
+ *
+ * Reading live rather than from the SQL dump is deliberate. The dump under
+ * `dumps/` stops at edition 19 while Lepton is on 23, so importing from it
+ * would silently drop four issues and go further out of date with every term.
  *
  * The covers and PDFs live in Lepton's Azure blob storage, which goes away
  * when Lepton is retired, so each file is copied into Photon's own object
@@ -13,16 +17,24 @@
  * from a file uploaded through the site.
  *
  * Safe to re-run: `edition` is the primary key, and an issue whose asset
- * already points at Photon is left alone instead of being copied again.
+ * already points at Photon is left alone instead of being copied again. That
+ * also makes this the way to pick up new issues later.
  *
  *   DATABASE_URL=... S3_...=... bun packages/lepton-migration/import-toddel.ts
  *   ... --commit    to actually write
  */
-import { readFile } from "node:fs/promises";
 import { S3ObjectStorageService } from "@photon/core/services/storage";
 import { schema } from "@photon/db";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { DatabaseAssetStorageService } from "../../apps/api/src/lib/storage";
+
+type LeptonIssue = {
+    edition: number;
+    title: string;
+    image: string | null;
+    pdf: string;
+    published_at: string;
+};
 
 type SourceIssue = {
     edition: number;
@@ -34,13 +46,48 @@ type SourceIssue = {
 
 const commit = process.argv.includes("--commit");
 const rootUrl = process.env.ROOT_URL ?? "https://photon.tihlde.org";
+const leptonUrl =
+    process.env.LEPTON_API_URL ??
+    "https://api.tihlde.org/toddel/?page_size=100";
 
-const issues: SourceIssue[] = JSON.parse(
-    await readFile(
-        new URL("./data/toddel-issues.json", import.meta.url),
-        "utf8",
-    ),
-);
+const leptonResponse = await fetch(leptonUrl);
+if (!leptonResponse.ok) {
+    throw new Error(
+        `Lepton returned ${leptonResponse.status} for the TÖDDEL archive`,
+    );
+}
+
+const payload = (await leptonResponse.json()) as {
+    count?: number;
+    results?: LeptonIssue[];
+};
+const leptonIssues = payload.results ?? [];
+
+if (leptonIssues.length === 0) {
+    throw new Error("Lepton returned no issues; refusing to run");
+}
+
+if (payload.count != null && payload.count !== leptonIssues.length) {
+    // One page is assumed to hold the whole archive. Say so loudly rather than
+    // importing a partial one if it ever outgrows the page size.
+    throw new Error(
+        `Lepton reports ${payload.count} issues but returned ${leptonIssues.length}; raise page_size`,
+    );
+}
+
+const issues: SourceIssue[] = leptonIssues.map((issue) => ({
+    edition: issue.edition,
+    title: issue.title,
+    sourceImageUrl: issue.image || null,
+    sourcePdfUrl: issue.pdf,
+    // Lepton stores edition 14 as `0024-04-19`. A four-digit year starting
+    // "00" is a typo for the 2000s, not a date in antiquity.
+    publishedAt: issue.published_at.startsWith("00")
+        ? `20${issue.published_at.slice(2)}`
+        : issue.published_at,
+}));
+
+console.log(`Found ${issues.length} issues in Lepton`);
 
 const db = drizzle(process.env.DATABASE_URL!, { schema });
 
