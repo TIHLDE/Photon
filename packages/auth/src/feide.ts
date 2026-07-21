@@ -6,11 +6,13 @@ import type {
     OAuth2UserInfo,
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import {
     account,
+    group,
+    groupMembership,
     studyProgram,
     studyProgramMembership,
 } from "@photon/db/schema";
@@ -179,7 +181,7 @@ export const syncFeideHook: (
         await ctx.db.transaction(async (tx) => {
             for (const feideGroup of groups) {
                 const sp = await tx
-                    .select({ id: studyProgram.id })
+                    .select({ id: studyProgram.id, slug: studyProgram.slug })
                     .from(studyProgram)
                     .where(eq(studyProgram.feideCode, feideGroup.code))
                     .limit(1);
@@ -191,38 +193,107 @@ export const syncFeideHook: (
                     continue;
                 }
 
-                const studyProgramId = sp[0].id;
+                const { id: studyProgramId, slug: programSlug } = sp[0];
 
-                const existing = await tx
-                    .select({
-                        userId: studyProgramMembership.userId,
-                        studyProgramId: studyProgramMembership.studyProgramId,
+                /**
+                 * Additive by design: an existing row is left exactly as it
+                 * is, start year included. Feide is asked with `showAll=true`
+                 * so that graduating does not revoke access, and rewriting or
+                 * deleting memberships here would undo that.
+                 */
+                await tx
+                    .insert(studyProgramMembership)
+                    .values({
+                        userId,
+                        studyProgramId,
+                        startYear: feideGroup.startYear,
                     })
-                    .from(studyProgramMembership)
-                    .where(
-                        and(
-                            eq(studyProgramMembership.userId, userId),
-                            eq(
-                                studyProgramMembership.studyProgramId,
-                                studyProgramId,
-                            ),
-                        ),
-                    )
-                    .limit(1);
+                    .onConflictDoNothing();
 
-                if (existing[0]) {
-                    continue;
-                }
-
-                await tx.insert(studyProgramMembership).values({
+                await syncDerivedStudyGroups(
+                    tx,
                     userId,
-                    studyProgramId,
-                    startYear: feideGroup.startYear,
-                });
+                    programSlug,
+                    feideGroup.startYear,
+                );
             }
         });
     }
 };
+
+/** The transaction handle `db.transaction` hands to its callback. */
+type Transaction = Parameters<
+    Parameters<NodePgDatabase<DbSchema>["transaction"]>[0]
+>[0];
+
+/**
+ * Mirror a Feide study programme onto the two groups that represent it.
+ *
+ * TIHLDE models a member's studies twice: as a study programme (this table,
+ * fed by Feide) and as a `study` plus a `studyyear` group. The groups are not
+ * decoration — 252 of the 273 priority pools inherited from Lepton target
+ * exactly those two types, so event registration priority breaks if they go
+ * missing. Feide is the authority; the groups are a projection of it, and
+ * nothing should edit them by hand.
+ *
+ * A study programme carries the same slug as its group, a convention the seed
+ * in `apps/api/src/db/seed/org.ts` already establishes, so no lookup table is
+ * needed.
+ *
+ * Additive like the membership above: leaving a programme never removes the
+ * group, because "én gang TIHLDE-medlem, alltid TIHLDE-medlem".
+ */
+export async function syncDerivedStudyGroups(
+    tx: Transaction,
+    userId: string,
+    programSlug: string,
+    startYear: number,
+): Promise<void> {
+    const studyYearSlug = String(startYear);
+
+    /**
+     * Cohort groups are pure labels, so a missing one is created on the fly —
+     * otherwise the first member of a new intake silently loses their year.
+     * Study groups are deliberately *not* created here: those are curated,
+     * carrying names, descriptions and images no code should invent.
+     */
+    await tx
+        .insert(group)
+        .values({
+            slug: studyYearSlug,
+            name: studyYearSlug,
+            // Upper case to match the values already in the table; see the
+            // note on `groupType`, which the column does not actually use.
+            type: "STUDYYEAR",
+            finesInfo: "",
+            finesActivated: false,
+        })
+        .onConflictDoNothing();
+
+    const existingGroups = await tx
+        .select({ slug: group.slug })
+        .from(group)
+        .where(inArray(group.slug, [programSlug, studyYearSlug]));
+
+    if (!existingGroups.some((g) => g.slug === programSlug)) {
+        console.warn(
+            `No group for study programme '${programSlug}'; skipping derived membership. Has the seed run?`,
+        );
+    }
+
+    const memberships = existingGroups.map((g) => ({
+        userId,
+        groupSlug: g.slug,
+        role: "member" as const,
+    }));
+
+    if (memberships.length > 0) {
+        await tx
+            .insert(groupMembership)
+            .values(memberships)
+            .onConflictDoNothing();
+    }
+}
 
 interface StudyProgram {
     code: ProgramCode;

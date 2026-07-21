@@ -19,6 +19,24 @@ import { type InferSelectModel, and, eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /**
+ * Group types whose membership is a projection of Feide, not an editable list.
+ *
+ * `syncDerivedStudyGroups` rebuilds these on every Feide login from the user's
+ * study programme, so an edit made here would either be silently reinstated or
+ * quietly contradict what NTNU reports. Refusing the write says so out loud
+ * instead of letting the two drift apart.
+ *
+ * Compared case-insensitively: the column is a varchar rather than the
+ * `groupType` enum, and the rows migrated from Lepton are upper case.
+ */
+const DERIVED_GROUP_TYPES = new Set(["study", "studyyear"]);
+
+/** True when membership of this group is derived and must not be hand-edited. */
+export function isDerivedGroupType(type: string): boolean {
+    return DERIVED_GROUP_TYPES.has(type.toLowerCase());
+}
+
+/**
  * Get group membership for a user, including their role (member/leader).
  * Returns null if user is not a member.
  */

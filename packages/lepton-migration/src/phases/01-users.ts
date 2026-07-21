@@ -1,4 +1,5 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { eq } from "drizzle-orm";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { query } from "../mysql";
@@ -72,8 +73,64 @@ export async function migrateUsers(
     // Generate a single hashed password to reuse (users will auth via Feide)
     const placeholderPassword = crypto.randomUUID() + crypto.randomUUID();
 
+    /**
+     * Accounts can already exist before the migration runs: self-registration
+     * is open to @stud.ntnu.no addresses and a Feide login creates a user on
+     * its first callback. `createUser` fails on the unique email for those,
+     * and counting that as "skipped" would leave the member out of
+     * `userIdMap` — which silently discards their group memberships, event
+     * registrations, strikes, payments, favorites, form answers, reactions
+     * and notifications in every later phase. Adopt the existing row instead.
+     */
+    const existingUsers = await db
+        .select({
+            id: schema.user.id,
+            email: schema.user.email,
+            username: schema.user.username,
+        })
+        .from(schema.user);
+
+    const existingByEmail = new Map(
+        existingUsers.map((r) => [r.email.toLowerCase().trim(), r]),
+    );
+
     let created = 0;
+    let adopted = 0;
     for (const u of uniqueUsers) {
+        const existing = existingByEmail.get(u.email.toLowerCase().trim());
+        if (existing) {
+            userIdMap.set(u.user_id, existing.id);
+            adopted++;
+
+            /**
+             * Later phases and `backfill-contact-persons.ts` resolve members
+             * by the Lepton user_id kept in `username`. A self-registered
+             * account derives its username from the email local part, so it
+             * usually already agrees — but never assume it does.
+             */
+            if (existing.username !== u.user_id) {
+                try {
+                    await db
+                        .update(schema.user)
+                        .set({
+                            username: u.user_id,
+                            displayUsername: u.user_id,
+                        })
+                        .where(eq(schema.user.id, existing.id));
+                } catch (err) {
+                    console.warn(
+                        `  ADOPT could not set username ${u.user_id} on existing ${existing.email}`,
+                        err,
+                    );
+                }
+            }
+
+            console.log(
+                `  ADOPT existing account for ${u.user_id} (${existing.email})`,
+            );
+            continue;
+        }
+
         try {
             const result = await auth.api.createUser({
                 body: {
@@ -107,7 +164,7 @@ export async function migrateUsers(
         }
     }
 
-    console.log(`  Created ${created} auth users`);
+    console.log(`  Created ${created} auth users, adopted ${adopted} existing`);
 
     // Collect all unique allergies across users
     const allergySet = new Map<string, string>(); // slug -> label
@@ -205,6 +262,6 @@ export async function migrateUsers(
     }
 
     console.log(
-        `  Phase 1 complete: ${created} users, ${skippedUsers.size} skipped`,
+        `  Phase 1 complete: ${created} users, ${adopted} adopted, ${skippedUsers.size} skipped`,
     );
 }
