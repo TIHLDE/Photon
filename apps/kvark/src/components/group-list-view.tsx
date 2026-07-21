@@ -18,14 +18,21 @@ function flattenBranches(branches: Branch[]): SimpleSection[] {
     });
 }
 
-export function GroupTreeMobile({ tree }: { tree: GroupTreeInput }) {
-    const sections = [...tree.main, ...flattenBranches(tree.branches)];
+/**
+ * Flat, section-by-section card listing of every group. Doubles as the mobile
+ * rendering of the hierarchy view, where the org chart is too wide to read.
+ */
+export function GroupListView({ tree }: { tree: GroupTreeInput }) {
+    const sections = [...tree.main, ...flattenBranches(tree.branches)].filter(
+        (section) => section.items.length > 0,
+    );
+
     return (
         <div className="flex flex-col gap-6">
             {sections.map((section) => (
                 <section key={section.id} className="flex flex-col gap-3">
                     <h2 className="text-lg font-semibold">{section.label}</h2>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {section.items.map((item) => (
                             <Link
                                 key={item.slug}
@@ -33,7 +40,10 @@ export function GroupTreeMobile({ tree }: { tree: GroupTreeInput }) {
                                 to="/grupper/$slug"
                                 params={{ slug: item.slug }}
                             >
-                                <Card size="sm" className="cursor-pointer">
+                                <Card
+                                    size="sm"
+                                    className="h-full cursor-pointer"
+                                >
                                     <CardContent className="flex items-center gap-3">
                                         <GroupIdentity {...item} />
                                     </CardContent>

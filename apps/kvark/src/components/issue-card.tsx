@@ -4,10 +4,16 @@ export type IssueCardProps = {
     title: string;
     edition: string;
     coverUrl?: string;
+    pdfUrl?: string;
 };
 
-export function IssueCard({ title, edition, coverUrl }: IssueCardProps) {
-    return (
+export function IssueCard({
+    title,
+    edition,
+    coverUrl,
+    pdfUrl,
+}: IssueCardProps) {
+    const card = (
         <Card size="sm">
             <div className="aspect-[3/4] w-full overflow-hidden">
                 {coverUrl ? (
@@ -15,6 +21,7 @@ export function IssueCard({ title, edition, coverUrl }: IssueCardProps) {
                         src={coverUrl}
                         alt={title}
                         className="size-full object-cover"
+                        loading="lazy"
                     />
                 ) : (
                     <div className="size-full bg-muted" aria-hidden />
@@ -25,5 +32,20 @@ export function IssueCard({ title, edition, coverUrl }: IssueCardProps) {
                 <p className="text-muted-foreground">{edition}</p>
             </CardHeader>
         </Card>
+    );
+
+    if (!pdfUrl) return card;
+
+    return (
+        <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            // The card already shows the title, so the link is named for what
+            // it does instead of repeating the heading to a screen reader.
+            aria-label={`Les ${title} (PDF, åpnes i ny fane)`}
+        >
+            {card}
+        </a>
     );
 }
