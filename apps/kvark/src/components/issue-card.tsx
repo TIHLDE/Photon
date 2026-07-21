@@ -15,18 +15,22 @@ export function IssueCard({
 }: IssueCardProps) {
     const card = (
         <Card size="sm">
-            <div className="aspect-[3/4] w-full overflow-hidden">
-                {coverUrl ? (
-                    <img
-                        src={coverUrl}
-                        alt={title}
-                        className="size-full object-cover"
-                        loading="lazy"
-                    />
-                ) : (
-                    <div className="size-full bg-muted" aria-hidden />
-                )}
-            </div>
+            {/*
+             * The cover is a direct child on purpose: Card drops its top
+             * padding and rounds the top corners only for an `img:first-child`,
+             * so wrapping it in an aspect-ratio div left a band of card above
+             * the image. The ratio goes on the image itself instead.
+             */}
+            {coverUrl ? (
+                <img
+                    src={coverUrl}
+                    alt={title}
+                    className="aspect-[3/4] w-full object-cover"
+                    loading="lazy"
+                />
+            ) : (
+                <div className="aspect-[3/4] w-full bg-muted" aria-hidden />
+            )}
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 <p className="text-muted-foreground">{edition}</p>
