@@ -29,7 +29,11 @@ export function IssueCard({
                     loading="lazy"
                 />
             ) : (
-                <div className="aspect-[3/4] w-full bg-muted" aria-hidden />
+                <div
+                    data-slot="card-media"
+                    className="aspect-[3/4] w-full bg-muted"
+                    aria-hidden
+                />
             )}
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
