@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { isDerivedGroupType } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -47,6 +48,12 @@ export const updateMemberRoleRoute = route().patch(
         if (!group) {
             throw new HTTPException(404, {
                 message: `Group with slug "${groupSlug}" not found`,
+            });
+        }
+
+        if (isDerivedGroupType(group.type)) {
+            throw new HTTPException(400, {
+                message: `Membership of "${groupSlug}" follows the member's Feide study programme and cannot be edited directly`,
             });
         }
 
