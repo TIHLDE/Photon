@@ -51,7 +51,7 @@ function StudiesPage() {
                     size="lg"
                     className="mt-2"
                     nativeButton={false}
-                    render={<Link to="/bedrift/kontakt" />}
+                    render={<Link to="/bedrift" hash="kontakt" />}
                 >
                     Kontakt oss
                 </Button>
