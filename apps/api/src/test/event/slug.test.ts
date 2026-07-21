@@ -37,6 +37,28 @@ describe("buildEventSlugBase", () => {
         ).toBe("sondagsplask-2026-03-17");
     });
 
+    it("uses the Oslo date, not the UTC one, for midnight starts", () => {
+        // 15 Jan 00:00 in Oslo is 14 Jan 23:00 UTC. Slugging off the UTC date
+        // put 22 of TIHLDE's events on the wrong day, and made the API import
+        // and the MySQL migration disagree about the same event.
+        expect(
+            buildEventSlugBase(
+                "TIHLDE til Åre",
+                new Date("2026-01-15T00:00:00+01:00"),
+            ),
+        ).toBe("tihlde-til-are-2026-01-15");
+    });
+
+    it("uses the Oslo date during summer time too", () => {
+        // +02:00 in July, so midnight local is 22:00 UTC the previous day.
+        expect(
+            buildEventSlugBase(
+                "Sommerfest",
+                new Date("2026-07-04T00:00:00+02:00"),
+            ),
+        ).toBe("sommerfest-2026-07-04");
+    });
+
     it("falls back to 'event' when a title slugs to nothing", () => {
         // The migration has titles made only of emoji or punctuation.
         expect(buildEventSlugBase("💜", new Date("2026-03-17T18:00:00Z"))).toBe(
