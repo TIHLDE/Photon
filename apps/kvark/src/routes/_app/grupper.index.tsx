@@ -75,6 +75,8 @@ function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
             sectionFrom("undergrupper", "Undergrupper", 3, groups, "SUBGROUP"),
             sectionFrom("komiteer", "Komitéer", 3, groups, "COMMITTEE"),
         ],
+        // Sports teams sit alongside interest groups rather than inside them:
+        // same level in the organisation, but a category of their own.
         branches: [
             sectionFrom(
                 "interessegrupper",
@@ -83,6 +85,7 @@ function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
                 groups,
                 "INTERESTGROUP",
             ),
+            sectionFrom("idrettslag", "Idrettslag", 2, groups, "SPORTSTEAM"),
         ],
     };
 }
