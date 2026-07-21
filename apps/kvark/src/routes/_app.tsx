@@ -116,7 +116,7 @@ function AppLayout() {
                                   {
                                       kind: "internal",
                                       label: "QR koder",
-                                      link: linkOptions({ to: "/" }),
+                                      link: linkOptions({ to: "/qr-koder" }),
                                       description: "Generer dine egne QR koder",
                                   },
                                   {
