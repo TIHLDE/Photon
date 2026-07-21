@@ -31,7 +31,6 @@ import { IconActionButton } from "#/components/icon-action-button";
 import { ShareButton } from "#/components/share-button";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import {
-    DEFAULT_EVENT_IMAGE,
     deriveRegistrationState,
     formatEventDate,
     formatEventPrice,
@@ -109,7 +108,7 @@ function EventDetailPage() {
                     </Button>
                 </div>
             }
-            hero={<DetailHero imageUrl={event.image || DEFAULT_EVENT_IMAGE} />}
+            hero={<DetailHero imageUrl={event.image ?? undefined} />}
             header={
                 <>
                     <div className="flex items-center justify-between gap-2">

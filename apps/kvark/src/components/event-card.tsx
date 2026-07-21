@@ -2,7 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { CalendarDays, MapPin, UsersRound } from "lucide-react";
 
 import { ListCard } from "#/components/list-card";
-import { DEFAULT_EVENT_IMAGE } from "#/lib/event";
 
 export type EventCardProps = {
     slug: string;
@@ -46,7 +45,7 @@ export function EventCard({
         <ListCard
             render={<Link to="/arrangementer/$slug" params={{ slug }} />}
             title={title}
-            imageUrl={imageUrl || DEFAULT_EVENT_IMAGE}
+            imageUrl={imageUrl}
             imageBadge={organizer}
             meta={meta}
         />

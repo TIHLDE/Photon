@@ -7,6 +7,8 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 
+import { DEFAULT_COVER_IMAGE } from "#/lib/image";
+
 export type NewsCardProps = {
     slug: string;
     title: string;
@@ -32,19 +34,11 @@ export function NewsCard({
              * the top corners only for an `img:first-child`, so a ratio wrapper
              * leaves a strip of card above the image. The ratio goes here.
              */}
-            {imageUrl ? (
-                <img
-                    src={imageUrl}
-                    alt=""
-                    className="aspect-[16/7] w-full object-cover"
-                />
-            ) : (
-                <div
-                    data-slot="card-media"
-                    className="aspect-[16/7] w-full bg-muted"
-                    aria-hidden
-                />
-            )}
+            <img
+                src={imageUrl || DEFAULT_COVER_IMAGE}
+                alt=""
+                className="aspect-[16/7] w-full object-cover"
+            />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{publishedAt}</CardDescription>

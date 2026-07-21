@@ -3,6 +3,8 @@ import { useRender } from "@tihlde/ui/hooks/use-render";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { DEFAULT_COVER_IMAGE } from "#/lib/image";
+
 export type ListCardMetaRow = {
     icon: LucideIcon;
     text: ReactNode;
@@ -30,14 +32,17 @@ export function ListCard({
                 "flex flex-col gap-3 overflow-hidden rounded-2xl bg-card sm:flex-row sm:gap-3 sm:overflow-visible sm:bg-transparent sm:p-2 sm:transition-colors sm:hover:bg-muted/50",
             children: (
                 <>
-                    <div className="relative aspect-[16/7] w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:rounded-lg">
-                        {imageUrl ? (
-                            <img
-                                src={imageUrl}
-                                alt=""
-                                className="size-full object-cover"
-                            />
-                        ) : null}
+                    {/*
+                     * `self-start` keeps the media at its 16/7 ratio: as a
+                     * flex child it would otherwise stretch to the row height,
+                     * making covers taller on cards with two-line titles.
+                     */}
+                    <div className="relative aspect-[16/7] w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg">
+                        <img
+                            src={imageUrl || DEFAULT_COVER_IMAGE}
+                            alt=""
+                            className="size-full object-cover"
+                        />
                         {imageBadge ? (
                             <Badge className="absolute right-2 bottom-2">
                                 {imageBadge}
