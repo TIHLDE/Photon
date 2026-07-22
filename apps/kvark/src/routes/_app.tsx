@@ -22,8 +22,9 @@ function AppLayout() {
         : null;
     const isAuthenticated = Boolean(currentUser);
 
-    // Mock this for now
-    const isNewStudentTime = false;
+    // Vis "Ny student" i navmenyen fra og med juni til og med august
+    const month = new Date().getMonth();
+    const isNewStudentTime = month >= 5 && month <= 7;
 
     const navItems = useMemo(
         () =>
