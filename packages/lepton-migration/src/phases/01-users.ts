@@ -41,18 +41,49 @@ export async function migrateUsers(
 ): Promise<void> {
     console.log("\n=== Phase 1: Users ===");
 
-    const users = await query<LeptonUser>(`
-        SELECT
-            cu.*,
-            at.key,
-            ub.description,
-            ub.gitHub_link,
-            ub.linkedIn_link
-        FROM content_user cu
-        LEFT JOIN authtoken_token at ON at.user_id = cu.user_id
-        LEFT JOIN content_userbio ub ON ub.user_id = cu.user_id
-        ORDER BY cu.created_at ASC
-    `);
+    /**
+     * Plain per-table reads with an in-code join, so the phase works both
+     * against MySQL and against the JSON table export (which serves single
+     * tables only). authtoken_token and content_userbio are not part of the
+     * export — legacy tokens no longer exist in Photon's schema, and bios
+     * only matter for users being created, so both degrade gracefully.
+     */
+    const users = await query<LeptonUser>("SELECT * FROM content_user");
+
+    type LeptonBio = {
+        user_id: string;
+        description: string | null;
+        gitHub_link: string | null;
+        linkedIn_link: string | null;
+    };
+    let bioByUser = new Map<string, LeptonBio>();
+    try {
+        const bios = await query<LeptonBio>("SELECT * FROM content_userbio");
+        bioByUser = new Map(bios.map((b) => [b.user_id, b]));
+    } catch {
+        console.warn("  content_userbio unavailable — bios skipped");
+    }
+    let tokenByUser = new Map<string, string>();
+    try {
+        const tokens = await query<{ user_id: string; key: string }>(
+            "SELECT * FROM authtoken_token",
+        );
+        tokenByUser = new Map(tokens.map((t) => [t.user_id, t.key]));
+    } catch {
+        console.warn("  authtoken_token unavailable — legacy tokens skipped");
+    }
+    for (const u of users) {
+        const bio = bioByUser.get(u.user_id);
+        u.key = tokenByUser.get(u.user_id) ?? null;
+        u.description = bio?.description ?? null;
+        u.gitHub_link = bio?.gitHub_link ?? null;
+        u.linkedIn_link = bio?.linkedIn_link ?? null;
+    }
+
+    // Duplicate-email preference below keeps the FIRST occurrence, which the
+    // SQL used to guarantee via ORDER BY — the JSON export pages by primary
+    // key, so the ordering has to be applied here.
+    users.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
 
     console.log(`  Found ${users.length} users in Lepton`);
 
@@ -107,8 +138,19 @@ export async function migrateUsers(
              * by the Lepton user_id kept in `username`. A self-registered
              * account derives its username from the email local part, so it
              * usually already agrees — but never assume it does.
+             *
+             * Only ever fill an EMPTY username: import-users deliberately
+             * sanitized seven legacy ids that violate Better Auth's rules
+             * (`'asbjørn loven'` → `asbjorn.loven`, duplicate human `sunnhø`
+             * → `sunnho.2`), and overwriting those with the raw Lepton id
+             * would undo that. For them, email carries the identity.
              */
-            if (existing.username !== u.user_id) {
+            if (existing.username && existing.username !== u.user_id) {
+                console.warn(
+                    `  ADOPT keeps username "${existing.username}" (lepton id "${u.user_id}") for ${existing.email}`,
+                );
+            }
+            if (!existing.username) {
                 try {
                     await db
                         .update(schema.user)

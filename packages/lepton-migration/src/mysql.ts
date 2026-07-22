@@ -69,6 +69,11 @@ export async function query<T = Record<string, unknown>>(
             );
         }
         const rows = (await file.json()) as Record<string, unknown>[];
+        // verify.ts counts via `SELECT COUNT(*) as cnt` — serve the length
+        // rather than the rows so its old-side numbers stay meaningful.
+        if (/SELECT\s+COUNT\(\*\)/i.test(sql)) {
+            return [{ cnt: rows.length }] as T[];
+        }
         return rows.map(reviveDates) as T[];
     }
 

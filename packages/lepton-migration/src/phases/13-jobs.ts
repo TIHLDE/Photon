@@ -30,7 +30,32 @@ export async function migrateJobs(db: NodePgDatabase<DbSchema>): Promise<void> {
     const jobs = await query<LeptonJobPost>("SELECT * FROM career_jobpost");
     console.log(`  Found ${jobs.length} job posts`);
 
-    const records = jobs.map((j) => ({
+    /**
+     * Postings can already exist: import-news-jobs.ts loaded the history
+     * from Lepton's public API, and the table has no natural key — inserting
+     * again would duplicate all of them. Skip by (title, created_at), the
+     * same identity the importer dedupes on. Nothing downstream references
+     * job posts, so no map entry is needed.
+     */
+    const existingJobs = await db
+        .select({
+            title: schema.jobPost.title,
+            createdAt: schema.jobPost.createdAt,
+        })
+        .from(schema.jobPost);
+    const existingKeys = new Set(
+        existingJobs.map((j) => `${j.title} ${j.createdAt.getTime()}`),
+    );
+
+    const remaining = jobs.filter(
+        (j) =>
+            !existingKeys.has(
+                `${j.title.slice(0, 200)} ${j.created_at.getTime()}`,
+            ),
+    );
+    const skipped = jobs.length - remaining.length;
+
+    const records = remaining.map((j) => ({
         id: crypto.randomUUID(),
         title: j.title.slice(0, 200),
         ingress: (j.ingress || "").slice(0, 800),
@@ -55,6 +80,8 @@ export async function migrateJobs(db: NodePgDatabase<DbSchema>): Promise<void> {
         await db.insert(schema.jobPost).values(batch).onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${records.length} job posts`);
+    console.log(
+        `  Inserted ${records.length} job posts, skipped ${skipped} existing`,
+    );
     console.log("  Phase 13 complete");
 }
