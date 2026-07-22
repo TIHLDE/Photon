@@ -407,6 +407,20 @@ describe("group members", () => {
                 const userIds = json.map((m) => m.userId);
                 expect(userIds).toContain(member1.user.id);
                 expect(userIds).toContain(member2.user.id);
+
+                // Each member includes public user info for display
+                const m1 = json.find((m) => m.userId === member1.user.id);
+                const m2 = json.find((m) => m.userId === member2.user.id);
+                expect(m1?.user).toMatchObject({
+                    id: member1.user.id,
+                    name: "Member 1",
+                });
+                expect(m2?.user).toMatchObject({
+                    id: member2.user.id,
+                    name: "Member 2",
+                });
+                // No sensitive fields leak through the user relation
+                expect(m1?.user).not.toHaveProperty("email");
             },
             500_000,
         );

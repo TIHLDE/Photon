@@ -299,6 +299,7 @@ export function createAuth(options: CreateAuthOptions) {
                         slug: g.groupSlug,
                         name: g.group.name,
                         type: g.group.type,
+                        imageUrl: g.group.imageUrl,
                         role: g.role,
                     })),
                 };

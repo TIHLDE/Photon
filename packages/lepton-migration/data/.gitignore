@@ -1,3 +1,4 @@
 # The user export holds personal data for ~1700 members and must never be
 # committed. It is refetched from Lepton's export endpoint on demand.
 lepton-users.json
+lepton-memberships.json

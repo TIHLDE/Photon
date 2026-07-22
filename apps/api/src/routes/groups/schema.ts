@@ -186,6 +186,16 @@ export const memberSchema = Schema(
         updatedAt: z
             .string()
             .meta({ description: "Membership update timestamp" }),
+        user: z
+            .object({
+                id: z.string().meta({ description: "User ID" }),
+                name: z.string().meta({ description: "User display name" }),
+                image: z
+                    .string()
+                    .nullable()
+                    .meta({ description: "User profile image URL" }),
+            })
+            .meta({ description: "Public user info for the member" }),
     }),
 );
 
