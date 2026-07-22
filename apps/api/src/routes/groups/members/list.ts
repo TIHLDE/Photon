@@ -38,11 +38,19 @@ export const listMembersRoute = route().get(
             });
         }
 
-        // Get members
-        const members = await db
-            .select()
-            .from(schema.groupMembership)
-            .where(eq(schema.groupMembership.groupSlug, groupSlug));
+        // Get members with their public user info (name/image for display)
+        const members = await db.query.groupMembership.findMany({
+            where: eq(schema.groupMembership.groupSlug, groupSlug),
+            with: {
+                user: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    },
+                },
+            },
+        });
 
         return c.json(members);
     },

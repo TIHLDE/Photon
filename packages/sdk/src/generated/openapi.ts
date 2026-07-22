@@ -2425,6 +2425,15 @@ export interface components {
             createdAt: string;
             /** @description Membership update timestamp */
             updatedAt: string;
+            /** @description Public user info for the member */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
         };
         GroupMemberList: components["schemas"]["GroupMember"][];
         GroupMembership: {
