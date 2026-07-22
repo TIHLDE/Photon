@@ -1,19 +1,19 @@
 /**
- * Imports TIHLDE's upcoming events from Lepton's public REST API into Photon.
+ * Imports ALL of TIHLDE's events — the full history — from Lepton's public
+ * REST API into Photon.
  *
- * A stopgap so there is real content to build against before the full MySQL
- * migration runs. Deliberately narrow:
+ * Supersedes `import-upcoming.ts`, which brought the 28 upcoming events before
+ * users existed. Two things have changed since: every event comes over, and
+ * contact persons are resolved inline against the imported users (matched by
+ * email via the user export, the one key that survived the legacy-username
+ * sanitizing) instead of being deferred to a backfill.
  *
- *   - only events that have not expired
- *   - no users, registrations, payments, strikes or forms — the public API does
- *     not expose them, and contact_person_id stays null
- *   - ON CONFLICT DO NOTHING everywhere, so re-running changes nothing
+ * Still no registrations, payments, strikes or forms — the public API does not
+ * expose them; they belong to the MySQL migration. ON CONFLICT DO NOTHING
+ * everywhere, so re-running changes nothing and the 28 already-imported events
+ * are recognised by slug rather than duplicated.
  *
- * Slugs come from @photon/core/slug, the same function the API and the MySQL
- * migration use, so the migration's ON CONFLICT (slug) recognises these rows
- * instead of duplicating them.
- *
- * Usage: DATABASE_URL=... bun import-upcoming.ts [--commit]
+ * Usage: DATABASE_URL=... bun import-events.ts [--commit]
  * Without --commit it rolls back and only reports what it would have written.
  */
 import { buildEventSlugBase, slugifyText } from "@photon/core/slug";
@@ -77,14 +77,22 @@ const main = async () => {
     const details =
         await read<Record<string, Record<string, unknown>>>("events_detail");
 
-    const upcoming = events.filter((e) => !e.expired);
+    const upcoming = events; // hele historikken, navnet beholdt for diff-ens skyld
     console.log(
-        `Kilde: ${categories.length} kategorier, ${groups.length} grupper, ${upcoming.length} kommende arrangementer\n`,
+        `Kilde: ${categories.length} kategorier, ${groups.length} grupper, ${upcoming.length} arrangementer (hele historikken)\n`,
+    );
+
+    // Contact persons resolve inline now that the users exist in Photon.
+    // Matched by email via the user export — the one key that survived the
+    // legacy-username sanitizing ("sunnhø" is sunnho.2 in Photon).
+    const { users: leptonUsers } = (await Bun.file(
+        `${import.meta.dir}/data/lepton-users.json`,
+    ).json()) as { users: { user_id: string; email: string }[] };
+    const emailByLeptonId = new Map(
+        leptonUsers.map((u) => [u.user_id, u.email.trim().toLowerCase()]),
     );
 
     const written: string[] = [];
-    /** slug -> Lepton user_id of the contact person, for the later backfill. */
-    const contactPersons: Record<string, string> = {};
 
     await db
         .transaction(async (tx) => {
@@ -137,6 +145,14 @@ const main = async () => {
             console.log(
                 `grupper:       ${insertedGroups.length} nye av ${groupRows.length}`,
             );
+
+            const photonUsers = await tx
+                .select({ id: schema.user.id, email: schema.user.email })
+                .from(schema.user);
+            const userIdByEmail = new Map(
+                photonUsers.map((u) => [u.email.trim().toLowerCase(), u.id]),
+            );
+            let unresolvedContacts = 0;
 
             const knownGroups = new Set(
                 (
@@ -200,8 +216,16 @@ const main = async () => {
                     requiresSigningUp: asBool(d.sign_up),
                     priceMinor: price != null ? Math.round(price * 100) : null,
                     reactionsAllowed: asBool(d.emojis_allowed),
-                    // Left null on purpose: users are not migrated yet.
-                    contactPersonId: null,
+                    contactPersonId: (() => {
+                        const contact = d.contact_person as {
+                            user_id?: string;
+                        } | null;
+                        if (!contact?.user_id) return null;
+                        const email = emailByLeptonId.get(contact.user_id);
+                        const id = email ? userIdByEmail.get(email) : undefined;
+                        if (!id) unresolvedContacts++;
+                        return id ?? null;
+                    })(),
                     createdByUserId: null,
                     organizerGroupSlug:
                         organizerSlug && knownGroups.has(organizerSlug)
@@ -210,13 +234,6 @@ const main = async () => {
                     enforcesPreviousStrikes: asBool(d.can_cause_strikes),
                 });
                 written.push(slug);
-
-                // The public API gives us the contact person's Lepton user_id, but
-                // there is no Photon user to point at yet. Record it so
-                // backfill-contact-persons.ts can join it up once the MySQL
-                // migration has created the users (it stores user_id as username).
-                const contact = d.contact_person as { user_id?: string } | null;
-                if (contact?.user_id) contactPersons[slug] = contact.user_id;
             }
 
             const insertedEvents = await tx
@@ -244,17 +261,7 @@ const main = async () => {
     for (const s of written.slice(0, 8)) console.log(`  ${s}`);
     if (written.length > 8) console.log(`  ... og ${written.length - 8} til`);
 
-    // Written into the repo, not a temp dir: the backfill happens days later,
-    // after the user migration, and a file in /tmp would not survive.
-    const manifest = `${import.meta.dir}/data/imported-events.json`;
-    await Bun.write(
-        manifest,
-        `${JSON.stringify({ slugs: written, contactPersons }, null, 4)}\n`,
-    );
-    console.log(
-        `\n${written.length} slugger og ${Object.keys(contactPersons).length} kontaktpersoner skrevet til`,
-    );
-    console.log(`  packages/lepton-migration/data/imported-events.json`);
+    console.log(`\n${written.length} slugger behandlet`);
 };
 
 await main();
