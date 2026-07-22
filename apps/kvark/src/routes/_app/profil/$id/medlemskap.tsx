@@ -1,6 +1,7 @@
 import { authQueryOptions } from "#/api/auth";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
 import {
@@ -44,6 +45,17 @@ function RouteComponent() {
                         size="sm"
                         className="flex-row items-center gap-3 px-3"
                     >
+                        <Avatar className="size-10 shrink-0">
+                            {group.imageUrl ? (
+                                <AvatarImage
+                                    src={group.imageUrl}
+                                    alt={group.name}
+                                />
+                            ) : null}
+                            <AvatarFallback>
+                                {group.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
                         <div className="flex min-w-0 flex-1 flex-col">
                             <span className="truncate font-medium">
                                 {group.name}

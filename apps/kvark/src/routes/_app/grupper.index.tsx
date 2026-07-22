@@ -57,6 +57,7 @@ type ApiGroup = {
     slug: string;
     type: string;
     contactEmail: string | null;
+    imageUrl: string | null;
 };
 
 function sectionFrom(
@@ -76,6 +77,7 @@ function sectionFrom(
                 name: g.name,
                 slug: g.slug,
                 email: g.contactEmail ?? undefined,
+                logoUrl: g.imageUrl ?? undefined,
             })),
     };
 }
