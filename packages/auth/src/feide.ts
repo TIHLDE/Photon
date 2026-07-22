@@ -15,6 +15,7 @@ import {
     groupMembership,
     studyProgram,
     studyProgramMembership,
+    user,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
 
@@ -68,6 +69,13 @@ interface OpenIDProfile {
      * Email address of the authenticated user. Requires the email attribute group.
      */
     email: string;
+    /**
+     * Secondary user identifiers, e.g. `["feide:mathstr@ntnu.no"]`. Requires
+     * the userid scope. The local part is the NTNU username — the same value
+     * Lepton stored as `user_id`, and therefore what the migration put in
+     * `username`.
+     */
+    "https://n.feide.no/claims/userid_sec"?: string[];
 }
 
 /**
@@ -104,7 +112,7 @@ interface FeideGroup {
  * flow cannot start. A conditional spread in the plugins array would instead
  * widen the tuple and silently drop inferred fields like `banned`.
  */
-export const feidePlugin = () =>
+export const feidePlugin = (db: NodePgDatabase<DbSchema>) =>
     genericOAuth({
         config:
             env.FEIDE_CLIENT_ID && env.FEIDE_CLIENT_SECRET
@@ -122,7 +130,7 @@ export const feidePlugin = () =>
                               "groups-edu",
                               "email",
                           ],
-                          getUserInfo,
+                          getUserInfo: createGetUserInfo(db),
                       },
                   ]
                 : [],
@@ -350,29 +358,108 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
 }
 
 /**
- * Creates a User object from Feide OpenID profile
- * @param accessToken Access token with "openid" scope from Feide
+ * Extracts the NTNU username from a Feide profile: `feide:mathstr@ntnu.no`
+ * becomes `mathstr`. Identical to the rule Lepton used when it set `user_id`,
+ * which is what the migration stored as `username` — the whole point is that
+ * the two derive the same value. Exported for testing.
  */
-async function getUserInfo(tokens: OAuth2Tokens): Promise<OAuth2UserInfo> {
-    if (!tokens.accessToken) {
-        throw new Error("No access token provided");
+export function feideUsernameOf(profile: {
+    "https://n.feide.no/claims/userid_sec"?: string[];
+}): string | null {
+    for (const id of profile["https://n.feide.no/claims/userid_sec"] ?? []) {
+        if (id.startsWith("feide:")) {
+            const local = id.slice("feide:".length).split("@")[0];
+            if (local) return local.toLowerCase();
+        }
     }
-
-    const response = await fetch("https://auth.dataporten.no/openid/userinfo", {
-        headers: { Authorization: `Bearer ${tokens.accessToken}` },
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to fetch user info");
-    }
-
-    const profile = (await response.json()) as OpenIDProfile;
-
-    return {
-        id: profile.sub,
-        name: profile.name,
-        email: profile.email,
-        emailVerified: true,
-        image: undefined,
-    };
+    return null;
 }
+
+/**
+ * The email a migrated account should be resolved by, or null to use Feide's.
+ *
+ * Better Auth matches a first-time OAuth login to an existing user by email
+ * alone. Most migrated members (996 of 1686) registered in Lepton with a
+ * personal address, while Feide hands us their NTNU one — so the lookup misses
+ * and they would get a second, empty account while their history sits on the
+ * migrated one.
+ *
+ * Feide has already authenticated the NTNU username, and the migration stored
+ * exactly that as `username`. When it names a user with no Feide link yet,
+ * returning that user's stored email makes Better Auth's own email match land
+ * on the right account. Exported for testing.
+ *
+ * Only accounts without an existing Feide link are considered: after the first
+ * login the provider/sub pair identifies the user before email is consulted,
+ * and the guard closes the edge where an old hand-picked Lepton username
+ * happens to equal someone else's NTNU username.
+ */
+export async function resolveMigratedEmail(
+    db: NodePgDatabase<DbSchema>,
+    profile: OpenIDProfile,
+): Promise<string | null> {
+    const username = feideUsernameOf(profile);
+    if (!username) {
+        return null;
+    }
+
+    const [match] = await db
+        .select({ id: user.id, email: user.email })
+        .from(user)
+        .where(eq(user.username, username))
+        .limit(1);
+
+    if (!match) {
+        return null;
+    }
+
+    const [feideLink] = await db
+        .select({ id: account.id })
+        .from(account)
+        .where(
+            and(
+                eq(account.userId, match.id),
+                eq(account.providerId, FEIDE_PROVIDER_ID),
+            ),
+        )
+        .limit(1);
+
+    return feideLink ? null : match.email;
+}
+
+/**
+ * Creates the profile fetcher for the Feide provider.
+ *
+ * Needs the database because a first-time login may belong to a migrated
+ * member: see {@link resolveMigratedEmail}.
+ */
+const createGetUserInfo =
+    (db: NodePgDatabase<DbSchema>) =>
+    async (tokens: OAuth2Tokens): Promise<OAuth2UserInfo> => {
+        if (!tokens.accessToken) {
+            throw new Error("No access token provided");
+        }
+
+        const response = await fetch(
+            "https://auth.dataporten.no/openid/userinfo",
+            {
+                headers: { Authorization: `Bearer ${tokens.accessToken}` },
+            },
+        );
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch user info");
+        }
+
+        const profile = (await response.json()) as OpenIDProfile;
+
+        const migratedEmail = await resolveMigratedEmail(db, profile);
+
+        return {
+            id: profile.sub,
+            name: profile.name,
+            email: migratedEmail ?? profile.email,
+            emailVerified: true,
+            image: undefined,
+        };
+    };
