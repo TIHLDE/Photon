@@ -15,6 +15,7 @@ interface LeptonRegistration {
     user_id: string;
     is_on_wait: number;
     has_attended: number;
+    allow_photo: number;
     created_at: Date;
     updated_at: Date;
 }
@@ -34,6 +35,7 @@ export async function migrateRegistrations(
         userId: string;
         status: "registered" | "waitlisted" | "attended";
         attendedAt: Date | null;
+        allowPhoto: boolean;
         createdAt: Date;
         updatedAt: Date;
     }> = [];
@@ -54,6 +56,7 @@ export async function migrateRegistrations(
             userId: newUserId,
             status,
             attendedAt: r.has_attended ? r.updated_at : null,
+            allowPhoto: Boolean(r.allow_photo),
             createdAt: r.created_at,
             updatedAt: r.updated_at,
         });

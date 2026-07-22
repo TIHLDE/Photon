@@ -363,6 +363,7 @@ export async function resolveRegistrationsForEvent(
                     createdAt: registration.createdAt,
                     updatedAt: new Date(),
                     attendedAt: null,
+                    allowPhoto: registration.allowPhoto,
                 });
             }
             if (swappedUserId) {
@@ -380,6 +381,7 @@ export async function resolveRegistrationsForEvent(
                             createdAt: existing.createdAt,
                             updatedAt: new Date(),
                             attendedAt: existing.attendedAt,
+                            allowPhoto: existing.allowPhoto,
                         };
                     }
                 }
