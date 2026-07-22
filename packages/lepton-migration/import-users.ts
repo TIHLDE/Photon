@@ -18,6 +18,7 @@
  * Usage: DATABASE_URL=... [AUTH_SECRET=...] bun import-users.ts [--commit]
  */
 import { createAuth, drizzleAdapter } from "@photon/auth";
+import { slugifyText } from "@photon/core/slug";
 import { createDb, schema } from "@photon/db";
 import { ConsoleEmailService } from "@photon/core/services/email";
 import { InMemoryCache } from "@photon/core/services/cache";
@@ -103,6 +104,46 @@ const main = async () => {
         existing.map((r) => [r.email.trim().toLowerCase(), r]),
     );
 
+    // Usernames must be unique. Seed with what the database already holds so a
+    // sanitized legacy id cannot collide with a real one — Sunniva has both a
+    // proper `sunnho` account and a legacy `sunnhø` duplicate, and the second
+    // must become sunnho.2 rather than fail. Deduplicating the human being is
+    // a judgement call left to TIHLDE, not something an import decides.
+    const takenUsernames = new Set(
+        existing.map((r) => r.username?.toLowerCase()).filter(Boolean),
+    );
+    const uniqueUsername = (base: string): string => {
+        let candidate = base;
+        let n = 1;
+        while (takenUsernames.has(candidate.toLowerCase())) {
+            n += 1;
+            candidate = `${base}.${n}`;
+        }
+        takenUsernames.add(candidate.toLowerCase());
+        return candidate;
+    };
+
+    /**
+     * Better Auth only accepts usernames matching [a-zA-Z0-9_.]{3,}. Seven
+     * legacy Lepton ids break that rule — full names with spaces and ø/æ,
+     * one-letter ids, hyphens. For them the username cannot be a join key
+     * anywhere (the eventual MySQL migration's createUser enforces the same
+     * rule), so email carries the identity and the username just has to be
+     * valid and unique. Falls back to the email local part when the id itself
+     * sanitizes to nothing usable.
+     */
+    const usernameFor = (u: LeptonUser): string => {
+        const id = (u.user_id || "").trim();
+        if (/^[a-zA-Z0-9_.]{3,}$/.test(id)) return id;
+
+        const fromId = slugifyText(id).replace(/-/g, ".");
+        if (fromId.length >= 3) return fromId;
+
+        const local = u.email.split("@")[0] ?? "";
+        const fromEmail = slugifyText(local).replace(/-/g, ".");
+        return fromEmail.length >= 3 ? fromEmail : `legacy.${fromId || "user"}`;
+    };
+
     let created = 0;
     let adopted = 0;
     let failed = 0;
@@ -110,15 +151,25 @@ const main = async () => {
     for (const u of unique) {
         const email = u.email.trim().toLowerCase();
         const match = existingByEmail.get(email);
+        // An adopted account keeps its slot in the taken-set via the seed; a
+        // new one must claim a free name.
+        const username = match
+            ? usernameFor(u)
+            : uniqueUsername(usernameFor(u));
+        if (username !== u.user_id) {
+            console.log(
+                `  LEGACY brukernavn ${JSON.stringify(u.user_id)} -> ${username}`,
+            );
+        }
 
         if (match) {
             adopted++;
-            if (commit && match.username !== u.user_id) {
+            if (commit && match.username !== username) {
                 await db
                     .update(schema.user)
                     .set({
-                        username: u.user_id,
-                        displayUsername: u.user_id,
+                        username,
+                        displayUsername: username,
                     })
                     .where(eq(schema.user.id, match.id));
             }
@@ -139,8 +190,8 @@ const main = async () => {
                     name: `${u.first_name} ${u.last_name}`.trim(),
                     role: u.is_superuser ? "admin" : "user",
                     data: {
-                        username: u.user_id,
-                        displayUsername: u.user_id,
+                        username,
+                        displayUsername: username,
                     },
                 },
             });
