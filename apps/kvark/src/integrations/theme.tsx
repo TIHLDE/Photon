@@ -30,14 +30,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // The inline script in __root.tsx applied the theme class before
+        // hydration — adopt it as the source of truth for React state.
         setTheme(readTheme());
         setMounted(true);
     }, []);
 
+    // The class on <html> is derived from state, never toggled ad hoc. This
+    // re-applies it after anything outside our control (e.g. React recovering
+    // from a hydration error re-renders <html> and drops attributes it does
+    // not own) has wiped it.
+    useEffect(() => {
+        if (!mounted) {
+            return;
+        }
+        const root = document.documentElement;
+        root.classList.toggle("dark", theme === "dark");
+
+        // Guard against external wipes between renders: if the class list is
+        // mutated to disagree with state, restore it.
+        const observer = new MutationObserver(() => {
+            const hasDark = root.classList.contains("dark");
+            if (hasDark !== (theme === "dark")) {
+                root.classList.toggle("dark", theme === "dark");
+            }
+        });
+        observer.observe(root, {
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+        return () => observer.disconnect();
+    }, [theme, mounted]);
+
     const toggleTheme = useCallback(() => {
         setTheme((prev) => {
             const next = prev === "dark" ? "light" : "dark";
-            document.documentElement.classList.toggle("dark", next === "dark");
             window.localStorage.setItem(THEME_STORAGE_KEY, next);
             return next;
         });
