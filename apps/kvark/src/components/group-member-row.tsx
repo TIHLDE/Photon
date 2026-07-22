@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card } from "@tihlde/ui/ui/card";
@@ -40,6 +40,9 @@ export function GroupMemberRow({
                 className="flex min-w-0 flex-1 items-center gap-3"
             >
                 <Avatar className="size-10">
+                    {member.image ? (
+                        <AvatarImage src={member.image} alt={member.name} />
+                    ) : null}
                     <AvatarFallback>{initials(member.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex min-w-0 flex-1 flex-col">

@@ -89,13 +89,14 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
 
 /**
  * Map an API group membership to a display member.
- * The members endpoint only exposes `userId` (no name/image lookup exists),
- * so the userId is used as the display identifier.
+ * The members endpoint includes public user info (name/image); fall back to
+ * the userId if the user relation is missing for some reason.
  */
 export function mapMember(member: ApiGroupMember): Member {
     return {
         id: member.userId,
-        name: member.userId,
+        name: member.user?.name ?? member.userId,
+        image: member.user?.image ?? undefined,
         role: member.role,
         joined: formatGroupDate(member.createdAt),
     };
