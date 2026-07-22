@@ -97,6 +97,7 @@ export const listRoute = route().get(
                 endTime: e.end.toISOString(),
                 organizer,
                 image: e.imageUrl,
+                imageAlt: e.imageAlt,
                 createdAt: e.createdAt.toISOString(),
                 updatedAt: e.updatedAt.toISOString(),
                 category: {

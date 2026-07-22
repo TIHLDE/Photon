@@ -112,10 +112,12 @@ export const createRoute = route().post(
                 categorySlug: body.categorySlug,
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 imageUrl: body.imageUrl,
+                imageAlt: body.imageAlt,
                 createdByUserId: userId,
                 updateByUserId: userId,
                 organizerGroupSlug: body.organizerGroupSlug,
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
+                onlyAllowPrioritized: body.onlyAllowPrioritized,
             };
 
             const [event] = await tx

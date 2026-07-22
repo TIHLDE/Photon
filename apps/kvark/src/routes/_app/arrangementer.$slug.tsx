@@ -73,6 +73,7 @@ function EventDetailPage() {
     const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
         id: u.id,
         name: u.name,
+        allowPhoto: u.allowPhoto,
     }));
 
     const calendarUrl = buildGoogleCalendarUrl({
@@ -82,12 +83,12 @@ function EventDetailPage() {
         end: { iso: event.endTime },
     });
 
-    function handleRegister() {
+    function handleRegister({ allowPhoto }: { allowPhoto: boolean }) {
         if (!session) {
             navigate({ to: "/login", search: { redirectTo: location.href } });
             return;
         }
-        registerMutation.mutate({ eventId: event.id });
+        registerMutation.mutate({ eventId: event.id, allowPhoto });
     }
 
     function handleUnregister() {
@@ -108,7 +109,12 @@ function EventDetailPage() {
                     </Button>
                 </div>
             }
-            hero={<DetailHero imageUrl={event.image ?? undefined} />}
+            hero={
+                <DetailHero
+                    imageUrl={event.image ?? undefined}
+                    alt={event.imageAlt ?? undefined}
+                />
+            }
             header={
                 <>
                     <div className="flex items-center justify-between gap-2">

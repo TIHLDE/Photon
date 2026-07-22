@@ -62,6 +62,7 @@ export const event = pgTable("event", {
         .notNull(),
     location: varchar("location", { length: 256 }),
     imageUrl: text("image_url"),
+    imageAlt: varchar("image_alt", { length: 255 }),
     capacity: integer("capacity"),
     allowWaitlist: boolean("allow_waitlist").default(true).notNull(),
     contactPersonId: text("contact_person_id").references(() => user.id, {
@@ -91,6 +92,10 @@ export const event = pgTable("event", {
         length: 128,
     }).references(() => group.slug, { onDelete: "set null" }),
     enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
+    /** Only members covered by a priority pool may register. */
+    onlyAllowPrioritized: boolean("only_allow_prioritized")
+        .default(false)
+        .notNull(),
     ...timestamps,
 });
 
@@ -121,6 +126,12 @@ export const eventRegistration = pgTable(
         status: registrationStatus("status").notNull().default("registered"),
         waitlistPosition: integer("waitlist_position"),
         attendedAt: timestamp("attended_at"),
+        /**
+         * Photo consent for THIS event, overriding the account-level
+         * `allowsPhotosByDefault`. Carried over from Lepton, where members
+         * declined photos on individual registrations.
+         */
+        allowPhoto: boolean("allow_photo").default(true).notNull(),
         ...timestamps,
     },
     (t) => [primaryKey({ columns: [t.userId, t.eventId] })],

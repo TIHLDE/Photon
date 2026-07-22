@@ -194,9 +194,16 @@ export const getEventRegistrationsQuery = (
     });
 
 export const registerForEventMutation = mutationOptions({
-    mutationFn: ({ eventId }: { eventId: string }) =>
+    mutationFn: ({
+        eventId,
+        allowPhoto = true,
+    }: {
+        eventId: string;
+        allowPhoto?: boolean;
+    }) =>
         apiClient.post("/api/event/{eventId}/registration", {
             params: { eventId },
+            json: { allowPhoto },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

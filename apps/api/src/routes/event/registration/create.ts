@@ -1,9 +1,18 @@
 import { schema } from "@photon/db";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
+import {
+    getUserGroupSlugs,
+    isUserPrioritized,
+} from "../../../lib/event/priority";
+import { getUserStrikeCount } from "../../../lib/event/strikes";
 import { route } from "../../../lib/route";
 import { requireAuth } from "../../../middleware/auth";
-import { eventRegistrationResponseSchema } from "../schema";
+import {
+    createRegistrationBodySchema,
+    eventRegistrationResponseSchema,
+} from "../schema";
 
 export const registerToEventRoute = route().post(
     "/:eventId/registration",
@@ -20,6 +29,10 @@ export const registerToEventRoute = route().post(
             description: "OK",
         })
         .notFound({ description: "Event not found" })
+        .forbidden({
+            description:
+                "Event only allows members covered by a priority pool to register",
+        })
         .response({
             statusCode: 409,
             description:
@@ -27,14 +40,23 @@ export const registerToEventRoute = route().post(
         })
         .build(),
     requireAuth,
+    validator("json", createRegistrationBodySchema),
     async (c) => {
         const now = new Date();
         const eventId = c.req.param("eventId");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
+        const { allowPhoto } = c.req.valid("json");
 
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
+            with: {
+                pools: {
+                    with: {
+                        groups: true,
+                    },
+                },
+            },
         });
 
         if (!event) {
@@ -45,6 +67,27 @@ export const registerToEventRoute = route().post(
             throw new HTTPException(409, {
                 message: "Event is not open for registration",
             });
+        }
+
+        // Events with onlyAllowPrioritized reject non-prioritized users
+        // outright at sign-up time, instead of waitlisting them.
+        if (event.onlyAllowPrioritized) {
+            const userGroupSlugs = await getUserGroupSlugs(userId, db);
+            const strikeCount = await getUserStrikeCount(userId, db);
+
+            const isPrioritized = isUserPrioritized({
+                userGroupSlugs,
+                eventPools: event.pools,
+                strikeCount,
+                enforcesPreviousStrikes: event.enforcesPreviousStrikes,
+            });
+
+            if (!isPrioritized) {
+                throw new HTTPException(403, {
+                    message:
+                        "This event only allows members in a priority pool to register",
+                });
+            }
         }
 
         // Check if user is already registered
@@ -66,6 +109,7 @@ export const registerToEventRoute = route().post(
             eventId,
             userId,
             status: "pending",
+            allowPhoto,
         });
 
         return c.json({
@@ -73,6 +117,7 @@ export const registerToEventRoute = route().post(
             userId,
             status: "pending" as const,
             createdAt: now.toISOString(),
+            allowPhoto,
         });
     },
 );

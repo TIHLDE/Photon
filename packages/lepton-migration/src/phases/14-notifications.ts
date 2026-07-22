@@ -25,6 +25,24 @@ export async function migrateNotifications(
     );
     console.log(`  Found ${notifications.length} notifications`);
 
+    /**
+     * Notifications have no natural key and mint a random uuid per row, so a
+     * re-run (the delta import) would duplicate the entire archive. Skip rows
+     * that already exist by (userId, createdAt) — Lepton timestamps are
+     * microsecond-precision, so one user does not get two notifications in
+     * the same microsecond.
+     */
+    const existing = await db
+        .select({
+            userId: schema.notification.userId,
+            createdAt: schema.notification.createdAt,
+        })
+        .from(schema.notification);
+    const existingKeys = new Set(
+        existing.map((n) => `${n.userId} ${n.createdAt.getTime()}`),
+    );
+    let adopted = 0;
+
     const records: Array<{
         id: string;
         userId: string;
@@ -41,6 +59,11 @@ export async function migrateNotifications(
         const newUserId = userIdMap.get(n.user_id);
         if (!newUserId) {
             skipped++;
+            continue;
+        }
+
+        if (existingKeys.has(`${newUserId} ${n.created_at.getTime()}`)) {
+            adopted++;
             continue;
         }
 
@@ -64,7 +87,7 @@ export async function migrateNotifications(
     });
 
     console.log(
-        `  Inserted ${records.length} notifications (${skipped} skipped)`,
+        `  Inserted ${records.length} notifications, ${adopted} already present (${skipped} skipped)`,
     );
     console.log("  Phase 14 complete");
 }

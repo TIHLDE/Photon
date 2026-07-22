@@ -23,7 +23,36 @@ export async function migrateNews(db: NodePgDatabase<DbSchema>): Promise<void> {
     const news = await query<LeptonNews>("SELECT * FROM content_news");
     console.log(`  Found ${news.length} news articles`);
 
-    const records = news.map((n) => {
+    /**
+     * Articles can already exist: import-news-jobs.ts loaded the archive from
+     * Lepton's public API. The table has no natural key, so inserting again
+     * would duplicate every article — and the map must point at the row that
+     * exists, or phase 12 hangs reactions on articles that were never
+     * written. Adopt by (title, created_at), the same identity the importer
+     * dedupes on.
+     */
+    const existingNews = await db
+        .select({
+            id: schema.news.id,
+            title: schema.news.title,
+            createdAt: schema.news.createdAt,
+        })
+        .from(schema.news);
+    const existingByTitleCreated = new Map(
+        existingNews.map((n) => [`${n.title} ${n.createdAt.getTime()}`, n.id]),
+    );
+
+    let adopted = 0;
+    const records = news.flatMap((n) => {
+        const existingId = existingByTitleCreated.get(
+            `${n.title.slice(0, 200)} ${n.created_at.getTime()}`,
+        );
+        if (existingId) {
+            newsIdMap.set(n.id, existingId);
+            adopted++;
+            return [];
+        }
+
         const newId = crypto.randomUUID();
         newsIdMap.set(n.id, newId);
 
@@ -47,6 +76,8 @@ export async function migrateNews(db: NodePgDatabase<DbSchema>): Promise<void> {
         await db.insert(schema.news).values(batch).onConflictDoNothing();
     });
 
-    console.log(`  Inserted ${records.length} news articles`);
+    console.log(
+        `  Inserted ${records.length} news articles, adopted ${adopted} existing`,
+    );
     console.log("  Phase 11 complete");
 }

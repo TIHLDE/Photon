@@ -1523,6 +1523,8 @@ export interface components {
             location: string;
             /** @description Main image to display for the event */
             imageUrl: string | null;
+            /** @description Alt text for the event image */
+            imageAlt?: string | null;
             /**
              * Format: date-time
              * @description When the event starts
@@ -1607,6 +1609,8 @@ export interface components {
             closed: boolean;
             /** @description Event image URL (nullable) */
             image: string | null;
+            /** @description Alt text for the event image (nullable) */
+            imageAlt: string | null;
             /**
              * Format: date
              * @description Event creation time (ISO 8601)
@@ -1648,6 +1652,8 @@ export interface components {
             location?: string;
             /** @description Main image to display for the event */
             imageUrl?: string | null;
+            /** @description Alt text for the event image */
+            imageAlt?: string | null;
             /**
              * Format: date-time
              * @description When the event starts
@@ -1737,6 +1743,8 @@ export interface components {
             closed: boolean;
             /** @description Event image URL (nullable) */
             image: string | null;
+            /** @description Alt text for the event image (nullable) */
+            imageAlt: string | null;
             /**
              * Format: date-time
              * @description Event creation time (ISO 8601)
@@ -1786,6 +1794,8 @@ export interface components {
             }[];
             /** @description Does the event enforce previous strikes for registration */
             enforcesPreviousStrikes: boolean;
+            /** @description Only members covered by a priority pool may register */
+            onlyAllowPrioritized: boolean;
             /** @description The current user's registration information. This is null if not registered or if not logged in. */
             registration: {
                 /**
@@ -1833,6 +1843,15 @@ export interface components {
             /** @constant */
             status: "pending";
             createdAt: string;
+            /** @description Photo consent for this event */
+            allowPhoto: boolean;
+        };
+        CreateEventRegistrationBody: {
+            /**
+             * @description Photo consent for this event, overriding the account-level allowsPhotosByDefault
+             * @default true
+             */
+            allowPhoto: boolean;
         };
         EventRegisteredUser: {
             /** @description User id */
@@ -1841,6 +1860,8 @@ export interface components {
             name: string;
             /** @description User image url (if any) */
             image: string | null;
+            /** @description Photo consent for this event. Only included when the caller has event admin permissions. */
+            allowPhoto?: boolean;
         };
         EventRegistrationList: {
             /** @description Total number of items available */
@@ -3828,7 +3849,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventRegistrationBody"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -3847,6 +3872,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Forbidden - Event only allows members covered by a priority pool to register */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Event not found */
             404: {

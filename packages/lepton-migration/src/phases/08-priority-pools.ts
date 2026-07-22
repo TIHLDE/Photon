@@ -31,6 +31,20 @@ export async function migratePriorityPools(
     );
     console.log(`  Found ${pools.length} priority pools`);
 
+    /**
+     * Pools mint a random uuid per row, so a re-run (the delta import) would
+     * duplicate them. A pool has no natural key of its own — skip every pool
+     * whose EVENT already has pools in Photon: historical pools do not
+     * change, and new pools arrive on new events. (An old event gaining an
+     * additional pool in Lepton after the initial import is the one case
+     * this misses — it would have to be carried over by hand.)
+     */
+    const existingPools = await db
+        .select({ eventId: schema.eventPriorityPool.eventId })
+        .from(schema.eventPriorityPool);
+    const eventsWithPools = new Set(existingPools.map((p) => p.eventId));
+    let adopted = 0;
+
     const poolRecords: Array<{
         id: string;
         eventId: string;
@@ -44,6 +58,11 @@ export async function migratePriorityPools(
         const newEventId = eventIdMap.get(p.event_id);
         if (!newEventId) {
             skipped++;
+            continue;
+        }
+
+        if (eventsWithPools.has(newEventId)) {
+            adopted++;
             continue;
         }
 
@@ -100,7 +119,7 @@ export async function migratePriorityPools(
     });
 
     console.log(
-        `  Inserted ${poolRecords.length} pools, ${poolGroupRecords.length} pool-groups (${skipped} skipped)`,
+        `  Inserted ${poolRecords.length} pools, ${poolGroupRecords.length} pool-groups, ${adopted} already present (${skipped} skipped)`,
     );
     console.log("  Phase 8 complete");
 }

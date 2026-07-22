@@ -1,9 +1,11 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, desc, eq, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { captureAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
     getPageOffset,
@@ -26,10 +28,22 @@ export const getAllRegistrationsForEventsRoute = route().get(
             description: "OK",
         })
         .build(),
+    captureAuth,
     validator("query", PaginationSchema),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const { pageSize, page } = c.req.valid("query");
+
+        // Photo consent is admin-facing information: only include it for
+        // callers who can manage events.
+        const user = c.get("user");
+        const isEventAdmin = user
+            ? await hasPermission(ctx, user.id, [
+                  "events:update",
+                  "events:manage",
+              ])
+            : false;
 
         const pageOffset = getPageOffset(page, pageSize);
 
@@ -72,6 +86,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
             id: r.userId,
             image: r.user.image,
             name: r.user.name,
+            ...(isEventAdmin ? { allowPhoto: r.allowPhoto } : {}),
         }));
 
         return c.json({
