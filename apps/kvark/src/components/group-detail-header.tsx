@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Crown, HandCoins, Mail } from "lucide-react";
@@ -23,6 +23,9 @@ export function GroupDetailHeader({
         <DetailHeader
             avatar={
                 <Avatar className="size-16 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
+                    {group.imageUrl ? (
+                        <AvatarImage src={group.imageUrl} alt={group.name} />
+                    ) : null}
                     <AvatarFallback className="text-2xl">
                         {initials(group.name)}
                     </AvatarFallback>
