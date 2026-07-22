@@ -1,6 +1,8 @@
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import { Checkbox } from "@tihlde/ui/ui/checkbox";
+import { Label } from "@tihlde/ui/ui/label";
 import { Progress } from "@tihlde/ui/ui/progress";
 import {
     AlertCircle,
@@ -15,7 +17,7 @@ import {
     Users,
     type LucideIcon,
 } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type ReactNode, useState } from "react";
 
 import type {
     EventDeadline,
@@ -35,7 +37,7 @@ type EventRegistrationCardProps = {
     waitlistCount: number;
     isAdmin: boolean;
     price: EventPrice;
-    onRegister?: () => void;
+    onRegister?: (opts: { allowPhoto: boolean }) => void;
     onUnregister?: () => void;
     onJoinWaitlist?: () => void;
     onNotify?: () => void;
@@ -47,8 +49,9 @@ type EventRegistrationCardProps = {
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
+    const [allowPhoto, setAllowPhoto] = useState(true);
     const timeline = buildTimeline(props);
-    const state = getStateRendering(props);
+    const state = getStateRendering(props, { allowPhoto, setAllowPhoto });
 
     return (
         <Card>
@@ -92,7 +95,15 @@ type StateRendering = {
     actions?: ReactNode;
 };
 
-function getStateRendering(props: EventRegistrationCardProps): StateRendering {
+type PhotoConsentState = {
+    allowPhoto: boolean;
+    setAllowPhoto: (allowPhoto: boolean) => void;
+};
+
+function getStateRendering(
+    props: EventRegistrationCardProps,
+    photoConsent: PhotoConsentState,
+): StateRendering {
     const state = props.registrationState;
 
     switch (state) {
@@ -210,9 +221,31 @@ function getStateRendering(props: EventRegistrationCardProps): StateRendering {
         case "open":
             return {
                 actions: (
-                    <Button className="w-full" onClick={props.onRegister}>
-                        Meld deg på
-                    </Button>
+                    <>
+                        <Label className="flex items-start gap-3">
+                            <Checkbox
+                                className="shrink-0"
+                                checked={photoConsent.allowPhoto}
+                                onCheckedChange={(checked) =>
+                                    photoConsent.setAllowPhoto(checked === true)
+                                }
+                            />
+                            <span>
+                                Jeg samtykker til at bilder av meg fra
+                                arrangementet kan publiseres
+                            </span>
+                        </Label>
+                        <Button
+                            className="w-full"
+                            onClick={() =>
+                                props.onRegister?.({
+                                    allowPhoto: photoConsent.allowPhoto,
+                                })
+                            }
+                        >
+                            Meld deg på
+                        </Button>
+                    </>
                 ),
             };
 

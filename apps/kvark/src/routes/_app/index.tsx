@@ -96,6 +96,7 @@ function EventsSection() {
                             organizer={event.organizer?.name ?? ""}
                             category={event.category?.label}
                             imageUrl={event.image || undefined}
+                            imageAlt={event.imageAlt || undefined}
                         />
                     ))}
                 </div>

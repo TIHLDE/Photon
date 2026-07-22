@@ -169,6 +169,8 @@ export const updateRoute = route().put(
                 capacity: body.capacity,
                 createdByUserId: userId,
                 imageUrl: body.imageUrl,
+                imageAlt: body.imageAlt,
+                onlyAllowPrioritized: body.onlyAllowPrioritized,
                 isPaidEvent: body.isPaidEvent,
                 isRegistrationClosed: body.isRegistrationClosed,
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,

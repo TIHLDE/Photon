@@ -14,6 +14,7 @@ type ListCardProps = {
     render?: useRender.RenderProp;
     title: ReactNode;
     imageUrl?: string;
+    imageAlt?: string;
     imageBadge?: ReactNode;
     meta: ListCardMetaRow[];
 };
@@ -22,6 +23,7 @@ export function ListCard({
     render,
     title,
     imageUrl,
+    imageAlt,
     imageBadge,
     meta,
 }: ListCardProps) {
@@ -40,7 +42,7 @@ export function ListCard({
                     <div className="relative aspect-[16/7] w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg">
                         <img
                             src={imageUrl || DEFAULT_COVER_IMAGE}
-                            alt=""
+                            alt={imageAlt ?? ""}
                             className="size-full object-cover"
                         />
                         {imageBadge ? (

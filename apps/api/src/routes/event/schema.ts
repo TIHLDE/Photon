@@ -28,6 +28,12 @@ const eventMutationSchema = z.object({
         .url()
         .nullable()
         .meta({ description: "Main image to display for the event" }),
+    imageAlt: z
+        .string()
+        .max(255)
+        .nullable()
+        .optional()
+        .meta({ description: "Alt text for the event image" }),
 
     // Timing
     start: z.iso.datetime().meta({ description: "When the event starts" }),
@@ -364,6 +370,16 @@ export const registerSchema = Schema(
     }),
 );
 
+export const createRegistrationBodySchema = Schema(
+    "CreateEventRegistrationBody",
+    z.object({
+        allowPhoto: z.boolean().default(true).meta({
+            description:
+                "Photo consent for this event, overriding the account-level allowsPhotosByDefault",
+        }),
+    }),
+);
+
 export const createPaymentBodySchema = Schema(
     "CreatePaymentBody",
     z.object({
@@ -450,6 +466,10 @@ export const eventDetailSchema = Schema(
             .url()
             .nullable()
             .meta({ description: "Event image URL (nullable)" }),
+        imageAlt: z
+            .string()
+            .nullable()
+            .meta({ description: "Alt text for the event image (nullable)" }),
         createdAt: z.iso
             .datetime()
             .meta({ description: "Event creation time (ISO 8601)" }),
@@ -505,6 +525,9 @@ export const eventDetailSchema = Schema(
         enforcesPreviousStrikes: z.boolean().meta({
             description:
                 "Does the event enforce previous strikes for registration",
+        }),
+        onlyAllowPrioritized: z.boolean().meta({
+            description: "Only members covered by a priority pool may register",
         }),
         registration: z
             .object({
@@ -563,6 +586,10 @@ export const eventListItemSchema = Schema(
             .url()
             .nullable()
             .meta({ description: "Event image URL (nullable)" }),
+        imageAlt: z
+            .string()
+            .nullable()
+            .meta({ description: "Alt text for the event image (nullable)" }),
         createdAt: z.iso
             .date()
             .meta({ description: "Event creation time (ISO 8601)" }),
@@ -627,6 +654,9 @@ export const eventRegistrationResponseSchema = Schema(
         userId: z.string(),
         status: z.literal("pending"),
         createdAt: z.string(),
+        allowPhoto: z.boolean().meta({
+            description: "Photo consent for this event",
+        }),
     }),
 );
 
@@ -639,6 +669,10 @@ export const registeredUserSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "User image url (if any)" }),
+        allowPhoto: z.boolean().optional().meta({
+            description:
+                "Photo consent for this event. Only included when the caller has event admin permissions.",
+        }),
     }),
 );
 

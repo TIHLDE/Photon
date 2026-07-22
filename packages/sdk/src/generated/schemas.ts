@@ -24,6 +24,7 @@ export type CreateApiKeyResponse = Schemas["CreateApiKeyResponse"];
 export type CreateContract = Schemas["CreateContract"];
 export type CreateEventForm = Schemas["CreateEventForm"];
 export type CreateEventFormResponse = Schemas["CreateEventFormResponse"];
+export type CreateEventRegistrationBody = Schemas["CreateEventRegistrationBody"];
 export type CreateEventResponse = Schemas["CreateEventResponse"];
 export type CreateEventSchema = Schemas["CreateEventSchema"];
 export type CreateFine = Schemas["CreateFine"];
