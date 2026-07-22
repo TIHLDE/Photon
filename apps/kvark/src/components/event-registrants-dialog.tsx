@@ -99,6 +99,9 @@ function RegistrantRow({
                     </span>
                 ) : null}
             </div>
+            {registrant.allowPhoto === false ? (
+                <Badge variant="outline">Ikke foto</Badge>
+            ) : null}
             {waitlist ? <Badge variant="secondary">Venteliste</Badge> : null}
         </div>
     );

@@ -11,6 +11,7 @@ export type EventCardProps = {
     organizer: string;
     category?: string;
     imageUrl?: string;
+    imageAlt?: string;
     capacity?: number | null;
     registeredCount?: number;
 };
@@ -22,6 +23,7 @@ export function EventCard({
     location,
     organizer,
     imageUrl,
+    imageAlt,
     capacity,
     registeredCount,
 }: EventCardProps) {
@@ -46,6 +48,7 @@ export function EventCard({
             render={<Link to="/arrangementer/$slug" params={{ slug }} />}
             title={title}
             imageUrl={imageUrl}
+            imageAlt={imageAlt}
             imageBadge={organizer}
             meta={meta}
         />
