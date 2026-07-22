@@ -5,18 +5,23 @@
  *
  * Usage:
  *   bun src/index.ts --mysql-url="mysql://root:pass@localhost:3306/lepton" [options]
+ *   bun src/index.ts --mysql-url="json:./data/tables" [options]
+ *
+ * The json: form reads the table dumps fetched by fetch-lepton-tables.ts from
+ * Lepton's superuser-gated export endpoint — the mode used against prod,
+ * where no MySQL access exists.
  *
  * Options:
- *   --mysql-url   MySQL connection URL (required, or set MYSQL_URL env)
+ *   --mysql-url   MySQL connection URL or json:<dir> (required, or MYSQL_URL env)
  *   --phase       Run only a specific phase (e.g. --phase=users)
  *   --force       Truncate target tables before inserting
  *   --verify-only Run only verification (no migration)
  */
-import { createDb } from "@photon/db";
-import { createAuth } from "@photon/auth";
+import { createDb, schema } from "@photon/db";
+import { createAuth, drizzleAdapter } from "@photon/auth";
 import { env } from "@photon/core/env";
-import { QueueManager, createRedisClient } from "@photon/core/cache";
-import { createEmailTransporter } from "@photon/email";
+import { InMemoryCache } from "@photon/core/services/cache";
+import { ConsoleEmailService } from "@photon/core/services";
 import { connectMySQL, closeMySQL } from "./mysql";
 import { skippedUsers, userIdMap, eventIdMap, newsIdMap } from "./mappings";
 
@@ -115,14 +120,31 @@ async function main() {
         return;
     }
 
-    // Create auth instance for user migration
-    const redis = await createRedisClient(env.REDIS_URL);
-    const queue = new QueueManager(env.REDIS_URL);
-    const mailer = createEmailTransporter();
-    const auth = createAuth(
-        { db, redis, mailer, queue, bucket: null as any },
-        { isDev: true },
-    );
+    // Auth instance for the user phase. The migration never sends email and
+    // needs no shared cache, so in-memory/console services suffice.
+    const auth = createAuth({
+        isDevMode: env.NODE_ENV === "development" || env.NODE_ENV === "test",
+        secret: env.AUTH_SECRET,
+        services: {
+            database: drizzleAdapter(db, { provider: "pg", schema }),
+            db,
+            cache: new InMemoryCache(),
+            email: new ConsoleEmailService(),
+        },
+        oauth: {
+            pages: {
+                consent: "/consent",
+                login: "/login",
+            },
+        },
+        urls: {
+            backend: env.ROOT_URL,
+            frontend: env.WEBSITE_URL,
+            additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
+            basePath: "/api/auth",
+        },
+        DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
+    });
 
     const startTime = Date.now();
 

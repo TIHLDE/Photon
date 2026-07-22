@@ -2,3 +2,7 @@
 # committed. It is refetched from Lepton's export endpoint on demand.
 lepton-users.json
 lepton-memberships.json
+
+# Table dumps from the photon-table-export endpoint: registrations, fines,
+# payments and form answers for real members. Refetch on demand.
+tables/

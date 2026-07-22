@@ -2,7 +2,8 @@
     "extends": "@photon/tsconfig/node/bundler.json",
     "compilerOptions": {
         "outDir": "./dist",
-        "strict": true
+        "strict": true,
+        "types": ["node", "bun"]
     },
     "include": ["src"],
     "exclude": ["node_modules", "dist"]
