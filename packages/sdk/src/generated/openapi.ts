@@ -2409,6 +2409,24 @@ export interface components {
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
+            /** @description Public user info for the fined user */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+            /** @description Public user info for the fine creator */
+            createdByUser: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            } | null;
         };
         FineList: components["schemas"]["Fine"][];
         CreateFine: {

@@ -35,7 +35,9 @@ export type Member = {
 
 export type Fine = {
     id: string;
+    userId: string;
     user: string;
+    userImage?: string;
     paragraph: string;
     title: string;
     amount: number;
@@ -96,7 +98,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
 export function mapMember(member: ApiGroupMember): Member {
     return {
         id: member.userId,
-        name: member.user?.name ?? member.userId,
+        name: member.user?.name ?? "Ukjent bruker",
         image: member.user?.image ?? undefined,
         role: member.role,
         joined: formatGroupDate(member.createdAt),
@@ -111,13 +113,15 @@ export function mapMember(member: ApiGroupMember): Member {
 export function mapFine(fine: ApiFine): Fine {
     return {
         id: fine.id,
-        user: fine.userId,
+        userId: fine.userId,
+        user: fine.user?.name ?? "Ukjent bruker",
+        userImage: fine.user?.image ?? undefined,
         paragraph: "",
         title: fine.reason,
         amount: fine.amount,
         approved: fine.status === "approved" || fine.status === "paid",
         paid: fine.status === "paid",
-        createdBy: fine.createdByUserId ?? "",
+        createdBy: fine.createdByUser?.name ?? "",
         date: fine.createdAt ? formatGroupDate(fine.createdAt) : "",
         reason: fine.reason,
         image: fine.image ?? undefined,

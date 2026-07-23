@@ -184,6 +184,19 @@ export const fine = pgTable("fine", {
     ...timestamps,
 });
 
+export const fineRelations = relations(fine, ({ one }) => ({
+    user: one(user, {
+        fields: [fine.userId],
+        references: [user.id],
+        relationName: "fineUser",
+    }),
+    createdByUser: one(user, {
+        fields: [fine.createdByUserId],
+        references: [user.id],
+        relationName: "fineCreatedByUser",
+    }),
+}));
+
 /**
  * Where a signature is drawn on the contract PDF.
  *
