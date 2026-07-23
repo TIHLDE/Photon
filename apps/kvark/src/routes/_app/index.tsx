@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
+import { authQueryOptions } from "#/api/auth";
 import { getEventsQuery } from "#/api/queries/events";
 import { EventCard } from "#/components/event-card";
 import { NewsCard, type NewsCardProps } from "#/components/news-card";
@@ -154,19 +155,41 @@ function Hero() {
                     cybersikkerhet, Digital forretningsutvikling, Digital
                     transformasjon og Informasjonsbehandling ved NTNU.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button
-                        size="lg"
-                        nativeButton={false}
-                        render={<Link to="/login" />}
-                    >
-                        Logg inn
-                    </Button>
-                    <Button size="lg" variant="outline">
-                        Opprett bruker
-                    </Button>
-                </div>
+                <HeroActions />
             </section>
+        </div>
+    );
+}
+
+function HeroActions() {
+    const { data: session } = useQuery(authQueryOptions);
+
+    if (session?.user) {
+        return (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                    size="lg"
+                    nativeButton={false}
+                    render={<Link to="/profil/$id" params={{ id: "me" }} />}
+                >
+                    Min profil
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+                size="lg"
+                nativeButton={false}
+                render={<Link to="/login" />}
+            >
+                Logg inn
+            </Button>
+            <Button size="lg" variant="outline">
+                Opprett bruker
+            </Button>
         </div>
     );
 }
