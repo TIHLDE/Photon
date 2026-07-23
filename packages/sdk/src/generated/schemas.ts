@@ -132,6 +132,7 @@ export type UpdateRole = Schemas["UpdateRole"];
 export type UpdateUserSettings = Schemas["UpdateUserSettings"];
 export type UpdateUserSettingsInput = Schemas["UpdateUserSettingsInput"];
 export type UploadResponse = Schemas["UploadResponse"];
+export type UserSearchResult = Schemas["UserSearchResult"];
 export type UserSettings = Schemas["UserSettings"];
 export type UserSettingsBase = Schemas["UserSettingsBase"];
 export type ValidateApiKeyInput = Schemas["ValidateApiKeyInput"];
