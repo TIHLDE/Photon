@@ -47,6 +47,9 @@ export const PERMISSION_REGISTRY = {
         payments: {
             actions: ["view", "create", "update", "delete", "refund"],
         },
+        strikes: {
+            actions: ["view", "create", "delete"],
+        },
     },
 
     // Group permissions
@@ -73,6 +76,11 @@ export const PERMISSION_REGISTRY = {
 
     // Job permissions
     jobs: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
+
+    // Front-page banner permissions
+    banners: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
 } as const;

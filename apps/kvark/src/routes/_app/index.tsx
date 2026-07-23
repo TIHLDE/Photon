@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
@@ -7,8 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
+import { authQueryOptions } from "#/api/auth";
 import { getEventsQuery } from "#/api/queries/events";
+import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
+import { InfoBanner } from "#/components/info-banner";
 import { NewsCard, type NewsCardProps } from "#/components/news-card";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
@@ -25,8 +28,12 @@ const LIST_PREVIEW_COUNT = 4;
 
 export const Route = createFileRoute("/_app/")({
     component: Home,
-    loader: ({ context }) =>
-        context.queryClient.ensureQueryData(upcomingEventsQuery()),
+    loader: async ({ context }) => {
+        await Promise.all([
+            context.queryClient.ensureQueryData(upcomingEventsQuery()),
+            context.queryClient.ensureQueryData(getVisibleBannersQuery()),
+        ]);
+    },
 });
 
 const NEWS: NewsCardProps[] = [
@@ -49,6 +56,11 @@ const NEWS: NewsCardProps[] = [
 function Home() {
     return (
         <>
+            {/* Preloaded in the route loader, so the fallback never flashes. */}
+            <Suspense fallback={null}>
+                <BannersSection />
+            </Suspense>
+
             <Hero />
 
             <section className="container mx-auto w-full px-4 py-8">
@@ -71,6 +83,25 @@ function Home() {
                 </div>
             </section>
         </>
+    );
+}
+
+function BannersSection() {
+    const { data: banners } = useSuspenseQuery(getVisibleBannersQuery());
+
+    if (banners.length === 0) return null;
+
+    return (
+        <div className="container mx-auto flex w-full flex-col gap-2 px-4 pt-4">
+            {banners.map((banner) => (
+                <InfoBanner
+                    key={banner.id}
+                    title={banner.title}
+                    description={banner.description}
+                    url={banner.url}
+                />
+            ))}
+        </div>
     );
 }
 
@@ -154,24 +185,46 @@ function Hero() {
                     cybersikkerhet, Digital forretningsutvikling, Digital
                     transformasjon og Informasjonsbehandling ved NTNU.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button
-                        size="lg"
-                        nativeButton={false}
-                        render={<Link to="/login" />}
-                    >
-                        Logg inn
-                    </Button>
-                    <Button
-                        size="lg"
-                        variant="outline"
-                        nativeButton={false}
-                        render={<Link to="/register" />}
-                    >
-                        Opprett bruker
-                    </Button>
-                </div>
+                <HeroActions />
             </section>
+        </div>
+    );
+}
+
+function HeroActions() {
+    const { data: session } = useQuery(authQueryOptions);
+
+    if (session?.user) {
+        return (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                    size="lg"
+                    nativeButton={false}
+                    render={<Link to="/profil/$id" params={{ id: "me" }} />}
+                >
+                    Min profil
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+                size="lg"
+                nativeButton={false}
+                render={<Link to="/login" />}
+            >
+                Logg inn
+            </Button>
+            <Button
+                size="lg"
+                variant="outline"
+                nativeButton={false}
+                render={<Link to="/register" />}
+            >
+                Opprett bruker
+            </Button>
         </div>
     );
 }

@@ -129,6 +129,13 @@ function AppLayout() {
                                   },
                                   {
                                       kind: "external",
+                                      label: "Søknader",
+                                      href: "https://utlegg.tihlde.org",
+                                      description:
+                                          "Send inn utlegg og søknader til TIHLDE",
+                                  },
+                                  {
+                                      kind: "external",
                                       label: "Kontres",
                                       href: "https://new-kontres.tihlde.org",
                                       description:
