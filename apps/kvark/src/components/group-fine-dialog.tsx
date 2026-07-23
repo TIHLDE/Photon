@@ -76,7 +76,13 @@ export function GroupFineDialog({
                                 </span>
                                 <p className="text-sm">{fine.reason}</p>
                             </div>
-                            <div className="aspect-video w-full rounded-md bg-muted" />
+                            {fine.image ? (
+                                <img
+                                    src={fine.image}
+                                    alt="Bevis for boten"
+                                    className="max-h-80 w-full rounded-md object-contain"
+                                />
+                            ) : null}
                             <div className="flex flex-wrap gap-2">
                                 <Button size="sm" variant="outline">
                                     Merk som godkjent

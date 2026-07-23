@@ -169,6 +169,8 @@ export const fine = pgTable("fine", {
     reason: text("reason").notNull(),
     amount: integer("amount").notNull(), // Amount in NOK (or minor units)
     defense: text("defense"),
+    /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
+    image: varchar("image", { length: 600 }),
     status: fineStatus("status").notNull().default("pending"),
     createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
         () => user.id,
