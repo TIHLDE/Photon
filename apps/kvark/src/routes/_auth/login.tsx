@@ -19,6 +19,7 @@ import {
     signInWithFeide,
 } from "#/api/auth";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
+import { OrDivider } from "#/components/or-divider";
 import { env } from "#/env";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
@@ -93,8 +94,8 @@ function LoginPage() {
                     Velkommen tilbake. Logg inn på kontoen din.
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)}>
-                <CardContent>
+            <form {...formHandlers(form)} className="flex flex-col gap-4">
+                <CardContent className="flex flex-col gap-5">
                     <FieldGroup>
                         <form.AppField name="username">
                             {(field) => (
@@ -106,22 +107,31 @@ function LoginPage() {
                                 />
                             )}
                         </form.AppField>
-                        <form.AppField name="password">
-                            {(field) => (
-                                <field.PasswordField
-                                    label="Passord"
-                                    autoComplete="current-password"
-                                    required
-                                />
-                            )}
-                        </form.AppField>
+                        <div className="flex flex-col gap-2">
+                            <form.AppField name="password">
+                                {(field) => (
+                                    <field.PasswordField
+                                        label="Passord"
+                                        autoComplete="current-password"
+                                        required
+                                    />
+                                )}
+                            </form.AppField>
+                            <div className="flex justify-end">
+                                <Link
+                                    to="/forgot-password"
+                                    className="text-sm text-muted-foreground underline underline-offset-4"
+                                >
+                                    Glemt passord?
+                                </Link>
+                            </div>
+                        </div>
                     </FieldGroup>
 
                     <form.AppForm>
                         <form.FormErrors />
                     </form.AppForm>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3">
+
                     <form.AppForm>
                         <form.SubmitButton
                             className="w-full"
@@ -135,12 +145,18 @@ function LoginPage() {
                             Logg inn
                         </form.SubmitButton>
                     </form.AppForm>
+
                     {env.VITE_FEIDE_ENABLED && (
-                        <FeideSignInButton
-                            onSignIn={handleFeideSignIn}
-                            loading={feideLoading}
-                        />
+                        <>
+                            <OrDivider />
+                            <FeideSignInButton
+                                onSignIn={handleFeideSignIn}
+                                loading={feideLoading}
+                            />
+                        </>
                     )}
+                </CardContent>
+                <CardFooter className="justify-center">
                     <p className="text-sm text-muted-foreground">
                         Har du ikke konto?{" "}
                         <Link
@@ -148,14 +164,6 @@ function LoginPage() {
                             className="underline underline-offset-4"
                         >
                             Opprett bruker
-                        </Link>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                        <Link
-                            to="/forgot-password"
-                            className="underline underline-offset-4"
-                        >
-                            Glemt passord?
                         </Link>
                     </p>
                 </CardFooter>

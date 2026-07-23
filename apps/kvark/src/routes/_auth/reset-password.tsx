@@ -118,8 +118,8 @@ function ResetPasswordPage() {
                     Velg et nytt passord for kontoen din.
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)}>
-                <CardContent>
+            <form {...formHandlers(form)} className="flex flex-col gap-4">
+                <CardContent className="flex flex-col gap-5">
                     <FieldGroup>
                         <form.AppField name="password">
                             {(field) => (
@@ -146,10 +146,10 @@ function ResetPasswordPage() {
                     <form.AppForm>
                         <form.FormErrors />
                     </form.AppForm>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3">
+
                     <form.AppForm>
                         <form.SubmitButton
+                            className="w-full"
                             loading={
                                 <>
                                     <Spinner />
@@ -160,6 +160,8 @@ function ResetPasswordPage() {
                             Sett nytt passord
                         </form.SubmitButton>
                     </form.AppForm>
+                </CardContent>
+                <CardFooter className="justify-center">
                     <p className="text-sm text-muted-foreground">
                         <Link
                             to="/login"
