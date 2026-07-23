@@ -11,7 +11,7 @@ import ResetPasswordEmail from "./reset-password";
 import SwappedToWaitlistEmail from "./swapped-to-waitlist";
 import WaitlistPlacementEmail from "./waitlist-placement";
 import { ContractSignedEmail } from "./contract-signed";
-import { render } from "@react-email/render";
+import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps, ReactElement } from "react";
 
 type EmailTemplateComponent<TProps> = (props: TProps) => ReactElement;
@@ -44,7 +44,16 @@ export async function renderEmailTemplate<TName extends EmailTemplateName>(
         EmailTemplateOptions<TName>
     >;
 
-    return await render(Template(options));
+    // @react-email/render resolves react-dom/server through a dynamic import
+    // and reads `.default` off the module namespace. Under Bun that interop is
+    // unreliable (react-dom's server.bun.js build has no dependable default
+    // export), which made every email render throw
+    // "undefined is not an object (evaluating 'Object.hasOwn(reactDOMServer, ...)')"
+    // in production. None of our templates suspend, so render synchronously via
+    // the named export instead and prepend the doctype ourselves (same one
+    // @react-email/render emits).
+    const markup = renderToStaticMarkup(Template(options));
+    return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">${markup}`;
 }
 
 export {
