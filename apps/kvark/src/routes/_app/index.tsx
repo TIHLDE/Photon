@@ -217,7 +217,12 @@ function HeroActions() {
             >
                 Logg inn
             </Button>
-            <Button size="lg" variant="outline">
+            <Button
+                size="lg"
+                variant="outline"
+                nativeButton={false}
+                render={<Link to="/register" />}
+            >
                 Opprett bruker
             </Button>
         </div>
