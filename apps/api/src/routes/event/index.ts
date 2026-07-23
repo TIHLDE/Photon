@@ -13,9 +13,17 @@ import { paymentWebhookRoute } from "./payment/webhook";
 import { registerToEventRoute } from "./registration/create";
 import { deleteEventRegistrationRoute } from "./registration/delete";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
+import { createStrikeRoute } from "./strike/create";
+import { deleteStrikeRoute } from "./strike/delete";
+import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
 
 export const eventRoutes = route()
+    // Strikes (registered before "/:eventId" so the static /strikes path wins)
+    .route("/", listStrikesRoute)
+    .route("/", createStrikeRoute)
+    .route("/", deleteStrikeRoute)
+
     // Event routes
     .route("/", createRoute)
     .route("/", listRoute)
