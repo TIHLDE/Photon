@@ -46,6 +46,7 @@ interface LeptonFine {
     description: string;
     reason: string;
     defense: string;
+    image: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -151,6 +152,7 @@ export async function migrateGroups(
         reason: string;
         amount: number;
         defense: string | null;
+        image: string | null;
         status: "pending" | "approved" | "paid" | "rejected";
         createdByUserId: string | null;
         approvedAt: Date | null;
@@ -177,6 +179,7 @@ export async function migrateGroups(
             reason: f.reason || f.description,
             amount: f.amount,
             defense: f.defense || null,
+            image: f.image || null,
             status,
             createdByUserId: userIdMap.get(f.created_by_id) ?? null,
             approvedAt: f.approved ? f.updated_at : null,

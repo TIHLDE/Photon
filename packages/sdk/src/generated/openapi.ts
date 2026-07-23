@@ -2393,6 +2393,8 @@ export interface components {
             amount: number;
             /** @description User's defense text */
             defense: string | null;
+            /** @description Evidence image URL */
+            image: string | null;
             /** @description Fine status (pending, approved, paid, rejected) */
             status: string;
             /** @description User who created the fine */
@@ -2420,6 +2422,11 @@ export interface components {
             amount: number;
             /** @description User's defense text */
             defense?: string;
+            /**
+             * Format: uri
+             * @description Evidence image URL
+             */
+            image?: string;
         };
         UpdateFineResponse: {
             message: string;

@@ -24,6 +24,11 @@ export const createFineSchema = Schema(
             .string()
             .optional()
             .meta({ description: "User's defense text" }),
+        image: z
+            .url()
+            .max(600)
+            .optional()
+            .meta({ description: "Evidence image URL" }),
     }),
 );
 
@@ -63,6 +68,10 @@ export const fineSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "User's defense text" }),
+        image: z
+            .string()
+            .nullable()
+            .meta({ description: "Evidence image URL" }),
         status: z.string().meta({
             description: "Fine status (pending, approved, paid, rejected)",
         }),

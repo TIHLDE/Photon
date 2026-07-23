@@ -44,6 +44,7 @@ export type Fine = {
     createdBy: string;
     date: string;
     reason: string;
+    image?: string;
 };
 
 export type Law = {
@@ -119,6 +120,7 @@ export function mapFine(fine: ApiFine): Fine {
         createdBy: fine.createdByUserId ?? "",
         date: fine.createdAt ? formatGroupDate(fine.createdAt) : "",
         reason: fine.reason,
+        image: fine.image ?? undefined,
     };
 }
 

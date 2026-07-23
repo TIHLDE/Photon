@@ -134,6 +134,13 @@
       "when": 1784754062419,
       "tag": "0018_bored_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784792291391,
+      "tag": "0019_tired_kree",
+      "breakpoints": true
     }
   ]
 }
