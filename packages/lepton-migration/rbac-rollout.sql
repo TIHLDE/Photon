@@ -1,6 +1,6 @@
 -- =============================================================================
 -- RBAC/verv rollout for PROD — run ONCE, AFTER the deploy that applies
--- migration 0019 (org_group_position tables + org_group.leader_role_id).
+-- migration 0020 (org_group_position tables + org_group.leader_role_id).
 --
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f rbac-rollout.sql
 --
