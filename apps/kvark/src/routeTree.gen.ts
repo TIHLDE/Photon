@@ -47,6 +47,9 @@ import { Route as AppGalleriIndexRouteImport } from './routes/_app/galleri.index
 import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
+import { Route as AppMotetidIndexRouteImport } from './routes/_app/motetid.index'
+import { Route as AppMotetidSlugRouteImport } from './routes/_app/motetid.$slug'
+import { Route as AppMotetidNyRouteImport } from './routes/_app/motetid.ny'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
@@ -249,6 +252,21 @@ const AppGrupperSlugRoute = AppGrupperSlugRouteImport.update({
   path: '/grupper/$slug',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMotetidIndexRoute = AppMotetidIndexRouteImport.update({
+  id: '/motetid/',
+  path: '/motetid/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMotetidSlugRoute = AppMotetidSlugRouteImport.update({
+  id: '/motetid/$slug',
+  path: '/motetid/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMotetidNyRoute = AppMotetidNyRouteImport.update({
+  id: '/motetid/ny',
+  path: '/motetid/ny',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
   id: '/nyheter/',
   path: '/nyheter/',
@@ -358,6 +376,8 @@ export interface FileRoutesByFullPath {
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
+  '/motetid/$slug': typeof AppMotetidSlugRoute
+  '/motetid/ny': typeof AppMotetidNyRoute
   '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -372,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/bedrift/': typeof AppBedriftIndexRoute
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
+  '/motetid/': typeof AppMotetidIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
@@ -408,6 +429,8 @@ export interface FileRoutesByTo {
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/galleri/$slug': typeof AppGalleriSlugRoute
   '/grupper/$slug': typeof AppGrupperSlugRoute
+  '/motetid/$slug': typeof AppMotetidSlugRoute
+  '/motetid/ny': typeof AppMotetidNyRoute
   '/nyheter/$slug': typeof AppNyheterSlugRoute
   '/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/sporreskjema/$id': typeof AppSporreskjemaIdRoute
@@ -421,6 +444,7 @@ export interface FileRoutesByTo {
   '/bedrift': typeof AppBedriftIndexRoute
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
+  '/motetid': typeof AppMotetidIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
@@ -463,6 +487,8 @@ export interface FileRoutesById {
   '/_app/bedrift/studiene': typeof AppBedriftStudieneRoute
   '/_app/galleri/$slug': typeof AppGalleriSlugRoute
   '/_app/grupper/$slug': typeof AppGrupperSlugRoute
+  '/_app/motetid/$slug': typeof AppMotetidSlugRoute
+  '/_app/motetid/ny': typeof AppMotetidNyRoute
   '/_app/nyheter/$slug': typeof AppNyheterSlugRoute
   '/_app/playground/markdown': typeof AppPlaygroundMarkdownRoute
   '/_app/profil/$id': typeof AppProfilIdRouteWithChildren
@@ -477,6 +503,7 @@ export interface FileRoutesById {
   '/_app/bedrift/': typeof AppBedriftIndexRoute
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
+  '/_app/motetid/': typeof AppMotetidIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
@@ -516,6 +543,8 @@ export interface FileRouteTypes {
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
+    | '/motetid/$slug'
+    | '/motetid/ny'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/profil/$id'
@@ -530,6 +559,7 @@ export interface FileRouteTypes {
     | '/bedrift/'
     | '/galleri/'
     | '/grupper/'
+    | '/motetid/'
     | '/nyheter/'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
@@ -566,6 +596,8 @@ export interface FileRouteTypes {
     | '/bedrift/studiene'
     | '/galleri/$slug'
     | '/grupper/$slug'
+    | '/motetid/$slug'
+    | '/motetid/ny'
     | '/nyheter/$slug'
     | '/playground/markdown'
     | '/sporreskjema/$id'
@@ -579,6 +611,7 @@ export interface FileRouteTypes {
     | '/bedrift'
     | '/galleri'
     | '/grupper'
+    | '/motetid'
     | '/nyheter'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
@@ -620,6 +653,8 @@ export interface FileRouteTypes {
     | '/_app/bedrift/studiene'
     | '/_app/galleri/$slug'
     | '/_app/grupper/$slug'
+    | '/_app/motetid/$slug'
+    | '/_app/motetid/ny'
     | '/_app/nyheter/$slug'
     | '/_app/playground/markdown'
     | '/_app/profil/$id'
@@ -634,6 +669,7 @@ export interface FileRouteTypes {
     | '/_app/bedrift/'
     | '/_app/galleri/'
     | '/_app/grupper/'
+    | '/_app/motetid/'
     | '/_app/nyheter/'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/medlemskap'
@@ -917,6 +953,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppGrupperSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/motetid/': {
+      id: '/_app/motetid/'
+      path: '/motetid'
+      fullPath: '/motetid/'
+      preLoaderRoute: typeof AppMotetidIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/motetid/$slug': {
+      id: '/_app/motetid/$slug'
+      path: '/motetid/$slug'
+      fullPath: '/motetid/$slug'
+      preLoaderRoute: typeof AppMotetidSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/motetid/ny': {
+      id: '/_app/motetid/ny'
+      path: '/motetid/ny'
+      fullPath: '/motetid/ny'
+      preLoaderRoute: typeof AppMotetidNyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/nyheter/': {
       id: '/_app/nyheter/'
       path: '/nyheter'
@@ -1059,6 +1116,8 @@ interface AppRouteChildren {
   AppBedriftStudieneRoute: typeof AppBedriftStudieneRoute
   AppGalleriSlugRoute: typeof AppGalleriSlugRoute
   AppGrupperSlugRoute: typeof AppGrupperSlugRoute
+  AppMotetidSlugRoute: typeof AppMotetidSlugRoute
+  AppMotetidNyRoute: typeof AppMotetidNyRoute
   AppNyheterSlugRoute: typeof AppNyheterSlugRoute
   AppPlaygroundMarkdownRoute: typeof AppPlaygroundMarkdownRoute
   AppProfilIdRoute: typeof AppProfilIdRouteWithChildren
@@ -1068,6 +1127,7 @@ interface AppRouteChildren {
   AppBedriftIndexRoute: typeof AppBedriftIndexRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
+  AppMotetidIndexRoute: typeof AppMotetidIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
 }
 
@@ -1085,6 +1145,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppBedriftStudieneRoute: AppBedriftStudieneRoute,
   AppGalleriSlugRoute: AppGalleriSlugRoute,
   AppGrupperSlugRoute: AppGrupperSlugRoute,
+  AppMotetidSlugRoute: AppMotetidSlugRoute,
+  AppMotetidNyRoute: AppMotetidNyRoute,
   AppNyheterSlugRoute: AppNyheterSlugRoute,
   AppPlaygroundMarkdownRoute: AppPlaygroundMarkdownRoute,
   AppProfilIdRoute: AppProfilIdRouteWithChildren,
@@ -1094,6 +1156,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBedriftIndexRoute: AppBedriftIndexRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
+  AppMotetidIndexRoute: AppMotetidIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
 }
 

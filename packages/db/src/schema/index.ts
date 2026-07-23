@@ -12,3 +12,4 @@ export * from "./asset";
 export * from "./toddel";
 export * from "./banner";
 export * from "./qr-code";
+export * from "./motetid";

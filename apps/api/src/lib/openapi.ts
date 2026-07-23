@@ -26,6 +26,7 @@ const tags = [
     "fines",
     "jobs",
     "laws",
+    "motetid",
     "news",
     "notifications",
     "payments",

@@ -24,6 +24,8 @@
         "@scalar/hono-api-reference": "^0.9.16",
         "@socotra/modelcontextprotocol-sdk": "^1.18.0",
         "@vippsmobilepay/sdk": "^2.4.2",
+        "date-fns": "^4.4.0",
+        "date-fns-tz": "^3.2.0",
         "drizzle-orm": "catalog:backend",
         "drizzle-seed": "catalog:backend",
         "hono": "catalog:backend",
