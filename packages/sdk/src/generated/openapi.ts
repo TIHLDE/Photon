@@ -212,6 +212,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/strikes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List strikes
+         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission.
+         */
+        get: operations["listStrikes"];
+        put?: never;
+        /**
+         * Create strike
+         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.
+         */
+        post: operations["createStrike"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/strikes/{strikeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete strike
+         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage' permission.
+         */
+        delete: operations["deleteStrike"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event": {
         parameters: {
             query?: never;
@@ -1749,6 +1793,64 @@ export interface components {
                  */
                 url: string;
             })[];
+        };
+        Strike: {
+            /** @description Strike ID */
+            id: string;
+            /** @description User ID who received the strike */
+            userId: string;
+            /** @description Event the strike is connected to */
+            eventId: string;
+            /** @description Number of strikes */
+            count: number;
+            /** @description Reason for the strike */
+            reason: string | null;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Public user info for the struck user */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+            /** @description Event the strike belongs to */
+            event: {
+                /** @description Event ID */
+                id: string;
+                /** @description Event title */
+                title: string;
+            };
+        };
+        StrikeList: {
+            /** @description Total number of strikes */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            strikes: components["schemas"]["Strike"][];
+        };
+        CreateStrike: {
+            /** @description User ID who receives the strike */
+            userId: string;
+            /**
+             * Format: uuid
+             * @description Event the strike is connected to
+             */
+            eventId: string;
+            /**
+             * @description Number of strikes (1-3)
+             * @default 1
+             */
+            count: number;
+            /** @description Reason for the strike */
+            reason?: string;
+        };
+        DeleteStrikeResponse: {
+            message: string;
         };
         CreateEventResponse: {
             /** Format: uuid */
@@ -3954,6 +4056,141 @@ export interface operations {
             };
             /** @description Email API not configured */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listStrikes: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Filter strikes by user ID */
+                userId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrikeList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:view or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createStrike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStrike"];
+            };
+        };
+        responses: {
+            /** @description Strike created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Strike"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:create or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User or event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteStrike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strikeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Strike deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteStrikeResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:delete or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Strike not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -47,6 +47,9 @@ export const PERMISSION_REGISTRY = {
         payments: {
             actions: ["view", "create", "update", "delete", "refund"],
         },
+        strikes: {
+            actions: ["view", "create", "delete"],
+        },
     },
 
     // Group permissions

@@ -31,6 +31,7 @@ const tags = [
     "positions",
     "qr-codes",
     "roles",
+    "strikes",
     "toddel",
     "users",
     "webhooks",

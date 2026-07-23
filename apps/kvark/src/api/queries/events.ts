@@ -10,6 +10,7 @@ import type {
     UpdateEventSchema,
     CreatePaymentBody,
     CreateEventForm,
+    CreateStrike,
     UpdateFavoriteEvent,
 } from "@tihlde/sdk";
 
@@ -20,6 +21,7 @@ const EventQueryKeys = {
     favorites: ["events", "favorites"] as const,
     registrations: ["events", "registrations"] as const,
     forms: ["events", "forms"] as const,
+    strikes: ["events", "strikes"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -282,6 +284,54 @@ export const createEventFormMutation = mutationOptions({
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.forms, vars.eventId],
+            exact: false,
+        });
+    },
+});
+
+// -- Strikes (prikker) --
+
+export const getStrikesQuery = (
+    page: number,
+    userId?: string,
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    queryOptions({
+        queryKey: [
+            ...EventQueryKeys.strikes,
+            page,
+            pageSize,
+            userId ?? null,
+        ] as const,
+        queryFn: () =>
+            apiClient.get("/api/event/strikes", {
+                searchParams: {
+                    page,
+                    pageSize,
+                    ...(userId ? { userId } : {}),
+                },
+            }),
+    });
+
+export const createStrikeMutation = mutationOptions({
+    mutationFn: ({ data }: { data: CreateStrike }) =>
+        apiClient.post("/api/event/strikes", { json: data }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: EventQueryKeys.strikes,
+            exact: false,
+        });
+    },
+});
+
+export const deleteStrikeMutation = mutationOptions({
+    mutationFn: ({ strikeId }: { strikeId: string }) =>
+        apiClient.delete("/api/event/strikes/{strikeId}", {
+            params: { strikeId },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: EventQueryKeys.strikes,
             exact: false,
         });
     },
