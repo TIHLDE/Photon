@@ -103,14 +103,18 @@ export const createApp = async (variables?: Variables) => {
                 // Credentialed requests need an explicit origin — never "*".
                 // Outside production, keep localhost usable even when
                 // WEBSITE_URL points somewhere else (an ngrok tunnel, say).
-                origin: [
-                    ...new Set([
-                        env.WEBSITE_URL,
-                        ...(env.NODE_ENV === "production"
-                            ? []
-                            : ["http://localhost:3000"]),
-                    ]),
-                ],
+                // Any localhost port is accepted in dev so worktrees/dev
+                // servers on non-default ports can talk to the API.
+                origin: (origin) => {
+                    if (origin === env.WEBSITE_URL) return origin;
+                    if (
+                        env.NODE_ENV !== "production" &&
+                        /^http:\/\/localhost(:\d+)?$/.test(origin)
+                    ) {
+                        return origin;
+                    }
+                    return undefined;
+                },
                 allowHeaders: ["Content-Type", "Authorization"],
                 allowMethods: [
                     "GET",

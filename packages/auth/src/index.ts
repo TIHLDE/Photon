@@ -200,6 +200,9 @@ export function createAuth(options: CreateAuthOptions) {
             options.urls.backend,
             options.urls.frontend,
             ...options.urls.additionalTrusted,
+            // In dev, any localhost port is trusted so worktrees/dev servers
+            // on non-default ports can authenticate.
+            ...(options.isDevMode ? ["http://localhost:*"] : []),
         ],
 
         emailAndPassword: {
