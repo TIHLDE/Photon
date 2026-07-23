@@ -20,11 +20,12 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import type {
-    Group,
     GroupSignatureList,
     GroupSignatureMember,
+    GroupWithMemberCount,
 } from "@tihlde/sdk";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { CheckCircle2, UsersIcon, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { getGroupsQuery, updateGroupMutation } from "#/api/queries/groups";
@@ -32,6 +33,8 @@ import {
     getGroupSignaturesQuery,
     revokeSignatureMutation,
 } from "#/api/queries/contracts";
+import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AdminPageHeader } from "#/components/admin-page-header";
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
@@ -42,43 +45,80 @@ export const Route = createFileRoute("/admin/grupper")({
 // Kontraktsignering gjelder kun verv (undergrupper, komiteer, styrer,
 // interessegrupper). Automatisk genererte grupper (klassetrinn, studier,
 // TIHLDE) og private bøtelag skal ikke administreres her.
-const HIDDEN_GROUP_TYPES = new Set<Group["type"]>([
-    "STUDYYEAR",
-    "STUDY",
-    "TIHLDE",
-    "PRIVATE",
-]);
+const GROUP_TYPE_TABS = [
+    { type: "SUBGROUP", label: "Undergrupper" },
+    { type: "COMMITTEE", label: "Komiteer" },
+    { type: "BOARD", label: "Styrer" },
+    { type: "INTERESTGROUP", label: "Interessegrupper" },
+] as const;
+
+type TabType = (typeof GROUP_TYPE_TABS)[number]["type"];
+
+const GROUP_TYPE_LABELS: Record<string, string> = {
+    SUBGROUP: "Undergruppe",
+    COMMITTEE: "Komité",
+    BOARD: "Styre",
+    INTERESTGROUP: "Interessegruppe",
+    STUDYYEAR: "Klassetrinn",
+    STUDY: "Studie",
+    TIHLDE: "TIHLDE",
+    PRIVATE: "Privat",
+};
+
+/** Norsk visningsnavn for en gruppetype fra databasen (f.eks. "SUBGROUP"). */
+function groupTypeLabel(type: string): string {
+    return (
+        GROUP_TYPE_LABELS[type] ??
+        type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
+    );
+}
 
 function GrupperAdminPage() {
     const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
-    const groups = allGroups.filter(
-        (group) => !HIDDEN_GROUP_TYPES.has(group.type),
-    );
+    const [tab, setTab] = useState<TabType>("SUBGROUP");
     const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
+    const groups = allGroups.filter((group) => group.type === tab);
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
-                <h1>Grupper – kontraktinnstillinger</h1>
-                <p>
-                    Administrer kontraktsignering per gruppe og se
-                    signeringsstatus for medlemmer.
-                </p>
-            </div>
-            <div className="flex flex-col gap-4">
-                {groups.map((group) => (
-                    <GroupCard
-                        key={group.slug}
-                        group={group}
-                        expanded={expandedSlug === group.slug}
-                        onToggle={() =>
-                            setExpandedSlug(
-                                expandedSlug === group.slug ? null : group.slug,
-                            )
-                        }
-                    />
-                ))}
-            </div>
+            <AdminPageHeader
+                title="Grupper – kontraktinnstillinger"
+                description="Administrer kontraktsignering per gruppe og se signeringsstatus for medlemmer."
+            />
+            <Tabs value={tab} onValueChange={(v) => setTab(v as TabType)}>
+                <TabsList>
+                    {GROUP_TYPE_TABS.map(({ type, label }) => (
+                        <TabsTrigger key={type} value={type}>
+                            {label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+            </Tabs>
+            {groups.length === 0 ? (
+                <AdminEmptyState
+                    icon={UsersIcon}
+                    title="Ingen grupper"
+                    description="Fant ingen grupper av denne typen."
+                />
+            ) : (
+                <div className="flex flex-col gap-4">
+                    {groups.map((group) => (
+                        <GroupCard
+                            key={group.slug}
+                            group={group}
+                            expanded={expandedSlug === group.slug}
+                            onToggle={() =>
+                                setExpandedSlug(
+                                    expandedSlug === group.slug
+                                        ? null
+                                        : group.slug,
+                                )
+                            }
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
@@ -88,7 +128,7 @@ function GroupCard({
     expanded,
     onToggle,
 }: {
-    group: Group;
+    group: GroupWithMemberCount;
     expanded: boolean;
     onToggle: () => void;
 }) {
@@ -110,7 +150,8 @@ function GroupCard({
                     <div className="flex flex-col gap-1">
                         <CardTitle>{group.name}</CardTitle>
                         <CardDescription>
-                            {group.slug} · {group.type}
+                            {groupTypeLabel(group.type)} · {group.memberCount}{" "}
+                            {group.memberCount === 1 ? "medlem" : "medlemmer"}
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">

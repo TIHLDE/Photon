@@ -157,7 +157,19 @@ export const groupSchema = Schema(
     }),
 );
 
-export const groupListSchema = Schema("GroupList", z.array(groupSchema));
+export const groupWithMemberCountSchema = Schema(
+    "GroupWithMemberCount",
+    groupSchema.extend({
+        memberCount: z
+            .number()
+            .meta({ description: "Number of members in the group" }),
+    }),
+);
+
+export const groupListSchema = Schema(
+    "GroupList",
+    z.array(groupWithMemberCountSchema),
+);
 
 const membershipSchema = z.object({
     role: z.enum(["member", "leader"]),
