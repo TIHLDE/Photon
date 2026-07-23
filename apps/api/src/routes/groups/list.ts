@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { asc, eq, ilike, or } from "drizzle-orm";
+import { asc, count, eq, ilike, or } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { groupListSchema } from "./schema";
@@ -46,6 +46,23 @@ export const listRoute = route().get(
             orderBy: [asc(schema.group.name)],
         });
 
-        return c.json(groups);
+        // Fetch member counts in one aggregated query instead of per group
+        const memberCounts = await db
+            .select({
+                groupSlug: schema.groupMembership.groupSlug,
+                memberCount: count(),
+            })
+            .from(schema.groupMembership)
+            .groupBy(schema.groupMembership.groupSlug);
+        const countBySlug = new Map(
+            memberCounts.map((row) => [row.groupSlug, row.memberCount]),
+        );
+
+        return c.json(
+            groups.map((group) => ({
+                ...group,
+                memberCount: countBySlug.get(group.slug) ?? 0,
+            })),
+        );
     },
 );

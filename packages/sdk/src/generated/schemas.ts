@@ -88,6 +88,7 @@ export type GroupPositionList = Schemas["GroupPositionList"];
 export type GroupPositionMessage = Schemas["GroupPositionMessage"];
 export type GroupSignatureList = Schemas["GroupSignatureList"];
 export type GroupSignatureMember = Schemas["GroupSignatureMember"];
+export type GroupWithMemberCount = Schemas["GroupWithMemberCount"];
 export type HTTPAppException = Schemas["HTTPAppException"];
 export type JobDetail = Schemas["JobDetail"];
 export type JobList = Schemas["JobList"];

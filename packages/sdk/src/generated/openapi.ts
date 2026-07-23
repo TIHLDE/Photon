@@ -2753,7 +2753,7 @@ export interface components {
             /** @description Whether notification should be marked as read */
             isRead: boolean;
         };
-        Group: {
+        GroupWithMemberCount: {
             /** @description Group slug */
             slug: string;
             /** @description Group image URL */
@@ -2778,8 +2778,10 @@ export interface components {
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
+            /** @description Number of members in the group */
+            memberCount: number;
         };
-        GroupList: components["schemas"]["Group"][];
+        GroupList: components["schemas"]["GroupWithMemberCount"][];
         MyGroup: {
             /** @description Group slug */
             slug: string;
@@ -2813,6 +2815,32 @@ export interface components {
             };
         };
         MyGroupList: components["schemas"]["MyGroup"][];
+        Group: {
+            /** @description Group slug */
+            slug: string;
+            /** @description Group image URL */
+            imageUrl: string | null;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description: string | null;
+            /** @description Group contact email */
+            contactEmail: string | null;
+            /** @description Group type */
+            type: string;
+            /** @description Group fines info */
+            finesInfo: string;
+            /** @description Group fines activated */
+            finesActivated: boolean;
+            /** @description Group fines admin ID */
+            finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+        };
         CreateGroup: {
             /** @description Unique group slug identifier */
             slug: string;

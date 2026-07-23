@@ -27,6 +27,7 @@ import { CheckCircle2, Upload, XCircle, Zap } from "lucide-react";
 import { Suspense, lazy, useEffect, useState } from "react";
 
 import { uploadAssetMutation } from "#/api/queries/assets";
+import { AdminPageHeader } from "#/components/admin-page-header";
 import {
     activateContractMutation,
     createContractMutation,
@@ -51,10 +52,10 @@ function OpptakAdminPage() {
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
-                <h1>Kontraktstyring</h1>
-                <p>Last opp og administrer frivillighetskontrakter.</p>
-            </div>
+            <AdminPageHeader
+                title="Kontraktstyring"
+                description="Last opp og administrer frivillighetskontrakter."
+            />
             <UploadContractCard />
             <ContractListCard
                 contracts={contracts}
