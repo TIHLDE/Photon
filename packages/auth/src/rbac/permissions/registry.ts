@@ -75,6 +75,11 @@ export const PERMISSION_REGISTRY = {
     jobs: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
+
+    // Front-page banner permissions
+    banners: {
+        actions: ["view", "create", "update", "delete", "manage"],
+    },
 } as const;
 
 /**

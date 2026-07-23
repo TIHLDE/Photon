@@ -1,33 +1,380 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BookmarkIcon } from "lucide-react";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { BookmarkIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
+import { Suspense, useState } from "react";
 
+import type { Banner } from "@tihlde/sdk";
+import { Badge } from "@tihlde/ui/ui/badge";
+import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@tihlde/ui/ui/dialog";
+import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import { Input } from "@tihlde/ui/ui/input";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@tihlde/ui/ui/table";
+import { Textarea } from "@tihlde/ui/ui/textarea";
 
+import {
+    createBannerMutation,
+    deleteBannerMutation,
+    getBannersQuery,
+    updateBannerMutation,
+} from "#/api/queries/banners";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
 export const Route = createFileRoute("/admin/bannere")({
     component: BannersAdminPage,
-    loader: () => ({ breadcrumbs: "Bannere" }),
+    loader: async ({ context }) => {
+        await context.queryClient.ensureQueryData(getBannersQuery());
+        return { breadcrumbs: "Bannere" };
+    },
 });
 
 function BannersAdminPage() {
+    const [dialog, setDialog] = useState<
+        { mode: "create" } | { mode: "edit"; banner: Banner } | null
+    >(null);
+
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <AdminPageHeader
                 title="Bannere"
                 description="Tidsstyrte toppbannere for viktige beskjeder på forsiden."
+                action={
+                    <Button onClick={() => setDialog({ mode: "create" })}>
+                        <PlusIcon className="size-4" />
+                        Nytt banner
+                    </Button>
+                }
             />
 
+            <Suspense fallback={<TableSkeleton />}>
+                <BannersTable
+                    onEdit={(banner) => setDialog({ mode: "edit", banner })}
+                />
+            </Suspense>
+
+            <BannerDialog
+                key={dialog?.mode === "edit" ? dialog.banner.id : "create"}
+                open={dialog !== null}
+                banner={dialog?.mode === "edit" ? dialog.banner : null}
+                onOpenChange={(open) => {
+                    if (!open) setDialog(null);
+                }}
+            />
+        </div>
+    );
+}
+
+function BannersTable({ onEdit }: { onEdit: (banner: Banner) => void }) {
+    const { data: banners } = useSuspenseQuery(getBannersQuery());
+    const remove = useMutation(deleteBannerMutation);
+
+    if (banners.length === 0) {
+        return (
             <Card>
                 <CardContent>
                     <AdminEmptyState
                         icon={BookmarkIcon}
-                        title="Venter på API-endepunkt"
-                        description="Bannerhåndtering krever et banner-endepunkt i API-et, som ennå ikke finnes. Når det er på plass, vil denne siden la deg opprette, tidsstyre og publisere bannere."
+                        title="Ingen bannere"
+                        description="Ingen bannere er opprettet ennå. Opprett et for å vise en beskjed på forsiden i et gitt tidsrom."
                     />
                 </CardContent>
             </Card>
-        </div>
+        );
+    }
+
+    function handleDelete(banner: Banner) {
+        if (
+            window.confirm(
+                `Slette banneret "${banner.title}"? Dette kan ikke angres.`,
+            )
+        ) {
+            remove.mutate({ bannerId: banner.id });
+        }
+    }
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tittel</TableHead>
+                            <TableHead>Synlig fra</TableHead>
+                            <TableHead>Synlig til</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">
+                                Handlinger
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {banners.map((banner) => (
+                            <TableRow key={banner.id}>
+                                <TableCell>{banner.title}</TableCell>
+                                <TableCell>
+                                    {formatDateTime(banner.visibleFrom)}
+                                </TableCell>
+                                <TableCell>
+                                    {formatDateTime(banner.visibleUntil)}
+                                </TableCell>
+                                <TableCell>
+                                    <BannerStatusBadge banner={banner} />
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onEdit(banner)}
+                                        >
+                                            <PencilIcon className="size-4" />
+                                            Rediger
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            disabled={remove.isPending}
+                                            onClick={() => handleDelete(banner)}
+                                        >
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+function BannerStatusBadge({ banner }: { banner: Banner }) {
+    if (banner.isVisible) {
+        return <Badge variant="secondary">Synlig nå</Badge>;
+    }
+    if (new Date(banner.visibleFrom).getTime() > Date.now()) {
+        return <Badge variant="outline">Planlagt</Badge>;
+    }
+    return <Badge variant="outline">Utløpt</Badge>;
+}
+
+function BannerDialog({
+    open,
+    banner,
+    onOpenChange,
+}: {
+    open: boolean;
+    banner: Banner | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const isEdit = banner !== null;
+
+    const [title, setTitle] = useState(banner?.title ?? "");
+    const [description, setDescription] = useState(banner?.description ?? "");
+    const [url, setUrl] = useState(banner?.url ?? "");
+    const [visibleFrom, setVisibleFrom] = useState(
+        toDatetimeLocal(banner?.visibleFrom),
+    );
+    const [visibleUntil, setVisibleUntil] = useState(
+        toDatetimeLocal(banner?.visibleUntil),
+    );
+    const [error, setError] = useState<string | null>(null);
+
+    const create = useMutation(createBannerMutation);
+    const update = useMutation(updateBannerMutation);
+    const isPending = create.isPending || update.isPending;
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setError(null);
+
+        if (!visibleFrom || !visibleUntil) {
+            setError("Både synlig fra og synlig til må fylles ut.");
+            return;
+        }
+
+        const fromIso = new Date(visibleFrom).toISOString();
+        const untilIso = new Date(visibleUntil).toISOString();
+
+        if (fromIso >= untilIso) {
+            setError("Synlig fra må være før synlig til.");
+            return;
+        }
+
+        try {
+            if (isEdit && banner) {
+                await update.mutateAsync({
+                    bannerId: banner.id,
+                    data: {
+                        title,
+                        description,
+                        url: url || null,
+                        visibleFrom: fromIso,
+                        visibleUntil: untilIso,
+                    },
+                });
+            } else {
+                await create.mutateAsync({
+                    data: {
+                        title,
+                        description,
+                        url: url || undefined,
+                        visibleFrom: fromIso,
+                        visibleUntil: untilIso,
+                    },
+                });
+            }
+            onOpenChange(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isEdit ? "Rediger banner" : "Nytt banner"}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="banner-title">
+                                Tittel
+                            </FieldLabel>
+                            <Input
+                                id="banner-title"
+                                required
+                                maxLength={200}
+                                value={title}
+                                onChange={(event) =>
+                                    setTitle(event.target.value)
+                                }
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="banner-description">
+                                Beskrivelse
+                            </FieldLabel>
+                            <Textarea
+                                id="banner-description"
+                                required
+                                rows={3}
+                                maxLength={500}
+                                value={description}
+                                onChange={(event) =>
+                                    setDescription(event.target.value)
+                                }
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="banner-url">
+                                Lenke (valgfri)
+                            </FieldLabel>
+                            <Input
+                                id="banner-url"
+                                type="url"
+                                value={url}
+                                onChange={(event) => setUrl(event.target.value)}
+                                placeholder="https://"
+                            />
+                        </Field>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Field>
+                                <FieldLabel htmlFor="banner-visible-from">
+                                    Synlig fra
+                                </FieldLabel>
+                                <Input
+                                    id="banner-visible-from"
+                                    type="datetime-local"
+                                    required
+                                    value={visibleFrom}
+                                    onChange={(event) =>
+                                        setVisibleFrom(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="banner-visible-until">
+                                    Synlig til
+                                </FieldLabel>
+                                <Input
+                                    id="banner-visible-until"
+                                    type="datetime-local"
+                                    required
+                                    value={visibleUntil}
+                                    onChange={(event) =>
+                                        setVisibleUntil(event.target.value)
+                                    }
+                                />
+                            </Field>
+                        </div>
+                    </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button type="submit" disabled={isPending}>
+                            {isEdit ? "Lagre" : "Opprett"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function toDatetimeLocal(iso: string | null | undefined): string {
+    if (!iso) return "";
+    const date = new Date(iso);
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60_000);
+    return local.toISOString().slice(0, 16);
+}
+
+function formatDateTime(iso: string): string {
+    return new Date(iso).toLocaleString("nb-NO", {
+        dateStyle: "short",
+        timeStyle: "short",
+    });
+}
+
+function TableSkeleton() {
+    return (
+        <Card>
+            <CardContent className="flex flex-col gap-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <Skeleton key={index} className="h-10 w-full" />
+                ))}
+            </CardContent>
+        </Card>
     );
 }
