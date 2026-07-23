@@ -10,7 +10,20 @@ import { apiClient } from "#/api/api-client";
 const RoleQueryKeys = {
     roles: ["roles"] as const,
     positions: ["groups", "positions"] as const,
+    userSearch: ["users", "search"] as const,
 } as const;
+
+// -- User search (for assigning roles/positions by name, not ID) --
+
+export const searchUsersQuery = (q: string) =>
+    queryOptions({
+        queryKey: [...RoleQueryKeys.userSearch, q],
+        queryFn: () =>
+            apiClient.get("/api/user/search", {
+                searchParams: { q },
+            }),
+        staleTime: 30_000,
+    });
 
 // -- Roles --
 
