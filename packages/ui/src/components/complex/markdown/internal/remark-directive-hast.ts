@@ -1,7 +1,7 @@
 import type { Root } from "mdast";
-import type { Directives } from "mdast-util-directive";
+import type { Directives, TextDirective } from "mdast-util-directive";
 import type { Plugin } from "unified";
-import { visit } from "unist-util-visit";
+import { SKIP, visit } from "unist-util-visit";
 
 import type { DirectiveRegistry } from "../directive";
 
@@ -22,15 +22,18 @@ export const ATTRS_PROPERTY = ATTRS_PROP;
  * the mdast→hast conversion intact, then re-validated with Zod inside the
  * components map.
  *
- * Unknown directives (not in the registry) are left as-is — react-markdown
- * will skip rendering them, effectively making them inert.
+ * Unknown *inline* directives are converted back into plain text. Ordinary
+ * prose triggers them by accident all the time — "kl 16:15" parses as a text
+ * directive named "15" — and without this the ":15" silently disappears and
+ * the fallback rendering nests a <div> inside <p> (hydration error). Unknown
+ * block directives (leaf/container) are left as-is and render inert.
  */
 export function buildRemarkDirectivePlugin(
     registry: DirectiveRegistry,
 ): Plugin<[], Root> {
     return function remarkTihldeDirective() {
         return (tree) => {
-            visit(tree, (node) => {
+            visit(tree, (node, index, parent) => {
                 if (
                     node.type !== "containerDirective" &&
                     node.type !== "leafDirective" &&
@@ -39,7 +42,28 @@ export function buildRemarkDirectivePlugin(
                     return;
                 }
                 const directive = node as Directives;
-                if (!registry.has(directive.name)) return;
+                if (!registry.has(directive.name)) {
+                    if (
+                        directive.type === "textDirective" &&
+                        parent &&
+                        typeof index === "number"
+                    ) {
+                        // Restore the literal ":name" text and keep any
+                        // [label] children as ordinary inline content.
+                        const inline = directive as TextDirective;
+                        parent.children.splice(
+                            index,
+                            1,
+                            {
+                                type: "text",
+                                value: `:${inline.name}`,
+                            },
+                            ...inline.children,
+                        );
+                        return [SKIP, index];
+                    }
+                    return;
+                }
 
                 const data = (directive.data ??= {});
                 data.hName = tagFor(directive.name);

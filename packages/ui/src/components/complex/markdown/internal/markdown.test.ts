@@ -6,9 +6,12 @@ import {
     type DirectiveRegistry,
     defineDirective,
 } from "../directive";
+import { unified } from "unified";
+
 import { mdastToTiptap } from "./mdast-to-pm";
 import { parseMarkdown, stringifyMdast } from "./pipeline";
 import { tiptapToMdast } from "./pm-to-mdast";
+import { buildRemarkDirectivePlugin } from "./remark-directive-hast";
 
 // Inline fixtures: a container directive (callout) and a leaf directive (youtube).
 // We don't render Edit/Render in tests — only the round-trip through mdast and
@@ -197,5 +200,58 @@ describe("markdown round-trip", () => {
         const result = normalize(roundTrip(input, minimalRegistry));
         expect(result).toContain("# Title");
         expect(result).toContain("**bold**");
+    });
+});
+
+describe("buildRemarkDirectivePlugin", () => {
+    function runPlugin(markdown: string, registry = minimalRegistry) {
+        const mdast = parseMarkdown(markdown);
+        const transform = buildRemarkDirectivePlugin(registry).call(
+            unified(),
+        ) as (tree: typeof mdast) => void;
+        transform(mdast);
+        return mdast;
+    }
+
+    test("accidental inline directive (time of day) is restored as text", () => {
+        // "kl 16:15" parses ":15" as a text directive; the plugin must put
+        // the literal text back instead of leaving an unrenderable node.
+        const tree = runPlugin("Møtet holdes kl 16:15 hver onsdag.");
+        const paragraph = tree.children[0];
+        expect(paragraph?.type).toBe("paragraph");
+        if (paragraph?.type !== "paragraph") return;
+        const text = paragraph.children
+            .map((c) => (c.type === "text" ? c.value : ""))
+            .join("");
+        expect(text).toBe("Møtet holdes kl 16:15 hver onsdag.");
+        expect(paragraph.children.some((c) => c.type === "textDirective")).toBe(
+            false,
+        );
+    });
+
+    test("unknown inline directive keeps its label content", () => {
+        const tree = runPlugin("Se :info[detaljer her] for mer.");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const text = paragraph.children
+            .map((c) => (c.type === "text" ? c.value : ""))
+            .join("");
+        expect(text).toBe("Se :infodetaljer her for mer.");
+        expect(
+            paragraph.children.some(
+                (c) => c.type === "text" && c.value === "detaljer her",
+            ),
+        ).toBe(true);
+    });
+
+    test("registered directives still get hName tagged", () => {
+        const tree = runPlugin(
+            ":::callout{type=info}\nBody.\n:::",
+            richRegistry,
+        );
+        const directive = tree.children[0];
+        expect(directive?.type).toBe("containerDirective");
+        if (directive?.type !== "containerDirective") return;
+        expect(directive.data?.hName).toBe("tihlde-callout");
     });
 });
