@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { InfoIcon, PlusIcon, Trash2, UsersIcon } from "lucide-react";
+import { PlusIcon, Trash2, UsersIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
@@ -14,7 +14,6 @@ import {
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
-import { Input } from "@tihlde/ui/ui/input";
 import {
     Select,
     SelectContent,
@@ -40,14 +39,50 @@ import {
     removeGroupMemberMutation,
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
+import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    UserSearchCombobox,
+    type UserSearchOption,
+} from "#/components/user-search-combobox";
+import { useDebounced } from "#/lib/use-debounced";
+import { initials } from "#/lib/utils";
 
 const ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
     member: "Medlem",
 };
+
+const MEMBER_SINCE_FORMAT = new Intl.DateTimeFormat("nb-NO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+});
+
+/** Prefer the API's own error message over ky's generic HTTP status text. */
+async function extractErrorMessage(error: unknown): Promise<string> {
+    // Structural check instead of `instanceof HTTPError` — Vite can bundle
+    // duplicate ky instances, which breaks instanceof across modules.
+    const response =
+        error && typeof error === "object" && "response" in error
+            ? error.response
+            : null;
+    if (response instanceof Response) {
+        try {
+            const body = (await response.clone().json()) as {
+                message?: string;
+            };
+            if (body.message) {
+                return body.message;
+            }
+        } catch {
+            // Fall through to the generic message.
+        }
+    }
+    return error instanceof Error ? error.message : String(error);
+}
 
 export const Route = createFileRoute("/admin/brukere")({
     component: UsersAdminPage,
@@ -70,17 +105,6 @@ function UsersAdminPage() {
                 title="Brukere"
                 description="Administrer medlemskap og roller per gruppe."
             />
-
-            <Alert>
-                <InfoIcon className="size-4" />
-                <AlertTitle>Gruppebasert medlemshåndtering</AlertTitle>
-                <AlertDescription>
-                    API-et har ennå ikke et globalt brukerregister. Brukere
-                    administreres derfor per gruppe her. Når et endepunkt for å
-                    liste alle brukere finnes, kan denne siden utvides med et
-                    fullt brukersøk.
-                </AlertDescription>
-            </Alert>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <Field className="sm:max-w-72">
@@ -160,7 +184,7 @@ function MembersTable({ groupSlug }: { groupSlug: string }) {
     function handleRemove(member: GroupMember) {
         if (
             window.confirm(
-                `Fjerne bruker ${member.userId} fra gruppen? Dette kan ikke angres.`,
+                `Fjerne ${member.user.name} fra gruppen? Dette kan ikke angres.`,
             )
         ) {
             remove.mutate({ groupSlug, userId: member.userId });
@@ -173,7 +197,7 @@ function MembersTable({ groupSlug }: { groupSlug: string }) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Bruker-ID</TableHead>
+                            <TableHead>Navn</TableHead>
                             <TableHead>Rolle</TableHead>
                             <TableHead>Medlem siden</TableHead>
                             <TableHead className="text-right">
@@ -185,9 +209,24 @@ function MembersTable({ groupSlug }: { groupSlug: string }) {
                         {members.map((member) => (
                             <TableRow key={member.userId}>
                                 <TableCell>
-                                    <code className="text-xs">
-                                        {member.userId}
-                                    </code>
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="size-7">
+                                            <AvatarImage
+                                                src={
+                                                    member.user.image ??
+                                                    undefined
+                                                }
+                                            />
+                                            <AvatarFallback>
+                                                {initials(
+                                                    member.user.name ?? "?",
+                                                )}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-sm font-medium">
+                                            {member.user.name}
+                                        </span>
+                                    </div>
                                 </TableCell>
                                 <TableCell>
                                     <Select
@@ -234,9 +273,9 @@ function MembersTable({ groupSlug }: { groupSlug: string }) {
                                     </Select>
                                 </TableCell>
                                 <TableCell>
-                                    {new Date(
-                                        member.createdAt,
-                                    ).toLocaleDateString("nb-NO")}
+                                    {MEMBER_SINCE_FORMAT.format(
+                                        new Date(member.createdAt),
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end">
@@ -269,25 +308,39 @@ function AddMemberDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
-    const [userId, setUserId] = useState("");
+    const [selectedUser, setSelectedUser] = useState<UserSearchOption | null>(
+        null,
+    );
+    const [query, setQuery] = useState("");
     const [role, setRole] = useState<"member" | "leader">("member");
     const [error, setError] = useState<string | null>(null);
+
+    const debouncedQuery = useDebounced(query);
+    const { data: searchResults, isFetching } = useQuery({
+        ...searchUsersQuery(debouncedQuery),
+        enabled: debouncedQuery.length >= 2,
+    });
 
     const add = useMutation(addGroupMemberMutation);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        if (!selectedUser) {
+            setError("Velg en bruker først.");
+            return;
+        }
         setError(null);
         try {
             await add.mutateAsync({
                 groupSlug,
-                data: { userId: userId.trim(), role },
+                data: { userId: selectedUser.id, role },
             });
-            setUserId("");
+            setSelectedUser(null);
+            setQuery("");
             setRole("member");
             onOpenChange(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(await extractErrorMessage(err));
         }
     }
 
@@ -300,17 +353,16 @@ function AddMemberDialog({
                     </DialogHeader>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor="member-user-id">
-                                Bruker-ID
-                            </FieldLabel>
-                            <Input
-                                id="member-user-id"
-                                required
-                                value={userId}
-                                onChange={(event) =>
-                                    setUserId(event.target.value)
-                                }
-                                placeholder="Feide-/bruker-ID"
+                            <FieldLabel>Bruker</FieldLabel>
+                            <UserSearchCombobox
+                                holder={selectedUser}
+                                query={query}
+                                onQueryChange={setQuery}
+                                results={searchResults ?? []}
+                                isSearching={isFetching}
+                                onSelect={setSelectedUser}
+                                onRemove={() => setSelectedUser(null)}
+                                emptyLabel="Søk etter bruker…"
                             />
                         </Field>
                         <Field>

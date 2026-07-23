@@ -172,6 +172,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/banners/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List currently visible banners
+         * @description Banners whose visibility window covers the current moment, newest first. Public endpoint — this is what the front page renders.
+         */
+        get: operations["listVisibleBanners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all banners
+         * @description Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' permission. There are only ever a handful of banners, so the list is unpaginated.
+         */
+        get: operations["listBanners"];
+        put?: never;
+        /**
+         * Create banner
+         * @description Create a new front-page banner. Requires 'banners:create' permission.
+         */
+        post: operations["createBanner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/banners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete banner
+         * @description Delete a banner. Requires 'banners:delete' or 'banners:manage' permission.
+         */
+        delete: operations["deleteBanner"];
+        options?: never;
+        head?: never;
+        /**
+         * Update banner
+         * @description Update a banner. Requires 'banners:update' or 'banners:manage' permission.
+         */
+        patch: operations["updateBanner"];
+        trace?: never;
+    };
     "/api/company/contact": {
         parameters: {
             query?: never;
@@ -207,6 +275,50 @@ export interface paths {
          */
         post: operations["sendCustomEmail"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/strikes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List strikes
+         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission.
+         */
+        get: operations["listStrikes"];
+        put?: never;
+        /**
+         * Create strike
+         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.
+         */
+        post: operations["createStrike"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/strikes/{strikeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete strike
+         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage' permission.
+         */
+        delete: operations["deleteStrike"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1812,6 +1924,83 @@ export interface components {
              */
             createdAt: string;
         };
+        VisibleBanner: {
+            /**
+             * Format: uuid
+             * @description Banner ID
+             */
+            id: string;
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /** @description Optional link for the banner */
+            url: string | null;
+            /** @description Visibility window end (ISO 8601) */
+            visibleUntil: string;
+        };
+        /** @description Banners currently live, newest first */
+        VisibleBannerList: components["schemas"]["VisibleBanner"][];
+        Banner: {
+            /**
+             * Format: uuid
+             * @description Banner ID
+             */
+            id: string;
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /** @description Optional link for the banner */
+            url: string | null;
+            /** @description Visibility window start (ISO 8601) */
+            visibleFrom: string;
+            /** @description Visibility window end (ISO 8601) */
+            visibleUntil: string;
+            /** @description Whether the banner is live right now */
+            isVisible: boolean;
+            /** @description Creator user ID */
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+        };
+        /** @description All banners, newest visibility first */
+        BannerList: components["schemas"]["Banner"][];
+        CreateBanner: {
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /**
+             * Format: uri
+             * @description Optional link for the banner
+             */
+            url?: string;
+            /**
+             * Format: date-time
+             * @description When the banner becomes visible
+             */
+            visibleFrom: string;
+            /**
+             * Format: date-time
+             * @description When the banner stops being visible
+             */
+            visibleUntil: string;
+        };
+        UpdateBanner: {
+            title?: string;
+            description?: string;
+            url?: string | null;
+            /** Format: date-time */
+            visibleFrom?: string;
+            /** Format: date-time */
+            visibleUntil?: string;
+        };
+        DeleteBannerResponse: {
+            message: string;
+        };
         CompanyContactResponse: {
             success: boolean;
             message: string;
@@ -1877,6 +2066,64 @@ export interface components {
                  */
                 url: string;
             })[];
+        };
+        Strike: {
+            /** @description Strike ID */
+            id: string;
+            /** @description User ID who received the strike */
+            userId: string;
+            /** @description Event the strike is connected to */
+            eventId: string;
+            /** @description Number of strikes */
+            count: number;
+            /** @description Reason for the strike */
+            reason: string | null;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Public user info for the struck user */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+            /** @description Event the strike belongs to */
+            event: {
+                /** @description Event ID */
+                id: string;
+                /** @description Event title */
+                title: string;
+            };
+        };
+        StrikeList: {
+            /** @description Total number of strikes */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            strikes: components["schemas"]["Strike"][];
+        };
+        CreateStrike: {
+            /** @description User ID who receives the strike */
+            userId: string;
+            /**
+             * Format: uuid
+             * @description Event the strike is connected to
+             */
+            eventId: string;
+            /**
+             * @description Number of strikes (1-3)
+             * @default 1
+             */
+            count: number;
+            /** @description Reason for the strike */
+            reason?: string;
+        };
+        DeleteStrikeResponse: {
+            message: string;
         };
         CreateEventResponse: {
             /** Format: uuid */
@@ -4141,6 +4388,196 @@ export interface operations {
             };
         };
     };
+    listVisibleBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleBannerList"];
+                };
+            };
+        };
+    };
+    listBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BannerList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBanner"];
+            };
+        };
+        responses: {
+            /** @description Banner created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Banner"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Banner deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteBannerResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Banner not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBanner"];
+            };
+        };
+        responses: {
+            /** @description Banner updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Banner"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Banner not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     submitCompanyContact: {
         parameters: {
             query?: never;
@@ -4217,6 +4654,141 @@ export interface operations {
             };
             /** @description Email API not configured */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listStrikes: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Filter strikes by user ID */
+                userId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrikeList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:view or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createStrike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStrike"];
+            };
+        };
+        responses: {
+            /** @description Strike created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Strike"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:create or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User or event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteStrike: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                strikeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Strike deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteStrikeResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:strikes:delete or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Strike not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

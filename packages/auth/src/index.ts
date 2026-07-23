@@ -51,6 +51,33 @@ const isFeideConfigured = Boolean(
 const STUD_NTNU_EMAIL_PATTERN =
     /^([a-z0-9]+(?:[._-][a-z0-9]+)*)@stud\.ntnu\.no$/;
 
+/**
+ * Longest domain suffix shared by two URLs' hostnames, or undefined when the
+ * hosts are identical (host-only cookies already reach both) or share fewer
+ * than two labels (never widen a cookie to a bare TLD or unrelated hosts).
+ * `https://tihlde.org` + `https://photon.tihlde.org` -> `tihlde.org`.
+ */
+export function sharedParentDomain(a: string, b: string): string | undefined {
+    const hostA = new URL(a).hostname;
+    const hostB = new URL(b).hostname;
+    if (hostA === hostB) return undefined;
+
+    const labelsA = hostA.split(".");
+    const labelsB = hostB.split(".");
+    const shared: string[] = [];
+    while (
+        labelsA.length > 0 &&
+        labelsB.length > 0 &&
+        labelsA.at(-1) === labelsB.at(-1)
+    ) {
+        shared.unshift(labelsA.pop() as string);
+        labelsB.pop();
+    }
+
+    if (shared.length < 2) return undefined;
+    return shared.join(".");
+}
+
 export interface CreateAuthOptions {
     isDevMode?: boolean;
 
@@ -136,6 +163,22 @@ export function createAuth(options: CreateAuthOptions) {
         );
     }
 
+    /**
+     * The frontend server-renders auth-guarded routes and must forward the
+     * session cookie to the API. That only works if the browser sends the
+     * cookie to the frontend host too — i.e. the cookie is scoped to the
+     * shared parent domain (tihlde.org for tihlde.org + photon.tihlde.org),
+     * not host-only for the API. Without this, a hard refresh on a guarded
+     * page SSRs with no cookie and bounces a logged-in user to /login.
+     *
+     * Derived from the configured URLs so localhost dev (same hostname on
+     * both sides — host-only cookies already work) stays untouched.
+     */
+    const cookieDomain = sharedParentDomain(
+        options.urls.frontend,
+        options.urls.backend,
+    );
+
     return betterAuth({
         appName: "Photon, TIHLDE Backend",
         secret: options.secret || undefined,
@@ -205,7 +248,9 @@ export function createAuth(options: CreateAuthOptions) {
         advanced: {
             cookiePrefix: "tihlde",
             useSecureCookies: isProd,
-            crossSubDomainCookies: { enabled: false },
+            crossSubDomainCookies: cookieDomain
+                ? { enabled: true, domain: cookieDomain }
+                : { enabled: false },
             defaultCookieAttributes: {
                 httpOnly: true,
                 sameSite: "lax",
