@@ -1,6 +1,5 @@
-import { Button } from "@tihlde/ui/ui/button";
-import { Separator } from "@tihlde/ui/ui/separator";
-import { Fragment, type ReactNode } from "react";
+import { Tabs, TabsIndicator, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import type { ReactNode } from "react";
 
 type NavItem<K extends string> = {
     key: K;
@@ -17,9 +16,7 @@ export function DetailLayout({ header, children }: DetailLayoutProps) {
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             {header}
-            <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
-                {children}
-            </div>
+            {children}
         </div>
     );
 }
@@ -66,74 +63,36 @@ type DetailLayoutNavProps<K extends string> = {
     sections: NavItem<K>[][];
     active: K;
     onSelect: (key: K) => void;
-    desktopFooter?: ReactNode;
 };
 
 export function DetailLayoutNav<K extends string>({
     sections,
     active,
     onSelect,
-    desktopFooter,
 }: DetailLayoutNavProps<K>) {
     const flatItems = sections.flat();
 
     return (
-        <>
-            <nav className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
-                <ul className="flex w-max gap-2">
+        <nav className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Tabs
+                value={active}
+                onValueChange={(value) => onSelect(value as K)}
+            >
+                <TabsList>
+                    <TabsIndicator />
                     {flatItems.map((item) => (
-                        <li key={item.key} className="shrink-0">
-                            <Button
-                                variant={
-                                    active === item.key ? "default" : "ghost"
-                                }
-                                size="sm"
-                                onClick={() => onSelect(item.key)}
-                            >
-                                {item.icon}
-                                {item.label}
-                            </Button>
-                        </li>
+                        <TabsTrigger
+                            key={item.key}
+                            value={item.key}
+                            className="px-3"
+                        >
+                            {item.icon}
+                            {item.label}
+                        </TabsTrigger>
                     ))}
-                </ul>
-            </nav>
-
-            <aside className="hidden md:block">
-                <nav className="flex flex-col gap-2">
-                    {sections.map((items, index) => (
-                        <Fragment key={index}>
-                            {index > 0 ? <Separator className="my-2" /> : null}
-                            <ul className="flex flex-col gap-1">
-                                {items.map((item) => (
-                                    <li key={item.key}>
-                                        <Button
-                                            variant={
-                                                active === item.key
-                                                    ? "default"
-                                                    : "ghost"
-                                            }
-                                            className="w-full justify-start"
-                                            onClick={() => onSelect(item.key)}
-                                        >
-                                            {item.icon}
-                                            <span className="flex-1 text-left">
-                                                {item.label}
-                                            </span>
-                                        </Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </Fragment>
-                    ))}
-                    {desktopFooter ? (
-                        <>
-                            <Separator className="my-2" />
-                            {desktopFooter}
-                        </>
-                    ) : null}
-                </nav>
-            </aside>
-        </>
+                </TabsList>
+            </Tabs>
+        </nav>
     );
 }
 
