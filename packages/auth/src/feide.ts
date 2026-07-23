@@ -13,9 +13,11 @@ import {
     account,
     group,
     groupMembership,
+    role,
     studyProgram,
     studyProgramMembership,
     user,
+    userRole,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
 
@@ -205,9 +207,12 @@ export const syncFeideHook: (
 
                 /**
                  * Additive by design: an existing row is left exactly as it
-                 * is, start year included. Feide is asked with `showAll=true`
-                 * so that graduating does not revoke access, and rewriting or
-                 * deleting memberships here would undo that.
+                 * is, start year included. Feide only reports ACTIVE
+                 * memberships, so graduating removes the group from the
+                 * response — access history survives because rows are never
+                 * rewritten or deleted here. Baseline roles (member/alumni)
+                 * are what actually gate participation; see
+                 * syncBaselineRoles.
                  */
                 await tx
                     .insert(studyProgramMembership)
@@ -225,9 +230,87 @@ export const syncFeideHook: (
                     feideGroup.startYear,
                 );
             }
+
+            // Baseline roles follow the Feide result: active students get
+            // "member", former members get "alumni", strangers get neither.
+            await syncBaselineRoles(tx, userId, groups.length > 0);
         });
     }
 };
+
+/**
+ * Keep a user's baseline RBAC role ("member" / "alumni") in sync with what
+ * Feide reports at login.
+ *
+ * - Active student (Feide returned ≥1 TIHLDE study programme): assign
+ *   "member", remove "alumni".
+ * - Not active, but with TIHLDE history (a study-programme membership or any
+ *   group membership — both additive, "én gang TIHLDE-medlem, alltid
+ *   TIHLDE-medlem"): assign "alumni", remove "member".
+ * - No TIHLDE tie (e.g. an NTNU student outside TIHLDE's programmes): remove
+ *   both.
+ *
+ * No-ops for roles that don't exist yet (unseeded databases), so the login
+ * flow never breaks on a missing role.
+ */
+export async function syncBaselineRoles(
+    tx: Transaction,
+    userId: string,
+    isActiveStudent: boolean,
+): Promise<void> {
+    const baselineRoles = await tx
+        .select({ id: role.id, name: role.name })
+        .from(role)
+        .where(inArray(role.name, ["member", "alumni"]));
+
+    const memberRole = baselineRoles.find((r) => r.name === "member");
+    const alumniRole = baselineRoles.find((r) => r.name === "alumni");
+    if (!memberRole && !alumniRole) return;
+
+    let target: "member" | "alumni" | null = null;
+    if (isActiveStudent) {
+        target = "member";
+    } else {
+        const [studyHistory] = await tx
+            .select({ userId: studyProgramMembership.userId })
+            .from(studyProgramMembership)
+            .where(eq(studyProgramMembership.userId, userId))
+            .limit(1);
+        const [groupHistory] = studyHistory
+            ? [studyHistory]
+            : await tx
+                  .select({ userId: groupMembership.userId })
+                  .from(groupMembership)
+                  .where(eq(groupMembership.userId, userId))
+                  .limit(1);
+        if (studyHistory || groupHistory) target = "alumni";
+    }
+
+    const assign = async (roleId: number) => {
+        await tx
+            .insert(userRole)
+            .values({ userId, roleId })
+            .onConflictDoNothing();
+    };
+    const remove = async (roleId: number) => {
+        await tx
+            .delete(userRole)
+            .where(
+                and(eq(userRole.userId, userId), eq(userRole.roleId, roleId)),
+            );
+    };
+
+    if (target === "member") {
+        if (memberRole) await assign(memberRole.id);
+        if (alumniRole) await remove(alumniRole.id);
+    } else if (target === "alumni") {
+        if (alumniRole) await assign(alumniRole.id);
+        if (memberRole) await remove(memberRole.id);
+    } else {
+        if (memberRole) await remove(memberRole.id);
+        if (alumniRole) await remove(alumniRole.id);
+    }
+}
 
 /** The transaction handle `db.transaction` hands to its callback. */
 type Transaction = Parameters<
@@ -315,8 +398,11 @@ interface StudyProgram {
 async function fetchValidStudyPrograms(
     accessToken: string,
 ): Promise<StudyProgram[]> {
-    // showAll=true includes all groups, even those that are not active
-    // this follows the principle of "Én gang TIHLDE-medlem, alltid TIHLDE-medlem" to still provide access
+    // NOTE: no `show_all` param, so Dataporten only returns ACTIVE
+    // memberships — an empty result for TIHLDE programmes means the user is
+    // not an active student. Historic access is preserved anyway because the
+    // membership rows below are additive ("Én gang TIHLDE-medlem, alltid
+    // TIHLDE-medlem").
     const response = await fetch(
         "https://groups-api.dataporten.no/groups/me/groups",
         { headers: { Authorization: `Bearer ${accessToken}` } },

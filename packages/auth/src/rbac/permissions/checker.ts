@@ -7,7 +7,13 @@
 
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { role, userPermission, userRole } from "@photon/db/schema";
+import {
+    groupPosition,
+    groupPositionHolder,
+    role,
+    userPermission,
+    userRole,
+} from "@photon/db/schema";
 import type { DbSchema } from "@photon/db";
 import {
     GLOBAL_SCOPE,
@@ -61,19 +67,54 @@ async function getDirectPermissions(
 }
 
 /**
- * Get all permissions for a user (from roles + direct grants).
+ * Get all permissions a user receives from group positions (verv/titler).
+ *
+ * Positions with scope "group" grant their permissions scoped to the
+ * position's group ("permission@group:<slug>"); positions with scope
+ * "global" grant them globally.
+ */
+async function getPermissionsFromPositions(
+    ctx: DbCtx,
+    userId: string,
+): Promise<string[]> {
+    const db = ctx.db;
+    const rows = await db
+        .select({
+            permissions: groupPosition.permissions,
+            scope: groupPosition.scope,
+            groupSlug: groupPosition.groupSlug,
+        })
+        .from(groupPositionHolder)
+        .innerJoin(
+            groupPosition,
+            eq(groupPositionHolder.positionId, groupPosition.id),
+        )
+        .where(eq(groupPositionHolder.userId, userId));
+
+    return rows.flatMap((row) =>
+        (row.permissions ?? []).map((p) =>
+            row.scope === "global"
+                ? p
+                : formatPermission(p, `group:${row.groupSlug}`),
+        ),
+    );
+}
+
+/**
+ * Get all permissions for a user (from roles + direct grants + positions).
  * Returns raw array with potential duplicates.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
-    const [rolePerms, directPerms] = await Promise.all([
+    const [rolePerms, directPerms, positionPerms] = await Promise.all([
         getPermissionsFromRoles(ctx, userId),
         getDirectPermissions(ctx, userId),
+        getPermissionsFromPositions(ctx, userId),
     ]);
 
-    return [...rolePerms, ...directPerms];
+    return [...rolePerms, ...directPerms, ...positionPerms];
 }
 
 /**

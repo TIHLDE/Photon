@@ -1,8 +1,8 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { isGroupMember } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
@@ -16,7 +16,7 @@ export const getFineRoute = route().get(
         summary: "Get fine by ID",
         operationId: "getFine",
         description:
-            "Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.",
+            "Retrieve detailed information about a specific fine. Group members can view fines in their own group, users can always view their own fines, and fines admins / 'fines:view' holders can view all fines for the group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -74,34 +74,34 @@ export const getFineRoute = route().get(
             });
         }
 
-        // Check authorization: user can view their own fines, fines admin can view all,
-        // OR user has fines:view permission (globally or scoped to this group)
+        // Check authorization: own fine, membership in the group (Lepton
+        // parity), fines admin, or fines:view (globally or scoped).
         const isOwner = fine.userId === user.id;
 
         if (!isOwner) {
-            const group = await db
-                .select()
-                .from(schema.group)
-                .where(eq(schema.group.slug, groupSlug))
-                .limit(1)
-                .then((res) => res[0]);
+            const isMember = await isGroupMember(ctx, user.id, groupSlug);
 
-            const isFinesAdmin = group?.finesAdminId === user.id;
+            let allowed = isMember;
+            if (!allowed) {
+                const group = await db
+                    .select()
+                    .from(schema.group)
+                    .where(eq(schema.group.slug, groupSlug))
+                    .limit(1)
+                    .then((res) => res[0]);
 
-            // Check for global or scoped fines:view permission
-            const hasGlobalPerm = await hasPermission(
-                ctx,
-                user.id,
-                "fines:view",
-            );
-            const hasScopedPerm = await hasScopedPermission(
-                ctx,
-                user.id,
-                "fines:view",
-                `group:${groupSlug}`,
-            );
+                const isFinesAdmin = group?.finesAdminId === user.id;
+                allowed =
+                    isFinesAdmin ||
+                    (await hasScopedPermission(
+                        ctx,
+                        user.id,
+                        "fines:view",
+                        `group:${groupSlug}`,
+                    ));
+            }
 
-            if (!isFinesAdmin && !hasGlobalPerm && !hasScopedPerm) {
+            if (!allowed) {
                 throw new HTTPException(403, {
                     message: "Not authorized to view this fine",
                 });

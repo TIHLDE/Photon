@@ -144,6 +144,9 @@ describe("registration allowPhoto", () => {
             const event = await ctx.utils.createTestEvent();
 
             const decliningUser = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(decliningUser, [
+                "events:registrations:create",
+            ]);
             const decliningClient =
                 await ctx.utils.clientForUser(decliningUser);
 
@@ -158,6 +161,9 @@ describe("registration allowPhoto", () => {
             expect(declineJson.allowPhoto).toBe(false);
 
             const defaultUser = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(defaultUser, [
+                "events:registrations:create",
+            ]);
             const defaultClient = await ctx.utils.clientForUser(defaultUser);
 
             const defaultResponse = await defaultClient.api.event[
@@ -260,6 +266,9 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             });
 
             const outsider = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(outsider, [
+                "events:registrations:create",
+            ]);
             const outsiderClient = await ctx.utils.clientForUser(outsider);
 
             const outsiderResponse = await outsiderClient.api.event[
@@ -271,6 +280,9 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             expect(outsiderResponse.status).toBe(403);
 
             const member = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(member, [
+                "events:registrations:create",
+            ]);
             await ctx.db.insert(schema.groupMembership).values({
                 userId: member.id,
                 groupSlug: "index",

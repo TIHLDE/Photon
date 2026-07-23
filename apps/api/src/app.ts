@@ -26,6 +26,7 @@ import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
 import { newsRoutes } from "./routes/news";
 import { qrCodeRoutes } from "./routes/qr-code";
+import { rolesRoutes } from "./routes/roles";
 import { toddelRoutes } from "./routes/toddel";
 import { notificationRoutes } from "./routes/notification";
 import { userRoutes } from "./routes/user";
@@ -82,6 +83,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/news", newsRoutes)
         .route("/toddel", toddelRoutes)
         .route("/qr-codes", qrCodeRoutes)
+        .route("/roles", rolesRoutes)
         .route("/jobs", jobRoutes)
         .route("/user", userRoutes)
         .route("/", mcpRoute);
