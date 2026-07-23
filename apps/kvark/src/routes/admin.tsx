@@ -38,6 +38,7 @@ import * as React from "react";
 
 import { authClientWithRedirect } from "#/api/auth";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
+import { TihldeLogo } from "#/components/icons/tihlde";
 
 export const Route = createFileRoute("/admin")({
     component: AdminLayout,
@@ -188,13 +189,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     aria-label="Til forsiden"
                                     to="/"
                                     className="h-full w-full cursor-pointer"
+                                    style={{
+                                        color: "var(--color-logo, currentColor)",
+                                    }}
                                 />
                             }
                         >
-                            {/* <TihldeLogo
-                                className="w-full! h-full! text-primary"
-                                size="large"
-                            /> */}
+                            <div className="size-8">
+                                <TihldeLogo />
+                            </div>
+                            <span className="text-sm font-stretch-condensed font-extrabold">
+                                TIHLDE
+                            </span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
