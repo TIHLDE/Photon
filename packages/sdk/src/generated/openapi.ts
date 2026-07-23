@@ -2393,6 +2393,8 @@ export interface components {
             amount: number;
             /** @description User's defense text */
             defense: string | null;
+            /** @description Evidence image URL */
+            image: string | null;
             /** @description Fine status (pending, approved, paid, rejected) */
             status: string;
             /** @description User who created the fine */
@@ -2407,6 +2409,24 @@ export interface components {
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
+            /** @description Public user info for the fined user */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+            /** @description Public user info for the fine creator */
+            createdByUser: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            } | null;
         };
         FineList: components["schemas"]["Fine"][];
         CreateFine: {
@@ -2420,6 +2440,11 @@ export interface components {
             amount: number;
             /** @description User's defense text */
             defense?: string;
+            /**
+             * Format: uri
+             * @description Evidence image URL
+             */
+            image?: string;
         };
         UpdateFineResponse: {
             message: string;

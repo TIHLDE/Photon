@@ -41,16 +41,13 @@ export const getAuthSession = createIsomorphicFn()
 export const authQueryOptions = queryOptions({
     queryKey: ["auth"],
     staleTime: 1000 * 60 * 2, // 2 minutes we want to check this frequently
-    async queryFn() {
-        try {
-            return await getAuthSession();
-        } catch (error) {
-            if (error instanceof AuthError) {
-                return undefined;
-            }
-            throw error;
-        }
-    },
+    // A failed session check (network hiccup, API 5xx) is NOT the same as
+    // being logged out — getAuthSession only resolves to null when the
+    // backend definitively says there is no session. Let errors throw so
+    // React Query retries and keeps the previous session in cache instead
+    // of silently caching "logged out".
+    retry: 2,
+    queryFn: () => getAuthSession(),
 });
 
 /**
@@ -59,14 +56,14 @@ export const authQueryOptions = queryOptions({
  */
 export async function authClient() {
     try {
-        const auth = await getQueryClient().ensureQueryData(authQueryOptions);
-        if (auth == null) {
-            invalidateAuth();
-        }
-        return auth;
+        return await getQueryClient().ensureQueryData(authQueryOptions);
     } catch {
-        invalidateAuth();
-        return undefined;
+        // The session check itself failed (after retries). Fall back to the
+        // last known session rather than treating the user as logged out —
+        // redirecting an authenticated user to /login on a transient error
+        // is worse than briefly trusting stale auth state. The API still
+        // enforces permissions server-side on every request.
+        return getQueryClient().getQueryData(authQueryOptions.queryKey);
     }
 }
 

@@ -169,6 +169,8 @@ export const fine = pgTable("fine", {
     reason: text("reason").notNull(),
     amount: integer("amount").notNull(), // Amount in NOK (or minor units)
     defense: text("defense"),
+    /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
+    image: varchar("image", { length: 600 }),
     status: fineStatus("status").notNull().default("pending"),
     createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
         () => user.id,
@@ -181,6 +183,19 @@ export const fine = pgTable("fine", {
     paidAt: timestamp("paid_at"),
     ...timestamps,
 });
+
+export const fineRelations = relations(fine, ({ one }) => ({
+    user: one(user, {
+        fields: [fine.userId],
+        references: [user.id],
+        relationName: "fineUser",
+    }),
+    createdByUser: one(user, {
+        fields: [fine.createdByUserId],
+        references: [user.id],
+        relationName: "fineCreatedByUser",
+    }),
+}));
 
 /**
  * Where a signature is drawn on the contract PDF.

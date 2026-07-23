@@ -89,11 +89,28 @@ export const listFinesRoute = route().get(
             conditions.push(eq(schema.fine.status, statusFilter));
         }
 
-        const fines = await db
-            .select()
-            .from(schema.fine)
-            .where(and(...conditions))
-            .orderBy(desc(schema.fine.createdAt));
+        // Include public user info (name/image) so the UI can display names
+        // instead of user IDs
+        const fines = await db.query.fine.findMany({
+            where: and(...conditions),
+            orderBy: desc(schema.fine.createdAt),
+            with: {
+                user: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    },
+                },
+                createdByUser: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    },
+                },
+            },
+        });
 
         return c.json(fines);
     },
