@@ -1039,7 +1039,7 @@ export interface paths {
         put?: never;
         /**
          * Assign a position to a user
-         * @description Assign a position (verv) to a group member. The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
+         * @description Assign a position (verv) to a group member. A position can be held by at most ONE user — assigning an occupied position fails; unassign the current holder first (or create a second position for a second holder). The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
          */
         post: operations["assignGroupPosition"];
         delete?: never;
@@ -1279,6 +1279,134 @@ export interface paths {
          * @description Removes a member's signature from the active contract. Requires being a group leader or 'contracts:manage' permission.
          */
         delete: operations["revokeContractSignature"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your scheduling events
+         * @description Every scheduling event the authenticated member created or participates in, newest first.
+         */
+        get: operations["listMotetidEvents"];
+        put?: never;
+        /**
+         * Create a scheduling event
+         * @description Create a when2meet-style scheduling event with candidate dates and a daily time window. Returns the share-link slug.
+         */
+        post: operations["createMotetidEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/events/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a scheduling event by slug
+         * @description The full availability board for a scheduling event: participants with their slot selections. Publicly readable via the share link; authentication only enriches the viewer info.
+         */
+        get: operations["getMotetidEvent"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a scheduling event
+         * @description Delete a scheduling event you created. Participants and slots are removed with it.
+         */
+        delete: operations["deleteMotetidEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/events/{slug}/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save your availability
+         * @description Replace the authenticated member's full slot selection for a scheduling event. Rejected after the event's deadline.
+         */
+        put: operations["saveMotetidAvailability"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/google/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start Google Calendar OAuth
+         * @description Build a Google OAuth consent URL (calendar.readonly) for the authenticated member. The frontend navigates the browser to the returned URL; Google redirects back to the callback endpoint.
+         */
+        get: operations["motetidGoogleConnect"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Calendar OAuth callback
+         * @description Handles the redirect back from Google: verifies the signed state, exchanges the code for tokens, stores them, and redirects the browser back to the website.
+         */
+        get: operations["motetidGoogleCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/motetid/events/{slug}/sync-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Google Calendar busy times
+         * @description Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired.
+         */
+        post: operations["motetidSyncCalendar"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2753,7 +2881,7 @@ export interface components {
             /** @description Whether notification should be marked as read */
             isRead: boolean;
         };
-        Group: {
+        GroupWithMemberCount: {
             /** @description Group slug */
             slug: string;
             /** @description Group image URL */
@@ -2778,8 +2906,10 @@ export interface components {
             createdAt: string;
             /** @description Last update timestamp */
             updatedAt: string;
+            /** @description Number of members in the group */
+            memberCount: number;
         };
-        GroupList: components["schemas"]["Group"][];
+        GroupList: components["schemas"]["GroupWithMemberCount"][];
         MyGroup: {
             /** @description Group slug */
             slug: string;
@@ -2813,6 +2943,32 @@ export interface components {
             };
         };
         MyGroupList: components["schemas"]["MyGroup"][];
+        Group: {
+            /** @description Group slug */
+            slug: string;
+            /** @description Group image URL */
+            imageUrl: string | null;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description: string | null;
+            /** @description Group contact email */
+            contactEmail: string | null;
+            /** @description Group type */
+            type: string;
+            /** @description Group fines info */
+            finesInfo: string;
+            /** @description Group fines activated */
+            finesActivated: boolean;
+            /** @description Group fines admin ID */
+            finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+        };
         CreateGroup: {
             /** @description Unique group slug identifier */
             slug: string;
@@ -3066,7 +3222,8 @@ export interface components {
             permissions: string[];
             /** @enum {string} */
             scope: "group" | "global";
-            holders: components["schemas"]["GroupPositionHolder"][];
+            /** @description The single holder of this position, if assigned */
+            holder: components["schemas"]["GroupPositionHolder"] | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -3254,6 +3411,141 @@ export interface components {
         };
         RevokeSignatureResponse: {
             message: string;
+        };
+        MotetidEventListItem: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            title: string;
+            dates: string[];
+            /** @description "HH:mm" time string */
+            startTime: string;
+            /** @description "HH:mm" time string */
+            endTime: string;
+            deadline: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Whether the caller created the event */
+            isOwner: boolean;
+            participantCount: number;
+        };
+        /** @description Events the caller created or participates in, newest first */
+        MotetidEventList: components["schemas"]["MotetidEventListItem"][];
+        CreateMotetidEventResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description Share-link slug for the new event */
+            slug: string;
+        };
+        CreateMotetidEvent: {
+            /** @description Event title */
+            title: string;
+            /** @description Candidate dates */
+            dates: string[];
+            /** @description "HH:mm" time string */
+            startTime: string;
+            /** @description "HH:mm" time string */
+            endTime: string;
+            /**
+             * Format: date-time
+             * @description Optional deadline; the board becomes read-only after this instant
+             */
+            deadline?: string;
+        };
+        MotetidEvent: {
+            /**
+             * Format: uuid
+             * @description Event ID
+             */
+            id: string;
+            /** @description Share-link slug */
+            slug: string;
+            title: string;
+            /** @description Candidate dates, sorted */
+            dates: string[];
+            /** @description "HH:mm" time string */
+            startTime: string;
+            /** @description "HH:mm" time string */
+            endTime: string;
+            /** @description Slot length in minutes */
+            slotDuration: number;
+            deadline: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            participants: {
+                /**
+                 * Format: uuid
+                 * @description Participant ID
+                 */
+                id: string;
+                /** @description Display name */
+                name: string;
+                /** @description Linked user id, null for anonymous participants */
+                userId: string | null;
+                slots: {
+                    /** @description ISO "YYYY-MM-DD" date string */
+                    date: string;
+                    /** @description "HH:mm" time string */
+                    time: string;
+                    /**
+                     * @description Availability status for a slot
+                     * @enum {string}
+                     */
+                    status: "AVAILABLE" | "IF_NEEDED";
+                }[];
+            }[];
+            viewer: {
+                isAuthenticated: boolean;
+                isOwner: boolean;
+                /** @description The viewer's participant row, if any */
+                participantId: string | null;
+                /** @description Suggested display name for the viewer */
+                name: string | null;
+            };
+        };
+        SaveMotetidAvailabilityResponse: {
+            /** Format: uuid */
+            participantId: string;
+        };
+        SaveMotetidAvailability: {
+            /** @description Display name for the participant */
+            name: string;
+            /** @description The participant's full slot selection */
+            slots: {
+                /** @description ISO "YYYY-MM-DD" date string */
+                date: string;
+                /** @description "HH:mm" time string */
+                time: string;
+                /**
+                 * @description Availability status for a slot
+                 * @enum {string}
+                 */
+                status: "AVAILABLE" | "IF_NEEDED";
+            }[];
+        };
+        DeleteMotetidEventResponse: {
+            /** @description Success message */
+            message: string;
+        };
+        MotetidGoogleConnectResponse: {
+            /** @description Google OAuth consent URL to navigate the browser to */
+            url: string;
+        };
+        MotetidSyncCalendarResponse: {
+            /** @description Busy grid slots as "date|time" keys */
+            blocked: string[];
+            events: {
+                title: string;
+                /** Format: date-time */
+                start: string;
+                /** Format: date-time */
+                end: string;
+            }[];
+        };
+        MotetidSyncCalendarError: {
+            error: string;
+            /** @description The user must redo the Google OAuth flow */
+            requiresReconnect?: boolean;
         };
         NewsArticle: {
             /**
@@ -6782,6 +7074,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Position already has a holder */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     unassignGroupPosition: {
@@ -7332,6 +7631,287 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Signature not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMotetidEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotetidEventList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createMotetidEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMotetidEvent"];
+            };
+        };
+        responses: {
+            /** @description Event created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateMotetidEventResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getMotetidEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Short share-link slug for the event */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotetidEvent"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteMotetidEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Short share-link slug for the event */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteMotetidEventResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    saveMotetidAvailability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Short share-link slug for the event */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveMotetidAvailability"];
+            };
+        };
+        responses: {
+            /** @description Availability saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveMotetidAvailabilityResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    motetidGoogleConnect: {
+        parameters: {
+            query?: {
+                /** @description Relative path to return to after OAuth */
+                returnTo?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Consent URL built */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotetidGoogleConnectResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    motetidGoogleCallback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect back to the website */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    motetidSyncCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Short share-link slug for the event */
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Busy slots computed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotetidSyncCalendarResponse"];
+                };
+            };
+            /** @description Google credential missing or invalid — reconnect required */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MotetidSyncCalendarError"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
             404: {
                 headers: {
                     [name: string]: unknown;

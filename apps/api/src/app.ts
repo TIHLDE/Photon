@@ -25,6 +25,7 @@ import { companyRoutes } from "./routes/company";
 import { contractsRoutes } from "./routes/contracts";
 import { groupsRoutes } from "./routes/groups";
 import { jobRoutes } from "./routes/job";
+import { motetidRoutes } from "./routes/motetid";
 import { newsRoutes } from "./routes/news";
 import { qrCodeRoutes } from "./routes/qr-code";
 import { rolesRoutes } from "./routes/roles";
@@ -82,6 +83,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
         .route("/contracts", contractsRoutes)
+        .route("/motetid", motetidRoutes)
         .route("/news", newsRoutes)
         .route("/toddel", toddelRoutes)
         .route("/qr-codes", qrCodeRoutes)
@@ -103,14 +105,18 @@ export const createApp = async (variables?: Variables) => {
                 // Credentialed requests need an explicit origin — never "*".
                 // Outside production, keep localhost usable even when
                 // WEBSITE_URL points somewhere else (an ngrok tunnel, say).
-                origin: [
-                    ...new Set([
-                        env.WEBSITE_URL,
-                        ...(env.NODE_ENV === "production"
-                            ? []
-                            : ["http://localhost:3000"]),
-                    ]),
-                ],
+                // Any localhost port is accepted in dev so worktrees/dev
+                // servers on non-default ports can talk to the API.
+                origin: (origin) => {
+                    if (origin === env.WEBSITE_URL) return origin;
+                    if (
+                        env.NODE_ENV !== "production" &&
+                        /^http:\/\/localhost(:\d+)?$/.test(origin)
+                    ) {
+                        return origin;
+                    }
+                    return undefined;
+                },
                 allowHeaders: ["Content-Type", "Authorization"],
                 allowMethods: [
                     "GET",

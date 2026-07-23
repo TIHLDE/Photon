@@ -179,59 +179,62 @@ export type GroupPositionScope =
  * A named position (verv/tittel) within a group, e.g. "Økonomiansvarlig",
  * "President". Positions carry a permission list that holders receive —
  * scoped to the group or globally depending on `scope`.
+ *
+ * Names are intentionally NOT unique per group: a position is held by at
+ * most ONE user, so a group needing two økonomiansvarlige simply creates
+ * two "Økonomiansvarlig" positions.
  */
-export const groupPosition = pgTable(
-    "group_position",
-    {
-        id: uuid("id").primaryKey().defaultRandom(),
-        groupSlug: varchar("group_slug", { length: 128 })
-            .notNull()
-            .references(() => group.slug, { onDelete: "cascade" }),
-        name: varchar("name", { length: 128 }).notNull(),
-        description: text("description"),
-        permissions: text("permissions").array().notNull().default([]),
-        scope: groupPositionScope("scope").notNull().default("group"),
-        ...timestamps,
-    },
-    (t) => [
-        uniqueIndex("org_group_position_slug_name").on(t.groupSlug, t.name),
-    ],
-);
+export const groupPosition = pgTable("group_position", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupSlug: varchar("group_slug", { length: 128 })
+        .notNull()
+        .references(() => group.slug, { onDelete: "cascade" }),
+    name: varchar("name", { length: 128 }).notNull(),
+    description: text("description"),
+    permissions: text("permissions").array().notNull().default([]),
+    scope: groupPositionScope("scope").notNull().default("group"),
+    /**
+     * Marks this position as THE leader-verv for another group (a subgroup).
+     * When that group's leadership changes, the new leader is auto-added to
+     * HS and auto-assigned this position (see syncSubgroupLeadership in
+     * apps/api). E.g. Teknologiminister has linkedGroupSlug "index". Deleted
+     * with the linked group.
+     */
+    linkedGroupSlug: varchar("linked_group_slug", { length: 128 }).references(
+        () => group.slug,
+        { onDelete: "cascade" },
+    ),
+    ...timestamps,
+});
 
 /**
- * Assignment of a group position to a user. Holders must be members of the
+ * Assignment of a group position to a user. A position has at most ONE
+ * holder (positionId is the primary key). Holders must be members of the
  * position's group (enforced in the API layer; membership removal also
  * removes the user's positions in that group).
  */
-export const groupPositionHolder = pgTable(
-    "group_position_holder",
-    {
-        positionId: uuid("position_id")
-            .notNull()
-            .references(() => groupPosition.id, { onDelete: "cascade" }),
-        userId: varchar("user_id", { length: 255 })
-            .notNull()
-            .references(() => user.id, { onDelete: "cascade" }),
-        /** User who assigned the position (audit trail) */
-        grantedBy: varchar("granted_by", { length: 255 }).references(
-            () => user.id,
-            { onDelete: "set null" },
-        ),
-        ...timestamps,
-    },
-    (t) => [primaryKey({ columns: [t.positionId, t.userId] })],
-);
+export const groupPositionHolder = pgTable("group_position_holder", {
+    positionId: uuid("position_id")
+        .primaryKey()
+        .references(() => groupPosition.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+        .notNull()
+        .references(() => user.id, { onDelete: "cascade" }),
+    /** User who assigned the position (audit trail) */
+    grantedBy: varchar("granted_by", { length: 255 }).references(
+        () => user.id,
+        { onDelete: "set null" },
+    ),
+    ...timestamps,
+});
 
-export const groupPositionRelations = relations(
-    groupPosition,
-    ({ one, many }) => ({
-        group: one(group, {
-            fields: [groupPosition.groupSlug],
-            references: [group.slug],
-        }),
-        holders: many(groupPositionHolder),
+export const groupPositionRelations = relations(groupPosition, ({ one }) => ({
+    group: one(group, {
+        fields: [groupPosition.groupSlug],
+        references: [group.slug],
     }),
-);
+    holder: one(groupPositionHolder),
+}));
 
 export const groupPositionHolderRelations = relations(
     groupPositionHolder,

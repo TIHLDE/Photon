@@ -40,6 +40,7 @@
         "class-variance-authority": "catalog:frontend",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
+        "date-fns-tz": "^3.2.0",
         "ky": "^2.0.2",
         "lucide-react": "^0.577.0",
         "nitro": "latest",

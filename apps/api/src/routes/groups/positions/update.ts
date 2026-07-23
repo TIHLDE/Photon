@@ -95,7 +95,7 @@ export const updatePositionRoute = route().patch(
             .where(eq(schema.groupPosition.id, positionId))
             .returning();
 
-        const holders = await db.query.groupPositionHolder.findMany({
+        const holder = await db.query.groupPositionHolder.findFirst({
             where: eq(schema.groupPositionHolder.positionId, positionId),
             with: {
                 user: { columns: { id: true, name: true, image: true } },
@@ -104,11 +104,13 @@ export const updatePositionRoute = route().patch(
 
         return c.json({
             ...updated,
-            holders: holders.map((h) => ({
-                userId: h.user.id,
-                name: h.user.name,
-                image: h.user.image,
-            })),
+            holder: holder
+                ? {
+                      userId: holder.user.id,
+                      name: holder.user.name,
+                      image: holder.user.image,
+                  }
+                : null,
         });
     },
 );
