@@ -90,6 +90,37 @@ export interface CreateAuthOptions {
     DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: boolean;
 }
 
+/**
+ * Point an auth action link's redirect back at the FRONTEND (WEBSITE_URL).
+ *
+ * Better Auth builds action URLs against its own baseURL (the backend) and
+ * defaults `callbackURL` to "/" — a RELATIVE path that resolves against the
+ * backend host when the user clicks the link, landing them on the API
+ * (photon.tihlde.org) instead of the website. Rewrites relative callback
+ * URLs to absolute frontend ones; absolute callbacks (e.g. the frontend's
+ * own redirectTo for password resets) pass through untouched.
+ *
+ * Exported for testing.
+ */
+export function withFrontendCallback(
+    rawUrl: string,
+    frontendOrigin: string,
+): string {
+    try {
+        const url = new URL(rawUrl);
+        const callback = url.searchParams.get("callbackURL") ?? "/";
+        if (callback.startsWith("/")) {
+            url.searchParams.set(
+                "callbackURL",
+                new URL(callback, frontendOrigin).toString(),
+            );
+        }
+        return url.toString();
+    } catch {
+        return rawUrl;
+    }
+}
+
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
@@ -135,7 +166,7 @@ export function createAuth(options: CreateAuthOptions) {
             async sendResetPassword({ user: u, url }) {
                 await options.services.email.sendPasswordResetMail({
                     to: u.email,
-                    url,
+                    url: withFrontendCallback(url, options.urls.frontend),
                 });
             },
             ...(options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM && !isProd
@@ -159,7 +190,7 @@ export function createAuth(options: CreateAuthOptions) {
             sendVerificationEmail: async ({ user: u, url }) => {
                 await options.services.email.sendVerifyEmailMail({
                     to: u.email,
-                    url,
+                    url: withFrontendCallback(url, options.urls.frontend),
                 });
             },
         },
