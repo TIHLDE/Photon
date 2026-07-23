@@ -196,3 +196,21 @@
     --tw-prose-td-borders: var(--border);
     --tw-prose-kbd: var(--foreground);
 }
+
+/* Møtetid: subtle nudge on the primary action when the user tries to paint
+   the grid before entering edit mode. */
+@keyframes motetid-primary-nudge {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .motetid-primary-nudge {
+        animation: motetid-primary-nudge 0.25s ease-in-out 1;
+    }
+}
