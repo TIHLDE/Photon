@@ -84,6 +84,31 @@ export const fineSchema = Schema(
             .meta({ description: "Payment timestamp" }),
         createdAt: z.string().meta({ description: "Creation timestamp" }),
         updatedAt: z.string().meta({ description: "Last update timestamp" }),
+        user: z
+            .object({
+                id: z.string().meta({ description: "User ID" }),
+                name: z.string().meta({ description: "User display name" }),
+                image: z
+                    .string()
+                    .nullable()
+                    .meta({ description: "User profile image URL" }),
+            })
+            .meta({
+                description: "Public user info for the fined user",
+            }),
+        createdByUser: z
+            .object({
+                id: z.string().meta({ description: "User ID" }),
+                name: z.string().meta({ description: "User display name" }),
+                image: z
+                    .string()
+                    .nullable()
+                    .meta({ description: "User profile image URL" }),
+            })
+            .nullable()
+            .meta({
+                description: "Public user info for the fine creator",
+            }),
     }),
 );
 
