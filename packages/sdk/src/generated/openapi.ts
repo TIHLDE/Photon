@@ -772,6 +772,54 @@ export interface paths {
         patch: operations["updateFine"];
         trace?: never;
     };
+    "/api/groups/{groupSlug}/laws": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a group's laws (lovverk)
+         * @description Retrieve the fine laws for a group, ordered by paragraph. Group members can view their own group's laws (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped).
+         */
+        get: operations["listLaws"];
+        put?: never;
+        /**
+         * Create a law
+         * @description Add a paragraph to a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         */
+        post: operations["createLaw"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/laws/{lawId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a law
+         * @description Delete a paragraph from a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         */
+        delete: operations["deleteLaw"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a law
+         * @description Update a paragraph in a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         */
+        patch: operations["updateLaw"];
+        trace?: never;
+    };
     "/api/groups/{groupSlug}/members": {
         parameters: {
             query?: never;
@@ -2635,6 +2683,45 @@ export interface components {
             status?: "pending" | "approved" | "paid" | "rejected";
             /** @description User who approved the fine */
             approvedByUserId?: string;
+        };
+        Law: {
+            /** @description Law ID */
+            id: string;
+            /** @description Group the law belongs to */
+            groupSlug: string;
+            /** @description Paragraph number as a decimal string */
+            paragraph: string;
+            /** @description Law title */
+            title: string;
+            /** @description Longer description of the law */
+            description: string;
+            /** @description Default number of fine units */
+            amount: number;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+        };
+        LawList: components["schemas"]["Law"][];
+        CreateLaw: {
+            /** @description Paragraph number, e.g. 1 or 3.12 */
+            paragraph: number;
+            /** @description Law title */
+            title: string;
+            /** @description Longer description of the law */
+            description?: string;
+            /** @description Default number of fine units */
+            amount?: number;
+        };
+        UpdateLaw: {
+            /** @description Paragraph number, e.g. 1 or 3.12 */
+            paragraph?: number;
+            /** @description Law title */
+            title?: string;
+            /** @description Longer description of the law */
+            description?: string;
+            /** @description Default number of fine units */
+            amount?: number;
         };
         GroupMember: {
             /** @description User ID */
@@ -5491,6 +5578,194 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Fine or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listLaws: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of laws retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LawList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to view laws for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createLaw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLaw"];
+            };
+        };
+        responses: {
+            /** @description Law created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Law"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to manage laws for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteLaw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                lawId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Law successfully deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to manage laws for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Law or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateLaw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                lawId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLaw"];
+            };
+        };
+        responses: {
+            /** @description Law updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Law"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to manage laws for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Law or group not found */
             404: {
                 headers: {
                     [name: string]: unknown;

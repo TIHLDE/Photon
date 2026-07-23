@@ -24,6 +24,7 @@ const tags = [
     "groups",
     "fines",
     "jobs",
+    "laws",
     "news",
     "notifications",
     "payments",

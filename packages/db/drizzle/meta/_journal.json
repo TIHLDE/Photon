@@ -148,6 +148,13 @@
       "when": 1784796054011,
       "tag": "0020_mute_tomorrow_man",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784797700584,
+      "tag": "0021_rare_psylocke",
+      "breakpoints": true
     }
   ]
 }

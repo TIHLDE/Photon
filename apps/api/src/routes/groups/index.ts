@@ -2,6 +2,7 @@ import { route } from "~/lib/route";
 import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
 import { finesRoutes } from "./fines";
+import { lawsRoutes } from "./laws";
 import { createGroupFormRoute } from "./form/create";
 import { listGroupFormsRoute } from "./form/list";
 import { getRoute } from "./get";
@@ -19,6 +20,7 @@ export const groupsRoutes = route()
     .route("/", deleteRoute)
     .route("/", getRoute)
     .route("/", finesRoutes)
+    .route("/", lawsRoutes)
     .route("/", membersRoutes)
     .route("/", positionsRoutes)
     .route("/", createGroupFormRoute)
