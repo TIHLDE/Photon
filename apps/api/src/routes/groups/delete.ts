@@ -1,6 +1,11 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import {
+    getGroupMembers,
+    isSubgroupType,
+    pruneHsMembershipIfUnwarranted,
+} from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -52,8 +57,22 @@ export const deleteRoute = route().delete(
             });
         }
 
+        // Deleting a subgroup: its leaders lose the HS seat that came with
+        // the leadership (the linked leder-verv is cascade-deleted with the
+        // group). Collect them BEFORE the cascade wipes the memberships.
+        const ctx = c.get("ctx");
+        const leaderIds = isSubgroupType(group.type)
+            ? (await getGroupMembers(ctx, slug))
+                  .filter((m) => m.role === "leader")
+                  .map((m) => m.userId)
+            : [];
+
         // Delete the group and all associated data (cascading handled by DB)
         await db.delete(schema.group).where(eq(schema.group.slug, slug));
+
+        for (const leaderId of leaderIds) {
+            await pruneHsMembershipIfUnwarranted(ctx, leaderId);
+        }
 
         return c.body(null, 204);
     },

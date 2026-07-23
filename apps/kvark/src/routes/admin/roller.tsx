@@ -321,64 +321,61 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            {position.holders.map((holder) => (
+                                            {position.holder ? (
                                                 <HolderChip
-                                                    key={holder.userId}
-                                                    name={holder.name}
-                                                    image={holder.image}
+                                                    key={position.holder.userId}
+                                                    name={position.holder.name}
+                                                    image={
+                                                        position.holder.image
+                                                    }
                                                     onRemove={() =>
                                                         unassign.mutate({
                                                             groupSlug,
                                                             positionId:
                                                                 position.id,
-                                                            userId: holder.userId,
+                                                            userId: position
+                                                                .holder!.userId,
                                                         })
                                                     }
                                                 />
-                                            ))}
-                                            <UserSearchCombobox
-                                                holder={null}
-                                                emptyLabel={
-                                                    position.holders.length ===
-                                                    0
-                                                        ? "Ingen tildelt"
-                                                        : "Legg til"
-                                                }
-                                                query={
-                                                    assignFor === position.id
-                                                        ? assignQuery
-                                                        : ""
-                                                }
-                                                onQueryChange={setAssignQuery}
-                                                onOpenChange={(open) => {
-                                                    setAssignFor(
-                                                        open
-                                                            ? position.id
-                                                            : null,
-                                                    );
-                                                    setAssignQuery("");
-                                                }}
-                                                results={
-                                                    assignFor === position.id
-                                                        ? filteredOptions.filter(
-                                                              (option) =>
-                                                                  !position.holders.some(
-                                                                      (h) =>
-                                                                          h.userId ===
-                                                                          option.id,
-                                                                  ),
-                                                          )
-                                                        : []
-                                                }
-                                                onSelect={(user) =>
-                                                    assign.mutate({
-                                                        groupSlug,
-                                                        positionId: position.id,
-                                                        userId: user.id,
-                                                    })
-                                                }
-                                                placeholder="Søk blant gruppens medlemmer…"
-                                            />
+                                            ) : (
+                                                <UserSearchCombobox
+                                                    holder={null}
+                                                    emptyLabel="Ingen tildelt"
+                                                    query={
+                                                        assignFor ===
+                                                        position.id
+                                                            ? assignQuery
+                                                            : ""
+                                                    }
+                                                    onQueryChange={
+                                                        setAssignQuery
+                                                    }
+                                                    onOpenChange={(open) => {
+                                                        setAssignFor(
+                                                            open
+                                                                ? position.id
+                                                                : null,
+                                                        );
+                                                        setAssignQuery("");
+                                                    }}
+                                                    results={
+                                                        assignFor ===
+                                                        position.id
+                                                            ? filteredOptions
+                                                            : []
+                                                    }
+                                                    onSelect={(user) =>
+                                                        assign.mutate({
+                                                            groupSlug,
+                                                            positionId:
+                                                                position.id,
+                                                            userId: user.id,
+                                                        })
+                                                    }
+                                                    placeholder="Søk blant gruppens medlemmer…"
+                                                />
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">

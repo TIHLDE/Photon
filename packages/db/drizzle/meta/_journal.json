@@ -169,6 +169,13 @@
       "when": 1784806358093,
       "tag": "0023_lethal_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784807941617,
+      "tag": "0024_narrow_violations",
+      "breakpoints": true
     }
   ]
 }
