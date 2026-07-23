@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import {
@@ -29,8 +30,23 @@ import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
 import { mapFine, mapForm, mapGroup, mapLaw, mapMember } from "#/lib/group";
 
+const searchSchema = z.object({
+    tab: z
+        .enum([
+            "om",
+            "medlemmer",
+            "arrangementer",
+            "boter",
+            "lovverk",
+            "sporreskjema",
+        ])
+        .default("om")
+        .catch("om"),
+});
+
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
+    validateSearch: searchSchema,
     loader: ({ context, params }) =>
         context.queryClient.ensureQueryData(getGroupBySlugQuery(params.slug)),
 });
@@ -39,8 +55,13 @@ const ADMIN_PERMISSIONS = ["groups:update", "groups:manage", "groups:delete"];
 
 function GroupDetailPage() {
     const { slug } = Route.useParams();
-    const [active, setActive] = useState<GroupNavKey>("om");
+    const { tab: active } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
+
+    function setActive(tab: GroupNavKey) {
+        navigate({ search: (prev) => ({ ...prev, tab }) });
+    }
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
     const { data: session } = useQuery(authQueryOptions);
