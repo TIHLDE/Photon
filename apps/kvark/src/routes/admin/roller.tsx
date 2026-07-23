@@ -32,7 +32,7 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { MoreHorizontalIcon, PlusIcon, ShieldIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import {
@@ -63,6 +63,7 @@ import {
     summarizePermissions,
     toggleDomain,
 } from "#/lib/permission-domains";
+import { useDebounced } from "#/lib/use-debounced";
 import { initials } from "#/lib/utils";
 
 export const Route = createFileRoute("/admin/roller")({
@@ -95,19 +96,6 @@ function RolesAdminPage() {
             {tab === "verv" ? <PositionsSection /> : <RolesSection />}
         </div>
     );
-}
-
-/** Debounce a string value (for search-as-you-type). */
-function useDebounced(value: string, delayMs = 200): string {
-    const [debounced, setDebounced] = useState(value);
-    useEffect(() => {
-        const timeout = window.setTimeout(
-            () => setDebounced(value.trim()),
-            delayMs,
-        );
-        return () => window.clearTimeout(timeout);
-    }, [value, delayMs]);
-    return debounced;
 }
 
 // =============================================================================
