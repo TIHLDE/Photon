@@ -21,6 +21,7 @@ import {
     BookmarkIcon,
     BriefcaseBusinessIcon,
     CalendarIcon,
+    CrownIcon,
     DatabaseIcon,
     DotSquare,
     FileUserIcon,
@@ -134,6 +135,11 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Prikker",
                 icon: DotSquare,
                 link: linkOptions({ to: "/admin/prikker" }),
+            },
+            {
+                label: "Roller og verv",
+                icon: CrownIcon,
+                link: linkOptions({ to: "/admin/roller" }),
             },
             {
                 label: "Opptak",

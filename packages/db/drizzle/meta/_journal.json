@@ -134,6 +134,13 @@
       "when": 1784754062419,
       "tag": "0018_bored_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784793820993,
+      "tag": "0019_swift_scrambler",
+      "breakpoints": true
     }
   ]
 }

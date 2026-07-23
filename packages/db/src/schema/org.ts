@@ -98,6 +98,14 @@ export const group = pgTable("group", {
         onDelete: "set null",
     }),
     /**
+     * Optional RBAC role that gets auto-assigned to the group's LEADER only.
+     * Assigned when a member becomes leader, revoked when they step down or
+     * leave. Used for leader-bound powers (e.g. NOK leader → payments:refund).
+     */
+    leaderRoleId: integer("leader_role_id").references(() => role.id, {
+        onDelete: "set null",
+    }),
+    /**
      * Permission mode for managing group resources (events, fines, etc.).
      * - leader_only: Only group leaders can manage (default, more restrictive)
      * - member: Any member with the base permission can manage (more permissive)
@@ -145,6 +153,95 @@ export const groupMembershipRelations = relations(
         group: one(group, {
             fields: [groupMembership.groupSlug],
             references: [group.slug],
+        }),
+    }),
+);
+
+/**
+ * Scope for permissions granted by a group position (verv/tittel).
+ *
+ * - group: permissions apply only within the position's group, i.e. they are
+ *   granted as "permission@group:<slug>" (e.g. Økonomiansvarlig i Volley).
+ * - global: permissions apply everywhere (e.g. HS-verv like President →
+ *   roles:assign). Creating/updating global positions requires global
+ *   "roles:create" — enforced in the API layer.
+ */
+export const groupPositionScope = pgEnum("org_group_position_scope", [
+    "group",
+    "global",
+]);
+
+export type GroupPositionScope =
+    (typeof groupPositionScope)["enumValues"][number];
+
+/**
+ * A named position (verv/tittel) within a group, e.g. "Økonomiansvarlig",
+ * "President". Positions carry a permission list that holders receive —
+ * scoped to the group or globally depending on `scope`.
+ */
+export const groupPosition = pgTable(
+    "group_position",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, { onDelete: "cascade" }),
+        name: varchar("name", { length: 128 }).notNull(),
+        description: text("description"),
+        permissions: text("permissions").array().notNull().default([]),
+        scope: groupPositionScope("scope").notNull().default("group"),
+        ...timestamps,
+    },
+    (t) => [
+        uniqueIndex("org_group_position_slug_name").on(t.groupSlug, t.name),
+    ],
+);
+
+/**
+ * Assignment of a group position to a user. Holders must be members of the
+ * position's group (enforced in the API layer; membership removal also
+ * removes the user's positions in that group).
+ */
+export const groupPositionHolder = pgTable(
+    "group_position_holder",
+    {
+        positionId: uuid("position_id")
+            .notNull()
+            .references(() => groupPosition.id, { onDelete: "cascade" }),
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        /** User who assigned the position (audit trail) */
+        grantedBy: varchar("granted_by", { length: 255 }).references(
+            () => user.id,
+            { onDelete: "set null" },
+        ),
+        ...timestamps,
+    },
+    (t) => [primaryKey({ columns: [t.positionId, t.userId] })],
+);
+
+export const groupPositionRelations = relations(
+    groupPosition,
+    ({ one, many }) => ({
+        group: one(group, {
+            fields: [groupPosition.groupSlug],
+            references: [group.slug],
+        }),
+        holders: many(groupPositionHolder),
+    }),
+);
+
+export const groupPositionHolderRelations = relations(
+    groupPositionHolder,
+    ({ one }) => ({
+        position: one(groupPosition, {
+            fields: [groupPositionHolder.positionId],
+            references: [groupPosition.id],
+        }),
+        user: one(user, {
+            fields: [groupPositionHolder.userId],
+            references: [user.id],
         }),
     }),
 );

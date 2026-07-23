@@ -335,7 +335,7 @@ export interface paths {
         put?: never;
         /**
          * Register to an event
-         * @description Create a new registration for the authenticated user to attend an event, initially with pending status
+         * @description Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role.
          */
         post: operations["createEventRegistration"];
         /**
@@ -729,7 +729,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.
+         * @description Retrieve a list of fines for a group. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Supports filtering by status and user.
          */
         get: operations["listFines"];
         put?: never;
@@ -753,7 +753,7 @@ export interface paths {
         };
         /**
          * Get fine by ID
-         * @description Retrieve detailed information about a specific fine. Users can view their own fines, fines admins can view all fines for their group.
+         * @description Retrieve detailed information about a specific fine. Group members can view fines in their own group, users can always view their own fines, and fines admins / 'fines:view' holders can view all fines for the group.
          */
         get: operations["getFine"];
         put?: never;
@@ -818,6 +818,94 @@ export interface paths {
          * @description Update a member's role in a group. Requires 'groups:manage' permission.
          */
         patch: operations["updateGroupMemberRole"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List positions for a group
+         * @description Retrieve all positions (verv) for a group, with their holders.
+         */
+        get: operations["listGroupPositions"];
+        put?: never;
+        /**
+         * Create a position
+         * @description Create a new position (verv) in a group. Group leaders can create group-scoped positions limited to permissions they themselves hold in the group. Positions with global scope require the global 'roles:create' permission, and the creator must hold every granted permission globally.
+         */
+        post: operations["createGroupPosition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/positions/{positionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a position
+         * @description Delete a position (verv). Holders lose the position's permissions. Deleting a global position requires 'roles:create'.
+         */
+        delete: operations["deleteGroupPosition"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a position
+         * @description Update a position's name, description, permissions or scope. The same guardrails as creation apply — including for the position's EXISTING scope, so a group leader cannot edit a global position, and permission changes are limited to permissions the editor holds.
+         */
+        patch: operations["updateGroupPosition"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/positions/{positionId}/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign a position to a user
+         * @description Assign a position (verv) to a group member. The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
+         */
+        post: operations["assignGroupPosition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/positions/{positionId}/holders/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a position from a user
+         * @description Remove a position (verv) from a holder. Same authorization as assigning.
+         */
+        delete: operations["unassignGroupPosition"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/groups/{slug}/forms": {
@@ -1171,6 +1259,94 @@ export interface paths {
          * @description Delete one of your own QR codes. Someone else's code reads as not found rather than forbidden, so the endpoint does not confirm that an id exists.
          */
         delete: operations["deleteQRCode"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List roles
+         * @description List all RBAC roles with their permissions and assigned users, ordered by hierarchy position (highest first).
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create a role
+         * @description Create a new RBAC role. The role is positioned directly below the creator's highest role. The creator can only grant permissions they hold themselves.
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a role
+         * @description Delete a role. Hierarchy applies: you can only delete roles strictly below your own highest role. Assignments are removed with it.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a role
+         * @description Update a role's name, description or permissions. Hierarchy applies: you can only edit roles strictly below your own highest role, and only grant permissions you hold yourself.
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/api/roles/{roleId}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign a role to a user
+         * @description Assign a role to a user. Hierarchy applies: you can only assign roles strictly below your own highest role.
+         */
+        post: operations["assignRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/roles/{roleId}/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a role from a user
+         * @description Remove a role from a user. Hierarchy applies: you can only remove roles strictly below your own highest role.
+         */
+        delete: operations["unassignRole"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2492,6 +2668,59 @@ export interface components {
              */
             role: "member" | "leader";
         };
+        GroupPositionHolder: {
+            /** @description Holder's user ID */
+            userId: string;
+            /** @description Holder's name */
+            name: string | null;
+            /** @description Holder's profile image */
+            image: string | null;
+        };
+        GroupPosition: {
+            /** @description Position ID */
+            id: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description Position name */
+            name: string;
+            description: string | null;
+            permissions: string[];
+            /** @enum {string} */
+            scope: "group" | "global";
+            holders: components["schemas"]["GroupPositionHolder"][];
+            createdAt: string;
+            updatedAt: string;
+        };
+        GroupPositionList: components["schemas"]["GroupPosition"][];
+        CreateGroupPosition: {
+            /** @description Position name, e.g. 'Økonomiansvarlig' */
+            name: string;
+            /** @description Optional description of the position */
+            description?: string;
+            /** @description Permissions granted to holders of this position. Must be valid permission names from the registry. */
+            permissions: string[];
+            /**
+             * @description Whether permissions apply only within this group, or globally (global requires roles:create)
+             * @default group
+             * @enum {string}
+             */
+            scope: "group" | "global";
+        };
+        UpdateGroupPosition: {
+            name?: string;
+            description?: string | null;
+            /** @description Permissions granted to holders of this position. Must be valid permission names from the registry. */
+            permissions?: string[];
+            /** @enum {string} */
+            scope?: "group" | "global";
+        };
+        GroupPositionMessage: {
+            message: string;
+        };
+        AssignGroupPosition: {
+            /** @description User to assign the position to */
+            userId: string;
+        };
         CreateGroupFormResponse: {
             /** Format: uuid */
             id?: string;
@@ -2828,6 +3057,45 @@ export interface components {
         DeleteQRCodeResponse: {
             /** @description Success message */
             message: string;
+        };
+        RoleUser: {
+            userId: string;
+            name: string | null;
+            image: string | null;
+        };
+        Role: {
+            id: number;
+            name: string;
+            description: string | null;
+            position: number;
+            permissions: string[];
+            users: components["schemas"]["RoleUser"][];
+            createdAt: string;
+            updatedAt: string;
+        };
+        RoleList: components["schemas"]["Role"][];
+        CreateRole: {
+            /** @description Unique role name */
+            name: string;
+            description?: string;
+            /**
+             * @description Permissions granted by this role
+             * @default []
+             */
+            permissions: string[];
+        };
+        UpdateRole: {
+            name?: string;
+            description?: string | null;
+            /** @description Permissions granted by this role */
+            permissions?: string[];
+        };
+        RoleMessage: {
+            message: string;
+        };
+        AssignRole: {
+            /** @description User to assign */
+            userId: string;
         };
         JobDetail: {
             /**
@@ -5364,6 +5632,307 @@ export interface operations {
             };
         };
     };
+    listGroupPositions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of positions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPositionList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createGroupPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupPosition"];
+            };
+        };
+        responses: {
+            /** @description Position created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPosition"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to create positions, or tried to grant permissions the creator does not hold */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGroupPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                positionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Position deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPositionMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to delete this position */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Position not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGroupPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                positionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupPosition"];
+            };
+        };
+        responses: {
+            /** @description Position updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPosition"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to update this position */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Position not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    assignGroupPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                positionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignGroupPosition"];
+            };
+        };
+        responses: {
+            /** @description Position assigned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPositionMessage"];
+                };
+            };
+            /** @description Bad Request - User is not a member of the group */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to assign this position */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Position not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unassignGroupPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                positionId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Position removed from user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupPositionMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to manage this position */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Position not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listGroupForms: {
         parameters: {
             query?: never;
@@ -6254,6 +6823,285 @@ export interface operations {
                 };
             };
             /** @description Not Found - QR code not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of roles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires roles:view */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRole"];
+            };
+        };
+        responses: {
+            /** @description Role created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            /** @description Bad Request - Invalid input or duplicate name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires roles:create, or tried to grant unheld permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Role deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient hierarchy */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Role not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRole"];
+            };
+        };
+        responses: {
+            /** @description Role updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient hierarchy or unheld permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Role not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    assignRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignRole"];
+            };
+        };
+        responses: {
+            /** @description Role assigned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient hierarchy */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Role or user not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unassignRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Role removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleMessage"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient hierarchy */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Role not found */
             404: {
                 headers: {
                     [name: string]: unknown;

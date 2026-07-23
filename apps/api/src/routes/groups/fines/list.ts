@@ -1,8 +1,8 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, desc, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { isGroupMember } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -15,7 +15,7 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a list of fines for a group. Users can view their own fines, fines admins can view all fines for their group. Supports filtering by status and user.",
+            "Retrieve a list of fines for a group. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Supports filtering by status and user.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -50,21 +50,23 @@ export const listFinesRoute = route().get(
             });
         }
 
-        // Check authorization
+        // Check authorization: group members see their own group's fines
+        // (Lepton parity — the membership itself is the access), fines admin
+        // and fines:view holders see them too.
+        const isMember = await isGroupMember(ctx, user.id, groupSlug);
         const isFinesAdmin = group.finesAdminId === user.id;
 
-        // Check for global or scoped fines:view permission
-        const hasGlobalPerm = await hasPermission(ctx, user.id, "fines:view");
-        const hasScopedPerm = await hasScopedPermission(
-            ctx,
-            user.id,
-            "fines:view",
-            `group:${groupSlug}`,
-        );
-        const hasViewPermission = hasGlobalPerm || hasScopedPerm;
+        const hasViewPermission =
+            isMember ||
+            isFinesAdmin ||
+            (await hasScopedPermission(
+                ctx,
+                user.id,
+                "fines:view",
+                `group:${groupSlug}`,
+            ));
 
-        // Only fines admin or users with fines:view permission can list fines
-        if (!isFinesAdmin && !hasViewPermission) {
+        if (!hasViewPermission) {
             throw new HTTPException(403, {
                 message: "Not authorized to view fines for this group",
             });
