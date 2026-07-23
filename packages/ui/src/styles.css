@@ -170,6 +170,10 @@
     }
     html {
         @apply font-sans;
+        /* Reserve space for the vertical scrollbar so centered layouts
+         * don't shift horizontally when content height changes (e.g.
+         * switching between short and tall tabs). */
+        scrollbar-gutter: stable;
     }
 }
 
