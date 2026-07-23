@@ -10,4 +10,5 @@ export * from "./user";
 export * from "./api-key";
 export * from "./asset";
 export * from "./toddel";
+export * from "./banner";
 export * from "./qr-code";

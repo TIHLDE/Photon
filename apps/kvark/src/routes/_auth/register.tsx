@@ -20,6 +20,7 @@ import {
     signUpEmailMutationOptions,
 } from "#/api/auth";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
+import { OrDivider } from "#/components/or-divider";
 import { env } from "#/env";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
@@ -143,8 +144,8 @@ function RegisterPage() {
                     Opprett en konto for å delta på arrangementer.
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)}>
-                <CardContent>
+            <form {...formHandlers(form)} className="flex flex-col gap-4">
+                <CardContent className="flex flex-col gap-5">
                     <FieldGroup>
                         <form.AppField name="name">
                             {(field) => (
@@ -189,8 +190,7 @@ function RegisterPage() {
                     <form.AppForm>
                         <form.FormErrors />
                     </form.AppForm>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3">
+
                     <form.AppForm>
                         <form.SubmitButton
                             className="w-full"
@@ -204,12 +204,18 @@ function RegisterPage() {
                             Opprett bruker
                         </form.SubmitButton>
                     </form.AppForm>
+
                     {env.VITE_FEIDE_ENABLED && (
-                        <FeideSignInButton
-                            onSignIn={handleFeideSignIn}
-                            loading={feideLoading}
-                        />
+                        <>
+                            <OrDivider />
+                            <FeideSignInButton
+                                onSignIn={handleFeideSignIn}
+                                loading={feideLoading}
+                            />
+                        </>
                     )}
+                </CardContent>
+                <CardFooter className="justify-center">
                     <p className="text-sm text-muted-foreground">
                         Har du allerede konto?{" "}
                         <Link

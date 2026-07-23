@@ -1,13 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import {
+    createLawMutation,
+    deleteLawMutation,
     getGroupBySlugQuery,
     getGroupFinesQuery,
     getGroupFormsQuery,
+    getGroupLawsQuery,
     getGroupMembersQuery,
+    updateLawMutation,
 } from "#/api/queries/groups";
 import {
     DetailLayout,
@@ -23,10 +28,25 @@ import { GroupLawsTab } from "#/components/group-laws-tab";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
-import { mapFine, mapForm, mapGroup, mapMember } from "#/lib/group";
+import { mapFine, mapForm, mapGroup, mapLaw, mapMember } from "#/lib/group";
+
+const searchSchema = z.object({
+    tab: z
+        .enum([
+            "om",
+            "medlemmer",
+            "arrangementer",
+            "boter",
+            "lovverk",
+            "sporreskjema",
+        ])
+        .default("om")
+        .catch("om"),
+});
 
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
+    validateSearch: searchSchema,
     loader: ({ context, params }) =>
         context.queryClient.ensureQueryData(getGroupBySlugQuery(params.slug)),
 });
@@ -35,8 +55,13 @@ const ADMIN_PERMISSIONS = ["groups:update", "groups:manage", "groups:delete"];
 
 function GroupDetailPage() {
     const { slug } = Route.useParams();
-    const [active, setActive] = useState<GroupNavKey>("om");
+    const { tab: active } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
+
+    function setActive(tab: GroupNavKey) {
+        navigate({ search: (prev) => ({ ...prev, tab }) });
+    }
 
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
     const { data: session } = useQuery(authQueryOptions);
@@ -49,6 +74,14 @@ function GroupDetailPage() {
         ...getGroupFormsQuery(slug),
         enabled: Boolean(session),
     });
+    const { data: apiLaws } = useQuery({
+        ...getGroupLawsQuery(slug),
+        enabled: Boolean(session),
+    });
+
+    const createLaw = useMutation(createLawMutation);
+    const updateLaw = useMutation(updateLawMutation);
+    const deleteLaw = useMutation(deleteLawMutation);
 
     const isAdmin = Boolean(
         session?.permissions?.some(
@@ -78,6 +111,12 @@ function GroupDetailPage() {
     );
     const fines = useMemo(() => (apiFines ?? []).map(mapFine), [apiFines]);
     const forms = useMemo(() => (apiForms ?? []).map(mapForm), [apiForms]);
+    const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
+
+    const isFinesAdmin = Boolean(
+        session && apiGroup.finesAdminId === session.user?.id,
+    );
+    const canManageLaws = canManage || isFinesAdmin;
 
     function openGiveFine() {
         setActive("boter");
@@ -117,7 +156,29 @@ function GroupDetailPage() {
                             memberCount={members.length}
                         />
                     ) : null}
-                    {active === "lovverk" ? <GroupLawsTab /> : null}
+                    {active === "lovverk" ? (
+                        <GroupLawsTab
+                            laws={laws}
+                            canManage={canManageLaws}
+                            onSave={(values, lawId) => {
+                                if (lawId) {
+                                    updateLaw.mutate({
+                                        groupSlug: slug,
+                                        lawId,
+                                        data: values,
+                                    });
+                                } else {
+                                    createLaw.mutate({
+                                        groupSlug: slug,
+                                        data: values,
+                                    });
+                                }
+                            }}
+                            onDelete={(lawId) =>
+                                deleteLaw.mutate({ groupSlug: slug, lawId })
+                            }
+                        />
+                    ) : null}
                     {active === "sporreskjema" ? (
                         <GroupFormsTab forms={forms} isAdmin={canManage} />
                     ) : null}
@@ -128,7 +189,7 @@ function GroupDetailPage() {
                 open={fineDialogOpen}
                 onOpenChange={setFineDialogOpen}
                 users={[]}
-                laws={[]}
+                laws={laws}
             />
         </>
     );

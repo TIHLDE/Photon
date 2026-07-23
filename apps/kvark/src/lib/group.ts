@@ -5,6 +5,7 @@ import type {
     Group as ApiGroup,
     GroupMember as ApiGroupMember,
     Fine as ApiFine,
+    Law as ApiLaw,
     GroupFormList,
 } from "@tihlde/sdk";
 
@@ -50,6 +51,7 @@ export type Fine = {
 };
 
 export type Law = {
+    id: string;
     paragraph: string;
     title: string;
     description: string;
@@ -149,6 +151,21 @@ export function mapFine(fine: ApiFine): Fine {
         date: fine.createdAt ? formatGroupDate(fine.createdAt) : "",
         reason: fine.reason,
         image: fine.image ?? undefined,
+    };
+}
+
+/**
+ * Map an API law to the display shape used by the laws tab and fine dialogs.
+ * The backend stores `paragraph` as a decimal string ("3.10"); trailing
+ * zeros are stripped for display ("3.1", "1").
+ */
+export function mapLaw(law: ApiLaw): Law {
+    return {
+        id: law.id,
+        paragraph: String(Number(law.paragraph)),
+        title: law.title,
+        description: law.description,
+        amount: law.amount,
     };
 }
 

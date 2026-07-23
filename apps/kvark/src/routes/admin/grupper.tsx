@@ -39,8 +39,21 @@ export const Route = createFileRoute("/admin/grupper")({
         context.queryClient.ensureQueryData(getGroupsQuery(0)),
 });
 
+// Kontraktsignering gjelder kun verv (undergrupper, komiteer, styrer,
+// interessegrupper). Automatisk genererte grupper (klassetrinn, studier,
+// TIHLDE) og private bøtelag skal ikke administreres her.
+const HIDDEN_GROUP_TYPES = new Set<Group["type"]>([
+    "STUDYYEAR",
+    "STUDY",
+    "TIHLDE",
+    "PRIVATE",
+]);
+
 function GrupperAdminPage() {
-    const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+    const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
+    const groups = allGroups.filter(
+        (group) => !HIDDEN_GROUP_TYPES.has(group.type),
+    );
     const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
 
     return (

@@ -12,6 +12,8 @@ import type {
     UpdateGroupMemberRole,
     CreateFine,
     UpdateFine,
+    CreateLaw,
+    UpdateLaw,
     CreateGroupForm,
 } from "@tihlde/sdk";
 
@@ -22,6 +24,7 @@ const GroupQueryKeys = {
     detail: ["groups", "detail"] as const,
     members: ["groups", "members"] as const,
     fines: ["groups", "fines"] as const,
+    laws: ["groups", "laws"] as const,
     forms: ["groups", "forms"] as const,
 } as const;
 
@@ -314,6 +317,66 @@ export const deleteFineMutation = mutationOptions({
         );
         ctx.client.invalidateQueries({
             queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
+            exact: false,
+        });
+    },
+});
+
+// -- Laws (lovverk) --
+
+export const getGroupLawsQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...GroupQueryKeys.laws, groupSlug],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/laws", {
+                params: { groupSlug },
+            }),
+    });
+
+export const createLawMutation = mutationOptions({
+    mutationFn: ({ groupSlug, data }: { groupSlug: string; data: CreateLaw }) =>
+        apiClient.post("/api/groups/{groupSlug}/laws", {
+            params: { groupSlug },
+            json: data,
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.laws, vars.groupSlug],
+            exact: false,
+        });
+    },
+});
+
+export const updateLawMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        lawId,
+        data,
+    }: {
+        groupSlug: string;
+        lawId: string;
+        data: UpdateLaw;
+    }) =>
+        apiClient.patch("/api/groups/{groupSlug}/laws/{lawId}", {
+            params: { groupSlug, lawId },
+            json: data,
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.laws, vars.groupSlug],
+            exact: false,
+        });
+    },
+});
+
+export const deleteLawMutation = mutationOptions({
+    mutationFn: ({ groupSlug, lawId }: { groupSlug: string; lawId: string }) =>
+        apiClient.delete("/api/groups/{groupSlug}/laws/{lawId}", {
+            params: { groupSlug, lawId },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.laws, vars.groupSlug],
             exact: false,
         });
     },

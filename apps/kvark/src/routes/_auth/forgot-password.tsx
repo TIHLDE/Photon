@@ -83,8 +83,8 @@ function ForgotPasswordPage() {
                     tilbakestille passordet.
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)}>
-                <CardContent>
+            <form {...formHandlers(form)} className="flex flex-col gap-4">
+                <CardContent className="flex flex-col gap-5">
                     <FieldGroup>
                         <form.AppField name="email">
                             {(field) => (
@@ -101,8 +101,7 @@ function ForgotPasswordPage() {
                     <form.AppForm>
                         <form.FormErrors />
                     </form.AppForm>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-3">
+
                     <form.AppForm>
                         <form.SubmitButton
                             className="w-full"
@@ -116,6 +115,8 @@ function ForgotPasswordPage() {
                             Send lenke
                         </form.SubmitButton>
                     </form.AppForm>
+                </CardContent>
+                <CardFooter className="justify-center">
                     <p className="text-sm text-muted-foreground">
                         <Link
                             to="/login"

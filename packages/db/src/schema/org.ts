@@ -3,6 +3,7 @@ import {
     boolean,
     integer,
     jsonb,
+    numeric,
     pgTableCreator,
     primaryKey,
     serial,
@@ -291,6 +292,31 @@ export const fineRelations = relations(fine, ({ one }) => ({
         fields: [fine.createdByUserId],
         references: [user.id],
         relationName: "fineCreatedByUser",
+    }),
+}));
+
+/**
+ * A group's fine law ("lovverk"): the numbered paragraphs members can be
+ * fined under. Ported from Lepton's `group_law` table. `amount` is the
+ * default number of units for a fine given under this paragraph.
+ */
+export const groupLaw = pgTable("group_law", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupSlug: varchar("group_slug", { length: 128 })
+        .notNull()
+        .references(() => group.slug, { onDelete: "cascade" }),
+    /** Paragraph number, e.g. 1.00 or 3.12 — mirrors Lepton's decimal(4,2). */
+    paragraph: numeric("paragraph", { precision: 4, scale: 2 }).notNull(),
+    title: varchar("title", { length: 100 }).notNull(),
+    description: text("description").notNull().default(""),
+    amount: integer("amount").notNull().default(1),
+    ...timestamps,
+});
+
+export const groupLawRelations = relations(groupLaw, ({ one }) => ({
+    group: one(group, {
+        fields: [groupLaw.groupSlug],
+        references: [group.slug],
     }),
 }));
 
