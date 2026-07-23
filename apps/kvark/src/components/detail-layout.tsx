@@ -1,4 +1,4 @@
-import { Tabs, TabsIndicator, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import type { ReactNode } from "react";
 
 type NavItem<K extends string> = {
@@ -79,7 +79,6 @@ export function DetailLayoutNav<K extends string>({
                 onValueChange={(value) => onSelect(value as K)}
             >
                 <TabsList>
-                    <TabsIndicator />
                     {flatItems.map((item) => (
                         <TabsTrigger
                             key={item.key}
