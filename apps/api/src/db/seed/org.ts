@@ -136,6 +136,8 @@ export default async ({ db }: AppContext) => {
         name: string;
         description: string;
         permissions: string[];
+        /** Subgroup whose leader auto-holds this verv (see linkedGroupSlug) */
+        linkedGroupSlug?: string;
     }[] = [
         {
             name: "President",
@@ -182,20 +184,45 @@ export default async ({ db }: AppContext) => {
             name: "Teknologiminister",
             description: "Leder av Index — full systemtilgang (root)",
             permissions: ["root"],
+            linkedGroupSlug: "index",
+        },
+        // Øvrige undergruppeledere sitter også i HS. Vervene bærer ingen
+        // ekstra globale tilganger (HS-rollen følger av gruppemedlemskapet),
+        // men skal finnes som titler og vises i /admin/roller.
+        {
+            name: "Promoteringsminister",
+            description: "Leder av Promo",
+            permissions: [],
+        },
+        {
+            name: "Kontorminister",
+            description: "Leder av Kiosk og Kontor",
+            permissions: [],
+        },
+        {
+            name: "Næringslivsminister",
+            description: "Leder av Næringsliv og Kurs",
+            permissions: [],
         },
     ];
 
+    // Position names are no longer unique per group (one holder per
+    // position), so idempotency is an explicit existence check.
     for (const position of hsPositions) {
-        await db
-            .insert(schema.groupPosition)
-            .values({
-                groupSlug: "hs",
-                name: position.name,
-                description: position.description,
-                permissions: position.permissions,
-                scope: "global",
-            })
-            .onConflictDoNothing();
+        const existing = await db.query.groupPosition.findFirst({
+            where: (t, { and }) =>
+                and(eq(t.groupSlug, "hs"), eq(t.name, position.name)),
+        });
+        if (existing) continue;
+
+        await db.insert(schema.groupPosition).values({
+            groupSlug: "hs",
+            name: position.name,
+            description: position.description,
+            permissions: position.permissions,
+            scope: "global",
+            linkedGroupSlug: position.linkedGroupSlug ?? null,
+        });
     }
 
     // Seed study programs (from org schema)

@@ -1,6 +1,8 @@
 -- =============================================================================
 -- RBAC/verv rollout for PROD — run ONCE, AFTER the deploy that applies
--- migration 0020 (org_group_position tables + org_group.leader_role_id).
+-- migration 0024 (org_group_position tables + org_group.leader_role_id +
+-- single-holder PK on org_group_position_holder, duplicate names allowed +
+-- org_group_position.linked_group_slug for subgroup-leader auto-verv).
 --
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f rbac-rollout.sql
 --
@@ -63,19 +65,58 @@ SELECT m.user_id, (SELECT id FROM rbac_role WHERE name = 'hs')
 FROM org_group_membership m WHERE m.group_slug = 'hs'
 ON CONFLICT DO NOTHING;
 
--- 6) HS titles (verv). Holders are assigned afterwards in /admin/roller.
-INSERT INTO org_group_position (group_slug, name, description, permissions, scope) VALUES
-('hs','President','Leder av Arbeidsutvalget og TIHLDE',
-    ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign'],'global'),
-('hs','Visepresident','Del av Arbeidsutvalget',
-    ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign'],'global'),
-('hs','Finansminister','Del av Arbeidsutvalget, styrer økonomien',
-    ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign','events:payments:view','events:payments:refund'],'global'),
-('hs','Sosialminister','Leder av Sosialen, kan refundere arrangementsbetalinger',
-    ARRAY['events:payments:view','events:payments:refund'],'global'),
-('hs','Teknologiminister','Leder av Index — full systemtilgang (root)',
-    ARRAY['root'],'global')
-ON CONFLICT DO NOTHING;
+-- 6) HS titles (verv): AU + alle undergruppeledere. Holders are assigned
+--    afterwards in /admin/roller. Position names are NOT unique per group
+--    anymore (one holder per position; two økonomiansvarlige = two
+--    positions), so idempotency is an explicit NOT EXISTS check instead of
+--    ON CONFLICT.
+INSERT INTO org_group_position (group_slug, name, description, permissions, scope)
+SELECT v.group_slug, v.name, v.description, v.permissions, v.scope::org_group_position_scope
+FROM (VALUES
+    ('hs','President','Leder av Arbeidsutvalget og TIHLDE',
+        ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign'],'global'),
+    ('hs','Visepresident','Del av Arbeidsutvalget',
+        ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign'],'global'),
+    ('hs','Finansminister','Del av Arbeidsutvalget, styrer økonomien',
+        ARRAY['roles:view','roles:create','roles:update','roles:delete','roles:assign','events:payments:view','events:payments:refund'],'global'),
+    ('hs','Sosialminister','Leder av Sosialen, kan refundere arrangementsbetalinger',
+        ARRAY['events:payments:view','events:payments:refund'],'global'),
+    ('hs','Teknologiminister','Leder av Index — full systemtilgang (root)',
+        ARRAY['root'],'global'),
+    ('hs','Promoteringsminister','Leder av Promo',
+        ARRAY[]::text[],'global'),
+    ('hs','Kontorminister','Leder av Kiosk og Kontor',
+        ARRAY[]::text[],'global'),
+    ('hs','Næringslivsminister','Leder av Næringsliv og Kurs',
+        ARRAY[]::text[],'global')
+) AS v(group_slug, name, description, permissions, scope)
+WHERE NOT EXISTS (
+    SELECT 1 FROM org_group_position p
+    WHERE p.group_slug = v.group_slug AND p.name = v.name
+);
+
+-- 6b) Link minister titles to their subgroups so the verv follows the
+--     group's leadership automatically (new leader → auto HS member + verv).
+--     Each UPDATE is a no-op if the guessed slug doesn't exist in prod —
+--     VERIFY the actual subgroup slugs (SELECT slug FROM org_group WHERE
+--     lower(type)='subgroup') and adjust before running. Unlinked subgroups
+--     get an auto-created "Leder av <navn>"-verv at the next leader change
+--     instead, so a missed link is cosmetic, not breaking.
+UPDATE org_group_position SET linked_group_slug = 'index'
+WHERE group_slug = 'hs' AND name = 'Teknologiminister'
+  AND EXISTS (SELECT 1 FROM org_group WHERE slug = 'index');
+UPDATE org_group_position SET linked_group_slug = 'sosialen'
+WHERE group_slug = 'hs' AND name = 'Sosialminister'
+  AND EXISTS (SELECT 1 FROM org_group WHERE slug = 'sosialen');
+UPDATE org_group_position SET linked_group_slug = 'promo'
+WHERE group_slug = 'hs' AND name = 'Promoteringsminister'
+  AND EXISTS (SELECT 1 FROM org_group WHERE slug = 'promo');
+UPDATE org_group_position SET linked_group_slug = 'nok'
+WHERE group_slug = 'hs' AND name = 'Næringslivsminister'
+  AND EXISTS (SELECT 1 FROM org_group WHERE slug = 'nok');
+UPDATE org_group_position SET linked_group_slug = 'kok'
+WHERE group_slug = 'hs' AND name = 'Kontorminister'
+  AND EXISTS (SELECT 1 FROM org_group WHERE slug = 'kok');
 
 -- 7) Teknologiminister-tittelen til mathstr (root flyttes med tittelen ved
 --    fremtidige skifter; den direkte root-rollen fra 2026-07-23 kan beholdes
@@ -127,6 +168,10 @@ COMMIT;
 SELECT r.name, r.position, cardinality(r.permissions) AS perms, count(ur.user_id) AS users
 FROM rbac_role r LEFT JOIN rbac_user_role ur ON ur.role_id = r.id
 GROUP BY r.id ORDER BY r.position DESC;
-SELECT name, scope FROM org_group_position WHERE group_slug = 'hs';
+SELECT name, scope, linked_group_slug FROM org_group_position WHERE group_slug = 'hs';
+-- Subgroups WITHOUT a linked HS-verv (should be empty — fix 6b slugs if not):
+SELECT g.slug FROM org_group g
+WHERE lower(g.type) = 'subgroup'
+  AND NOT EXISTS (SELECT 1 FROM org_group_position p WHERE p.linked_group_slug = g.slug);
 SELECT slug, role_id, leader_role_id FROM org_group WHERE slug IN ('hs','index','nok');
 SELECT count(*) FROM org_study_program;

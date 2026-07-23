@@ -163,6 +163,11 @@ export async function addUserToGroup(
         }
     }
 
+    // Subgroup leaders sit in HS
+    if (role === "leader") {
+        await syncSubgroupLeaderIntoHs(ctx, userId, group);
+    }
+
     return membership;
 }
 
@@ -185,6 +190,11 @@ export async function removeUserFromGroup(
     if (!group) {
         throw new Error(`Group not found: ${groupSlug}`);
     }
+
+    // Was this the subgroup's leader? (checked before the row is deleted)
+    const wasSubgroupLeader =
+        isSubgroupType(group.type) &&
+        (await isGroupLeader(ctx, userId, groupSlug));
 
     // Remove user from group
     await db
@@ -212,6 +222,12 @@ export async function removeUserFromGroup(
         }
     }
     await removeUserPositionsInGroup(ctx, userId, groupSlug);
+
+    // A departing subgroup leader forfeits the HS seat too (unless something
+    // else warrants it — see pruneHsMembershipIfUnwarranted)
+    if (wasSubgroupLeader) {
+        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+    }
 }
 
 /**
@@ -277,6 +293,162 @@ export async function updateGroupMemberRole(
             }
         }
     }
+
+    // Keep HS in sync with subgroup leadership
+    if (group && isSubgroupType(group.type)) {
+        if (newRole === "leader") {
+            await syncSubgroupLeaderIntoHs(ctx, userId, group);
+        } else {
+            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+        }
+    }
+}
+
+// =============================================================================
+// HS auto-membership for subgroup leaders
+//
+// Hovedstyret = AU + the leaders of every subgroup. When someone becomes
+// leader of a group of type "subgroup", they are automatically added to the
+// hs group and assigned the subgroup's linked leader-verv (created on the
+// fly as "Leder av <gruppe>" if none is linked yet — minister titles like
+// Teknologiminister are linked via groupPosition.linkedGroupSlug and are
+// then reused instead). When they lose the leadership, the verv is taken
+// back and the hs membership is removed unless something else warrants it
+// (another subgroup leadership or another hs verv, e.g. an AU title).
+// =============================================================================
+
+export const HS_GROUP_SLUG = "hs";
+
+/** True for groups whose leader belongs in HS. Column is freeform varchar
+ *  (Lepton rows are upper case), so compare case-insensitively. */
+export function isSubgroupType(type: string): boolean {
+    return type.toLowerCase() === "subgroup";
+}
+
+/**
+ * Get the leader-verv linked to a subgroup (in any group, normally hs).
+ */
+async function getLinkedLeaderPosition(ctx: AppContext, groupSlug: string) {
+    const [position] = await ctx.db
+        .select()
+        .from(schema.groupPosition)
+        .where(eq(schema.groupPosition.linkedGroupSlug, groupSlug))
+        .limit(1);
+    return position ?? null;
+}
+
+/**
+ * Called when `userId` BECOMES leader of `group`. No-op unless the group is
+ * a subgroup and the hs group exists. Adds the leader to hs and hands them
+ * the linked leader-verv (replacing any previous holder — a verv has exactly
+ * one holder, and leadership is the source of truth for this one).
+ */
+async function syncSubgroupLeaderIntoHs(
+    ctx: AppContext,
+    userId: string,
+    group: InferSelectModel<DbSchema["group"]>,
+): Promise<void> {
+    if (!isSubgroupType(group.type) || group.slug === HS_GROUP_SLUG) return;
+    const hsGroup = await getGroup(ctx, HS_GROUP_SLUG);
+    if (!hsGroup) return; // e.g. minimal test fixtures without an hs group
+
+    await addUserToGroup(ctx, userId, HS_GROUP_SLUG, "member");
+
+    let position = await getLinkedLeaderPosition(ctx, group.slug);
+    if (!position) {
+        const [created] = await ctx.db
+            .insert(schema.groupPosition)
+            .values({
+                groupSlug: HS_GROUP_SLUG,
+                name: `Leder av ${group.name}`,
+                description: `Leder av ${group.name} — automatisk verv, følger ledervervet i gruppen`,
+                permissions: [],
+                scope: "global",
+                linkedGroupSlug: group.slug,
+            })
+            .returning();
+        position = created ?? null;
+    }
+    if (!position) return;
+
+    // Hand the verv to the new leader (single holder — replace).
+    await ctx.db
+        .delete(schema.groupPositionHolder)
+        .where(eq(schema.groupPositionHolder.positionId, position.id));
+    await ctx.db.insert(schema.groupPositionHolder).values({
+        positionId: position.id,
+        userId,
+    });
+}
+
+/**
+ * Called when `userId` STOPS being leader of subgroup `groupSlug`. Takes the
+ * linked leader-verv back (if they hold it) and prunes the hs membership if
+ * nothing else warrants it.
+ */
+async function syncSubgroupLeaderOutOfHs(
+    ctx: AppContext,
+    userId: string,
+    groupSlug: string,
+): Promise<void> {
+    const position = await getLinkedLeaderPosition(ctx, groupSlug);
+    if (position) {
+        await ctx.db
+            .delete(schema.groupPositionHolder)
+            .where(
+                and(
+                    eq(schema.groupPositionHolder.positionId, position.id),
+                    eq(schema.groupPositionHolder.userId, userId),
+                ),
+            );
+    }
+    await pruneHsMembershipIfUnwarranted(ctx, userId);
+}
+
+/**
+ * Remove `userId` from hs unless they still belong there: they lead another
+ * subgroup, or they hold some hs verv (e.g. an AU title). Safe to call for
+ * users who are not hs members at all.
+ */
+export async function pruneHsMembershipIfUnwarranted(
+    ctx: AppContext,
+    userId: string,
+): Promise<void> {
+    if (!(await isGroupMember(ctx, userId, HS_GROUP_SLUG))) return;
+
+    // Still leader of some subgroup?
+    const memberships = await ctx.db
+        .select({
+            role: schema.groupMembership.role,
+            type: schema.group.type,
+        })
+        .from(schema.groupMembership)
+        .innerJoin(
+            schema.group,
+            eq(schema.groupMembership.groupSlug, schema.group.slug),
+        )
+        .where(eq(schema.groupMembership.userId, userId));
+    if (memberships.some((m) => m.role === "leader" && isSubgroupType(m.type)))
+        return;
+
+    // Still holds an hs verv (e.g. AU title)?
+    const [heldHsPosition] = await ctx.db
+        .select({ positionId: schema.groupPositionHolder.positionId })
+        .from(schema.groupPositionHolder)
+        .innerJoin(
+            schema.groupPosition,
+            eq(schema.groupPositionHolder.positionId, schema.groupPosition.id),
+        )
+        .where(
+            and(
+                eq(schema.groupPositionHolder.userId, userId),
+                eq(schema.groupPosition.groupSlug, HS_GROUP_SLUG),
+            ),
+        )
+        .limit(1);
+    if (heldHsPosition) return;
+
+    await removeUserFromGroup(ctx, userId, HS_GROUP_SLUG);
 }
 
 /**

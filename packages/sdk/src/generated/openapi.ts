@@ -1039,7 +1039,7 @@ export interface paths {
         put?: never;
         /**
          * Assign a position to a user
-         * @description Assign a position (verv) to a group member. The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
+         * @description Assign a position (verv) to a group member. A position can be held by at most ONE user — assigning an occupied position fails; unassign the current holder first (or create a second position for a second holder). The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
          */
         post: operations["assignGroupPosition"];
         delete?: never;
@@ -3066,7 +3066,8 @@ export interface components {
             permissions: string[];
             /** @enum {string} */
             scope: "group" | "global";
-            holders: components["schemas"]["GroupPositionHolder"][];
+            /** @description The single holder of this position, if assigned */
+            holder: components["schemas"]["GroupPositionHolder"] | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -6777,6 +6778,13 @@ export interface operations {
             };
             /** @description Not Found - Position not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Position already has a holder */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

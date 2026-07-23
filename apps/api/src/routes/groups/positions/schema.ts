@@ -83,7 +83,9 @@ export const positionSchema = Schema(
         description: z.string().nullable(),
         permissions: z.array(z.string()),
         scope: z.enum(["group", "global"]),
-        holders: z.array(positionHolderSchema),
+        holder: positionHolderSchema.nullable().meta({
+            description: "The single holder of this position, if assigned",
+        }),
         createdAt: z.string(),
         updatedAt: z.string(),
     }),

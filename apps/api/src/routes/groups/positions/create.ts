@@ -77,6 +77,8 @@ export const createPositionRoute = route().post(
             });
         }
 
+        // Duplicate names are allowed on purpose: a position has one holder,
+        // so a second "Økonomiansvarlig" is simply a second position.
         const [position] = await db
             .insert(schema.groupPosition)
             .values({
@@ -86,15 +88,14 @@ export const createPositionRoute = route().post(
                 permissions: body.permissions,
                 scope: body.scope,
             })
-            .onConflictDoNothing()
             .returning();
 
         if (!position) {
-            throw new HTTPException(400, {
-                message: `A position named "${body.name}" already exists in this group`,
+            throw new HTTPException(500, {
+                message: "Failed to create position",
             });
         }
 
-        return c.json({ ...position, holders: [] }, 201);
+        return c.json({ ...position, holder: null }, 201);
     },
 );
