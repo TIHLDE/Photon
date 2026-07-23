@@ -90,7 +90,7 @@ export default async ({ db }: AppContext) => {
     ] as const;
 
     // Groups that auto-assign an RBAC role to their members (see group.roleId).
-    const groupRoles: Record<string, string> = { hs: "hs" };
+    const groupRoles: Record<string, string> = { hs: "hs", index: "admin" };
 
     for (const group of groups) {
         const exists = await db
@@ -126,6 +126,76 @@ export default async ({ db }: AppContext) => {
 
             await db.insert(schema.group).values(newGroup);
         }
+    }
+
+    // HS positions (verv/titler). Globally-scoped titles carry the powers
+    // the hs ROLE deliberately lacks: AU governs roles, Sosialminister can
+    // refund event payments, and Teknologiminister holds root. Assigning a
+    // title moves the power with it — no manual role juggling at handovers.
+    const hsPositions: {
+        name: string;
+        description: string;
+        permissions: string[];
+    }[] = [
+        {
+            name: "President",
+            description: "Leder av Arbeidsutvalget og TIHLDE",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+            ],
+        },
+        {
+            name: "Visepresident",
+            description: "Del av Arbeidsutvalget",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+            ],
+        },
+        {
+            name: "Finansminister",
+            description: "Del av Arbeidsutvalget, styrer økonomien",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+                "events:payments:view",
+                "events:payments:refund",
+            ],
+        },
+        {
+            name: "Sosialminister",
+            description:
+                "Leder av Sosialen, kan refundere arrangementsbetalinger",
+            permissions: ["events:payments:view", "events:payments:refund"],
+        },
+        {
+            name: "Teknologiminister",
+            description: "Leder av Index — full systemtilgang (root)",
+            permissions: ["root"],
+        },
+    ];
+
+    for (const position of hsPositions) {
+        await db
+            .insert(schema.groupPosition)
+            .values({
+                groupSlug: "hs",
+                name: position.name,
+                description: position.description,
+                permissions: position.permissions,
+                scope: "global",
+            })
+            .onConflictDoNothing();
     }
 
     // Seed study programs (from org schema)

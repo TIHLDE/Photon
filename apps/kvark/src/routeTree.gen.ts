@@ -36,6 +36,7 @@ import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
+import { Route as AdminRollerRouteImport } from './routes/admin/roller'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
@@ -193,6 +194,11 @@ const AdminPrikkerRoute = AdminPrikkerRouteImport.update({
   path: '/prikker',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRollerRoute = AdminRollerRouteImport.update({
+  id: '/roller',
+  path: '/roller',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
   id: '/annonser/',
   path: '/annonser/',
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
+  '/admin/roller': typeof AdminRollerRoute
   '/admin/': typeof AdminIndexRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
@@ -395,6 +402,7 @@ export interface FileRoutesByTo {
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
+  '/admin/roller': typeof AdminRollerRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
@@ -447,6 +455,7 @@ export interface FileRoutesById {
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
+  '/admin/roller': typeof AdminRollerRoute
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
@@ -500,6 +509,7 @@ export interface FileRouteTypes {
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
+    | '/admin/roller'
     | '/admin/'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
@@ -550,6 +560,7 @@ export interface FileRouteTypes {
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
+    | '/admin/roller'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
     | '/bedrift/studiene'
@@ -601,6 +612,7 @@ export interface FileRouteTypes {
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
+    | '/admin/roller'
     | '/_app/'
     | '/admin/'
     | '/_app/annonser/$slug'
@@ -826,6 +838,13 @@ declare module '@tanstack/react-router' {
       path: '/prikker'
       fullPath: '/admin/prikker'
       preLoaderRoute: typeof AdminPrikkerRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/roller': {
+      id: '/admin/roller'
+      path: '/roller'
+      fullPath: '/admin/roller'
+      preLoaderRoute: typeof AdminRollerRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_app/annonser/': {
@@ -1136,6 +1155,7 @@ interface AdminRouteChildren {
   AdminNyheterRoute: typeof AdminNyheterRoute
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
+  AdminRollerRoute: typeof AdminRollerRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1149,6 +1169,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminNyheterRoute: AdminNyheterRoute,
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,
+  AdminRollerRoute: AdminRollerRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

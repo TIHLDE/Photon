@@ -44,5 +44,20 @@ export default async ({ db, auth }: AppContext) => {
             updatedAt: new Date(),
             isOnboarded: true,
         });
+
+        // Give the dev test user the root RBAC role so every flow (incl.
+        // event registration, which requires events:registrations:create)
+        // works out of the box.
+        const [rootRole] = await db
+            .select({ id: schema.role.id })
+            .from(schema.role)
+            .where(eq(schema.role.name, "root"))
+            .limit(1);
+        if (rootRole) {
+            await db
+                .insert(schema.userRole)
+                .values({ userId, roleId: rootRole.id })
+                .onConflictDoNothing();
+        }
     }
 };

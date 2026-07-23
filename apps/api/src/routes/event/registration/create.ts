@@ -8,6 +8,7 @@ import {
 } from "../../../lib/event/priority";
 import { getUserStrikeCount } from "../../../lib/event/strikes";
 import { route } from "../../../lib/route";
+import { requireAccess } from "../../../middleware/access";
 import { requireAuth } from "../../../middleware/auth";
 import {
     createRegistrationBodySchema,
@@ -21,7 +22,7 @@ export const registerToEventRoute = route().post(
         summary: "Register to an event",
         operationId: "createEventRegistration",
         description:
-            "Create a new registration for the authenticated user to attend an event, initially with pending status",
+            "Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -40,6 +41,7 @@ export const registerToEventRoute = route().post(
         })
         .build(),
     requireAuth,
+    requireAccess({ permission: "events:registrations:create" }),
     validator("json", createRegistrationBodySchema),
     async (c) => {
         const now = new Date();

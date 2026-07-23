@@ -15,7 +15,7 @@ import {
     removeUserRole,
 } from "@photon/auth/roles";
 import { type DbSchema, schema } from "@photon/db";
-import { type InferSelectModel, and, eq } from "drizzle-orm";
+import { type InferSelectModel, and, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -155,6 +155,14 @@ export async function addUserToGroup(
         }
     }
 
+    // If group has a leader role and the user joins as leader, assign it
+    if (role === "leader" && group.leaderRoleId) {
+        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
+        if (leaderRole) {
+            await assignUserRole(ctx, userId, leaderRole.name);
+        }
+    }
+
     return membership;
 }
 
@@ -195,6 +203,41 @@ export async function removeUserFromGroup(
             await removeUserRole(ctx, userId, rbacRole.name);
         }
     }
+
+    // Leaving the group also forfeits the leader role and any positions held
+    if (group.leaderRoleId) {
+        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
+        if (leaderRole) {
+            await removeUserRole(ctx, userId, leaderRole.name);
+        }
+    }
+    await removeUserPositionsInGroup(ctx, userId, groupSlug);
+}
+
+/**
+ * Remove all positions (verv) a user holds in a group.
+ * Called when a user leaves the group — positions require membership.
+ */
+export async function removeUserPositionsInGroup(
+    ctx: AppContext,
+    userId: string,
+    groupSlug: string,
+): Promise<void> {
+    const db = ctx.db;
+    await db
+        .delete(schema.groupPositionHolder)
+        .where(
+            and(
+                eq(schema.groupPositionHolder.userId, userId),
+                inArray(
+                    schema.groupPositionHolder.positionId,
+                    db
+                        .select({ id: schema.groupPosition.id })
+                        .from(schema.groupPosition)
+                        .where(eq(schema.groupPosition.groupSlug, groupSlug)),
+                ),
+            ),
+        );
 }
 
 /**
@@ -221,6 +264,19 @@ export async function updateGroupMemberRole(
                 eq(schema.groupMembership.groupSlug, groupSlug),
             ),
         );
+
+    // Keep the group's leader role in sync with the membership role
+    const group = await getGroup(ctx, groupSlug);
+    if (group?.leaderRoleId) {
+        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
+        if (leaderRole) {
+            if (newRole === "leader") {
+                await assignUserRole(ctx, userId, leaderRole.name);
+            } else {
+                await removeUserRole(ctx, userId, leaderRole.name);
+            }
+        }
+    }
 }
 
 /**
