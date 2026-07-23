@@ -8,7 +8,9 @@ import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
 import { getEventsQuery } from "#/api/queries/events";
+import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
+import { InfoBanner } from "#/components/info-banner";
 import { NewsCard, type NewsCardProps } from "#/components/news-card";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
@@ -25,8 +27,12 @@ const LIST_PREVIEW_COUNT = 4;
 
 export const Route = createFileRoute("/_app/")({
     component: Home,
-    loader: ({ context }) =>
-        context.queryClient.ensureQueryData(upcomingEventsQuery()),
+    loader: async ({ context }) => {
+        await Promise.all([
+            context.queryClient.ensureQueryData(upcomingEventsQuery()),
+            context.queryClient.ensureQueryData(getVisibleBannersQuery()),
+        ]);
+    },
 });
 
 const NEWS: NewsCardProps[] = [
@@ -49,6 +55,11 @@ const NEWS: NewsCardProps[] = [
 function Home() {
     return (
         <>
+            {/* Preloaded in the route loader, so the fallback never flashes. */}
+            <Suspense fallback={null}>
+                <BannersSection />
+            </Suspense>
+
             <Hero />
 
             <section className="container mx-auto w-full px-4 py-8">
@@ -71,6 +82,25 @@ function Home() {
                 </div>
             </section>
         </>
+    );
+}
+
+function BannersSection() {
+    const { data: banners } = useSuspenseQuery(getVisibleBannersQuery());
+
+    if (banners.length === 0) return null;
+
+    return (
+        <div className="container mx-auto flex w-full flex-col gap-2 px-4 pt-4">
+            {banners.map((banner) => (
+                <InfoBanner
+                    key={banner.id}
+                    title={banner.title}
+                    description={banner.description}
+                    url={banner.url}
+                />
+            ))}
+        </div>
     );
 }
 

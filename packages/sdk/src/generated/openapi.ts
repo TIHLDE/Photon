@@ -172,6 +172,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/banners/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List currently visible banners
+         * @description Banners whose visibility window covers the current moment, newest first. Public endpoint — this is what the front page renders.
+         */
+        get: operations["listVisibleBanners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/banners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all banners
+         * @description Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' permission. There are only ever a handful of banners, so the list is unpaginated.
+         */
+        get: operations["listBanners"];
+        put?: never;
+        /**
+         * Create banner
+         * @description Create a new front-page banner. Requires 'banners:create' permission.
+         */
+        post: operations["createBanner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/banners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete banner
+         * @description Delete a banner. Requires 'banners:delete' or 'banners:manage' permission.
+         */
+        delete: operations["deleteBanner"];
+        options?: never;
+        head?: never;
+        /**
+         * Update banner
+         * @description Update a banner. Requires 'banners:update' or 'banners:manage' permission.
+         */
+        patch: operations["updateBanner"];
+        trace?: never;
+    };
     "/api/company/contact": {
         parameters: {
             query?: never;
@@ -1727,6 +1795,83 @@ export interface components {
              * @description When the asset was created
              */
             createdAt: string;
+        };
+        VisibleBanner: {
+            /**
+             * Format: uuid
+             * @description Banner ID
+             */
+            id: string;
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /** @description Optional link for the banner */
+            url: string | null;
+            /** @description Visibility window end (ISO 8601) */
+            visibleUntil: string;
+        };
+        /** @description Banners currently live, newest first */
+        VisibleBannerList: components["schemas"]["VisibleBanner"][];
+        Banner: {
+            /**
+             * Format: uuid
+             * @description Banner ID
+             */
+            id: string;
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /** @description Optional link for the banner */
+            url: string | null;
+            /** @description Visibility window start (ISO 8601) */
+            visibleFrom: string;
+            /** @description Visibility window end (ISO 8601) */
+            visibleUntil: string;
+            /** @description Whether the banner is live right now */
+            isVisible: boolean;
+            /** @description Creator user ID */
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+        };
+        /** @description All banners, newest visibility first */
+        BannerList: components["schemas"]["Banner"][];
+        CreateBanner: {
+            /** @description Banner headline */
+            title: string;
+            /** @description Short message shown in the banner */
+            description: string;
+            /**
+             * Format: uri
+             * @description Optional link for the banner
+             */
+            url?: string;
+            /**
+             * Format: date-time
+             * @description When the banner becomes visible
+             */
+            visibleFrom: string;
+            /**
+             * Format: date-time
+             * @description When the banner stops being visible
+             */
+            visibleUntil: string;
+        };
+        UpdateBanner: {
+            title?: string;
+            description?: string;
+            url?: string | null;
+            /** Format: date-time */
+            visibleFrom?: string;
+            /** Format: date-time */
+            visibleUntil?: string;
+        };
+        DeleteBannerResponse: {
+            message: string;
         };
         CompanyContactResponse: {
             success: boolean;
@@ -3972,6 +4117,196 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listVisibleBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisibleBannerList"];
+                };
+            };
+        };
+    };
+    listBanners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BannerList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBanner"];
+            };
+        };
+        responses: {
+            /** @description Banner created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Banner"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Banner deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteBannerResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Banner not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateBanner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBanner"];
+            };
+        };
+        responses: {
+            /** @description Banner updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Banner"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Banner not found */
             404: {
                 headers: {
                     [name: string]: unknown;
