@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Card } from "@tihlde/ui/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { ChevronRight } from "lucide-react";
@@ -46,9 +46,9 @@ export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
     const grouped = useMemo(() => {
         const map = new Map<string, Fine[]>();
         for (const fine of filtered) {
-            const list = map.get(fine.user) ?? [];
+            const list = map.get(fine.userId) ?? [];
             list.push(fine);
-            map.set(fine.user, list);
+            map.set(fine.userId, list);
         }
         return map;
     }, [filtered]);
@@ -144,8 +144,8 @@ export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
                     </ul>
                 ) : (
                     <ul className="flex flex-col gap-2">
-                        {Array.from(grouped.entries()).map(([user, list]) => (
-                            <li key={user}>
+                        {Array.from(grouped.entries()).map(([userId, list]) => (
+                            <li key={userId}>
                                 <Card
                                     size="sm"
                                     className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
@@ -158,13 +158,19 @@ export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
                                     }}
                                 >
                                     <Avatar className="size-10">
+                                        {list[0]?.userImage ? (
+                                            <AvatarImage
+                                                src={list[0].userImage}
+                                                alt={list[0].user}
+                                            />
+                                        ) : null}
                                         <AvatarFallback>
-                                            {initials(user)}
+                                            {initials(list[0]?.user ?? "")}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div className="flex min-w-0 flex-1 flex-col">
                                         <span className="truncate font-medium">
-                                            {user}
+                                            {list[0]?.user}
                                         </span>
                                         <span className="truncate text-sm text-muted-foreground">
                                             {list.length} bøter

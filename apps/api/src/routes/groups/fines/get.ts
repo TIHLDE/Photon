@@ -40,12 +40,27 @@ export const getFineRoute = route().get(
             });
         }
 
-        const fine = await db
-            .select()
-            .from(schema.fine)
-            .where(eq(schema.fine.id, fineId))
-            .limit(1)
-            .then((res) => res[0]);
+        // Include public user info (name/image) so the UI can display names
+        // instead of user IDs
+        const fine = await db.query.fine.findFirst({
+            where: eq(schema.fine.id, fineId),
+            with: {
+                user: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    },
+                },
+                createdByUser: {
+                    columns: {
+                        id: true,
+                        name: true,
+                        image: true,
+                    },
+                },
+            },
+        });
 
         if (!fine) {
             throw new HTTPException(404, {
