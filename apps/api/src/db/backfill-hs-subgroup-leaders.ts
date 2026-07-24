@@ -50,6 +50,15 @@ const MINISTER_BY_SUBGROUP_NAME: Record<string, string> = {
     "Næringsliv og Kurs": "Næringslivsminister",
 };
 
+/** Match resiliently: ignore surrounding whitespace and letter case. */
+const normalizeName = (name: string) => name.trim().toLowerCase();
+const MINISTER_BY_NORMALIZED_NAME = new Map(
+    Object.entries(MINISTER_BY_SUBGROUP_NAME).map(([name, minister]) => [
+        normalizeName(name),
+        minister,
+    ]),
+);
+
 type Ctx = Awaited<ReturnType<typeof createAppContext>>;
 type Group = InferSelectModel<DbSchema["group"]>;
 
@@ -107,7 +116,9 @@ async function main() {
 
     // Step 1: link the named minister-verv for each known subgroup.
     for (const group of subgroups) {
-        const ministerName = MINISTER_BY_SUBGROUP_NAME[group.name];
+        const ministerName = MINISTER_BY_NORMALIZED_NAME.get(
+            normalizeName(group.name),
+        );
         if (!ministerName) {
             console.log(
                 `⚠️  ${group.slug} ("${group.name}"): no minister mapping — leader will get a generic "Leder av …" verv`,
