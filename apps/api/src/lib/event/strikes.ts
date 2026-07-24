@@ -96,6 +96,46 @@ export async function getUserStrikeCount(
     return rows.reduce((total, row) => total + row.count, 0);
 }
 
+/**
+ * Issue a strike to a user for an event, idempotently. If the user already has
+ * any strike tied to this event, nothing is inserted — this prevents duplicate
+ * strikes from job re-runs or overlapping automatic/manual paths. Returns true
+ * when a strike was created, false when one already existed.
+ */
+export async function issueStrike(
+    db: NodePgDatabase<DbSchema>,
+    input: {
+        eventId: string;
+        userId: string;
+        count: number;
+        reason: string;
+    },
+): Promise<boolean> {
+    const existing = await db
+        .select({ id: schema.eventStrike.id })
+        .from(schema.eventStrike)
+        .where(
+            and(
+                eq(schema.eventStrike.userId, input.userId),
+                eq(schema.eventStrike.eventId, input.eventId),
+            ),
+        )
+        .limit(1);
+
+    if (existing.length > 0) {
+        return false;
+    }
+
+    await db.insert(schema.eventStrike).values({
+        eventId: input.eventId,
+        userId: input.userId,
+        count: input.count,
+        reason: input.reason,
+    });
+
+    return true;
+}
+
 interface CanRegisterResult {
     allowed: boolean;
     reason?: string;

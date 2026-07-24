@@ -107,6 +107,17 @@ export const event = pgTable("event", {
         length: 128,
     }).references(() => group.slug, { onDelete: "set null" }),
     enforcesPreviousStrikes: boolean("enforces_previous_strikes").notNull(),
+    /**
+     * When true, this event automatically issues strikes (prikker): 1 strike
+     * for unregistering after `cancellationDeadline`, and 2 strikes for
+     * no-shows after the event ends. When false, no automatic strikes are given.
+     */
+    canCauseStrikes: boolean("can_cause_strikes").default(false).notNull(),
+    /**
+     * Set once the no-show strike job has processed this event after it ended.
+     * Used as an idempotency marker so no-show strikes are issued only once.
+     */
+    noShowProcessedAt: timestamp("no_show_processed_at"),
     /** Only members covered by a priority pool may register. */
     onlyAllowPrioritized: boolean("only_allow_prioritized")
         .default(false)

@@ -10,6 +10,7 @@ import { getRoute } from "./get";
 import { listRoute } from "./list";
 import { createPaymentRoute } from "./payment/create";
 import { paymentWebhookRoute } from "./payment/webhook";
+import { setAttendanceRoute } from "./registration/attendance";
 import { registerToEventRoute } from "./registration/create";
 import { deleteEventRegistrationRoute } from "./registration/delete";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
@@ -41,6 +42,7 @@ export const eventRoutes = route()
     .route("/", registerToEventRoute)
     .route("/", getAllRegistrationsForEventsRoute)
     .route("/", deleteEventRegistrationRoute)
+    .route("/", setAttendanceRoute)
 
     // Payment
     .route("/", createPaymentRoute)
