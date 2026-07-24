@@ -21,7 +21,9 @@ import {
     User,
     Users,
 } from "lucide-react";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+
+import { useIsAdmin } from "#/hooks/use-permission";
 
 type CommandAction =
     | { kind: "navigate"; link: LinkOptions }
@@ -40,6 +42,8 @@ type CommandEntry = {
 type CommandSection = {
     heading: string;
     items: CommandEntry[];
+    /** Only shown to admins. The section is hidden entirely otherwise. */
+    requiresAdmin?: boolean;
 };
 
 const SECTIONS: CommandSection[] = [
@@ -105,6 +109,7 @@ const SECTIONS: CommandSection[] = [
     },
     {
         heading: "Administrasjon",
+        requiresAdmin: true,
         items: [
             {
                 id: "dashboard",
@@ -120,6 +125,12 @@ const SECTIONS: CommandSection[] = [
 export function CommandMenu() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
+    const isAdmin = useIsAdmin();
+
+    const sections = useMemo(
+        () => SECTIONS.filter((section) => !section.requiresAdmin || isAdmin),
+        [isAdmin],
+    );
 
     useHotkey("Mod+K", () => {
         setOpen((prev) => !prev);
@@ -145,7 +156,7 @@ export function CommandMenu() {
                 <CommandInput placeholder="Søk etter en side eller handling..." />
                 <CommandList>
                     <CommandEmpty>Ingen treff.</CommandEmpty>
-                    {SECTIONS.map((section, index) => (
+                    {sections.map((section, index) => (
                         <SectionBlock
                             key={section.heading}
                             section={section}
