@@ -183,6 +183,13 @@
       "when": 1784881169407,
       "tag": "0025_brown_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1784883630252,
+      "tag": "0026_wooden_nightshade",
+      "breakpoints": true
     }
   ]
 }
