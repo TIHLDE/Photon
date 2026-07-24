@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -11,6 +11,7 @@ import {
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
+import { getStrikeActiveCutoff } from "~/lib/event/strikes";
 import { strikeListResponseSchema } from "./schema";
 
 export const listStrikesRoute = route().get(
@@ -45,9 +46,15 @@ export const listStrikesRoute = route().get(
         const { pageSize, page, userId } = c.req.valid("query");
 
         const pageOffset = getPageOffset(page, pageSize);
+        // Only list strikes that are still active (not expired / not aged out
+        // past the freeze-adjusted 20-day window).
+        const activeCutoff = getStrikeActiveCutoff();
         const filters = userId
-            ? eq(schema.eventStrike.userId, userId)
-            : undefined;
+            ? and(
+                  eq(schema.eventStrike.userId, userId),
+                  gte(schema.eventStrike.createdAt, activeCutoff),
+              )
+            : gte(schema.eventStrike.createdAt, activeCutoff);
 
         const totalCount = await db.$count(schema.eventStrike, filters);
 
