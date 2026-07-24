@@ -28,6 +28,7 @@ import {
     logoutUser,
 } from "#/api/auth";
 import { updateUserSettingsMutation } from "#/api/queries/user";
+import { useIsAdmin } from "#/hooks/use-permission";
 import { EditBioDialog } from "#/components/edit-bio-dialog";
 import { MembershipQrDialog } from "#/components/membership-qr-dialog";
 import {
@@ -69,6 +70,7 @@ function RouteComponent() {
     const navigate = useNavigate();
 
     const { data: session } = useQuery(authQueryOptions);
+    const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
 
     const settings = session?.user.settings;
@@ -134,16 +136,21 @@ function RouteComponent() {
                 },
             ],
         },
-        {
-            id: "secondary",
-            items: [
-                {
-                    label: "Admin",
-                    icon: ShieldCheck,
-                    link: linkOptions({ to: "/admin" }),
-                },
-            ],
-        },
+        // Admin entry point — only for admins. The API still enforces access.
+        ...(isAdmin
+            ? [
+                  {
+                      id: "secondary",
+                      items: [
+                          {
+                              label: "Admin",
+                              icon: ShieldCheck,
+                              link: linkOptions({ to: "/admin" }),
+                          },
+                      ],
+                  },
+              ]
+            : []),
     ];
 
     return (

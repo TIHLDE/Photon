@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
 import { authQueryOptions } from "#/api/auth";
+import { usePermission } from "#/hooks/use-permission";
 import { getEventsQuery } from "#/api/queries/events";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
@@ -54,6 +55,10 @@ const NEWS: NewsCardProps[] = [
 ];
 
 function Home() {
+    // Admin-only shortcuts — the API enforces these permissions server-side too.
+    const canCreateEvent = usePermission("events:create");
+    const canCreateNews = usePermission("news:create");
+
     return (
         <>
             {/* Preloaded in the route loader, so the fallback never flashes. */}
@@ -66,7 +71,9 @@ function Home() {
             <section className="container mx-auto w-full px-4 py-8">
                 <SectionHeader
                     title="Arrangementer"
-                    actionLabel="Nytt arrangement"
+                    actionLabel={
+                        canCreateEvent ? "Nytt arrangement" : undefined
+                    }
                 />
                 <Suspense fallback={<EventsSkeleton />}>
                     <EventsSection />
@@ -74,7 +81,10 @@ function Home() {
             </section>
 
             <section className="container mx-auto w-full px-4 py-8">
-                <SectionHeader title="Nyheter" actionLabel="Ny nyhet" />
+                <SectionHeader
+                    title="Nyheter"
+                    actionLabel={canCreateNews ? "Ny nyhet" : undefined}
+                />
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {NEWS.map((item) => (
                         // TODO: replace with a unique id field once wired up to the backend
