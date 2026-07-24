@@ -23,6 +23,7 @@ export const banner = pgTable("banner", {
     title: varchar("title", { length: 200 }).notNull(),
     description: varchar("description", { length: 500 }).notNull(),
     url: text("url"),
+    linkText: varchar("link_text", { length: 100 }),
     visibleFrom: timestamp("visible_from").notNull(),
     visibleUntil: timestamp("visible_until").notNull(),
     createdById: text("created_by_user_id").references(() => user.id, {
