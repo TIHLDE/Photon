@@ -67,6 +67,29 @@ export type Form = {
 type ApiGroupForm = GroupFormList[number];
 
 /**
+ * Norske visningsnavn for gruppetyper. Databasen lagrer typen som UPPERCASE
+ * (f.eks. "SUBGROUP"); i grensesnittet vil vi vise norske ord.
+ */
+const GROUP_TYPE_LABELS: Record<string, string> = {
+    SUBGROUP: "Undergruppe",
+    COMMITTEE: "Komité",
+    BOARD: "Styre",
+    INTERESTGROUP: "Interessegruppe",
+    STUDYYEAR: "Klassetrinn",
+    STUDY: "Studie",
+    TIHLDE: "TIHLDE",
+    PRIVATE: "Privat",
+};
+
+/** Norsk visningsnavn for en gruppetype fra databasen (f.eks. "SUBGROUP"). */
+export function groupTypeLabel(type: string): string {
+    return (
+        GROUP_TYPE_LABELS[type] ??
+        type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
+    );
+}
+
+/**
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 30. apr. 2026".
  */
 export function formatGroupDate(iso: string): string {

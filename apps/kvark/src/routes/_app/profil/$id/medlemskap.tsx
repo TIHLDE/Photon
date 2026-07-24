@@ -1,4 +1,5 @@
 import { authQueryOptions } from "#/api/auth";
+import { groupTypeLabel } from "#/lib/group";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
@@ -21,9 +22,11 @@ function RouteComponent() {
     const { data: session } = useQuery(authQueryOptions);
     const groups = session?.groups ?? [];
     // study/studyyear er avledede grupper (projeksjon av Feide-data) og vises
-    // ved profilbildet, ikke i medlemskapslisten. Typen er UPPERCASE i DB.
+    // ved profilbildet, ikke i medlemskapslisten. TIHLDE er ingen gruppe man
+    // melder seg inn i – alle er med – så den skal heller ikke vises her.
+    // Typen er UPPERCASE i DB.
     const memberships = groups.filter(
-        (g) => !["study", "studyyear"].includes(g.type.toLowerCase()),
+        (g) => !["study", "studyyear", "tihlde"].includes(g.type.toLowerCase()),
     );
 
     if (memberships.length === 0) {
@@ -66,7 +69,7 @@ function RouteComponent() {
                                 {group.name}
                             </span>
                             <span className="truncate text-sm text-muted-foreground">
-                                {group.type}
+                                {groupTypeLabel(group.type)}
                             </span>
                         </div>
                         <Badge
