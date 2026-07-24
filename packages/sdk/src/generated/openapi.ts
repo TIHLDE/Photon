@@ -3251,6 +3251,8 @@ export interface components {
             permissions: string[];
             /** @enum {string} */
             scope: "group" | "global";
+            /** @description If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually. */
+            linkedGroupSlug: string | null;
             /** @description The single holder of this position, if assigned */
             holder: components["schemas"]["GroupPositionHolder"] | null;
             createdAt: string;
@@ -7159,6 +7161,13 @@ export interface operations {
             };
             /** @description Not Found - Position not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Position is managed automatically from group leadership */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
