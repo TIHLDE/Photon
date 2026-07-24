@@ -166,14 +166,20 @@
    `cubic-bezier(0.22, 1, 0.36, 1)` that a few components (navigation-menu,
    tabs) already used — it starts fast for instant feedback and decelerates
    into a long, calm tail (essentially Emil Kowalski's strong ease-out). */
-@theme {
-    /* Tailwind's built-in easings are intentionally weak; strengthen them so
-       the `ease-out` / `ease-in-out` utilities and everything downstream pull
-       from real curves. `--ease-drawer` is the Ionic drawer curve for sheets. */
+/* Easing tokens are the published contract of the motion system, so emit them
+   with `static` — always present in `:root` even when no component currently
+   references a given curve. Without `static`, Tailwind tree-shakes unused theme
+   tokens: `--ease-in-out` had no live consumer (sheet moved to `--ease-drawer`)
+   and silently resolved to an empty string, so a future `ease-in-out` utility
+   would have gotten no curve. Tailwind's built-in easings are intentionally
+   weak; these strengthen them. `--ease-drawer` is the Ionic drawer curve. */
+@theme static {
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
 
+@theme {
     /* Every bare `transition-*` utility (button, select trigger, table row,
        switch, badge, …) now decelerates with the same curve instead of the
        flat default. Components that pin an explicit `ease-*` still win. */
