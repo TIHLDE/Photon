@@ -1,6 +1,7 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
+import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
     CardContent,
@@ -63,6 +64,10 @@ function RegisterPage() {
     const navigate = useNavigate();
 
     const [feideLoading, setFeideLoading] = useState(false);
+    // When Feide is the primary path, the email/password form stays collapsed
+    // behind a "Kan du ikke bruke Feide?" link. When Feide is off entirely the
+    // form is the only option, so show it straight away.
+    const [showEmailForm, setShowEmailForm] = useState(!env.VITE_FEIDE_ENABLED);
 
     async function handleFeideSignIn() {
         setFeideLoading(true);
@@ -136,97 +141,118 @@ function RegisterPage() {
         }
     }
 
+    const feideEnabled = env.VITE_FEIDE_ENABLED;
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Opprett bruker</CardTitle>
                 <CardDescription>
-                    Opprett en konto for å delta på arrangementer.
+                    {feideEnabled
+                        ? "Registrer deg med Feide for å delta på arrangementer."
+                        : "Opprett en konto for å delta på arrangementer."}
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)} className="flex flex-col gap-4">
-                <CardContent className="flex flex-col gap-5">
-                    <FieldGroup>
-                        <form.AppField name="name">
-                            {(field) => (
-                                <field.InputField
-                                    label="Navn"
-                                    autoComplete="name"
-                                    required
-                                />
-                            )}
-                        </form.AppField>
-                        <form.AppField name="email">
-                            {(field) => (
-                                <field.InputField
-                                    label="E-post"
-                                    type="email"
-                                    autoComplete="email"
-                                    description="Bruk din @stud.ntnu.no-adresse. Brukernavnet ditt blir det som står før @."
-                                    required
-                                />
-                            )}
-                        </form.AppField>
-                        <form.AppField name="password">
-                            {(field) => (
-                                <field.PasswordField
-                                    label="Passord"
-                                    autoComplete="new-password"
-                                    required
-                                />
-                            )}
-                        </form.AppField>
-                        <form.AppField name="confirmPassword">
-                            {(field) => (
-                                <field.PasswordField
-                                    label="Bekreft passord"
-                                    autoComplete="new-password"
-                                    required
-                                />
-                            )}
-                        </form.AppField>
-                    </FieldGroup>
 
-                    <form.AppForm>
-                        <form.FormErrors />
-                    </form.AppForm>
-
-                    <form.AppForm>
-                        <form.SubmitButton
-                            className="w-full"
-                            loading={
-                                <>
-                                    <Spinner />
-                                    <span>Oppretter...</span>
-                                </>
-                            }
+            {feideEnabled && (
+                <CardContent className="flex flex-col gap-4">
+                    <FeideSignInButton
+                        variant="default"
+                        label="Registrer med Feide"
+                        onSignIn={handleFeideSignIn}
+                        loading={feideLoading}
+                    />
+                    {!showEmailForm && (
+                        <Button
+                            type="button"
+                            variant="link"
+                            className="mx-auto"
+                            onClick={() => setShowEmailForm(true)}
                         >
-                            Opprett bruker
-                        </form.SubmitButton>
-                    </form.AppForm>
-
-                    {env.VITE_FEIDE_ENABLED && (
-                        <>
-                            <OrDivider />
-                            <FeideSignInButton
-                                onSignIn={handleFeideSignIn}
-                                loading={feideLoading}
-                            />
-                        </>
+                            Kan du ikke bruke Feide?
+                        </Button>
                     )}
                 </CardContent>
-                <CardFooter className="justify-center">
-                    <p className="text-sm text-muted-foreground">
-                        Har du allerede konto?{" "}
-                        <Link
-                            to="/login"
-                            className="underline underline-offset-4"
-                        >
-                            Logg inn
-                        </Link>
-                    </p>
-                </CardFooter>
-            </form>
+            )}
+
+            {showEmailForm && (
+                <form {...formHandlers(form)} className="flex flex-col gap-4">
+                    {feideEnabled && (
+                        <div className="px-6">
+                            <OrDivider label="eller registrer med e-post" />
+                        </div>
+                    )}
+                    <CardContent className="flex flex-col gap-5">
+                        <FieldGroup>
+                            <form.AppField name="name">
+                                {(field) => (
+                                    <field.InputField
+                                        label="Navn"
+                                        autoComplete="name"
+                                        required
+                                    />
+                                )}
+                            </form.AppField>
+                            <form.AppField name="email">
+                                {(field) => (
+                                    <field.InputField
+                                        label="E-post"
+                                        type="email"
+                                        autoComplete="email"
+                                        description="Bruk din @stud.ntnu.no-adresse. Brukernavnet ditt blir det som står før @."
+                                        required
+                                    />
+                                )}
+                            </form.AppField>
+                            <form.AppField name="password">
+                                {(field) => (
+                                    <field.PasswordField
+                                        label="Passord"
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                )}
+                            </form.AppField>
+                            <form.AppField name="confirmPassword">
+                                {(field) => (
+                                    <field.PasswordField
+                                        label="Bekreft passord"
+                                        autoComplete="new-password"
+                                        required
+                                    />
+                                )}
+                            </form.AppField>
+                        </FieldGroup>
+
+                        <form.AppForm>
+                            <form.FormErrors />
+                        </form.AppForm>
+
+                        <form.AppForm>
+                            <form.SubmitButton
+                                className="w-full"
+                                loading={
+                                    <>
+                                        <Spinner />
+                                        <span>Oppretter...</span>
+                                    </>
+                                }
+                            >
+                                Opprett bruker
+                            </form.SubmitButton>
+                        </form.AppForm>
+                    </CardContent>
+                </form>
+            )}
+
+            <CardFooter className="justify-center">
+                <p className="text-sm text-muted-foreground">
+                    Har du allerede konto?{" "}
+                    <Link to="/login" className="underline underline-offset-4">
+                        Logg inn
+                    </Link>
+                </p>
+            </CardFooter>
         </Card>
     );
 }
