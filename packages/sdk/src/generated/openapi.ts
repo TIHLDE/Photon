@@ -2192,6 +2192,12 @@ export interface components {
             contactPersonUserId: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed: boolean;
+            /**
+             * @description Who may see the event. 'public' is visible to everyone including logged-out visitors; 'members' hides it from unauthenticated callers.
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         EventListItem: {
             /**
@@ -2247,6 +2253,11 @@ export interface components {
                 /** @description Category label */
                 label: string;
             };
+            /**
+             * @description Who may see the event ('public' or 'members'-only)
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         EventList: {
             /** @description Total number of items available */
@@ -2321,6 +2332,12 @@ export interface components {
             contactPersonUserId?: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed?: boolean;
+            /**
+             * @description Who may see the event. 'public' is visible to everyone including logged-out visitors; 'members' hides it from unauthenticated callers.
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         DeleteEventResponse: {
             message: string;
@@ -2415,6 +2432,11 @@ export interface components {
             enforcesPreviousStrikes: boolean;
             /** @description Only members covered by a priority pool may register */
             onlyAllowPrioritized: boolean;
+            /**
+             * @description Who may see the event ('public' or 'members'-only)
+             * @enum {string}
+             */
+            visibility: "public" | "members";
             /** @description The current user's registration information. This is null if not registered or if not logged in. */
             registration: {
                 /**

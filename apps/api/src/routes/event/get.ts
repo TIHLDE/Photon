@@ -65,6 +65,13 @@ export const getRoute = route().get(
 
         const user = c.get("user");
 
+        // Members-only events are hidden from unauthenticated (non-member)
+        // callers. Any authenticated user counts as a member. Respond 404
+        // rather than 403 so the event's existence isn't leaked.
+        if (event.visibility === "members" && !user) {
+            return c.json("The event was not found", 404);
+        }
+
         let registration: z.infer<typeof eventDetailSchema>["registration"] =
             null;
 
@@ -146,6 +153,7 @@ export const getRoute = route().get(
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,
             onlyAllowPrioritized: event.onlyAllowPrioritized,
+            visibility: event.visibility,
             priorityPools,
             registration,
         };

@@ -171,6 +171,7 @@ export const updateRoute = route().put(
                 imageUrl: body.imageUrl,
                 imageAlt: body.imageAlt,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                visibility: body.visibility,
                 isPaidEvent: body.isPaidEvent,
                 isRegistrationClosed: body.isRegistrationClosed,
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
