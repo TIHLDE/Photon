@@ -6,13 +6,16 @@ import {
     PlusIcon,
     Trash2,
 } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { addWeeks } from "date-fns";
+import { nb } from "date-fns/locale";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import type { JobListItem } from "@tihlde/sdk";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
+import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import {
     Dialog,
     DialogContent,
@@ -49,6 +52,7 @@ import {
 } from "#/api/queries/jobs";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { nextWholeHour } from "#/lib/date";
 
 const JOB_TYPES = ["full_time", "part_time", "summer_job", "other"] as const;
 type JobType = (typeof JOB_TYPES)[number];
@@ -327,7 +331,9 @@ function JobDialog({
     const [classEnd, setClassEnd] = useState<UserClass>(
         (job?.classEnd as UserClass) ?? "fifth",
     );
-    const [deadline, setDeadline] = useState(toDatetimeLocal(job?.deadline));
+    const [deadline, setDeadline] = useState<Date | null>(
+        job?.deadline ? new Date(job.deadline) : null,
+    );
     const [isContinuouslyHiring, setIsContinuouslyHiring] = useState(
         job?.isContinuouslyHiring ?? false,
     );
@@ -337,6 +343,12 @@ function JobDialog({
     const [body, setBody] = useState(job?.body ?? "");
     const [error, setError] = useState<string | null>(null);
 
+    // Ny annonse: foreslå en søknadsfrist to uker fram på en hel time.
+    useEffect(() => {
+        if (isEdit) return;
+        setDeadline((current) => current ?? addWeeks(nextWholeHour(), 2));
+    }, [isEdit]);
+
     const create = useMutation(createJobMutation);
     const update = useMutation(updateJobMutation);
     const isPending = create.isPending || update.isPending;
@@ -345,7 +357,7 @@ function JobDialog({
         event.preventDefault();
         setError(null);
 
-        const deadlineIso = deadline ? new Date(deadline).toISOString() : null;
+        const deadlineIso = deadline ? deadline.toISOString() : null;
 
         try {
             if (isEdit && job) {
@@ -528,14 +540,13 @@ function JobDialog({
                                 <FieldLabel htmlFor="job-deadline">
                                     Søknadsfrist
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="job-deadline"
-                                    type="datetime-local"
+                                    locale={nb}
+                                    placeholder="Velg søknadsfrist"
                                     value={deadline}
                                     disabled={isContinuouslyHiring}
-                                    onChange={(event) =>
-                                        setDeadline(event.target.value)
-                                    }
+                                    onValueChange={setDeadline}
                                 />
                             </Field>
                             <div className="flex items-center gap-2 sm:self-end sm:pb-2">
@@ -630,14 +641,6 @@ function JobDialog({
             </DialogContent>
         </Dialog>
     );
-}
-
-function toDatetimeLocal(iso: string | null | undefined): string {
-    if (!iso) return "";
-    const date = new Date(iso);
-    const offset = date.getTimezoneOffset();
-    const local = new Date(date.getTime() - offset * 60_000);
-    return local.toISOString().slice(0, 16);
 }
 
 function formatDeadline(iso: string | null): string {

@@ -14,6 +14,7 @@ import {
     InputGroupText,
 } from "@tihlde/ui/ui/input-group";
 import { type DateRange } from "@tihlde/ui/ui/date-picker";
+import { nb } from "date-fns/locale";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { type TimeValue } from "@tihlde/ui/ui/time-picker";
 import {
@@ -187,6 +188,10 @@ const formTestSchema = z.object({
             minute: z.number().int().min(0).max(59),
         })
         .nullable(),
+    deadline: z
+        .instanceof(Date, { error: "Velg dato og tid" })
+        .nullable()
+        .refine((v) => v !== null, { error: "Velg dato og tid" }),
 });
 
 function FormTestPage() {
@@ -232,6 +237,7 @@ function FormTestPage() {
             reportRange: null as DateRange | null,
             startTime: null as TimeValue | null,
             reminderTime: null as TimeValue | null,
+            deadline: null as Date | null,
         },
         validators: { onDynamic: formTestSchema },
         async onSubmit({ value }) {
@@ -809,7 +815,8 @@ function FormTestPage() {
                         <CardTitle>Datoer og tider</CardTitle>
                         <CardDescription>
                             DatePicker (enkelt + range, dag- og månedsvisning)
-                            paret med TimePicker — 24-timers norsk klokke.
+                            paret med TimePicker, og DateTimePicker som
+                            kombinerer dato + tid — 24-timers norsk klokke.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -867,6 +874,21 @@ function FormTestPage() {
                                     )}
                                 </form.AppField>
                             </div>
+
+                            <form.AppField name="deadline">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>
+                                            Frist (dato + tid)
+                                        </field.Label>
+                                        <field.DateTimePicker
+                                            locale={nb}
+                                            placeholder="Velg dato og tid"
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
 
                             <form.AppField name="vacationRange">
                                 {(field) => (
