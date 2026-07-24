@@ -23,6 +23,11 @@ export const unassignPositionRoute = route().delete(
         })
         .forbidden({ description: "Not authorized to manage this position" })
         .notFound({ description: "Position not found" })
+        .response({
+            statusCode: 409,
+            description:
+                "Position is managed automatically from group leadership",
+        })
         .build(),
     requireAuth,
     async (c) => {
@@ -36,6 +41,15 @@ export const unassignPositionRoute = route().delete(
         const position = await getPosition(ctx, positionId);
         if (!position || position.groupSlug !== groupSlug) {
             throw new HTTPException(404, { message: "Position not found" });
+        }
+
+        // Linked leader-verv follow the linked subgroup's leadership and are
+        // synced automatically — they must never be unassigned by hand here.
+        if (position.linkedGroupSlug) {
+            throw new HTTPException(409, {
+                message:
+                    "This position is held automatically by the linked group's leader and cannot be changed manually. Change the group's leader on the group page instead.",
+            });
         }
 
         if (!(await canAssignPosition(ctx, user.id, position))) {

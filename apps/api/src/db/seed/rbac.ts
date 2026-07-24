@@ -13,7 +13,6 @@ import type { AppContext } from "~/lib/ctx";
  *              role management, API keys, OAuth clients and payment refunds.
  *              Those powers come from HS titles (AU → roles:*, Sosialminister
  *              → refund) instead. Auto-assigned via the hs group's roleId.
- * - moderator: limited helper role.
  * - member:    baseline for ACTIVE students, synced by the Feide hook
  *              (syncBaselineRoles). Can participate: view + register for
  *              events, view content, propose fines (group permissionMode
@@ -38,29 +37,29 @@ export default async ({ db }: AppContext) => {
     ] as const;
     const HS_EXCLUDED = new Set(["root", "events:payments:refund"]);
 
-    // Root role - highest in hierarchy (position 6)
+    // Root role - highest in hierarchy (position 5)
     await db
         .insert(schema.role)
         .values({
             name: "root",
             description: "System administrator with full access",
-            position: 6, // Manually set ONLY for seeding - highest number = highest role
+            position: 5, // Manually set ONLY for seeding - highest number = highest role
             permissions: Array.from(PERMISSIONS),
         })
         .onConflictDoNothing();
 
-    // Admin role - second highest (position 5)
+    // Admin role - second highest (position 4)
     await db
         .insert(schema.role)
         .values({
             name: "admin",
             description: "Administrator with most permissions",
-            position: 5, // Just below root
+            position: 4, // Just below root
             permissions: Array.from(PERMISSIONS).filter((p) => p !== "root"),
         })
         .onConflictDoNothing();
 
-    // Hovedstyret role (position 4)
+    // Hovedstyret role (position 3)
     // Auto-assigned to members of the "hs" group via group.roleId. Broad
     // content/ops access; role management and refunds come from HS titles.
     await db
@@ -69,7 +68,7 @@ export default async ({ db }: AppContext) => {
             name: "hs",
             description:
                 "Hovedstyret — all content/ops permissions; role management and refunds are granted via HS titles",
-            position: 4, // Below admin, above moderator
+            position: 3, // Below admin
             permissions: Array.from(PERMISSIONS).filter(
                 (p) =>
                     !HS_EXCLUDED.has(p) &&
@@ -77,22 +76,6 @@ export default async ({ db }: AppContext) => {
                         p.startsWith(prefix),
                     ),
             ),
-        })
-        .onConflictDoNothing();
-
-    // Moderator role (position 3)
-    await db
-        .insert(schema.role)
-        .values({
-            name: "moderator",
-            description: "Moderator with limited permissions",
-            position: 3, // Below hs
-            permissions: [
-                "events:view",
-                "events:create",
-                "users:view",
-                "roles:view",
-            ],
         })
         .onConflictDoNothing();
 

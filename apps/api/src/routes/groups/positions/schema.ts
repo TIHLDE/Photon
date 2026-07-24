@@ -83,6 +83,10 @@ export const positionSchema = Schema(
         description: z.string().nullable(),
         permissions: z.array(z.string()),
         scope: z.enum(["group", "global"]),
+        linkedGroupSlug: z.string().nullable().meta({
+            description:
+                "If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually.",
+        }),
         holder: positionHolderSchema.nullable().meta({
             description: "The single holder of this position, if assigned",
         }),
