@@ -55,6 +55,9 @@ function EventAdminPage() {
     const [end, setEnd] = useState("");
     const [registrationEnd, setRegistrationEnd] = useState("");
     const [capacity, setCapacity] = useState("");
+    const [visibility, setVisibility] = useState<"public" | "members">(
+        "public",
+    );
     const [isPaidEvent, setIsPaidEvent] = useState(false);
     const [price, setPrice] = useState("");
 
@@ -83,6 +86,7 @@ function EventAdminPage() {
                     registrationEnd: registrationEndIso,
                     cancellationDeadline: null,
                     capacity: capacity ? Number(capacity) : null,
+                    visibility,
                     isRegistrationClosed: false,
                     requiresSigningUp: true,
                     allowWaitlist: true,
@@ -108,6 +112,7 @@ function EventAdminPage() {
                     setEnd("");
                     setRegistrationEnd("");
                     setCapacity("");
+                    setVisibility("public");
                     setIsPaidEvent(false);
                     setPrice("");
                 },
@@ -259,6 +264,43 @@ function EventAdminPage() {
                                         setCapacity(event.target.value)
                                     }
                                 />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="event-visibility">
+                                    Synlighet
+                                </FieldLabel>
+                                <Select
+                                    items={[
+                                        {
+                                            value: "public",
+                                            label: "Offentlig",
+                                        },
+                                        {
+                                            value: "members",
+                                            label: "Kun for medlemmer",
+                                        },
+                                    ]}
+                                    value={visibility}
+                                    onValueChange={(value) =>
+                                        setVisibility(
+                                            value === "members"
+                                                ? "members"
+                                                : "public",
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="event-visibility">
+                                        <SelectValue placeholder="Velg synlighet" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="public">
+                                            Offentlig
+                                        </SelectItem>
+                                        <SelectItem value="members">
+                                            Kun for medlemmer
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </Field>
                             <Field className="flex-row items-center gap-3">
                                 <Checkbox

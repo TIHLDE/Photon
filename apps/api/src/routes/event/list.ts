@@ -3,6 +3,7 @@ import { and, eq, gte, ilike, inArray, lt, lte, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
+import { captureAuth } from "../../middleware/auth";
 import { route } from "../../lib/route";
 import { getPageOffset, getTotalPages } from "../../middleware/pagination";
 import {
@@ -26,14 +27,20 @@ export const listRoute = route().get(
             description: "OK",
         })
         .build(),
+    captureAuth,
     validator("query", eventListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
         const { page, pageSize, search, expired, openSignUp, category } =
             c.req.valid("query");
 
+        // Members-only events are hidden from unauthenticated (non-member)
+        // callers. Any authenticated user counts as a member.
+        const isMember = !!c.get("user");
+
         const filters = and(
             ...[
+                isMember ? undefined : eq(schema.event.visibility, "public"),
                 search ? ilike(schema.event.title, `%${search}%`) : undefined,
                 category
                     ? inArray(schema.event.categorySlug, category)
@@ -104,6 +111,7 @@ export const listRoute = route().get(
                     slug: e.category.slug,
                     label: e.category.label,
                 },
+                visibility: e.visibility,
             } satisfies z.infer<typeof eventListItemSchema>;
         });
 

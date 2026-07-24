@@ -118,6 +118,7 @@ export const createRoute = route().post(
                 organizerGroupSlug: body.organizerGroupSlug,
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                visibility: body.visibility,
             };
 
             const [event] = await tx
