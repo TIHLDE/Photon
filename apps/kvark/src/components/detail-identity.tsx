@@ -12,11 +12,7 @@ export function DetailIdentity({ name, logoUrl }: DetailIdentityProps) {
                     src={logoUrl}
                     className="size-12 shrink-0 rounded-lg object-cover"
                 />
-            ) : (
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium">
-                    {name.slice(0, 2).toUpperCase()}
-                </div>
-            )}
+            ) : null}
             <span className="truncate font-medium">{name}</span>
         </div>
     );
