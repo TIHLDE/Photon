@@ -156,7 +156,8 @@ function HolderChip({
 }: {
     name: string | null;
     image: string | null;
-    onRemove: () => void;
+    /** Omit to render a non-removable chip (e.g. auto-managed holders). */
+    onRemove?: () => void;
 }) {
     return (
         <Badge variant="secondary" className="gap-1.5 py-1 pl-1">
@@ -165,14 +166,16 @@ function HolderChip({
                 <AvatarFallback>{initials(name ?? "?")}</AvatarFallback>
             </Avatar>
             {name}
-            <button
-                type="button"
-                aria-label={`Fjern ${name}`}
-                onClick={onRemove}
-                className="cursor-pointer"
-            >
-                <XIcon className="size-3" />
-            </button>
+            {onRemove ? (
+                <button
+                    type="button"
+                    aria-label={`Fjern ${name}`}
+                    onClick={onRemove}
+                    className="cursor-pointer"
+                >
+                    <XIcon className="size-3" />
+                </button>
+            ) : null}
         </Badge>
     );
 }
@@ -312,7 +315,12 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                             <span className="font-medium">
                                                 {position.name}
                                             </span>
-                                            {position.scope === "global" ? (
+                                            {position.linkedGroupSlug ? (
+                                                <span className="text-xs text-muted-foreground">
+                                                    Følger lederen av «
+                                                    {position.linkedGroupSlug}»
+                                                </span>
+                                            ) : position.scope === "global" ? (
                                                 <span className="text-xs text-muted-foreground">
                                                     Gjelder hele TIHLDE
                                                 </span>
@@ -321,7 +329,30 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            {position.holder ? (
+                                            {position.linkedGroupSlug ? (
+                                                // Auto-managed: holder follows the
+                                                // linked group's leader — not
+                                                // assignable from here.
+                                                position.holder ? (
+                                                    <HolderChip
+                                                        key={
+                                                            position.holder
+                                                                .userId
+                                                        }
+                                                        name={
+                                                            position.holder.name
+                                                        }
+                                                        image={
+                                                            position.holder
+                                                                .image
+                                                        }
+                                                    />
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        Settes av gruppens leder
+                                                    </span>
+                                                )
+                                            ) : position.holder ? (
                                                 <HolderChip
                                                     key={position.holder.userId}
                                                     name={position.holder.name}
@@ -542,9 +573,21 @@ function PositionDialog({
 // Roller (global RBAC roles)
 // =============================================================================
 
+/**
+ * Roles that are managed automatically and must not be assigned by hand here:
+ * - `member` is the Feide baseline synced to every active student, so it would
+ *   list every user and isn't something you hand out from this page.
+ * - `moderator` is retired — nobody should hold it.
+ */
+const HIDDEN_ROLE_NAMES = new Set(["member", "moderator"]);
+
 function RolesSection() {
     const { data: roles, isPending, error } = useQuery(getRolesQuery());
     const [createOpen, setCreateOpen] = useState(false);
+
+    const visibleRoles = (roles ?? []).filter(
+        (role) => !HIDDEN_ROLE_NAMES.has(role.name),
+    );
 
     if (isPending) {
         return (
@@ -595,7 +638,7 @@ function RolesSection() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {(roles ?? []).map((role) => (
+                            {visibleRoles.map((role) => (
                                 <RoleRow key={role.id} role={role} />
                             ))}
                         </TableBody>

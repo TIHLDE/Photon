@@ -34,6 +34,7 @@ import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
 import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
+import { Route as AdminOppmoteRouteImport } from './routes/admin/oppmote'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
 import { Route as AdminRollerRouteImport } from './routes/admin/roller'
@@ -185,6 +186,11 @@ const AdminGrupperRoute = AdminGrupperRouteImport.update({
 const AdminNyheterRoute = AdminNyheterRouteImport.update({
   id: '/nyheter',
   path: '/nyheter',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOppmoteRoute = AdminOppmoteRouteImport.update({
+  id: '/oppmote',
+  path: '/oppmote',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOpptakRoute = AdminOpptakRouteImport.update({
@@ -367,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
+  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -421,6 +428,7 @@ export interface FileRoutesByTo {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
+  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -477,6 +485,7 @@ export interface FileRoutesById {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
+  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -534,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/grupper'
     | '/admin/nyheter'
+    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -588,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/grupper'
     | '/admin/nyheter'
+    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/grupper'
     | '/admin/nyheter'
+    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -860,6 +872,13 @@ declare module '@tanstack/react-router' {
       path: '/nyheter'
       fullPath: '/admin/nyheter'
       preLoaderRoute: typeof AdminNyheterRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/oppmote': {
+      id: '/admin/oppmote'
+      path: '/oppmote'
+      fullPath: '/admin/oppmote'
+      preLoaderRoute: typeof AdminOppmoteRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/opptak': {
@@ -1216,6 +1235,7 @@ interface AdminRouteChildren {
   AdminBrukereRoute: typeof AdminBrukereRoute
   AdminGrupperRoute: typeof AdminGrupperRoute
   AdminNyheterRoute: typeof AdminNyheterRoute
+  AdminOppmoteRoute: typeof AdminOppmoteRoute
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
   AdminRollerRoute: typeof AdminRollerRoute
@@ -1230,6 +1250,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBrukereRoute: AdminBrukereRoute,
   AdminGrupperRoute: AdminGrupperRoute,
   AdminNyheterRoute: AdminNyheterRoute,
+  AdminOppmoteRoute: AdminOppmoteRoute,
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,
   AdminRollerRoute: AdminRollerRoute,
@@ -1247,12 +1268,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

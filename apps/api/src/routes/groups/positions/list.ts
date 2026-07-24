@@ -61,6 +61,7 @@ export const listPositionsRoute = route().get(
                 description: position.description,
                 permissions: position.permissions,
                 scope: position.scope,
+                linkedGroupSlug: position.linkedGroupSlug,
                 holder: position.holder
                     ? {
                           userId: position.holder.user.id,

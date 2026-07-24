@@ -500,6 +500,71 @@ describe("group positions", () => {
         );
 
         integrationTest(
+            "linked leader-verv cannot be assigned or unassigned manually",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const outsider = await ctx.utils.createTestUser();
+                // Actor holds root — so a 409 proves the guard blocks the
+                // linked verv, not a missing permission.
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                const client = await ctx.utils.clientForUser(admin);
+
+                await ctx.utils.createTestGroup({
+                    slug: "hs",
+                    name: "Hovedstyret",
+                    type: "board",
+                });
+                const subgroup = await ctx.utils.createTestGroup({
+                    type: "subgroup",
+                    name: "Låstgruppen",
+                });
+
+                // Becoming leader auto-creates the linked verv in HS.
+                await addUserToGroup(ctx, leader.id, subgroup.slug, "leader");
+
+                const [position] = await ctx.db
+                    .select()
+                    .from(schema.groupPosition)
+                    .where(
+                        eq(schema.groupPosition.linkedGroupSlug, subgroup.slug),
+                    );
+                expect(position).toBeDefined();
+
+                // Manual assignment to someone else is rejected.
+                const assignResponse = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].holders.$post({
+                    param: { groupSlug: "hs", positionId: position!.id },
+                    json: { userId: outsider.id },
+                });
+                expect(assignResponse.status).toBe(409);
+
+                // Manual unassignment of the auto-assigned leader is rejected.
+                const unassignResponse = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].holders[":userId"].$delete({
+                    param: {
+                        groupSlug: "hs",
+                        positionId: position!.id,
+                        userId: leader.id,
+                    },
+                });
+                expect(unassignResponse.status).toBe(409);
+
+                // The verv still belongs to the group leader.
+                const [holder] = await ctx.db
+                    .select()
+                    .from(schema.groupPositionHolder)
+                    .where(
+                        eq(schema.groupPositionHolder.positionId, position!.id),
+                    );
+                expect(holder?.userId).toBe(leader.id);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "leadership change moves the verv and prunes the old leader from HS",
             async ({ ctx }) => {
                 const oldLeader = await ctx.utils.createTestUser();

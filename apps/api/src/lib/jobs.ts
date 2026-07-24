@@ -2,6 +2,7 @@ import { startQueuedEmailWorker } from "@photon/core/services/email";
 import cron from "node-cron";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
+import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { startPaymentTimerWorker } from "./event/payment";
 import { resolveRegistrationsForEvent } from "./event/resolve-registration";
 
@@ -46,6 +47,22 @@ function startRegistrationResolverCron(ctx: AppContext): void {
 }
 
 /**
+ * Start cron job to issue no-show strikes for events that have ended.
+ * Runs every 5 minutes.
+ */
+function startNoShowStrikeCron(ctx: AppContext): void {
+    cron.schedule("*/5 * * * *", async () => {
+        try {
+            await processNoShowStrikesForEndedEvents(ctx);
+        } catch (error) {
+            console.error("Error in no-show strike cron:", error);
+        }
+    });
+
+    console.log("⏰ No-show strike cron started (runs every 5 minutes)");
+}
+
+/**
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
@@ -61,4 +78,7 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start asset cleanup cron
     startAssetCleanupCron(ctx);
+
+    // Start no-show strike cron
+    startNoShowStrikeCron(ctx);
 }

@@ -73,6 +73,7 @@ function EventAdminPage() {
         "public",
     );
     const [isPaidEvent, setIsPaidEvent] = useState(false);
+    const [canCauseStrikes, setCanCauseStrikes] = useState(false);
     const [price, setPrice] = useState("");
 
     // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
@@ -114,8 +115,8 @@ function EventAdminPage() {
                     allowWaitlist: true,
                     priorityPools: null,
                     onlyAllowPrioritized: false,
-                    canCauseStrikes: false,
-                    enforcesPreviousStrikes: false,
+                    canCauseStrikes,
+                    enforcesPreviousStrikes: canCauseStrikes,
                     isPaidEvent,
                     price: isPaidEvent && price ? Number(price) : null,
                     paymentGracePeriodMinutes: null,
@@ -137,6 +138,7 @@ function EventAdminPage() {
                     setCapacity("");
                     setVisibility("public");
                     setIsPaidEvent(false);
+                    setCanCauseStrikes(false);
                     setPrice("");
                 },
             },
@@ -349,6 +351,19 @@ function EventAdminPage() {
                                     />
                                 </Field>
                             )}
+                            <Field className="flex-row items-center gap-3">
+                                <Checkbox
+                                    id="event-strikes"
+                                    checked={canCauseStrikes}
+                                    onCheckedChange={(checked) =>
+                                        setCanCauseStrikes(Boolean(checked))
+                                    }
+                                />
+                                <FieldLabel htmlFor="event-strikes">
+                                    Kan gi prikker (avmelding etter frist og
+                                    no-show)
+                                </FieldLabel>
+                            </Field>
                             <Field>
                                 <FieldLabel>Beskrivelse</FieldLabel>
                                 <RichEditor

@@ -29,7 +29,7 @@ export default async ({ db }: AppContext) => {
             description:
                 'Beta er en prosjektbasert komité, med selvvalgte prosjekter, og forslag fra _dere_ (send inn ønsker vha. spørreskjemaer). Prosjektene skal i både stor og liten skala bidra til å forbedre linjeforeningen. Vi har i det siste jobbet med å forbedre opptaksprosessen, SoMe-retningslinjer, interessegrupper og intern struktur. \n\nI IT-verden er "Beta" et velkjent begrep som representerer en forbedret versjon eller testversjon før den endelige lanseringen av et produkt.\n\nHar du lyst til å bidra litt _ekstra_ i TIHLDE, søk Beta! Hvis du har noen ideer til prosjekter legg det inn på \n[prosjektforslagsiden vår](https://www.notion.so/tihlde/199eea18864180e087a9c2afff74bedf?v=199eea1886418001b8e5000c485dfbe6&pvs=4)',
             contact_email: "betaleder@tihlde.org",
-            type: "COMMITTEE",
+            type: "SUBGROUP",
             fine_info: "",
             fines_activated: 0,
         },
@@ -203,6 +203,12 @@ export default async ({ db }: AppContext) => {
             name: "Næringslivsminister",
             description: "Leder av Næringsliv og Kurs",
             permissions: [],
+        },
+        {
+            name: "Innovasjonsminister",
+            description: "Leder av Beta",
+            permissions: [],
+            linkedGroupSlug: "beta",
         },
     ];
 

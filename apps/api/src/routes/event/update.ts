@@ -177,6 +177,8 @@ export const updateRoute = route().put(
                 paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 reactionsAllowed: body.reactionsAllowed,
                 requiresSigningUp: body.requiresSigningUp,
+                enforcesPreviousStrikes: body.enforcesPreviousStrikes,
+                canCauseStrikes: body.canCauseStrikes,
                 priceMinor: body.price ? body.price * 100 : null,
                 updatedAt: new Date(),
                 title: body.title,

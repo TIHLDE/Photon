@@ -230,6 +230,31 @@ export const unregisterFromEventMutation = mutationOptions({
     },
 });
 
+export const setAttendanceMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        userId,
+        attended,
+    }: {
+        eventId: string;
+        userId: string;
+        attended: boolean;
+    }) =>
+        apiClient.patch(
+            "/api/event/{eventId}/registration/{userId}/attendance",
+            {
+                params: { eventId, userId },
+                json: { attended },
+            },
+        ),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.registrations, vars.eventId],
+            exact: false,
+        });
+    },
+});
+
 // -- Payment --
 
 export const createEventPaymentMutation = mutationOptions({

@@ -46,6 +46,15 @@ export const assignPositionRoute = route().post(
             throw new HTTPException(404, { message: "Position not found" });
         }
 
+        // Linked leader-verv follow the linked subgroup's leadership and are
+        // synced automatically — they must never be assigned by hand here.
+        if (position.linkedGroupSlug) {
+            throw new HTTPException(409, {
+                message:
+                    "This position is held automatically by the linked group's leader and cannot be assigned manually. Change the group's leader on the group page instead.",
+            });
+        }
+
         if (!(await canAssignPosition(ctx, user.id, position))) {
             throw new HTTPException(403, {
                 message: "Not authorized to assign this position",

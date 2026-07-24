@@ -688,6 +688,14 @@ export const registeredUserSchema = Schema(
             description:
                 "Photo consent for this event. Only included when the caller has event admin permissions.",
         }),
+        status: z.string().optional().meta({
+            description:
+                "Registration status (registered/attended/no_show). Only included for event admins.",
+        }),
+        attendedAt: z.string().nullable().optional().meta({
+            description:
+                "When the user was checked in, if at all. Only included for event admins.",
+        }),
     }),
 );
 
