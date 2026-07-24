@@ -3,7 +3,10 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
-import { getPaymentDetails } from "../../../lib/vipps";
+import {
+    getPaymentDetails,
+    verifyVippsWebhookRequest,
+} from "../../../lib/vipps";
 
 /**
  * For documentation, please visit https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/events/#epayment-api-event-types
@@ -38,10 +41,26 @@ export const paymentWebhookRoute = route().post(
             description: "Webhook processed successfully",
         })
         .badRequest({ description: "Invalid webhook payload" })
+        .response({
+            statusCode: 401,
+            description: "Invalid webhook signature",
+        })
         .notFound({ description: "Payment not found" })
         .build(),
     async (c) => {
-        const body = (await c.req.json()) as WebhookPayload;
+        // Read the raw body BEFORE parsing: the signature is computed over the
+        // raw bytes, and the body can only be consumed once.
+        const rawBody = await c.req.text();
+
+        // Reject any request that is not authentically signed by Vipps.
+        const isAuthentic = await verifyVippsWebhookRequest(c, rawBody);
+        if (!isAuthentic) {
+            throw new HTTPException(401, {
+                message: "Invalid webhook signature",
+            });
+        }
+
+        const body = JSON.parse(rawBody) as WebhookPayload;
         const { db } = c.get("ctx");
 
         // Vipps webhook payload structure

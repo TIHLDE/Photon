@@ -5274,6 +5274,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Invalid webhook signature */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Payment not found */
             404: {
                 headers: {
