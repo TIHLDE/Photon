@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
+import { createPaymentObligation, refundPaidRegistration } from "./payment";
 import {
     calculateWaitlistPosition,
     findSwapTarget,
@@ -194,9 +195,14 @@ export async function resolveRegistrationsForEvent(
                     swappedUserId = swapTarget.userId;
                     finalStatus = "registered";
 
+                    // If the swapped-out user had already paid, refund them.
+                    await refundPaidRegistration(
+                        txCtx,
+                        event,
+                        swapTarget.userId,
+                    );
+
                     // Send notification to swapped user (will calculate position later)
-                    // TODO: Check if swapped user had paid
-                    // TODO: If paid, issue refund via payment processor
                     console.log(
                         `User ${swapTarget.userId} swapped to waitlist by prioritized user ${userId}`,
                     );
@@ -243,9 +249,12 @@ export async function resolveRegistrationsForEvent(
                     );
             }
 
-            // TODO: If event isPaidEvent and finalStatus='registered':
-            // TODO:   Create payment record with expiration = now + paymentGracePeriodMinutes
-            // TODO:   Start payment countdown timer
+            // For paid events, a registered user now owes payment: create the
+            // obligation and schedule the countdown that reclaims the spot if
+            // it is not paid within the grace period.
+            if (finalStatus === "registered") {
+                await createPaymentObligation(txCtx, event, userId);
+            }
 
             // Send notification to user based on finalStatus
             const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;

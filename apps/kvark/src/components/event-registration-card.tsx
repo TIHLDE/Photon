@@ -1,5 +1,6 @@
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
+import { VippsButton } from "@tihlde/ui/ui/vipps-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Label } from "@tihlde/ui/ui/label";
@@ -155,10 +156,7 @@ function getStateRendering(
                     : null,
                 actions: (
                     <>
-                        <Button className="w-full" onClick={props.onPay}>
-                            <CreditCard />
-                            Betal nå
-                        </Button>
+                        <VippsButton className="w-full" onClick={props.onPay} />
                         <Button
                             variant="ghost"
                             className="w-full"

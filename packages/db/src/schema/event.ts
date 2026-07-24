@@ -209,6 +209,13 @@ export const eventPayment = pgTable("payment", {
     providerPaymentId: text("provider_payment_id"),
     status: paymentStatus("status").notNull().default("pending"),
     receivedPaymentAt: timestamp("received_payment_at"),
+    /**
+     * Deadline for when this payment obligation must be fulfilled. Set when a
+     * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
+     * A countdown job cancels the registration if payment is not completed by
+     * this time.
+     */
+    expiresAt: timestamp("expires_at"),
     ...timestamps,
 });
 

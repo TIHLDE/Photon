@@ -1,5 +1,5 @@
 {
-  "id": "c0bb245a-3971-4913-86b6-b6416039d0b5",
+  "id": "f1329b58-e630-4c91-8cf4-544e6c3e2f83",
   "prevId": "6696e7e3-aa9d-4c22-b253-ac3c84307d29",
   "version": "7",
   "dialect": "postgresql",
@@ -1628,14 +1628,6 @@
           "notNull": true,
           "default": false
         },
-        "visibility": {
-          "name": "visibility",
-          "type": "event_visibility",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'public'"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1968,6 +1960,12 @@
         },
         "received_payment_at": {
           "name": "received_payment_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -5450,14 +5448,6 @@
       "values": [
         "public",
         "private"
-      ]
-    },
-    "public.event_visibility": {
-      "name": "event_visibility",
-      "schema": "public",
-      "values": [
-        "public",
-        "members"
       ]
     },
     "public.event_payment_status": {

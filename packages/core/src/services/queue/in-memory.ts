@@ -1,4 +1,5 @@
 import type {
+    QueueAddOptions,
     QueueJob,
     QueueLike,
     QueueName,
@@ -50,16 +51,23 @@ export class InMemoryQueue<TData = unknown> implements QueueLike<TData> {
         >,
     ) {}
 
-    async add(name: string, data: TData): Promise<QueueJob<TData>> {
-        const job: QueueJob<TData> = {
+    async add(
+        name: string,
+        data: TData,
+        options?: QueueAddOptions,
+    ): Promise<QueueJob<TData>> {
+        const job: QueueJob<TData> & { delay?: number } = {
             id: String(this.nextJobId++),
             name,
             data,
+            delay: options?.delay,
         };
 
         this.jobs.push(job);
 
-        if (this.mode === "inline") {
+        // In inline mode, delayed jobs are intentionally NOT run automatically —
+        // tests drive expiration explicitly to keep timing deterministic.
+        if (this.mode === "inline" && !options?.delay) {
             await this.processInline(job);
         }
 

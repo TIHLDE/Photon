@@ -20,8 +20,13 @@ export const Route = createFileRoute("/_app/profil/$id/medlemskap")({
 function RouteComponent() {
     const { data: session } = useQuery(authQueryOptions);
     const groups = session?.groups ?? [];
+    // study/studyyear er avledede grupper (projeksjon av Feide-data) og vises
+    // ved profilbildet, ikke i medlemskapslisten. Typen er UPPERCASE i DB.
+    const memberships = groups.filter(
+        (g) => !["study", "studyyear"].includes(g.type.toLowerCase()),
+    );
 
-    if (groups.length === 0) {
+    if (memberships.length === 0) {
         return (
             <Empty>
                 <EmptyHeader>
@@ -39,7 +44,7 @@ function RouteComponent() {
 
     return (
         <ul className="flex flex-col gap-3">
-            {groups.map((group) => (
+            {memberships.map((group) => (
                 <li key={group.slug}>
                     <Card
                         size="sm"
