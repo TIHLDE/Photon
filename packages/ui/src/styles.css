@@ -159,6 +159,44 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ── Motion system ────────────────────────────────────────────────────────
+   One set of easing + timing tokens so every transition and enter/exit
+   animation across @tihlde/ui reads as a single intentional system rather
+   than a grab-bag of per-component curves. Standardised on the expo-out
+   `cubic-bezier(0.22, 1, 0.36, 1)` that a few components (navigation-menu,
+   tabs) already used — it starts fast for instant feedback and decelerates
+   into a long, calm tail (essentially Emil Kowalski's strong ease-out). */
+@theme {
+    /* Tailwind's built-in easings are intentionally weak; strengthen them so
+       the `ease-out` / `ease-in-out` utilities and everything downstream pull
+       from real curves. `--ease-drawer` is the Ionic drawer curve for sheets. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* Every bare `transition-*` utility (button, select trigger, table row,
+       switch, badge, …) now decelerates with the same curve instead of the
+       flat default. Components that pin an explicit `ease-*` still win. */
+    --default-transition-timing-function: var(--ease-out);
+
+    /* tw-animate-css resolves enter/exit easing via `var(--tw-ease, …)`.
+       Redefine its shorthands so dialogs, popovers, dropdowns, selects,
+       tooltips and menus that don't set an explicit `ease-*` class default to
+       our ease-out (was the flat browser `ease`). Duration fallback unchanged
+       (150ms — snappy, well under the 300ms UI ceiling); components that set
+       their own `duration-*` still win. */
+    --animate-in: enter var(--tw-animation-duration, var(--tw-duration, 0.15s))
+        var(--tw-ease, var(--ease-out)) var(--tw-animation-delay, 0s)
+        var(--tw-animation-iteration-count, 1)
+        var(--tw-animation-direction, normal)
+        var(--tw-animation-fill-mode, none);
+    --animate-out: exit var(--tw-animation-duration, var(--tw-duration, 0.15s))
+        var(--tw-ease, var(--ease-out)) var(--tw-animation-delay, 0s)
+        var(--tw-animation-iteration-count, 1)
+        var(--tw-animation-direction, normal)
+        var(--tw-animation-fill-mode, none);
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -216,5 +254,21 @@
 @media (prefers-reduced-motion: no-preference) {
     .motetid-primary-nudge {
         animation: motetid-primary-nudge 0.25s ease-in-out 1;
+    }
+}
+
+/* Honour a user's reduced-motion preference globally: collapse movement-based
+   transitions and animations (slides, zooms, the spinner, the caret blink) to
+   effectively instant, while leaving final visual state intact — opacity and
+   colour still settle, just without travel. tw-animate-css ships no such guard,
+   so without this every overlay slide/zoom and infinite loop plays regardless. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }
