@@ -2,16 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
+import { RichEditor } from "@tihlde/ui/complex/markdown";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@tihlde/ui/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
@@ -126,8 +120,8 @@ function EventAdminPage() {
             <div className="flex flex-col gap-1">
                 <h1 className="text-3xl">Nytt arrangement</h1>
                 <p className="text-muted-foreground">
-                    Beskrivelsen lagres som markdown og rendres med samme
-                    direktiv-registret som redigeringen.
+                    Beskrivelsen lagres som markdown og formateringen vises
+                    direkte mens du skriver.
                 </p>
             </div>
 
@@ -303,21 +297,6 @@ function EventAdminPage() {
                                 />
                             </Field>
                         </FieldGroup>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Forhåndsvisning</CardTitle>
-                        <CardDescription>
-                            Slik blir beskrivelsen vist for medlemmer.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <MarkdownView
-                            registry={richRegistry}
-                            source={description}
-                        />
                     </CardContent>
                 </Card>
 
