@@ -35,6 +35,7 @@ import {
     type ProfileHeaderUser,
     type ProfileLink,
 } from "#/components/profile-header";
+import { deriveStudy } from "#/lib/utils";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
@@ -71,10 +72,16 @@ function RouteComponent() {
     const updateSettings = useMutation(updateUserSettingsMutation);
 
     const settings = session?.user.settings;
+    const { programme, classYear } = deriveStudy(session?.groups ?? []);
+    const studyLabel =
+        [programme, classYear ? `${classYear}. klasse` : null]
+            .filter(Boolean)
+            .join(" · ") || undefined;
     const user: ProfileHeaderUser = {
         name: session?.user.name ?? "",
         email: session?.user.email ?? "",
         avatarUrl: settings?.imageUrl ?? session?.user.image ?? undefined,
+        programme: studyLabel,
         links: buildProfileLinks(settings?.githubUrl, settings?.linkedinUrl),
     };
 
