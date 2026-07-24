@@ -1,0 +1,1 @@
+ALTER TABLE "banner_banner" ADD COLUMN "link_text" varchar(100);

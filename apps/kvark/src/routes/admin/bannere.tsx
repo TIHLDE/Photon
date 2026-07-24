@@ -192,6 +192,7 @@ function BannerDialog({
     const [title, setTitle] = useState(banner?.title ?? "");
     const [description, setDescription] = useState(banner?.description ?? "");
     const [url, setUrl] = useState(banner?.url ?? "");
+    const [linkText, setLinkText] = useState(banner?.linkText ?? "");
     const [visibleFrom, setVisibleFrom] = useState<Date | null>(
         banner?.visibleFrom ? new Date(banner.visibleFrom) : null,
     );
@@ -236,6 +237,7 @@ function BannerDialog({
                         title,
                         description,
                         url: url || null,
+                        linkText: linkText || null,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -246,6 +248,7 @@ function BannerDialog({
                         title,
                         description,
                         url: url || undefined,
+                        linkText: linkText || undefined,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -306,6 +309,20 @@ function BannerDialog({
                                 value={url}
                                 onChange={(event) => setUrl(event.target.value)}
                                 placeholder="https://"
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="banner-link-text">
+                                Lenketekst (valgfri)
+                            </FieldLabel>
+                            <Input
+                                id="banner-link-text"
+                                maxLength={100}
+                                value={linkText}
+                                onChange={(event) =>
+                                    setLinkText(event.target.value)
+                                }
+                                placeholder="Les mer"
                             />
                         </Field>
                         <div className="grid gap-4 sm:grid-cols-2">

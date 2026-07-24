@@ -61,6 +61,7 @@ export const updateRoute = route().patch(
                 title: body.title,
                 description: body.description,
                 url: body.url,
+                linkText: body.linkText,
                 visibleFrom: body.visibleFrom ? visibleFrom : undefined,
                 visibleUntil: body.visibleUntil ? visibleUntil : undefined,
             })

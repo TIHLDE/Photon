@@ -37,6 +37,7 @@ export const createRoute = route().post(
                 title: body.title,
                 description: body.description,
                 url: body.url,
+                linkText: body.linkText,
                 visibleFrom: new Date(body.visibleFrom),
                 visibleUntil: new Date(body.visibleUntil),
                 createdById: userId,
