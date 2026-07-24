@@ -176,6 +176,13 @@
       "when": 1784807941617,
       "tag": "0024_narrow_violations",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1784881169407,
+      "tag": "0025_brown_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

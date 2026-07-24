@@ -1,6 +1,14 @@
-export type QueueName = "registration" | "email";
+export type QueueName = "registration" | "email" | "payment";
 export const EMAIL_QUEUE_NAME = "email" satisfies QueueName;
 export const EMAIL_SEND_RATE_MS = 3000;
+
+export const PAYMENT_QUEUE_NAME = "payment" satisfies QueueName;
+
+/** Options accepted when enqueueing a job. */
+export interface QueueAddOptions {
+    /** Delay in milliseconds before the job becomes available to a worker. */
+    delay?: number;
+}
 
 export type QueueJobState =
     | "waiting"
@@ -18,7 +26,11 @@ export interface QueueJob<TData = unknown, TResult = unknown> {
 }
 
 export interface QueueLike<TData = unknown> {
-    add(name: string, data: TData): Promise<QueueJob<TData>>;
+    add(
+        name: string,
+        data: TData,
+        options?: QueueAddOptions,
+    ): Promise<QueueJob<TData>>;
     getJobs(states?: QueueJobState[]): Promise<QueueJob<TData>[]>;
 }
 

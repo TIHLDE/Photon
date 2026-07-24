@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { type DbSchema, schema } from "@photon/db";
-import type { InferInsertModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -74,14 +75,26 @@ export const createPaymentRoute = route().post(
             });
         }
 
-        // Check for existing pending payment
+        // Check for existing payments
         const existingPayments = await db.query.eventPayment.findMany({
             where: (payment, { eq, and }) =>
                 and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
         });
 
-        // Check if there is already a pending payment
-        if (existingPayments.some((p) => p.status === "pending")) {
+        // An unstarted obligation (created automatically on registration) is a
+        // pending payment without a provider reference. Reuse it instead of
+        // creating a duplicate — the countdown timer already tracks its id.
+        const obligation = existingPayments.find(
+            (p) => p.status === "pending" && !p.providerPaymentId,
+        );
+
+        // A pending payment that has already been handed to Vipps blocks a new
+        // checkout for the same event.
+        if (
+            existingPayments.some(
+                (p) => p.status === "pending" && p.providerPaymentId,
+            )
+        ) {
             throw new HTTPException(409, {
                 message: "A pending payment already exists for this event",
             });
@@ -110,21 +123,37 @@ export const createPaymentRoute = route().post(
                 description: `Payment for ${event.title}`,
             });
 
-            const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
-                eventId,
-                userId,
-                amountMinor: event.priceMinor,
-                currency: "NOK",
-                provider: "vipps",
-                providerPaymentId: vippsReference,
-                status: "pending",
-            };
+            let payment: InferSelectModel<DbSchema["eventPayment"]> | undefined;
 
-            // Create payment record after Vipps payment is created
-            const [payment] = await db
-                .insert(schema.eventPayment)
-                .values(newPayment)
-                .returning();
+            if (obligation) {
+                // Attach the Vipps checkout to the existing obligation.
+                [payment] = await db
+                    .update(schema.eventPayment)
+                    .set({
+                        provider: "vipps",
+                        providerPaymentId: vippsReference,
+                        amountMinor: event.priceMinor,
+                        currency: "NOK",
+                    })
+                    .where(eq(schema.eventPayment.id, obligation.id))
+                    .returning();
+            } else {
+                const newPayment: InferInsertModel<DbSchema["eventPayment"]> = {
+                    eventId,
+                    userId,
+                    amountMinor: event.priceMinor,
+                    currency: "NOK",
+                    provider: "vipps",
+                    providerPaymentId: vippsReference,
+                    status: "pending",
+                };
+
+                // Create payment record after Vipps payment is created
+                [payment] = await db
+                    .insert(schema.eventPayment)
+                    .values(newPayment)
+                    .returning();
+            }
 
             if (!payment) {
                 throw new HTTPException(500, {

@@ -140,6 +140,38 @@ export async function createPayment(
     return response.data.redirectUrl;
 }
 
+export interface RefundPaymentParams {
+    reference: string; // The provider payment reference to refund
+    amount: number; // Amount to refund in minor units (øre)
+    currency?: string;
+}
+
+/**
+ * Refund a (fully or partially) captured Vipps payment.
+ *
+ * Uses the Vipps ePayment refund endpoint. The amount is specified in minor
+ * units and may not exceed the captured amount of the payment.
+ */
+export async function refundPayment(
+    params: RefundPaymentParams,
+): Promise<void> {
+    const token = await getVippsToken();
+    const vipps = getVippsClient();
+
+    const response = await vipps.payment.refund(token, params.reference, {
+        modificationAmount: {
+            currency: (params.currency || "NOK") as "NOK",
+            value: params.amount,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to refund payment: ${response.error instanceof Error ? response.error.message : "title" in response.error ? response.error.title : "Unknown error"}`,
+        );
+    }
+}
+
 /**
  * Get payment details from Vipps
  */

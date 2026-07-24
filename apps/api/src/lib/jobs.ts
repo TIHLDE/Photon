@@ -2,6 +2,7 @@ import { startQueuedEmailWorker } from "@photon/core/services/email";
 import cron from "node-cron";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
+import { startPaymentTimerWorker } from "./event/payment";
 import { resolveRegistrationsForEvent } from "./event/resolve-registration";
 
 /**
@@ -51,6 +52,9 @@ function startRegistrationResolverCron(ctx: AppContext): void {
 export function startBackgroundJobs(ctx: AppContext): void {
     // Start email worker
     startQueuedEmailWorker(ctx.queue, ctx.emailDelivery);
+
+    // Start payment-deadline countdown worker
+    startPaymentTimerWorker(ctx);
 
     // Start registration resolver cron
     startRegistrationResolverCron(ctx);
