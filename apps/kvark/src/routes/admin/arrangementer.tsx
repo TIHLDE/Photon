@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { addHours } from "date-fns";
 
 import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
@@ -13,6 +14,7 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
+import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import {
@@ -23,10 +25,12 @@ import {
     SelectValue,
 } from "@tihlde/ui/ui/select";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { nb } from "date-fns/locale";
 
 import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { nextWholeHour } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/arrangementer")({
     component: EventAdminPage,
@@ -43,10 +47,20 @@ Husk å sjekke kapasitet og påmeldingsfrist før du publiserer.
 :::
 `;
 
-/** datetime-local value ("YYYY-MM-DDTHH:mm") -> ISO string, or null when empty */
-function toIso(value: string): string | null {
+/** Date -> ISO string, or null when unset */
+function toIso(value: Date | null): string | null {
     if (!value) return null;
-    return new Date(value).toISOString();
+    return value.toISOString();
+}
+
+/**
+ * Fornuftige standardverdier for et nytt arrangement: start på neste hele
+ * time, slutt to timer senere, og påmelding som lukkes når arrangementet
+ * starter.
+ */
+function eventDateDefaults() {
+    const start = nextWholeHour();
+    return { start, end: addHours(start, 2), registrationEnd: start };
 }
 
 function EventAdminPage() {
@@ -57,12 +71,20 @@ function EventAdminPage() {
     const [categorySlug, setCategorySlug] = useState("");
     const [organizerGroupSlug, setOrganizerGroupSlug] = useState("");
     const [location, setLocation] = useState("");
-    const [start, setStart] = useState("");
-    const [end, setEnd] = useState("");
-    const [registrationEnd, setRegistrationEnd] = useState("");
+    const [start, setStart] = useState<Date | null>(null);
+    const [end, setEnd] = useState<Date | null>(null);
+    const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
     const [capacity, setCapacity] = useState("");
     const [isPaidEvent, setIsPaidEvent] = useState(false);
     const [price, setPrice] = useState("");
+
+    // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
+    useEffect(() => {
+        const defaults = eventDateDefaults();
+        setStart((current) => current ?? defaults.start);
+        setEnd((current) => current ?? defaults.end);
+        setRegistrationEnd((current) => current ?? defaults.registrationEnd);
+    }, []);
 
     const createEvent = useMutation(createEventMutation);
 
@@ -110,9 +132,10 @@ function EventAdminPage() {
                     setCategorySlug("");
                     setOrganizerGroupSlug("");
                     setLocation("");
-                    setStart("");
-                    setEnd("");
-                    setRegistrationEnd("");
+                    const defaults = eventDateDefaults();
+                    setStart(defaults.start);
+                    setEnd(defaults.end);
+                    setRegistrationEnd(defaults.registrationEnd);
                     setCapacity("");
                     setIsPaidEvent(false);
                     setPrice("");
@@ -214,42 +237,38 @@ function EventAdminPage() {
                                 <FieldLabel htmlFor="event-start">
                                     Starttidspunkt
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="event-start"
-                                    type="datetime-local"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg starttidspunkt"
                                     value={start}
-                                    onChange={(event) =>
-                                        setStart(event.target.value)
-                                    }
+                                    onValueChange={setStart}
                                 />
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="event-end">
                                     Sluttidspunkt
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="event-end"
-                                    type="datetime-local"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg sluttidspunkt"
+                                    minDate={start ?? undefined}
                                     value={end}
-                                    onChange={(event) =>
-                                        setEnd(event.target.value)
-                                    }
+                                    onValueChange={setEnd}
                                 />
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="event-reg-end">
                                     Påmeldingsfrist
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="event-reg-end"
-                                    type="datetime-local"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg påmeldingsfrist"
+                                    maxDate={start ?? undefined}
                                     value={registrationEnd}
-                                    onChange={(event) =>
-                                        setRegistrationEnd(event.target.value)
-                                    }
+                                    onValueChange={setRegistrationEnd}
                                 />
                             </Field>
                             <Field>
