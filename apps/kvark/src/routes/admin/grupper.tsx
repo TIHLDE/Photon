@@ -35,6 +35,7 @@ import {
 } from "#/api/queries/contracts";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { groupTypeLabel } from "#/lib/group";
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
@@ -53,25 +54,6 @@ const GROUP_TYPE_TABS = [
 ] as const;
 
 type TabType = (typeof GROUP_TYPE_TABS)[number]["type"];
-
-const GROUP_TYPE_LABELS: Record<string, string> = {
-    SUBGROUP: "Undergruppe",
-    COMMITTEE: "Komité",
-    BOARD: "Styre",
-    INTERESTGROUP: "Interessegruppe",
-    STUDYYEAR: "Klassetrinn",
-    STUDY: "Studie",
-    TIHLDE: "TIHLDE",
-    PRIVATE: "Privat",
-};
-
-/** Norsk visningsnavn for en gruppetype fra databasen (f.eks. "SUBGROUP"). */
-function groupTypeLabel(type: string): string {
-    return (
-        GROUP_TYPE_LABELS[type] ??
-        type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
-    );
-}
 
 function GrupperAdminPage() {
     const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
