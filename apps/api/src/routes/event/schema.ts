@@ -1,4 +1,7 @@
-import { registrationStatusVariants } from "@photon/db/schema";
+import {
+    eventVisibilityVariants,
+    registrationStatusVariants,
+} from "@photon/db/schema";
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 import {
@@ -112,6 +115,12 @@ const eventMutationSchema = z.object({
     }),
     reactionsAllowed: z.boolean().meta({
         description: "Should users be able to react to this event with emojis?",
+    }),
+
+    // Visibility
+    visibility: z.enum(eventVisibilityVariants).default("public").meta({
+        description:
+            "Who may see the event. 'public' is visible to everyone including logged-out visitors; 'members' hides it from unauthenticated callers.",
     }),
 });
 
@@ -529,6 +538,9 @@ export const eventDetailSchema = Schema(
         onlyAllowPrioritized: z.boolean().meta({
             description: "Only members covered by a priority pool may register",
         }),
+        visibility: z.enum(eventVisibilityVariants).meta({
+            description: "Who may see the event ('public' or 'members'-only)",
+        }),
         registration: z
             .object({
                 createdAt: z.iso
@@ -602,6 +614,9 @@ export const eventListItemSchema = Schema(
                 label: z.string().meta({ description: "Category label" }),
             })
             .meta({ description: "Event category" }),
+        visibility: z.enum(eventVisibilityVariants).meta({
+            description: "Who may see the event ('public' or 'members'-only)",
+        }),
     }),
 );
 

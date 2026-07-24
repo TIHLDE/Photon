@@ -1936,6 +1936,8 @@ export interface components {
             description: string;
             /** @description Optional link for the banner */
             url: string | null;
+            /** @description Optional label for the banner link */
+            linkText: string | null;
             /** @description Visibility window end (ISO 8601) */
             visibleUntil: string;
         };
@@ -1953,6 +1955,8 @@ export interface components {
             description: string;
             /** @description Optional link for the banner */
             url: string | null;
+            /** @description Optional label for the banner link */
+            linkText: string | null;
             /** @description Visibility window start (ISO 8601) */
             visibleFrom: string;
             /** @description Visibility window end (ISO 8601) */
@@ -1978,6 +1982,8 @@ export interface components {
              * @description Optional link for the banner
              */
             url?: string;
+            /** @description Optional label for the banner link; an arrow is always shown */
+            linkText?: string;
             /**
              * Format: date-time
              * @description When the banner becomes visible
@@ -1993,6 +1999,7 @@ export interface components {
             title?: string;
             description?: string;
             url?: string | null;
+            linkText?: string | null;
             /** Format: date-time */
             visibleFrom?: string;
             /** Format: date-time */
@@ -2192,6 +2199,12 @@ export interface components {
             contactPersonUserId: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed: boolean;
+            /**
+             * @description Who may see the event. 'public' is visible to everyone including logged-out visitors; 'members' hides it from unauthenticated callers.
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         EventListItem: {
             /**
@@ -2247,6 +2260,11 @@ export interface components {
                 /** @description Category label */
                 label: string;
             };
+            /**
+             * @description Who may see the event ('public' or 'members'-only)
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         EventList: {
             /** @description Total number of items available */
@@ -2321,6 +2339,12 @@ export interface components {
             contactPersonUserId?: string | null;
             /** @description Should users be able to react to this event with emojis? */
             reactionsAllowed?: boolean;
+            /**
+             * @description Who may see the event. 'public' is visible to everyone including logged-out visitors; 'members' hides it from unauthenticated callers.
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "members";
         };
         DeleteEventResponse: {
             message: string;
@@ -2415,6 +2439,11 @@ export interface components {
             enforcesPreviousStrikes: boolean;
             /** @description Only members covered by a priority pool may register */
             onlyAllowPrioritized: boolean;
+            /**
+             * @description Who may see the event ('public' or 'members'-only)
+             * @enum {string}
+             */
+            visibility: "public" | "members";
             /** @description The current user's registration information. This is null if not registered or if not logged in. */
             registration: {
                 /**
@@ -5269,6 +5298,13 @@ export interface operations {
             };
             /** @description Bad Request - Invalid webhook payload */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid webhook signature */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

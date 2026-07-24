@@ -1,4 +1,6 @@
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
+import type { Context } from "hono";
 import { getRedis } from "./cache";
 import { env } from "./env";
 
@@ -140,6 +142,38 @@ export async function createPayment(
     return response.data.redirectUrl;
 }
 
+export interface RefundPaymentParams {
+    reference: string; // The provider payment reference to refund
+    amount: number; // Amount to refund in minor units (øre)
+    currency?: string;
+}
+
+/**
+ * Refund a (fully or partially) captured Vipps payment.
+ *
+ * Uses the Vipps ePayment refund endpoint. The amount is specified in minor
+ * units and may not exceed the captured amount of the payment.
+ */
+export async function refundPayment(
+    params: RefundPaymentParams,
+): Promise<void> {
+    const token = await getVippsToken();
+    const vipps = getVippsClient();
+
+    const response = await vipps.payment.refund(token, params.reference, {
+        modificationAmount: {
+            currency: (params.currency || "NOK") as "NOK",
+            value: params.amount,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to refund payment: ${response.error instanceof Error ? response.error.message : "title" in response.error ? response.error.title : "Unknown error"}`,
+        );
+    }
+}
+
 /**
  * Get payment details from Vipps
  */
@@ -263,4 +297,122 @@ async function getWebhookSecret() {
     return webhook.secret;
 }
 
-export async function verifyVippsWebhookRequest() {}
+/**
+ * The raw parts of an incoming request needed to verify a Vipps webhook.
+ *
+ * Vipps signs each callback with an HMAC-SHA256 signature over the request
+ * method, path, host, date and a hash of the raw body. See
+ * https://developer.vippsmobilepay.com/docs/APIs/webhooks-api/request-authentication/
+ */
+export interface VippsWebhookRequestParts {
+    /** HTTP method, e.g. "POST". */
+    method: string;
+    /** Path and query string of the request, e.g. "/api/event/payment/webhook". */
+    pathAndQuery: string;
+    /** The `Host` header value the request was sent to. */
+    host: string;
+    /** The `x-ms-date` (or `date`) header value. */
+    date: string;
+    /** The `x-ms-content-sha256` header value (base64 SHA-256 of the body). */
+    contentSha256: string;
+    /** The `Authorization` header value. */
+    authorization: string;
+    /** The raw, unparsed request body. */
+    rawBody: string;
+}
+
+/**
+ * Constant-time comparison of two UTF-8 strings that never throws on length
+ * mismatch (which `timingSafeEqual` would).
+ */
+function safeStringEqual(a: string, b: string): boolean {
+    const bufferA = Buffer.from(a, "utf-8");
+    const bufferB = Buffer.from(b, "utf-8");
+
+    if (bufferA.length !== bufferB.length) {
+        return false;
+    }
+
+    return timingSafeEqual(bufferA, bufferB);
+}
+
+/**
+ * Extracts the `Signature` value from a Vipps `Authorization` header of the form
+ * `HMAC-SHA256 SignedHeaders=x-ms-date;host;x-ms-content-sha256&Signature=<base64>`.
+ */
+function parseAuthorizationSignature(authorization: string): string | null {
+    if (!authorization.startsWith("HMAC-SHA256 ")) {
+        return null;
+    }
+
+    const match = authorization.match(/Signature=([^&\s]+)/);
+    return match?.[1] ?? null;
+}
+
+/**
+ * Verifies the authenticity of a Vipps webhook request from its raw parts.
+ *
+ * Recomputes the content hash and HMAC-SHA256 signature using the shared webhook
+ * secret and compares them, in constant time, against the values Vipps sent.
+ *
+ * @returns `true` if the request is authentic, `false` otherwise.
+ */
+export function verifyVippsWebhookSignature(
+    parts: VippsWebhookRequestParts,
+    secret: string,
+): boolean {
+    const providedSignature = parseAuthorizationSignature(parts.authorization);
+
+    if (!providedSignature || !parts.contentSha256 || !parts.date) {
+        return false;
+    }
+
+    // Verify the body has not been tampered with: base64(sha256(rawBody)) must
+    // match the x-ms-content-sha256 header.
+    const computedContentHash = createHash("sha256")
+        .update(parts.rawBody, "utf-8")
+        .digest("base64");
+
+    if (!safeStringEqual(computedContentHash, parts.contentSha256)) {
+        return false;
+    }
+
+    // Rebuild the string Vipps signed and recompute the HMAC-SHA256 signature.
+    const stringToSign = `${parts.method}\n${parts.pathAndQuery}\n${parts.date};${parts.host};${computedContentHash}`;
+
+    const expectedSignature = createHmac("sha256", secret)
+        .update(stringToSign, "utf-8")
+        .digest("base64");
+
+    return safeStringEqual(expectedSignature, providedSignature);
+}
+
+/**
+ * Verifies an incoming Vipps webhook request from the Hono context.
+ *
+ * The raw body must be read (e.g. via `c.req.text()`) before parsing it as JSON,
+ * because the body can only be consumed once and the raw bytes are required to
+ * recompute the content hash.
+ *
+ * @returns `true` if the request is authentic, `false` otherwise.
+ */
+export async function verifyVippsWebhookRequest(
+    c: Context,
+    rawBody: string,
+): Promise<boolean> {
+    const secret = await getWebhookSecret();
+    const url = new URL(c.req.url);
+
+    return verifyVippsWebhookSignature(
+        {
+            method: c.req.method,
+            pathAndQuery: url.pathname + url.search,
+            host: c.req.header("host") ?? url.host,
+            date: c.req.header("x-ms-date") ?? c.req.header("date") ?? "",
+            contentSha256: c.req.header("x-ms-content-sha256") ?? "",
+            authorization: c.req.header("authorization") ?? "",
+            rawBody,
+        },
+        secret,
+    );
+}

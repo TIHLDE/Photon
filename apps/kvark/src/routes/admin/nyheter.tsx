@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
+import { RichEditor } from "@tihlde/ui/complex/markdown";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -66,7 +66,7 @@ function NewsAdminPage() {
                 <h1 className="text-3xl">Ny nyhet</h1>
                 <p className="text-muted-foreground">
                     Skriv en nyhet i markdown-redigeringsverktøyet under.
-                    Forhåndsvisning til høyre.
+                    Formateringen vises direkte mens du skriver.
                 </p>
             </div>
 
@@ -118,18 +118,6 @@ function NewsAdminPage() {
                                 />
                             </Field>
                         </FieldGroup>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Forhåndsvisning</CardTitle>
-                        <CardDescription>
-                            Slik vises nyheten med rik-registret aktivert.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <MarkdownView registry={richRegistry} source={body} />
                     </CardContent>
                 </Card>
 

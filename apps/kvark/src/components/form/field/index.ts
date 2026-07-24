@@ -10,4 +10,5 @@ export { RadioGroup } from "./radio-group";
 export { Combobox } from "./combobox";
 export { ImageDropzone } from "./image-dropzone";
 export { DatePicker, DateRangePicker } from "./date-picker";
+export { DateTimePicker } from "./date-time-picker";
 export { TimePicker } from "./time-picker";

@@ -5,6 +5,13 @@ export type FeideSignInButtonProps = {
     onSignIn: () => void;
     loading?: boolean;
     disabled?: boolean;
+    /**
+     * Button emphasis. Defaults to "outline" so login keeps Feide as a
+     * secondary action; register passes "default" to make it the primary CTA.
+     */
+    variant?: "default" | "outline";
+    /** Overrides the resting label, e.g. "Registrer med Feide". */
+    label?: string;
 };
 
 /**
@@ -15,11 +22,13 @@ export function FeideSignInButton({
     onSignIn,
     loading = false,
     disabled = false,
+    variant = "outline",
+    label = "Logg inn med Feide",
 }: FeideSignInButtonProps) {
     return (
         <Button
             type="button"
-            variant="outline"
+            variant={variant}
             className="w-full"
             onClick={onSignIn}
             disabled={disabled || loading}
@@ -30,7 +39,7 @@ export function FeideSignInButton({
                     <span>Sender deg til Feide...</span>
                 </>
             ) : (
-                <span>Logg inn med Feide</span>
+                <span>{label}</span>
             )}
         </Button>
     );

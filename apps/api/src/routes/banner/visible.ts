@@ -40,6 +40,7 @@ export const visibleRoute = route().get(
             title: banner.title,
             description: banner.description,
             url: banner.url ?? null,
+            linkText: banner.linkText ?? null,
             visibleUntil: banner.visibleUntil.toISOString(),
         })) satisfies z.infer<typeof visibleBannerSchema>[];
 

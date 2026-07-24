@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { BookmarkIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { addDays } from "date-fns";
+import { nb } from "date-fns/locale";
+import { Suspense, useEffect, useState } from "react";
 
 import type { Banner } from "@tihlde/sdk";
 import { Badge } from "@tihlde/ui/ui/badge";
@@ -14,6 +16,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
+import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
@@ -189,13 +192,21 @@ function BannerDialog({
     const [title, setTitle] = useState(banner?.title ?? "");
     const [description, setDescription] = useState(banner?.description ?? "");
     const [url, setUrl] = useState(banner?.url ?? "");
-    const [visibleFrom, setVisibleFrom] = useState(
-        toDatetimeLocal(banner?.visibleFrom),
+    const [linkText, setLinkText] = useState(banner?.linkText ?? "");
+    const [visibleFrom, setVisibleFrom] = useState<Date | null>(
+        banner?.visibleFrom ? new Date(banner.visibleFrom) : null,
     );
-    const [visibleUntil, setVisibleUntil] = useState(
-        toDatetimeLocal(banner?.visibleUntil),
+    const [visibleUntil, setVisibleUntil] = useState<Date | null>(
+        banner?.visibleUntil ? new Date(banner.visibleUntil) : null,
     );
     const [error, setError] = useState<string | null>(null);
+
+    // Nytt banner: synlig fra nå og en uke fram. Redigering beholder verdiene.
+    useEffect(() => {
+        const now = new Date();
+        setVisibleFrom((current) => current ?? now);
+        setVisibleUntil((current) => current ?? addDays(now, 7));
+    }, []);
 
     const create = useMutation(createBannerMutation);
     const update = useMutation(updateBannerMutation);
@@ -210,8 +221,8 @@ function BannerDialog({
             return;
         }
 
-        const fromIso = new Date(visibleFrom).toISOString();
-        const untilIso = new Date(visibleUntil).toISOString();
+        const fromIso = visibleFrom.toISOString();
+        const untilIso = visibleUntil.toISOString();
 
         if (fromIso >= untilIso) {
             setError("Synlig fra må være før synlig til.");
@@ -226,6 +237,7 @@ function BannerDialog({
                         title,
                         description,
                         url: url || null,
+                        linkText: linkText || null,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -236,6 +248,7 @@ function BannerDialog({
                         title,
                         description,
                         url: url || undefined,
+                        linkText: linkText || undefined,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -298,33 +311,44 @@ function BannerDialog({
                                 placeholder="https://"
                             />
                         </Field>
+                        <Field>
+                            <FieldLabel htmlFor="banner-link-text">
+                                Lenketekst (valgfri)
+                            </FieldLabel>
+                            <Input
+                                id="banner-link-text"
+                                maxLength={100}
+                                value={linkText}
+                                onChange={(event) =>
+                                    setLinkText(event.target.value)
+                                }
+                                placeholder="Les mer"
+                            />
+                        </Field>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field>
                                 <FieldLabel htmlFor="banner-visible-from">
                                     Synlig fra
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="banner-visible-from"
-                                    type="datetime-local"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg dato og tid"
                                     value={visibleFrom}
-                                    onChange={(event) =>
-                                        setVisibleFrom(event.target.value)
-                                    }
+                                    onValueChange={setVisibleFrom}
                                 />
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="banner-visible-until">
                                     Synlig til
                                 </FieldLabel>
-                                <Input
+                                <DateTimePicker
                                     id="banner-visible-until"
-                                    type="datetime-local"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg dato og tid"
+                                    minDate={visibleFrom ?? undefined}
                                     value={visibleUntil}
-                                    onChange={(event) =>
-                                        setVisibleUntil(event.target.value)
-                                    }
+                                    onValueChange={setVisibleUntil}
                                 />
                             </Field>
                         </div>
@@ -350,14 +374,6 @@ function BannerDialog({
             </DialogContent>
         </Dialog>
     );
-}
-
-function toDatetimeLocal(iso: string | null | undefined): string {
-    if (!iso) return "";
-    const date = new Date(iso);
-    const offset = date.getTimezoneOffset();
-    const local = new Date(date.getTime() - offset * 60_000);
-    return local.toISOString().slice(0, 16);
 }
 
 function formatDateTime(iso: string): string {

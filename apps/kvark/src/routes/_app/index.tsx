@@ -99,6 +99,7 @@ function BannersSection() {
                     title={banner.title}
                     description={banner.description}
                     url={banner.url}
+                    linkText={banner.linkText}
                 />
             ))}
         </div>

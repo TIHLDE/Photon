@@ -52,6 +52,21 @@ export const paymentStatus = pgEnum("event_payment_status", [
 
 export type PaymentStatus = (typeof paymentStatus)["enumValues"][number];
 
+export const eventVisibilityVariants = [
+    // Visible to everyone, including logged-out visitors
+    "public",
+
+    // Visible only to authenticated (member) users
+    "members",
+] as const;
+
+export const eventVisibility = pgEnum(
+    "event_visibility",
+    eventVisibilityVariants,
+);
+
+export type EventVisibility = (typeof eventVisibilityVariants)[number];
+
 export const event = pgTable("event", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 256 }).notNull(),
@@ -96,6 +111,11 @@ export const event = pgTable("event", {
     onlyAllowPrioritized: boolean("only_allow_prioritized")
         .default(false)
         .notNull(),
+    /**
+     * Who may see the event. "public" is visible to everyone including
+     * logged-out visitors; "members" hides it from unauthenticated callers.
+     */
+    visibility: eventVisibility("visibility").default("public").notNull(),
     ...timestamps,
 });
 
@@ -189,6 +209,13 @@ export const eventPayment = pgTable("payment", {
     providerPaymentId: text("provider_payment_id"),
     status: paymentStatus("status").notNull().default("pending"),
     receivedPaymentAt: timestamp("received_payment_at"),
+    /**
+     * Deadline for when this payment obligation must be fulfilled. Set when a
+     * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
+     * A countdown job cancels the registration if payment is not completed by
+     * this time.
+     */
+    expiresAt: timestamp("expires_at"),
     ...timestamps,
 });
 
