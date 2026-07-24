@@ -85,7 +85,7 @@ function Home() {
                     title="Nyheter"
                     actionLabel={canCreateNews ? "Ny nyhet" : undefined}
                 />
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {NEWS.map((item) => (
                         // TODO: replace with a unique id field once wired up to the backend
                         <NewsCard key={item.title} {...item} />
