@@ -452,12 +452,32 @@ export interface paths {
         post: operations["createEventRegistration"];
         /**
          * Unregister from event
-         * @description Remove the authenticated user's registration from an event
+         * @description Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike.
          */
         delete: operations["deleteEventRegistration"];
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/registration/{userId}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set registration attendance
+         * @description Mark a registered user as attended (checked in) or revert them to registered. Used for event check-in; users left as 'registered' after the event may receive no-show strikes. Requires 'events:update' or 'events:manage' permission.
+         */
+        patch: operations["setRegistrationAttendance"];
         trace?: never;
     };
     "/api/event/{eventId}/payment": {
@@ -2510,6 +2530,10 @@ export interface components {
             image: string | null;
             /** @description Photo consent for this event. Only included when the caller has event admin permissions. */
             allowPhoto?: boolean;
+            /** @description Registration status (registered/attended/no_show). Only included for event admins. */
+            status?: string;
+            /** @description When the user was checked in, if at all. Only included for event admins. */
+            attendedAt?: string | null;
         };
         EventRegistrationList: {
             /** @description Total number of items available */
@@ -2520,6 +2544,17 @@ export interface components {
             nextPage: number | null;
             /** @description List of registered users (paginated) */
             registeredUsers: components["schemas"]["EventRegisteredUser"][];
+        };
+        Attendance: {
+            userId: string;
+            eventId: string;
+            /** @description New registration status */
+            status: string;
+            attendedAt: string | null;
+        };
+        SetAttendance: {
+            /** @description True marks the user as attended (checked in); false reverts them to registered. */
+            attended: boolean;
         };
         CreatePaymentResponse: {
             /** Format: uuid */
@@ -5223,6 +5258,56 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    setRegistrationAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAttendance"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Attendance"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:update or events:manage permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Registration not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -21,6 +21,7 @@ import {
     BookmarkIcon,
     BriefcaseBusinessIcon,
     CalendarIcon,
+    CircleCheckBigIcon,
     CrownIcon,
     DatabaseIcon,
     DotSquare,
@@ -98,6 +99,11 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Arrangementer",
                 icon: CalendarIcon,
                 link: linkOptions({ to: "/admin/arrangementer" }),
+            },
+            {
+                label: "Oppmøte",
+                icon: CircleCheckBigIcon,
+                link: linkOptions({ to: "/admin/oppmote" }),
             },
             {
                 label: "Nyheter",

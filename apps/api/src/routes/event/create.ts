@@ -117,6 +117,7 @@ export const createRoute = route().post(
                 updateByUserId: userId,
                 organizerGroupSlug: body.organizerGroupSlug,
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
+                canCauseStrikes: body.canCauseStrikes,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
                 visibility: body.visibility,
             };

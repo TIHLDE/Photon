@@ -86,7 +86,13 @@ export const getAllRegistrationsForEventsRoute = route().get(
             id: r.userId,
             image: r.user.image,
             name: r.user.name,
-            ...(isEventAdmin ? { allowPhoto: r.allowPhoto } : {}),
+            ...(isEventAdmin
+                ? {
+                      allowPhoto: r.allowPhoto,
+                      status: r.status,
+                      attendedAt: r.attendedAt?.toISOString() ?? null,
+                  }
+                : {}),
         }));
 
         return c.json({
