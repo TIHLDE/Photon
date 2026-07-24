@@ -343,7 +343,7 @@ async function getLinkedLeaderPosition(ctx: AppContext, groupSlug: string) {
  * the linked leader-verv (replacing any previous holder — a verv has exactly
  * one holder, and leadership is the source of truth for this one).
  */
-async function syncSubgroupLeaderIntoHs(
+export async function syncSubgroupLeaderIntoHs(
     ctx: AppContext,
     userId: string,
     group: InferSelectModel<DbSchema["group"]>,
