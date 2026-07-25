@@ -4,9 +4,24 @@ import type { AppContext } from "~/lib/ctx";
 // Import all seed modules
 import seedAuth from "./auth";
 import seedEvent from "./event";
-import seedOrg from "./org";
-import seedRbac from "./rbac";
+import seedOrg, { backfillGroupData, syncHsPositions } from "./org";
+import seedRbac, { backfillRolePermissions } from "./rbac";
 import seedUser from "./user";
+
+/**
+ * Idempotent steps that must run on EVERY boot, not just the first.
+ *
+ * The seed below bails out entirely once the database has content, and the
+ * inserts it does make are onConflictDoNothing — so without this, an
+ * environment that was seeded before a permission, role link, or group field
+ * existed would never pick it up. Everything here only fills in what is
+ * missing; nothing is removed or overwritten.
+ */
+async function runBackfills(ctx: AppContext) {
+    await backfillRolePermissions(ctx);
+    await backfillGroupData(ctx);
+    await syncHsPositions(ctx);
+}
 
 /**
  * Main seed orchestrator
@@ -25,7 +40,10 @@ export default async (ctx: AppContext) => {
     const firstRun = studyGroupCount === 0;
 
     if (!firstRun) {
-        console.log("🌱 Database already seeded, skipping seeding process.");
+        await runBackfills(ctx);
+        console.log(
+            "🌱 Database already seeded, ran idempotent backfills only.",
+        );
         return;
     }
 
@@ -44,6 +62,8 @@ export default async (ctx: AppContext) => {
 
     // 5. Event (categories)
     await seedEvent(ctx);
+
+    await runBackfills(ctx);
 
     console.log("🌱 Successfully seeded the database");
 };

@@ -25,7 +25,9 @@ Requires either session authentication or a valid API key.
 - Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}
 
 **Usage:**
-Send the file as multipart/form-data with a field named "file".`,
+Send the file as multipart/form-data with a field named "file".
+
+Pass an optional "visibility" field set to "private" for files that must not be served by the open \`GET /api/assets/:key\` route — those are only reachable through a route that does its own authorization (e.g. application attachments).`,
     })
         .schemaResponse({
             statusCode: 201,
@@ -68,6 +70,21 @@ Send the file as multipart/form-data with a field named "file".`,
         const apiKey = c.get("apiKey");
         const uploadedById = user?.id ?? apiKey?.createdById ?? undefined;
 
+        // Callers may opt a file out of the open download route. Anyone may
+        // do so: "private" only removes a way to read the file, it never
+        // grants access.
+        const visibilityField = formData.get("visibility");
+        if (
+            visibilityField !== null &&
+            visibilityField !== "public" &&
+            visibilityField !== "private"
+        ) {
+            throw HTTPAppException.BadRequest(
+                "Field 'visibility' must be 'public' or 'private'",
+            );
+        }
+        const visibility = visibilityField === "private" ? "private" : "public";
+
         // Generate unique key
         const key = generateAssetKey(file.name);
 
@@ -80,6 +97,7 @@ Send the file as multipart/form-data with a field named "file".`,
             originalFilename: file.name,
             contentType: file.type,
             uploadedById,
+            visibility,
         });
 
         // Get the created asset

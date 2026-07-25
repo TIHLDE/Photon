@@ -3,6 +3,181 @@ import type { InferInsertModel } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
+/** Groups that auto-assign an RBAC role to their members (see group.roleId). */
+const GROUP_ROLES: Record<string, string> = {
+    hs: "hs",
+    index: "admin",
+    idkom: "idkom",
+};
+
+/**
+ * Idempotent org backfills, run on EVERY boot rather than only the first.
+ *
+ * The group insert in the seed below is skipped for groups that already exist,
+ * so an environment seeded before a group↔role link was introduced would
+ * otherwise never pick it up. Only fills in NULLs, so a role picked by hand in
+ * /admin is never clobbered.
+ */
+export async function backfillGroupData({ db }: AppContext) {
+    for (const [groupSlug, roleName] of Object.entries(GROUP_ROLES)) {
+        const existingGroup = await db.query.group.findFirst({
+            where: eq(schema.group.slug, groupSlug),
+        });
+        if (!existingGroup || existingGroup.roleId !== null) continue;
+
+        const linkedRole = await db.query.role.findFirst({
+            where: eq(schema.role.name, roleName),
+        });
+        if (!linkedRole) continue;
+
+        await db
+            .update(schema.group)
+            .set({ roleId: linkedRole.id })
+            .where(eq(schema.group.slug, groupSlug));
+    }
+}
+
+/**
+ * HS positions (verv/titler). Globally-scoped titles carry the powers the hs
+ * ROLE deliberately lacks: AU governs roles, Sosialminister can refund event
+ * payments, and Teknologiminister holds root. Assigning a title moves the
+ * power with it — no manual role juggling at handovers.
+ *
+ * Runs on every boot rather than only the first: an existing title gets any
+ * newly-registered permissions added, so an environment seeded before a
+ * permission existed still picks it up.
+ */
+export async function syncHsPositions({ db }: AppContext) {
+    const hsGroup = await db.query.group.findFirst({
+        where: eq(schema.group.slug, "hs"),
+    });
+    if (!hsGroup) return;
+
+    const hsPositions: {
+        name: string;
+        description: string;
+        permissions: string[];
+        /** Subgroup whose leader auto-holds this verv (see linkedGroupSlug) */
+        linkedGroupSlug?: string;
+    }[] = [
+        {
+            name: "President",
+            description: "Leder av Arbeidsutvalget og TIHLDE",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+            ],
+        },
+        {
+            name: "Visepresident",
+            description: "Del av Arbeidsutvalget",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+            ],
+        },
+        {
+            name: "Finansminister",
+            description: "Del av Arbeidsutvalget, styrer økonomien",
+            permissions: [
+                "roles:view",
+                "roles:create",
+                "roles:update",
+                "roles:delete",
+                "roles:assign",
+                "events:payments:view",
+                "events:payments:refund",
+                // Utlegg and støttesøknader are the Finansminister's desk.
+                // The hs role deliberately excludes utlegg, so this title is
+                // the only path to them outside root/admin.
+                "applications:expense:view",
+                "applications:expense:manage",
+                "applications:support:view",
+                "applications:support:manage",
+            ],
+        },
+        {
+            name: "Sosialminister",
+            description:
+                "Leder av Sosialen, kan refundere arrangementsbetalinger",
+            permissions: ["events:payments:view", "events:payments:refund"],
+        },
+        {
+            name: "Teknologiminister",
+            description: "Leder av Index — full systemtilgang (root)",
+            permissions: ["root"],
+            linkedGroupSlug: "index",
+        },
+        // Øvrige undergruppeledere sitter også i HS. Vervene bærer ingen
+        // ekstra globale tilganger (HS-rollen følger av gruppemedlemskapet),
+        // men skal finnes som titler og vises i /admin/roller.
+        {
+            name: "Promoteringsminister",
+            description: "Leder av Promo",
+            permissions: [],
+        },
+        {
+            name: "Kontorminister",
+            description: "Leder av Kiosk og Kontor",
+            permissions: [],
+        },
+        {
+            name: "Næringslivsminister",
+            description: "Leder av Næringsliv og Kurs",
+            permissions: [],
+        },
+        {
+            name: "Innovasjonsminister",
+            description: "Leder av Beta",
+            permissions: [],
+            linkedGroupSlug: "beta",
+        },
+    ];
+
+    // Position names are no longer unique per group (one holder per
+    // position), so idempotency is an explicit existence check.
+    for (const position of hsPositions) {
+        const existing = await db.query.groupPosition.findFirst({
+            where: (t, { and }) =>
+                and(eq(t.groupSlug, "hs"), eq(t.name, position.name)),
+        });
+        if (existing) {
+            // An environment seeded before a permission existed would never
+            // pick it up. Add what is missing without removing anything that
+            // was granted by hand in /admin/roller.
+            const current = new Set(existing.permissions ?? []);
+            const missing = position.permissions.filter((p) => !current.has(p));
+            if (missing.length > 0) {
+                await db
+                    .update(schema.groupPosition)
+                    .set({
+                        permissions: [
+                            ...(existing.permissions ?? []),
+                            ...missing,
+                        ],
+                    })
+                    .where(eq(schema.groupPosition.id, existing.id));
+            }
+            continue;
+        }
+
+        await db.insert(schema.groupPosition).values({
+            groupSlug: "hs",
+            name: position.name,
+            description: position.description,
+            permissions: position.permissions,
+            scope: "global",
+            linkedGroupSlug: position.linkedGroupSlug ?? null,
+        });
+    }
+}
+
 /**
  * Seed org-related tables (group, studyProgram, groupMembership, etc.)
  */
@@ -87,10 +262,22 @@ export default async ({ db }: AppContext) => {
             fine_info: "Skyldig til motsatt bevist.\n\nForeldring på 1 uke",
             fines_activated: 1,
         },
+        {
+            created_at: "2021-04-27 06:26:01.739510",
+            updated_at: "2021-04-27 06:26:01.739510",
+            image: null,
+            name: "IdKom",
+            slug: "idkom",
+            description:
+                "Idrettskomiteen har ansvar for TIHLDEs idrettsgrupper og behandler søknader om støtte til idrettslag.",
+            contact_email: "idkom@tihlde.org",
+            type: "COMMITTEE",
+            fine_info: "",
+            fines_activated: 0,
+        },
     ] as const;
 
-    // Groups that auto-assign an RBAC role to their members (see group.roleId).
-    const groupRoles: Record<string, string> = { hs: "hs", index: "admin" };
+    const groupRoles = GROUP_ROLES;
 
     for (const group of groups) {
         const exists = await db
@@ -126,109 +313,6 @@ export default async ({ db }: AppContext) => {
 
             await db.insert(schema.group).values(newGroup);
         }
-    }
-
-    // HS positions (verv/titler). Globally-scoped titles carry the powers
-    // the hs ROLE deliberately lacks: AU governs roles, Sosialminister can
-    // refund event payments, and Teknologiminister holds root. Assigning a
-    // title moves the power with it — no manual role juggling at handovers.
-    const hsPositions: {
-        name: string;
-        description: string;
-        permissions: string[];
-        /** Subgroup whose leader auto-holds this verv (see linkedGroupSlug) */
-        linkedGroupSlug?: string;
-    }[] = [
-        {
-            name: "President",
-            description: "Leder av Arbeidsutvalget og TIHLDE",
-            permissions: [
-                "roles:view",
-                "roles:create",
-                "roles:update",
-                "roles:delete",
-                "roles:assign",
-            ],
-        },
-        {
-            name: "Visepresident",
-            description: "Del av Arbeidsutvalget",
-            permissions: [
-                "roles:view",
-                "roles:create",
-                "roles:update",
-                "roles:delete",
-                "roles:assign",
-            ],
-        },
-        {
-            name: "Finansminister",
-            description: "Del av Arbeidsutvalget, styrer økonomien",
-            permissions: [
-                "roles:view",
-                "roles:create",
-                "roles:update",
-                "roles:delete",
-                "roles:assign",
-                "events:payments:view",
-                "events:payments:refund",
-            ],
-        },
-        {
-            name: "Sosialminister",
-            description:
-                "Leder av Sosialen, kan refundere arrangementsbetalinger",
-            permissions: ["events:payments:view", "events:payments:refund"],
-        },
-        {
-            name: "Teknologiminister",
-            description: "Leder av Index — full systemtilgang (root)",
-            permissions: ["root"],
-            linkedGroupSlug: "index",
-        },
-        // Øvrige undergruppeledere sitter også i HS. Vervene bærer ingen
-        // ekstra globale tilganger (HS-rollen følger av gruppemedlemskapet),
-        // men skal finnes som titler og vises i /admin/roller.
-        {
-            name: "Promoteringsminister",
-            description: "Leder av Promo",
-            permissions: [],
-        },
-        {
-            name: "Kontorminister",
-            description: "Leder av Kiosk og Kontor",
-            permissions: [],
-        },
-        {
-            name: "Næringslivsminister",
-            description: "Leder av Næringsliv og Kurs",
-            permissions: [],
-        },
-        {
-            name: "Innovasjonsminister",
-            description: "Leder av Beta",
-            permissions: [],
-            linkedGroupSlug: "beta",
-        },
-    ];
-
-    // Position names are no longer unique per group (one holder per
-    // position), so idempotency is an explicit existence check.
-    for (const position of hsPositions) {
-        const existing = await db.query.groupPosition.findFirst({
-            where: (t, { and }) =>
-                and(eq(t.groupSlug, "hs"), eq(t.name, position.name)),
-        });
-        if (existing) continue;
-
-        await db.insert(schema.groupPosition).values({
-            groupSlug: "hs",
-            name: position.name,
-            description: position.description,
-            permissions: position.permissions,
-            scope: "global",
-            linkedGroupSlug: position.linkedGroupSlug ?? null,
-        });
     }
 
     // Seed study programs (from org schema)

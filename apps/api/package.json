@@ -21,6 +21,7 @@
         "@photon/core": "workspace:*",
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
+        "@react-pdf/renderer": "^4.3.0",
         "@scalar/hono-api-reference": "^0.9.16",
         "@socotra/modelcontextprotocol-sdk": "^1.18.0",
         "@vippsmobilepay/sdk": "^2.4.2",

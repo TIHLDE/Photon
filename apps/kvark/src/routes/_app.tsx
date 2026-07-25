@@ -135,9 +135,9 @@ function AppLayout() {
                                           "Se alle bilder fra TIHLDE sine arrangementer",
                                   },
                                   {
-                                      kind: "external",
+                                      kind: "internal",
                                       label: "Søknader",
-                                      href: "https://utlegg.tihlde.org",
+                                      link: linkOptions({ to: "/soknader" }),
                                       description:
                                           "Send inn utlegg og søknader til TIHLDE",
                                   },
