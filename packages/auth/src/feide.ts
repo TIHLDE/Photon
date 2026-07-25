@@ -237,7 +237,21 @@ export const syncFeideHook: (
             throw new Error("No Feide account linked to user");
         }
 
-        const groups = await fetchValidStudyPrograms(token);
+        const { programs: groups, campus } =
+            await fetchValidStudyPrograms(token);
+
+        if (needsCampusFollowUp(groups, campus)) {
+            /**
+             * The user was let into a multi-campus programme without us being
+             * able to tell which campus they attend — see
+             * parseValidStudyPrograms for why that is allowed. Named here so
+             * the case can actually be followed up on: the pure parser has no
+             * user to point at.
+             */
+            console.warn(
+                `Could not resolve campus for user ${userId} (${session.user.username ?? "no username"}) on ${groups.map((g) => g.code).join(", ")}; allowing.`,
+            );
+        }
 
         // Add user to all valid study programs
         await ctx.db.transaction(async (tx) => {
@@ -444,12 +458,31 @@ interface StudyProgram {
 }
 
 /**
+ * Whether a login should be flagged for manual follow-up: the user was let
+ * into a programme NTNU runs on several campuses, but their Feide groups did
+ * not say which campus they attend. Exported for testing.
+ */
+export function needsCampusFollowUp(
+    programs: StudyProgram[],
+    campus: Campus | null,
+): boolean {
+    return (
+        campus === null &&
+        programs.some((p) => MULTI_CAMPUS_PROGRAM_CODES.has(p.code))
+    );
+}
+
+/**
  * Fetch all study programs of the user, that are part of TIHLDE
+ *
+ * Returns the resolved campus alongside the programmes, so the caller — which
+ * knows *who* logged in — can flag an unresolved one for follow-up.
+ *
  * @param accessToken Access token with "groups-edu" scope
  */
 async function fetchValidStudyPrograms(
     accessToken: string,
-): Promise<StudyProgram[]> {
+): Promise<{ programs: StudyProgram[]; campus: Campus | null }> {
     // NOTE: no `show_all` param, so Dataporten only returns ACTIVE
     // memberships — an empty result for TIHLDE programmes means the user is
     // not an active student. Historic access is preserved anyway because the
@@ -465,7 +498,10 @@ async function fetchValidStudyPrograms(
     }
 
     const groups = (await response.json()) as FeideGroup[];
-    return parseValidStudyPrograms(groups);
+    return {
+        programs: parseValidStudyPrograms(groups),
+        campus: resolveCampus(groups),
+    };
 }
 
 /**
@@ -568,12 +604,6 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
             campus !== TIHLDE_CAMPUS
         ) {
             return [];
-        }
-
-        if (MULTI_CAMPUS_PROGRAM_CODES.has(programCode) && campus === null) {
-            console.warn(
-                `Could not resolve campus for multi-campus programme ${programCode}; allowing.`,
-            );
         }
 
         return ALLOWED_PROGRAM_CODES.filter((p) => p === programCode).map(

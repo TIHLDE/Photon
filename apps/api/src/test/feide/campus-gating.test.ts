@@ -1,5 +1,6 @@
 import {
     campusOfCourseCode,
+    needsCampusFollowUp,
     parseValidStudyPrograms,
     resolveCampus,
 } from "@photon/auth/feide";
@@ -131,6 +132,33 @@ describe("campusOfCourseCode", () => {
         assert.equal(campusOfCourseCode("HMS0002"), null);
         assert.equal(campusOfCourseCode("PROG1001"), null);
         assert.equal(campusOfCourseCode(""), null);
+    });
+});
+
+describe("needsCampusFollowUp", () => {
+    test("flags a multi-campus programme with unresolved campus", () => {
+        assert.isTrue(
+            needsCampusFollowUp([{ code: "BIDATA", startYear: 2025 }], null),
+        );
+    });
+
+    test("does not flag a resolved campus", () => {
+        assert.isFalse(
+            needsCampusFollowUp(
+                [{ code: "BIDATA", startYear: 2025 }],
+                "trondheim",
+            ),
+        );
+    });
+
+    test("does not flag single-campus programmes", () => {
+        assert.isFalse(
+            needsCampusFollowUp([{ code: "ITBAINFO", startYear: 2025 }], null),
+        );
+    });
+
+    test("does not flag a login with no TIHLDE programmes at all", () => {
+        assert.isFalse(needsCampusFollowUp([], null));
     });
 });
 
