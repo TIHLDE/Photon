@@ -237,24 +237,39 @@ export const syncFeideHook: (
             throw new Error("No Feide account linked to user");
         }
 
-        const { programs: groups, campus } =
-            await fetchValidStudyPrograms(token);
+        const { programs, campus } = await fetchValidStudyPrograms(token);
+        const { allowed, campusRejected } = partitionByCampus(programs, campus);
 
-        if (needsCampusFollowUp(groups, campus)) {
+        if (needsCampusFollowUp(allowed, campus)) {
             /**
              * The user was let into a multi-campus programme without us being
-             * able to tell which campus they attend — see
-             * parseValidStudyPrograms for why that is allowed. Named here so
-             * the case can actually be followed up on: the pure parser has no
-             * user to point at.
+             * able to tell which campus they attend — see partitionByCampus for
+             * why that is allowed. Named here so the case can actually be
+             * followed up on: the pure parser has no user to point at.
              */
             console.warn(
-                `Could not resolve campus for user ${userId} (${session.user.username ?? "no username"}) on ${groups.map((g) => g.code).join(", ")}; allowing.`,
+                `Could not resolve campus for user ${userId} (${session.user.username ?? "no username"}) on ${allowed.map((p) => p.code).join(", ")}; allowing.`,
             );
         }
 
         // Add user to all valid study programs
         await ctx.db.transaction(async (tx) => {
+            /**
+             * Campus only decides who gets *in*. A member whose reading came
+             * out as another campus this semester — an exchange, or courses
+             * taken at another campus — keeps the programme they already
+             * belong to, so the gate can never take away access it once gave.
+             */
+            const groups = [
+                ...allowed,
+                ...(await keepExistingMemberships(
+                    tx,
+                    userId,
+                    campusRejected,
+                    session.user.username ?? null,
+                )),
+            ];
+
             for (const feideGroup of groups) {
                 const sp = await tx
                     .select({ id: studyProgram.id, slug: studyProgram.slug })
@@ -378,6 +393,48 @@ export async function syncBaselineRoles(
     }
 }
 
+/**
+ * Of the programmes campus held back, the ones the user already belongs to.
+ *
+ * Membership is the record of having been admitted once, and admission is
+ * where campus is supposed to matter. Re-reading campus every login is only
+ * useful for newcomers; for an existing member a "Gjøvik" reading means they
+ * are taking courses there this semester, not that they stopped being a
+ * TIHLDE member. Those programmes are handed back to the caller unchanged.
+ *
+ * Exported for testing.
+ */
+export async function keepExistingMemberships(
+    tx: Transaction,
+    userId: string,
+    campusRejected: StudyProgram[],
+    username: string | null,
+): Promise<StudyProgram[]> {
+    if (campusRejected.length === 0) return [];
+
+    const existing = await tx
+        .select({ code: studyProgram.feideCode })
+        .from(studyProgramMembership)
+        .innerJoin(
+            studyProgram,
+            eq(studyProgram.id, studyProgramMembership.studyProgramId),
+        )
+        .where(eq(studyProgramMembership.userId, userId));
+
+    const existingCodes = new Set(existing.map((e) => e.code));
+    const kept = campusRejected.filter((p) => existingCodes.has(p.code));
+
+    for (const p of campusRejected) {
+        console.warn(
+            existingCodes.has(p.code)
+                ? `User ${userId} (${username ?? "no username"}) reads as another campus on ${p.code} but is already a member; keeping access.`
+                : `User ${userId} (${username ?? "no username"}) rejected from ${p.code}: studies at another campus.`,
+        );
+    }
+
+    return kept;
+}
+
 /** The transaction handle `db.transaction` hands to its callback. */
 type Transaction = Parameters<
     Parameters<NodePgDatabase<DbSchema>["transaction"]>[0]
@@ -455,6 +512,45 @@ export async function syncDerivedStudyGroups(
 interface StudyProgram {
     code: ProgramCode;
     startYear: number;
+}
+
+/**
+ * Split the programmes Feide reported into the ones campus lets through and
+ * the ones it does not.
+ *
+ * NTNU runs BIDATA and BDIGSEC on several campuses under one code, so the code
+ * alone would let Gjøvik- and Ålesund-students into TIHLDE. A programme is held
+ * back only on *positive* evidence of another campus: an unresolved campus is
+ * let through on purpose, because the alternative locks out a Trondheim student
+ * whose FS course registrations have not landed yet — exactly the time of year
+ * most new members sign up.
+ *
+ * This is an entry criterion, not a recurring one. Campus is re-derived from
+ * whichever courses are active at each login, so a Trondheim student on
+ * exchange, or one taking a semester at another campus, can well read as
+ * "Gjøvik" halfway through their degree. The caller therefore only applies
+ * `campusRejected` to programmes the user is not already a member of; see
+ * {@link syncFeideHook}. "Én gang TIHLDE-medlem, alltid TIHLDE-medlem" holds
+ * here as everywhere else — losing active studies makes you alumni, not a
+ * stranger.
+ *
+ * Exported for testing.
+ */
+export function partitionByCampus(
+    programs: StudyProgram[],
+    campus: Campus | null,
+): { allowed: StudyProgram[]; campusRejected: StudyProgram[] } {
+    const rejects =
+        campus !== null &&
+        campus !== TIHLDE_CAMPUS &&
+        ((p: StudyProgram) => MULTI_CAMPUS_PROGRAM_CODES.has(p.code));
+
+    if (!rejects) return { allowed: programs, campusRejected: [] };
+
+    return {
+        allowed: programs.filter((p) => !rejects(p)),
+        campusRejected: programs.filter(rejects),
+    };
 }
 
 /**
@@ -567,9 +663,11 @@ export function resolveCampus(groups: FeideGroup[]): Campus | null {
     return tied ? null : best;
 }
 
+/**
+ * The TIHLDE study programmes Feide reports for the user, by programme code
+ * alone. Campus is a separate concern — see {@link partitionByCampus}.
+ */
 export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
-    const campus = resolveCampus(groups);
-
     return groups.flatMap((g) => {
         if (g.type !== "fc:fs:kull") return [];
         const parts = g.id.split(":"); // i.e. fc:fs:fs:kull:ntnu.no:BIDATA:2023H
@@ -585,25 +683,6 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
             throw new Error(
                 `Invalid start year parsed from Feide: ${startYear}`,
             );
-        }
-
-        /**
-         * NTNU runs BIDATA and BDIGSEC on several campuses under one code, so
-         * the code alone would let Gjøvik- and Ålesund-students into TIHLDE.
-         *
-         * Rejected only on positive evidence of another campus. An unresolved
-         * campus is let through on purpose: the alternative locks out a
-         * Trondheim student whose FS course registrations have not landed yet,
-         * at exactly the time of year most new members sign up. Should one slip
-         * through, the next login re-runs this and drops their "member" role
-         * (see syncBaselineRoles).
-         */
-        if (
-            MULTI_CAMPUS_PROGRAM_CODES.has(programCode) &&
-            campus !== null &&
-            campus !== TIHLDE_CAMPUS
-        ) {
-            return [];
         }
 
         return ALLOWED_PROGRAM_CODES.filter((p) => p === programCode).map(

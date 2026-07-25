@@ -2,6 +2,7 @@ import {
     campusOfCourseCode,
     needsCampusFollowUp,
     parseValidStudyPrograms,
+    partitionByCampus,
     resolveCampus,
 } from "@photon/auth/feide";
 import { assert, describe, test } from "vitest";
@@ -25,6 +26,13 @@ const emne = (code: string) => ({
     displayName: code,
 });
 
+/**
+ * The gate as the login hook composes it: parse the programmes, read the
+ * campus off the courses, then split on campus.
+ */
+const gate = (groups: { id: string; type: string; displayName: string }[]) =>
+    partitionByCampus(parseValidStudyPrograms(groups), resolveCampus(groups));
+
 /** The courses a first-semester Dataingeniør student has, per campus. */
 const firstSemester = {
     trondheim: ["INGT1002", "IMAT1002", "IDATT1003", "IDATT1004"],
@@ -34,83 +42,86 @@ const firstSemester = {
 
 describe("campus gating of multi-campus study programmes", () => {
     test("accepts a BIDATA student in Trondheim", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed } = gate([
             kull("BIDATA", "2025H"),
             ...firstSemester.trondheim.map(emne),
         ]);
 
-        assert.equal(programs.length, 1);
-        assert.equal(programs[0]?.code, "BIDATA");
+        assert.equal(allowed.length, 1);
+        assert.equal(allowed[0]?.code, "BIDATA");
     });
 
     test("rejects a BIDATA student in Gjøvik", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed, campusRejected } = gate([
             kull("BIDATA", "2025H"),
             ...firstSemester.gjovik.map(emne),
         ]);
 
-        assert.deepEqual(programs, []);
+        assert.deepEqual(allowed, []);
+        assert.equal(campusRejected[0]?.code, "BIDATA");
     });
 
     test("rejects a BIDATA student in Ålesund", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed, campusRejected } = gate([
             kull("BIDATA", "2025H"),
             ...firstSemester.alesund.map(emne),
         ]);
 
-        assert.deepEqual(programs, []);
+        assert.deepEqual(allowed, []);
+        assert.equal(campusRejected[0]?.code, "BIDATA");
     });
 
     test("rejects a BDIGSEC student in Gjøvik", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed, campusRejected } = gate([
             kull("BDIGSEC", "2025H"),
             emne("DCSG1001"),
             emne("IMAG1002"),
         ]);
 
-        assert.deepEqual(programs, []);
+        assert.deepEqual(allowed, []);
+        assert.equal(campusRejected[0]?.code, "BDIGSEC");
     });
 
     test("accepts a BDIGSEC student in Trondheim", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed } = gate([
             kull("BDIGSEC", "2025H"),
             emne("DCST1001"),
             emne("IMAT1002"),
         ]);
 
-        assert.equal(programs[0]?.code, "BDIGSEC");
+        assert.equal(allowed[0]?.code, "BDIGSEC");
     });
 
     test("a single course at another campus does not move the student", () => {
-        const programs = parseValidStudyPrograms([
+        const { allowed } = gate([
             kull("BIDATA", "2025H"),
             ...firstSemester.trondheim.map(emne),
             emne("IDATG2001"),
         ]);
 
-        assert.equal(programs[0]?.code, "BIDATA");
+        assert.equal(allowed[0]?.code, "BIDATA");
     });
 
     test("allows a student with no campus-marked courses yet", () => {
         // A brand new student whose FS course registrations have not landed.
-        const programs = parseValidStudyPrograms([
+        const { allowed } = gate([
             kull("BIDATA", "2025H"),
             emne("EXPH0600"),
             emne("HMS0002"),
         ]);
 
-        assert.equal(programs[0]?.code, "BIDATA");
+        assert.equal(allowed[0]?.code, "BIDATA");
     });
 
     test("leaves single-campus programmes ungated", () => {
         // ITBAITBEDR only exists in Trondheim, so stray course codes from
         // elsewhere must not be able to lock the student out.
-        const programs = parseValidStudyPrograms([
+        const { allowed } = gate([
             kull("ITBAITBEDR", "2025H"),
             emne("IDATG1003"),
         ]);
 
-        assert.equal(programs[0]?.code, "ITBAITBEDR");
+        assert.equal(allowed[0]?.code, "ITBAITBEDR");
     });
 });
 
