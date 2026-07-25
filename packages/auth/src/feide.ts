@@ -51,6 +51,58 @@ const ALLOWED_PROGRAM_CODES = [
 type ProgramCode = (typeof ALLOWED_PROGRAM_CODES)[number];
 
 /**
+ * The NTNU campuses relevant to TIHLDE's programmes.
+ */
+type Campus = "trondheim" | "gjovik" | "alesund";
+
+/** TIHLDE only covers students in Trondheim. */
+const TIHLDE_CAMPUS: Campus = "trondheim";
+
+/**
+ * Programmes NTNU runs on more than one campus under a *single* FS programme
+ * code, and which therefore need a campus check on top of the code.
+ *
+ * BIDATA (Dataingeniør) runs in Trondheim, Gjøvik and Ålesund; BDIGSEC
+ * (Digital infrastruktur og cybersikkerhet) in Trondheim and Gjøvik. The
+ * remaining codes in ALLOWED_PROGRAM_CODES are Trondheim-only, so a campus
+ * check would only add a way for them to break.
+ */
+const MULTI_CAMPUS_PROGRAM_CODES: ReadonlySet<string> = new Set([
+    "BIDATA",
+    "BDIGSEC",
+]);
+
+/**
+ * Course-code stems whose next letter is NTNU's campus marker.
+ *
+ * NTNU gives the same course a separate code per campus, with the campus as
+ * the last letter of the alphabetic stem: Programmering 1 is IDATT1003 in
+ * Trondheim, IDATG1003 in Gjøvik and IDATA1003 in Ålesund. The same holds for
+ * ING (fellesemner for ingeniørfag), IMA (matematikk), IST (statistikk), IFY
+ * (fysikk), IELE (elektro) and DCS (cybersikkerhet) — all verified to exist in
+ * all three (DCS: two) variants.
+ *
+ * Deliberately a fixed list, not a regex over any prefix: codes such as
+ * TDT4127, EXPH0600, PROG1001 and HMS0002 end in letters that would otherwise
+ * be misread as a campus.
+ */
+const CAMPUS_COURSE_STEMS = [
+    "IDAT",
+    "ING",
+    "IMA",
+    "IST",
+    "IFY",
+    "IELE",
+    "DCS",
+] as const;
+
+const CAMPUS_BY_LETTER: Record<string, Campus> = {
+    T: "trondheim",
+    G: "gjovik",
+    A: "alesund",
+};
+
+/**
  * OpenID Profile returned by Dataporten/Feide
  *
  * Some fields not available based on membership type.
@@ -416,7 +468,72 @@ async function fetchValidStudyPrograms(
     return parseValidStudyPrograms(groups);
 }
 
+/**
+ * The campus a course code belongs to, or null if the code does not carry a
+ * campus marker. Exported for testing.
+ */
+export function campusOfCourseCode(courseCode: string): Campus | null {
+    const match = /^([A-Z]+)\d/.exec(courseCode);
+    const stem = match?.[1];
+    if (!stem) return null;
+
+    const family = stem.slice(0, -1);
+    const letter = stem.slice(-1);
+
+    if (!CAMPUS_COURSE_STEMS.some((s) => s === family)) return null;
+    return CAMPUS_BY_LETTER[letter] ?? null;
+}
+
+/**
+ * Work out which campus a student attends from their Feide groups.
+ *
+ * Feide has no campus field: neither the `kull` nor the `klasse` group carries
+ * one, and a Gjøvik student on BIDATA gets the exact same
+ * `fc:fs:fs:kull:ntnu.no:BIDATA:2025H` id as a Trondheim student. The course
+ * groups do carry it, because NTNU codes each course per campus — see
+ * {@link CAMPUS_COURSE_STEMS}. A first-semester student already has such
+ * courses (INGx1002, IMAx1002, IDATx1003), so this works from day one of the
+ * programme.
+ *
+ * Majority vote rather than first hit: a single course taken at another campus
+ * should not move the student. A tie, or no campus-marked courses at all,
+ * yields null — see {@link parseValidStudyPrograms} for what that means.
+ *
+ * Exported for testing.
+ */
+export function resolveCampus(groups: FeideGroup[]): Campus | null {
+    const votes = new Map<Campus, number>();
+
+    for (const g of groups) {
+        if (g.type !== "fc:fs:emne") continue;
+        // i.e. fc:fs:fs:emne:ntnu.no:IDATT2003:1
+        const courseCode = g.id.split(":")[5];
+        if (!courseCode) continue;
+
+        const campus = campusOfCourseCode(courseCode);
+        if (campus) votes.set(campus, (votes.get(campus) ?? 0) + 1);
+    }
+
+    let best: Campus | null = null;
+    let bestCount = 0;
+    let tied = false;
+
+    for (const [campus, count] of votes) {
+        if (count > bestCount) {
+            best = campus;
+            bestCount = count;
+            tied = false;
+        } else if (count === bestCount) {
+            tied = true;
+        }
+    }
+
+    return tied ? null : best;
+}
+
 export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
+    const campus = resolveCampus(groups);
+
     return groups.flatMap((g) => {
         if (g.type !== "fc:fs:kull") return [];
         const parts = g.id.split(":"); // i.e. fc:fs:fs:kull:ntnu.no:BIDATA:2023H
@@ -431,6 +548,31 @@ export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
         if (Number.isNaN(startYear) || startYear < 2000 || startYear > 3000) {
             throw new Error(
                 `Invalid start year parsed from Feide: ${startYear}`,
+            );
+        }
+
+        /**
+         * NTNU runs BIDATA and BDIGSEC on several campuses under one code, so
+         * the code alone would let Gjøvik- and Ålesund-students into TIHLDE.
+         *
+         * Rejected only on positive evidence of another campus. An unresolved
+         * campus is let through on purpose: the alternative locks out a
+         * Trondheim student whose FS course registrations have not landed yet,
+         * at exactly the time of year most new members sign up. Should one slip
+         * through, the next login re-runs this and drops their "member" role
+         * (see syncBaselineRoles).
+         */
+        if (
+            MULTI_CAMPUS_PROGRAM_CODES.has(programCode) &&
+            campus !== null &&
+            campus !== TIHLDE_CAMPUS
+        ) {
+            return [];
+        }
+
+        if (MULTI_CAMPUS_PROGRAM_CODES.has(programCode) && campus === null) {
+            console.warn(
+                `Could not resolve campus for multi-campus programme ${programCode}; allowing.`,
             );
         }
 
