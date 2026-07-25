@@ -162,7 +162,10 @@ function RouteComponent() {
                 onAddLink={() => setBioOpen(true)}
                 actions={
                     <>
-                        <MembershipQrDialog name={user.name} />
+                        <MembershipQrDialog
+                            name={user.name}
+                            userId={session?.user.id}
+                        />
                         <Button onClick={() => setBioOpen(true)}>
                             <Pencil />
                             Rediger bio
