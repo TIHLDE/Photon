@@ -36,6 +36,13 @@ export const studyProgram = pgTable("study_program", {
     ...timestamps,
 });
 
+/**
+ * The NTNU campuses TIHLDE's study programmes run on. TIHLDE covers Trondheim.
+ */
+export const campus = pgEnum("org_campus", ["trondheim", "gjovik", "alesund"]);
+
+export type Campus = (typeof campus)["enumValues"][number];
+
 export const studyProgramMembership = pgTable(
     "study_program_membership",
     {
@@ -46,6 +53,21 @@ export const studyProgramMembership = pgTable(
             .notNull()
             .references(() => studyProgram.id, { onDelete: "cascade" }),
         startYear: integer("start_year").notNull(),
+        /**
+         * The campus we have positively confirmed the member studies at, from
+         * their Feide course codes. NTNU runs BIDATA and BDIGSEC on several
+         * campuses under one programme code, so the code alone does not say
+         * where someone studies.
+         *
+         * Write-once, and deliberately not "where are they now": a member on
+         * exchange, or taking a semester at another campus, reads as something
+         * else that semester without ever having stopped being a Trondheim
+         * student. Once set to "trondheim" this is what earns them permanent
+         * access to the programme. NULL means we have never had a clear
+         * reading — everyone migrated from Lepton starts out that way, and
+         * fills in on their next login with campus-marked courses.
+         */
+        confirmedCampus: campus("confirmed_campus"),
         ...timestamps,
     },
     (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],

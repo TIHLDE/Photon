@@ -1,6 +1,6 @@
 {
-  "id": "66c6fc29-7bbe-4b99-bc93-b12c4ab97ff8",
-  "prevId": "a5f4f99c-f073-4e0b-9c72-7b5d8857ada4",
+  "id": "bc96185d-2800-5d2c-a21e-0561d5ed6ca9",
+  "prevId": "66c6fc29-7bbe-4b99-bc93-b12c4ab97ff8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -104,6 +104,510 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.application": {
+      "name": "application",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "type": {
+          "name": "type",
+          "type": "application_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "application_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'new'"
+        },
+        "submitted_by_id": {
+          "name": "submitted_by_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contact_name": {
+          "name": "contact_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_email": {
+          "name": "contact_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pdf_asset_key": {
+          "name": "pdf_asset_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "internal_comment": {
+          "name": "internal_comment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handled_by_id": {
+          "name": "handled_by_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "handled_at": {
+          "name": "handled_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "application_submitted_by_id_created_at_index": {
+          "name": "application_submitted_by_id_created_at_index",
+          "columns": [
+            {
+              "expression": "submitted_by_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "application_type_status_created_at_index": {
+          "name": "application_type_status_created_at_index",
+          "columns": [
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "application_submitted_by_id_auth_user_id_fk": {
+          "name": "application_submitted_by_id_auth_user_id_fk",
+          "tableFrom": "application",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "submitted_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "application_handled_by_id_auth_user_id_fk": {
+          "name": "application_handled_by_id_auth_user_id_fk",
+          "tableFrom": "application",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "handled_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.application_attachment": {
+      "name": "application_attachment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_key": {
+          "name": "asset_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "application_attachment_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "application_attachment_application_id_index": {
+          "name": "application_attachment_application_id_index",
+          "columns": [
+            {
+              "expression": "application_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "application_attachment_application_id_application_id_fk": {
+          "name": "application_attachment_application_id_application_id_fk",
+          "tableFrom": "application_attachment",
+          "tableTo": "application",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.application_expense": {
+      "name": "application_expense",
+      "schema": "",
+      "columns": {
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cc_email": {
+          "name": "cc_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount_nok": {
+          "name": "amount_nok",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expense_date": {
+          "name": "expense_date",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_slug": {
+          "name": "group_slug",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "budget_type": {
+          "name": "budget_type",
+          "type": "application_budget_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_number": {
+          "name": "account_number",
+          "type": "varchar(13)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "application_expense_application_id_application_id_fk": {
+          "name": "application_expense_application_id_application_id_fk",
+          "tableFrom": "application_expense",
+          "tableTo": "application",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "application_expense_group_slug_org_group_slug_fk": {
+          "name": "application_expense_group_slug_org_group_slug_fk",
+          "tableFrom": "application_expense",
+          "tableTo": "org_group",
+          "columnsFrom": [
+            "group_slug"
+          ],
+          "columnsTo": [
+            "slug"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.application_hs_case": {
+      "name": "application_hs_case",
+      "schema": "",
+      "columns": {
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "case_name": {
+          "name": "case_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "case_type": {
+          "name": "case_type",
+          "type": "application_case_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "background": {
+          "name": "background",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assessment": {
+          "name": "assessment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recommendation": {
+          "name": "recommendation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "application_hs_case_application_id_application_id_fk": {
+          "name": "application_hs_case_application_id_application_id_fk",
+          "tableFrom": "application_hs_case",
+          "tableTo": "application",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.application_support": {
+      "name": "application_support",
+      "schema": "",
+      "columns": {
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "group_slug": {
+          "name": "group_slug",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_description": {
+          "name": "event_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "justification": {
+          "name": "justification",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_amount_nok": {
+          "name": "total_amount_nok",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "budget_link": {
+          "name": "budget_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "application_support_application_id_application_id_fk": {
+          "name": "application_support_application_id_application_id_fk",
+          "tableFrom": "application_support",
+          "tableTo": "application",
+          "columnsFrom": [
+            "application_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "application_support_group_slug_org_group_slug_fk": {
+          "name": "application_support_group_slug_org_group_slug_fk",
+          "tableFrom": "application_support",
+          "tableTo": "org_group",
+          "columnsFrom": [
+            "group_slug"
+          ],
+          "columnsTo": [
+            "slug"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1461,6 +1965,31 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.event_category": {
+      "name": "event_category",
+      "schema": "",
+      "columns": {
+        "slug": {
+          "name": "slug",
+          "type": "varchar(64)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.event_event": {
       "name": "event_event",
       "schema": "",
@@ -1748,31 +2277,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.event_category": {
-      "name": "event_category",
-      "schema": "",
-      "columns": {
-        "slug": {
-          "name": "slug",
-          "type": "varchar(64)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "varchar(128)",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2440,59 +2944,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.form_form": {
-      "name": "form_form",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "title": {
-          "name": "title",
-          "type": "varchar(400)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_template": {
-          "name": "is_template",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.form_answer": {
       "name": "form_answer",
       "schema": "",
@@ -2808,6 +3259,59 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.form_form": {
+      "name": "form_form",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(400)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_template": {
+          "name": "is_template",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.form_group_form": {
       "name": "form_group_form",
       "schema": "",
@@ -3031,6 +3535,825 @@
         "form_submission_user_id_auth_user_id_fk": {
           "name": "form_submission_user_id_auth_user_id_fk",
           "tableFrom": "form_submission",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.job_job_post": {
+      "name": "job_job_post",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingress": {
+          "name": "ingress",
+          "type": "varchar(800)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "company": {
+          "name": "company",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_continuously_hiring": {
+          "name": "is_continuously_hiring",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "job_type": {
+          "name": "job_type",
+          "type": "job_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'other'"
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_start": {
+          "name": "class_start",
+          "type": "user_class",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'first'"
+        },
+        "class_end": {
+          "name": "class_end",
+          "type": "user_class",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'fifth'"
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_alt": {
+          "name": "image_alt",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_job_post_created_by_user_id_auth_user_id_fk": {
+          "name": "job_job_post_created_by_user_id_auth_user_id_fk",
+          "tableFrom": "job_job_post",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.motetid_event": {
+      "name": "motetid_event",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_id": {
+          "name": "created_by_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dates": {
+          "name": "dates",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_duration": {
+          "name": "slot_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "deadline": {
+          "name": "deadline",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "motetid_event_created_by_id_index": {
+          "name": "motetid_event_created_by_id_index",
+          "columns": [
+            {
+              "expression": "created_by_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "motetid_event_created_by_id_auth_user_id_fk": {
+          "name": "motetid_event_created_by_id_auth_user_id_fk",
+          "tableFrom": "motetid_event",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "created_by_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "motetid_event_slug_unique": {
+          "name": "motetid_event_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.motetid_google_credential": {
+      "name": "motetid_google_credential",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "motetid_google_credential_user_id_auth_user_id_fk": {
+          "name": "motetid_google_credential_user_id_auth_user_id_fk",
+          "tableFrom": "motetid_google_credential",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.motetid_participant": {
+      "name": "motetid_participant",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "motetid_participant_event_id_user_id_index": {
+          "name": "motetid_participant_event_id_user_id_index",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "motetid_participant_user_id_index": {
+          "name": "motetid_participant_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "motetid_participant_event_id_motetid_event_id_fk": {
+          "name": "motetid_participant_event_id_motetid_event_id_fk",
+          "tableFrom": "motetid_participant",
+          "tableTo": "motetid_event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "motetid_participant_user_id_auth_user_id_fk": {
+          "name": "motetid_participant_user_id_auth_user_id_fk",
+          "tableFrom": "motetid_participant",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.motetid_slot": {
+      "name": "motetid_slot",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time": {
+          "name": "time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "motetid_slot_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "motetid_slot_participant_id_date_time_index": {
+          "name": "motetid_slot_participant_id_date_time_index",
+          "columns": [
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "motetid_slot_event_id_date_time_index": {
+          "name": "motetid_slot_event_id_date_time_index",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "motetid_slot_participant_id_motetid_participant_id_fk": {
+          "name": "motetid_slot_participant_id_motetid_participant_id_fk",
+          "tableFrom": "motetid_slot",
+          "tableTo": "motetid_participant",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "motetid_slot_event_id_motetid_event_id_fk": {
+          "name": "motetid_slot_event_id_motetid_event_id_fk",
+          "tableFrom": "motetid_slot",
+          "tableTo": "motetid_event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.news_news": {
+      "name": "news_news",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "header": {
+          "name": "header",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_alt": {
+          "name": "image_alt",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "emojis_allowed": {
+          "name": "emojis_allowed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "news_news_created_by_user_id_auth_user_id_fk": {
+          "name": "news_news_created_by_user_id_auth_user_id_fk",
+          "tableFrom": "news_news",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.news_reaction": {
+      "name": "news_reaction",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "news_id": {
+          "name": "news_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "news_reaction_user_id_auth_user_id_fk": {
+          "name": "news_reaction_user_id_auth_user_id_fk",
+          "tableFrom": "news_reaction",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "news_reaction_news_id_news_news_id_fk": {
+          "name": "news_reaction_news_id_news_news_id_fk",
+          "tableFrom": "news_reaction",
+          "tableTo": "news_news",
+          "columnsFrom": [
+            "news_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "news_reaction_user_id_news_id_pk": {
+          "name": "news_reaction_user_id_news_id_pk",
+          "columns": [
+            "user_id",
+            "news_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notification_notification": {
+      "name": "notification_notification",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link": {
+          "name": "link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "notification_notification_user_id_auth_user_id_fk": {
+          "name": "notification_notification_user_id_auth_user_id_fk",
+          "tableFrom": "notification_notification",
           "tableTo": "auth_user",
           "columnsFrom": [
             "user_id"
@@ -4087,6 +5410,72 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.qrcode_qr_code": {
+      "name": "qrcode_qr_code",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "qrcode_qr_code_user_id_auth_user_id_fk": {
+          "name": "qrcode_qr_code_user_id_auth_user_id_fk",
+          "tableFrom": "qrcode_qr_code",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.rbac_role": {
       "name": "rbac_role",
       "schema": "",
@@ -4315,111 +5704,19 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.notification_notification": {
-      "name": "notification_notification",
+    "public.toddel_issue": {
+      "name": "toddel_issue",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
+        "edition": {
+          "name": "edition",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "title": {
           "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "link": {
-          "name": "link",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_read": {
-          "name": "is_read",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "notification_notification_user_id_auth_user_id_fk": {
-          "name": "notification_notification_user_id_auth_user_id_fk",
-          "tableFrom": "notification_notification",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.news_news": {
-      "name": "news_news",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "title": {
-          "name": "title",
           "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "header": {
-          "name": "header",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -4429,24 +5726,17 @@
           "primaryKey": false,
           "notNull": false
         },
-        "image_alt": {
-          "name": "image_alt",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by_user_id": {
-          "name": "created_by_user_id",
+        "pdf_url": {
+          "name": "pdf_url",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "emojis_allowed": {
-          "name": "emojis_allowed",
-          "type": "boolean",
+        "published_at": {
+          "name": "published_at",
+          "type": "date",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -4464,241 +5754,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "news_news_created_by_user_id_auth_user_id_fk": {
-          "name": "news_news_created_by_user_id_auth_user_id_fk",
-          "tableFrom": "news_news",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.news_reaction": {
-      "name": "news_reaction",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "news_id": {
-          "name": "news_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "emoji": {
-          "name": "emoji",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "news_reaction_user_id_auth_user_id_fk": {
-          "name": "news_reaction_user_id_auth_user_id_fk",
-          "tableFrom": "news_reaction",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "news_reaction_news_id_news_news_id_fk": {
-          "name": "news_reaction_news_id_news_news_id_fk",
-          "tableFrom": "news_reaction",
-          "tableTo": "news_news",
-          "columnsFrom": [
-            "news_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "news_reaction_user_id_news_id_pk": {
-          "name": "news_reaction_user_id_news_id_pk",
-          "columns": [
-            "user_id",
-            "news_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.job_job_post": {
-      "name": "job_job_post",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "title": {
-          "name": "title",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ingress": {
-          "name": "ingress",
-          "type": "varchar(800)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "company": {
-          "name": "company",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "location": {
-          "name": "location",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "deadline": {
-          "name": "deadline",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_continuously_hiring": {
-          "name": "is_continuously_hiring",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "job_type": {
-          "name": "job_type",
-          "type": "job_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'other'"
-        },
-        "email": {
-          "name": "email",
-          "type": "varchar(320)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "link": {
-          "name": "link",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "class_start": {
-          "name": "class_start",
-          "type": "user_class",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'first'"
-        },
-        "class_end": {
-          "name": "class_end",
-          "type": "user_class",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'fifth'"
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "image_alt": {
-          "name": "image_alt",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by_user_id": {
-          "name": "created_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "job_job_post_created_by_user_id_auth_user_id_fk": {
-          "name": "job_job_post_created_by_user_id_auth_user_id_fk",
-          "tableFrom": "job_job_post",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -4731,80 +5787,6 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.user_user_setting_allergy": {
-      "name": "user_user_setting_allergy",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "allergy_slug": {
-          "name": "allergy_slug",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "user_user_setting_allergy_user_id_user_settings_user_id_fk": {
-          "name": "user_user_setting_allergy_user_id_user_settings_user_id_fk",
-          "tableFrom": "user_user_setting_allergy",
-          "tableTo": "user_settings",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk": {
-          "name": "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
-          "tableFrom": "user_user_setting_allergy",
-          "tableTo": "user_allergy",
-          "columnsFrom": [
-            "allergy_slug"
-          ],
-          "columnsTo": [
-            "slug"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "user_user_setting_allergy_user_id_allergy_slug_pk": {
-          "name": "user_user_setting_allergy_user_id_allergy_slug_pk",
-          "columns": [
-            "user_id",
-            "allergy_slug"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -4914,92 +5896,22 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.toddel_issue": {
-      "name": "toddel_issue",
+    "public.user_user_setting_allergy": {
+      "name": "user_user_setting_allergy",
       "schema": "",
       "columns": {
-        "edition": {
-          "name": "edition",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pdf_url": {
-          "name": "pdf_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "published_at": {
-          "name": "published_at",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.qrcode_qr_code": {
-      "name": "qrcode_qr_code",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "user_id": {
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
+        "allergy_slug": {
+          "name": "allergy_slug",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -5017,450 +5929,42 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "qrcode_qr_code_user_id_auth_user_id_fk": {
-          "name": "qrcode_qr_code_user_id_auth_user_id_fk",
-          "tableFrom": "qrcode_qr_code",
-          "tableTo": "auth_user",
+        "user_user_setting_allergy_user_id_user_settings_user_id_fk": {
+          "name": "user_user_setting_allergy_user_id_user_settings_user_id_fk",
+          "tableFrom": "user_user_setting_allergy",
+          "tableTo": "user_settings",
           "columnsFrom": [
             "user_id"
           ],
           "columnsTo": [
-            "id"
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk": {
+          "name": "user_user_setting_allergy_allergy_slug_user_allergy_slug_fk",
+          "tableFrom": "user_user_setting_allergy",
+          "tableTo": "user_allergy",
+          "columnsFrom": [
+            "allergy_slug"
+          ],
+          "columnsTo": [
+            "slug"
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.motetid_event": {
-      "name": "motetid_event",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "slug": {
-          "name": "slug",
-          "type": "varchar(12)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by_id": {
-          "name": "created_by_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "dates": {
-          "name": "dates",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "start_time": {
-          "name": "start_time",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "end_time": {
-          "name": "end_time",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "slot_duration": {
-          "name": "slot_duration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 30
-        },
-        "deadline": {
-          "name": "deadline",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "motetid_event_created_by_id_index": {
-          "name": "motetid_event_created_by_id_index",
+      "compositePrimaryKeys": {
+        "user_user_setting_allergy_user_id_allergy_slug_pk": {
+          "name": "user_user_setting_allergy_user_id_allergy_slug_pk",
           "columns": [
-            {
-              "expression": "created_by_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "motetid_event_created_by_id_auth_user_id_fk": {
-          "name": "motetid_event_created_by_id_auth_user_id_fk",
-          "tableFrom": "motetid_event",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "created_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "motetid_event_slug_unique": {
-          "name": "motetid_event_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
+            "user_id",
+            "allergy_slug"
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.motetid_google_credential": {
-      "name": "motetid_google_credential",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "access_token": {
-          "name": "access_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "refresh_token": {
-          "name": "refresh_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "motetid_google_credential_user_id_auth_user_id_fk": {
-          "name": "motetid_google_credential_user_id_auth_user_id_fk",
-          "tableFrom": "motetid_google_credential",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.motetid_participant": {
-      "name": "motetid_participant",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "motetid_participant_event_id_user_id_index": {
-          "name": "motetid_participant_event_id_user_id_index",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "motetid_participant_user_id_index": {
-          "name": "motetid_participant_user_id_index",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "motetid_participant_event_id_motetid_event_id_fk": {
-          "name": "motetid_participant_event_id_motetid_event_id_fk",
-          "tableFrom": "motetid_participant",
-          "tableTo": "motetid_event",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "motetid_participant_user_id_auth_user_id_fk": {
-          "name": "motetid_participant_user_id_auth_user_id_fk",
-          "tableFrom": "motetid_participant",
-          "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.motetid_slot": {
-      "name": "motetid_slot",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "participant_id": {
-          "name": "participant_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "date": {
-          "name": "date",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "time": {
-          "name": "time",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "motetid_slot_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "motetid_slot_participant_id_date_time_index": {
-          "name": "motetid_slot_participant_id_date_time_index",
-          "columns": [
-            {
-              "expression": "participant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "time",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "motetid_slot_event_id_date_time_index": {
-          "name": "motetid_slot_event_id_date_time_index",
-          "columns": [
-            {
-              "expression": "event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "time",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "motetid_slot_participant_id_motetid_participant_id_fk": {
-          "name": "motetid_slot_participant_id_motetid_participant_id_fk",
-          "tableFrom": "motetid_slot",
-          "tableTo": "motetid_participant",
-          "columnsFrom": [
-            "participant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "motetid_slot_event_id_motetid_event_id_fk": {
-          "name": "motetid_slot_event_id_motetid_event_id_fk",
-          "tableFrom": "motetid_slot",
-          "tableTo": "motetid_event",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -5468,6 +5972,54 @@
     }
   },
   "enums": {
+    "public.application_attachment_kind": {
+      "name": "application_attachment_kind",
+      "schema": "public",
+      "values": [
+        "receipt",
+        "budget",
+        "attachment"
+      ]
+    },
+    "public.application_budget_type": {
+      "name": "application_budget_type",
+      "schema": "public",
+      "values": [
+        "social_budget",
+        "group_budget",
+        "approved_hs_application",
+        "approved_idkom_application"
+      ]
+    },
+    "public.application_case_type": {
+      "name": "application_case_type",
+      "schema": "public",
+      "values": [
+        "discussion",
+        "decision",
+        "orientation"
+      ]
+    },
+    "public.application_status": {
+      "name": "application_status",
+      "schema": "public",
+      "values": [
+        "new",
+        "in_progress",
+        "approved",
+        "rejected"
+      ]
+    },
+    "public.application_type": {
+      "name": "application_type",
+      "schema": "public",
+      "values": [
+        "expense",
+        "support",
+        "sports_support",
+        "hs_case"
+      ]
+    },
     "public.asset_status": {
       "name": "asset_status",
       "schema": "public",
@@ -5482,14 +6034,6 @@
       "values": [
         "public",
         "private"
-      ]
-    },
-    "public.event_visibility": {
-      "name": "event_visibility",
-      "schema": "public",
-      "values": [
-        "public",
-        "members"
       ]
     },
     "public.event_payment_status": {
@@ -5514,6 +6058,14 @@
         "pending"
       ]
     },
+    "public.event_visibility": {
+      "name": "event_visibility",
+      "schema": "public",
+      "values": [
+        "public",
+        "members"
+      ]
+    },
     "public.form_event_form_type": {
       "name": "form_event_form_type",
       "schema": "public",
@@ -5529,6 +6081,24 @@
         "text_answer",
         "multiple_select",
         "single_select"
+      ]
+    },
+    "public.job_type": {
+      "name": "job_type",
+      "schema": "public",
+      "values": [
+        "full_time",
+        "part_time",
+        "summer_job",
+        "other"
+      ]
+    },
+    "public.motetid_slot_status": {
+      "name": "motetid_slot_status",
+      "schema": "public",
+      "values": [
+        "AVAILABLE",
+        "IF_NEEDED"
       ]
     },
     "public.org_campus": {
@@ -5597,16 +6167,6 @@
         "master"
       ]
     },
-    "public.job_type": {
-      "name": "job_type",
-      "schema": "public",
-      "values": [
-        "full_time",
-        "part_time",
-        "summer_job",
-        "other"
-      ]
-    },
     "public.user_class": {
       "name": "user_class",
       "schema": "public",
@@ -5626,14 +6186,6 @@
         "male",
         "female",
         "other"
-      ]
-    },
-    "public.motetid_slot_status": {
-      "name": "motetid_slot_status",
-      "schema": "public",
-      "values": [
-        "AVAILABLE",
-        "IF_NEEDED"
       ]
     }
   },

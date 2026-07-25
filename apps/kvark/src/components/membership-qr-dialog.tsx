@@ -6,18 +6,24 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
+import { QRCode } from "@tihlde/ui/ui/qr-code";
 import { QrCode } from "lucide-react";
 
 type MembershipQrDialogProps = {
     name: string;
+    /**
+     * Bruker-id-en som skannes ved innsjekk på arrangementer. Uten den finnes
+     * det ikke noe gyldig medlemsbevis, så knappen deaktiveres.
+     */
+    userId?: string;
 };
 
-export function MembershipQrDialog({ name }: MembershipQrDialogProps) {
+export function MembershipQrDialog({ name, userId }: MembershipQrDialogProps) {
     return (
         <Dialog>
             <DialogTrigger
                 render={
-                    <Button variant="outline">
+                    <Button variant="outline" disabled={!userId}>
                         <QrCode />
                         Medlemsbevis
                     </Button>
@@ -28,10 +34,10 @@ export function MembershipQrDialog({ name }: MembershipQrDialogProps) {
                     <DialogTitle>Medlemsbevis</DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col items-center gap-4">
+                    {userId ? (
+                        <QRCode className="w-full max-w-xs" value={userId} />
+                    ) : null}
                     <p className="text-base font-medium">{name}</p>
-                    <div className="flex aspect-square w-full max-w-xs items-center justify-center rounded-md bg-muted">
-                        <QrCode className="size-32 text-muted-foreground" />
-                    </div>
                 </div>
             </DialogContent>
         </Dialog>
