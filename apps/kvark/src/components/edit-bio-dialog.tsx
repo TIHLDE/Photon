@@ -35,10 +35,29 @@ type EditBioValues = z.infer<typeof editBioSchema>;
 type EditBioDialogProps = {
     defaultValues?: Partial<EditBioValues>;
     onSubmit?: (values: EditBioValues) => void | Promise<void>;
+    /**
+     * Styrt åpen-tilstand. Oppgis denne, skjules den innebygde
+     * «Rediger bio»-knappen og kalleren bestemmer når dialogen vises — slik
+     * kan flere knapper (f.eks. «Legg til lenke») åpne samme dialog.
+     */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 };
 
-export function EditBioDialog({ defaultValues, onSubmit }: EditBioDialogProps) {
-    const [open, setOpen] = useState(false);
+export function EditBioDialog({
+    defaultValues,
+    onSubmit,
+    open: controlledOpen,
+    onOpenChange,
+}: EditBioDialogProps) {
+    const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+    function setOpen(next: boolean) {
+        if (!isControlled) setUncontrolledOpen(next);
+        onOpenChange?.(next);
+    }
 
     const form = useForm({
         defaultValues: {
@@ -55,14 +74,16 @@ export function EditBioDialog({ defaultValues, onSubmit }: EditBioDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger
-                render={
-                    <Button>
-                        <Pencil />
-                        Rediger bio
-                    </Button>
-                }
-            />
+            {isControlled ? null : (
+                <DialogTrigger
+                    render={
+                        <Button>
+                            <Pencil />
+                            Rediger bio
+                        </Button>
+                    }
+                />
+            )}
             <DialogContent className="max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Rediger bio</DialogTitle>
