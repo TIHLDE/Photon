@@ -204,6 +204,13 @@
       "when": 1784894055099,
       "tag": "0028_public_zemo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1784979134317,
+      "tag": "0029_perpetual_firestar",
+      "breakpoints": true
     }
   ]
 }

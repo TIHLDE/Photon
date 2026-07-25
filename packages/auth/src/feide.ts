@@ -6,9 +6,10 @@ import type {
     OAuth2UserInfo,
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
+import type { Campus } from "@photon/db/schema";
 import {
     account,
     group,
@@ -49,11 +50,6 @@ const ALLOWED_PROGRAM_CODES = [
  * Valid TIHLDE program codes
  */
 type ProgramCode = (typeof ALLOWED_PROGRAM_CODES)[number];
-
-/**
- * The NTNU campuses relevant to TIHLDE's programmes.
- */
-type Campus = "trondheim" | "gjovik" | "alesund";
 
 /** TIHLDE only covers students in Trondheim. */
 const TIHLDE_CAMPUS: Campus = "trondheim";
@@ -301,8 +297,11 @@ export const syncFeideHook: (
                         userId,
                         studyProgramId,
                         startYear: feideGroup.startYear,
+                        confirmedCampus: campus,
                     })
                     .onConflictDoNothing();
+
+                await confirmCampus(tx, userId, studyProgramId, campus);
 
                 await syncDerivedStudyGroups(
                     tx,
@@ -394,13 +393,49 @@ export async function syncBaselineRoles(
 }
 
 /**
- * Of the programmes campus held back, the ones the user already belongs to.
+ * Record the campus a membership was seen at, if we do not already know one.
  *
- * Membership is the record of having been admitted once, and admission is
- * where campus is supposed to matter. Re-reading campus every login is only
- * useful for newcomers; for an existing member a "Gjøvik" reading means they
- * are taking courses there this semester, not that they stopped being a
- * TIHLDE member. Those programmes are handed back to the caller unchanged.
+ * Write-once: a confirmed campus is what earns permanent access to a
+ * multi-campus programme, so it is only ever filled in, never rewritten. A
+ * member who reads as Gjøvik during an exchange keeps the "trondheim" they
+ * earned, and a row that predates this column — everyone migrated from Lepton
+ * — fills in the first time we get a clear reading. A login with no resolvable
+ * campus records nothing, which is the point: it is exactly the reading that
+ * must not be able to earn anyone permanent access.
+ *
+ * Exported for testing.
+ */
+export async function confirmCampus(
+    tx: Transaction,
+    userId: string,
+    studyProgramId: number,
+    campus: Campus | null,
+): Promise<void> {
+    if (campus === null) return;
+
+    await tx
+        .update(studyProgramMembership)
+        .set({ confirmedCampus: campus })
+        .where(
+            and(
+                eq(studyProgramMembership.userId, userId),
+                eq(studyProgramMembership.studyProgramId, studyProgramId),
+                isNull(studyProgramMembership.confirmedCampus),
+            ),
+        );
+}
+
+/**
+ * Of the programmes campus held back, the ones the member has already been
+ * confirmed as a Trondheim student on.
+ *
+ * A membership row alone is not enough: it may have been created during a
+ * login where campus could not be resolved at all, which is precisely the gap
+ * a Gjøvik student can slip through. Only a recorded `confirmedCampus` of
+ * "trondheim" — a semester's worth of Trondheim-coded courses actually seen in
+ * Feide — earns the permanent access, and from then on a "Gjøvik" reading
+ * means an exchange or a semester elsewhere, not that they stopped being a
+ * TIHLDE member.
  *
  * Exported for testing.
  */
@@ -412,23 +447,28 @@ export async function keepExistingMemberships(
 ): Promise<StudyProgram[]> {
     if (campusRejected.length === 0) return [];
 
-    const existing = await tx
+    const confirmed = await tx
         .select({ code: studyProgram.feideCode })
         .from(studyProgramMembership)
         .innerJoin(
             studyProgram,
             eq(studyProgram.id, studyProgramMembership.studyProgramId),
         )
-        .where(eq(studyProgramMembership.userId, userId));
+        .where(
+            and(
+                eq(studyProgramMembership.userId, userId),
+                eq(studyProgramMembership.confirmedCampus, TIHLDE_CAMPUS),
+            ),
+        );
 
-    const existingCodes = new Set(existing.map((e) => e.code));
-    const kept = campusRejected.filter((p) => existingCodes.has(p.code));
+    const confirmedCodes = new Set(confirmed.map((c) => c.code));
+    const kept = campusRejected.filter((p) => confirmedCodes.has(p.code));
 
     for (const p of campusRejected) {
         console.warn(
-            existingCodes.has(p.code)
-                ? `User ${userId} (${username ?? "no username"}) reads as another campus on ${p.code} but is already a member; keeping access.`
-                : `User ${userId} (${username ?? "no username"}) rejected from ${p.code}: studies at another campus.`,
+            confirmedCodes.has(p.code)
+                ? `User ${userId} (${username ?? "no username"}) reads as another campus on ${p.code} but was confirmed in Trondheim earlier; keeping access.`
+                : `User ${userId} (${username ?? "no username"}) rejected from ${p.code}: studies at another campus, never confirmed in Trondheim.`,
         );
     }
 
