@@ -20,6 +20,7 @@ import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
 import { Route as AppOpptakRouteImport } from './routes/_app/opptak'
 import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
 import { Route as AppQrKoderRouteImport } from './routes/_app/qr-koder'
+import { Route as AppSoknaderRouteImport } from './routes/_app/soknader'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
@@ -38,6 +39,7 @@ import { Route as AdminOppmoteRouteImport } from './routes/admin/oppmote'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
 import { Route as AdminRollerRouteImport } from './routes/admin/roller'
+import { Route as AdminSoknaderRouteImport } from './routes/admin/soknader'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
@@ -117,6 +119,11 @@ const AppPersonvernRoute = AppPersonvernRouteImport.update({
 const AppQrKoderRoute = AppQrKoderRouteImport.update({
   id: '/qr-koder',
   path: '/qr-koder',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSoknaderRoute = AppSoknaderRouteImport.update({
+  id: '/soknader',
+  path: '/soknader',
   getParentRoute: () => AppRoute,
 } as any)
 const AppToddelRoute = AppToddelRouteImport.update({
@@ -206,6 +213,11 @@ const AdminPrikkerRoute = AdminPrikkerRouteImport.update({
 const AdminRollerRoute = AdminRollerRouteImport.update({
   id: '/roller',
   path: '/roller',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSoknaderRoute = AdminSoknaderRouteImport.update({
+  id: '/soknader',
+  path: '/soknader',
   getParentRoute: () => AdminRoute,
 } as any)
 const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
@@ -361,6 +373,7 @@ export interface FileRoutesByFullPath {
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
   '/qr-koder': typeof AppQrKoderRoute
+  '/soknader': typeof AppSoknaderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -377,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
+  '/admin/soknader': typeof AdminSoknaderRoute
   '/admin/': typeof AdminIndexRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
@@ -415,6 +429,7 @@ export interface FileRoutesByTo {
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
   '/qr-koder': typeof AppQrKoderRoute
+  '/soknader': typeof AppSoknaderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -432,6 +447,7 @@ export interface FileRoutesByTo {
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
+  '/admin/soknader': typeof AdminSoknaderRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
@@ -472,6 +488,7 @@ export interface FileRoutesById {
   '/_app/opptak': typeof AppOpptakRoute
   '/_app/personvern': typeof AppPersonvernRoute
   '/_app/qr-koder': typeof AppQrKoderRoute
+  '/_app/soknader': typeof AppSoknaderRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -489,6 +506,7 @@ export interface FileRoutesById {
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
+  '/admin/soknader': typeof AdminSoknaderRoute
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
@@ -531,6 +549,7 @@ export interface FileRouteTypes {
     | '/opptak'
     | '/personvern'
     | '/qr-koder'
+    | '/soknader'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -547,6 +566,7 @@ export interface FileRouteTypes {
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
+    | '/admin/soknader'
     | '/admin/'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
@@ -585,6 +605,7 @@ export interface FileRouteTypes {
     | '/opptak'
     | '/personvern'
     | '/qr-koder'
+    | '/soknader'
     | '/toddel'
     | '/forgot-password'
     | '/login'
@@ -602,6 +623,7 @@ export interface FileRouteTypes {
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
+    | '/admin/soknader'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
     | '/bedrift/studiene'
@@ -641,6 +663,7 @@ export interface FileRouteTypes {
     | '/_app/opptak'
     | '/_app/personvern'
     | '/_app/qr-koder'
+    | '/_app/soknader'
     | '/_app/toddel'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -658,6 +681,7 @@ export interface FileRouteTypes {
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
+    | '/admin/soknader'
     | '/_app/'
     | '/admin/'
     | '/_app/annonser/$slug'
@@ -774,6 +798,13 @@ declare module '@tanstack/react-router' {
       path: '/qr-koder'
       fullPath: '/qr-koder'
       preLoaderRoute: typeof AppQrKoderRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/soknader': {
+      id: '/_app/soknader'
+      path: '/soknader'
+      fullPath: '/soknader'
+      preLoaderRoute: typeof AppSoknaderRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/toddel': {
@@ -900,6 +931,13 @@ declare module '@tanstack/react-router' {
       path: '/roller'
       fullPath: '/admin/roller'
       preLoaderRoute: typeof AdminRollerRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/soknader': {
+      id: '/admin/soknader'
+      path: '/soknader'
+      fullPath: '/admin/soknader'
+      preLoaderRoute: typeof AdminSoknaderRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_app/annonser/': {
@@ -1128,6 +1166,7 @@ interface AppRouteChildren {
   AppOpptakRoute: typeof AppOpptakRoute
   AppPersonvernRoute: typeof AppPersonvernRoute
   AppQrKoderRoute: typeof AppQrKoderRoute
+  AppSoknaderRoute: typeof AppSoknaderRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
@@ -1157,6 +1196,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOpptakRoute: AppOpptakRoute,
   AppPersonvernRoute: AppPersonvernRoute,
   AppQrKoderRoute: AppQrKoderRoute,
+  AppSoknaderRoute: AppSoknaderRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,
@@ -1239,6 +1279,7 @@ interface AdminRouteChildren {
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
   AdminRollerRoute: typeof AdminRollerRoute
+  AdminSoknaderRoute: typeof AdminSoknaderRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1254,6 +1295,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,
   AdminRollerRoute: AdminRollerRoute,
+  AdminSoknaderRoute: AdminSoknaderRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -1268,3 +1310,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

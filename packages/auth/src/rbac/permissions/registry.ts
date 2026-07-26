@@ -83,6 +83,32 @@ export const PERMISSION_REGISTRY = {
     banners: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
+
+    /**
+     * Søknader (utlegg, støttesøknader, saker til HS).
+     *
+     * There is deliberately no "create" action — submitting an application is
+     * a plain member right, so those routes only require authentication. The
+     * sub-domains exist because the four types are handled by different
+     * people: utlegg by the Finansminister, idrettslagsstøtte by IdKom, saker
+     * til HS by Hovedstyret. The top-level view/manage pair is the
+     * all-types grant held by root/admin.
+     */
+    applications: {
+        actions: ["view", "manage"],
+        expense: {
+            actions: ["view", "manage"],
+        },
+        support: {
+            actions: ["view", "manage"],
+        },
+        "sports-support": {
+            actions: ["view", "manage"],
+        },
+        "hs-case": {
+            actions: ["view", "manage"],
+        },
+    },
 } as const;
 
 /**

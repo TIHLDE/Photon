@@ -15,12 +15,13 @@ import {
     HelpCircle,
     LayoutGrid,
     LogOut,
+    Pencil,
     ShieldCheck,
     Ticket,
     UserCircle2,
     type LucideIcon,
 } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import {
     authClientWithRedirect,
     authQueryOptions,
@@ -72,6 +73,7 @@ function RouteComponent() {
     const { data: session } = useQuery(authQueryOptions);
     const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
+    const [bioOpen, setBioOpen] = useState(false);
 
     const settings = session?.user.settings;
     const { programme, classYear } = deriveStudy(session?.groups ?? []);
@@ -157,30 +159,41 @@ function RouteComponent() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <ProfileHeader
                 user={user}
+                onAddLink={() => setBioOpen(true)}
                 actions={
                     <>
-                        <MembershipQrDialog name={user.name} />
-                        <EditBioDialog
-                            defaultValues={{
-                                bio: settings?.bioDescription ?? "",
-                                github: settings?.githubUrl ?? "",
-                                linkedin: settings?.linkedinUrl ?? "",
-                            }}
-                            onSubmit={async (values) => {
-                                await updateSettings.mutateAsync({
-                                    data: {
-                                        bioDescription: values.bio || undefined,
-                                        githubUrl: values.github || undefined,
-                                        linkedinUrl:
-                                            values.linkedin || undefined,
-                                        allergies: settings?.allergies ?? [],
-                                    },
-                                });
-                                await invalidateAuth();
-                            }}
+                        <MembershipQrDialog
+                            name={user.name}
+                            userId={session?.user.id}
                         />
+                        <Button onClick={() => setBioOpen(true)}>
+                            <Pencil />
+                            Rediger bio
+                        </Button>
                     </>
                 }
+            />
+            {/* Dialogen styres herfra slik at både «Rediger bio» og
+                «Legg til lenke» i headeren åpner den samme dialogen. */}
+            <EditBioDialog
+                open={bioOpen}
+                onOpenChange={setBioOpen}
+                defaultValues={{
+                    bio: settings?.bioDescription ?? "",
+                    github: settings?.githubUrl ?? "",
+                    linkedin: settings?.linkedinUrl ?? "",
+                }}
+                onSubmit={async (values) => {
+                    await updateSettings.mutateAsync({
+                        data: {
+                            bioDescription: values.bio || undefined,
+                            githubUrl: values.github || undefined,
+                            linkedinUrl: values.linkedin || undefined,
+                            allergies: settings?.allergies ?? [],
+                        },
+                    });
+                    await invalidateAuth();
+                }}
             />
             <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
                 <ProfileNav navGroups={navGroups} onLogout={handleLogout} />

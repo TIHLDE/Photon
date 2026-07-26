@@ -17,6 +17,7 @@ import {
     SidebarMenuItem,
     SidebarProvider,
 } from "@tihlde/ui/ui/sidebar";
+import { useQuery } from "@tanstack/react-query";
 import {
     BookmarkIcon,
     BriefcaseBusinessIcon,
@@ -25,6 +26,7 @@ import {
     CrownIcon,
     DatabaseIcon,
     DotSquare,
+    FileTextIcon,
     FileUserIcon,
     KeyIcon,
     LayoutDashboardIcon,
@@ -37,7 +39,11 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { authClientWithRedirect } from "#/api/auth";
+import {
+    authClientWithRedirect,
+    authQueryOptions,
+    sessionHasPermission,
+} from "#/api/auth";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 import { TihldeLogo } from "#/components/icons/tihlde";
 
@@ -73,6 +79,12 @@ type SidebarGroup = {
         link: LinkOptions;
 
         icon?: LucideIcon;
+        /**
+         * Hide this entry unless the session holds one of these permissions
+         * globally. Omit for sections everyone signed in may reach. Cosmetic
+         * only — the API is what actually enforces access.
+         */
+        permission?: string | string[];
     }[];
 };
 
@@ -153,6 +165,18 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 icon: FileUserIcon,
                 link: linkOptions({ to: "/admin/opptak" }),
             },
+            {
+                label: "Søknader",
+                icon: FileTextIcon,
+                link: linkOptions({ to: "/admin/soknader" }),
+                permission: [
+                    "applications:view",
+                    "applications:expense:view",
+                    "applications:support:view",
+                    "applications:sports-support:view",
+                    "applications:hs-case:view",
+                ],
+            },
         ],
     },
     {
@@ -184,6 +208,20 @@ const sidebarMenuGroups: SidebarGroup[] = [
 ];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const { data: session } = useQuery(authQueryOptions);
+
+    // Drop entries the viewer cannot use, then drop groups left empty.
+    const visibleGroups = sidebarMenuGroups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter(
+                (item) =>
+                    !item.permission ||
+                    sessionHasPermission(session?.permissions, item.permission),
+            ),
+        }))
+        .filter((group) => group.items.length > 0);
+
     return (
         <Sidebar collapsible="offcanvas" {...props}>
             <SidebarHeader>
@@ -212,7 +250,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                {sidebarMenuGroups.map((group) => (
+                {visibleGroups.map((group) => (
                     <SidebarGroup key={group.id}>
                         {group.label && (
                             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>

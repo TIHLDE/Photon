@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
-import { Github, Linkedin, Mail, Plus } from "lucide-react";
+import { Github, GraduationCap, Linkedin, Mail, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { DetailHeader } from "#/components/detail-layout";
@@ -13,7 +13,6 @@ export type ProfileLink = {
 
 export type ProfileHeaderUser = {
     name: string;
-    username?: string;
     email: string;
     programme?: string;
     avatarUrl?: string;
@@ -23,9 +22,15 @@ export type ProfileHeaderUser = {
 type ProfileHeaderProps = {
     user: ProfileHeaderUser;
     actions?: ReactNode;
+    /** Åpner dialogen der GitHub-/LinkedIn-lenker redigeres. */
+    onAddLink?: () => void;
 };
 
-export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
+export function ProfileHeader({
+    user,
+    actions,
+    onAddLink,
+}: ProfileHeaderProps) {
     return (
         <DetailHeader
             avatar={
@@ -39,28 +44,24 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
                 </Avatar>
             }
             title={
+                /* Navn, studie + klassetrinn og e-post stables vertikalt — én
+                   opplysning per linje, i stedet for å slås sammen på én rad. */
                 <div className="flex flex-col gap-1">
                     <h1 className="text-2xl">{user.name}</h1>
+                    {user.programme ? (
+                        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <GraduationCap className="size-3.5 shrink-0" />
+                            {user.programme}
+                        </p>
+                    ) : null}
                     <a
                         href={`mailto:${user.email}`}
-                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground md:hidden"
+                        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground"
                     >
-                        <Mail className="size-3.5" />
+                        <Mail className="size-3.5 shrink-0" />
                         {user.email}
                     </a>
                 </div>
-            }
-            subtitle={
-                <p className="text-sm text-muted-foreground">
-                    <span className="md:hidden">
-                        {user.programme ?? user.email}
-                    </span>
-                    <span className="hidden md:inline">
-                        {[user.username, user.email, user.programme]
-                            .filter(Boolean)
-                            .join(" · ")}
-                    </span>
-                </p>
             }
             badges={
                 <>
@@ -68,7 +69,7 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
                         <Badge
                             key={link.kind}
                             variant="outline"
-                            className="hidden gap-1.5 md:flex"
+                            className="gap-1.5"
                         >
                             {link.kind === "github" ? <Github /> : <Linkedin />}
                             {link.label}
@@ -76,10 +77,11 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
                     ))}
                     <Badge
                         variant="secondary"
-                        className="hidden gap-1.5 md:flex"
+                        className="gap-1.5"
+                        render={<button type="button" onClick={onAddLink} />}
                     >
                         <Plus />
-                        add link
+                        Legg til lenke
                     </Badge>
                 </>
             }

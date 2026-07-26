@@ -96,6 +96,246 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/applications/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get application form options
+         * @description Groups selectable in the application forms, their økonomiansvarlig addresses, and the budget/case type labels.
+         */
+        get: operations["getApplicationOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my applications
+         * @description Lists the authenticated user's own applications and their processing status.
+         */
+        get: operations["listMyApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/expense": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit an expense claim
+         * @description Submit an utlegg. Any authenticated member may submit; the claim is handled by the Finansminister.
+         */
+        post: operations["createExpenseApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/support": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply for financial support
+         * @description Submit a søknad om støtte. Handled by the Finansminister and Hovedstyret.
+         */
+        post: operations["createSupportApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/sports-support": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply for sports club support
+         * @description Submit a søknad om støtte til idrettslag. Handled by IdKom.
+         */
+        post: operations["createSportsSupportApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/hs-case": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a case to Hovedstyret
+         * @description Submit a sak til HS. A Vedtakssak must include a recommendation.
+         */
+        post: operations["createHsCaseApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List applications for handling
+         * @description Lists applications the caller is allowed to handle. Results are limited to the types they have view permission for.
+         */
+        get: operations["listApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download an application's PDF
+         * @description Streams the generated PDF. Available to the submitter and to handlers of that application type.
+         */
+        get: operations["getApplicationPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{id}/attachments/{assetKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download an application attachment
+         * @description Streams one of an application's attachments. Available to the submitter and to handlers of that application type.
+         */
+        get: operations["getApplicationAttachment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{id}/pdf/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate an application's PDF
+         * @description Re-renders and stores the PDF for an application. Used when generation failed at submission time.
+         */
+        post: operations["regenerateApplicationPdf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/applications/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update an application's status
+         * @description Sets the processing status and optional internal note. Approving or rejecting emails the submitter; moving to 'under behandling' does not.
+         */
+        patch: operations["updateApplicationStatus"];
+        trace?: never;
+    };
+    "/api/applications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an application
+         * @description Returns a single application. Available to the submitter and to anyone with view permission for that application's type. The internal comment is only included for handlers.
+         */
+        get: operations["getApplication"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assets": {
         parameters: {
             query?: never;
@@ -117,6 +357,8 @@ export interface paths {
          *
          *     **Usage:**
          *     Send the file as multipart/form-data with a field named "file".
+         *
+         *     Pass an optional "visibility" field set to "private" for files that must not be served by the open `GET /api/assets/:key` route — those are only reachable through a route that does its own authorization (e.g. application attachments).
          */
         post: operations["uploadAsset"];
         delete?: never;
@@ -1901,6 +2143,230 @@ export interface components {
         ValidateApiKeyInput: {
             /** @description The API key to validate */
             key: string;
+        };
+        ApplicationOptions: {
+            /** @description Groups selectable as the applying group */
+            groups: {
+                slug: string;
+                name: string;
+            }[];
+            /** @description Groups with an økonomiansvarlig address */
+            ccOptions: {
+                slug: string;
+                name: string;
+                email: string;
+            }[];
+            budgetTypes: {
+                /** @enum {string} */
+                value: "social_budget" | "group_budget" | "approved_hs_application" | "approved_idkom_application";
+                label: string;
+            }[];
+            caseTypes: {
+                /** @enum {string} */
+                value: "discussion" | "decision" | "orientation";
+                label: string;
+            }[];
+        };
+        ApplicationSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "expense" | "support" | "sports_support" | "hs_case";
+            /** @description Norwegian type label */
+            typeLabel: string;
+            /** @enum {string} */
+            status: "new" | "in_progress" | "approved" | "rejected";
+            /** @description Norwegian status label */
+            statusLabel: string;
+            /** @description Short human title — the case name, or the group and amount */
+            title: string;
+            contactName: string;
+            contactEmail: string;
+            submittedById: string | null;
+            submittedByName: string | null;
+            /** @description Amount for expense/support types, otherwise null */
+            amountNok: number | null;
+            groupName: string | null;
+            hasPdf: boolean;
+            handledByName: string | null;
+            handledAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        ApplicationList: components["schemas"]["ApplicationSummary"][];
+        CreateApplicationResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description False when PDF rendering failed; the submission was still saved and an admin can regenerate it. */
+            pdfGenerated: boolean;
+        };
+        CreateExpenseApplication: {
+            /** @description Full name of the person submitting */
+            contactName: string;
+            /**
+             * Format: email
+             * @description Contact email address
+             */
+            contactEmail: string;
+            /**
+             * Format: email
+             * @description Optional copy to a group's økonomiansvarlig. Must match a group's registered finance address.
+             */
+            ccEmail?: string;
+            /** @description Amount in whole NOK */
+            amountNok: number;
+            /** @description Date of the expense, YYYY-MM-DD */
+            expenseDate: string;
+            /** @description Slug of the group the expense belongs to */
+            groupSlug: string;
+            /**
+             * @description Which budget the expense is drawn from
+             * @enum {string}
+             */
+            budgetType: "social_budget" | "group_budget" | "approved_hs_application" | "approved_idkom_application";
+            /** @description What the expense is for */
+            description: string;
+            /** @description Norwegian account number, xxxx.xx.xxxxx */
+            accountNumber: string;
+            /** @description Receipt images, at least one */
+            attachmentKeys: string[];
+        };
+        CreateSupportApplication: {
+            /** @description Full name of the person submitting */
+            contactName: string;
+            /**
+             * Format: email
+             * @description Contact email address
+             */
+            contactEmail: string;
+            /** @description Slug of the group applying */
+            groupSlug: string;
+            /** @description Purpose of the application */
+            purpose: string;
+            /** @description Description of the event or product */
+            eventDescription: string;
+            /** @description Why the support is needed */
+            justification: string;
+            /** @description Total amount applied for, in whole NOK */
+            totalAmountNok: number;
+            /**
+             * Format: uri
+             * @description Optional link to a budget document
+             */
+            budgetLink?: string;
+            /** @description Optional closing summary */
+            summary?: string;
+            /** @description Budget documentation images */
+            attachmentKeys: string[];
+        };
+        CreateHsCaseApplication: {
+            /** @description Full name of the person submitting */
+            contactName: string;
+            /**
+             * Format: email
+             * @description Contact email address
+             */
+            contactEmail: string;
+            /** @description Name of the case */
+            caseName: string;
+            /**
+             * @description Kind of case
+             * @enum {string}
+             */
+            caseType: "discussion" | "decision" | "orientation";
+            /** @description Background for the case */
+            background: string;
+            /** @description The case handler's assessment */
+            assessment: string;
+            /** @description The case handler's recommendation. Required for a Vedtakssak. */
+            recommendation?: string;
+            /** @description Optional attachments */
+            attachmentKeys: string[];
+        };
+        RegenerateApplicationPdfResponse: {
+            pdfAssetKey: string;
+        };
+        ApplicationDetail: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "expense" | "support" | "sports_support" | "hs_case";
+            /** @description Norwegian type label */
+            typeLabel: string;
+            /** @enum {string} */
+            status: "new" | "in_progress" | "approved" | "rejected";
+            /** @description Norwegian status label */
+            statusLabel: string;
+            /** @description Short human title — the case name, or the group and amount */
+            title: string;
+            contactName: string;
+            contactEmail: string;
+            submittedById: string | null;
+            submittedByName: string | null;
+            /** @description Amount for expense/support types, otherwise null */
+            amountNok: number | null;
+            groupName: string | null;
+            hasPdf: boolean;
+            handledByName: string | null;
+            handledAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            signature: string;
+            internalComment?: string | null;
+            attachments: {
+                /** Format: uuid */
+                id: string;
+                assetKey: string;
+                /** @enum {string} */
+                kind: "receipt" | "budget" | "attachment";
+                sortOrder: number;
+            }[];
+            expense: {
+                ccEmail: string | null;
+                amountNok: number;
+                expenseDate: string;
+                /** @enum {string} */
+                budgetType: "social_budget" | "group_budget" | "approved_hs_application" | "approved_idkom_application";
+                budgetTypeLabel: string;
+                description: string;
+                accountNumber: string;
+                group: {
+                    slug: string;
+                    name: string;
+                };
+            } | null;
+            support: {
+                purpose: string;
+                eventDescription: string;
+                justification: string;
+                totalAmountNok: number;
+                budgetLink: string | null;
+                summary: string | null;
+                group: {
+                    slug: string;
+                    name: string;
+                };
+            } | null;
+            hsCase: {
+                caseName: string;
+                /** @enum {string} */
+                caseType: "discussion" | "decision" | "orientation";
+                caseTypeLabel: string;
+                background: string;
+                assessment: string;
+                recommendation: string | null;
+            } | null;
+        };
+        UpdateApplicationStatus: {
+            /**
+             * @description New processing status
+             * @enum {string}
+             */
+            status: "new" | "in_progress" | "approved" | "rejected";
+            /** @description Handler-only note. Never shown to the submitter. */
+            internalComment?: string | null;
+            /** @description Optional message included in the decision email sent to the submitter. */
+            messageToSubmitter?: string;
         };
         UploadResponse: {
             /** @description The unique key to reference this asset */
@@ -4138,7 +4604,9 @@ export interface components {
         }[];
     };
     responses: never;
-    parameters: never;
+    parameters: {
+        ListApplicationsQuery: "expense" | "support" | "sports_support" | "hs_case";
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -4388,6 +4856,469 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ValidateApiKeyResponse"];
                 };
+            };
+        };
+    };
+    getApplicationOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Form options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationOptions"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listMyApplications: {
+        parameters: {
+            query?: {
+                type?: components["parameters"]["ListApplicationsQuery"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user's applications, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createExpenseApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExpenseApplication"];
+            };
+        };
+        responses: {
+            /** @description Application submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApplicationResponse"];
+                };
+            };
+            /** @description Bad Request - Unknown group or invalid attachment */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createSupportApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSupportApplication"];
+            };
+        };
+        responses: {
+            /** @description Application submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApplicationResponse"];
+                };
+            };
+            /** @description Bad Request - Unknown group or invalid attachment */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createSportsSupportApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSupportApplication"];
+            };
+        };
+        responses: {
+            /** @description Application submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApplicationResponse"];
+                };
+            };
+            /** @description Bad Request - Unknown group or invalid attachment */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createHsCaseApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHsCaseApplication"];
+            };
+        };
+        responses: {
+            /** @description Application submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateApplicationResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid attachment or missing innstilling */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listApplications: {
+        parameters: {
+            query?: {
+                type?: components["parameters"]["ListApplicationsQuery"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Applications, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getApplicationPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The application PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Unknown application, or no PDF generated */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getApplicationAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                assetKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The attachment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Unknown application or attachment */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    regenerateApplicationPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new PDF asset key */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegenerateApplicationPdfResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateApplicationStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateApplicationStatus"];
+            };
+        };
+        responses: {
+            /** @description The updated application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationDetail"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Unknown application, or not yours */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
