@@ -14,6 +14,7 @@ import type { ApplicationWithDetails } from "~/lib/application/types";
  */
 function buildTitle(application: ApplicationWithDetails): string {
     if (application.hsCase) return application.hsCase.caseName;
+    if (application.companyContact) return application.companyContact.company;
     if (application.expense) {
         return `${application.expense.group.name} – ${formatNok(application.expense.amountNok)}`;
     }
@@ -123,6 +124,14 @@ export function serializeApplicationDetail(
                   recommendation: application.hsCase.recommendation,
               }
             : null,
+        companyContact: application.companyContact
+            ? {
+                  company: application.companyContact.company,
+                  eventTypes: application.companyContact.eventTypes,
+                  semesters: application.companyContact.semesters,
+                  comment: application.companyContact.comment,
+              }
+            : null,
     };
 }
 
@@ -158,6 +167,20 @@ export function buildEmailDetails(
             {
                 label: "Type",
                 value: applicationCaseTypeLabels[application.hsCase.caseType],
+            },
+        ];
+    }
+
+    if (application.companyContact) {
+        return [
+            { label: "Bedrift", value: application.companyContact.company },
+            {
+                label: "Arrangementer",
+                value: application.companyContact.eventTypes.join(", "),
+            },
+            {
+                label: "Semester",
+                value: application.companyContact.semesters.join(", "),
             },
         ];
     }

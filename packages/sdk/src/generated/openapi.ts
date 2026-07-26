@@ -493,7 +493,7 @@ export interface paths {
         put?: never;
         /**
          * Submit company contact form
-         * @description Public endpoint used by the company landing page. Emails the submission to TIHLDE's business contact. Rate limited per client.
+         * @description Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/soknader, and emails it to TIHLDE's business contact. Rate limited per client.
          */
         post: operations["submitCompanyContact"];
         delete?: never;
@@ -2171,7 +2171,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: "expense" | "support" | "sports_support" | "hs_case";
+            type: "expense" | "support" | "sports_support" | "hs_case" | "company_contact";
             /** @description Norwegian type label */
             typeLabel: string;
             /** @enum {string} */
@@ -2290,7 +2290,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: "expense" | "support" | "sports_support" | "hs_case";
+            type: "expense" | "support" | "sports_support" | "hs_case" | "company_contact";
             /** @description Norwegian type label */
             typeLabel: string;
             /** @enum {string} */
@@ -2355,6 +2355,12 @@ export interface components {
                 background: string;
                 assessment: string;
                 recommendation: string | null;
+            } | null;
+            companyContact: {
+                company: string;
+                eventTypes: string[];
+                semesters: string[];
+                comment: string | null;
             } | null;
         };
         UpdateApplicationStatus: {
@@ -4605,7 +4611,7 @@ export interface components {
     };
     responses: never;
     parameters: {
-        ListApplicationsQuery: "expense" | "support" | "sports_support" | "hs_case";
+        ListApplicationsQuery: "expense" | "support" | "sports_support" | "hs_case" | "company_contact";
     };
     requestBodies: never;
     headers: never;

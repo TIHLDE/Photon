@@ -86,6 +86,18 @@ function detailFields(application: ApplicationDetail): Field[] {
         ];
     }
 
+    if (application.companyContact) {
+        const contact = application.companyContact;
+        return [
+            { label: "Bedrift", value: contact.company },
+            { label: "Arrangementer", value: contact.eventTypes.join(", ") },
+            { label: "Semester", value: contact.semesters.join(", ") },
+            ...(contact.comment
+                ? [{ label: "Kommentar", value: contact.comment }]
+                : []),
+        ];
+    }
+
     return [];
 }
 
@@ -291,7 +303,11 @@ export function AdminDetailDialog({
                                 />
                             </div>
 
-                            {isDecision && (
+                            {/* Bedriftshenvendelser get no automated decision
+                                email — the Næringslivsminister answers them
+                                directly — so offering a message would be a
+                                field that goes nowhere. */}
+                            {isDecision && !application.companyContact && (
                                 <div className="flex flex-col gap-2">
                                     <Label htmlFor="application-message">
                                         Melding til innsender

@@ -175,6 +175,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                     "applications:support:view",
                     "applications:sports-support:view",
                     "applications:hs-case:view",
+                    "applications:company-contact:view",
                 ],
             },
         ],

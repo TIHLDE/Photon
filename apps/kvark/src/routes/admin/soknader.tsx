@@ -33,7 +33,13 @@ const searchSchema = z.object({
     /** Deep link from the notification email opens this søknad directly. */
     id: z.string().optional(),
     type: z
-        .enum(["expense", "support", "sports_support", "hs_case"])
+        .enum([
+            "expense",
+            "support",
+            "sports_support",
+            "hs_case",
+            "company_contact",
+        ])
         .optional(),
 });
 
@@ -46,7 +52,8 @@ export const Route = createFileRoute("/admin/soknader")({
 /**
  * Which type tab a viewer sees depends on what they may handle: the
  * Finansminister gets Utlegg and Støtte, HS gets Støtte and HS-saker, IdKom
- * only Idrettslag. The API narrows the data the same way — this just keeps
+ * only Idrettslag, Næringslivsministeren Bedrifter. The API narrows the data
+ * the same way — this just keeps
  * the UI from offering empty tabs.
  */
 const TYPE_TABS: {
@@ -73,6 +80,11 @@ const TYPE_TABS: {
         value: "hs_case",
         label: "Saker til HS",
         permissions: ["applications:view", "applications:hs-case:view"],
+    },
+    {
+        value: "company_contact",
+        label: "Bedrifter",
+        permissions: ["applications:view", "applications:company-contact:view"],
     },
 ];
 
@@ -157,7 +169,7 @@ function AdminApplicationsPage() {
             <div className="flex flex-col gap-6">
                 <AdminPageHeader
                     title="Søknader"
-                    description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
+                    description="Utlegg, søknader om støtte, saker meldt inn til Hovedstyret og henvendelser fra bedrifter."
                 />
                 <AdminEmptyState
                     icon={FileText}
@@ -172,7 +184,7 @@ function AdminApplicationsPage() {
         <div className="flex flex-col gap-6">
             <AdminPageHeader
                 title="Søknader"
-                description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
+                description="Utlegg, søknader om støtte, saker meldt inn til Hovedstyret og henvendelser fra bedrifter."
             />
 
             <Tabs

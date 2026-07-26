@@ -16,6 +16,7 @@ export const applicationTypeLabels: Record<ApplicationType, string> = {
     support: "Søknad om støtte",
     sports_support: "Søknad om støtte til idrettslag",
     hs_case: "Sak til HS",
+    company_contact: "Henvendelse fra bedrift",
 };
 
 export const applicationStatusLabels: Record<ApplicationStatus, string> = {

@@ -278,6 +278,14 @@ export const applicationDetailSchema = Schema(
                 recommendation: z.string().nullable(),
             })
             .nullable(),
+        companyContact: z
+            .object({
+                company: z.string(),
+                eventTypes: z.array(z.string()),
+                semesters: z.array(z.string()),
+                comment: z.string().nullable(),
+            })
+            .nullable(),
     }),
 );
 

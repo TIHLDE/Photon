@@ -91,8 +91,9 @@ export const PERMISSION_REGISTRY = {
      * a plain member right, so those routes only require authentication. The
      * sub-domains exist because the four types are handled by different
      * people: utlegg by the Finansminister, idrettslagsstøtte by IdKom, saker
-     * til HS by Hovedstyret. The top-level view/manage pair is the
-     * all-types grant held by root/admin.
+     * til HS by Hovedstyret, bedriftshenvendelser by the Næringslivsminister.
+     * The top-level view/manage pair is the all-types grant held by
+     * root/admin.
      */
     applications: {
         actions: ["view", "manage"],
@@ -106,6 +107,9 @@ export const PERMISSION_REGISTRY = {
             actions: ["view", "manage"],
         },
         "hs-case": {
+            actions: ["view", "manage"],
+        },
+        "company-contact": {
             actions: ["view", "manage"],
         },
     },
