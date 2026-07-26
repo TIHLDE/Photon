@@ -24,18 +24,10 @@ export const Route = createFileRoute("/admin/nyheter")({
     component: NewsAdminPage,
 });
 
-const INITIAL_BODY = `:::callout{type=info title="Tip"}
-Use directives like callouts to highlight important information for readers.
-:::
-
-Add the body of the news article here using **markdown** and any directive
-exposed by the rich registry.
-`;
-
 function NewsAdminPage() {
     const [title, setTitle] = useState("");
     const [excerpt, setExcerpt] = useState("");
-    const [body, setBody] = useState(INITIAL_BODY);
+    const [body, setBody] = useState("");
 
     const createNews = useMutation(createNewsMutation);
 
@@ -54,7 +46,7 @@ function NewsAdminPage() {
                 onSuccess() {
                     setTitle("");
                     setExcerpt("");
-                    setBody(INITIAL_BODY);
+                    setBody("");
                 },
             },
         );
