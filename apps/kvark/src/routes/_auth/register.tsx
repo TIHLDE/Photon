@@ -22,7 +22,6 @@ import {
 } from "#/api/auth";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import { OrDivider } from "#/components/or-divider";
-import { env } from "#/env";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
 export const Route = createFileRoute("/_auth/register")({
@@ -64,10 +63,9 @@ function RegisterPage() {
     const navigate = useNavigate();
 
     const [feideLoading, setFeideLoading] = useState(false);
-    // When Feide is the primary path, the email/password form stays collapsed
-    // behind a "Kan du ikke bruke Feide?" link. When Feide is off entirely the
-    // form is the only option, so show it straight away.
-    const [showEmailForm, setShowEmailForm] = useState(!env.VITE_FEIDE_ENABLED);
+    // Feide is the primary path, so the email/password form stays collapsed
+    // behind a "Kan du ikke bruke Feide?" link.
+    const [showEmailForm, setShowEmailForm] = useState(false);
 
     async function handleFeideSignIn() {
         setFeideLoading(true);
@@ -141,47 +139,39 @@ function RegisterPage() {
         }
     }
 
-    const feideEnabled = env.VITE_FEIDE_ENABLED;
-
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Opprett bruker</CardTitle>
                 <CardDescription>
-                    {feideEnabled
-                        ? "Registrer deg med Feide for å delta på arrangementer."
-                        : "Opprett en konto for å delta på arrangementer."}
+                    Registrer deg med Feide for å delta på arrangementer.
                 </CardDescription>
             </CardHeader>
 
-            {feideEnabled && (
-                <CardContent className="flex flex-col gap-4">
-                    <FeideSignInButton
-                        variant="default"
-                        label="Registrer med Feide"
-                        onSignIn={handleFeideSignIn}
-                        loading={feideLoading}
-                    />
-                    {!showEmailForm && (
-                        <Button
-                            type="button"
-                            variant="link"
-                            className="mx-auto"
-                            onClick={() => setShowEmailForm(true)}
-                        >
-                            Kan du ikke bruke Feide?
-                        </Button>
-                    )}
-                </CardContent>
-            )}
+            <CardContent className="flex flex-col gap-4">
+                <FeideSignInButton
+                    variant="default"
+                    label="Registrer med Feide"
+                    onSignIn={handleFeideSignIn}
+                    loading={feideLoading}
+                />
+                {!showEmailForm && (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="mx-auto"
+                        onClick={() => setShowEmailForm(true)}
+                    >
+                        Kan du ikke bruke Feide?
+                    </Button>
+                )}
+            </CardContent>
 
             {showEmailForm && (
                 <form {...formHandlers(form)} className="flex flex-col gap-4">
-                    {feideEnabled && (
-                        <div className="px-6">
-                            <OrDivider label="eller registrer med e-post" />
-                        </div>
-                    )}
+                    <div className="px-6">
+                        <OrDivider label="eller registrer med e-post" />
+                    </div>
                     <CardContent className="flex flex-col gap-5">
                         <FieldGroup>
                             <form.AppField name="name">

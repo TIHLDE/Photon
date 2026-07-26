@@ -62,6 +62,14 @@ function AttendanceAdminPage() {
     const [eventId, setEventId] = useState<string | null>(
         events.items[0]?.id ?? null,
     );
+    const eventOptions = useMemo(
+        () =>
+            events.items.map((event) => ({
+                value: event.id,
+                label: event.title,
+            })),
+        [events.items],
+    );
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -83,14 +91,18 @@ function AttendanceAdminPage() {
 
             <Field className="sm:max-w-96">
                 <FieldLabel>Arrangement</FieldLabel>
-                <Select value={eventId ?? ""} onValueChange={setEventId}>
+                <Select
+                    items={eventOptions}
+                    value={eventId ?? ""}
+                    onValueChange={setEventId}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Velg arrangement" />
                     </SelectTrigger>
                     <SelectContent>
-                        {events.items.map((event) => (
-                            <SelectItem key={event.id} value={event.id}>
-                                {event.title}
+                        {eventOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
                             </SelectItem>
                         ))}
                     </SelectContent>
