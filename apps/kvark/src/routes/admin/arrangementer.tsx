@@ -32,15 +32,6 @@ export const Route = createFileRoute("/admin/arrangementer")({
         context.queryClient.ensureQueryData(getGroupsQuery(0)),
 });
 
-const INITIAL_DESCRIPTION = `# Arrangementsbeskrivelse
-
-Beskriv arrangementet med **markdown**.
-
-:::callout{type=warn title="Påmelding"}
-Husk å sjekke kapasitet og påmeldingsfrist før du publiserer.
-:::
-`;
-
 /** Date -> ISO string, or null when unset */
 function toIso(value: Date | null): string | null {
     if (!value) return null;
@@ -61,7 +52,7 @@ function EventAdminPage() {
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
 
     const [title, setTitle] = useState("");
-    const [description, setDescription] = useState(INITIAL_DESCRIPTION);
+    const [description, setDescription] = useState("");
     const [categorySlug, setCategorySlug] = useState("");
     const [organizerGroupSlug, setOrganizerGroupSlug] = useState("");
     const [location, setLocation] = useState("");
@@ -127,7 +118,7 @@ function EventAdminPage() {
             {
                 onSuccess() {
                     setTitle("");
-                    setDescription(INITIAL_DESCRIPTION);
+                    setDescription("");
                     setCategorySlug("");
                     setOrganizerGroupSlug("");
                     setLocation("");

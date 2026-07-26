@@ -208,7 +208,20 @@ export const syncFeideHook: (
     ) {
         const session = middlewareContext.context.newSession;
         if (!session) {
-            throw new Error("No session found after Feide callback executed");
+            /**
+             * The callback did NOT authenticate anyone — an expired or reused
+             * state ("State mismatch: verification not found"), a denied
+             * consent, a provider error. Better Auth has already produced its
+             * own error response (and redirects to the sign-in's
+             * errorCallbackURL when one was given); throwing here replaced
+             * that with a bare 500 and an empty body, which is exactly what
+             * users hit on photon.tihlde.org/api/auth/oauth2/callback/feide.
+             * There is nothing to sync, so leave the response alone.
+             */
+            console.warn(
+                "Feide callback finished without a session; skipping sync.",
+            );
+            return;
         }
 
         const userId = session.user.id;

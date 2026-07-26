@@ -208,11 +208,21 @@ export async function authClientWithPermission(
  * Feide, which redirects back to the backend callback and finally to
  * `callbackURL` on success. Provider id must match `feidePlugin` in
  * @photon/auth. Requires the backend Feide client to be configured.
+ *
+ * The callbacks MUST be absolute frontend URLs: Better Auth resolves a
+ * relative callback against its own baseURL — the API host — so a plain "/"
+ * dumps the user on photon.tihlde.org (a 404 from the API router) instead of
+ * back on the website. Sanitized first, so only same-site paths are ever
+ * absolutized. Browser-only, so window.location.origin is available.
  */
 export async function signInWithFeide(callbackURL: string) {
+    const toFrontendUrl = (path: string) =>
+        new URL(sanitizeRedirectTo(path), window.location.origin).toString();
+
     const result = await clientAuthInstance.signIn.oauth2({
         providerId: "feide",
-        callbackURL: sanitizeRedirectTo(callbackURL),
+        callbackURL: toFrontendUrl(callbackURL),
+        errorCallbackURL: toFrontendUrl("/login"),
     });
 
     if (result.error) {

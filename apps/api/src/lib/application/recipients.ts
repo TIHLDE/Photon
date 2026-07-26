@@ -11,6 +11,10 @@ const recipientsByType: Record<ApplicationType, string[]> = {
     support: ["finansminister@tihlde.org", "hs@tihlde.org"],
     sports_support: ["idkomleder@tihlde.org", "idkom@tihlde.org"],
     hs_case: ["hs@tihlde.org"],
+    // Listed for completeness — bedriftshenvendelser are mailed by
+    // routes/company/contact.ts, which uses the configurable
+    // COMPANY_CONTACT_EMAIL instead of going through this table.
+    company_contact: ["naeringslivsminister@tihlde.org"],
 };
 
 export function recipientsFor(type: ApplicationType): string[] {

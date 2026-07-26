@@ -11,6 +11,7 @@ const applicationWith = {
     expense: { with: { group: { columns: { slug: true, name: true } } } },
     support: { with: { group: { columns: { slug: true, name: true } } } },
     hsCase: true,
+    companyContact: true,
     attachments: true,
     submittedBy: { columns: { id: true, name: true } },
     handledBy: { columns: { id: true, name: true } },

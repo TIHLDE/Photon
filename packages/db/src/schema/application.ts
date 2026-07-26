@@ -24,12 +24,19 @@ import { group } from "./org";
  * `support` and `sports_support` share the exact same field set — they only
  * differ in who receives and handles them — so they share a detail table and
  * are told apart by this discriminator.
+ *
+ * `company_contact` is the odd one out: it comes from the public /bedrift
+ * form, so it has no submitting user. It rides along here because a business
+ * enquiry needs exactly what a søknad needs — a status, a handler and a
+ * permanent record — and reusing the pipeline gives it the whole admin
+ * inbox for free.
  */
 export const applicationTypeVariants = [
     "expense",
     "support",
     "sports_support",
     "hs_case",
+    "company_contact",
 ] as const;
 
 export const applicationType = pgEnum(
@@ -196,6 +203,28 @@ export const applicationHsCase = pgTable("application_hs_case", {
     recommendation: text("recommendation"),
 });
 
+/**
+ * Henvendelse fra en bedrift, submitted through the public /bedrift form.
+ *
+ * `eventTypes` and `semesters` are free-form label arrays rather than enums:
+ * the option lists are marketing copy that changes between semesters, and a
+ * stored enquiry must keep the wording it was actually sent with.
+ */
+export const applicationCompanyContact = pgTable(
+    "application_company_contact",
+    {
+        applicationId: uuid("application_id")
+            .primaryKey()
+            .references(() => application.id, { onDelete: "cascade" }),
+        company: text("company").notNull(),
+        /** Which kinds of arrangement the company is interested in. */
+        eventTypes: text("event_types").array().notNull(),
+        /** Which semesters they asked about, e.g. "Høst 2026". */
+        semesters: text("semesters").array().notNull(),
+        comment: text("comment"),
+    },
+);
+
 export const applicationAttachment = pgTable(
     "application_attachment",
     {
@@ -234,6 +263,10 @@ export const applicationRelations = relations(application, ({ one, many }) => ({
     hsCase: one(applicationHsCase, {
         fields: [application.id],
         references: [applicationHsCase.applicationId],
+    }),
+    companyContact: one(applicationCompanyContact, {
+        fields: [application.id],
+        references: [applicationCompanyContact.applicationId],
     }),
     attachments: many(applicationAttachment),
 }));
@@ -276,6 +309,16 @@ export const applicationHsCaseRelations = relations(
     }),
 );
 
+export const applicationCompanyContactRelations = relations(
+    applicationCompanyContact,
+    ({ one }) => ({
+        application: one(application, {
+            fields: [applicationCompanyContact.applicationId],
+            references: [application.id],
+        }),
+    }),
+);
+
 export const applicationAttachmentRelations = relations(
     applicationAttachment,
     ({ one }) => ({
@@ -291,4 +334,6 @@ export type NewApplication = typeof application.$inferInsert;
 export type ApplicationExpense = typeof applicationExpense.$inferSelect;
 export type ApplicationSupport = typeof applicationSupport.$inferSelect;
 export type ApplicationHsCase = typeof applicationHsCase.$inferSelect;
+export type ApplicationCompanyContact =
+    typeof applicationCompanyContact.$inferSelect;
 export type ApplicationAttachment = typeof applicationAttachment.$inferSelect;
