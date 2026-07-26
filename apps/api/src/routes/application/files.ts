@@ -156,6 +156,14 @@ export const regeneratePdfRoute = route().post(
             );
         }
 
+        // Bedriftshenvendelser never had a PDF to begin with, so this would
+        // fail deep inside the renderer instead of saying why.
+        if (application.type === "company_contact") {
+            throw HTTPAppException.BadRequest(
+                "Bedriftshenvendelser har ingen PDF",
+            );
+        }
+
         const pdfAssetKey = await generateApplicationPdf(ctx, application);
         return c.json({ pdfAssetKey }, 200);
     },

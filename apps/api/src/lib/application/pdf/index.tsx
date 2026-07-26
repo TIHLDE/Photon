@@ -125,6 +125,13 @@ export async function renderApplicationPdf(
                 />,
             );
         }
+
+        // Bedriftshenvendelser are an inbox item, not a document that gets
+        // signed or filed — there is nothing a PDF would add.
+        case "company_contact":
+            throw new Error(
+                `Application ${application.id} is a company contact enquiry and has no PDF`,
+            );
     }
 }
 

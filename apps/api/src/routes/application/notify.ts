@@ -12,6 +12,7 @@ const handlerLabels: Record<ApplicationWithDetails["type"], string> = {
     support: "Finansminister og Hovedstyret",
     sports_support: "IdKom",
     hs_case: "Hovedstyret",
+    company_contact: "Næringslivsminister",
 };
 
 const headlines: Record<ApplicationWithDetails["type"], string> = {
@@ -19,6 +20,7 @@ const headlines: Record<ApplicationWithDetails["type"], string> = {
     support: "Ny søknad om støtte",
     sports_support: "Ny søknad om støtte til idrettslag",
     hs_case: "Ny sak meldt inn til HS",
+    company_contact: "Ny henvendelse fra bedrift",
 };
 
 const logoUrl = () => `${env.WEBSITE_URL}/logo512.png`;

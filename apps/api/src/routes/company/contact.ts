@@ -1,3 +1,4 @@
+import { schema } from "@photon/db";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { env } from "~/lib/env";
@@ -30,7 +31,7 @@ export const contactRoute = route().post(
         summary: "Submit company contact form",
         operationId: "submitCompanyContact",
         description:
-            "Public endpoint used by the company landing page. Emails the submission to TIHLDE's business contact. Rate limited per client.",
+            "Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/soknader, and emails it to TIHLDE's business contact. Rate limited per client.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -46,7 +47,8 @@ export const contactRoute = route().post(
     validator("json", companyContactSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { cache, email } = c.get("ctx");
+        const { cache, db, email } = c.get("ctx");
+        const logger = c.get("logger");
 
         const key = rateLimitKey(
             clientIp(c.req.header("x-forwarded-for")),
@@ -65,24 +67,61 @@ export const contactRoute = route().post(
             RATE_LIMIT_WINDOW_SECONDS,
         );
 
-        await email.sendEmailTemplate(
-            {
-                from: env.MAIL_FROM,
-                to: env.COMPANY_CONTACT_EMAIL,
-                subject: `Bedrift: ${body.company} – Ny kontaktforespørsel`,
-                replyTo: body.contactEmail,
-            },
-            "CompanyContactEmail",
-            {
-                company: body.company,
+        // Store first: the database is the system of record, so an enquiry
+        // must survive a mail outage. The submitter is external, hence no
+        // submittedById — the signature says where it came from instead.
+        const [stored] = await db
+            .insert(schema.application)
+            .values({
+                type: "company_contact",
                 contactName: body.contactName,
                 contactEmail: body.contactEmail,
-                eventTypes: body.eventTypes,
-                semesters: body.semesters,
-                comment: body.comment || undefined,
-                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-            },
-        );
+                signature: `${body.company} (innsendt via tihlde.org/bedrift)`,
+            })
+            .returning({ id: schema.application.id });
+
+        if (!stored) {
+            throw new HTTPException(500, {
+                message: "Kunne ikke lagre henvendelsen",
+            });
+        }
+
+        await db.insert(schema.applicationCompanyContact).values({
+            applicationId: stored.id,
+            company: body.company,
+            eventTypes: body.eventTypes,
+            semesters: body.semesters,
+            comment: body.comment || null,
+        });
+
+        // Non-fatal from here on: the enquiry is already saved and visible in
+        // /admin/soknader, so a mail failure must not tell the company their
+        // submission was lost.
+        try {
+            await email.sendEmailTemplate(
+                {
+                    from: env.MAIL_FROM,
+                    to: env.COMPANY_CONTACT_EMAIL,
+                    subject: `Bedrift: ${body.company} – Ny kontaktforespørsel`,
+                    replyTo: body.contactEmail,
+                },
+                "CompanyContactEmail",
+                {
+                    company: body.company,
+                    contactName: body.contactName,
+                    contactEmail: body.contactEmail,
+                    eventTypes: body.eventTypes,
+                    semesters: body.semesters,
+                    comment: body.comment || undefined,
+                    logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                },
+            );
+        } catch (error) {
+            logger.error(
+                { err: error, applicationId: stored.id },
+                "Failed to queue company contact email",
+            );
+        }
 
         return c.json(
             {

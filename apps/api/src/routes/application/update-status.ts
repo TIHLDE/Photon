@@ -66,6 +66,11 @@ export const updateStatusRoute = route().patch(
         const isDecision =
             body.status === "approved" || body.status === "rejected";
 
+        // A bedrift is not a submitter with a "Mine søknader" page, and an
+        // automated "Henvendelse fra bedrift er avslått" would be the wrong
+        // way to answer one. The Næringslivsminister replies by email.
+        const notifiesSubmitter = existing.type !== "company_contact";
+
         await ctx.db
             .update(schema.application)
             .set({
@@ -83,7 +88,11 @@ export const updateStatusRoute = route().patch(
         if (!updated) throw HTTPAppException.NotFound("Søknad");
 
         // Only final decisions are worth an email; "under behandling" is noise.
-        if (isDecision && body.status !== existing.status) {
+        if (
+            notifiesSubmitter &&
+            isDecision &&
+            body.status !== existing.status
+        ) {
             await notifyApplicationDecided(ctx, logger, updated, {
                 approved: body.status === "approved",
                 statusLabel: applicationStatusLabels[body.status],
