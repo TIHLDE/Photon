@@ -19,6 +19,7 @@ import { eventRoutes } from "~/routes/event";
 import { formRoutes } from "~/routes/form";
 import { pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
+import { applicationRoutes } from "./routes/application";
 import { assetRoutes } from "./routes/asset";
 import { bannerRoutes } from "./routes/banner";
 import { companyRoutes } from "./routes/company";
@@ -74,6 +75,7 @@ export const createApp = async (variables?: Variables) => {
             return c.text("Healthy!");
         })
         .route("/api-keys", apiKeyRoutes)
+        .route("/applications", applicationRoutes)
         .route("/assets", assetRoutes)
         .route("/banners", bannerRoutes)
         .route("/company", companyRoutes)

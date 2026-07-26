@@ -211,6 +211,13 @@
       "when": 1784979134317,
       "tag": "0029_perpetual_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1784980469803,
+      "tag": "0030_faulty_quentin_quire",
+      "breakpoints": true
     }
   ]
 }

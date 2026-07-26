@@ -60,6 +60,11 @@ export const ADMIN_DASHBOARD_PERMISSIONS = [
     "banners:update",
     "banners:delete",
     "banners:manage",
+    "applications:manage",
+    "applications:expense:manage",
+    "applications:support:manage",
+    "applications:sports-support:manage",
+    "applications:hs-case:manage",
 ] as const;
 
 /**
