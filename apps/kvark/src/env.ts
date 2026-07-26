@@ -14,16 +14,6 @@ export const env = createEnv({
 
     client: {
         VITE_APP_TITLE: z.string().min(1).optional(),
-        /**
-         * Set to "true" to show the "Logg inn med Feide" button. Kept off by
-         * default so the button never appears before the backend Feide client
-         * is registered and its credentials are in place — clicking it then
-         * would only produce a Dataporten error.
-         */
-        VITE_FEIDE_ENABLED: z
-            .string()
-            .optional()
-            .transform((v) => v === "true"),
     },
 
     /**

@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
+import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
     CardContent,
@@ -20,7 +21,6 @@ import {
 } from "#/api/auth";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import { OrDivider } from "#/components/or-divider";
-import { env } from "#/env";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
 // Keep extra search params (sig, exp, client_id, scope…) so the
@@ -45,6 +45,9 @@ function LoginPage() {
     const { redirectTo } = Route.useSearch();
 
     const [feideLoading, setFeideLoading] = useState(false);
+    // Feide is the primary path, so the username/password form stays collapsed
+    // behind a "Kan du ikke bruke Feide?" link.
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
 
     async function handleFeideSignIn() {
         setFeideLoading(true);
@@ -91,83 +94,98 @@ function LoginPage() {
             <CardHeader>
                 <CardTitle>Logg inn</CardTitle>
                 <CardDescription>
-                    Velkommen tilbake. Logg inn på kontoen din.
+                    Velkommen tilbake. Logg inn med Feide.
                 </CardDescription>
             </CardHeader>
-            <form {...formHandlers(form)} className="flex flex-col gap-4">
-                <CardContent className="flex flex-col gap-5">
-                    <FieldGroup>
-                        <form.AppField name="username">
-                            {(field) => (
-                                <field.InputField
-                                    label="Brukernavn"
-                                    type="text"
-                                    autoComplete="username"
-                                    required
-                                />
-                            )}
-                        </form.AppField>
-                        <div className="flex flex-col gap-2">
-                            <form.AppField name="password">
+
+            <CardContent className="flex flex-col gap-4">
+                <FeideSignInButton
+                    variant="default"
+                    onSignIn={handleFeideSignIn}
+                    loading={feideLoading}
+                />
+                {!showPasswordForm && (
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="mx-auto"
+                        onClick={() => setShowPasswordForm(true)}
+                    >
+                        Kan du ikke bruke Feide?
+                    </Button>
+                )}
+            </CardContent>
+
+            {showPasswordForm && (
+                <form {...formHandlers(form)} className="flex flex-col gap-4">
+                    <div className="px-6">
+                        <OrDivider label="eller logg inn med brukernavn" />
+                    </div>
+                    <CardContent className="flex flex-col gap-5">
+                        <FieldGroup>
+                            <form.AppField name="username">
                                 {(field) => (
-                                    <field.PasswordField
-                                        label="Passord"
-                                        autoComplete="current-password"
+                                    <field.InputField
+                                        label="Brukernavn"
+                                        type="text"
+                                        autoComplete="username"
                                         required
                                     />
                                 )}
                             </form.AppField>
-                            <div className="flex justify-end">
-                                <Link
-                                    to="/forgot-password"
-                                    className="text-sm text-muted-foreground underline underline-offset-4"
-                                >
-                                    Glemt passord?
-                                </Link>
+                            <div className="flex flex-col gap-2">
+                                <form.AppField name="password">
+                                    {(field) => (
+                                        <field.PasswordField
+                                            label="Passord"
+                                            autoComplete="current-password"
+                                            required
+                                        />
+                                    )}
+                                </form.AppField>
+                                <div className="flex justify-end">
+                                    <Link
+                                        to="/forgot-password"
+                                        className="text-sm text-muted-foreground underline underline-offset-4"
+                                    >
+                                        Glemt passord?
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                    </FieldGroup>
+                        </FieldGroup>
 
-                    <form.AppForm>
-                        <form.FormErrors />
-                    </form.AppForm>
+                        <form.AppForm>
+                            <form.FormErrors />
+                        </form.AppForm>
 
-                    <form.AppForm>
-                        <form.SubmitButton
-                            className="w-full"
-                            loading={
-                                <>
-                                    <Spinner />
-                                    <span>Logger inn...</span>
-                                </>
-                            }
-                        >
-                            Logg inn
-                        </form.SubmitButton>
-                    </form.AppForm>
+                        <form.AppForm>
+                            <form.SubmitButton
+                                className="w-full"
+                                loading={
+                                    <>
+                                        <Spinner />
+                                        <span>Logger inn...</span>
+                                    </>
+                                }
+                            >
+                                Logg inn
+                            </form.SubmitButton>
+                        </form.AppForm>
+                    </CardContent>
+                </form>
+            )}
 
-                    {env.VITE_FEIDE_ENABLED && (
-                        <>
-                            <OrDivider />
-                            <FeideSignInButton
-                                onSignIn={handleFeideSignIn}
-                                loading={feideLoading}
-                            />
-                        </>
-                    )}
-                </CardContent>
-                <CardFooter className="justify-center">
-                    <p className="text-sm text-muted-foreground">
-                        Har du ikke konto?{" "}
-                        <Link
-                            to="/register"
-                            className="underline underline-offset-4"
-                        >
-                            Opprett bruker
-                        </Link>
-                    </p>
-                </CardFooter>
-            </form>
+            <CardFooter className="justify-center">
+                <p className="text-sm text-muted-foreground">
+                    Har du ikke konto?{" "}
+                    <Link
+                        to="/register"
+                        className="underline underline-offset-4"
+                    >
+                        Opprett bruker
+                    </Link>
+                </p>
+            </CardFooter>
         </Card>
     );
 }
