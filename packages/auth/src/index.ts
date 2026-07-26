@@ -291,7 +291,18 @@ export function createAuth(options: CreateAuthOptions) {
                 if (!isFeideConfigured) return;
                 // Syncs the user's TIHLDE study-program memberships after a
                 // successful Feide callback; a no-op for every other request.
-                await syncFeideHook(ctx, { db: options.services.db });
+                //
+                // Never allowed to fail the request: by the time this runs the
+                // session cookie is already set, so throwing would hand a
+                // logged-in user a 500 at the callback URL instead of sending
+                // them back to the website. A failed sync costs them their
+                // baseline role until the next login — a 500 costs them the
+                // login itself.
+                try {
+                    await syncFeideHook(ctx, { db: options.services.db });
+                } catch (error) {
+                    console.error("Feide sync failed after callback:", error);
+                }
             }),
         },
 
