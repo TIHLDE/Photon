@@ -152,7 +152,7 @@ function GroupCard({
             {expanded && (
                 <CardContent className="flex flex-col gap-6">
                     <FieldGroup>
-                        <Field className="flex-row items-center gap-3">
+                        <Field orientation="horizontal" className="gap-3">
                             <Checkbox
                                 id={`signing-${group.slug}`}
                                 checked={requiresSigning}

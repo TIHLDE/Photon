@@ -314,7 +314,7 @@ function EventAdminPage() {
                                     </SelectContent>
                                 </Select>
                             </Field>
-                            <Field className="flex-row items-center gap-3">
+                            <Field orientation="horizontal" className="gap-3">
                                 <Checkbox
                                     id="event-paid"
                                     checked={isPaidEvent}
@@ -342,7 +342,7 @@ function EventAdminPage() {
                                     />
                                 </Field>
                             )}
-                            <Field className="flex-row items-center gap-3">
+                            <Field orientation="horizontal" className="gap-3">
                                 <Checkbox
                                     id="event-strikes"
                                     checked={canCauseStrikes}
