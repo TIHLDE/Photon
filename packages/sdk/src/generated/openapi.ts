@@ -2150,6 +2150,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Paginated list of every user, with optional name/username search and study filters. Used by the admin user overview. Requires 'users:view'.
+         */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4898,6 +4918,31 @@ export interface components {
             username: string | null;
             image: string | null;
         }[];
+        UserListItem: {
+            /** @description User ID */
+            id: string;
+            /** @description User display name */
+            name: string;
+            /** @description Username */
+            username: string | null;
+            /** @description Profile image URL */
+            image: string | null;
+            /** @description Name of the user's study programme, derived from their STUDY group membership. Null when they have none. */
+            studyProgram: string | null;
+            /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+            studyStartYear: number | null;
+            /** @description Account creation timestamp */
+            createdAt: string;
+        };
+        UserList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            items: components["schemas"]["UserListItem"][];
+        };
     };
     responses: never;
     parameters: {
@@ -10839,6 +10884,53 @@ export interface operations {
                 };
             };
             /** @description Forbidden - Requires users:view or roles:assign */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Filter by name or username (substring) */
+                search?: string;
+                /** @description Slug of a STUDY group to filter by, or "none" for users without one */
+                study?: string;
+                /** @description Filter by cohort (STUDYYEAR group), e.g. 2023 */
+                studyStartYear?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:view */
             403: {
                 headers: {
                     [name: string]: unknown;
