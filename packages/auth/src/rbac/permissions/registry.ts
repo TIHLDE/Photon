@@ -74,6 +74,14 @@ export const PERMISSION_REGISTRY = {
         },
     },
 
+    // Gallery permissions ("galleri" — albums and the pictures in them)
+    galleries: {
+        actions: ["view", "create", "update", "delete", "manage"],
+        pictures: {
+            actions: ["create", "update", "delete"],
+        },
+    },
+
     /**
      * TÖDDEL, the student magazine. There is no "view" action: the archive is
      * a public endpoint, so the only permissions worth handing out are the

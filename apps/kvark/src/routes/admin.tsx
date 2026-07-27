@@ -29,6 +29,7 @@ import {
     DotSquare,
     FileTextIcon,
     FileUserIcon,
+    ImagesIcon,
     KeyIcon,
     LayoutDashboardIcon,
     LogsIcon,
@@ -134,6 +135,17 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Bannere",
                 icon: BookmarkIcon,
                 link: linkOptions({ to: "/admin/bannere" }),
+            },
+            {
+                label: "Galleri",
+                icon: ImagesIcon,
+                link: linkOptions({ to: "/admin/galleri" }),
+                permission: [
+                    "galleries:create",
+                    "galleries:update",
+                    "galleries:delete",
+                    "galleries:manage",
+                ],
             },
             {
                 label: "TÖDDEL",

@@ -14,3 +14,4 @@ export * from "./banner";
 export * from "./qr-code";
 export * from "./motetid";
 export * from "./application";
+export * from "./gallery";
