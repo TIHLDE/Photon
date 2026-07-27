@@ -1,4 +1,5 @@
-import { queryOptions } from "@tanstack/react-query";
+import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import type { CreateToddel, UpdateToddel } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
 
 const ToddelQueryKeys = {
@@ -14,3 +15,32 @@ export const getToddelIssuesQuery = () =>
         queryKey: ToddelQueryKeys.list,
         queryFn: () => apiClient.get("/api/toddel"),
     });
+
+export const createToddelMutation = mutationOptions({
+    mutationFn: ({ data }: { data: CreateToddel }) =>
+        apiClient.post("/api/toddel", { json: data }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries(getToddelIssuesQuery());
+    },
+});
+
+export const updateToddelMutation = mutationOptions({
+    mutationFn: ({ edition, data }: { edition: number; data: UpdateToddel }) =>
+        apiClient.patch("/api/toddel/{edition}", {
+            params: { edition: String(edition) },
+            json: data,
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries(getToddelIssuesQuery());
+    },
+});
+
+export const deleteToddelMutation = mutationOptions({
+    mutationFn: ({ edition }: { edition: number }) =>
+        apiClient.delete("/api/toddel/{edition}", {
+            params: { edition: String(edition) },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries(getToddelIssuesQuery());
+    },
+});

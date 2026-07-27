@@ -1763,11 +1763,39 @@ export interface paths {
          */
         get: operations["listToddel"];
         put?: never;
-        post?: never;
+        /**
+         * Publish a TÖDDEL issue
+         * @description Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' permission.
+         */
+        post: operations["createToddel"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/toddel/{edition}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a TÖDDEL issue
+         * @description Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' permission.
+         */
+        delete: operations["deleteToddel"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a TÖDDEL issue
+         * @description Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' permission.
+         */
+        patch: operations["updateToddel"];
         trace?: never;
     };
     "/api/qr-codes": {
@@ -4234,6 +4262,38 @@ export interface components {
         };
         /** @description Every issue, newest first */
         ToddelList: components["schemas"]["ToddelIssue"][];
+        CreateToddel: {
+            /** @description Running count, continuing where the archive left off — not the number printed on the cover */
+            edition: number;
+            /** @description Title of the issue, e.g. “Töddel” */
+            title: string;
+            /**
+             * Format: date
+             * @description Publication date (ISO 8601)
+             */
+            publishedAt: string;
+            /** @description Asset key of the PDF, from POST /api/assets */
+            pdfKey: string;
+            /** @description Asset key of the cover image, if there is one */
+            imageKey?: string | null;
+        };
+        /** @description Only the given fields are changed */
+        UpdateToddel: {
+            /** @description Title of the issue, e.g. “Töddel” */
+            title?: string;
+            /**
+             * Format: date
+             * @description Publication date (ISO 8601)
+             */
+            publishedAt?: string;
+            /** @description Asset key of the PDF, from POST /api/assets */
+            pdfKey?: string;
+            /** @description Asset key of the cover image, if there is one */
+            imageKey?: string | null;
+        };
+        DeleteToddelResponse: {
+            message: string;
+        };
         QRCode: {
             /**
              * Format: uuid
@@ -9272,6 +9332,161 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ToddelList"];
                 };
+            };
+        };
+    };
+    createToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToddel"];
+            };
+        };
+        responses: {
+            /** @description Issue published */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToddelIssue"];
+                };
+            };
+            /** @description Bad Request - Unknown asset key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - that edition already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edition: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Issue removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteToddelResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Issue not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edition: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateToddel"];
+            };
+        };
+        responses: {
+            /** @description Issue updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToddelIssue"];
+                };
+            };
+            /** @description Bad Request - Unknown asset key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Issue not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
