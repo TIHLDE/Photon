@@ -3729,6 +3729,10 @@ export interface components {
                 name: string;
                 /** @description User profile image URL */
                 image: string | null;
+                /** @description Name of the member's study programme, derived from their STUDY group membership. Null when the member has none (alumni, honorary members). */
+                studyProgram: string | null;
+                /** @description The year the member started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+                studyStartYear: number | null;
             };
         };
         GroupMemberList: components["schemas"]["GroupMember"][];
