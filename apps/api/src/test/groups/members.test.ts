@@ -426,6 +426,103 @@ describe("group members", () => {
         );
 
         integrationTest(
+            "includes study programme and cohort derived from the member's study groups",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "study-list",
+                });
+                // Lepton stores these types in UPPERCASE — the route has to
+                // match case-insensitively, so seed them that way.
+                const study = await ctx.utils.createTestGroup({
+                    slug: "dataingenior",
+                    name: "Dataingeniør",
+                    type: "STUDY",
+                });
+                const olderCohort = await ctx.utils.createTestGroup({
+                    slug: "2021",
+                    name: "2021",
+                    type: "STUDYYEAR",
+                });
+                const cohort = await ctx.utils.createTestGroup({
+                    slug: "2024",
+                    name: "2024",
+                    type: "STUDYYEAR",
+                });
+
+                const student = await ctx.auth.api.createUser({
+                    body: {
+                        email: "student@test.com",
+                        name: "Student",
+                        password: "test123!",
+                    },
+                });
+                const alumni = await ctx.auth.api.createUser({
+                    body: {
+                        email: "alumni@test.com",
+                        name: "Alumni",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: student.user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                    {
+                        userId: student.user.id,
+                        groupSlug: study.slug,
+                        role: "member",
+                    },
+                    {
+                        userId: student.user.id,
+                        groupSlug: olderCohort.slug,
+                        role: "member",
+                    },
+                    {
+                        userId: student.user.id,
+                        groupSlug: cohort.slug,
+                        role: "member",
+                    },
+                    {
+                        userId: alumni.user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+
+                const json = await response.json();
+                const studentRow = json.find(
+                    (m) => m.userId === student.user.id,
+                );
+                const alumniRow = json.find((m) => m.userId === alumni.user.id);
+
+                expect(studentRow?.user).toMatchObject({
+                    studyProgram: "Dataingeniør",
+                    // The most recent cohort wins when someone has several.
+                    studyStartYear: 2024,
+                });
+                expect(alumniRow?.user).toMatchObject({
+                    studyProgram: null,
+                    studyStartYear: null,
+                });
+            },
+            500_000,
+        );
+
+        integrationTest(
             "returns empty array for group with no members",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();

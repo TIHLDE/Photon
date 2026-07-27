@@ -10,12 +10,20 @@
  * the one key guaranteed to agree between the two systems. The Lepton user_id
  * is translated to an email via the user export cache.
  *
- * Idempotent: ON CONFLICT DO NOTHING on the (user, group) pair, and a re-run
- * reports zero new rows. Without --commit nothing is written.
+ * `created_at` follows the membership over: "medlem siden" is when someone
+ * actually joined the group in Lepton, not when the import happened to run.
+ * A row that already exists only ever gets its date moved *earlier* — a
+ * membership created natively in Photon after the migration keeps its own
+ * date, and a re-run never drags anything forward.
+ *
+ * Idempotent: the (user, group) pair conflicts are resolved as described
+ * above, and a settled re-run reports zero new and zero corrected rows.
+ * Without --commit nothing is written.
  *
  * Usage: DATABASE_URL=... bun import-memberships.ts [--commit]
  */
 import { createDb, schema } from "@photon/db";
+import { and, eq } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
 
@@ -66,10 +74,30 @@ const main = async () => {
         ),
     );
 
+    // Existing rows, so an already-imported membership can have its join date
+    // corrected instead of being silently skipped.
+    const existing = new Map(
+        (
+            await db
+                .select({
+                    userId: schema.groupMembership.userId,
+                    groupSlug: schema.groupMembership.groupSlug,
+                    createdAt: schema.groupMembership.createdAt,
+                })
+                .from(schema.groupMembership)
+        ).map((m) => [`${m.userId} ${m.groupSlug}`, m.createdAt]),
+    );
+
     const rows: (typeof schema.groupMembership.$inferInsert)[] = [];
+    const corrections: {
+        userId: string;
+        groupSlug: string;
+        createdAt: Date;
+    }[] = [];
     let unknownUser = 0;
     let unknownGroup = 0;
     let unknownRole = 0;
+    let missingJoinDate = 0;
 
     for (const [slug, list] of Object.entries(memberships)) {
         if (!knownGroups.has(slug)) {
@@ -102,13 +130,42 @@ const main = async () => {
                 continue;
             }
 
-            rows.push({ userId, groupSlug: slug, role });
+            const joined = m.created_at ? new Date(m.created_at) : null;
+            const joinedAt =
+                joined && !Number.isNaN(joined.getTime()) ? joined : null;
+            if (!joinedAt) {
+                missingJoinDate++;
+            }
+
+            const current = existing.get(`${userId} ${slug}`);
+            if (current) {
+                // Only ever move the date backwards — see the file header.
+                if (joinedAt && joinedAt < current) {
+                    corrections.push({
+                        userId,
+                        groupSlug: slug,
+                        createdAt: joinedAt,
+                    });
+                }
+                continue;
+            }
+
+            rows.push({
+                userId,
+                groupSlug: slug,
+                role,
+                ...(joinedAt ? { createdAt: joinedAt } : {}),
+            });
         }
     }
 
     console.log(`${rows.length} medlemskap klare til innsetting`);
+    console.log(
+        `${corrections.length} medlemskap får korrigert «medlem siden»`,
+    );
 
     let inserted = 0;
+    let corrected = 0;
     if (commit && rows.length > 0) {
         for (let i = 0; i < rows.length; i += 500) {
             const batch = rows.slice(i, i + 500);
@@ -121,6 +178,21 @@ const main = async () => {
         }
     }
 
+    if (commit && corrections.length > 0) {
+        for (const c of corrections) {
+            await db
+                .update(schema.groupMembership)
+                .set({ createdAt: c.createdAt })
+                .where(
+                    and(
+                        eq(schema.groupMembership.userId, c.userId),
+                        eq(schema.groupMembership.groupSlug, c.groupSlug),
+                    ),
+                );
+            corrected++;
+        }
+    }
+
     console.log();
     console.log(commit ? "=== KJØRT ===" : "=== TØRRKJØRING (read-only) ===");
     console.log(`klare:            ${rows.length}`);
@@ -129,9 +201,15 @@ const main = async () => {
             ? `satt inn:         ${inserted}`
             : "satt inn:         0 (tørrkjøring)",
     );
+    console.log(
+        commit
+            ? `dato korrigert:   ${corrected}`
+            : `dato korrigert:   0 (tørrkjøring, ${corrections.length} klare)`,
+    );
     console.log(`bruker mangler:   ${unknownUser}`);
     console.log(`gruppe mangler:   ${unknownGroup}`);
     console.log(`ukjent rolle:     ${unknownRole}`);
+    console.log(`uten dato:        ${missingJoinDate}`);
 };
 
 await main();

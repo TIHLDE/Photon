@@ -101,6 +101,8 @@ export async function migrateGroups(
         userId: string;
         groupSlug: string;
         role: "member" | "leader";
+        createdAt?: Date;
+        updatedAt?: Date;
     }> = [];
 
     /**
@@ -120,10 +122,14 @@ export async function migrateGroups(
             continue;
         }
 
+        // Carry the join date over: "medlem siden" has to say when someone
+        // actually joined the group, not when the import ran.
         membershipRecords.push({
             userId: newUserId,
             groupSlug,
             role: mapMembershipRole(m.membership_type),
+            ...(m.created_at ? { createdAt: new Date(m.created_at) } : {}),
+            ...(m.updated_at ? { updatedAt: new Date(m.updated_at) } : {}),
         });
     }
 
