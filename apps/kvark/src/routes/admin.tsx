@@ -20,6 +20,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
     BookmarkIcon,
+    BookOpenIcon,
     BriefcaseBusinessIcon,
     CalendarIcon,
     CircleCheckBigIcon,
@@ -133,6 +134,17 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Bannere",
                 icon: BookmarkIcon,
                 link: linkOptions({ to: "/admin/bannere" }),
+            },
+            {
+                label: "TÖDDEL",
+                icon: BookOpenIcon,
+                link: linkOptions({ to: "/admin/toddel" }),
+                permission: [
+                    "toddel:create",
+                    "toddel:update",
+                    "toddel:delete",
+                    "toddel:manage",
+                ],
             },
         ],
     },

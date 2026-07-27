@@ -40,6 +40,7 @@ import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
 import { Route as AdminRollerRouteImport } from './routes/admin/roller'
 import { Route as AdminSoknaderRouteImport } from './routes/admin/soknader'
+import { Route as AdminToddelRouteImport } from './routes/admin/toddel'
 import { Route as AppAnnonserIndexRouteImport } from './routes/_app/annonser.index'
 import { Route as AppAnnonserSlugRouteImport } from './routes/_app/annonser.$slug'
 import { Route as AppArrangementerIndexRouteImport } from './routes/_app/arrangementer.index'
@@ -220,6 +221,11 @@ const AdminSoknaderRoute = AdminSoknaderRouteImport.update({
   path: '/soknader',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminToddelRoute = AdminToddelRouteImport.update({
+  id: '/toddel',
+  path: '/toddel',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppAnnonserIndexRoute = AppAnnonserIndexRouteImport.update({
   id: '/annonser/',
   path: '/annonser/',
@@ -391,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
   '/admin/soknader': typeof AdminSoknaderRoute
+  '/admin/toddel': typeof AdminToddelRoute
   '/admin/': typeof AdminIndexRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
   '/admin/soknader': typeof AdminSoknaderRoute
+  '/admin/toddel': typeof AdminToddelRoute
   '/annonser/$slug': typeof AppAnnonserSlugRoute
   '/arrangementer/$slug': typeof AppArrangementerSlugRoute
   '/bedrift/studiene': typeof AppBedriftStudieneRoute
@@ -507,6 +515,7 @@ export interface FileRoutesById {
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
   '/admin/soknader': typeof AdminSoknaderRoute
+  '/admin/toddel': typeof AdminToddelRoute
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_app/annonser/$slug': typeof AppAnnonserSlugRoute
@@ -567,6 +576,7 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/admin/roller'
     | '/admin/soknader'
+    | '/admin/toddel'
     | '/admin/'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
@@ -624,6 +634,7 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/admin/roller'
     | '/admin/soknader'
+    | '/admin/toddel'
     | '/annonser/$slug'
     | '/arrangementer/$slug'
     | '/bedrift/studiene'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/admin/prikker'
     | '/admin/roller'
     | '/admin/soknader'
+    | '/admin/toddel'
     | '/_app/'
     | '/admin/'
     | '/_app/annonser/$slug'
@@ -938,6 +950,13 @@ declare module '@tanstack/react-router' {
       path: '/soknader'
       fullPath: '/admin/soknader'
       preLoaderRoute: typeof AdminSoknaderRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/toddel': {
+      id: '/admin/toddel'
+      path: '/toddel'
+      fullPath: '/admin/toddel'
+      preLoaderRoute: typeof AdminToddelRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_app/annonser/': {
@@ -1280,6 +1299,7 @@ interface AdminRouteChildren {
   AdminPrikkerRoute: typeof AdminPrikkerRoute
   AdminRollerRoute: typeof AdminRollerRoute
   AdminSoknaderRoute: typeof AdminSoknaderRoute
+  AdminToddelRoute: typeof AdminToddelRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1296,6 +1316,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPrikkerRoute: AdminPrikkerRoute,
   AdminRollerRoute: AdminRollerRoute,
   AdminSoknaderRoute: AdminSoknaderRoute,
+  AdminToddelRoute: AdminToddelRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
