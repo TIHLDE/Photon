@@ -9,8 +9,10 @@ import {
 export type GalleryCardProps = {
     slug: string;
     title: string;
-    description?: string;
-    imageUrl: string;
+    description?: string | null;
+    /** Cover image. Albums with no pictures yet have none. */
+    imageUrl?: string | null;
+    pictureCount?: number;
 };
 
 export function GalleryCard({
@@ -18,6 +20,7 @@ export function GalleryCard({
     title,
     description,
     imageUrl,
+    pictureCount,
 }: GalleryCardProps) {
     return (
         <Card
@@ -29,17 +32,26 @@ export function GalleryCard({
              * the top corners only for an `img:first-child`, so a ratio wrapper
              * leaves a strip of card above the image. The ratio goes here.
              */}
-            <img
-                src={imageUrl}
-                alt=""
-                loading="lazy"
-                className="aspect-video w-full object-cover"
-            />
+            {imageUrl && (
+                <img
+                    src={imageUrl}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-video w-full object-cover"
+                />
+            )}
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
                 {description && (
                     <CardDescription className="line-clamp-2">
                         {description}
+                    </CardDescription>
+                )}
+                {pictureCount !== undefined && (
+                    <CardDescription>
+                        {pictureCount === 1
+                            ? "1 bilde"
+                            : `${pictureCount} bilder`}
                     </CardDescription>
                 )}
             </CardHeader>

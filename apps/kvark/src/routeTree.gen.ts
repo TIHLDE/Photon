@@ -33,6 +33,7 @@ import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
 import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
 import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
+import { Route as AdminGalleriRouteImport } from './routes/admin/galleri'
 import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
 import { Route as AdminOppmoteRouteImport } from './routes/admin/oppmote'
@@ -183,6 +184,11 @@ const AdminBannereRoute = AdminBannereRouteImport.update({
 const AdminBrukereRoute = AdminBrukereRouteImport.update({
   id: '/brukere',
   path: '/brukere',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGalleriRoute = AdminGalleriRouteImport.update({
+  id: '/galleri',
+  path: '/galleri',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminGrupperRoute = AdminGrupperRouteImport.update({
@@ -384,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
+  '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/oppmote': typeof AdminOppmoteRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByTo {
   '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
+  '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/oppmote': typeof AdminOppmoteRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
+  '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/oppmote': typeof AdminOppmoteRoute
@@ -560,6 +569,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
+    | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
     | '/admin/oppmote'
@@ -617,6 +627,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
+    | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
     | '/admin/oppmote'
@@ -675,6 +686,7 @@ export interface FileRouteTypes {
     | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
+    | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
     | '/admin/oppmote'
@@ -889,6 +901,13 @@ declare module '@tanstack/react-router' {
       path: '/brukere'
       fullPath: '/admin/brukere'
       preLoaderRoute: typeof AdminBrukereRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/galleri': {
+      id: '/admin/galleri'
+      path: '/galleri'
+      fullPath: '/admin/galleri'
+      preLoaderRoute: typeof AdminGalleriRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/grupper': {
@@ -1273,6 +1292,7 @@ interface AdminRouteChildren {
   AdminArrangementerRoute: typeof AdminArrangementerRoute
   AdminBannereRoute: typeof AdminBannereRoute
   AdminBrukereRoute: typeof AdminBrukereRoute
+  AdminGalleriRoute: typeof AdminGalleriRoute
   AdminGrupperRoute: typeof AdminGrupperRoute
   AdminNyheterRoute: typeof AdminNyheterRoute
   AdminOppmoteRoute: typeof AdminOppmoteRoute
@@ -1289,6 +1309,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminArrangementerRoute: AdminArrangementerRoute,
   AdminBannereRoute: AdminBannereRoute,
   AdminBrukereRoute: AdminBrukereRoute,
+  AdminGalleriRoute: AdminGalleriRoute,
   AdminGrupperRoute: AdminGrupperRoute,
   AdminNyheterRoute: AdminNyheterRoute,
   AdminOppmoteRoute: AdminOppmoteRoute,

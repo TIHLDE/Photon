@@ -25,6 +25,7 @@ const tags = [
     "forms",
     "groups",
     "fines",
+    "gallery",
     "jobs",
     "laws",
     "motetid",

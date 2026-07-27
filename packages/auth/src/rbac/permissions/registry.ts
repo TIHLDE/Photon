@@ -74,6 +74,14 @@ export const PERMISSION_REGISTRY = {
         },
     },
 
+    // Gallery permissions ("galleri" — albums and the pictures in them)
+    galleries: {
+        actions: ["view", "create", "update", "delete", "manage"],
+        pictures: {
+            actions: ["create", "update", "delete"],
+        },
+    },
+
     // Job permissions
     jobs: {
         actions: ["view", "create", "update", "delete", "manage"],
