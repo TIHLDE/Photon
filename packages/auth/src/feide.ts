@@ -106,7 +106,7 @@ const CAMPUS_BY_LETTER: Record<string, Campus> = {
  *
  * Docs: https://docs.feide.no/reference/apis/userinfo.html
  */
-interface OpenIDProfile {
+type OpenIDProfile = {
     /**
      * The internal ID of the authenticated user. This ID is stable but opaque, not releasing any additional information about the user. Always included.
      */
@@ -126,7 +126,7 @@ interface OpenIDProfile {
      * `username`.
      */
     "https://n.feide.no/claims/userid_sec"?: string[];
-}
+};
 
 /**
  * Feide group membership
@@ -781,6 +781,45 @@ export function feideUsernameOf(profile: {
 }
 
 /**
+ * Describe the shape of every `userid_sec` claim Dataporten sent, without
+ * putting the identifiers themselves in the log.
+ *
+ * Knowing the claim is *present* is not enough to explain why no username came
+ * out of it: a JSON string reads as an iterable of single characters, so
+ * {@link feideUsernameOf} would loop over letters and match nothing, and that
+ * looks exactly like an array whose entries carry a prefix other than
+ * `feide:`. Reporting the type, the length and the prefix before the first
+ * colon separates the two, and a prefix is not personal data the way the
+ * identifier after it is.
+ *
+ * Covers the two Dataporten-specific aliases as well as the standard claim,
+ * since they are not documented to agree and a usable value may sit in one
+ * while the one we read is empty.
+ */
+function describeUserIdClaims(profile: Record<string, unknown>): string {
+    const keys = [
+        "https://n.feide.no/claims/userid_sec",
+        "dataporten-userid_sec",
+        "connect-userid_sec",
+    ];
+
+    return keys
+        .map((key) => {
+            const raw = profile[key];
+            if (raw === undefined) return `${key}: absent`;
+            if (Array.isArray(raw)) {
+                const prefixes = raw.map((v) => `${String(v).split(":")[0]}:…`);
+                return `${key}: array(${raw.length}) [${prefixes.join(", ")}]`;
+            }
+            if (typeof raw === "string") {
+                return `${key}: string(${raw.length}) "${raw.split(":")[0]}:…"`;
+            }
+            return `${key}: ${typeof raw}`;
+        })
+        .join("; ");
+}
+
+/**
  * The email a migrated account should be resolved by, or null to use Feide's.
  *
  * Better Auth matches a first-time OAuth login to an existing user by email
@@ -871,7 +910,7 @@ const createGetUserInfo =
          */
         if (!feideUsernameOf(profile)) {
             console.warn(
-                `Feide userinfo carried no usable userid_sec claim, so a migrated account cannot be matched by username. Claims received: ${Object.keys(profile).join(", ")}`,
+                `Feide userinfo carried no usable userid_sec claim, so a migrated account cannot be matched by username. Claims received: ${Object.keys(profile).join(", ")}. ${describeUserIdClaims(profile)}`,
             );
         }
 
