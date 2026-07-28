@@ -34,18 +34,16 @@ const COPY: Record<
      * from a returning one whose old username differs from their NTNU one.
      */
     signup_disabled: {
-        title: "Har du vært medlem i TIHLDE før?",
-        description:
-            "Vi fant ingen bruker som passer til Feide-kontoen din. Har du brukt TIHLDE-nettsiden tidligere, vil vi helst koble deg til den gamle brukeren din, så du beholder påmeldinger, bøter og gruppene dine.",
+        title: "Har du vært medlem før?",
+        description: "Vi fant ingen bruker som passer til Feide-kontoen din.",
     },
     /**
      * A user *was* found, but Better Auth refused to attach Feide to it. In
      * practice this is a migrated member whose email was never verified.
      */
     account_not_linked: {
-        title: "Vi fant brukeren din, men fikk ikke koblet Feide til den",
-        description:
-            "Du har en TIHLDE-bruker fra før, men den kunne ikke kobles til Feide automatisk. Logg inn med brukernavn og passord i mellomtiden — bruk «Glemt passord?» om du ikke har satt et.",
+        title: "Fikk ikke koblet Feide til brukeren din",
+        description: "Logg inn med brukernavn og passord så lenge.",
     },
 };
 
@@ -77,7 +75,7 @@ export function FeideSignInIssue({
                         variant="default"
                         onClick={onUseExistingAccount}
                     >
-                        Ja, jeg har bruker fra før
+                        Ja, jeg har bruker
                     </Button>
                 )}
                 {reason === "signup_disabled" && (
@@ -90,10 +88,10 @@ export function FeideSignInIssue({
                         {loading ? (
                             <>
                                 <Spinner />
-                                <span>Oppretter bruker...</span>
+                                <span>Oppretter...</span>
                             </>
                         ) : (
-                            "Nei, jeg er ny — opprett bruker"
+                            "Nei, jeg er ny"
                         )}
                     </Button>
                 )}
