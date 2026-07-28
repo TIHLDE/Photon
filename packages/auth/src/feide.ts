@@ -173,9 +173,25 @@ export const feidePlugin = (db: NodePgDatabase<DbSchema>) =>
                           clientSecret: env.FEIDE_CLIENT_SECRET,
                           discoveryUrl:
                               "https://auth.dataporten.no/.well-known/openid-configuration",
+                          /**
+                           * `userid` alone only buys the `userid_sec` claim
+                           * itself — it arrives as an empty array unless the
+                           * authorization request *also* asks for the
+                           * attribute group that fills it. Feide's rule is
+                           * that userinfo returns the intersection of what the
+                           * client has authorized and what the request asks
+                           * for, so having `userid-feide` enabled in
+                           * Kundeportalen is not enough on its own.
+                           *
+                           * `groups-edu` below is the same pattern, and it is
+                           * why groups worked while usernames did not: there
+                           * the scope happens to carry the attribute group's
+                           * own name.
+                           */
                           scopes: [
                               "openid",
                               "userid",
+                              "userid-feide",
                               "profile",
                               "groups-edu",
                               "email",
