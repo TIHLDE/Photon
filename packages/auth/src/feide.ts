@@ -647,6 +647,21 @@ async function fetchValidStudyPrograms(
     }
 
     const groups = (await response.json()) as FeideGroup[];
+
+    /**
+     * An empty response is indistinguishable from "not a TIHLDE student" in
+     * the data alone, but the two need very different fixes: one is a member
+     * who graduated, the other is `groups-edu` not being released to the
+     * service at all. Name the types we did get so the log can tell them
+     * apart — a login that returns no groups whatsoever is a configuration
+     * problem, not a graduation.
+     */
+    if (groups.length === 0) {
+        console.warn(
+            "Feide groups API returned no groups at all; is `groups-edu` released to this service?",
+        );
+    }
+
     return {
         programs: parseValidStudyPrograms(groups),
         campus: resolveCampus(groups),
@@ -842,6 +857,23 @@ const createGetUserInfo =
         }
 
         const profile = (await response.json()) as OpenIDProfile;
+
+        /**
+         * `userid_sec` is the only thing that ties a first-time Feide login to
+         * a migrated member, and Feide drops it silently when the `userid`
+         * scope is not released — no error, no empty field, just an absent
+         * key. {@link resolveMigratedEmail} then returns null and Better Auth
+         * mints a brand-new empty account while the member's history sits on
+         * the old one. That failure is invisible in the data: the only trace
+         * is a user row with no username, which reads exactly like a member
+         * who never had one. Name the claims we actually received so one
+         * login is enough to tell a missing scope from a missing member.
+         */
+        if (!feideUsernameOf(profile)) {
+            console.warn(
+                `Feide userinfo carried no usable userid_sec claim, so a migrated account cannot be matched by username. Claims received: ${Object.keys(profile).join(", ")}`,
+            );
+        }
 
         const migratedEmail = await resolveMigratedEmail(db, profile);
 
