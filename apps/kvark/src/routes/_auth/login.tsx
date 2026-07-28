@@ -20,6 +20,10 @@ import {
     signInWithFeide,
 } from "#/api/auth";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
+import {
+    FeideSignInIssue,
+    type FeideSignInIssueReason,
+} from "#/components/feide-sign-in-issue";
 import { OrDivider } from "#/components/or-divider";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
@@ -28,8 +32,28 @@ import { formHandlers, useAppForm } from "#/hooks/form";
 const searchSchema = z
     .object({
         redirectTo: z.string().optional(),
+        // Better Auth appends this when the Feide callback fails; it redirects
+        // to errorCallbackURL, which signInWithFeide points back here.
+        error: z.string().optional(),
     })
     .loose();
+
+/**
+ * The two Feide outcomes that mean "we could not decide which account is
+ * yours", as opposed to a genuine failure. Better Auth builds these slugs by
+ * replacing spaces with underscores, so they arrive as `signup_disabled` and
+ * `account_not_linked`.
+ */
+const FEIDE_ISSUE_REASONS = new Set<FeideSignInIssueReason>([
+    "signup_disabled",
+    "account_not_linked",
+]);
+
+function feideIssueFrom(error: string | undefined) {
+    return error && FEIDE_ISSUE_REASONS.has(error as FeideSignInIssueReason)
+        ? (error as FeideSignInIssueReason)
+        : null;
+}
 
 export const Route = createFileRoute("/_auth/login")({
     component: LoginPage,
@@ -42,17 +66,22 @@ const loginSchema = z.object({
 });
 
 function LoginPage() {
-    const { redirectTo } = Route.useSearch();
+    const { redirectTo, error } = Route.useSearch();
+
+    const feideIssue = feideIssueFrom(error);
 
     const [feideLoading, setFeideLoading] = useState(false);
     // Feide is the primary path, so the username/password form stays collapsed
-    // behind a "Kan du ikke bruke Feide?" link.
-    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    // behind a "Kan du ikke bruke Feide?" link — unless Feide already failed in
+    // a way that points at an existing account, where the form *is* the answer.
+    const [showPasswordForm, setShowPasswordForm] = useState(
+        feideIssue === "account_not_linked",
+    );
 
-    async function handleFeideSignIn() {
+    async function handleFeideSignIn(options?: { requestSignUp?: boolean }) {
         setFeideLoading(true);
         try {
-            await signInWithFeide(sanitizeRedirectTo(redirectTo));
+            await signInWithFeide(sanitizeRedirectTo(redirectTo), options);
         } catch {
             // Reaching here means the redirect never happened; let the user retry.
             setFeideLoading(false);
@@ -99,9 +128,20 @@ function LoginPage() {
             </CardHeader>
 
             <CardContent className="flex flex-col gap-4">
+                {feideIssue && (
+                    <FeideSignInIssue
+                        reason={feideIssue}
+                        loading={feideLoading}
+                        showExistingAccountAction={!showPasswordForm}
+                        onRegisterAsNew={() =>
+                            handleFeideSignIn({ requestSignUp: true })
+                        }
+                        onUseExistingAccount={() => setShowPasswordForm(true)}
+                    />
+                )}
                 <FeideSignInButton
                     variant="default"
-                    onSignIn={handleFeideSignIn}
+                    onSignIn={() => handleFeideSignIn()}
                     loading={feideLoading}
                 />
                 {!showPasswordForm && (
