@@ -325,7 +325,7 @@ function CreateClientDialog({
                                 placeholder="https://app.example.com/oauth/callback"
                             />
                         </Field>
-                        <Field className="flex-row items-center gap-2">
+                        <Field orientation="horizontal" className="gap-2">
                             <Checkbox
                                 id="oauth-client-public"
                                 checked={isPublic}

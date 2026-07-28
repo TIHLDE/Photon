@@ -20,6 +20,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
     BookmarkIcon,
+    BookOpenIcon,
     BriefcaseBusinessIcon,
     CalendarIcon,
     CircleCheckBigIcon,
@@ -28,6 +29,7 @@ import {
     DotSquare,
     FileTextIcon,
     FileUserIcon,
+    ImagesIcon,
     KeyIcon,
     LayoutDashboardIcon,
     LogsIcon,
@@ -133,6 +135,28 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Bannere",
                 icon: BookmarkIcon,
                 link: linkOptions({ to: "/admin/bannere" }),
+            },
+            {
+                label: "Galleri",
+                icon: ImagesIcon,
+                link: linkOptions({ to: "/admin/galleri" }),
+                permission: [
+                    "galleries:create",
+                    "galleries:update",
+                    "galleries:delete",
+                    "galleries:manage",
+                ],
+            },
+            {
+                label: "TÖDDEL",
+                icon: BookOpenIcon,
+                link: linkOptions({ to: "/admin/toddel" }),
+                permission: [
+                    "toddel:create",
+                    "toddel:update",
+                    "toddel:delete",
+                    "toddel:manage",
+                ],
             },
         ],
     },
@@ -240,9 +264,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 />
                             }
                         >
-                            <div className="size-8">
-                                <TihldeLogo />
-                            </div>
+                            {/* size-8! slår sidebar-knappens [&_svg]:size-4-regel */}
+                            <TihldeLogo className="size-8! shrink-0" />
                             <span className="text-sm font-stretch-condensed font-extrabold">
                                 TIHLDE
                             </span>

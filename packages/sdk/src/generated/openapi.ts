@@ -962,6 +962,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/galleries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List galleries
+         * @description Get a paginated list of photo albums, newest first. Public endpoint.
+         */
+        get: operations["listGalleries"];
+        put?: never;
+        /**
+         * Create gallery
+         * @description Create a new photo album. Requires 'galleries:create' permission.
+         */
+        post: operations["createGallery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/galleries/{slug}/pictures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List pictures in a gallery
+         * @description Get a paginated list of the pictures in an album. This is what backs the 'Last inn mer' button. Public endpoint.
+         */
+        get: operations["listGalleryPictures"];
+        put?: never;
+        /**
+         * Add pictures to a gallery
+         * @description Add one or more already-uploaded images to an album. Upload the files via POST /api/assets first, then send the resulting URLs here. Requires 'galleries:pictures:create' or 'galleries:manage' permission.
+         */
+        post: operations["createGalleryPictures"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/galleries/{slug}/pictures/{pictureId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a picture from a gallery
+         * @description Remove a single picture from an album. Requires 'galleries:pictures:delete' or 'galleries:manage' permission.
+         */
+        delete: operations["deleteGalleryPicture"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a picture
+         * @description Update the title, description or alt text of a picture. Requires 'galleries:pictures:update' or 'galleries:manage' permission.
+         */
+        patch: operations["updateGalleryPicture"];
+        trace?: never;
+    };
+    "/api/galleries/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get gallery
+         * @description Get a single album by slug (or ID). Pictures are fetched separately via /api/galleries/{slug}/pictures. Public endpoint.
+         */
+        get: operations["getGallery"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete gallery
+         * @description Delete an album and every picture in it. Requires 'galleries:delete' or 'galleries:manage' permission, or being the creator.
+         */
+        delete: operations["deleteGallery"];
+        options?: never;
+        head?: never;
+        /**
+         * Update gallery
+         * @description Update an album. Requires 'galleries:update' or 'galleries:manage' permission, or being the creator. The slug is not regenerated on rename, so existing links keep working.
+         */
+        patch: operations["updateGallery"];
+        trace?: never;
+    };
     "/api/notification": {
         parameters: {
             query?: never;
@@ -1763,11 +1863,39 @@ export interface paths {
          */
         get: operations["listToddel"];
         put?: never;
-        post?: never;
+        /**
+         * Publish a TÖDDEL issue
+         * @description Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' permission.
+         */
+        post: operations["createToddel"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/toddel/{edition}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a TÖDDEL issue
+         * @description Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' permission.
+         */
+        delete: operations["deleteToddel"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a TÖDDEL issue
+         * @description Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' permission.
+         */
+        patch: operations["updateToddel"];
         trace?: never;
     };
     "/api/qr-codes": {
@@ -2014,6 +2142,26 @@ export interface paths {
          * @description Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign'.
          */
         get: operations["searchUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List users
+         * @description Paginated list of every user, with optional name/username search and study filters. Used by the admin user overview. Requires 'users:view'.
+         */
+        get: operations["listUsers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3364,6 +3512,132 @@ export interface components {
         DeleteSubmissionWithReason: {
             reason: string;
         };
+        Gallery: {
+            /**
+             * Format: uuid
+             * @description Album ID
+             */
+            id: string;
+            /** @description Public URL slug */
+            slug: string;
+            /** @description Album title */
+            title: string;
+            description: string | null;
+            /** @description Cover image URL */
+            imageUrl: string | null;
+            imageAlt: string | null;
+            /** @description Number of pictures in the album */
+            pictureCount: number;
+            /** @description Arrangement the album belongs to, if any */
+            event: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                slug: string;
+                /** @description Start time (ISO 8601) */
+                start: string;
+            } | null;
+            createdById: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+        };
+        CreateGallery: {
+            /** @description Album title, e.g. 'Julebord 2025' */
+            title: string;
+            /** @description Optional description shown on the album */
+            description?: string;
+            /**
+             * Format: uri
+             * @description Cover image shown in the album list
+             */
+            imageUrl?: string;
+            /** @description Alt text for the cover image */
+            imageAlt?: string;
+            /**
+             * Format: uuid
+             * @description Arrangement the pictures are from, if any
+             */
+            eventId?: string;
+        };
+        GalleryList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of albums */
+            items: components["schemas"]["Gallery"][];
+        };
+        GalleryPicture: {
+            /**
+             * Format: uuid
+             * @description Picture ID
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description Album the picture belongs to
+             */
+            albumId: string;
+            /** @description Image URL */
+            imageUrl: string;
+            imageAlt: string | null;
+            title: string | null;
+            description: string | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+        };
+        GalleryPictureList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of pictures */
+            items: components["schemas"]["GalleryPicture"][];
+        };
+        CreateGalleryPicturesResponse: {
+            /** @description Number of pictures added */
+            created: number;
+            items: components["schemas"]["GalleryPicture"][];
+        };
+        CreateGalleryPictures: {
+            /** @description Pictures to add to the album */
+            pictures: {
+                /**
+                 * Format: uri
+                 * @description URL of the uploaded image
+                 */
+                imageUrl: string;
+                imageAlt?: string;
+                title?: string;
+                description?: string;
+            }[];
+        };
+        UpdateGalleryPicture: {
+            imageAlt?: string | null;
+            title?: string | null;
+            description?: string | null;
+        };
+        DeleteGalleryPictureResponse: {
+            message: string;
+        };
+        UpdateGallery: {
+            title?: string;
+            description?: string | null;
+            imageUrl?: string | null;
+            imageAlt?: string | null;
+            eventId?: string | null;
+        };
+        DeleteGalleryResponse: {
+            message: string;
+        };
         Notification: {
             /** @description Notification ID */
             id: string;
@@ -3701,6 +3975,10 @@ export interface components {
                 name: string;
                 /** @description User profile image URL */
                 image: string | null;
+                /** @description Name of the member's study programme, derived from their STUDY group membership. Null when the member has none (alumni, honorary members). */
+                studyProgram: string | null;
+                /** @description The year the member started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+                studyStartYear: number | null;
             };
         };
         GroupMemberList: components["schemas"]["GroupMember"][];
@@ -4234,6 +4512,38 @@ export interface components {
         };
         /** @description Every issue, newest first */
         ToddelList: components["schemas"]["ToddelIssue"][];
+        CreateToddel: {
+            /** @description Running count, continuing where the archive left off — not the number printed on the cover */
+            edition: number;
+            /** @description Title of the issue, e.g. “Töddel” */
+            title: string;
+            /**
+             * Format: date
+             * @description Publication date (ISO 8601)
+             */
+            publishedAt: string;
+            /** @description Asset key of the PDF, from POST /api/assets */
+            pdfKey: string;
+            /** @description Asset key of the cover image, if there is one */
+            imageKey?: string | null;
+        };
+        /** @description Only the given fields are changed */
+        UpdateToddel: {
+            /** @description Title of the issue, e.g. “Töddel” */
+            title?: string;
+            /**
+             * Format: date
+             * @description Publication date (ISO 8601)
+             */
+            publishedAt?: string;
+            /** @description Asset key of the PDF, from POST /api/assets */
+            pdfKey?: string;
+            /** @description Asset key of the cover image, if there is one */
+            imageKey?: string | null;
+        };
+        DeleteToddelResponse: {
+            message: string;
+        };
         QRCode: {
             /**
              * Format: uuid
@@ -4608,6 +4918,31 @@ export interface components {
             username: string | null;
             image: string | null;
         }[];
+        UserListItem: {
+            /** @description User ID */
+            id: string;
+            /** @description User display name */
+            name: string;
+            /** @description Username */
+            username: string | null;
+            /** @description Profile image URL */
+            image: string | null;
+            /** @description Name of the user's study programme, derived from their STUDY group membership. Null when they have none. */
+            studyProgram: string | null;
+            /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+            studyStartYear: number | null;
+            /** @description Account creation timestamp */
+            createdAt: string;
+        };
+        UserList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            items: components["schemas"]["UserListItem"][];
+        };
     };
     responses: never;
     parameters: {
@@ -6957,6 +7292,375 @@ export interface operations {
             };
         };
     };
+    listGalleries: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Free-text search across title and description */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryList"];
+                };
+            };
+        };
+    };
+    createGallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGallery"];
+            };
+        };
+        responses: {
+            /** @description Album created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gallery"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGalleryPictures: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryPictureList"];
+                };
+            };
+            /** @description Not Found - Gallery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createGalleryPictures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGalleryPictures"];
+            };
+        };
+        responses: {
+            /** @description Pictures added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateGalleryPicturesResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Gallery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGalleryPicture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                pictureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Picture removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteGalleryPictureResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Gallery or picture not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGalleryPicture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                pictureId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGalleryPicture"];
+            };
+        };
+        responses: {
+            /** @description Picture updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalleryPicture"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Gallery or picture not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Album details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gallery"];
+                };
+            };
+            /** @description Not Found - Gallery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Album deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteGalleryResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Gallery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGallery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGallery"];
+            };
+        };
+        responses: {
+            /** @description Album updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gallery"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Gallery not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listNotifications: {
         parameters: {
             query?: {
@@ -9275,6 +9979,161 @@ export interface operations {
             };
         };
     };
+    createToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToddel"];
+            };
+        };
+        responses: {
+            /** @description Issue published */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToddelIssue"];
+                };
+            };
+            /** @description Bad Request - Unknown asset key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - that edition already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edition: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Issue removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteToddelResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Issue not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateToddel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                edition: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateToddel"];
+            };
+        };
+        responses: {
+            /** @description Issue updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToddelIssue"];
+                };
+            };
+            /** @description Bad Request - Unknown asset key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Issue not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listQRCodes: {
         parameters: {
             query?: never;
@@ -10025,6 +10884,53 @@ export interface operations {
                 };
             };
             /** @description Forbidden - Requires users:view or roles:assign */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Filter by name or username (substring) */
+                search?: string;
+                /** @description Slug of a STUDY group to filter by, or "none" for users without one */
+                study?: string;
+                /** @description Filter by cohort (STUDYYEAR group), e.g. 2023 */
+                studyStartYear?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:view */
             403: {
                 headers: {
                     [name: string]: unknown;

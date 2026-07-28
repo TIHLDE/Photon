@@ -206,6 +206,14 @@ export const memberSchema = Schema(
                     .string()
                     .nullable()
                     .meta({ description: "User profile image URL" }),
+                studyProgram: z.string().nullable().meta({
+                    description:
+                        "Name of the member's study programme, derived from their STUDY group membership. Null when the member has none (alumni, honorary members).",
+                }),
+                studyStartYear: z.number().int().nullable().meta({
+                    description:
+                        "The year the member started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
+                }),
             })
             .meta({ description: "Public user info for the member" }),
     }),

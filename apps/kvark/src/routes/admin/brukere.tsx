@@ -1,11 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
 import { PlusIcon, Trash2, UsersIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Input } from "@tihlde/ui/ui/input";
 import {
     Dialog,
     DialogContent,
@@ -30,7 +36,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import type { GroupMember } from "@tihlde/sdk";
+import type { Group, GroupMember } from "@tihlde/sdk";
 
 import {
     addGroupMemberMutation,
@@ -40,6 +46,7 @@ import {
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
 import { searchUsersQuery } from "#/api/queries/roles";
+import { getUsersInfiniteQuery } from "#/api/queries/user";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -48,7 +55,7 @@ import {
     type UserSearchOption,
 } from "#/components/user-search-combobox";
 import { useDebounced } from "#/lib/use-debounced";
-import { initials } from "#/lib/utils";
+import { computeClassYear, initials } from "#/lib/utils";
 
 const ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
@@ -60,6 +67,27 @@ const MEMBER_SINCE_FORMAT = new Intl.DateTimeFormat("nb-NO", {
     month: "long",
     year: "numeric",
 });
+
+/** Sentinel for "no filter" — the Select needs a concrete value. */
+const ALL = "__all__";
+/** Sentinel for members without a registered study programme. */
+const NO_STUDY = "__none__";
+
+/**
+ * Studieprogram + klassetrinn på én linje, f.eks. "Dataingeniør · 3. klasse".
+ * Klassetrinn vises bare i intervallet 1–5 (bachelor 3 + master 2) — utenfor
+ * det er medlemmet i praksis alumni, siden medlemskap aldri fjernes.
+ */
+function formatStudy(
+    programme: string | null,
+    startYear: number | null,
+): string | null {
+    if (!programme) return null;
+    if (startYear === null) return programme;
+    const classYear = computeClassYear(startYear);
+    if (classYear < 1 || classYear > 5) return programme;
+    return `${programme} · ${classYear}. klasse`;
+}
 
 /** Prefer the API's own error message over ky's generic HTTP status text. */
 async function extractErrorMessage(error: unknown): Promise<string> {
@@ -94,28 +122,53 @@ export const Route = createFileRoute("/admin/brukere")({
 
 function UsersAdminPage() {
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
-    const [groupSlug, setGroupSlug] = useState<string | null>(
-        groups[0]?.slug ?? null,
+    // Ingen gruppe valgt = alle brukere. Gruppenedtrekket filtrerer bare på
+    // studie, så det viser kun STUDY-gruppene (typen lagres i VERSALER fra
+    // Lepton, derfor lower()).
+    const studyGroups = useMemo(
+        () => groups.filter((group) => group.type.toLowerCase() === "study"),
+        [groups],
     );
+    const cohortYears = useMemo(
+        () =>
+            groups
+                .filter((group) => group.type.toLowerCase() === "studyyear")
+                .map((group) => Number.parseInt(group.name, 10))
+                .filter((year) => Number.isFinite(year))
+                .sort((a, b) => b - a),
+        [groups],
+    );
+    const [groupSlug, setGroupSlug] = useState<string | null>(null);
     const [addOpen, setAddOpen] = useState(false);
+
+    /**
+     * Medlemskap i studie- og kullgrupper bygges opp fra Feide ved hver
+     * innlogging, og API-et avviser håndredigering av dem (400). Lista vises
+     * derfor uten rolle- og fjern-handlinger for slike grupper.
+     */
+    const selectedGroup = groups.find((group) => group.slug === groupSlug);
+    const readOnly = selectedGroup
+        ? ["study", "studyyear"].includes(selectedGroup.type.toLowerCase())
+        : false;
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <AdminPageHeader
                 title="Brukere"
-                description="Administrer medlemskap og roller per gruppe."
+                description="Søk i alle brukere, eller velg et studie for å administrere medlemskap og roller."
             />
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <Field className="sm:max-w-72">
-                    <FieldLabel>Gruppe</FieldLabel>
+                    <FieldLabel>Studie</FieldLabel>
                     <AdminGroupPicker
-                        groups={groups}
+                        groups={studyGroups}
                         value={groupSlug}
                         onValueChange={setGroupSlug}
+                        allLabel="Alle brukere"
                     />
                 </Field>
-                {groupSlug && (
+                {groupSlug && !readOnly && (
                     <Button onClick={() => setAddOpen(true)}>
                         <PlusIcon className="size-4" />
                         Legg til medlem
@@ -124,20 +177,15 @@ function UsersAdminPage() {
             </div>
 
             {groupSlug ? (
-                <MembersTable groupSlug={groupSlug} />
+                <MembersTable groupSlug={groupSlug} readOnly={readOnly} />
             ) : (
-                <Card>
-                    <CardContent>
-                        <AdminEmptyState
-                            icon={UsersIcon}
-                            title="Velg en gruppe"
-                            description="Velg en gruppe for å se og administrere medlemmene."
-                        />
-                    </CardContent>
-                </Card>
+                <AllUsersTable
+                    studyGroups={studyGroups}
+                    cohortYears={cohortYears}
+                />
             )}
 
-            {groupSlug && (
+            {groupSlug && !readOnly && (
                 <AddMemberDialog
                     groupSlug={groupSlug}
                     open={addOpen}
@@ -148,12 +196,257 @@ function UsersAdminPage() {
     );
 }
 
-function MembersTable({ groupSlug }: { groupSlug: string }) {
+/**
+ * Alle brukere i systemet — ikke bare de som ligger i en gruppe. Søk og filtre
+ * kjøres server-side, og lista hentes sidevis, siden det er ~2000 brukere.
+ */
+function AllUsersTable({
+    studyGroups,
+    cohortYears,
+}: {
+    studyGroups: Group[];
+    cohortYears: number[];
+}) {
+    const [search, setSearch] = useState("");
+    const [study, setStudy] = useState<string>(ALL);
+    const [year, setYear] = useState<string>(ALL);
+
+    const debouncedSearch = useDebounced(search);
+
+    const {
+        data,
+        isPending,
+        isFetching,
+        hasNextPage,
+        fetchNextPage,
+        isFetchingNextPage,
+    } = useInfiniteQuery(
+        getUsersInfiniteQuery({
+            search: debouncedSearch.trim() || undefined,
+            // Backend-sentinelen for "uten studie" er "none".
+            study:
+                study === ALL ? undefined : study === NO_STUDY ? "none" : study,
+            studyStartYear: year === ALL ? undefined : Number(year),
+        }),
+    );
+
+    const users = useMemo(
+        () => (data?.pages ?? []).flatMap((page) => page.items),
+        [data],
+    );
+    const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Field>
+                    <FieldLabel htmlFor="user-search">Navn</FieldLabel>
+                    <Input
+                        id="user-search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Søk etter navn eller brukernavn…"
+                    />
+                </Field>
+                <Field>
+                    <FieldLabel htmlFor="user-filter-study">Studie</FieldLabel>
+                    <FilterSelect
+                        id="user-filter-study"
+                        value={study}
+                        onValueChange={setStudy}
+                        allLabel="Alle studier"
+                        options={[
+                            ...studyGroups.map((group) => ({
+                                value: group.slug,
+                                label: group.name,
+                            })),
+                            { value: NO_STUDY, label: "Uten studie" },
+                        ]}
+                    />
+                </Field>
+                <Field>
+                    <FieldLabel htmlFor="user-filter-year">Kull</FieldLabel>
+                    <FilterSelect
+                        id="user-filter-year"
+                        value={year}
+                        onValueChange={setYear}
+                        allLabel="Alle kull"
+                        options={cohortYears.map((option) => ({
+                            value: String(option),
+                            label: String(option),
+                        }))}
+                    />
+                </Field>
+            </div>
+
+            {isPending ? (
+                <Card>
+                    <CardContent className="flex flex-col gap-3">
+                        {Array.from({ length: 6 }).map((_, index) => (
+                            <Skeleton key={index} className="h-10 w-full" />
+                        ))}
+                    </CardContent>
+                </Card>
+            ) : users.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen treff"
+                            description="Ingen brukere passer med søket og filtrene."
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <>
+                    <p className="text-sm">
+                        Viser {users.length} av {totalCount} brukere
+                    </p>
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Navn</TableHead>
+                                        <TableHead>Brukernavn</TableHead>
+                                        <TableHead>Studie</TableHead>
+                                        <TableHead>Kull</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {users.map((user) => (
+                                        <TableRow key={user.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="size-7">
+                                                        <AvatarImage
+                                                            src={
+                                                                user.image ??
+                                                                undefined
+                                                            }
+                                                        />
+                                                        <AvatarFallback>
+                                                            {initials(
+                                                                user.name ??
+                                                                    "?",
+                                                            )}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-sm font-medium">
+                                                        {user.name}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.username ?? "—"}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatStudy(
+                                                    user.studyProgram,
+                                                    user.studyStartYear,
+                                                ) ?? "—"}
+                                            </TableCell>
+                                            <TableCell>
+                                                {user.studyStartYear ?? "—"}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                    {hasNextPage && (
+                        <div className="flex justify-center">
+                            <Button
+                                variant="outline"
+                                disabled={isFetchingNextPage || isFetching}
+                                onClick={() => fetchNextPage()}
+                            >
+                                Last inn flere
+                            </Button>
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+function MembersTable({
+    groupSlug,
+    readOnly,
+}: {
+    groupSlug: string;
+    /** Feide-avledede grupper kan ikke redigeres for hånd. */
+    readOnly: boolean;
+}) {
     const { data: members, isPending } = useQuery(
         getGroupMembersQuery(groupSlug, 0),
     );
     const updateRole = useMutation(updateGroupMemberRoleMutation);
     const remove = useMutation(removeGroupMemberMutation);
+
+    const [search, setSearch] = useState("");
+    const [study, setStudy] = useState<string>(ALL);
+    const [role, setRole] = useState<string>(ALL);
+    const [year, setYear] = useState<string>(ALL);
+
+    const debouncedSearch = useDebounced(search);
+
+    // Filtervalgene speiler dataene som faktisk ligger i gruppen, slik at man
+    // ikke kan velge et studie eller et år som gir null treff.
+    const studyOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    (members ?? [])
+                        .map((m) => m.user.studyProgram)
+                        .filter((p): p is string => Boolean(p)),
+                ),
+            ).sort((a, b) => a.localeCompare(b, "nb-NO")),
+        [members],
+    );
+
+    const yearOptions = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    (members ?? []).map((m) =>
+                        new Date(m.createdAt).getFullYear(),
+                    ),
+                ),
+            ).sort((a, b) => b - a),
+        [members],
+    );
+
+    const filtered = useMemo(() => {
+        const needle = debouncedSearch.toLowerCase();
+        return (members ?? []).filter((member) => {
+            if (needle && !member.user.name.toLowerCase().includes(needle)) {
+                return false;
+            }
+            if (role !== ALL && member.role !== role) {
+                return false;
+            }
+            if (study === NO_STUDY && member.user.studyProgram) {
+                return false;
+            }
+            if (
+                study !== ALL &&
+                study !== NO_STUDY &&
+                member.user.studyProgram !== study
+            ) {
+                return false;
+            }
+            if (
+                year !== ALL &&
+                String(new Date(member.createdAt).getFullYear()) !== year
+            ) {
+                return false;
+            }
+            return true;
+        });
+    }, [members, debouncedSearch, role, study, year]);
 
     if (isPending) {
         return (
@@ -192,110 +485,251 @@ function MembersTable({ groupSlug }: { groupSlug: string }) {
     }
 
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Navn</TableHead>
-                            <TableHead>Rolle</TableHead>
-                            <TableHead>Medlem siden</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {members.map((member) => (
-                            <TableRow key={member.userId}>
-                                <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <Avatar className="size-7">
-                                            <AvatarImage
-                                                src={
-                                                    member.user.image ??
-                                                    undefined
-                                                }
-                                            />
-                                            <AvatarFallback>
-                                                {initials(
-                                                    member.user.name ?? "?",
-                                                )}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-sm font-medium">
-                                            {member.user.name}
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Select
-                                        items={Object.entries(ROLE_LABELS).map(
-                                            ([value, label]) => ({
-                                                value,
-                                                label,
-                                            }),
-                                        )}
-                                        value={member.role}
-                                        onValueChange={(value) => {
-                                            if (
-                                                !value ||
-                                                value === member.role
-                                            ) {
-                                                return;
-                                            }
-                                            updateRole.mutate({
-                                                groupSlug,
-                                                userId: member.userId,
-                                                data: {
-                                                    role: value as
-                                                        | "member"
-                                                        | "leader",
-                                                },
-                                            });
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-36">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {Object.entries(ROLE_LABELS).map(
-                                                ([value, label]) => (
-                                                    <SelectItem
-                                                        key={value}
-                                                        value={value}
-                                                    >
-                                                        {label}
-                                                    </SelectItem>
-                                                ),
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                    {MEMBER_SINCE_FORMAT.format(
-                                        new Date(member.createdAt),
+        <div className="flex flex-col gap-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Field>
+                    <FieldLabel htmlFor="member-search">Navn</FieldLabel>
+                    <Input
+                        id="member-search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Søk etter navn…"
+                    />
+                </Field>
+                <Field>
+                    <FieldLabel htmlFor="member-filter-study">
+                        Studie
+                    </FieldLabel>
+                    <FilterSelect
+                        id="member-filter-study"
+                        value={study}
+                        onValueChange={setStudy}
+                        allLabel="Alle studier"
+                        options={[
+                            ...studyOptions.map((option) => ({
+                                value: option,
+                                label: option,
+                            })),
+                            { value: NO_STUDY, label: "Uten studie" },
+                        ]}
+                    />
+                </Field>
+                <Field>
+                    <FieldLabel htmlFor="member-filter-role">Rolle</FieldLabel>
+                    <FilterSelect
+                        id="member-filter-role"
+                        value={role}
+                        onValueChange={setRole}
+                        allLabel="Alle roller"
+                        options={Object.entries(ROLE_LABELS).map(
+                            ([value, label]) => ({ value, label }),
+                        )}
+                    />
+                </Field>
+                <Field>
+                    <FieldLabel htmlFor="member-filter-year">
+                        Medlem siden
+                    </FieldLabel>
+                    <FilterSelect
+                        id="member-filter-year"
+                        value={year}
+                        onValueChange={setYear}
+                        allLabel="Alle år"
+                        options={yearOptions.map((option) => ({
+                            value: String(option),
+                            label: String(option),
+                        }))}
+                    />
+                </Field>
+            </div>
+
+            <p className="text-sm">
+                Viser {filtered.length} av {members.length} medlemmer
+            </p>
+
+            {filtered.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen treff"
+                            description="Ingen medlemmer passer med filtrene."
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Navn</TableHead>
+                                    <TableHead>Studie</TableHead>
+                                    <TableHead>Rolle</TableHead>
+                                    <TableHead>Medlem siden</TableHead>
+                                    {!readOnly && (
+                                        <TableHead className="text-right">
+                                            Handlinger
+                                        </TableHead>
                                     )}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex justify-end">
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={remove.isPending}
-                                            onClick={() => handleRemove(member)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                            Fjern
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.map((member) => (
+                                    <TableRow key={member.userId}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="size-7">
+                                                    <AvatarImage
+                                                        src={
+                                                            member.user.image ??
+                                                            undefined
+                                                        }
+                                                    />
+                                                    <AvatarFallback>
+                                                        {initials(
+                                                            member.user.name ??
+                                                                "?",
+                                                        )}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-sm font-medium">
+                                                    {member.user.name}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatStudy(
+                                                member.user.studyProgram,
+                                                member.user.studyStartYear,
+                                            ) ?? "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {readOnly ? (
+                                                (ROLE_LABELS[member.role] ??
+                                                member.role)
+                                            ) : (
+                                                <Select
+                                                    items={Object.entries(
+                                                        ROLE_LABELS,
+                                                    ).map(([value, label]) => ({
+                                                        value,
+                                                        label,
+                                                    }))}
+                                                    value={member.role}
+                                                    onValueChange={(value) => {
+                                                        if (
+                                                            !value ||
+                                                            value ===
+                                                                member.role
+                                                        ) {
+                                                            return;
+                                                        }
+                                                        updateRole.mutate({
+                                                            groupSlug,
+                                                            userId: member.userId,
+                                                            data: {
+                                                                role: value as
+                                                                    | "member"
+                                                                    | "leader",
+                                                            },
+                                                        });
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="w-36">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {Object.entries(
+                                                            ROLE_LABELS,
+                                                        ).map(
+                                                            ([
+                                                                value,
+                                                                label,
+                                                            ]) => (
+                                                                <SelectItem
+                                                                    key={value}
+                                                                    value={
+                                                                        value
+                                                                    }
+                                                                >
+                                                                    {label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {MEMBER_SINCE_FORMAT.format(
+                                                new Date(member.createdAt),
+                                            )}
+                                        </TableCell>
+                                        {!readOnly && (
+                                            <TableCell>
+                                                <div className="flex justify-end">
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        disabled={
+                                                            remove.isPending
+                                                        }
+                                                        onClick={() =>
+                                                            handleRemove(member)
+                                                        }
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                        Fjern
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Nedtrekk for et enkelt kolonnefilter, med et fast "alle"-valg øverst.
+ */
+function FilterSelect({
+    id,
+    value,
+    onValueChange,
+    allLabel,
+    options,
+}: {
+    id: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    allLabel: string;
+    options: { value: string; label: string }[];
+}) {
+    const items = [{ value: ALL, label: allLabel }, ...options];
+    return (
+        <Select
+            items={items}
+            value={value}
+            onValueChange={(next) => onValueChange((next as string) ?? ALL)}
+        >
+            <SelectTrigger id={id} className="w-full">
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                {items.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     );
 }
 
