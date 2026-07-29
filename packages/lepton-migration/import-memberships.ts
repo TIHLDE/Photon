@@ -24,6 +24,7 @@
  */
 import { createDb, schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
+import { resolveGroupSlug } from "./src/mappings";
 
 const commit = process.argv.includes("--commit");
 
@@ -99,11 +100,17 @@ const main = async () => {
     let unknownRole = 0;
     let missingJoinDate = 0;
 
-    for (const [slug, list] of Object.entries(memberships)) {
+    for (const [leptonSlug, list] of Object.entries(memberships)) {
+        // Lepton's slug is not always Photon's — `kontkom` is `kok` here.
+        // The main migration also excludes `tihlde`, but prod does carry that
+        // group with 1672 real memberships, and this script only ever corrects
+        // rows that already exist. Photon's own group list is the authority,
+        // so an excluded slug falls back to itself rather than being dropped.
+        const slug = resolveGroupSlug(leptonSlug) ?? leptonSlug;
         if (!knownGroups.has(slug)) {
             if (list.length > 0) {
                 unknownGroup += list.length;
-                console.warn(`  gruppe finnes ikke i Photon: ${slug}`);
+                console.warn(`  gruppe finnes ikke i Photon: ${leptonSlug}`);
             }
             continue;
         }
