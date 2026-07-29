@@ -34,7 +34,7 @@ import { DatabaseAssetStorageService } from "../../apps/api/src/lib/storage";
 import { char32ToUuid } from "./src/mappings";
 
 const commit = process.argv.includes("--commit");
-const kinds = ["events", "groups", "users", "fines"] as const;
+const kinds = ["events", "groups", "users", "fines", "azure"] as const;
 const picked = kinds.filter((k) => process.argv.includes(`--${k}`));
 const wants = (kind: (typeof kinds)[number]): boolean =>
     picked.length === 0 || picked.includes(kind);
@@ -460,10 +460,129 @@ async function restoreFines(): Promise<void> {
     );
 }
 
+/**
+ * Whatever still points straight at Lepton's blob storage.
+ *
+ * These are not lost assets — they were never migrated. `user_settings
+ * .image_url` is a second copy of the profile picture that the July import
+ * missed entirely (it only rewrote `auth_user.image`), plus a handful of rows
+ * added in Lepton after the import ran. Lepton's storage disappears with
+ * Lepton, so they are copied in like everything else.
+ */
+async function restoreAzureLeftovers(): Promise<void> {
+    const isAzure = (url: string | null): boolean =>
+        !!url && url.includes("blob.core.windows.net");
+
+    type Leftover = {
+        label: string;
+        prefix: string;
+        sourceUrl: string;
+        apply: (newUrl: string) => Promise<void>;
+    };
+    const leftovers: Leftover[] = [];
+
+    const settings = await db
+        .select({
+            userId: schema.userSettings.userId,
+            imageUrl: schema.userSettings.imageUrl,
+        })
+        .from(schema.userSettings);
+    for (const row of settings) {
+        if (!isAzure(row.imageUrl)) continue;
+        leftovers.push({
+            label: `settings-${row.userId}`,
+            prefix: "profile-images",
+            sourceUrl: row.imageUrl!,
+            apply: async (newUrl) => {
+                await db
+                    .update(schema.userSettings)
+                    .set({ imageUrl: newUrl })
+                    .where(eq(schema.userSettings.userId, row.userId));
+            },
+        });
+    }
+
+    const events = await db
+        .select({ id: schema.event.id, imageUrl: schema.event.imageUrl })
+        .from(schema.event);
+    for (const row of events) {
+        if (!isAzure(row.imageUrl)) continue;
+        leftovers.push({
+            label: `event-${row.id.slice(0, 8)}`,
+            prefix: "event-images",
+            sourceUrl: row.imageUrl!,
+            apply: async (newUrl) => {
+                await db
+                    .update(schema.event)
+                    .set({ imageUrl: newUrl })
+                    .where(eq(schema.event.id, row.id));
+            },
+        });
+    }
+
+    const jobs = await db
+        .select({ id: schema.jobPost.id, imageUrl: schema.jobPost.imageUrl })
+        .from(schema.jobPost);
+    for (const row of jobs) {
+        if (!isAzure(row.imageUrl)) continue;
+        leftovers.push({
+            label: `job-${row.id.slice(0, 8)}`,
+            prefix: "uploads",
+            sourceUrl: row.imageUrl!,
+            apply: async (newUrl) => {
+                await db
+                    .update(schema.jobPost)
+                    .set({ imageUrl: newUrl })
+                    .where(eq(schema.jobPost.id, row.id));
+            },
+        });
+    }
+
+    const fines = await db
+        .select({ id: schema.fine.id, image: schema.fine.image })
+        .from(schema.fine);
+    for (const row of fines) {
+        if (!isAzure(row.image)) continue;
+        leftovers.push({
+            label: `fine-${row.id.slice(0, 8)}`,
+            prefix: "fine-images",
+            sourceUrl: row.image!,
+            apply: async (newUrl) => {
+                await db
+                    .update(schema.fine)
+                    .set({ image: newUrl })
+                    .where(eq(schema.fine.id, row.id));
+            },
+        });
+    }
+
+    console.log(`azure leftovers: ${leftovers.length} references`);
+    if (leftovers.length === 0 || !commit) return;
+
+    let restored = 0;
+    let failed = 0;
+
+    for (const item of leftovers) {
+        const newUrl = await copyImage(item.sourceUrl, item.label, item.prefix);
+        if (!newUrl) {
+            failed++;
+            continue;
+        }
+        await item.apply(newUrl);
+        restored++;
+        if (restored % 50 === 0) console.log(`  ${restored} copied…`);
+    }
+
+    console.log(
+        `azure leftovers: ${restored} copied in, ${failed} unreachable at source`,
+    );
+}
+
 if (wants("events")) await restoreEvents();
 if (wants("groups")) await restoreGroups();
 if (wants("users")) await restoreUsers();
 if (wants("fines")) await restoreFines();
+if (wants("azure")) await restoreAzureLeftovers();
 
 if (!commit) {
     console.log("\nDry run — nothing was written. Re-run with --commit.");
