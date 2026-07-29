@@ -1,6 +1,6 @@
 import { type DbSchema, schema } from "@photon/db";
 import type { InferInsertModel } from "drizzle-orm";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /** Groups that auto-assign an RBAC role to their members (see group.roleId). */
@@ -34,6 +34,70 @@ export async function backfillGroupData({ db }: AppContext) {
             .update(schema.group)
             .set({ roleId: linkedRole.id })
             .where(eq(schema.group.slug, groupSlug));
+    }
+}
+
+/**
+ * The NTNU institutes TIHLDE's study programmes run under, and which study
+ * group belongs to which. Everything is IDI except DigSec, which NTNU runs
+ * under IIK — the split that lets an institute-restricted event keep IDI and
+ * IIK students out of each other's seats.
+ */
+const INSTITUTES: {
+    slug: string;
+    shortName: string;
+    name: string;
+    /** Study group slugs (org_group.slug) belonging to this institute. */
+    groupSlugs: string[];
+}[] = [
+    {
+        slug: "idi",
+        shortName: "IDI",
+        name: "Institutt for datateknologi og informatikk",
+        groupSlugs: [
+            "dataingenir",
+            "digital-forretningsutvikling",
+            "digital-samhandling",
+            "drift-studie",
+            "informasjonsbehandling",
+        ],
+    },
+    {
+        slug: "iik",
+        shortName: "IIK",
+        name: "Institutt for informasjonssikkerhet og kommunikasjonsteknologi",
+        groupSlugs: ["digital-infrastruktur-og-cybersikkerhet"],
+    },
+];
+
+/**
+ * Create the institutes and attach the study groups to them.
+ *
+ * Runs on every boot, and only fills in NULLs, so an environment seeded
+ * before institutes existed picks them up while an institute reassigned by
+ * hand in /admin is left alone.
+ */
+export async function backfillInstitutes({ db }: AppContext) {
+    for (const { slug, shortName, name, groupSlugs } of INSTITUTES) {
+        await db
+            .insert(schema.institute)
+            .values({ slug, shortName, name })
+            .onConflictDoNothing({ target: schema.institute.slug });
+
+        const inserted = await db.query.institute.findFirst({
+            where: eq(schema.institute.slug, slug),
+        });
+        if (!inserted) continue;
+
+        await db
+            .update(schema.group)
+            .set({ instituteId: inserted.id })
+            .where(
+                and(
+                    inArray(schema.group.slug, groupSlugs),
+                    isNull(schema.group.instituteId),
+                ),
+            );
     }
 }
 

@@ -1477,6 +1477,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/institutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List institutes
+         * @description The NTNU institutes TIHLDE's study programmes run under. Used to pick which institute an event is reserved for. Reference data — public and unpaginated, since there are only ever a couple of them.
+         */
+        get: operations["listInstitutes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/contracts/active": {
         parameters: {
             query?: never;
@@ -2869,6 +2889,8 @@ export interface components {
             }[] | null;
             /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
             onlyAllowPrioritized: boolean;
+            /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
+            restrictedToInstituteSlug?: string | null;
             /** @description Can this event give strike penalties to users? */
             canCauseStrikes: boolean;
             /** @description Should the system enforce strike rules for this event? */
@@ -3013,6 +3035,8 @@ export interface components {
             }[] | null;
             /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
             onlyAllowPrioritized?: boolean;
+            /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
+            restrictedToInstituteSlug?: string | null;
             /** @description Can this event give strike penalties to users? */
             canCauseStrikes?: boolean;
             /** @description Should the system enforce strike rules for this event? */
@@ -3131,6 +3155,15 @@ export interface components {
             enforcesPreviousStrikes: boolean;
             /** @description Only members covered by a priority pool may register */
             onlyAllowPrioritized: boolean;
+            /** @description The institute this event is reserved for. Only members of a study group under this institute may register. Null means open to every institute. */
+            restrictedToInstitute: {
+                /** @description Institute slug */
+                slug: string;
+                /** @description Short institute name, e.g. 'IDI' */
+                shortName: string;
+                /** @description Full institute name */
+                name: string;
+            } | null;
             /**
              * @description Who may see the event ('public' or 'members'-only)
              * @enum {string}
@@ -4199,6 +4232,15 @@ export interface components {
             created_at: string;
             updated_at: string;
         }[];
+        Institute: {
+            /** @description Institute slug, e.g. 'idi' */
+            slug: string;
+            /** @description Short institute name, e.g. 'IDI' */
+            shortName: string;
+            /** @description Full institute name */
+            name: string;
+        };
+        InstituteList: components["schemas"]["Institute"][];
         SignaturePlacement: {
             page: number;
             xPct: number;
@@ -6571,7 +6613,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Event only allows members covered by a priority pool to register */
+            /** @description Forbidden - Event only allows members covered by a priority pool, or members of a specific institute, to register */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -9075,6 +9117,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listInstitutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstituteList"];
+                };
             };
         };
     };

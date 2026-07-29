@@ -95,6 +95,30 @@ export const updateRoute = route().put(
                 }
             }
 
+            // Institute restriction is tri-state: an absent field leaves it
+            // as is, null lifts the restriction, a slug sets it.
+            let restrictedToInstituteId: number | null | undefined;
+            if (body.restrictedToInstituteSlug === null) {
+                restrictedToInstituteId = null;
+            } else if (body.restrictedToInstituteSlug) {
+                const institute = await tx
+                    .select({ id: schema.institute.id })
+                    .from(schema.institute)
+                    .where(
+                        eq(
+                            schema.institute.slug,
+                            body.restrictedToInstituteSlug,
+                        ),
+                    )
+                    .limit(1);
+                if (!institute[0]) {
+                    throw new HTTPException(400, {
+                        message: `Institute with slug "${body.restrictedToInstituteSlug}" does not exist`,
+                    });
+                }
+                restrictedToInstituteId = institute[0].id;
+            }
+
             // If title is updated, generate new slug. A date change alone keeps
             // the existing slug — rewriting it would break links already shared.
             let slug = event.slug;
@@ -175,6 +199,7 @@ export const updateRoute = route().put(
                 imageUrl: body.imageUrl,
                 imageAlt: body.imageAlt,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                restrictedToInstituteId,
                 visibility: body.visibility,
                 isPaidEvent: body.isPaidEvent,
                 isRegistrationClosed: body.isRegistrationClosed,
