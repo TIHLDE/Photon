@@ -313,7 +313,11 @@ export async function migrateForms(
         }
 
         groupFormRecords.push({
-            id: crypto.randomUUID(),
+            // Derive the id from Lepton's, never at random: the insert below
+            // resolves conflicts on the primary key alone, so a random id
+            // collides with nothing and every re-run inserts the whole set
+            // again. Prod reached three copies of all 28 rows that way.
+            id: char32ToUuid(gf.form_ptr_id),
             formId: newFormId,
             groupSlug,
             emailReceiverOnSubmit:
