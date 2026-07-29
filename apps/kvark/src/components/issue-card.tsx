@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
@@ -26,7 +27,7 @@ export function IssueCard({
             <img
                 src={coverUrl || DEFAULT_COVER_IMAGE}
                 alt={title}
-                className="aspect-[3/4] w-full object-cover"
+                className={`${IMAGE_PRESETS["cover-portrait"].aspectClassName} w-full object-cover`}
                 loading="lazy"
             />
             <CardHeader>

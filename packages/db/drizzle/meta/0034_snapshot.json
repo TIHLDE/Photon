@@ -1,6 +1,6 @@
 {
-  "id": "83235ffd-3793-459e-95ff-dea70816f0a2",
-  "prevId": "5be86abc-d000-4fad-9366-0df5e4aec43c",
+  "id": "35141989-2cf7-439c-8234-cd59f1926b70",
+  "prevId": "83235ffd-3793-459e-95ff-dea70816f0a2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2060,6 +2060,18 @@
         "location": {
           "name": "location",
           "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_lat": {
+          "name": "location_lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_lng": {
+          "name": "location_lng",
+          "type": "double precision",
           "primaryKey": false,
           "notNull": false
         },

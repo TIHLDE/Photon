@@ -33,6 +33,7 @@ import {
     updateToddelMutation,
 } from "#/api/queries/toddel";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
 export const Route = createFileRoute("/admin/toddel")({
@@ -356,19 +357,14 @@ function IssueDialog({
                                 }
                             />
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor="toddel-cover">
-                                Forsidebilde (valgfritt)
-                            </FieldLabel>
-                            <Input
-                                id="toddel-cover"
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={(event) =>
-                                    setCover(event.target.files?.[0] ?? null)
-                                }
-                            />
-                        </Field>
+                        <AdminImageField
+                            label="Forsidebilde (valgfritt)"
+                            preset="cover-portrait"
+                            value={cover}
+                            onChange={setCover}
+                            existingImageUrl={issue?.imageUrl}
+                            disabled={isPending}
+                        />
                     </FieldGroup>
 
                     {error && (

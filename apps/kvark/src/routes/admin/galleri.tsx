@@ -38,20 +38,12 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { assetPublicUrl } from "#/lib/assets";
+import { imageDropzoneLabels } from "#/lib/image";
 
 /** The dropzone primitive ships English copy; the admin panel is Norwegian. */
 const dropzoneLabels = {
-    typeRejected: "Filtypen støttes ikke",
-    dropToUpload: "Slipp for å laste opp",
-    limitReached: (max: number) => `Maks ${max} bilder lastet opp`,
-    addMore: (count: number, max?: number) =>
-        max
-            ? `Klikk eller dra for å legge til (${count}/${max})`
-            : "Klikk eller dra for å legge til flere",
-    replaceSingle: "Klikk eller dra for å bytte bilde",
+    ...imageDropzoneLabels,
     defaultPlaceholder: "Klikk eller dra bilder hit for å laste opp",
-    previewLabel: (name: string) => `Forhåndsvis ${name}`,
-    removeLabel: "Fjern bilde",
 };
 
 export const Route = createFileRoute("/admin/galleri")({
@@ -312,6 +304,7 @@ function UploadPicturesCard() {
                                     <FieldLabel>Bilder</FieldLabel>
                                     <ImageDropzone
                                         multiple
+                                        preset="natural"
                                         value={files}
                                         onValueChange={setFiles}
                                         labels={dropzoneLabels}

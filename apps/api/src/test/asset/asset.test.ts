@@ -301,6 +301,111 @@ describe("Asset Upload/Download System", () => {
     );
 
     integrationTest(
+        "Upload re-encodes oversized images to WebP and leaves other files alone",
+        async ({ ctx }) => {
+            const { app, bucket } = ctx;
+
+            const testUser = await ctx.utils.createTestUser();
+            const { createApiKeyService } =
+                await import("~/lib/service/api-key");
+            const apiKeyService = createApiKeyService(ctx);
+            const apiKeyResult = await apiKeyService.create({
+                name: "Test Optimization Key",
+                description: "For image optimization testing",
+                permissions: ["root"],
+                createdById: testUser.id,
+            });
+            const authHeaders = { Authorization: `Bearer ${apiKeyResult.key}` };
+
+            const sharp = (await import("sharp")).default;
+
+            // A 4000x3000 photo-like PNG — bigger than any surface renders and
+            // far bigger than the 2560px cap.
+            const largePng = await sharp({
+                create: {
+                    width: 4000,
+                    height: 3000,
+                    channels: 3,
+                    background: { r: 190, g: 40, b: 60 },
+                },
+            })
+                .png()
+                .toBuffer();
+
+            const imageForm = new FormData();
+            imageForm.append(
+                "file",
+                new Blob([largePng], { type: "image/png" }),
+                "stort-bilde.png",
+            );
+
+            const imageResponse = await app.request("/api/assets", {
+                method: "POST",
+                body: imageForm,
+                headers: authHeaders,
+            });
+
+            expect(imageResponse.status).toBe(201);
+            const imageResult = (await imageResponse.json()) as any;
+
+            // Stored as WebP, with the key and filename following the new type.
+            expect(imageResult.contentType).toBe("image/webp");
+            expect(imageResult.originalFilename).toBe("stort-bilde.webp");
+            expect(imageResult.key).toMatch(/_stort-bilde\.webp$/);
+            expect(imageResult.size).toBeLessThan(largePng.length);
+
+            // And the bytes actually served are a WebP capped at 2560px.
+            const stored = await bucket.download(imageResult.key);
+            const meta = await sharp(stored).metadata();
+            expect(meta.format).toBe("webp");
+            expect(meta.width).toBe(2560);
+            expect(meta.height).toBe(1920);
+
+            // GIF must survive untouched, otherwise animation would be lost.
+            const gifBytes = Buffer.from("GIF89a not really a gif");
+            const gifForm = new FormData();
+            gifForm.append(
+                "file",
+                new Blob([gifBytes], { type: "image/gif" }),
+                "animasjon.gif",
+            );
+
+            const gifResponse = await app.request("/api/assets", {
+                method: "POST",
+                body: gifForm,
+                headers: authHeaders,
+            });
+
+            expect(gifResponse.status).toBe(201);
+            const gifResult = (await gifResponse.json()) as any;
+            expect(gifResult.contentType).toBe("image/gif");
+            expect(gifResult.originalFilename).toBe("animasjon.gif");
+
+            // PDFs are not images and must pass through byte for byte.
+            const pdfBytes = Buffer.from("%PDF-1.4 fake pdf body");
+            const pdfForm = new FormData();
+            pdfForm.append(
+                "file",
+                new Blob([pdfBytes], { type: "application/pdf" }),
+                "dokument.pdf",
+            );
+
+            const pdfResponse = await app.request("/api/assets", {
+                method: "POST",
+                body: pdfForm,
+                headers: authHeaders,
+            });
+
+            expect(pdfResponse.status).toBe(201);
+            const pdfResult = (await pdfResponse.json()) as any;
+            expect(pdfResult.contentType).toBe("application/pdf");
+            expect(pdfResult.size).toBe(pdfBytes.length);
+            expect(await bucket.download(pdfResult.key)).toEqual(pdfBytes);
+        },
+        600_000,
+    );
+
+    integrationTest(
         "Cleanup removes staged assets older than 2 days",
         async ({ ctx }) => {
             const { db, bucket } = ctx;

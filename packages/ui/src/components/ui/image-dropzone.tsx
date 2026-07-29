@@ -1,12 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { ImagePlusIcon, XIcon } from "lucide-react";
+import { ImagePlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type Accept, useDropzone } from "react-dropzone";
 
 import { cn } from "#/lib/utils";
+import { compressImageFiles } from "#/lib/image-compression";
 import { Button } from "#/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "#/components/ui/dialog";
+import {
+    IMAGE_PRESETS,
+    type ImagePresetName,
+    ImagePresetFrame,
+} from "#/components/ui/image-preset";
 
 export interface ImageDropzoneProps {
     value: File[];
@@ -26,6 +32,22 @@ export interface ImageDropzoneProps {
     "aria-invalid"?: boolean;
     className?: string;
     labels?: Partial<DropzoneLabels>;
+    /**
+     * Which surface the image ends up on. When set, the preview is rendered in
+     * that surface's exact crop instead of a generic thumbnail, so the editor
+     * sees the published result before saving.
+     */
+    preset?: ImagePresetName;
+    /**
+     * Already-uploaded image to show when nothing new has been picked. Lets an
+     * edit form open on the current image rather than an empty dropzone.
+     */
+    existingImageUrl?: string | null;
+    /**
+     * Skip the in-browser downscale. Only for files that must reach the server
+     * byte for byte; the server still optimizes images either way.
+     */
+    disableCompression?: boolean;
 }
 
 export interface DropzoneLabels {
@@ -37,6 +59,8 @@ export interface DropzoneLabels {
     defaultPlaceholder: string;
     previewLabel: (name: string) => string;
     removeLabel: string;
+    compressing: string;
+    replaceImage: string;
 }
 
 const defaultLabels: DropzoneLabels = {
@@ -49,6 +73,8 @@ const defaultLabels: DropzoneLabels = {
     defaultPlaceholder: "Click or drag an image here to upload",
     previewLabel: (name) => `Preview ${name}`,
     removeLabel: "Remove image",
+    compressing: "Preparing image…",
+    replaceImage: "Click to replace image",
 };
 
 type Preview = { file: File; url: string };
@@ -106,6 +132,9 @@ export function ImageDropzone({
     "aria-invalid": ariaInvalid,
     className,
     labels: userLabels,
+    preset,
+    existingImageUrl,
+    disableCompression = false,
 }: ImageDropzoneProps) {
     const labels = React.useMemo(
         () => ({ ...defaultLabels, ...userLabels }),
@@ -115,6 +144,7 @@ export function ImageDropzone({
 
     const [previews, setPreviews] = React.useState<Preview[]>([]);
     const [previewIndex, setPreviewIndex] = React.useState<number | null>(null);
+    const [isCompressing, setIsCompressing] = React.useState(false);
 
     React.useEffect(() => {
         const next = value.map((file) => ({
@@ -137,17 +167,28 @@ export function ImageDropzone({
             maxSize,
             maxFiles: multiple ? maxFiles : 1,
             multiple,
-            disabled: disabled || reachedLimit,
+            disabled: disabled || reachedLimit || isCompressing,
             noClick: true,
             noKeyboard: true,
-            onDrop: (accepted, rejected) => {
+            onDrop: async (accepted, rejected) => {
                 onError?.(
                     rejected.flatMap((r) => r.errors.map((e) => e.message)),
                 );
+
+                let files: File[] = accepted;
+                if (!disableCompression && accepted.length > 0) {
+                    setIsCompressing(true);
+                    try {
+                        files = await compressImageFiles(accepted);
+                    } finally {
+                        setIsCompressing(false);
+                    }
+                }
+
                 if (!multiple) {
-                    onValueChange(accepted.slice(0, 1));
+                    onValueChange(files.slice(0, 1));
                 } else {
-                    const merged = [...value, ...accepted];
+                    const merged = [...value, ...files];
                     onValueChange(
                         maxFiles ? merged.slice(0, maxFiles) : merged,
                     );
@@ -169,18 +210,29 @@ export function ImageDropzone({
         }
     };
 
-    const dropzoneText = getDropzoneText(
-        {
-            isDragReject,
-            isDragActive,
-            reachedLimit,
-            multiple,
-            fileCount: previews.length,
-            maxFiles,
-            placeholder: resolvedPlaceholder,
-        },
-        labels,
-    );
+    const dropzoneText = isCompressing
+        ? labels.compressing
+        : getDropzoneText(
+              {
+                  isDragReject,
+                  isDragActive,
+                  reachedLimit,
+                  multiple,
+                  fileCount: previews.length,
+                  maxFiles,
+                  placeholder: resolvedPlaceholder,
+              },
+              labels,
+          );
+
+    // With a preset and a single slot, the preview *is* the control: the editor
+    // clicks the framed image itself to swap it, exactly as it will look once
+    // published.
+    const singlePresetPreview =
+        preset && !multiple
+            ? (previews[0]?.url ?? existingImageUrl ?? null)
+            : null;
+    const showSingleFrame = preset !== undefined && !multiple;
 
     return (
         <>
@@ -197,23 +249,82 @@ export function ImageDropzone({
                         "aria-invalid": ariaInvalid,
                     })}
                 />
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={open}
-                    disabled={disabled || reachedLimit}
-                    aria-invalid={ariaInvalid}
-                    className="flex h-auto w-full flex-col items-center justify-center gap-2 px-4 py-6 aria-invalid:text-destructive"
-                >
-                    <ImagePlusIcon className="size-5" />
-                    <span>{dropzoneText}</span>
-                </Button>
-                {previews.length > 0 && (
-                    <ul className="flex flex-col gap-1">
+
+                {showSingleFrame ? (
+                    <ImagePresetFrame
+                        preset={preset}
+                        src={singlePresetPreview ?? undefined}
+                        alt=""
+                        containerClassName={cn(
+                            "border-2 border-dashed",
+                            isDragActive && !isDragReject && "border-primary",
+                            isDragReject && "border-destructive",
+                            ariaInvalid && "border-destructive",
+                        )}
+                        fallback={
+                            <span className="flex flex-col items-center gap-2 px-4 text-center">
+                                <ImagePlusIcon className="size-6" />
+                                <span>{dropzoneText}</span>
+                            </span>
+                        }
+                        overlay={
+                            <button
+                                type="button"
+                                onClick={open}
+                                disabled={disabled || isCompressing}
+                                aria-label={labels.replaceImage}
+                                className={cn(
+                                    "absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm font-medium text-white transition-opacity focus-visible:outline-none disabled:cursor-not-allowed",
+                                    singlePresetPreview
+                                        ? "bg-black/55 opacity-0 hover:opacity-100 focus-visible:opacity-100"
+                                        : "opacity-0",
+                                )}
+                            >
+                                <UploadIcon className="size-6" aria-hidden />
+                                <span>
+                                    {isCompressing
+                                        ? labels.compressing
+                                        : labels.replaceImage}
+                                </span>
+                            </button>
+                        }
+                    />
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={open}
+                        disabled={disabled || reachedLimit || isCompressing}
+                        aria-invalid={ariaInvalid}
+                        className="flex h-auto w-full flex-col items-center justify-center gap-2 px-4 py-6 aria-invalid:text-destructive"
+                    >
+                        <ImagePlusIcon className="size-5" />
+                        <span>{dropzoneText}</span>
+                    </Button>
+                )}
+
+                {preset ? (
+                    <p className="text-xs text-muted-foreground">
+                        {IMAGE_PRESETS[preset].hint}
+                        {IMAGE_PRESETS[preset].recommended
+                            ? ` Anbefalt størrelse: ${IMAGE_PRESETS[preset].recommended.width}×${IMAGE_PRESETS[preset].recommended.height} px.`
+                            : ""}
+                    </p>
+                ) : null}
+
+                {previews.length > 0 && !showSingleFrame && (
+                    <ul
+                        className={cn(
+                            preset
+                                ? "grid grid-cols-2 gap-3 sm:grid-cols-3"
+                                : "flex flex-col gap-1",
+                        )}
+                    >
                         {previews.map((preview, i) => (
                             <DropzonePreviewItem
                                 key={`${preview.file.name}-${preview.file.size}-${i}`}
                                 preview={preview}
+                                preset={preset}
                                 disabled={disabled}
                                 previewLabel={labels.previewLabel}
                                 removeLabel={labels.removeLabel}
@@ -222,6 +333,26 @@ export function ImageDropzone({
                             />
                         ))}
                     </ul>
+                )}
+
+                {previews.length > 0 && showSingleFrame && (
+                    <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-muted-foreground">
+                            {previews[0]?.file.name}
+                            {previews[0]
+                                ? ` · ${formatSize(previews[0].file.size)}`
+                                : ""}
+                        </span>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeAt(0)}
+                            disabled={disabled}
+                        >
+                            {labels.removeLabel}
+                        </Button>
+                    </div>
                 )}
             </div>
             <DropzonePreviewDialog
@@ -238,6 +369,7 @@ export function ImageDropzone({
 
 interface DropzonePreviewItemProps {
     preview: Preview;
+    preset?: ImagePresetName;
     disabled?: boolean;
     previewLabel: (name: string) => string;
     removeLabel: string;
@@ -247,6 +379,7 @@ interface DropzonePreviewItemProps {
 
 function DropzonePreviewItem({
     preview,
+    preset,
     disabled,
     previewLabel,
     removeLabel,
@@ -255,6 +388,45 @@ function DropzonePreviewItem({
 }: DropzonePreviewItemProps) {
     const { file, url } = preview;
     const type = formatType(file);
+
+    // With a preset, each item is shown in the published crop rather than as a
+    // row, so a batch upload is checked at a glance.
+    if (preset) {
+        return (
+            <li className="flex flex-col gap-1">
+                <ImagePresetFrame
+                    preset={preset}
+                    src={url}
+                    alt={file.name}
+                    overlay={
+                        <>
+                            <button
+                                type="button"
+                                onClick={onPreview}
+                                aria-label={previewLabel(file.name)}
+                                className="absolute inset-0 focus-visible:outline-none"
+                            />
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="secondary"
+                                onClick={onRemove}
+                                disabled={disabled}
+                                aria-label={removeLabel}
+                                className="absolute top-1 right-1"
+                            >
+                                <XIcon />
+                            </Button>
+                        </>
+                    }
+                />
+                <span className="truncate text-xs text-muted-foreground">
+                    {formatSize(file.size)}
+                    {type ? ` · ${type}` : ""}
+                </span>
+            </li>
+        );
+    }
 
     return (
         <li

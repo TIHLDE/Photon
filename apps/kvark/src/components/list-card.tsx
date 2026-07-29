@@ -1,5 +1,6 @@
 import { Badge } from "@tihlde/ui/ui/badge";
 import { useRender } from "@tihlde/ui/hooks/use-render";
+import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -39,7 +40,9 @@ export function ListCard({
                      * flex child it would otherwise stretch to the row height,
                      * making covers taller on cards with two-line titles.
                      */}
-                    <div className="relative aspect-[16/7] w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg">
+                    <div
+                        className={`relative ${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg`}
+                    >
                         <img
                             src={imageUrl || DEFAULT_COVER_IMAGE}
                             alt={imageAlt ?? ""}

@@ -44,6 +44,7 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 
+import { useImageUploader } from "#/api/queries/assets";
 import {
     createJobMutation,
     deleteJobMutation,
@@ -51,6 +52,7 @@ import {
     updateJobMutation,
 } from "#/api/queries/jobs";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { nextWholeHour } from "#/lib/date";
 
@@ -341,6 +343,7 @@ function JobDialog({
     const [link, setLink] = useState(job?.link ?? "");
     const [ingress, setIngress] = useState(job?.ingress ?? "");
     const [body, setBody] = useState(job?.body ?? "");
+    const [image, setImage] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Ny annonse: foreslå en søknadsfrist to uker fram på en hel time.
@@ -351,7 +354,8 @@ function JobDialog({
 
     const create = useMutation(createJobMutation);
     const update = useMutation(updateJobMutation);
-    const isPending = create.isPending || update.isPending;
+    const { uploadImage, isUploading } = useImageUploader();
+    const isPending = create.isPending || update.isPending || isUploading;
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -360,6 +364,10 @@ function JobDialog({
         const deadlineIso = deadline ? deadline.toISOString() : null;
 
         try {
+            // Uploaded before the write, so a failing upload cannot save an ad
+            // that quietly lost its image.
+            const imageUrl = image ? await uploadImage(image) : undefined;
+
             if (isEdit && job) {
                 await update.mutateAsync({
                     jobId: job.id,
@@ -376,6 +384,9 @@ function JobDialog({
                         link: link || null,
                         ingress,
                         body,
+                        // Left out when unchanged, so editing other fields
+                        // never clears an existing image.
+                        ...(imageUrl ? { imageUrl } : {}),
                     },
                 });
             } else {
@@ -393,6 +404,7 @@ function JobDialog({
                         link: link || undefined,
                         ingress,
                         body,
+                        imageUrl,
                     },
                 });
             }
@@ -619,6 +631,14 @@ function JobDialog({
                                 }
                             />
                         </Field>
+                        <AdminImageField
+                            label={`Bilde${isEdit ? " (la stå tom for å beholde)" : ""}`}
+                            preset="cover-wide"
+                            value={image}
+                            onChange={setImage}
+                            existingImageUrl={job?.imageUrl}
+                            disabled={isPending}
+                        />
                     </FieldGroup>
                     {error && (
                         <p className="text-sm text-destructive" role="alert">
