@@ -344,6 +344,42 @@ export const signUpEmailMutationOptions = mutationOptions({
     },
 });
 
+/**
+ * Asks for a fresh verification link to an address the caller types in.
+ *
+ * This is the way a member migrated from Lepton gets their Feide login to
+ * attach to the account that holds their history: Better Auth refuses to link
+ * a provider to a user whose email was never verified, and the migration
+ * created all 1685 of them with the flag unset. Verifying is also the proof of
+ * ownership — whoever reads that inbox is the member — which is why we ask them
+ * to do it rather than setting the flag on their behalf.
+ *
+ * The endpoint needs no session, answers `{ status: true }` whether or not the
+ * address exists, and holds a 500 ms floor so response time cannot be used to
+ * discover who is a member. Treat the result as "sent if it existed" and never
+ * report anything more specific to the user.
+ */
+export const sendVerificationEmailMutationOptions = mutationOptions({
+    mutationFn: async ({
+        email,
+        callbackURL,
+    }: {
+        email: string;
+        callbackURL: string;
+    }) => {
+        const result = await clientAuthInstance.sendVerificationEmail({
+            email,
+            callbackURL,
+        });
+        if (result.error) {
+            throw new Error(
+                result.error.message ?? "Kunne ikke sende lenke akkurat nå.",
+            );
+        }
+        return result.data;
+    },
+});
+
 export const requestPasswordResetMutationOptions = mutationOptions({
     mutationFn: async ({
         email,

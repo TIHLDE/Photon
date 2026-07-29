@@ -16,6 +16,7 @@ import { Spinner } from "@tihlde/ui/ui/spinner";
 
 import {
     sanitizeRedirectTo,
+    sendVerificationEmailMutationOptions,
     signInUsernameMutationOptions,
     signInWithFeide,
 } from "#/api/auth";
@@ -72,10 +73,14 @@ function LoginPage() {
 
     const [feideLoading, setFeideLoading] = useState(false);
     // Feide is the primary path, so the username/password form stays collapsed
-    // behind a "Kan du ikke bruke Feide?" link — unless Feide already failed in
-    // a way that points at an existing account, where the form *is* the answer.
-    const [showPasswordForm, setShowPasswordForm] = useState(
-        feideIssue === "account_not_linked",
+    // behind a "Kan du ikke bruke Feide?" link.
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+
+    // Verifying the address is what lets Better Auth attach Feide to a
+    // migrated account; the member does it themselves, since reading that
+    // inbox is also what proves the account is theirs.
+    const verificationMutation = useMutation(
+        sendVerificationEmailMutationOptions,
     );
 
     async function handleFeideSignIn(options?: { requestSignUp?: boolean }) {
@@ -132,11 +137,24 @@ function LoginPage() {
                     <FeideSignInIssue
                         reason={feideIssue}
                         loading={feideLoading}
-                        showExistingAccountAction={!showPasswordForm}
                         onRegisterAsNew={() =>
                             handleFeideSignIn({ requestSignUp: true })
                         }
                         onUseExistingAccount={() => setShowPasswordForm(true)}
+                        onSendVerification={(email) =>
+                            verificationMutation.mutate({
+                                email,
+                                // Absolute: Better Auth resolves a relative
+                                // callback against the API host, which would
+                                // land the member on a 404 from the router.
+                                callbackURL: new URL(
+                                    "/login",
+                                    window.location.origin,
+                                ).toString(),
+                            })
+                        }
+                        verificationSending={verificationMutation.isPending}
+                        verificationSent={verificationMutation.isSuccess}
                     />
                 )}
                 <FeideSignInButton
