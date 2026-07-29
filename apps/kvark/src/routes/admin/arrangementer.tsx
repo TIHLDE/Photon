@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { addHours } from "date-fns";
 
@@ -9,7 +9,12 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import {
     Select,
@@ -21,10 +26,16 @@ import {
 import { CheckCircle2, XCircle } from "lucide-react";
 import { nb } from "date-fns/locale";
 
+import type { AddressSuggestion } from "#/api/queries/address";
+import { searchAddressQuery } from "#/api/queries/address";
+import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
+import { AddressCombobox } from "#/components/address-combobox";
+import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { nextWholeHour } from "#/lib/date";
+import { useDebounced } from "#/lib/use-debounced";
 
 export const Route = createFileRoute("/admin/arrangementer")({
     component: EventAdminPage,
@@ -56,6 +67,16 @@ function EventAdminPage() {
     const [categorySlug, setCategorySlug] = useState("");
     const [organizerGroupSlug, setOrganizerGroupSlug] = useState("");
     const [location, setLocation] = useState("");
+    // Koordinater settes kun når stedet er valgt fra adressesøket. Fritekst
+    // ("Digitalt", "R1") gir null, og da vises stedet uten kartlenke.
+    const [locationCoords, setLocationCoords] = useState<{
+        label: string;
+        lat: number;
+        lng: number;
+    } | null>(null);
+    const debouncedLocation = useDebounced(location, 250);
+    const { data: addressSuggestions, isFetching: isSearchingAddress } =
+        useQuery(searchAddressQuery(debouncedLocation));
     const [start, setStart] = useState<Date | null>(null);
     const [end, setEnd] = useState<Date | null>(null);
     const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
@@ -66,6 +87,9 @@ function EventAdminPage() {
     const [isPaidEvent, setIsPaidEvent] = useState(false);
     const [canCauseStrikes, setCanCauseStrikes] = useState(false);
     const [price, setPrice] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+    const [imageAlt, setImageAlt] = useState("");
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
     useEffect(() => {
@@ -76,14 +100,50 @@ function EventAdminPage() {
     }, []);
 
     const createEvent = useMutation(createEventMutation);
+    const { uploadImage, isUploading } = useImageUploader();
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    /**
+     * Koordinatene følger teksten: så snart brukeren redigerer et valgt
+     * adresseforslag er de ikke lenger gyldige for stedet som står i feltet.
+     */
+    function handleLocationChange(next: string) {
+        setLocation(next);
+        setLocationCoords((current) =>
+            current && current.label === next ? current : null,
+        );
+    }
+
+    function handleSelectAddress(suggestion: AddressSuggestion) {
+        setLocation(suggestion.label);
+        setLocationCoords({
+            label: suggestion.label,
+            lat: suggestion.lat,
+            lng: suggestion.lng,
+        });
+    }
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setUploadError(null);
 
         const startIso = toIso(start);
         const endIso = toIso(end);
         const registrationEndIso = toIso(registrationEnd);
         if (!startIso || !endIso || !registrationEndIso) return;
+
+        // Uploaded first: a failed upload must not leave an event behind that
+        // silently lost its cover.
+        let imageUrl: string | null = null;
+        if (image) {
+            try {
+                imageUrl = await uploadImage(image);
+            } catch (err) {
+                setUploadError(
+                    err instanceof Error ? err.message : String(err),
+                );
+                return;
+            }
+        }
 
         createEvent.mutate(
             {
@@ -93,7 +153,10 @@ function EventAdminPage() {
                     categorySlug,
                     organizerGroupSlug,
                     location,
-                    imageUrl: null,
+                    locationLat: locationCoords?.lat ?? null,
+                    locationLng: locationCoords?.lng ?? null,
+                    imageUrl,
+                    imageAlt: imageUrl ? imageAlt || null : null,
                     start: startIso,
                     end: endIso,
                     registrationStart: null,
@@ -122,6 +185,7 @@ function EventAdminPage() {
                     setCategorySlug("");
                     setOrganizerGroupSlug("");
                     setLocation("");
+                    setLocationCoords(null);
                     const defaults = eventDateDefaults();
                     setStart(defaults.start);
                     setEnd(defaults.end);
@@ -131,6 +195,8 @@ function EventAdminPage() {
                     setIsPaidEvent(false);
                     setCanCauseStrikes(false);
                     setPrice("");
+                    setImage(null);
+                    setImageAlt("");
                 },
             },
         );
@@ -215,15 +281,20 @@ function EventAdminPage() {
                                 <FieldLabel htmlFor="event-location">
                                     Sted
                                 </FieldLabel>
-                                <Input
+                                <AddressCombobox
                                     id="event-location"
-                                    type="text"
                                     required
                                     value={location}
-                                    onChange={(event) =>
-                                        setLocation(event.target.value)
-                                    }
+                                    onValueChange={handleLocationChange}
+                                    suggestions={addressSuggestions ?? []}
+                                    isSearching={isSearchingAddress}
+                                    onSelectSuggestion={handleSelectAddress}
                                 />
+                                <FieldDescription>
+                                    {locationCoords
+                                        ? "Adressen er lenket til kart på arrangementssiden."
+                                        : "Søk opp en adresse for å legge ved kartlenke, eller skriv fritt (f.eks. «Digitalt»)."}
+                                </FieldDescription>
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="event-start">
@@ -367,6 +438,45 @@ function EventAdminPage() {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Forsidebilde</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
+                            <AdminImageField
+                                label="Bilde"
+                                description="Vises på arrangementskortet og øverst på arrangementssiden. Forhåndsvisningen er samme utsnitt som besøkende ser."
+                                preset="cover-wide"
+                                value={image}
+                                onChange={setImage}
+                            />
+                            <Field>
+                                <FieldLabel htmlFor="event-image-alt">
+                                    Bildebeskrivelse
+                                </FieldLabel>
+                                <Input
+                                    id="event-image-alt"
+                                    type="text"
+                                    maxLength={255}
+                                    placeholder="Kort beskrivelse for skjermlesere"
+                                    value={imageAlt}
+                                    onChange={(event) =>
+                                        setImageAlt(event.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
+
+                {uploadError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                        <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                )}
                 {createEvent.isSuccess && (
                     <Alert>
                         <CheckCircle2 className="size-4" />
@@ -389,9 +499,13 @@ function EventAdminPage() {
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={createEvent.isPending || !organizerGroupSlug}
+                        disabled={
+                            createEvent.isPending ||
+                            isUploading ||
+                            !organizerGroupSlug
+                        }
                     >
-                        Publiser
+                        {isUploading ? "Laster opp bilde …" : "Publiser"}
                     </Button>
                 </div>
             </form>

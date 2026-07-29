@@ -6,6 +6,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
@@ -37,7 +38,7 @@ export function NewsCard({
             <img
                 src={imageUrl || DEFAULT_COVER_IMAGE}
                 alt=""
-                className="aspect-[16/7] w-full object-cover"
+                className={`${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full object-cover`}
             />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>

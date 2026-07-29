@@ -23,6 +23,7 @@ import { Route as AppQrKoderRouteImport } from './routes/_app/qr-koder'
 import { Route as AppSoknaderRouteImport } from './routes/_app/soknader'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
+import { Route as AuthKobleFeideRouteImport } from './routes/_auth/koble-feide'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
@@ -136,6 +137,11 @@ const AppToddelRoute = AppToddelRouteImport.update({
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthKobleFeideRoute = AuthKobleFeideRouteImport.update({
+  id: '/koble-feide',
+  path: '/koble-feide',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -388,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/soknader': typeof AppSoknaderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
+  '/koble-feide': typeof AuthKobleFeideRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -446,6 +453,7 @@ export interface FileRoutesByTo {
   '/soknader': typeof AppSoknaderRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
+  '/koble-feide': typeof AuthKobleFeideRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
@@ -507,6 +515,7 @@ export interface FileRoutesById {
   '/_app/soknader': typeof AppSoknaderRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/_auth/koble-feide': typeof AuthKobleFeideRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
@@ -570,6 +579,7 @@ export interface FileRouteTypes {
     | '/soknader'
     | '/toddel'
     | '/forgot-password'
+    | '/koble-feide'
     | '/login'
     | '/register'
     | '/reset-password'
@@ -628,6 +638,7 @@ export interface FileRouteTypes {
     | '/soknader'
     | '/toddel'
     | '/forgot-password'
+    | '/koble-feide'
     | '/login'
     | '/register'
     | '/reset-password'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/_app/soknader'
     | '/_app/toddel'
     | '/_auth/forgot-password'
+    | '/_auth/koble-feide'
     | '/_auth/login'
     | '/_auth/register'
     | '/_auth/reset-password'
@@ -843,6 +855,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/koble-feide': {
+      id: '/_auth/koble-feide'
+      path: '/koble-feide'
+      fullPath: '/koble-feide'
+      preLoaderRoute: typeof AuthKobleFeideRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/login': {
@@ -1261,6 +1280,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface AuthRouteChildren {
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthKobleFeideRoute: typeof AuthKobleFeideRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
@@ -1269,6 +1289,7 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthKobleFeideRoute: AuthKobleFeideRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,

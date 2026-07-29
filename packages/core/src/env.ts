@@ -106,6 +106,13 @@ const envSchema = z
         COMPANY_CONTACT_EMAIL: z
             .string()
             .default("naeringslivsminister@tihlde.org"),
+        /**
+         * Where "jeg får ikke koblet Feide til den gamle brukeren min" lands.
+         * These need a human: the member has proved nothing yet, so linking
+         * their accounts is a judgement call, not something the flow can
+         * automate.
+         */
+        ACCOUNT_HELP_EMAIL: z.string().default("index@tihlde.org"),
         EMAIL_PROXY_URL: z.string().optional(),
         EMAIL_PROXY_KEY: z.string().optional(),
 

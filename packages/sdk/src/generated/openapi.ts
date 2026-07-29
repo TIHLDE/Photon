@@ -355,6 +355,9 @@ export interface paths {
          *     - Maximum file size: 10MB
          *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
          *
+         *     **Image optimization:**
+         *     JPEG, PNG and WebP uploads are re-encoded to WebP, scaled to fit within 2560x2560 px and stripped of metadata. The response therefore reports the stored `contentType`, `size` and `originalFilename` (extension swapped to `.webp`), which may differ from what was sent. GIF is passed through untouched so animation survives.
+         *
          *     **Usage:**
          *     Send the file as multipart/form-data with a field named "file".
          *
@@ -480,6 +483,26 @@ export interface paths {
          * @description Update a banner. Requires 'banners:update' or 'banners:manage' permission.
          */
         patch: operations["updateBanner"];
+        trace?: never;
+    };
+    "/api/account-link/help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a human to link a Feide login to an old account
+         * @description Last resort for a member migrated from Lepton whose stored username differs from their NTNU one and who no longer has the email the old account was registered with — nothing in the flow can verify them, so this notifies an admin to do it by hand. Rate limited per client.
+         */
+        post: operations["requestAccountLinkHelp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/company/contact": {
@@ -2648,6 +2671,23 @@ export interface components {
         DeleteBannerResponse: {
             message: string;
         };
+        AccountLinkHelpResponse: {
+            success: boolean;
+            message: string;
+        };
+        AccountLinkHelp: {
+            /** @description Name as Feide reported it */
+            feideName: string;
+            /** @description NTNU username from the Feide login */
+            feideUsername?: string;
+            /**
+             * Format: email
+             * @description Where to reach the member
+             */
+            contactEmail: string;
+            /** @description What they remember about the old account */
+            note?: string;
+        };
         CompanyContactResponse: {
             success: boolean;
             message: string;
@@ -2787,6 +2827,10 @@ export interface components {
             organizerGroupSlug: string;
             /** @description Location of the event (physical or online) */
             location: string;
+            /** @description Latitude of the location, when picked from address search */
+            locationLat?: number | null;
+            /** @description Longitude of the location, when picked from address search */
+            locationLng?: number | null;
             /** @description Main image to display for the event */
             imageUrl: string | null;
             /** @description Alt text for the event image */
@@ -2927,6 +2971,10 @@ export interface components {
             organizerGroupSlug?: string;
             /** @description Location of the event (physical or online) */
             location?: string;
+            /** @description Latitude of the location, when picked from address search */
+            locationLat?: number | null;
+            /** @description Longitude of the location, when picked from address search */
+            locationLng?: number | null;
             /** @description Main image to display for the event */
             imageUrl?: string | null;
             /** @description Alt text for the event image */
@@ -3001,6 +3049,10 @@ export interface components {
             title: string;
             /** @description Event location (nullable) */
             location?: string | null;
+            /** @description Latitude of the location (nullable) */
+            locationLat?: number | null;
+            /** @description Longitude of the location (nullable) */
+            locationLng?: number | null;
             /**
              * Format: date-time
              * @description Event start time (ISO 8601)
@@ -5938,6 +5990,44 @@ export interface operations {
             };
             /** @description Not Found - Banner not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    requestAccountLinkHelp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountLinkHelp"];
+            };
+        };
+        responses: {
+            /** @description Request delivered to an admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkHelpResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests from this client */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

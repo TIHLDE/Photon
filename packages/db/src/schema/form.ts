@@ -85,26 +85,39 @@ export const formEventFormRelations = relations(formEventForm, ({ one }) => ({
 
 // ===== GROUP FORM =====
 
-export const formGroupForm = pgTable("group_form", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    formId: uuid("form_id")
-        .references(() => form.id, { onDelete: "cascade" })
-        .notNull(),
-    groupSlug: varchar("group_slug", { length: 128 })
-        .references(() => group.slug, { onDelete: "cascade" })
-        .notNull(),
-    emailReceiverOnSubmit: varchar("email_receiver_on_submit", {
-        length: 256,
-    }),
-    canSubmitMultiple: boolean("can_submit_multiple").default(true).notNull(),
-    isOpenForSubmissions: boolean("is_open_for_submissions")
-        .default(false)
-        .notNull(),
-    onlyForGroupMembers: boolean("only_for_group_members")
-        .default(false)
-        .notNull(),
-    ...timestamps,
-});
+export const formGroupForm = pgTable(
+    "group_form",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        formId: uuid("form_id")
+            .references(() => form.id, { onDelete: "cascade" })
+            .notNull(),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .references(() => group.slug, { onDelete: "cascade" })
+            .notNull(),
+        emailReceiverOnSubmit: varchar("email_receiver_on_submit", {
+            length: 256,
+        }),
+        canSubmitMultiple: boolean("can_submit_multiple")
+            .default(true)
+            .notNull(),
+        isOpenForSubmissions: boolean("is_open_for_submissions")
+            .default(false)
+            .notNull(),
+        onlyForGroupMembers: boolean("only_for_group_members")
+            .default(false)
+            .notNull(),
+        ...timestamps,
+    },
+    // A form belongs to a group once. Several read paths look the row up on
+    // form_id alone with findFirst, so a duplicate does not surface as an
+    // error — it silently answers from whichever copy comes back first, and
+    // is_open_for_submissions or only_for_group_members can be read off the
+    // wrong one. The Lepton import produced exactly that (three copies of all
+    // 28 rows in prod); this makes the state unreachable rather than merely
+    // unwritten.
+    (t) => [unique("unique_group_form").on(t.formId, t.groupSlug)],
+);
 
 export const formGroupFormRelations = relations(formGroupForm, ({ one }) => ({
     form: one(form, {

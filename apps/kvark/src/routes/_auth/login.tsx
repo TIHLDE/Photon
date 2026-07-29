@@ -16,9 +16,11 @@ import { Spinner } from "@tihlde/ui/ui/spinner";
 
 import {
     sanitizeRedirectTo,
+    sendVerificationEmailMutationOptions,
     signInUsernameMutationOptions,
     signInWithFeide,
 } from "#/api/auth";
+import { requestAccountLinkHelpMutation } from "#/api/queries/account-link";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import {
     FeideSignInIssue,
@@ -72,11 +74,18 @@ function LoginPage() {
 
     const [feideLoading, setFeideLoading] = useState(false);
     // Feide is the primary path, so the username/password form stays collapsed
-    // behind a "Kan du ikke bruke Feide?" link — unless Feide already failed in
-    // a way that points at an existing account, where the form *is* the answer.
-    const [showPasswordForm, setShowPasswordForm] = useState(
-        feideIssue === "account_not_linked",
+    // behind a "Kan du ikke bruke Feide?" link.
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+
+    // Verifying the address is what lets Better Auth attach Feide to a
+    // migrated account; the member does it themselves, since reading that
+    // inbox is also what proves the account is theirs. Confirming signs them
+    // in, and /koble-feide then attaches Feide to that session — which is what
+    // rescues a member whose stored username never matched their NTNU one.
+    const verificationMutation = useMutation(
+        sendVerificationEmailMutationOptions,
     );
+    const helpMutation = useMutation(requestAccountLinkHelpMutation);
 
     async function handleFeideSignIn(options?: { requestSignUp?: boolean }) {
         setFeideLoading(true);
@@ -131,12 +140,30 @@ function LoginPage() {
                 {feideIssue && (
                     <FeideSignInIssue
                         reason={feideIssue}
-                        loading={feideLoading}
-                        showExistingAccountAction={!showPasswordForm}
+                        registering={feideLoading}
                         onRegisterAsNew={() =>
                             handleFeideSignIn({ requestSignUp: true })
                         }
-                        onUseExistingAccount={() => setShowPasswordForm(true)}
+                        onSendVerification={(email) =>
+                            verificationMutation.mutate({
+                                email,
+                                // Absolute: Better Auth resolves a relative
+                                // callback against the API host, which would
+                                // land the member on a 404 from the router.
+                                // Confirming signs them in, so send them
+                                // straight to the step that needs a session.
+                                callbackURL: new URL(
+                                    "/koble-feide",
+                                    window.location.origin,
+                                ).toString(),
+                            })
+                        }
+                        verificationSending={verificationMutation.isPending}
+                        verificationSent={verificationMutation.isSuccess}
+                        onRequestHelp={(data) => helpMutation.mutate({ data })}
+                        helpSending={helpMutation.isPending}
+                        helpSent={helpMutation.isSuccess}
+                        helpError={helpMutation.error?.message}
                     />
                 )}
                 <FeideSignInButton

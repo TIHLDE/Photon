@@ -3,6 +3,7 @@ import {
     ImageDropzone as ImageDropzonePrimitive,
     type ImageDropzoneProps as ImageDropzonePrimitiveProps,
 } from "@tihlde/ui/ui/image-dropzone";
+import { imageDropzoneLabels } from "#/lib/image";
 import { useField } from "./field";
 
 type ImageDropzoneProps = Omit<
@@ -19,19 +20,7 @@ type ImageDropzoneProps = Omit<
     labels?: ImageDropzonePrimitiveProps["labels"];
 };
 
-const defaultLabels = {
-    typeRejected: "Filtypen støttes ikke",
-    dropToUpload: "Slipp for å laste opp",
-    limitReached: (max: number) => `Maks ${max} bilder lastet opp`,
-    addMore: (count: number, max?: number) =>
-        max
-            ? `Klikk eller dra for å legge til (${count}/${max})`
-            : "Klikk eller dra for å legge til flere",
-    replaceSingle: "Klikk eller dra for å bytte bilde",
-    defaultPlaceholder: "Klikk eller dra et bilde hit for å laste opp",
-    previewLabel: (name: string) => `Forhåndsvis ${name}`,
-    removeLabel: "Fjern bilde",
-};
+const defaultLabels = imageDropzoneLabels;
 
 export function ImageDropzone({
     multiple = false,

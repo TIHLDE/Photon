@@ -28,8 +28,10 @@ import { EventQrDialog } from "#/components/event-qr-dialog";
 import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { IconActionButton } from "#/components/icon-action-button";
+import { MapLink } from "#/components/map-link";
 import { ShareButton } from "#/components/share-button";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
+import { buildMapsUrls } from "#/lib/maps";
 import {
     deriveRegistrationState,
     formatEventDate,
@@ -75,6 +77,20 @@ function EventDetailPage() {
         name: u.name,
         allowPhoto: u.allowPhoto,
     }));
+
+    // Kun steder som er valgt fra adressesøket har koordinater, og bare de
+    // blir en kartlenke.
+    const locationLabel = event.location ?? "";
+    const mapsUrls = buildMapsUrls({
+        label: locationLabel,
+        lat: event.locationLat,
+        lng: event.locationLng,
+    });
+    const locationValue = mapsUrls ? (
+        <MapLink label={locationLabel} urls={mapsUrls} />
+    ) : (
+        locationLabel
+    );
 
     const calendarUrl = buildGoogleCalendarUrl({
         title: event.title,
@@ -139,10 +155,7 @@ function EventDetailPage() {
                             icon={CalendarDays}
                             value={`${formatEventDate(event.startTime)}, kl. ${formatEventTime(event.startTime)}`}
                         />
-                        <DetailField
-                            icon={MapPin}
-                            value={event.location ?? ""}
-                        />
+                        <DetailField icon={MapPin} value={locationValue} />
                     </div>
                 </>
             }
@@ -174,10 +187,7 @@ function EventDetailPage() {
                                     />
                                 }
                             />,
-                            <DetailField
-                                icon={MapPin}
-                                value={event.location ?? ""}
-                            />,
+                            <DetailField icon={MapPin} value={locationValue} />,
                         ]}
                     />
 

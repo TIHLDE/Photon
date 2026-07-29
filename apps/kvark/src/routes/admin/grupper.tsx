@@ -28,12 +28,14 @@ import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { CheckCircle2, UsersIcon, XCircle } from "lucide-react";
 import { useState } from "react";
 
+import { useImageUploader } from "#/api/queries/assets";
 import { getGroupsQuery, updateGroupMutation } from "#/api/queries/groups";
 import {
     getGroupSignaturesQuery,
     revokeSignatureMutation,
 } from "#/api/queries/contracts";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { groupTypeLabel } from "#/lib/group";
 
@@ -117,8 +119,30 @@ function GroupCard({
     const [requiresSigning, setRequiresSigning] = useState(
         group.contractSigningRequired,
     );
+    const [image, setImage] = useState<File | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const updateGroup = useMutation(updateGroupMutation);
+    const { uploadImage, isUploading } = useImageUploader();
+
+    async function handleSave() {
+        setError(null);
+        try {
+            const imageUrl = image ? await uploadImage(image) : undefined;
+            await updateGroup.mutateAsync({
+                slug: group.slug,
+                data: {
+                    contractSigningRequired: requiresSigning,
+                    // Omitted when unchanged, so saving the checkbox never
+                    // clears the group's existing logo.
+                    ...(imageUrl ? { imageUrl } : {}),
+                },
+            });
+            setImage(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        }
+    }
 
     const signaturesQuery = useQuery({
         ...getGroupSignaturesQuery(group.slug),
@@ -164,20 +188,26 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
+                        <AdminImageField
+                            label="Gruppebilde (la stå tom for å beholde)"
+                            preset="avatar"
+                            value={image}
+                            onChange={setImage}
+                            existingImageUrl={group.imageUrl}
+                            disabled={updateGroup.isPending || isUploading}
+                        />
                     </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
                     <Button
                         className="self-start"
-                        disabled={updateGroup.isPending}
-                        onClick={() =>
-                            updateGroup.mutate({
-                                slug: group.slug,
-                                data: {
-                                    contractSigningRequired: requiresSigning,
-                                },
-                            })
-                        }
+                        disabled={updateGroup.isPending || isUploading}
+                        onClick={handleSave}
                     >
-                        Lagre
+                        {isUploading ? "Laster opp bilde …" : "Lagre"}
                     </Button>
                     {requiresSigning &&
                         (signaturesQuery.data ? (

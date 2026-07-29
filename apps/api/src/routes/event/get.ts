@@ -139,6 +139,8 @@ export const getRoute = route().get(
             slug: event.slug,
             title: event.title,
             location: event.location,
+            locationLat: event.locationLat,
+            locationLng: event.locationLng,
             startTime: event.start.toISOString(),
             endTime: event.end.toISOString(),
             organizer,
