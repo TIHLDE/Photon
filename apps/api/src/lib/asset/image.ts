@@ -1,5 +1,43 @@
-import sharp from "sharp";
+import type Sharp from "sharp";
 import type { LoggerType } from "~/middleware/logger";
+
+/**
+ * Resolved sharp module, or `null` once we know it cannot be loaded here.
+ * `undefined` means we have not tried yet.
+ */
+let sharpModule: typeof Sharp | null | undefined;
+
+/**
+ * Load sharp on first use instead of at import time.
+ *
+ * sharp ships its codec as a platform-specific binary, and when that binary
+ * does not match the host it throws on import. As a static import that killed
+ * the entire API at boot: this module is pulled in by the asset upload route,
+ * so a failure to load an image optimizer took down authentication, events and
+ * everything else with it — which is exactly what happened in production on
+ * 2026-07-29.
+ *
+ * Optimization is a nice-to-have; serving the site is not. Resolving it lazily
+ * confines the blast radius to uploads, which already fall back to storing the
+ * original whenever re-encoding fails.
+ */
+async function loadSharp(logger?: LoggerType): Promise<typeof Sharp | null> {
+    if (sharpModule !== undefined) {
+        return sharpModule;
+    }
+
+    try {
+        sharpModule = (await import("sharp")).default;
+    } catch (error) {
+        sharpModule = null;
+        logger?.error(
+            { err: error },
+            "sharp could not be loaded; uploads will be stored without optimization",
+        );
+    }
+
+    return sharpModule;
+}
 
 /**
  * Longest edge an uploaded image is allowed to keep. Anything larger is scaled
@@ -55,6 +93,11 @@ export async function optimizeImage(
     logger?: LoggerType,
 ): Promise<OptimizedImage | null> {
     if (!isOptimizableImage(contentType)) {
+        return null;
+    }
+
+    const sharp = await loadSharp(logger);
+    if (!sharp) {
         return null;
     }
 
