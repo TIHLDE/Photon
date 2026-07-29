@@ -3,6 +3,7 @@ import {
     queryOptions,
     useMutation,
 } from "@tanstack/react-query";
+import { HTTPError } from "ky";
 import { apiClient } from "#/api/api-client";
 import { assetPublicUrl } from "#/lib/assets";
 
@@ -29,11 +30,43 @@ export const getAssetMetadataQuery = (key: string) =>
             }),
     });
 
+/**
+ * Uploads pass a reverse proxy that rejects large bodies before they reach the
+ * API. That rejection carries no CORS headers, so the browser hides the 413 and
+ * surfaces a bare `TypeError` instead — the size has to come from the file we
+ * tried to send rather than from the response.
+ */
+function uploadErrorMessage(error: unknown, formData: FormData): string {
+    const file = formData.get("file");
+    const name = file instanceof File ? `«${file.name}»` : "Filen";
+    const size =
+        file instanceof File
+            ? ` (${(file.size / 1024 / 1024).toFixed(1)} MB)`
+            : "";
+
+    if (error instanceof HTTPError && error.response.status === 413) {
+        return `${name}${size} er for stor til å lastes opp. Prøv en mindre fil.`;
+    }
+
+    if (error instanceof TypeError) {
+        return `Fikk ikke lastet opp ${name}${size}. Filen er trolig for stor, eller nettverket ustabilt. Prøv en mindre fil.`;
+    }
+
+    return error instanceof Error ? error.message : String(error);
+}
+
 export const uploadAssetMutation = mutationOptions({
-    mutationFn: ({ formData }: { formData: FormData }) =>
-        apiClient.post("/api/assets", {
-            body: formData,
-        } as never),
+    mutationFn: async ({ formData }: { formData: FormData }) => {
+        try {
+            return await apiClient.post("/api/assets", {
+                body: formData,
+            } as never);
+        } catch (error) {
+            throw new Error(uploadErrorMessage(error, formData), {
+                cause: error,
+            });
+        }
+    },
 });
 
 /**
