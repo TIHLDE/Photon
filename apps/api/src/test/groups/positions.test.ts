@@ -782,7 +782,7 @@ describe("group positions", () => {
 
     describe("baseline role sync", () => {
         integrationTest(
-            "active student gets member, inactive with history gets alumni, stranger gets nothing",
+            "active student gets member, only study-programme history earns alumni, stranger gets nothing",
             async ({ ctx }) => {
                 const memberRole = await createTestingRole(ctx, {
                     name: "member",
@@ -801,12 +801,26 @@ describe("group positions", () => {
                 const alumnus = await ctx.utils.createTestUser();
                 const stranger = await ctx.utils.createTestUser();
 
-                // Alumnus has TIHLDE history via a group membership
-                const group = await ctx.utils.createTestGroup();
-                await ctx.db.insert(schema.groupMembership).values({
+                // Only a study-programme membership counts as proof that we
+                // once saw someone enrolled. Group memberships do not: every
+                // member migrated from Lepton has those, so treating them as
+                // history demoted the whole membership the first time Feide
+                // came back empty.
+                const [program] = await ctx.db
+                    .insert(schema.studyProgram)
+                    .values({
+                        slug: "baseline-roles-program",
+                        feideCode: "BIDATA",
+                        displayName: "Dataingeniør",
+                        type: "bachelor",
+                    })
+                    .returning();
+                if (!program) throw new Error("Could not seed study programme");
+
+                await ctx.db.insert(schema.studyProgramMembership).values({
                     userId: alumnus.id,
-                    groupSlug: group.slug,
-                    role: "member",
+                    studyProgramId: program.id,
+                    startYear: 2019,
                 });
 
                 await ctx.db.transaction(async (tx) => {
@@ -821,12 +835,26 @@ describe("group positions", () => {
                 expect(strangerRoles).not.toContain("member");
                 expect(strangerRoles).not.toContain("alumni");
 
-                // Graduating: student loses member, becomes alumni once they
-                // have history
+                // A group membership alone must never cost anyone "member":
+                // an empty Feide result is equally consistent with the
+                // programme simply not coming through.
+                const group = await ctx.utils.createTestGroup();
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: student.id,
                     groupSlug: group.slug,
                     role: "member",
+                });
+                await ctx.db.transaction(async (tx) => {
+                    await syncBaselineRoles(tx, student.id, false);
+                });
+                expect(await getUserRoles(ctx, student.id)).toContain("member");
+
+                // Graduating: once a study programme proves they were
+                // enrolled, an empty Feide result does mean they finished.
+                await ctx.db.insert(schema.studyProgramMembership).values({
+                    userId: student.id,
+                    studyProgramId: program.id,
+                    startYear: 2021,
                 });
                 await ctx.db.transaction(async (tx) => {
                     await syncBaselineRoles(tx, student.id, false);

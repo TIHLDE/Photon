@@ -374,11 +374,18 @@ export const syncFeideHook: (
  *
  * - Active student (Feide returned ≥1 TIHLDE study programme): assign
  *   "member", remove "alumni".
- * - Not active, but with TIHLDE history (a study-programme membership or any
- *   group membership — both additive, "én gang TIHLDE-medlem, alltid
- *   TIHLDE-medlem"): assign "alumni", remove "member".
- * - No TIHLDE tie (e.g. an NTNU student outside TIHLDE's programmes): remove
- *   both.
+ * - Previously confirmed active, but no longer (a study-programme membership
+ *   exists from an earlier login): assign "alumni", remove "member".
+ * - Anything else: leave the baseline roles exactly as they are.
+ *
+ * That last case used to assign "alumni" on the strength of *any* group
+ * membership, which read as "has a TIHLDE tie". Every member migrated from
+ * Lepton has those, so an empty Feide result demoted them — and on
+ * 2026-07-29 that hit a third-year student on ITBAITBEDR who is very much
+ * active. An empty result is not evidence of graduation: it is equally
+ * consistent with Feide not returning the programme at all, which is the open
+ * question this same login exposed. Only a study-programme membership proves
+ * we once saw them enrolled, so only that earns the demotion.
  *
  * No-ops for roles that don't exist yet (unseeded databases), so the login
  * flow never breaks on a missing role.
@@ -406,14 +413,11 @@ export async function syncBaselineRoles(
             .from(studyProgramMembership)
             .where(eq(studyProgramMembership.userId, userId))
             .limit(1);
-        const [groupHistory] = studyHistory
-            ? [studyHistory]
-            : await tx
-                  .select({ userId: groupMembership.userId })
-                  .from(groupMembership)
-                  .where(eq(groupMembership.userId, userId))
-                  .limit(1);
-        if (studyHistory || groupHistory) target = "alumni";
+        // No row means we have never seen this member enrolled, so an empty
+        // Feide result tells us nothing about whether they graduated. Leaving
+        // the roles untouched is the only honest option.
+        if (!studyHistory) return;
+        target = "alumni";
     }
 
     const assign = async (roleId: number) => {
@@ -699,8 +703,36 @@ async function fetchValidStudyPrograms(
         );
     }
 
+    const programs = parseValidStudyPrograms(groups);
+
+    /**
+     * Groups came back, but none of them read as a TIHLDE cohort. That is
+     * either a member who really has finished studying, or a gap between what
+     * Feide sends and what {@link parseValidStudyPrograms} expects — and the
+     * two are indistinguishable in the data. Name the cohort groups we did
+     * see, plus a tally of the other types, so one login settles it. Group ids
+     * carry programme codes and years, not anything personal.
+     */
+    if (groups.length > 0 && programs.length === 0) {
+        const cohorts = groups.filter((g) => g.type === "fc:fs:kull");
+        const typeCounts = Object.entries(
+            groups.reduce<Record<string, number>>((acc, g) => {
+                acc[g.type] = (acc[g.type] ?? 0) + 1;
+                return acc;
+            }, {}),
+        )
+            .map(([type, count]) => `${type}×${count}`)
+            .join(", ");
+
+        console.warn(
+            `Feide returned ${groups.length} groups but no TIHLDE cohort. Types: ${typeCounts}. Cohort ids: ${
+                cohorts.map((g) => g.id).join(", ") || "(none)"
+            }`,
+        );
+    }
+
     return {
-        programs: parseValidStudyPrograms(groups),
+        programs,
         campus: resolveCampus(groups),
     };
 }
