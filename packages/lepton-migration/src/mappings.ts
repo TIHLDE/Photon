@@ -179,9 +179,16 @@ const EXCLUDED_GROUP_SLUGS = new Set(["tihlde"]);
  * `fondsforvalter` is a role title — the leader of Forvaltningsgruppen — that
  * was created as a STUDY group with a single member. Its one priority pool is
  * moved to the real board group instead of being dropped on the floor.
+ *
+ * `kontkom` is the same group as Photon's `kok` ("Kiosk og Kontor"): the slug
+ * was renamed in Photon after the first migration, cascading over eight
+ * foreign keys, while Lepton kept the old one. Without this entry a re-run
+ * re-creates `kontkom` as a separate group and splits `kok`'s members, fines
+ * and priority pools across the two.
  */
 const REMAPPED_GROUP_SLUGS = new Map([
     ["fondsforvalter", "forvaltningsgruppen"],
+    ["kontkom", "kok"],
 ]);
 
 /**
