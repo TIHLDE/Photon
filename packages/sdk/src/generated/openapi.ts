@@ -2827,6 +2827,10 @@ export interface components {
             organizerGroupSlug: string;
             /** @description Location of the event (physical or online) */
             location: string;
+            /** @description Latitude of the location, when picked from address search */
+            locationLat?: number | null;
+            /** @description Longitude of the location, when picked from address search */
+            locationLng?: number | null;
             /** @description Main image to display for the event */
             imageUrl: string | null;
             /** @description Alt text for the event image */
@@ -2967,6 +2971,10 @@ export interface components {
             organizerGroupSlug?: string;
             /** @description Location of the event (physical or online) */
             location?: string;
+            /** @description Latitude of the location, when picked from address search */
+            locationLat?: number | null;
+            /** @description Longitude of the location, when picked from address search */
+            locationLng?: number | null;
             /** @description Main image to display for the event */
             imageUrl?: string | null;
             /** @description Alt text for the event image */
@@ -3041,6 +3049,10 @@ export interface components {
             title: string;
             /** @description Event location (nullable) */
             location?: string | null;
+            /** @description Latitude of the location (nullable) */
+            locationLat?: number | null;
+            /** @description Longitude of the location (nullable) */
+            locationLng?: number | null;
             /**
              * Format: date-time
              * @description Event start time (ISO 8601)
