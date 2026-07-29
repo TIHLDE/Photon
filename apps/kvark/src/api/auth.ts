@@ -344,6 +344,79 @@ export const signUpEmailMutationOptions = mutationOptions({
     },
 });
 
+/**
+ * Asks for a fresh verification link to an address the caller types in.
+ *
+ * This is the way a member migrated from Lepton gets their Feide login to
+ * attach to the account that holds their history: Better Auth refuses to link
+ * a provider to a user whose email was never verified, and the migration
+ * created all 1685 of them with the flag unset. Verifying is also the proof of
+ * ownership — whoever reads that inbox is the member — which is why we ask them
+ * to do it rather than setting the flag on their behalf.
+ *
+ * The endpoint needs no session, answers `{ status: true }` whether or not the
+ * address exists, and holds a 500 ms floor so response time cannot be used to
+ * discover who is a member. Treat the result as "sent if it existed" and never
+ * report anything more specific to the user.
+ */
+export const sendVerificationEmailMutationOptions = mutationOptions({
+    mutationFn: async ({
+        email,
+        callbackURL,
+    }: {
+        email: string;
+        callbackURL: string;
+    }) => {
+        const result = await clientAuthInstance.sendVerificationEmail({
+            email,
+            callbackURL,
+        });
+        if (result.error) {
+            throw new Error(
+                result.error.message ?? "Kunne ikke sende lenke akkurat nå.",
+            );
+        }
+        return result.data;
+    },
+});
+
+/**
+ * Attaches Feide to whoever is signed in right now.
+ *
+ * This is what finally rescues a member whose Lepton username differs from
+ * their NTNU one: matching by username or email has already failed for them by
+ * definition, but a session says who they are outright. Once the account row
+ * exists, Better Auth matches on provider and account id before it ever looks
+ * at email, so the mismatch stops mattering for good.
+ */
+export const linkFeideMutationOptions = mutationOptions({
+    mutationFn: async ({ callbackURL }: { callbackURL: string }) => {
+        const toFrontendUrl = (path: string) =>
+            new URL(
+                sanitizeRedirectTo(path),
+                window.location.origin,
+            ).toString();
+
+        const result = await clientAuthInstance.oauth2.link({
+            providerId: "feide",
+            callbackURL: toFrontendUrl(callbackURL),
+            errorCallbackURL: toFrontendUrl("/koble-feide"),
+        });
+
+        if (result.error) {
+            throw new Error(
+                result.error.message ?? "Kunne ikke koble til Feide",
+            );
+        }
+
+        if (result.data && "url" in result.data && result.data.url) {
+            window.location.href = result.data.url;
+        }
+
+        return result.data;
+    },
+});
+
 export const requestPasswordResetMutationOptions = mutationOptions({
     mutationFn: async ({
         email,

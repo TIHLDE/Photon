@@ -241,6 +241,27 @@ export function createAuth(options: CreateAuthOptions) {
             },
         },
 
+        account: {
+            accountLinking: {
+                /**
+                 * Feide hands out `@ntnu.no` addresses, while 986 of the 1685
+                 * accounts migrated from Lepton hold a private one. Two
+                 * different addresses is therefore the normal case here, not
+                 * the suspicious one, and without this Better Auth rejects the
+                 * link with `email_doesn't_match` — precisely for the members
+                 * who have no other way back to their history, since a
+                 * matching username would have linked them automatically.
+                 *
+                 * Only relaxes the *explicit* link routes, where a session
+                 * already proves the local account and the provider proves the
+                 * Feide identity. The implicit linking done during sign-in
+                 * never consults this flag, so `requireLocalEmailVerified`
+                 * still guards that path untouched.
+                 */
+                allowDifferentEmails: true,
+            },
+        },
+
         session: {
             expiresIn: 60 * 60 * 24 * 30, // 30d
             updateAge: 60 * 60 * 24, // 1d

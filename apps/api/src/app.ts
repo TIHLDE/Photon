@@ -22,6 +22,7 @@ import { apiKeyRoutes } from "./routes/api-key";
 import { applicationRoutes } from "./routes/application";
 import { assetRoutes } from "./routes/asset";
 import { bannerRoutes } from "./routes/banner";
+import { accountLinkRoutes } from "./routes/account-link";
 import { companyRoutes } from "./routes/company";
 import { contractsRoutes } from "./routes/contracts";
 import { groupsRoutes } from "./routes/groups";
@@ -79,6 +80,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/applications", applicationRoutes)
         .route("/assets", assetRoutes)
         .route("/banners", bannerRoutes)
+        .route("/account-link", accountLinkRoutes)
         .route("/company", companyRoutes)
         .route("/email", emailRoutes)
         .route("/event", eventRoutes)

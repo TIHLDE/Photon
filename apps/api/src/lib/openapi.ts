@@ -14,6 +14,7 @@ import { HTTPAppException, httpAppExceptionSchema } from "./errors";
  * All tags available for API endpoints
  */
 const tags = [
+    "account-link",
     "api-keys",
     "applications",
     "assets",
