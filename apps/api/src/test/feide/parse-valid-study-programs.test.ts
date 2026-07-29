@@ -362,3 +362,141 @@ describe("feide parse valid study programs", () => {
         assert.equal(validStudyPrograms[0]?.startYear, 2023);
     });
 });
+
+/**
+ * A cohort membership is only valid for a bounded period, so an upper-year
+ * student's `fc:fs:kull` group has lapsed and — before `showAll=true` — was not
+ * returned at all. That is why no member in production ever got a study
+ * programme: the parser only read cohorts. It now reads the programme group
+ * too, and takes "currently enrolled" from `membership.active` rather than from
+ * a group merely being present.
+ */
+describe("parseValidStudyPrograms — programme and cohort groups", () => {
+    const member = (active: boolean) => ({
+        basic: "member",
+        active,
+        displayName: "Student",
+        fsroles: ["STUDENT"],
+    });
+
+    const prg = (code: string, active = true) => ({
+        id: `fc:fs:fs:prg:ntnu.no:${code}`,
+        type: "fc:fs:prg",
+        displayName: `${code} - bachelor`,
+        membership: member(active),
+    });
+
+    const kull = (code: string, term: string, active = true) => ({
+        id: `fc:fs:fs:kull:ntnu.no:${code}:${term}`,
+        type: "fc:fs:kull",
+        displayName: `Kull ${term} ${code}`,
+        membership: member(active),
+    });
+
+    test("accepts a programme group alone, with no start year", () => {
+        const [program, ...rest] = parseValidStudyPrograms([prg("ITBAITBEDR")]);
+
+        assert.lengthOf(rest, 0);
+        assert.equal(program?.code, "ITBAITBEDR");
+        assert.equal(program?.startYear, null);
+        assert.isTrue(program?.active);
+    });
+
+    test("an active programme keeps the member active even when the cohort has lapsed", () => {
+        const [program] = parseValidStudyPrograms([
+            prg("ITBAITBEDR", true),
+            kull("ITBAITBEDR", "2023H", false),
+        ]);
+
+        assert.equal(program?.startYear, 2023, "year comes from the cohort");
+        assert.isTrue(program?.active, "programme still active");
+    });
+
+    test("reports inactive when every group has lapsed", () => {
+        const [program] = parseValidStudyPrograms([
+            prg("BIDATA", false),
+            kull("BIDATA", "2019H", false),
+        ]);
+
+        assert.equal(program?.code, "BIDATA");
+        assert.equal(program?.startYear, 2019);
+        assert.isFalse(program?.active);
+    });
+
+    test("collapses a programme and its cohort into one entry", () => {
+        const programs = parseValidStudyPrograms([
+            prg("BIDATA"),
+            kull("BIDATA", "2023H"),
+        ]);
+
+        assert.lengthOf(programs, 1);
+        assert.equal(programs[0]?.startYear, 2023);
+    });
+
+    test("prefers a concrete year regardless of group order", () => {
+        const withCohortLast = parseValidStudyPrograms([
+            prg("BIDATA"),
+            kull("BIDATA", "2022H"),
+        ]);
+        const withCohortFirst = parseValidStudyPrograms([
+            kull("BIDATA", "2022H"),
+            prg("BIDATA"),
+        ]);
+
+        assert.equal(withCohortLast[0]?.startYear, 2022);
+        assert.equal(withCohortFirst[0]?.startYear, 2022);
+    });
+
+    test("keeps the programme when the cohort year is unparseable, without throwing", () => {
+        const programs = parseValidStudyPrograms([
+            prg("BIDATA"),
+            kull("BIDATA", "haust"),
+        ]);
+
+        assert.lengthOf(programs, 1);
+        assert.equal(programs[0]?.startYear, null);
+    });
+
+    test("rejects an implausible year rather than storing it", () => {
+        const [program] = parseValidStudyPrograms([kull("BIDATA", "1899H")]);
+
+        assert.equal(program?.code, "BIDATA");
+        assert.equal(program?.startYear, null);
+    });
+
+    test("ignores programmes outside the allowlist", () => {
+        assert.lengthOf(
+            parseValidStudyPrograms([prg("MTBYGG"), kull("MTBYGG", "2023H")]),
+            0,
+        );
+    });
+
+    test("ignores study-right groups whose code carries a specialisation suffix", () => {
+        assert.lengthOf(
+            parseValidStudyPrograms([
+                {
+                    id: "fc:fs:fs:str:ntnu.no:BIDATA-SYSUTV",
+                    type: "fc:fs:str",
+                    displayName: "Systemutvikling",
+                    membership: member(true),
+                },
+            ]),
+            0,
+        );
+    });
+
+    test("returns one entry per programme for a member on two", () => {
+        const programs = parseValidStudyPrograms([
+            prg("BIDATA"),
+            kull("BIDATA", "2020H"),
+            prg("ITMAIKTSA"),
+            kull("ITMAIKTSA", "2023H"),
+        ]);
+
+        assert.lengthOf(programs, 2);
+        assert.deepEqual(
+            programs.map((p) => `${p.code}:${p.startYear}`).sort(),
+            ["BIDATA:2020", "ITMAIKTSA:2023"],
+        );
+    });
+});

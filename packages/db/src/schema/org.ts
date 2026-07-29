@@ -68,7 +68,17 @@ export const studyProgramMembership = pgTable(
         studyProgramId: serial("study_program_id")
             .notNull()
             .references(() => studyProgram.id, { onDelete: "cascade" }),
-        startYear: integer("start_year").notNull(),
+        /**
+         * Cohort start year, or null when Feide only gave us the programme.
+         *
+         * The year comes from the `fc:fs:kull` cohort group, and that group is
+         * not always there: a member admitted on a study right without a
+         * cohort, an exchange student, or a programme that was restructured
+         * can have the programme and no cohort at all. Recording the
+         * membership without a year beats refusing the row — the row is what
+         * carries campus stickiness and proves enrolment later.
+         */
+        startYear: integer("start_year"),
         /**
          * The campus we have positively confirmed the member studies at, from
          * their Feide course codes. NTNU runs BIDATA and BDIGSEC on several

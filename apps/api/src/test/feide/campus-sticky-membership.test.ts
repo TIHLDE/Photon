@@ -52,7 +52,7 @@ describe("campus rejection is not applied to existing members", () => {
                 keepExistingMemberships(
                     tx,
                     user.id,
-                    [{ code: "BIDATA", startYear: 2023 }],
+                    [{ code: "BIDATA", startYear: 2023, active: true }],
                     "testuser",
                 ),
             );
@@ -80,7 +80,7 @@ describe("campus rejection is not applied to existing members", () => {
                 keepExistingMemberships(
                     tx,
                     user.id,
-                    [{ code: "BIDATA", startYear: 2025 }],
+                    [{ code: "BIDATA", startYear: 2025, active: true }],
                     "testuser",
                 ),
             );
@@ -106,7 +106,7 @@ describe("campus rejection is not applied to existing members", () => {
                 keepExistingMemberships(
                     tx,
                     user.id,
-                    [{ code: "BIDATA", startYear: 2025 }],
+                    [{ code: "BIDATA", startYear: 2025, active: true }],
                     "testuser",
                 ),
             );
@@ -125,7 +125,7 @@ describe("campus rejection is not applied to existing members", () => {
                 keepExistingMemberships(
                     tx,
                     user.id,
-                    [{ code: "BIDATA", startYear: 2025 }],
+                    [{ code: "BIDATA", startYear: 2025, active: true }],
                     "testuser",
                 ),
             );
@@ -157,8 +157,8 @@ describe("campus rejection is not applied to existing members", () => {
                     tx,
                     user.id,
                     [
-                        { code: "BIDATA", startYear: 2023 },
-                        { code: "BDIGSEC", startYear: 2025 },
+                        { code: "BIDATA", startYear: 2023, active: true },
+                        { code: "BDIGSEC", startYear: 2025, active: true },
                     ],
                     "testuser",
                 ),
