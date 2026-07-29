@@ -14,6 +14,7 @@ import {
     mapFormFieldType,
     mapEventFormType,
     batchInsert,
+    resolveGroupSlug,
 } from "../mappings";
 
 interface LeptonForm {
@@ -297,14 +298,24 @@ export async function migrateForms(
         onlyForGroupMembers: boolean;
     }> = [];
 
+    let droppedGroupForms = 0;
     for (const gf of groupForms) {
         const newFormId = formIdMap.get(gf.form_ptr_id);
         if (!newFormId) continue;
 
+        // Lepton's slug is not always Photon's — `kontkom` is `kok` here, and
+        // `tihlde` is not a group at all. Inserting the raw value trips the
+        // group foreign key and takes the whole batch down with it.
+        const groupSlug = resolveGroupSlug(gf.group_id);
+        if (!groupSlug) {
+            droppedGroupForms++;
+            continue;
+        }
+
         groupFormRecords.push({
             id: crypto.randomUUID(),
             formId: newFormId,
-            groupSlug: gf.group_id,
+            groupSlug,
             emailReceiverOnSubmit:
                 gf.email_receiver_on_submit?.slice(0, 256) ?? null,
             canSubmitMultiple: Boolean(gf.can_submit_multiple),
@@ -320,6 +331,11 @@ export async function migrateForms(
             .onConflictDoNothing();
     });
     console.log(`  Inserted ${groupFormRecords.length} group forms`);
+    if (droppedGroupForms > 0) {
+        console.log(
+            `  Skipped ${droppedGroupForms} group forms on groups Photon does not model`,
+        );
+    }
 
     console.log("  Phase 10 complete");
 }
