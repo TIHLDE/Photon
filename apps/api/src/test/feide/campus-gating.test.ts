@@ -149,14 +149,17 @@ describe("campusOfCourseCode", () => {
 describe("needsCampusFollowUp", () => {
     test("flags a multi-campus programme with unresolved campus", () => {
         assert.isTrue(
-            needsCampusFollowUp([{ code: "BIDATA", startYear: 2025 }], null),
+            needsCampusFollowUp(
+                [{ code: "BIDATA", startYear: 2025, active: true }],
+                null,
+            ),
         );
     });
 
     test("does not flag a resolved campus", () => {
         assert.isFalse(
             needsCampusFollowUp(
-                [{ code: "BIDATA", startYear: 2025 }],
+                [{ code: "BIDATA", startYear: 2025, active: true }],
                 "trondheim",
             ),
         );
@@ -164,7 +167,10 @@ describe("needsCampusFollowUp", () => {
 
     test("does not flag single-campus programmes", () => {
         assert.isFalse(
-            needsCampusFollowUp([{ code: "ITBAINFO", startYear: 2025 }], null),
+            needsCampusFollowUp(
+                [{ code: "ITBAINFO", startYear: 2025, active: true }],
+                null,
+            ),
         );
     });
 

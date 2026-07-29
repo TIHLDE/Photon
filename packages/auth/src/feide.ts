@@ -148,7 +148,20 @@ interface FeideGroup {
     displayName: string;
 
     /**
-     * parent and membership fields available, but omitted
+     * The caller's membership in this group. Present on the FS groups we care
+     * about; `active` is what separates a member still enrolled from one whose
+     * membership has lapsed, and it is the only signal that survives
+     * `showAll=true`.
+     */
+    membership?: {
+        basic?: string;
+        active?: boolean;
+        displayName?: string;
+        fsroles?: string[];
+    };
+
+    /**
+     * parent field available, but omitted
      */
 }
 
@@ -361,9 +374,20 @@ export const syncFeideHook: (
                 );
             }
 
-            // Baseline roles follow the Feide result: active students get
-            // "member", former members get "alumni", strangers get neither.
-            await syncBaselineRoles(tx, userId, groups.length > 0);
+            /**
+             * Baseline roles follow the Feide result: active students get
+             * "member", former members get "alumni", strangers get neither.
+             *
+             * Keyed on `active`, not on how many groups came back. With
+             * `showAll=true` a member who finished years ago still has their
+             * old groups in the response, so counting groups would call
+             * everyone an active student forever.
+             */
+            await syncBaselineRoles(
+                tx,
+                userId,
+                groups.some((g) => g.active),
+            );
         });
     }
 };
@@ -555,33 +579,45 @@ export async function syncDerivedStudyGroups(
     tx: Transaction,
     userId: string,
     programSlug: string,
-    startYear: number,
+    startYear: number | null,
 ): Promise<void> {
-    const studyYearSlug = String(startYear);
-
     /**
-     * Cohort groups are pure labels, so a missing one is created on the fly —
-     * otherwise the first member of a new intake silently loses their year.
-     * Study groups are deliberately *not* created here: those are curated,
-     * carrying names, descriptions and images no code should invent.
+     * No cohort group when the year is unknown. Feide gives a year only via
+     * `fc:fs:kull`, and a member can have the programme without ever having
+     * had a cohort — inventing a year would put them in the wrong intake, and
+     * the cohort groups are what the inherited priority pools select on.
      */
-    await tx
-        .insert(group)
-        .values({
-            slug: studyYearSlug,
-            name: studyYearSlug,
-            // Upper case to match the values already in the table; see the
-            // note on `groupType`, which the column does not actually use.
-            type: "STUDYYEAR",
-            finesInfo: "",
-            finesActivated: false,
-        })
-        .onConflictDoNothing();
+    const studyYearSlug = startYear === null ? null : String(startYear);
+
+    if (studyYearSlug !== null) {
+        /**
+         * Cohort groups are pure labels, so a missing one is created on the
+         * fly — otherwise the first member of a new intake silently loses
+         * their year. Study groups are deliberately *not* created here: those
+         * are curated, carrying names, descriptions and images no code should
+         * invent.
+         */
+        await tx
+            .insert(group)
+            .values({
+                slug: studyYearSlug,
+                name: studyYearSlug,
+                // Upper case to match the values already in the table; see the
+                // note on `groupType`, which the column does not actually use.
+                type: "STUDYYEAR",
+                finesInfo: "",
+                finesActivated: false,
+            })
+            .onConflictDoNothing();
+    }
+
+    const wanted =
+        studyYearSlug === null ? [programSlug] : [programSlug, studyYearSlug];
 
     const existingGroups = await tx
         .select({ slug: group.slug })
         .from(group)
-        .where(inArray(group.slug, [programSlug, studyYearSlug]));
+        .where(inArray(group.slug, wanted));
 
     if (!existingGroups.some((g) => g.slug === programSlug)) {
         console.warn(
@@ -605,7 +641,17 @@ export async function syncDerivedStudyGroups(
 
 interface StudyProgram {
     code: ProgramCode;
-    startYear: number;
+    /**
+     * Cohort start year, or null when Feide only gave us the programme group.
+     * Only `fc:fs:kull` carries a year, and that group is not always present.
+     */
+    startYear: number | null;
+    /**
+     * Whether Feide still reports the membership as active. With
+     * `showAll=true` the response includes lapsed memberships too, so this —
+     * not the mere presence of a group — is what says "currently enrolled".
+     */
+    active: boolean;
 }
 
 /**
@@ -673,13 +719,21 @@ export function needsCampusFollowUp(
 async function fetchValidStudyPrograms(
     accessToken: string,
 ): Promise<{ programs: StudyProgram[]; campus: Campus | null }> {
-    // NOTE: no `show_all` param, so Dataporten only returns ACTIVE
-    // memberships — an empty result for TIHLDE programmes means the user is
-    // not an active student. Historic access is preserved anyway because the
-    // membership rows below are additive ("Én gang TIHLDE-medlem, alltid
-    // TIHLDE-medlem").
+    /**
+     * `showAll=true` is what makes cohorts visible at all.
+     *
+     * A `fc:fs:kull` membership is valid for a bounded period, so by third year
+     * a student's cohort has lapsed and the default response — active
+     * memberships only — leaves it out entirely. That is why every login in
+     * production came back with a programme group and no cohort, and why no
+     * member ever got a study programme or a cohort group.
+     *
+     * The cost is that lapsed memberships now come back too, so the mere
+     * presence of a group no longer means "enrolled". `membership.active` on
+     * each group carries that instead; see {@link parseValidStudyPrograms}.
+     */
     const response = await fetch(
-        "https://groups-api.dataporten.no/groups/me/groups",
+        "https://groups-api.dataporten.no/groups/me/groups?showAll=true",
         { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
@@ -817,35 +871,88 @@ export function resolveCampus(groups: FeideGroup[]): Campus | null {
     return tied ? null : best;
 }
 
+/** The programme codes we accept, as a set for lookup. */
+const ALLOWED_CODES: ReadonlySet<string> = new Set(ALLOWED_PROGRAM_CODES);
+
+function isAllowedCode(code: string | undefined): code is ProgramCode {
+    return code !== undefined && ALLOWED_CODES.has(code);
+}
+
 /**
- * The TIHLDE study programmes Feide reports for the user, by programme code
- * alone. Campus is a separate concern — see {@link partitionByCampus}.
+ * The TIHLDE study programmes Feide reports for the user. Campus is a separate
+ * concern — see {@link partitionByCampus}.
+ *
+ * Reads two group types, because neither is enough alone:
+ *
+ * - `fc:fs:prg` — the programme, e.g. `fc:fs:fs:prg:ntnu.no:ITBAITBEDR`. This
+ *   is the group that is reliably there, and it is the *only* one an upper-year
+ *   student may have: a cohort membership is valid for a bounded period, so a
+ *   third-year student's 2023 cohort has already lapsed. It carries no year.
+ * - `fc:fs:kull` — the cohort, e.g. `fc:fs:fs:kull:ntnu.no:BIDATA:2023H`. This
+ *   is where the start year comes from, and the cohort groups the priority
+ *   pools inherited from Lepton are built on.
+ *
+ * Note the ids have different lengths, so the programme code is taken from the
+ * *last* segment for `prg` and the second-to-last for `kull` — reading a fixed
+ * index for both would yield `ntnu.no`.
+ *
+ * A malformed year is dropped rather than thrown: this used to abort the whole
+ * login, which meant one bad group from Feide could lock a member out entirely.
  */
 export function parseValidStudyPrograms(groups: FeideGroup[]): StudyProgram[] {
-    return groups.flatMap((g) => {
-        if (g.type !== "fc:fs:kull") return [];
-        const parts = g.id.split(":"); // i.e. fc:fs:fs:kull:ntnu.no:BIDATA:2023H
-        const programCode = parts[parts.length - 2]; // i.e. BIDATA
-        const startYearRaw = parts[parts.length - 1]; // i.e. 2023H
+    const byCode = new Map<ProgramCode, StudyProgram>();
 
-        if (!programCode || !startYearRaw) return [];
+    for (const g of groups) {
+        let code: string | undefined;
+        let startYear: number | null = null;
 
-        const startYear = Number.parseInt(startYearRaw.substring(0, 4));
+        if (g.type === "fc:fs:prg") {
+            code = g.id.split(":").at(-1);
+        } else if (g.type === "fc:fs:kull") {
+            const parts = g.id.split(":");
+            code = parts.at(-2);
 
-        // Sanity check startyear between 2000 and 3000
-        if (Number.isNaN(startYear) || startYear < 2000 || startYear > 3000) {
-            throw new Error(
-                `Invalid start year parsed from Feide: ${startYear}`,
-            );
+            const raw = parts.at(-1);
+            const parsed = raw
+                ? Number.parseInt(raw.substring(0, 4))
+                : Number.NaN;
+
+            if (!Number.isNaN(parsed) && parsed >= 2000 && parsed <= 3000) {
+                startYear = parsed;
+            } else if (raw) {
+                console.warn(
+                    `Ignoring Feide cohort with unexpected start year: ${g.id}`,
+                );
+            }
+        } else {
+            continue;
         }
 
-        return ALLOWED_PROGRAM_CODES.filter((p) => p === programCode).map(
-            (p) => ({
-                code: p,
-                startYear,
-            }),
-        );
-    });
+        if (!isAllowedCode(code)) continue;
+
+        /**
+         * The same programme arrives as both a `prg` and a `kull` group, and
+         * with `showAll=true` possibly several cohorts. Keep the concrete year
+         * over an unknown one, and treat the member as active if *any* of the
+         * groups for that programme still is — a lapsed cohort alongside an
+         * active programme means enrolled, not finished.
+         */
+        const active = g.membership?.active === true;
+        const existing = byCode.get(code);
+
+        if (!existing) {
+            byCode.set(code, { code, startYear, active });
+            continue;
+        }
+
+        byCode.set(code, {
+            code,
+            startYear: existing.startYear ?? startYear,
+            active: existing.active || active,
+        });
+    }
+
+    return [...byCode.values()];
 }
 
 /**

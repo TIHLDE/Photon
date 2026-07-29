@@ -113,4 +113,37 @@ describe("derived study groups", () => {
             expect(memberships.map((m) => m.groupSlug)).toEqual(["2024"]);
         },
     );
+
+    integrationTest(
+        "skips the cohort group when Feide gave no start year",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.group)
+                .values({
+                    slug: "dataingenir",
+                    name: "Dataingeniør",
+                    type: "STUDY",
+                    finesInfo: "",
+                    finesActivated: false,
+                })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncDerivedStudyGroups(tx, user.id, "dataingenir", null),
+            );
+
+            const memberships = await ctx.db
+                .select({ groupSlug: schema.groupMembership.groupSlug })
+                .from(schema.groupMembership)
+                .where(eq(schema.groupMembership.userId, user.id));
+
+            // The study group still applies; there is simply no cohort to join,
+            // and inventing a year would put them in the wrong intake.
+            expect(memberships.map((m) => m.groupSlug)).toEqual([
+                "dataingenir",
+            ]);
+        },
+    );
 });
