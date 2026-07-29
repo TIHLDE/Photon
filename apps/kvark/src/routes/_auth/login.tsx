@@ -20,6 +20,7 @@ import {
     signInUsernameMutationOptions,
     signInWithFeide,
 } from "#/api/auth";
+import { requestAccountLinkHelpMutation } from "#/api/queries/account-link";
 import { FeideSignInButton } from "#/components/feide-sign-in-button";
 import {
     FeideSignInIssue,
@@ -78,10 +79,13 @@ function LoginPage() {
 
     // Verifying the address is what lets Better Auth attach Feide to a
     // migrated account; the member does it themselves, since reading that
-    // inbox is also what proves the account is theirs.
+    // inbox is also what proves the account is theirs. Confirming signs them
+    // in, and /koble-feide then attaches Feide to that session — which is what
+    // rescues a member whose stored username never matched their NTNU one.
     const verificationMutation = useMutation(
         sendVerificationEmailMutationOptions,
     );
+    const helpMutation = useMutation(requestAccountLinkHelpMutation);
 
     async function handleFeideSignIn(options?: { requestSignUp?: boolean }) {
         setFeideLoading(true);
@@ -136,25 +140,30 @@ function LoginPage() {
                 {feideIssue && (
                     <FeideSignInIssue
                         reason={feideIssue}
-                        loading={feideLoading}
+                        registering={feideLoading}
                         onRegisterAsNew={() =>
                             handleFeideSignIn({ requestSignUp: true })
                         }
-                        onUseExistingAccount={() => setShowPasswordForm(true)}
                         onSendVerification={(email) =>
                             verificationMutation.mutate({
                                 email,
                                 // Absolute: Better Auth resolves a relative
                                 // callback against the API host, which would
                                 // land the member on a 404 from the router.
+                                // Confirming signs them in, so send them
+                                // straight to the step that needs a session.
                                 callbackURL: new URL(
-                                    "/login",
+                                    "/koble-feide",
                                     window.location.origin,
                                 ).toString(),
                             })
                         }
                         verificationSending={verificationMutation.isPending}
                         verificationSent={verificationMutation.isSuccess}
+                        onRequestHelp={(data) => helpMutation.mutate({ data })}
+                        helpSending={helpMutation.isPending}
+                        helpSent={helpMutation.isSuccess}
+                        helpError={helpMutation.error?.message}
                     />
                 )}
                 <FeideSignInButton

@@ -482,6 +482,26 @@ export interface paths {
         patch: operations["updateBanner"];
         trace?: never;
     };
+    "/api/account-link/help": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask a human to link a Feide login to an old account
+         * @description Last resort for a member migrated from Lepton whose stored username differs from their NTNU one and who no longer has the email the old account was registered with — nothing in the flow can verify them, so this notifies an admin to do it by hand. Rate limited per client.
+         */
+        post: operations["requestAccountLinkHelp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company/contact": {
         parameters: {
             query?: never;
@@ -2647,6 +2667,23 @@ export interface components {
         };
         DeleteBannerResponse: {
             message: string;
+        };
+        AccountLinkHelpResponse: {
+            success: boolean;
+            message: string;
+        };
+        AccountLinkHelp: {
+            /** @description Name as Feide reported it */
+            feideName: string;
+            /** @description NTNU username from the Feide login */
+            feideUsername?: string;
+            /**
+             * Format: email
+             * @description Where to reach the member
+             */
+            contactEmail: string;
+            /** @description What they remember about the old account */
+            note?: string;
         };
         CompanyContactResponse: {
             success: boolean;
@@ -5938,6 +5975,44 @@ export interface operations {
             };
             /** @description Not Found - Banner not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    requestAccountLinkHelp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountLinkHelp"];
+            };
+        };
+        responses: {
+            /** @description Request delivered to an admin */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkHelpResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too many requests from this client */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

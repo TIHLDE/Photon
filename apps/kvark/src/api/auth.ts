@@ -380,6 +380,43 @@ export const sendVerificationEmailMutationOptions = mutationOptions({
     },
 });
 
+/**
+ * Attaches Feide to whoever is signed in right now.
+ *
+ * This is what finally rescues a member whose Lepton username differs from
+ * their NTNU one: matching by username or email has already failed for them by
+ * definition, but a session says who they are outright. Once the account row
+ * exists, Better Auth matches on provider and account id before it ever looks
+ * at email, so the mismatch stops mattering for good.
+ */
+export const linkFeideMutationOptions = mutationOptions({
+    mutationFn: async ({ callbackURL }: { callbackURL: string }) => {
+        const toFrontendUrl = (path: string) =>
+            new URL(
+                sanitizeRedirectTo(path),
+                window.location.origin,
+            ).toString();
+
+        const result = await clientAuthInstance.oauth2.link({
+            providerId: "feide",
+            callbackURL: toFrontendUrl(callbackURL),
+            errorCallbackURL: toFrontendUrl("/koble-feide"),
+        });
+
+        if (result.error) {
+            throw new Error(
+                result.error.message ?? "Kunne ikke koble til Feide",
+            );
+        }
+
+        if (result.data && "url" in result.data && result.data.url) {
+            window.location.href = result.data.url;
+        }
+
+        return result.data;
+    },
+});
+
 export const requestPasswordResetMutationOptions = mutationOptions({
     mutationFn: async ({
         email,
