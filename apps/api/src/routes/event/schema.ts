@@ -89,6 +89,10 @@ const eventMutationSchema = z.object({
         description:
             "Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools.",
     }),
+    restrictedToInstituteSlug: z.string().nullable().optional().meta({
+        description:
+            "Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute.",
+    }),
 
     // Strikes & enforcement
     canCauseStrikes: z.boolean().meta({
@@ -538,6 +542,19 @@ export const eventDetailSchema = Schema(
         onlyAllowPrioritized: z.boolean().meta({
             description: "Only members covered by a priority pool may register",
         }),
+        restrictedToInstitute: z
+            .object({
+                slug: z.string().meta({ description: "Institute slug" }),
+                shortName: z
+                    .string()
+                    .meta({ description: "Short institute name, e.g. 'IDI'" }),
+                name: z.string().meta({ description: "Full institute name" }),
+            })
+            .nullable()
+            .meta({
+                description:
+                    "The institute this event is reserved for. Only members of a study group under this institute may register. Null means open to every institute.",
+            }),
         visibility: z.enum(eventVisibilityVariants).meta({
             description: "Who may see the event ('public' or 'members'-only)",
         }),

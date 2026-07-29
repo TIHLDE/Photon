@@ -4,7 +4,11 @@ import type { AppContext } from "~/lib/ctx";
 // Import all seed modules
 import seedAuth from "./auth";
 import seedEvent from "./event";
-import seedOrg, { backfillGroupData, syncHsPositions } from "./org";
+import seedOrg, {
+    backfillGroupData,
+    backfillInstitutes,
+    syncHsPositions,
+} from "./org";
 import seedRbac, { backfillRolePermissions } from "./rbac";
 import seedUser from "./user";
 
@@ -20,6 +24,7 @@ import seedUser from "./user";
 async function runBackfills(ctx: AppContext) {
     await backfillRolePermissions(ctx);
     await backfillGroupData(ctx);
+    await backfillInstitutes(ctx);
     await syncHsPositions(ctx);
 }
 

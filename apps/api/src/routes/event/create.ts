@@ -85,6 +85,27 @@ export const createRoute = route().post(
                 }
             }
 
+            // Resolve the institute the event is reserved for, if any
+            let restrictedToInstituteId: number | null = null;
+            if (body.restrictedToInstituteSlug) {
+                const institute = await tx
+                    .select({ id: schema.institute.id })
+                    .from(schema.institute)
+                    .where(
+                        eq(
+                            schema.institute.slug,
+                            body.restrictedToInstituteSlug,
+                        ),
+                    )
+                    .limit(1);
+                if (!institute[0]) {
+                    throw new HTTPException(400, {
+                        message: `Institute with slug "${body.restrictedToInstituteSlug}" does not exist`,
+                    });
+                }
+                restrictedToInstituteId = institute[0].id;
+            }
+
             const newEvent: InferInsertModel<DbSchema["event"]> = {
                 title: body.title,
                 description: body.description,
@@ -119,6 +140,7 @@ export const createRoute = route().post(
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
                 canCauseStrikes: body.canCauseStrikes,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                restrictedToInstituteId,
                 visibility: body.visibility,
             };
 

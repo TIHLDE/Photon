@@ -26,6 +26,7 @@ import { accountLinkRoutes } from "./routes/account-link";
 import { companyRoutes } from "./routes/company";
 import { contractsRoutes } from "./routes/contracts";
 import { groupsRoutes } from "./routes/groups";
+import { instituteRoutes } from "./routes/institutes";
 import { jobRoutes } from "./routes/job";
 import { motetidRoutes } from "./routes/motetid";
 import { galleryRoutes } from "./routes/gallery";
@@ -88,6 +89,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/galleries", galleryRoutes)
         .route("/notification", notificationRoutes)
         .route("/groups", groupsRoutes)
+        .route("/institutes", instituteRoutes)
         .route("/contracts", contractsRoutes)
         .route("/motetid", motetidRoutes)
         .route("/news", newsRoutes)

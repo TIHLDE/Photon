@@ -9,7 +9,12 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import {
     Select,
@@ -24,6 +29,7 @@ import { nb } from "date-fns/locale";
 import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
+import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { nextWholeHour } from "#/lib/date";
@@ -31,8 +37,14 @@ import { nextWholeHour } from "#/lib/date";
 export const Route = createFileRoute("/admin/arrangementer")({
     component: EventAdminPage,
     loader: ({ context }) =>
-        context.queryClient.ensureQueryData(getGroupsQuery(0)),
+        Promise.all([
+            context.queryClient.ensureQueryData(getGroupsQuery(0)),
+            context.queryClient.ensureQueryData(getInstitutesQuery()),
+        ]),
 });
+
+/** Sentinel for "no institute restriction" — Select has no empty value. */
+const ALL_INSTITUTES = "all";
 
 /** Date -> ISO string, or null when unset */
 function toIso(value: Date | null): string | null {
@@ -52,6 +64,7 @@ function eventDateDefaults() {
 
 function EventAdminPage() {
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+    const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -65,6 +78,7 @@ function EventAdminPage() {
     const [visibility, setVisibility] = useState<"public" | "members">(
         "public",
     );
+    const [instituteSlug, setInstituteSlug] = useState(ALL_INSTITUTES);
     const [isPaidEvent, setIsPaidEvent] = useState(false);
     const [canCauseStrikes, setCanCauseStrikes] = useState(false);
     const [price, setPrice] = useState("");
@@ -123,6 +137,8 @@ function EventAdminPage() {
                     cancellationDeadline: null,
                     capacity: capacity ? Number(capacity) : null,
                     visibility,
+                    restrictedToInstituteSlug:
+                        instituteSlug === ALL_INSTITUTES ? null : instituteSlug,
                     isRegistrationClosed: false,
                     requiresSigningUp: true,
                     allowWaitlist: true,
@@ -150,6 +166,7 @@ function EventAdminPage() {
                     setRegistrationEnd(defaults.registrationEnd);
                     setCapacity("");
                     setVisibility("public");
+                    setInstituteSlug(ALL_INSTITUTES);
                     setIsPaidEvent(false);
                     setCanCauseStrikes(false);
                     setPrice("");
@@ -337,6 +354,51 @@ function EventAdminPage() {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="event-institute">
+                                    Institutt
+                                </FieldLabel>
+                                <Select
+                                    items={[
+                                        {
+                                            value: ALL_INSTITUTES,
+                                            label: "Alle institutt",
+                                        },
+                                        ...institutes.map((institute) => ({
+                                            value: institute.slug,
+                                            label: institute.shortName,
+                                        })),
+                                    ]}
+                                    value={instituteSlug}
+                                    onValueChange={(value) =>
+                                        setInstituteSlug(
+                                            value ?? ALL_INSTITUTES,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="event-institute">
+                                        <SelectValue placeholder="Velg institutt" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_INSTITUTES}>
+                                            Alle institutt
+                                        </SelectItem>
+                                        {institutes.map((institute) => (
+                                            <SelectItem
+                                                key={institute.slug}
+                                                value={institute.slug}
+                                            >
+                                                {institute.shortName} –{" "}
+                                                {institute.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Begrenser påmelding til studenter ved dette
+                                    instituttet.
+                                </FieldDescription>
                             </Field>
                             <Field orientation="horizontal" className="gap-3">
                                 <Checkbox

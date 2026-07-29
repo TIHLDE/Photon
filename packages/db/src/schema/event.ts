@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
-import { group } from "./org";
+import { group, institute } from "./org";
 
 const pgTable = pgTableCreator((name) => `event_${name}`);
 
@@ -123,6 +123,20 @@ export const event = pgTable("event", {
         .default(false)
         .notNull(),
     /**
+     * Restricts registration to members of a single NTNU institute, matched
+     * through the study groups they belong to. NULL — the default — means the
+     * event is open to every institute, which is what nearly all events are.
+     * Set it for arrangements that belong to one institute, so DigSec (IIK)
+     * students cannot take IDI seats and the other way around.
+     *
+     * This gates registration only; the event stays visible to everyone, the
+     * same way a priority-pool-only event does.
+     */
+    restrictedToInstituteId: integer("restricted_to_institute_id").references(
+        () => institute.id,
+        { onDelete: "set null" },
+    ),
+    /**
      * Who may see the event. "public" is visible to everyone including
      * logged-out visitors; "members" hides it from unauthenticated callers.
      */
@@ -138,6 +152,10 @@ export const eventRelations = relations(event, ({ one, many }) => ({
     organizer: one(group, {
         fields: [event.organizerGroupSlug],
         references: [group.slug],
+    }),
+    restrictedToInstitute: one(institute, {
+        fields: [event.restrictedToInstituteId],
+        references: [institute.id],
     }),
     reactions: many(eventReaction),
     pools: many(eventPriorityPool),
