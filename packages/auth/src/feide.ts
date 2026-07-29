@@ -724,9 +724,26 @@ async function fetchValidStudyPrograms(
             .map(([type, count]) => `${type}×${count}`)
             .join(", ");
 
+        /**
+         * NTNU turned out not to hand this service any `fc:fs:kull` groups at
+         * all — a third-year ITBAITBEDR student came back with 18 `fc:fs:emne`
+         * and a single `fc:fs:prg`. The programme group is what we will have to
+         * read instead, but unlike a cohort it carries no start year, and
+         * `studyProgramMembership.startYear` is NOT NULL.
+         *
+         * So dump every non-course group whole: the id tells us where the
+         * programme code sits, and `displayName` plus whatever `membership`
+         * holds is the only place a year could still be hiding. Course groups
+         * are excluded because there are ~18 of them and they are already
+         * accounted for by the type tally.
+         */
+        const nonCourse = groups.filter((g) => g.type !== "fc:fs:emne");
+
         console.warn(
             `Feide returned ${groups.length} groups but no TIHLDE cohort. Types: ${typeCounts}. Cohort ids: ${
                 cohorts.map((g) => g.id).join(", ") || "(none)"
+            }. Non-course groups: ${
+                JSON.stringify(nonCourse).slice(0, 2000) || "(none)"
             }`,
         );
     }
