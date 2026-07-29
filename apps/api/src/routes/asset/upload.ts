@@ -4,6 +4,7 @@ import {
     generateAssetKey,
     isAllowedMimeType,
 } from "~/lib/asset";
+import { IMAGE_MAX_DIMENSION, optimizeImage } from "~/lib/asset/image";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -23,6 +24,9 @@ Requires either session authentication or a valid API key.
 **Constraints:**
 - Maximum file size: 10MB
 - Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}
+
+**Image optimization:**
+JPEG, PNG and WebP uploads are re-encoded to WebP, scaled to fit within ${IMAGE_MAX_DIMENSION}x${IMAGE_MAX_DIMENSION} px and stripped of metadata. The response therefore reports the stored \`contentType\`, \`size\` and \`originalFilename\` (extension swapped to \`.webp\`), which may differ from what was sent. GIF is passed through untouched so animation survives.
 
 **Usage:**
 Send the file as multipart/form-data with a field named "file".
@@ -85,17 +89,32 @@ Pass an optional "visibility" field set to "private" for files that must not be 
         }
         const visibility = visibilityField === "private" ? "private" : "public";
 
-        // Generate unique key
-        const key = generateAssetKey(file.name);
-
         // Convert file to buffer
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        // Re-encode images to WebP before they reach storage. Clients compress
+        // too, but this is the only step every upload passes through — API keys
+        // and migration scripts included — so it is what actually guarantees no
+        // oversized original is ever served.
+        const optimized = await optimizeImage(
+            buffer,
+            file.type,
+            file.name,
+            c.get("logger"),
+        );
+
+        const storedBuffer = optimized?.buffer ?? buffer;
+        const storedFilename = optimized?.filename ?? file.name;
+        const storedContentType = optimized?.contentType ?? file.type;
+
+        // Generate unique key
+        const key = generateAssetKey(storedFilename);
+
         // Upload to storage
-        await bucket.upload(key, buffer, {
-            originalFilename: file.name,
-            contentType: file.type,
+        await bucket.upload(key, storedBuffer, {
+            originalFilename: storedFilename,
+            contentType: storedContentType,
             uploadedById,
             visibility,
         });

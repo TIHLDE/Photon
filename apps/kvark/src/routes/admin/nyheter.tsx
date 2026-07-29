@@ -17,7 +17,9 @@ import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import { CheckCircle2, XCircle } from "lucide-react";
 
+import { useImageUploader } from "#/api/queries/assets";
 import { createNewsMutation } from "#/api/queries/news";
+import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 
 export const Route = createFileRoute("/admin/nyheter")({
@@ -28,11 +30,29 @@ function NewsAdminPage() {
     const [title, setTitle] = useState("");
     const [excerpt, setExcerpt] = useState("");
     const [body, setBody] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+    const [imageAlt, setImageAlt] = useState("");
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const createNews = useMutation(createNewsMutation);
+    const { uploadImage, isUploading } = useImageUploader();
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setUploadError(null);
+
+        let imageUrl: string | undefined;
+        if (image) {
+            try {
+                imageUrl = await uploadImage(image);
+            } catch (err) {
+                setUploadError(
+                    err instanceof Error ? err.message : String(err),
+                );
+                return;
+            }
+        }
+
         createNews.mutate(
             {
                 data: {
@@ -40,6 +60,8 @@ function NewsAdminPage() {
                     header: excerpt,
                     body,
                     emojisAllowed: false,
+                    imageUrl,
+                    imageAlt: imageUrl ? imageAlt || undefined : undefined,
                 },
             },
             {
@@ -47,6 +69,8 @@ function NewsAdminPage() {
                     setTitle("");
                     setExcerpt("");
                     setBody("");
+                    setImage(null);
+                    setImageAlt("");
                 },
             },
         );
@@ -113,6 +137,49 @@ function NewsAdminPage() {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Forsidebilde</CardTitle>
+                        <CardDescription>
+                            Bildet vises på nyhetskortet og øverst på
+                            nyhetssiden. Forhåndsvisningen under er nøyaktig
+                            samme utsnitt som besøkende ser.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
+                            <AdminImageField
+                                label="Bilde"
+                                preset="cover-wide"
+                                value={image}
+                                onChange={setImage}
+                            />
+                            <Field>
+                                <FieldLabel htmlFor="news-image-alt">
+                                    Bildebeskrivelse
+                                </FieldLabel>
+                                <Input
+                                    id="news-image-alt"
+                                    type="text"
+                                    maxLength={255}
+                                    placeholder="Kort beskrivelse for skjermlesere"
+                                    value={imageAlt}
+                                    onChange={(event) =>
+                                        setImageAlt(event.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
+
+                {uploadError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                        <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                )}
                 {createNews.isSuccess && (
                     <Alert>
                         <CheckCircle2 className="size-4" />
@@ -133,8 +200,11 @@ function NewsAdminPage() {
                 )}
 
                 <div className="flex justify-end">
-                    <Button type="submit" disabled={createNews.isPending}>
-                        Publiser
+                    <Button
+                        type="submit"
+                        disabled={createNews.isPending || isUploading}
+                    >
+                        {isUploading ? "Laster opp bilde …" : "Publiser"}
                     </Button>
                 </div>
             </form>

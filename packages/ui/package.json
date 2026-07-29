@@ -11,6 +11,7 @@
         ".": "./src/index.ts",
         "./styles.css": "./src/styles.css",
         "./utils": "./src/lib/utils.ts",
+        "./lib/*": "./src/lib/*.ts",
         "./hooks/*": "./src/hooks/*.ts",
         "./complex/*": "./src/components/complex/*/index.ts",
         "./*": "./src/components/*.tsx"
@@ -34,6 +35,7 @@
         "@tiptap/pm": "^3.22.4",
         "@tiptap/react": "^3.22.4",
         "@tiptap/starter-kit": "^3.22.4",
+        "browser-image-compression": "^2.0.2",
         "class-variance-authority": "catalog:frontend",
         "clsx": "catalog:frontend",
         "cmdk": "^1.1.1",

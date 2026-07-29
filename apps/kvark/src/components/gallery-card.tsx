@@ -5,6 +5,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 
 export type GalleryCardProps = {
     slug: string;
@@ -37,7 +38,7 @@ export function GalleryCard({
                     src={imageUrl}
                     alt=""
                     loading="lazy"
-                    className="aspect-video w-full object-cover"
+                    className={`${IMAGE_PRESETS["cover-video"].aspectClassName} w-full object-cover`}
                 />
             )}
             <CardHeader>

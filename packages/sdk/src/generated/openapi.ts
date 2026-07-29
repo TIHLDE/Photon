@@ -355,6 +355,9 @@ export interface paths {
          *     - Maximum file size: 10MB
          *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
          *
+         *     **Image optimization:**
+         *     JPEG, PNG and WebP uploads are re-encoded to WebP, scaled to fit within 2560x2560 px and stripped of metadata. The response therefore reports the stored `contentType`, `size` and `originalFilename` (extension swapped to `.webp`), which may differ from what was sent. GIF is passed through untouched so animation survives.
+         *
          *     **Usage:**
          *     Send the file as multipart/form-data with a field named "file".
          *

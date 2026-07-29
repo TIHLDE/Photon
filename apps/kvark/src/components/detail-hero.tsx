@@ -1,3 +1,5 @@
+import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
+
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
 type DetailHeroProps = {
@@ -7,7 +9,9 @@ type DetailHeroProps = {
 
 export function DetailHero({ imageUrl, alt = "" }: DetailHeroProps) {
     return (
-        <div className="aspect-[16/7] w-full overflow-hidden rounded-xl bg-muted">
+        <div
+            className={`${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full overflow-hidden rounded-xl bg-muted`}
+        >
             <img
                 src={imageUrl || DEFAULT_COVER_IMAGE}
                 alt={alt}

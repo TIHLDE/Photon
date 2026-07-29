@@ -21,8 +21,10 @@ import {
 import { CheckCircle2, XCircle } from "lucide-react";
 import { nb } from "date-fns/locale";
 
+import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
+import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { nextWholeHour } from "#/lib/date";
 
@@ -66,6 +68,9 @@ function EventAdminPage() {
     const [isPaidEvent, setIsPaidEvent] = useState(false);
     const [canCauseStrikes, setCanCauseStrikes] = useState(false);
     const [price, setPrice] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+    const [imageAlt, setImageAlt] = useState("");
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
     useEffect(() => {
@@ -76,14 +81,30 @@ function EventAdminPage() {
     }, []);
 
     const createEvent = useMutation(createEventMutation);
+    const { uploadImage, isUploading } = useImageUploader();
 
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setUploadError(null);
 
         const startIso = toIso(start);
         const endIso = toIso(end);
         const registrationEndIso = toIso(registrationEnd);
         if (!startIso || !endIso || !registrationEndIso) return;
+
+        // Uploaded first: a failed upload must not leave an event behind that
+        // silently lost its cover.
+        let imageUrl: string | null = null;
+        if (image) {
+            try {
+                imageUrl = await uploadImage(image);
+            } catch (err) {
+                setUploadError(
+                    err instanceof Error ? err.message : String(err),
+                );
+                return;
+            }
+        }
 
         createEvent.mutate(
             {
@@ -93,7 +114,8 @@ function EventAdminPage() {
                     categorySlug,
                     organizerGroupSlug,
                     location,
-                    imageUrl: null,
+                    imageUrl,
+                    imageAlt: imageUrl ? imageAlt || null : null,
                     start: startIso,
                     end: endIso,
                     registrationStart: null,
@@ -131,6 +153,8 @@ function EventAdminPage() {
                     setIsPaidEvent(false);
                     setCanCauseStrikes(false);
                     setPrice("");
+                    setImage(null);
+                    setImageAlt("");
                 },
             },
         );
@@ -367,6 +391,45 @@ function EventAdminPage() {
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Forsidebilde</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
+                            <AdminImageField
+                                label="Bilde"
+                                description="Vises på arrangementskortet og øverst på arrangementssiden. Forhåndsvisningen er samme utsnitt som besøkende ser."
+                                preset="cover-wide"
+                                value={image}
+                                onChange={setImage}
+                            />
+                            <Field>
+                                <FieldLabel htmlFor="event-image-alt">
+                                    Bildebeskrivelse
+                                </FieldLabel>
+                                <Input
+                                    id="event-image-alt"
+                                    type="text"
+                                    maxLength={255}
+                                    placeholder="Kort beskrivelse for skjermlesere"
+                                    value={imageAlt}
+                                    onChange={(event) =>
+                                        setImageAlt(event.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
+
+                {uploadError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                        <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                )}
                 {createEvent.isSuccess && (
                     <Alert>
                         <CheckCircle2 className="size-4" />
@@ -389,9 +452,13 @@ function EventAdminPage() {
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={createEvent.isPending || !organizerGroupSlug}
+                        disabled={
+                            createEvent.isPending ||
+                            isUploading ||
+                            !organizerGroupSlug
+                        }
                     >
-                        Publiser
+                        {isUploading ? "Laster opp bilde …" : "Publiser"}
                     </Button>
                 </div>
             </form>
