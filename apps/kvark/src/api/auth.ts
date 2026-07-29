@@ -215,7 +215,10 @@ export async function authClientWithPermission(
  * back on the website. Sanitized first, so only same-site paths are ever
  * absolutized. Browser-only, so window.location.origin is available.
  */
-export async function signInWithFeide(callbackURL: string) {
+export async function signInWithFeide(
+    callbackURL: string,
+    options: { requestSignUp?: boolean } = {},
+) {
     const toFrontendUrl = (path: string) =>
         new URL(sanitizeRedirectTo(path), window.location.origin).toString();
 
@@ -223,6 +226,14 @@ export async function signInWithFeide(callbackURL: string) {
         providerId: "feide",
         callbackURL: toFrontendUrl(callbackURL),
         errorCallbackURL: toFrontendUrl("/login"),
+        /**
+         * The backend runs the Feide provider with `disableImplicitSignUp`, so
+         * a login that matches no existing member fails with
+         * `signup_disabled` rather than quietly creating a second account.
+         * Only set this once the member has told us they are new — it is the
+         * answer to that question, not a default.
+         */
+        ...(options.requestSignUp ? { requestSignUp: true } : {}),
     });
 
     if (result.error) {

@@ -174,6 +174,27 @@ export const feidePlugin = (db: NodePgDatabase<DbSchema>) =>
                           discoveryUrl:
                               "https://auth.dataporten.no/.well-known/openid-configuration",
                           /**
+                           * Never create an account behind the member's back.
+                           *
+                           * A Feide login that matches no existing user is
+                           * ambiguous: it is either a genuinely new member, or
+                           * a member from Lepton whose stored username does not
+                           * equal their NTNU one — 986 migrated members
+                           * registered with a private address, so email cannot
+                           * settle it either. Creating a user silently picks
+                           * the first reading, and picking wrong strands that
+                           * member's registrations, fines and roles on an
+                           * account they can no longer reach.
+                           *
+                           * With implicit sign-up off, that login fails with
+                           * `signup_disabled` instead, and the frontend asks
+                           * the one question we cannot answer for them. Saying
+                           * "I am new" replays the sign-in with
+                           * `requestSignUp`, which creates the account exactly
+                           * as before.
+                           */
+                          disableImplicitSignUp: true,
+                          /**
                            * `userid` alone only buys the `userid_sec` claim
                            * itself — it arrives as an empty array unless the
                            * authorization request *also* asks for the
