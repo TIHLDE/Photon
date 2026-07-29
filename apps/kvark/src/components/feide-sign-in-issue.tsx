@@ -83,7 +83,10 @@ export function FeideSignInIssue(props: FeideSignInIssueProps) {
 
     return (
         <Alert>
-            <AlertTitle>Har du vært medlem før?</AlertTitle>
+            {/* "Medlem" and "bruker" are not the same thing: you can have been
+                a member for years without thinking of yourself as having an
+                account. The account is what the question is about. */}
+            <AlertTitle>Har du registrert TIHLDE-bruker tidligere?</AlertTitle>
             <AlertDescription>
                 Vi fant ingen bruker som passer til Feide-kontoen din.
             </AlertDescription>
