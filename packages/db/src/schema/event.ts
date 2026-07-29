@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
     boolean,
+    doublePrecision,
     integer,
     pgEnum,
     pgTableCreator,
@@ -76,6 +77,13 @@ export const event = pgTable("event", {
         .references(() => eventCategory.slug)
         .notNull(),
     location: varchar("location", { length: 256 }),
+    /**
+     * Koordinater for stedet, satt når adressen er valgt fra adressesøket
+     * (Kartverket). Er null for fritekst-steder som "Digitalt" eller "R1".
+     * Brukes til å lage en kartlenke på arrangementssiden.
+     */
+    locationLat: doublePrecision("location_lat"),
+    locationLng: doublePrecision("location_lng"),
     imageUrl: text("image_url"),
     imageAlt: varchar("image_alt", { length: 255 }),
     capacity: integer("capacity"),
