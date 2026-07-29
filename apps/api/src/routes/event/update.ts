@@ -188,6 +188,10 @@ export const updateRoute = route().put(
                 contactPersonId: body.contactPersonUserId,
                 description: body.description,
                 location: body.location,
+                // undefined lar Drizzle stå over feltet; eksplisitt null
+                // nullstiller koordinatene når stedet endres til fritekst.
+                locationLat: body.locationLat,
+                locationLng: body.locationLng,
                 organizerGroupSlug: body.organizerGroupSlug,
                 slug: slug,
                 capacity: body.capacity,

@@ -24,8 +24,16 @@ const eventMutationSchema = z.object({
     organizerGroupSlug: z
         .string()
         .meta({ description: "Slug of the group organizing the event" }),
-    location: z.string().meta({
+    location: z.string().max(256).meta({
         description: "Location of the event (physical or online)",
+    }),
+    locationLat: z.number().min(-90).max(90).nullable().optional().meta({
+        description:
+            "Latitude of the location, when picked from address search",
+    }),
+    locationLng: z.number().min(-180).max(180).nullable().optional().meta({
+        description:
+            "Longitude of the location, when picked from address search",
     }),
     imageUrl: z
         .url()
@@ -456,6 +464,16 @@ export const eventDetailSchema = Schema(
             .nullable()
             .optional()
             .meta({ description: "Event location (nullable)" }),
+        locationLat: z
+            .number()
+            .nullable()
+            .optional()
+            .meta({ description: "Latitude of the location (nullable)" }),
+        locationLng: z
+            .number()
+            .nullable()
+            .optional()
+            .meta({ description: "Longitude of the location (nullable)" }),
         startTime: z.iso
             .datetime()
             .meta({ description: "Event start time (ISO 8601)" }),

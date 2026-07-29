@@ -1,6 +1,6 @@
 {
-  "id": "35141989-2cf7-439c-8234-cd59f1926b70",
-  "prevId": "83235ffd-3793-459e-95ff-dea70816f0a2",
+  "id": "c9c53dbc-70d6-42db-9d78-55c5c7e1fa7b",
+  "prevId": "35141989-2cf7-439c-8234-cd59f1926b70",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2220,6 +2220,12 @@
           "notNull": true,
           "default": false
         },
+        "restricted_to_institute_id": {
+          "name": "restricted_to_institute_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "visibility": {
           "name": "visibility",
           "type": "event_visibility",
@@ -2306,6 +2312,19 @@
           ],
           "columnsTo": [
             "slug"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "event_event_restricted_to_institute_id_org_institute_id_fk": {
+          "name": "event_event_restricted_to_institute_id_org_institute_id_fk",
+          "tableFrom": "event_event",
+          "tableTo": "org_institute",
+          "columnsFrom": [
+            "restricted_to_institute_id"
+          ],
+          "columnsTo": [
+            "id"
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
@@ -4310,6 +4329,12 @@
           "notNull": true,
           "default": false
         },
+        "institute_id": {
+          "name": "institute_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -4359,6 +4384,19 @@
           "tableTo": "rbac_role",
           "columnsFrom": [
             "leader_role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "org_group_institute_id_org_institute_id_fk": {
+          "name": "org_group_institute_id_org_institute_id_fk",
+          "tableFrom": "org_group",
+          "tableTo": "org_institute",
+          "columnsFrom": [
+            "institute_id"
           ],
           "columnsTo": [
             "id"
@@ -4716,6 +4754,65 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.org_institute": {
+      "name": "org_institute",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "short_name": {
+          "name": "short_name",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "org_institute_slug_unique": {
+          "name": "org_institute_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

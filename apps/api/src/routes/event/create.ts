@@ -110,6 +110,8 @@ export const createRoute = route().post(
                 title: body.title,
                 description: body.description,
                 location: body.location,
+                locationLat: body.locationLat ?? null,
+                locationLng: body.locationLng ?? null,
                 start: new Date(body.start),
                 end: new Date(body.end),
                 capacity: body.capacity,

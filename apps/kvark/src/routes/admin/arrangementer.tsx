@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { addHours } from "date-fns";
 
@@ -26,13 +26,17 @@ import {
 import { CheckCircle2, XCircle } from "lucide-react";
 import { nb } from "date-fns/locale";
 
+import type { AddressSuggestion } from "#/api/queries/address";
+import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
+import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { nextWholeHour } from "#/lib/date";
+import { useDebounced } from "#/lib/use-debounced";
 
 export const Route = createFileRoute("/admin/arrangementer")({
     component: EventAdminPage,
@@ -71,6 +75,16 @@ function EventAdminPage() {
     const [categorySlug, setCategorySlug] = useState("");
     const [organizerGroupSlug, setOrganizerGroupSlug] = useState("");
     const [location, setLocation] = useState("");
+    // Koordinater settes kun når stedet er valgt fra adressesøket. Fritekst
+    // ("Digitalt", "R1") gir null, og da vises stedet uten kartlenke.
+    const [locationCoords, setLocationCoords] = useState<{
+        label: string;
+        lat: number;
+        lng: number;
+    } | null>(null);
+    const debouncedLocation = useDebounced(location, 250);
+    const { data: addressSuggestions, isFetching: isSearchingAddress } =
+        useQuery(searchAddressQuery(debouncedLocation));
     const [start, setStart] = useState<Date | null>(null);
     const [end, setEnd] = useState<Date | null>(null);
     const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
@@ -96,6 +110,26 @@ function EventAdminPage() {
 
     const createEvent = useMutation(createEventMutation);
     const { uploadImage, isUploading } = useImageUploader();
+
+    /**
+     * Koordinatene følger teksten: så snart brukeren redigerer et valgt
+     * adresseforslag er de ikke lenger gyldige for stedet som står i feltet.
+     */
+    function handleLocationChange(next: string) {
+        setLocation(next);
+        setLocationCoords((current) =>
+            current && current.label === next ? current : null,
+        );
+    }
+
+    function handleSelectAddress(suggestion: AddressSuggestion) {
+        setLocation(suggestion.label);
+        setLocationCoords({
+            label: suggestion.label,
+            lat: suggestion.lat,
+            lng: suggestion.lng,
+        });
+    }
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -128,6 +162,8 @@ function EventAdminPage() {
                     categorySlug,
                     organizerGroupSlug,
                     location,
+                    locationLat: locationCoords?.lat ?? null,
+                    locationLng: locationCoords?.lng ?? null,
                     imageUrl,
                     imageAlt: imageUrl ? imageAlt || null : null,
                     start: startIso,
@@ -160,6 +196,7 @@ function EventAdminPage() {
                     setCategorySlug("");
                     setOrganizerGroupSlug("");
                     setLocation("");
+                    setLocationCoords(null);
                     const defaults = eventDateDefaults();
                     setStart(defaults.start);
                     setEnd(defaults.end);
@@ -256,15 +293,20 @@ function EventAdminPage() {
                                 <FieldLabel htmlFor="event-location">
                                     Sted
                                 </FieldLabel>
-                                <Input
+                                <AddressCombobox
                                     id="event-location"
-                                    type="text"
                                     required
                                     value={location}
-                                    onChange={(event) =>
-                                        setLocation(event.target.value)
-                                    }
+                                    onValueChange={handleLocationChange}
+                                    suggestions={addressSuggestions ?? []}
+                                    isSearching={isSearchingAddress}
+                                    onSelectSuggestion={handleSelectAddress}
                                 />
+                                <FieldDescription>
+                                    {locationCoords
+                                        ? "Adressen er lenket til kart på arrangementssiden."
+                                        : "Søk opp en adresse for å legge ved kartlenke, eller skriv fritt (f.eks. «Digitalt»)."}
+                                </FieldDescription>
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="event-start">
