@@ -215,6 +215,23 @@ async function importGalleries(): Promise<void> {
                     })
                     .returning({ id: schema.galleryAlbum.id });
                 albumId = inserted?.id;
+
+                // The insert is the only source of this album's id. Reading it
+                // back by slug is what catches an id that does not belong to
+                // this album — the prod run of 2026-07-28 filed one album's 100
+                // pictures under the previous album because `albumId` pointed
+                // at the wrong row, and nothing in the run noticed.
+                const [check] = await db
+                    .select({ id: schema.galleryAlbum.id })
+                    .from(schema.galleryAlbum)
+                    .where(
+                        eq(schema.galleryAlbum.slug, album.slug.slice(0, 80)),
+                    );
+                if (!check?.id || check.id !== albumId) {
+                    throw new Error(
+                        `album ${album.slug}: insert returned ${albumId ?? "nothing"} but the row with this slug is ${check?.id ?? "missing"} — refusing to attach pictures`,
+                    );
+                }
             }
 
             importedAlbums++;
@@ -302,6 +319,39 @@ async function importGalleries(): Promise<void> {
                     .update(schema.galleryAlbum)
                     .set({ imageUrl: rows[0].imageUrl })
                     .where(eq(schema.galleryAlbum.id, albumId));
+            }
+
+            /**
+             * The list is sorted newest album first. Left alone, `createdAt`
+             * is the import timestamp, and since this walks Lepton newest to
+             * oldest that sorts the whole gallery backwards. The newest
+             * picture in an album is when the event happened, which is both
+             * the right sort key and a truthful date.
+             */
+            const albumDate = rows.reduce<Date | null>(
+                (newest, row) =>
+                    row.createdAt && (!newest || row.createdAt > newest)
+                        ? row.createdAt
+                        : newest,
+                null,
+            );
+            if (albumDate) {
+                await db
+                    .update(schema.galleryAlbum)
+                    .set({ createdAt: albumDate, updatedAt: albumDate })
+                    .where(eq(schema.galleryAlbum.id, albumId));
+            }
+
+            // Cheap end-of-album audit: the row count must match what was
+            // copied, or pictures have landed somewhere they do not belong.
+            const attached = await db.$count(
+                schema.galleryPicture,
+                eq(schema.galleryPicture.albumId, albumId),
+            );
+            if (attached !== rows.length + existingSources.size) {
+                throw new Error(
+                    `album ${album.slug}: expected ${rows.length + existingSources.size} pictures on the album, found ${attached}`,
+                );
             }
         }
     }

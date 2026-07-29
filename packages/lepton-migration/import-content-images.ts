@@ -175,6 +175,12 @@ const main = async () => {
                     size: bytes.length,
                     uploadedById: null,
                     visibility: "public",
+                    // Without these the row stays `staged`, and the cleanup
+                    // cron deletes object and row alike after two days — which
+                    // is exactly how 1 419 migrated images were lost on
+                    // 2026-07-2x. Imported assets are finished, not staged.
+                    status: "ready",
+                    promotedAt: new Date(),
                 })
                 .onConflictDoNothing();
 
