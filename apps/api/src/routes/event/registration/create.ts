@@ -3,6 +3,10 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import {
+    getUserInstituteIds,
+    isUserInInstitute,
+} from "../../../lib/event/institute";
+import {
     getUserGroupSlugs,
     isUserPrioritized,
 } from "../../../lib/event/priority";
@@ -32,7 +36,7 @@ export const registerToEventRoute = route().post(
         .notFound({ description: "Event not found" })
         .forbidden({
             description:
-                "Event only allows members covered by a priority pool to register",
+                "Event only allows members covered by a priority pool, or members of a specific institute, to register",
         })
         .response({
             statusCode: 409,
@@ -58,6 +62,7 @@ export const registerToEventRoute = route().post(
                         groups: true,
                     },
                 },
+                restrictedToInstitute: true,
             },
         });
 
@@ -69,6 +74,26 @@ export const registerToEventRoute = route().post(
             throw new HTTPException(409, {
                 message: "Event is not open for registration",
             });
+        }
+
+        // Events tied to one institute reject everyone outside it, so a
+        // DigSec (IIK) student cannot take an IDI seat, or the other way
+        // around.
+        if (event.restrictedToInstituteId !== null) {
+            const userInstituteIds = await getUserInstituteIds(userId, db);
+
+            if (
+                !isUserInInstitute(
+                    event.restrictedToInstituteId,
+                    userInstituteIds,
+                )
+            ) {
+                const shortName =
+                    event.restrictedToInstitute?.shortName ?? "instituttet";
+                throw new HTTPException(403, {
+                    message: `This event is only open to students at ${shortName}`,
+                });
+            }
         }
 
         // Events with onlyAllowPrioritized reject non-prioritized users

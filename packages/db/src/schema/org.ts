@@ -20,6 +20,22 @@ import { role } from "./rbac";
 
 const pgTable = pgTableCreator((name) => `org_${name}`);
 
+/**
+ * The NTNU institutes TIHLDE's study programmes belong to. Most of them run
+ * under IDI (Institutt for datateknologi og informatikk), but Digital
+ * infrastruktur og cybersikkerhet belongs to IIK (Institutt for
+ * informasjonssikkerhet og kommunikasjonsteknologi). Arrangements funded or
+ * run on behalf of one institute may only admit that institute's students.
+ */
+export const institute = pgTable("institute", {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 64 }).notNull().unique(),
+    /** Short form used in the UI, e.g. "IDI". */
+    shortName: varchar("short_name", { length: 16 }).notNull(),
+    name: varchar("name", { length: 160 }).notNull(),
+    ...timestamps,
+});
+
 export const studyProgramType = pgEnum("org_study_program_type", [
     "bachelor",
     "master",
@@ -140,8 +156,29 @@ export const group = pgTable("group", {
     contractSigningRequired: boolean("contract_signing_required")
         .notNull()
         .default(false),
+    /**
+     * The NTNU institute this group belongs to. Only meaningful for study
+     * groups (type "study"), where it decides which institute-restricted
+     * events the members may register for. NULL means "no institute", which
+     * is the case for every non-study group and is never a reason to grant
+     * access — an institute-restricted event admits nobody without a match.
+     */
+    instituteId: integer("institute_id").references(() => institute.id, {
+        onDelete: "set null",
+    }),
     ...timestamps,
 });
+
+export const groupRelations = relations(group, ({ one }) => ({
+    institute: one(institute, {
+        fields: [group.instituteId],
+        references: [institute.id],
+    }),
+}));
+
+export const instituteRelations = relations(institute, ({ many }) => ({
+    groups: many(group),
+}));
 
 export const groupMembershipRole = pgEnum("org_group_membership_role", [
     "member",

@@ -5,6 +5,7 @@ import {
     ArrowLeft,
     CalendarDays,
     CalendarPlus,
+    GraduationCap,
     MapPin,
     PencilLine,
     QrCode,
@@ -188,6 +189,15 @@ function EventDetailPage() {
                                 }
                             />,
                             <DetailField icon={MapPin} value={locationValue} />,
+                            ...(event.restrictedToInstitute
+                                ? [
+                                      <DetailField
+                                          icon={GraduationCap}
+                                          label="Kun for"
+                                          value={`Studenter ved ${event.restrictedToInstitute.shortName}`}
+                                      />,
+                                  ]
+                                : []),
                         ]}
                     />
 

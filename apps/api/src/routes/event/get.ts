@@ -40,6 +40,9 @@ export const getRoute = route().get(
                     columns: { userId: true, emoji: true },
                     with: { user: { columns: { name: true } } },
                 },
+                restrictedToInstitute: {
+                    columns: { slug: true, shortName: true, name: true },
+                },
                 pools: {
                     columns: { priorityScore: true, id: true },
                     with: {
@@ -155,6 +158,7 @@ export const getRoute = route().get(
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,
             onlyAllowPrioritized: event.onlyAllowPrioritized,
+            restrictedToInstitute: event.restrictedToInstitute ?? null,
             visibility: event.visibility,
             priorityPools,
             registration,
