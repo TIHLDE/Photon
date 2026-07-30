@@ -10,7 +10,7 @@
 /** Longest edge kept in the browser. Matches the API's cap. */
 export const CLIENT_MAX_DIMENSION = 2560;
 
-/** Ceiling for the compressed file. The API caps uploads at 10 MB. */
+/** Ceiling for the compressed file. The API caps uploads at 50 MB. */
 export const CLIENT_MAX_SIZE_MB = 4;
 
 const COMPRESSION_OPTIONS = {
