@@ -30,6 +30,13 @@ export const accountLinkHelpSchema = Schema(
     }),
 );
 
+export const accountLinkSyncResponseSchema = Schema(
+    "AccountLinkSyncResponse",
+    z.object({
+        success: z.boolean(),
+    }),
+);
+
 export const accountLinkHelpResponseSchema = Schema(
     "AccountLinkHelpResponse",
     z.object({

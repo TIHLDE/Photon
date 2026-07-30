@@ -9,6 +9,7 @@ export type SchemaOf<TName extends SchemaNames> = Schemas[TName];
 
 export type AccountLinkHelp = Schemas["AccountLinkHelp"];
 export type AccountLinkHelpResponse = Schemas["AccountLinkHelpResponse"];
+export type AccountLinkSyncResponse = Schemas["AccountLinkSyncResponse"];
 export type ActivateContractResponse = Schemas["ActivateContractResponse"];
 export type ActiveContract = Schemas["ActiveContract"];
 export type AddGroupMember = Schemas["AddGroupMember"];
