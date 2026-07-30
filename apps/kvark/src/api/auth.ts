@@ -124,7 +124,7 @@ function parsePermission(raw: string): { permission: string; scope: string } {
  */
 export function sessionHasPermission(
     permissions: string[] | undefined,
-    required: string | string[],
+    required: string | readonly string[],
 ): boolean {
     if (!permissions) return false;
 
@@ -138,6 +138,62 @@ export function sessionHasPermission(
             const parsed = parsePermission(raw);
             return parsed.permission === name && parsed.scope === GLOBAL_SCOPE;
         }),
+    );
+}
+
+/**
+ * Whether the session holds a permission globally OR within `scope`.
+ *
+ * Mirrors `hasScopedPermission` in @photon/auth/rbac, which is what
+ * `requireAccess({ permission, scope })` uses server-side: a global grant
+ * satisfies any scope, a scoped grant only satisfies its exact scope.
+ * Scopes look like `"group:fotball"`.
+ */
+export function sessionHasScopedPermission(
+    permissions: string[] | undefined,
+    required: string | readonly string[],
+    scope: string,
+): boolean {
+    if (!permissions) return false;
+
+    const names = Array.isArray(required) ? required : [required];
+    if (names.length === 0) return false;
+
+    if (permissions.includes("root")) return true;
+
+    return names.some((name) =>
+        permissions.some((raw) => {
+            const parsed = parsePermission(raw);
+            if (parsed.permission !== name) return false;
+            return parsed.scope === GLOBAL_SCOPE || parsed.scope === scope;
+        }),
+    );
+}
+
+/**
+ * Whether the session holds a permission in ANY scope — globally or scoped to
+ * some group.
+ *
+ * Use this where the UI cannot know which scope an action will end up needing,
+ * typically a listing that mixes resources from several groups (the admin
+ * sections). Hiding an entry point from someone who holds the permission for
+ * *one* group would lock them out of work they may do, so we err on the side
+ * of showing it and let the API reject the individual request. Never use it
+ * when the scope IS known — use {@link sessionHasScopedPermission} there.
+ */
+export function sessionHasPermissionInAnyScope(
+    permissions: string[] | undefined,
+    required: string | readonly string[],
+): boolean {
+    if (!permissions) return false;
+
+    const names = Array.isArray(required) ? required : [required];
+    if (names.length === 0) return false;
+
+    if (permissions.includes("root")) return true;
+
+    return names.some((name) =>
+        permissions.some((raw) => parsePermission(raw).permission === name),
     );
 }
 

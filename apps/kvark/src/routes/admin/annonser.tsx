@@ -54,6 +54,10 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    useAnyScopePermission,
+    useCanActOnResource,
+} from "#/hooks/use-permission";
 import { nextWholeHour } from "#/lib/date";
 
 const JOB_TYPES = ["full_time", "part_time", "summer_job", "other"] as const;
@@ -96,6 +100,7 @@ export const Route = createFileRoute("/admin/annonser")({
 });
 
 function JobsAdminPage() {
+    const canCreate = useAnyScopePermission(["jobs:create", "jobs:manage"]);
     const [search, setSearch] = useState("");
     const [jobType, setJobType] = useState<JobType | "all">("all");
     const [showExpired, setShowExpired] = useState(true);
@@ -109,10 +114,12 @@ function JobsAdminPage() {
                 title="Annonser"
                 description="Opprett og administrer stillingsannonser fra bedrifter."
                 action={
-                    <Button onClick={() => setDialog({ mode: "create" })}>
-                        <PlusIcon className="size-4" />
-                        Ny annonse
-                    </Button>
+                    canCreate ? (
+                        <Button onClick={() => setDialog({ mode: "create" })}>
+                            <PlusIcon className="size-4" />
+                            Ny annonse
+                        </Button>
+                    ) : null
                 }
             />
 
@@ -203,6 +210,10 @@ function JobsTable({
 }) {
     const { data } = useSuspenseQuery(getJobsQuery(0, { expired: true }));
     const remove = useMutation(deleteJobMutation);
+    // The API lets the creator edit and delete their own posting, so the row
+    // buttons follow the item, not just the global permission.
+    const canEdit = useCanActOnResource(["jobs:update", "jobs:manage"]);
+    const canDelete = useCanActOnResource(["jobs:delete", "jobs:manage"]);
 
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -283,22 +294,28 @@ function JobsTable({
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => onEdit(job)}
-                                        >
-                                            <PencilIcon className="size-4" />
-                                            Rediger
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={remove.isPending}
-                                            onClick={() => handleDelete(job)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
+                                        {canEdit(job.createdById) ? (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onEdit(job)}
+                                            >
+                                                <PencilIcon className="size-4" />
+                                                Rediger
+                                            </Button>
+                                        ) : null}
+                                        {canDelete(job.createdById) ? (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={remove.isPending}
+                                                onClick={() =>
+                                                    handleDelete(job)
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        ) : null}
                                     </div>
                                 </TableCell>
                             </TableRow>

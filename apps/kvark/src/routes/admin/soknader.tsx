@@ -26,6 +26,7 @@ import {
 } from "#/api/queries/applications";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { AdminDetailDialog } from "#/components/soknader/admin-detail-dialog";
 import { ApplicationStatusBadge } from "#/components/soknader/status-badge";
 
@@ -93,6 +94,17 @@ function AdminApplicationsPage() {
     const navigate = Route.useNavigate();
 
     const { data: session } = useQuery(authQueryOptions);
+    // The list and the detail view need `*:view`; changing the status needs
+    // `*:manage`. Without it the dialog is read-only and the row button says
+    // "Se" instead of promising a decision the viewer cannot make.
+    const canManage = useAnyScopePermission([
+        "applications:manage",
+        "applications:expense:manage",
+        "applications:support:manage",
+        "applications:sports-support:manage",
+        "applications:hs-case:manage",
+        "applications:company-contact:manage",
+    ]);
     const visibleTabs = TYPE_TABS.filter((tab) =>
         sessionHasPermission(session?.permissions, tab.permissions),
     );
@@ -259,7 +271,9 @@ function AdminApplicationsPage() {
                                                         )
                                                     }
                                                 >
-                                                    Behandle
+                                                    {canManage
+                                                        ? "Behandle"
+                                                        : "Se"}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -280,6 +294,7 @@ function AdminApplicationsPage() {
                 isLoading={isLoadingDetail}
                 attachmentUrls={attachmentUrls}
                 isSaving={updateStatus.isPending}
+                canManage={canManage}
                 onDownloadPdf={() => {
                     if (selectedId) void downloadPdf(selectedId);
                 }}

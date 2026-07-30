@@ -54,6 +54,11 @@ import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
+    useIsGroupLeaderOf,
+    usePermission,
+    useScopedPermission,
+} from "#/hooks/use-permission";
+import {
     UserSearchCombobox,
     type UserSearchOption,
 } from "#/components/user-search-combobox";
@@ -76,8 +81,33 @@ export const Route = createFileRoute("/admin/roller")({
 
 type TabValue = "verv" | "roller";
 
+/**
+ * Whether the viewer may manage the verv of `groupSlug`.
+ *
+ * Mirrors `canManagePositions` server-side for group-scoped positions:
+ * `groups:manage`/`roles:create` globally or for this group, or being the
+ * group's leader.
+ */
+function useCanManagePositions(groupSlug: string): boolean {
+    const hasScoped = useScopedPermission(
+        ["groups:manage", "roles:create"],
+        `group:${groupSlug}`,
+    );
+    const isLeader = useIsGroupLeaderOf(groupSlug);
+    return hasScoped || isLeader;
+}
+
 function RolesAdminPage() {
     const [tab, setTab] = useState<TabValue>("verv");
+    // Global roles are listed and edited with global roles:* permissions —
+    // a group leader has no business in that tab, so it is not shown.
+    const canSeeRoles = usePermission([
+        "roles:view",
+        "roles:create",
+        "roles:update",
+        "roles:delete",
+        "roles:assign",
+    ]);
 
     return (
         <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
@@ -89,11 +119,17 @@ function RolesAdminPage() {
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
                 <TabsList>
                     <TabsTrigger value="verv">Verv</TabsTrigger>
-                    <TabsTrigger value="roller">Roller</TabsTrigger>
+                    {canSeeRoles ? (
+                        <TabsTrigger value="roller">Roller</TabsTrigger>
+                    ) : null}
                 </TabsList>
             </Tabs>
 
-            {tab === "verv" ? <PositionsSection /> : <RolesSection />}
+            {tab === "verv" || !canSeeRoles ? (
+                <PositionsSection />
+            ) : (
+                <RolesSection />
+            )}
         </div>
     );
 }
@@ -202,12 +238,12 @@ function PositionsSection() {
                         onValueChange={setGroupSlug}
                     />
                 </Field>
-                {groupSlug && (
-                    <Button onClick={() => setCreateOpen(true)}>
-                        <PlusIcon className="size-4" />
-                        Nytt verv
-                    </Button>
-                )}
+                {groupSlug ? (
+                    <NewPositionButton
+                        groupSlug={groupSlug}
+                        onClick={() => setCreateOpen(true)}
+                    />
+                ) : null}
             </div>
 
             {groupSlug ? <PositionsTable groupSlug={groupSlug} /> : null}
@@ -224,7 +260,29 @@ function PositionsSection() {
     );
 }
 
+/**
+ * Own component so the permission hook can depend on the selected group
+ * without the section re-running hooks conditionally.
+ */
+function NewPositionButton({
+    groupSlug,
+    onClick,
+}: {
+    groupSlug: string;
+    onClick: () => void;
+}) {
+    const canManage = useCanManagePositions(groupSlug);
+    if (!canManage) return null;
+    return (
+        <Button onClick={onClick}>
+            <PlusIcon className="size-4" />
+            Nytt verv
+        </Button>
+    );
+}
+
 function PositionsTable({ groupSlug }: { groupSlug: string }) {
+    const canManage = useCanManagePositions(groupSlug);
     const { data: positions, isPending } = useQuery(
         getGroupPositionsQuery(groupSlug),
     );
@@ -359,17 +417,23 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                                     image={
                                                         position.holder.image
                                                     }
-                                                    onRemove={() =>
-                                                        unassign.mutate({
-                                                            groupSlug,
-                                                            positionId:
-                                                                position.id,
-                                                            userId: position
-                                                                .holder!.userId,
-                                                        })
+                                                    onRemove={
+                                                        canManage
+                                                            ? () =>
+                                                                  unassign.mutate(
+                                                                      {
+                                                                          groupSlug,
+                                                                          positionId:
+                                                                              position.id,
+                                                                          userId: position
+                                                                              .holder!
+                                                                              .userId,
+                                                                      },
+                                                                  )
+                                                            : undefined
                                                     }
                                                 />
-                                            ) : (
+                                            ) : canManage ? (
                                                 <UserSearchCombobox
                                                     holder={null}
                                                     emptyLabel="Ingen tildelt"
@@ -406,6 +470,10 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                                     }
                                                     placeholder="Søk blant gruppens medlemmer…"
                                                 />
+                                            ) : (
+                                                <span className="text-sm text-muted-foreground">
+                                                    Ingen tildelt
+                                                </span>
                                             )}
                                         </div>
                                     </TableCell>
@@ -415,31 +483,35 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger
-                                                aria-label="Handlinger"
-                                                className="cursor-pointer"
-                                            >
-                                                <MoreHorizontalIcon className="size-4" />
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem
-                                                    onClick={() =>
-                                                        setEditing(position)
-                                                    }
+                                        {canManage ? (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger
+                                                    aria-label="Handlinger"
+                                                    className="cursor-pointer"
                                                 >
-                                                    Rediger
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    variant="destructive"
-                                                    onClick={() =>
-                                                        handleDelete(position)
-                                                    }
-                                                >
-                                                    Slett
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                                    <MoreHorizontalIcon className="size-4" />
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            setEditing(position)
+                                                        }
+                                                    >
+                                                        Rediger
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                position,
+                                                            )
+                                                        }
+                                                    >
+                                                        Slett
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        ) : null}
                                     </TableCell>
                                 </TableRow>
                             ))}

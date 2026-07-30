@@ -118,6 +118,80 @@ describe("group members", () => {
         );
 
         integrationTest(
+            "a group's leader may add a plain member without groups:manage",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup();
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const memberUser = await ctx.auth.api.createUser({
+                    body: {
+                        email: "led-member@test.com",
+                        name: "Led Member",
+                        password: "test123!",
+                    },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: memberUser.user.id,
+                        role: "member",
+                    },
+                });
+
+                expect(response.status).toBe(201);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a group's leader may not add another leader",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup();
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const other = await ctx.auth.api.createUser({
+                    body: {
+                        email: "would-be-leader@test.com",
+                        name: "Would Be Leader",
+                        password: "test123!",
+                    },
+                });
+
+                // Leadership carries the group's leader role and, for
+                // subgroups, a seat in HS — that stays with groups:manage.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: other.user.id,
+                        role: "leader",
+                    },
+                });
+
+                expect(response.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "returns 404 when adding member to non-existent group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
