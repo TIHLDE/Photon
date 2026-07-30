@@ -179,14 +179,19 @@ function VerifyEmailPrompt({
     return (
         <Alert>
             {/* Asking which account, rather than "bekreft e-posten din",
-                because the mistake to prevent is answering with the address
-                they use today. Most migrated accounts predate the member
-                having an NTNU address at all: 986 of 1685 carry a private
-                one, so @stud.ntnu.no is the likeliest wrong answer and is
-                worth naming outright. */}
+                because the mistake to prevent is answering with whatever
+                address they happen to use today.
+
+                Deliberately does NOT steer towards either kind. An earlier
+                version said the address was "as a rule private, not
+                @stud.ntnu.no" — true of the majority, but prod holds 1006
+                private addresses against 689 @stud.ntnu.no ones, so it told
+                two in five members the wrong thing. The first member to hit it
+                had an NTNU address, followed the hint, typed a private one and
+                got silence. Name both, and let the retry button carry them. */}
             <AlertTitle>Hvilken e-post hadde den gamle brukeren?</AlertTitle>
             <AlertDescription>
-                Som regel en privat adresse — ikke @stud.ntnu.no.
+                Privat adresse eller @stud.ntnu.no — begge deler er vanlig.
             </AlertDescription>
             <form
                 className="mt-3 flex flex-col gap-2"

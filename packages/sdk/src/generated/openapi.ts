@@ -505,6 +505,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account-link/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync study data from Feide for the current user
+         * @description Reads the caller's study programmes, cohort and campus from Feide and applies them, including derived study groups and the member/alumni role. Run after linking a Feide account, which cannot sync on its own. Safe to repeat.
+         */
+        post: operations["syncFeideAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company/contact": {
         parameters: {
             query?: never;
@@ -2767,6 +2787,9 @@ export interface components {
             contactEmail: string;
             /** @description What they remember about the old account */
             note?: string;
+        };
+        AccountLinkSyncResponse: {
+            success: boolean;
         };
         CompanyContactResponse: {
             success: boolean;
@@ -6253,6 +6276,49 @@ export interface operations {
             };
             /** @description Too many requests from this client */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    syncFeideAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Study data synced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkSyncResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description No Feide account is linked to this user */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Feide could not be reached */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

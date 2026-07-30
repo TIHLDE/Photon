@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import { z } from "zod";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
@@ -13,6 +14,7 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
 import { authQueryOptions, linkFeideMutationOptions } from "#/api/auth";
+import { syncFeideAccountMutation } from "#/api/queries/account-link";
 
 /**
  * Where a member lands after confirming their email address.
@@ -24,6 +26,9 @@ import { authQueryOptions, linkFeideMutationOptions } from "#/api/auth";
  */
 export const Route = createFileRoute("/_auth/koble-feide")({
     component: LinkFeidePage,
+    // Feide sends the member back here with ?linked, which is what tells this
+    // page to finish the job the callback could not.
+    validateSearch: z.object({ linked: z.coerce.boolean().optional() }),
 });
 
 function LinkFeidePage() {
@@ -31,6 +36,45 @@ function LinkFeidePage() {
         <Suspense fallback={<LinkFeideSkeleton />}>
             <LinkFeideCard />
         </Suspense>
+    );
+}
+
+/**
+ * The step that only exists because linking cannot sync.
+ *
+ * Better Auth's link branch writes the account row and redirects without
+ * minting a session, and the sync hook keys on that session to learn who
+ * logged in — so a linked member ends up with a working login and no study
+ * programme, campus or cohort. Five members reached exactly that state in
+ * production on 2026-07-30, and nothing in the UI told them.
+ *
+ * Failure is deliberately not fatal. The link succeeded and they are signed
+ * in; the next Feide login syncs them anyway. Trapping them on an error screen
+ * over data they will get regardless would be the worse outcome, so this moves
+ * them on either way.
+ */
+function FinishLink({ onDone }: { onDone: () => void }) {
+    const syncMutation = useMutation(syncFeideAccountMutation);
+    const started = useRef(false);
+
+    useEffect(() => {
+        // Guarded: React runs effects twice in development, and syncing is a
+        // network round trip to Feide, not a cheap no-op.
+        if (started.current) return;
+        started.current = true;
+        syncMutation.mutate(undefined, { onSettled: onDone });
+    }, [syncMutation, onDone]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Henter studieopplysningene dine</CardTitle>
+                <CardDescription>Ett øyeblikk.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Spinner />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -51,8 +95,13 @@ function LinkFeideSkeleton() {
 
 function LinkFeideCard() {
     const { data: auth } = useSuspenseQuery(authQueryOptions);
+    const { linked } = Route.useSearch();
     const navigate = useNavigate();
     const linkMutation = useMutation(linkFeideMutationOptions);
+
+    if (linked && auth?.user) {
+        return <FinishLink onDone={() => navigate({ to: "/" })} />;
+    }
 
     if (!auth?.user) {
         return (
@@ -88,7 +137,14 @@ function LinkFeideCard() {
                 <Button
                     className="w-full"
                     disabled={linkMutation.isPending}
-                    onClick={() => linkMutation.mutate({ callbackURL: "/" })}
+                    // Back here rather than to the front page: this is where
+                    // the study data gets pulled, since the link itself
+                    // cannot. See FinishLink.
+                    onClick={() =>
+                        linkMutation.mutate({
+                            callbackURL: "/koble-feide?linked=1",
+                        })
+                    }
                 >
                     {linkMutation.isPending ? (
                         <>
