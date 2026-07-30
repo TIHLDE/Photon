@@ -160,6 +160,16 @@ function LoginPage() {
                         }
                         verificationSending={verificationMutation.isPending}
                         verificationSent={verificationMutation.isSuccess}
+                        // The endpoint answers 200 whether or not the address
+                        // exists, so a failure here is never "wrong address" —
+                        // it is the request itself not getting through. Say
+                        // only that, rather than guessing at a cause.
+                        verificationError={
+                            verificationMutation.isError
+                                ? "Fikk ikke sendt lenken. Prøv igjen."
+                                : undefined
+                        }
+                        onTryAnotherEmail={() => verificationMutation.reset()}
                         onRequestHelp={(data) => helpMutation.mutate({ data })}
                         helpSending={helpMutation.isPending}
                         helpSent={helpMutation.isSuccess}
