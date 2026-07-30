@@ -17,6 +17,8 @@ type GroupingMode = "all" | "per-member";
 type GroupFinesTabProps = {
     fines: Fine[];
     memberCount: number;
+    /** Whether the viewer may approve, edit or delete the group's fines. */
+    canManage: boolean;
 };
 
 function fineFilterMatches(fine: Fine, approved: TriState, paid: TriState) {
@@ -32,7 +34,11 @@ function perMember(value: number, memberCount: number): string {
     return (value / memberCount).toFixed(1);
 }
 
-export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
+export function GroupFinesTab({
+    fines,
+    memberCount,
+    canManage,
+}: GroupFinesTabProps) {
     const [grouping, setGrouping] = useState<GroupingMode>("all");
     const [approved, setApproved] = useState<TriState>("all");
     const [paid, setPaid] = useState<TriState>("all");
@@ -188,6 +194,7 @@ export function GroupFinesTab({ fines, memberCount }: GroupFinesTabProps) {
                 fines={filtered}
                 openIndex={openIndex}
                 onOpenChange={setOpenIndex}
+                canManage={canManage}
             />
         </div>
     );

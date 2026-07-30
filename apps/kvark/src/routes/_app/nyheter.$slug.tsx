@@ -6,6 +6,7 @@ import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { ArrowLeft, CalendarDays, Clock3, PencilLine } from "lucide-react";
 
 import { getNewsByIdQuery } from "#/api/queries/news";
+import { useCanActOnResource } from "#/hooks/use-permission";
 import { DetailField } from "#/components/detail-field";
 import { DetailHero } from "#/components/detail-hero";
 import { DetailPage } from "#/components/detail-page";
@@ -23,6 +24,10 @@ function NewsDetailPage() {
     const { slug } = Route.useParams();
 
     const { data: news } = useSuspenseQuery(getNewsByIdQuery(slug));
+    // Same rule as the API: the permission, or having written the article.
+    const canEdit = useCanActOnResource(["news:update", "news:manage"])(
+        news.createdById,
+    );
 
     const updated = wasNewsUpdated(news.createdAt, news.updatedAt);
 
@@ -55,10 +60,12 @@ function NewsDetailPage() {
                             ) : null}
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center gap-2">
-                            <Button variant="outline" size="sm">
-                                <PencilLine />
-                                Rediger nyhet
-                            </Button>
+                            {canEdit ? (
+                                <Button variant="outline" size="sm">
+                                    <PencilLine />
+                                    Rediger nyhet
+                                </Button>
+                            ) : null}
                             <ShareButton label="Del nyhet" />
                         </div>
                     </div>

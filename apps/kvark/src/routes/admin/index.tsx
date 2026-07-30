@@ -24,32 +24,51 @@ import { getEventsQuery } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
 import { getJobsQuery } from "#/api/queries/jobs";
 import { getNewsQuery } from "#/api/queries/news";
+import { authClient, sessionHasPermissionInAnyScope } from "#/api/auth";
+import { useAnyScopePermission } from "#/hooks/use-permission";
+import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 
 export const Route = createFileRoute("/admin/")({
     component: DashboardPage,
     loader: async ({ context }) => {
+        // Only prefetch what the viewer may read. `/api/contracts` answers 403
+        // without `contracts:view`, and prefetching it unconditionally took
+        // the whole dashboard down with an error for everyone else.
+        const auth = await authClient();
+        const mayRead = (permission: string | readonly string[]) =>
+            sessionHasPermissionInAnyScope(auth?.permissions, permission);
+
         await Promise.all([
             context.queryClient.ensureQueryData(getEventsQuery(0)),
             context.queryClient.ensureQueryData(getNewsQuery(0)),
             context.queryClient.ensureQueryData(getJobsQuery(0)),
             context.queryClient.ensureQueryData(getGroupsQuery(0)),
-            context.queryClient.ensureQueryData(getContractListQuery()),
+            ...(mayRead(ADMIN_SECTION_PERMISSIONS.opptak)
+                ? [context.queryClient.ensureQueryData(getContractListQuery())]
+                : []),
         ]);
         return { breadcrumbs: "Dashboard" };
     },
 });
 
 function DashboardPage() {
+    const canCreateEvents = useAnyScopePermission([
+        "events:create",
+        "events:manage",
+    ]);
+
     return (
         <div className="container mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8">
             <AdminPageHeader
                 title="Dashboard"
                 description="Oversikt over innhold og administrasjon i Kvark."
                 action={
-                    <Button render={<Link to="/admin/arrangementer" />}>
-                        <PlusIcon className="size-4" />
-                        Nytt arrangement
-                    </Button>
+                    canCreateEvents ? (
+                        <Button render={<Link to="/admin/arrangementer" />}>
+                            <PlusIcon className="size-4" />
+                            Nytt arrangement
+                        </Button>
+                    ) : null
                 }
             />
 
@@ -76,75 +95,142 @@ function StatsGrid() {
     const { data: news } = useSuspenseQuery(getNewsQuery(0));
     const { data: jobs } = useSuspenseQuery(getJobsQuery(0));
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
-    const { data: contracts } = useSuspenseQuery(getContractListQuery());
+
+    // The cards are links into the admin sections, so they follow the same
+    // rule as the sidebar: no entry point to a section you cannot open.
+    const canEvents = useAnyScopePermission(
+        ADMIN_SECTION_PERMISSIONS.arrangementer,
+    );
+    const canNews = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.nyheter);
+    const canJobs = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.annonser);
+    const canGroups = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.grupper);
+    const canContracts = useAnyScopePermission(
+        ADMIN_SECTION_PERMISSIONS.opptak,
+    );
 
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <AdminStatCard
-                label="Arrangementer"
-                value={events.totalCount}
-                icon={CalendarIcon}
-                link={{ to: "/admin/arrangementer" }}
-            />
-            <AdminStatCard
-                label="Nyheter"
-                value={news.totalCount}
-                icon={NewspaperIcon}
-                link={{ to: "/admin/nyheter" }}
-            />
-            <AdminStatCard
-                label="Annonser"
-                value={jobs.totalCount}
-                icon={BriefcaseBusinessIcon}
-                link={{ to: "/admin/annonser" }}
-            />
-            <AdminStatCard
-                label="Grupper"
-                value={groups.length}
-                icon={Users2Icon}
-                link={{ to: "/admin/grupper" }}
-            />
-            <AdminStatCard
-                label="Kontrakter"
-                value={contracts.length}
-                icon={FileSignatureIcon}
-                hint={
-                    contracts.some((contract) => contract.isActive)
-                        ? "Én aktiv kontrakt"
-                        : "Ingen aktiv kontrakt"
-                }
-                link={{ to: "/admin/opptak" }}
-            />
+            {canEvents ? (
+                <AdminStatCard
+                    label="Arrangementer"
+                    value={events.totalCount}
+                    icon={CalendarIcon}
+                    link={{ to: "/admin/arrangementer" }}
+                />
+            ) : null}
+            {canNews ? (
+                <AdminStatCard
+                    label="Nyheter"
+                    value={news.totalCount}
+                    icon={NewspaperIcon}
+                    link={{ to: "/admin/nyheter" }}
+                />
+            ) : null}
+            {canJobs ? (
+                <AdminStatCard
+                    label="Annonser"
+                    value={jobs.totalCount}
+                    icon={BriefcaseBusinessIcon}
+                    link={{ to: "/admin/annonser" }}
+                />
+            ) : null}
+            {canGroups ? (
+                <AdminStatCard
+                    label="Grupper"
+                    value={groups.length}
+                    icon={Users2Icon}
+                    link={{ to: "/admin/grupper" }}
+                />
+            ) : null}
+            {/* Own component: the contracts endpoint 403s without
+                contracts:view, so the query must not run at all for others. */}
+            {canContracts ? <ContractsStatCard /> : null}
         </div>
     );
 }
 
+function ContractsStatCard() {
+    const { data: contracts } = useSuspenseQuery(getContractListQuery());
+
+    return (
+        <AdminStatCard
+            label="Kontrakter"
+            value={contracts.length}
+            icon={FileSignatureIcon}
+            hint={
+                contracts.some((contract) => contract.isActive)
+                    ? "Én aktiv kontrakt"
+                    : "Ingen aktiv kontrakt"
+            }
+            link={{ to: "/admin/opptak" }}
+        />
+    );
+}
+
 function QuickActions() {
+    const canCreateNews = useAnyScopePermission(
+        ADMIN_SECTION_PERMISSIONS.nyheter,
+    );
+    const canCreateJobs = useAnyScopePermission(["jobs:create", "jobs:manage"]);
+    const canUploadContract = useAnyScopePermission([
+        "contracts:create",
+        "contracts:manage",
+    ]);
+    const canManageGroups = useAnyScopePermission(
+        ADMIN_SECTION_PERMISSIONS.grupper,
+    );
+
+    if (
+        !canCreateNews &&
+        !canCreateJobs &&
+        !canUploadContract &&
+        !canManageGroups
+    ) {
+        return null;
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Hurtighandlinger</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
-                <Button variant="outline" render={<Link to="/admin/nyheter" />}>
-                    <NewspaperIcon className="size-4" />
-                    Ny nyhet
-                </Button>
-                <Button
-                    variant="outline"
-                    render={<Link to="/admin/annonser" />}
-                >
-                    <BriefcaseBusinessIcon className="size-4" />
-                    Ny annonse
-                </Button>
-                <Button variant="outline" render={<Link to="/admin/opptak" />}>
-                    <FileSignatureIcon className="size-4" />
-                    Last opp kontrakt
-                </Button>
-                <Button variant="outline" render={<Link to="/admin/grupper" />}>
-                    <Users2Icon className="size-4" />
-                    Administrer grupper
-                </Button>
+                {canCreateNews ? (
+                    <Button
+                        variant="outline"
+                        render={<Link to="/admin/nyheter" />}
+                    >
+                        <NewspaperIcon className="size-4" />
+                        Ny nyhet
+                    </Button>
+                ) : null}
+                {canCreateJobs ? (
+                    <Button
+                        variant="outline"
+                        render={<Link to="/admin/annonser" />}
+                    >
+                        <BriefcaseBusinessIcon className="size-4" />
+                        Ny annonse
+                    </Button>
+                ) : null}
+                {canUploadContract ? (
+                    <Button
+                        variant="outline"
+                        render={<Link to="/admin/opptak" />}
+                    >
+                        <FileSignatureIcon className="size-4" />
+                        Last opp kontrakt
+                    </Button>
+                ) : null}
+                {canManageGroups ? (
+                    <Button
+                        variant="outline"
+                        render={<Link to="/admin/grupper" />}
+                    >
+                        <Users2Icon className="size-4" />
+                        Administrer grupper
+                    </Button>
+                ) : null}
             </CardContent>
         </Card>
     );

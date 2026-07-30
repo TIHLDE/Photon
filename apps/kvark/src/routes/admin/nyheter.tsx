@@ -20,6 +20,8 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { useImageUploader } from "#/api/queries/assets";
 import { createNewsMutation } from "#/api/queries/news";
 import { AdminImageField } from "#/components/admin-image-field";
+import { AdminNoAccess } from "#/components/admin-no-access";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { richRegistry } from "#/components/markdown/directives/presets";
 
 export const Route = createFileRoute("/admin/nyheter")({
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/admin/nyheter")({
 });
 
 function NewsAdminPage() {
+    const canCreate = useAnyScopePermission(["news:create", "news:manage"]);
     const [title, setTitle] = useState("");
     const [excerpt, setExcerpt] = useState("");
     const [body, setBody] = useState("");
@@ -86,128 +89,132 @@ function NewsAdminPage() {
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Innhold</CardTitle>
-                        <CardDescription>
-                            Tittel, utdrag, og brødtekst. Brødteksten lagres som
-                            markdown i databasen.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <FieldGroup>
-                            <Field>
-                                <FieldLabel htmlFor="news-title">
-                                    Tittel
-                                </FieldLabel>
-                                <Input
-                                    id="news-title"
-                                    type="text"
-                                    required
-                                    value={title}
-                                    onChange={(event) =>
-                                        setTitle(event.target.value)
-                                    }
-                                />
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="news-excerpt">
-                                    Utdrag
-                                </FieldLabel>
-                                <Textarea
-                                    id="news-excerpt"
-                                    rows={2}
-                                    required
-                                    value={excerpt}
-                                    onChange={(event) =>
-                                        setExcerpt(event.target.value)
-                                    }
-                                />
-                            </Field>
-                            <Field>
-                                <FieldLabel>Brødtekst</FieldLabel>
-                                <RichEditor
-                                    registry={richRegistry}
-                                    value={body}
-                                    onChange={setBody}
-                                />
-                            </Field>
-                        </FieldGroup>
-                    </CardContent>
-                </Card>
+            {!canCreate ? <AdminNoAccess action="publisere nyheter" /> : null}
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Forsidebilde</CardTitle>
-                        <CardDescription>
-                            Bildet vises på nyhetskortet og øverst på
-                            nyhetssiden. Forhåndsvisningen under er nøyaktig
-                            samme utsnitt som besøkende ser.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <FieldGroup>
-                            <AdminImageField
-                                label="Bilde"
-                                preset="cover-wide"
-                                value={image}
-                                onChange={setImage}
-                            />
-                            <Field>
-                                <FieldLabel htmlFor="news-image-alt">
-                                    Bildebeskrivelse
-                                </FieldLabel>
-                                <Input
-                                    id="news-image-alt"
-                                    type="text"
-                                    maxLength={255}
-                                    placeholder="Kort beskrivelse for skjermlesere"
-                                    value={imageAlt}
-                                    onChange={(event) =>
-                                        setImageAlt(event.target.value)
-                                    }
+            {canCreate ? (
+                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Innhold</CardTitle>
+                            <CardDescription>
+                                Tittel, utdrag, og brødtekst. Brødteksten lagres
+                                som markdown i databasen.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FieldGroup>
+                                <Field>
+                                    <FieldLabel htmlFor="news-title">
+                                        Tittel
+                                    </FieldLabel>
+                                    <Input
+                                        id="news-title"
+                                        type="text"
+                                        required
+                                        value={title}
+                                        onChange={(event) =>
+                                            setTitle(event.target.value)
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="news-excerpt">
+                                        Utdrag
+                                    </FieldLabel>
+                                    <Textarea
+                                        id="news-excerpt"
+                                        rows={2}
+                                        required
+                                        value={excerpt}
+                                        onChange={(event) =>
+                                            setExcerpt(event.target.value)
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Brødtekst</FieldLabel>
+                                    <RichEditor
+                                        registry={richRegistry}
+                                        value={body}
+                                        onChange={setBody}
+                                    />
+                                </Field>
+                            </FieldGroup>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Forsidebilde</CardTitle>
+                            <CardDescription>
+                                Bildet vises på nyhetskortet og øverst på
+                                nyhetssiden. Forhåndsvisningen under er nøyaktig
+                                samme utsnitt som besøkende ser.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FieldGroup>
+                                <AdminImageField
+                                    label="Bilde"
+                                    preset="cover-wide"
+                                    value={image}
+                                    onChange={setImage}
                                 />
-                            </Field>
-                        </FieldGroup>
-                    </CardContent>
-                </Card>
+                                <Field>
+                                    <FieldLabel htmlFor="news-image-alt">
+                                        Bildebeskrivelse
+                                    </FieldLabel>
+                                    <Input
+                                        id="news-image-alt"
+                                        type="text"
+                                        maxLength={255}
+                                        placeholder="Kort beskrivelse for skjermlesere"
+                                        value={imageAlt}
+                                        onChange={(event) =>
+                                            setImageAlt(event.target.value)
+                                        }
+                                    />
+                                </Field>
+                            </FieldGroup>
+                        </CardContent>
+                    </Card>
 
-                {uploadError && (
-                    <Alert variant="destructive">
-                        <XCircle className="size-4" />
-                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
-                        <AlertDescription>{uploadError}</AlertDescription>
-                    </Alert>
-                )}
-                {createNews.isSuccess && (
-                    <Alert>
-                        <CheckCircle2 className="size-4" />
-                        <AlertTitle>Publisert</AlertTitle>
-                        <AlertDescription>
-                            Nyheten ble opprettet.
-                        </AlertDescription>
-                    </Alert>
-                )}
-                {createNews.isError && (
-                    <Alert variant="destructive">
-                        <XCircle className="size-4" />
-                        <AlertTitle>Kunne ikke publisere</AlertTitle>
-                        <AlertDescription>
-                            {createNews.error.message}
-                        </AlertDescription>
-                    </Alert>
-                )}
+                    {uploadError && (
+                        <Alert variant="destructive">
+                            <XCircle className="size-4" />
+                            <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                            <AlertDescription>{uploadError}</AlertDescription>
+                        </Alert>
+                    )}
+                    {createNews.isSuccess && (
+                        <Alert>
+                            <CheckCircle2 className="size-4" />
+                            <AlertTitle>Publisert</AlertTitle>
+                            <AlertDescription>
+                                Nyheten ble opprettet.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {createNews.isError && (
+                        <Alert variant="destructive">
+                            <XCircle className="size-4" />
+                            <AlertTitle>Kunne ikke publisere</AlertTitle>
+                            <AlertDescription>
+                                {createNews.error.message}
+                            </AlertDescription>
+                        </Alert>
+                    )}
 
-                <div className="flex justify-end">
-                    <Button
-                        type="submit"
-                        disabled={createNews.isPending || isUploading}
-                    >
-                        {isUploading ? "Laster opp bilde …" : "Publiser"}
-                    </Button>
-                </div>
-            </form>
+                    <div className="flex justify-end">
+                        <Button
+                            type="submit"
+                            disabled={createNews.isPending || isUploading}
+                        >
+                            {isUploading ? "Laster opp bilde …" : "Publiser"}
+                        </Button>
+                    </div>
+                </form>
+            ) : null}
         </div>
     );
 }

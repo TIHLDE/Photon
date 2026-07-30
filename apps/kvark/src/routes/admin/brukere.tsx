@@ -50,6 +50,7 @@ import { getUsersInfiniteQuery } from "#/api/queries/user";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { usePermission } from "#/hooks/use-permission";
 import {
     UserSearchCombobox,
     type UserSearchOption,
@@ -146,10 +147,15 @@ function UsersAdminPage() {
      * innlogging, og API-et avviser håndredigering av dem (400). Lista vises
      * derfor uten rolle- og fjern-handlinger for slike grupper.
      */
+    // Add/remove members and role changes all require `groups:manage`
+    // GLOBALLY server-side (no scope, no leader bypass), so anything less
+    // makes the list read-only rather than showing controls that 403.
+    const canManageMembers = usePermission("groups:manage");
     const selectedGroup = groups.find((group) => group.slug === groupSlug);
     const readOnly = selectedGroup
-        ? ["study", "studyyear"].includes(selectedGroup.type.toLowerCase())
-        : false;
+        ? ["study", "studyyear"].includes(selectedGroup.type.toLowerCase()) ||
+          !canManageMembers
+        : !canManageMembers;
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">

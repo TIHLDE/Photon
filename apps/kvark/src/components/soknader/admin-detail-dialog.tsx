@@ -109,6 +109,12 @@ type AdminDetailDialogProps = {
     /** Object URLs for the attachments, keyed by asset key. */
     attachmentUrls: Record<string, string>;
     isSaving: boolean;
+    /**
+     * Whether the viewer may actually decide the søknad. Holders of the
+     * `*:view` permission can open it but not change its status, so the whole
+     * decision block is hidden from them rather than left there to fail.
+     */
+    canManage: boolean;
     onSave: (values: {
         status: ApplicationStatus;
         internalComment: string;
@@ -124,6 +130,7 @@ export function AdminDetailDialog({
     isLoading,
     attachmentUrls,
     isSaving,
+    canManage,
     onSave,
     onDownloadPdf,
 }: AdminDetailDialogProps) {
@@ -249,97 +256,109 @@ export function AdminDetailDialog({
                             </>
                         )}
 
-                        <Separator />
+                        {canManage ? (
+                            <>
+                                <Separator />
 
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="application-status">
-                                    Status
-                                </Label>
-                                <Select
-                                    value={status}
-                                    onValueChange={(value) =>
-                                        setStatus(value as ApplicationStatus)
-                                    }
-                                >
-                                    <SelectTrigger
-                                        id="application-status"
-                                        className="w-full"
-                                    >
-                                        <SelectValue>
-                                            {(value) =>
-                                                STATUS_OPTIONS.find(
-                                                    (option) =>
-                                                        option.value === value,
-                                                )?.label ?? null
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="application-status">
+                                            Status
+                                        </Label>
+                                        <Select
+                                            value={status}
+                                            onValueChange={(value) =>
+                                                setStatus(
+                                                    value as ApplicationStatus,
+                                                )
                                             }
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {STATUS_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
+                                        >
+                                            <SelectTrigger
+                                                id="application-status"
+                                                className="w-full"
                                             >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                                <SelectValue>
+                                                    {(value) =>
+                                                        STATUS_OPTIONS.find(
+                                                            (option) =>
+                                                                option.value ===
+                                                                value,
+                                                        )?.label ?? null
+                                                    }
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {STATUS_OPTIONS.map(
+                                                    (option) => (
+                                                        <SelectItem
+                                                            key={option.value}
+                                                            value={option.value}
+                                                        >
+                                                            {option.label}
+                                                        </SelectItem>
+                                                    ),
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                            <div className="flex flex-col gap-2">
-                                <Label htmlFor="application-comment">
-                                    Internt notat
-                                </Label>
-                                <Textarea
-                                    id="application-comment"
-                                    rows={3}
-                                    value={internalComment}
-                                    onChange={(event) =>
-                                        setInternalComment(event.target.value)
-                                    }
-                                    placeholder="Kun synlig for behandlere"
-                                />
-                            </div>
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="application-comment">
+                                            Internt notat
+                                        </Label>
+                                        <Textarea
+                                            id="application-comment"
+                                            rows={3}
+                                            value={internalComment}
+                                            onChange={(event) =>
+                                                setInternalComment(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Kun synlig for behandlere"
+                                        />
+                                    </div>
 
-                            {/* Bedriftshenvendelser get no automated decision
+                                    {/* Bedriftshenvendelser get no automated decision
                                 email — the Næringslivsminister answers them
                                 directly — so offering a message would be a
                                 field that goes nowhere. */}
-                            {isDecision && !application.companyContact && (
-                                <div className="flex flex-col gap-2">
-                                    <Label htmlFor="application-message">
-                                        Melding til innsender
-                                    </Label>
-                                    <Textarea
-                                        id="application-message"
-                                        rows={3}
-                                        value={messageToSubmitter}
-                                        onChange={(event) =>
-                                            setMessageToSubmitter(
-                                                event.target.value,
-                                            )
-                                        }
-                                        placeholder="Valgfritt — blir med i e-posten om avgjørelsen"
-                                    />
-                                </div>
-                            )}
+                                    {isDecision &&
+                                        !application.companyContact && (
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="application-message">
+                                                    Melding til innsender
+                                                </Label>
+                                                <Textarea
+                                                    id="application-message"
+                                                    rows={3}
+                                                    value={messageToSubmitter}
+                                                    onChange={(event) =>
+                                                        setMessageToSubmitter(
+                                                            event.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Valgfritt — blir med i e-posten om avgjørelsen"
+                                                />
+                                            </div>
+                                        )}
 
-                            <Button
-                                disabled={isSaving}
-                                onClick={() =>
-                                    onSave({
-                                        status,
-                                        internalComment,
-                                        messageToSubmitter,
-                                    })
-                                }
-                            >
-                                {isSaving ? <Spinner /> : null}
-                                Lagre
-                            </Button>
-                        </div>
+                                    <Button
+                                        disabled={isSaving}
+                                        onClick={() =>
+                                            onSave({
+                                                status,
+                                                internalComment,
+                                                messageToSubmitter,
+                                            })
+                                        }
+                                    >
+                                        {isSaving ? <Spinner /> : null}
+                                        Lagre
+                                    </Button>
+                                </div>
+                            </>
+                        ) : null}
                     </>
                 )}
             </DialogContent>

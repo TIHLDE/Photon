@@ -31,6 +31,7 @@ import { EventRegistrationCard } from "#/components/event-registration-card";
 import { IconActionButton } from "#/components/icon-action-button";
 import { MapLink } from "#/components/map-link";
 import { ShareButton } from "#/components/share-button";
+import { useCanActOnResource } from "#/hooks/use-permission";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
 import {
@@ -46,8 +47,6 @@ export const Route = createFileRoute("/_app/arrangementer/$slug")({
         context.queryClient.ensureQueryData(getEventByIdQuery(params.slug)),
 });
 
-const ADMIN_PERMISSIONS = ["events:update", "events:manage", "events:delete"];
-
 function EventDetailPage() {
     const { slug } = Route.useParams();
     const navigate = useNavigate();
@@ -61,11 +60,13 @@ function EventDetailPage() {
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
 
-    const isAdmin = Boolean(
-        session?.permissions?.some(
-            (p) => ADMIN_PERMISSIONS.includes(p) || p === "root",
-        ),
-    );
+    // Same rule as the API: the permission (a group-scoped one counts), or
+    // having created the event.
+    const isAdmin = useCanActOnResource([
+        "events:update",
+        "events:manage",
+        "events:delete",
+    ])(event.createdById);
 
     const registrationState = deriveRegistrationState(
         event.registration,

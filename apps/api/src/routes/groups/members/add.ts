@@ -6,6 +6,7 @@ import { addUserToGroup, isDerivedGroupType } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { requireAuth } from "~/middleware/auth";
 import { addMemberSchema, membershipResponseSchema } from "../schema";
 
@@ -16,7 +17,7 @@ export const addMemberRoute = route().post(
         summary: "Add member to group",
         operationId: "addGroupMember",
         description:
-            "Add a member to a group. Requires 'groups:manage' permission.",
+            "Add a member to a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -27,7 +28,14 @@ export const addMemberRoute = route().post(
         .notFound({ description: "Group not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: "groups:manage" }),
+    // A group's leader manages their own roster; "groups:manage" scoped to the
+    // group does the same for anyone else. Derived (Feide) groups are refused
+    // further down regardless of who asks.
+    requireAccess({
+        permission: "groups:manage",
+        scope: (c) => `group:${c.req.param("groupSlug")}`,
+        ownership: { param: "groupSlug", check: isGroupLeader },
+    }),
     validator("json", addMemberSchema),
     async (c) => {
         const body = c.req.valid("json");
@@ -84,6 +92,16 @@ export const addMemberRoute = route().post(
         if (existingMembership.length > 0) {
             throw new HTTPException(400, {
                 message: `User is already a member of group "${groupSlug}"`,
+            });
+        }
+
+        // Handing out leadership is an escalation — a subgroup leader also
+        // gets the leader role and a seat in HS — so it stays with
+        // "groups:manage". A group's own leader may add plain members only.
+        if (body.role === "leader" && c.get("isResourceOwner")) {
+            throw new HTTPException(403, {
+                message:
+                    "Adding a member as leader requires the 'groups:manage' permission",
             });
         }
 

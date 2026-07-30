@@ -31,7 +31,7 @@ export function GroupFormsTab({ forms, isAdmin }: GroupFormsTabProps) {
                 <ul className="flex flex-col gap-3">
                     {forms.map((form) => (
                         <li key={form.id}>
-                            <GroupFormRow form={form} />
+                            <GroupFormRow form={form} canManage={isAdmin} />
                         </li>
                     ))}
                 </ul>

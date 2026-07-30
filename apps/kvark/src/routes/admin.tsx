@@ -44,8 +44,9 @@ import * as React from "react";
 import {
     authClientWithRedirect,
     authQueryOptions,
-    sessionHasPermission,
+    sessionHasPermissionInAnyScope,
 } from "#/api/auth";
+import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 import { TihldeLogo } from "#/components/icons/tihlde";
 
@@ -82,11 +83,14 @@ type SidebarGroup = {
 
         icon?: LucideIcon;
         /**
-         * Hide this entry unless the session holds one of these permissions
-         * globally. Omit for sections everyone signed in may reach. Cosmetic
-         * only — the API is what actually enforces access.
+         * Hide this entry unless the session holds one of these permissions,
+         * globally or scoped to a group. Cosmetic only — the API is what
+         * actually enforces access — but a member who cannot use a section
+         * should not be offered it.
          */
-        permission?: string | string[];
+        permission?: string | readonly string[];
+        /** Also show it to anyone who leads a group. */
+        allowGroupLeader?: boolean;
     }[];
 };
 
@@ -113,16 +117,19 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Arrangementer",
                 icon: CalendarIcon,
                 link: linkOptions({ to: "/admin/arrangementer" }),
+                permission: ADMIN_SECTION_PERMISSIONS.arrangementer,
             },
             {
                 label: "Oppmøte",
                 icon: CircleCheckBigIcon,
                 link: linkOptions({ to: "/admin/oppmote" }),
+                permission: ADMIN_SECTION_PERMISSIONS.oppmote,
             },
             {
                 label: "Nyheter",
                 icon: NewspaperIcon,
                 link: linkOptions({ to: "/admin/nyheter" }),
+                permission: ADMIN_SECTION_PERMISSIONS.nyheter,
             },
             {
                 label: "Annonser",
@@ -130,33 +137,25 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 link: linkOptions({
                     to: "/admin/annonser",
                 }),
+                permission: ADMIN_SECTION_PERMISSIONS.annonser,
             },
             {
                 label: "Bannere",
                 icon: BookmarkIcon,
                 link: linkOptions({ to: "/admin/bannere" }),
+                permission: ADMIN_SECTION_PERMISSIONS.bannere,
             },
             {
                 label: "Galleri",
                 icon: ImagesIcon,
                 link: linkOptions({ to: "/admin/galleri" }),
-                permission: [
-                    "galleries:create",
-                    "galleries:update",
-                    "galleries:delete",
-                    "galleries:manage",
-                ],
+                permission: ADMIN_SECTION_PERMISSIONS.galleri,
             },
             {
                 label: "TÖDDEL",
                 icon: BookOpenIcon,
                 link: linkOptions({ to: "/admin/toddel" }),
-                permission: [
-                    "toddel:create",
-                    "toddel:update",
-                    "toddel:delete",
-                    "toddel:manage",
-                ],
+                permission: ADMIN_SECTION_PERMISSIONS.toddel,
             },
         ],
     },
@@ -168,39 +167,41 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "Brukere",
                 icon: UserIcon,
                 link: linkOptions({ to: "/admin/brukere" }),
+                permission: ADMIN_SECTION_PERMISSIONS.brukere,
             },
             {
                 label: "Grupper",
                 icon: Users2Icon,
                 link: linkOptions({ to: "/admin/grupper" }),
+                permission: ADMIN_SECTION_PERMISSIONS.grupper,
             },
             {
                 label: "Prikker",
                 icon: DotSquare,
                 link: linkOptions({ to: "/admin/prikker" }),
+                permission: ADMIN_SECTION_PERMISSIONS.prikker,
             },
             {
+                // Group leaders reach this one without any global roles:*
+                // permission — they may create and assign verv inside their
+                // own group. The page hides the "Roller"-tab from them.
                 label: "Roller og verv",
                 icon: CrownIcon,
                 link: linkOptions({ to: "/admin/roller" }),
+                permission: ADMIN_SECTION_PERMISSIONS.roller,
+                allowGroupLeader: true,
             },
             {
                 label: "Opptak",
                 icon: FileUserIcon,
                 link: linkOptions({ to: "/admin/opptak" }),
+                permission: ADMIN_SECTION_PERMISSIONS.opptak,
             },
             {
                 label: "Søknader",
                 icon: FileTextIcon,
                 link: linkOptions({ to: "/admin/soknader" }),
-                permission: [
-                    "applications:view",
-                    "applications:expense:view",
-                    "applications:support:view",
-                    "applications:sports-support:view",
-                    "applications:hs-case:view",
-                    "applications:company-contact:view",
-                ],
+                permission: ADMIN_SECTION_PERMISSIONS.soknader,
             },
         ],
     },
@@ -212,21 +213,25 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "API Nøkler",
                 icon: KeyIcon,
                 link: linkOptions({ to: "/admin/api-keys" }),
+                permission: "root",
             },
             {
                 label: "OAuth-klienter",
                 icon: ShieldCheckIcon,
                 link: linkOptions({ to: "/admin/oauth-clients" }),
+                permission: "root",
             },
             {
                 label: "Database Viewer",
                 icon: DatabaseIcon,
                 link: linkOptions({ to: "/admin/database" }),
+                permission: "root",
             },
             {
                 label: "Logs",
                 icon: LogsIcon,
                 link: linkOptions({ to: "/admin/logs" }),
+                permission: "root",
             },
         ],
     },
@@ -234,16 +239,24 @@ const sidebarMenuGroups: SidebarGroup[] = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { data: session } = useQuery(authQueryOptions);
+    const isGroupLeader = Boolean(
+        session?.groups?.some((group) => group.role === "leader"),
+    );
 
-    // Drop entries the viewer cannot use, then drop groups left empty.
+    // Drop entries the viewer cannot use, then drop groups left empty. A
+    // group-scoped grant counts: the section lists more than one group's
+    // resources, and the API rejects the ones outside the grant.
     const visibleGroups = sidebarMenuGroups
         .map((group) => ({
             ...group,
-            items: group.items.filter(
-                (item) =>
-                    !item.permission ||
-                    sessionHasPermission(session?.permissions, item.permission),
-            ),
+            items: group.items.filter((item) => {
+                if (!item.permission) return true;
+                if (item.allowGroupLeader && isGroupLeader) return true;
+                return sessionHasPermissionInAnyScope(
+                    session?.permissions,
+                    item.permission as string | string[],
+                );
+            }),
         }))
         .filter((group) => group.items.length > 0);
 

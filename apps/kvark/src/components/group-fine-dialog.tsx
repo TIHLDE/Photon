@@ -16,12 +16,19 @@ type GroupFineDialogProps = {
     fines: Fine[];
     openIndex: number | null;
     onOpenChange: (i: number | null) => void;
+    /**
+     * Whether the viewer may act on the fine. Members can see the group's
+     * fines but only the botsjef and fines:* holders may settle them, so the
+     * action row is hidden rather than shown and rejected.
+     */
+    canManage: boolean;
 };
 
 export function GroupFineDialog({
     fines,
     openIndex,
     onOpenChange,
+    canManage,
 }: GroupFineDialogProps) {
     const fine = openIndex !== null ? fines[openIndex] : null;
 
@@ -83,22 +90,24 @@ export function GroupFineDialog({
                                     className="max-h-80 w-full rounded-md object-contain"
                                 />
                             ) : null}
-                            <div className="flex flex-wrap gap-2">
-                                <Button size="sm" variant="outline">
-                                    Merk som godkjent
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                    Merk som betalt
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                    <Pencil />
-                                    Rediger bot
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                    <Trash2 />
-                                    Slett bot
-                                </Button>
-                            </div>
+                            {canManage ? (
+                                <div className="flex flex-wrap gap-2">
+                                    <Button size="sm" variant="outline">
+                                        Merk som godkjent
+                                    </Button>
+                                    <Button size="sm" variant="outline">
+                                        Merk som betalt
+                                    </Button>
+                                    <Button size="sm" variant="outline">
+                                        <Pencil />
+                                        Rediger bot
+                                    </Button>
+                                    <Button size="sm" variant="outline">
+                                        <Trash2 />
+                                        Slett bot
+                                    </Button>
+                                </div>
+                            ) : null}
                         </div>
                         <DialogFooter className="justify-between sm:justify-between">
                             <Button
