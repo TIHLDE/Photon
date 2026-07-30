@@ -352,7 +352,7 @@ export interface paths {
          *     Requires either session authentication or a valid API key.
          *
          *     **Constraints:**
-         *     - Maximum file size: 10MB
+         *     - Maximum file size: 50MB
          *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
          *
          *     **Image optimization:**
