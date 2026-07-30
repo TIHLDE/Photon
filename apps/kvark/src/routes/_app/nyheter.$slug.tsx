@@ -68,8 +68,8 @@ function NewsDetailPage() {
                                     nativeButton={false}
                                     render={
                                         <Link
-                                            to="/nyheter/$slug/rediger"
-                                            params={{ slug: news.id }}
+                                            to="/admin/nyheter"
+                                            search={{ rediger: news.id }}
                                         />
                                     }
                                 >

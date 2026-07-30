@@ -31,13 +31,11 @@ import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
 import { Route as AdminAnnonserRouteImport } from './routes/admin/annonser'
-import { Route as AdminArrangementerRouteImport } from './routes/admin/arrangementer'
 import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
 import { Route as AdminGalleriRouteImport } from './routes/admin/galleri'
 import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
-import { Route as AdminOppmoteRouteImport } from './routes/admin/oppmote'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
 import { Route as AdminRollerRouteImport } from './routes/admin/roller'
@@ -66,8 +64,9 @@ import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_supe
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
-import { Route as AppArrangementerSlugRedigerRouteImport } from './routes/_app/arrangementer.$slug_.rediger'
-import { Route as AppNyheterSlugRedigerRouteImport } from './routes/_app/nyheter.$slug_.rediger'
+import { Route as AdminArrangementerIndexRouteImport } from './routes/admin/arrangementer.index'
+import { Route as AdminArrangementerEventIdRouteImport } from './routes/admin/arrangementer.$eventId'
+import { Route as AdminArrangementerNyRouteImport } from './routes/admin/arrangementer.ny'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
 import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
@@ -180,11 +179,6 @@ const AdminAnnonserRoute = AdminAnnonserRouteImport.update({
   path: '/annonser',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminArrangementerRoute = AdminArrangementerRouteImport.update({
-  id: '/arrangementer',
-  path: '/arrangementer',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminBannereRoute = AdminBannereRouteImport.update({
   id: '/bannere',
   path: '/bannere',
@@ -208,11 +202,6 @@ const AdminGrupperRoute = AdminGrupperRouteImport.update({
 const AdminNyheterRoute = AdminNyheterRouteImport.update({
   id: '/nyheter',
   path: '/nyheter',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOppmoteRoute = AdminOppmoteRouteImport.update({
-  id: '/oppmote',
-  path: '/oppmote',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOpptakRoute = AdminOpptakRouteImport.update({
@@ -356,16 +345,21 @@ const AdminSuperAdminOauthClientsRoute =
     path: '/oauth-clients',
     getParentRoute: () => AdminSuperAdminRoute,
   } as any)
-const AppArrangementerSlugRedigerRoute =
-  AppArrangementerSlugRedigerRouteImport.update({
-    id: '/arrangementer/$slug_/rediger',
-    path: '/arrangementer/$slug/rediger',
-    getParentRoute: () => AppRoute,
+const AdminArrangementerIndexRoute = AdminArrangementerIndexRouteImport.update({
+  id: '/arrangementer/',
+  path: '/arrangementer/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminArrangementerEventIdRoute =
+  AdminArrangementerEventIdRouteImport.update({
+    id: '/arrangementer/$eventId',
+    path: '/arrangementer/$eventId',
+    getParentRoute: () => AdminRoute,
   } as any)
-const AppNyheterSlugRedigerRoute = AppNyheterSlugRedigerRouteImport.update({
-  id: '/nyheter/$slug_/rediger',
-  path: '/nyheter/$slug/rediger',
-  getParentRoute: () => AppRoute,
+const AdminArrangementerNyRoute = AdminArrangementerNyRouteImport.update({
+  id: '/arrangementer/ny',
+  path: '/arrangementer/ny',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppProfilIdIndexRoute = AppProfilIdIndexRouteImport.update({
   id: '/',
@@ -413,13 +407,11 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/form-test': typeof DevFormTestRoute
   '/admin/annonser': typeof AdminAnnonserRoute
-  '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
-  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -442,6 +434,8 @@ export interface FileRoutesByFullPath {
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
   '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
+  '/admin/arrangementer/$eventId': typeof AdminArrangementerEventIdRoute
+  '/admin/arrangementer/ny': typeof AdminArrangementerNyRoute
   '/annonser/': typeof AppAnnonserIndexRoute
   '/arrangementer/': typeof AppArrangementerIndexRoute
   '/bedrift/': typeof AppBedriftIndexRoute
@@ -449,8 +443,7 @@ export interface FileRoutesByFullPath {
   '/grupper/': typeof AppGrupperIndexRoute
   '/motetid/': typeof AppMotetidIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
-  '/arrangementer/$slug/rediger': typeof AppArrangementerSlugRedigerRoute
-  '/nyheter/$slug/rediger': typeof AppNyheterSlugRedigerRoute
+  '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -475,13 +468,11 @@ export interface FileRoutesByTo {
   '/form-test': typeof DevFormTestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/annonser': typeof AdminAnnonserRoute
-  '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
-  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -502,6 +493,8 @@ export interface FileRoutesByTo {
   '/admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/logs': typeof AdminSuperAdminLogsRoute
   '/admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
+  '/admin/arrangementer/$eventId': typeof AdminArrangementerEventIdRoute
+  '/admin/arrangementer/ny': typeof AdminArrangementerNyRoute
   '/annonser': typeof AppAnnonserIndexRoute
   '/arrangementer': typeof AppArrangementerIndexRoute
   '/bedrift': typeof AppBedriftIndexRoute
@@ -509,8 +502,7 @@ export interface FileRoutesByTo {
   '/grupper': typeof AppGrupperIndexRoute
   '/motetid': typeof AppMotetidIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
-  '/arrangementer/$slug/rediger': typeof AppArrangementerSlugRedigerRoute
-  '/nyheter/$slug/rediger': typeof AppNyheterSlugRedigerRoute
+  '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -539,13 +531,11 @@ export interface FileRoutesById {
   '/_dev/form-test': typeof DevFormTestRoute
   '/admin/_super-admin': typeof AdminSuperAdminRouteWithChildren
   '/admin/annonser': typeof AdminAnnonserRoute
-  '/admin/arrangementer': typeof AdminArrangementerRoute
   '/admin/bannere': typeof AdminBannereRoute
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
   '/admin/nyheter': typeof AdminNyheterRoute
-  '/admin/oppmote': typeof AdminOppmoteRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
   '/admin/roller': typeof AdminRollerRoute
@@ -569,6 +559,8 @@ export interface FileRoutesById {
   '/admin/_super-admin/database': typeof AdminSuperAdminDatabaseRoute
   '/admin/_super-admin/logs': typeof AdminSuperAdminLogsRoute
   '/admin/_super-admin/oauth-clients': typeof AdminSuperAdminOauthClientsRoute
+  '/admin/arrangementer/$eventId': typeof AdminArrangementerEventIdRoute
+  '/admin/arrangementer/ny': typeof AdminArrangementerNyRoute
   '/_app/annonser/': typeof AppAnnonserIndexRoute
   '/_app/arrangementer/': typeof AppArrangementerIndexRoute
   '/_app/bedrift/': typeof AppBedriftIndexRoute
@@ -576,8 +568,7 @@ export interface FileRoutesById {
   '/_app/grupper/': typeof AppGrupperIndexRoute
   '/_app/motetid/': typeof AppMotetidIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
-  '/_app/arrangementer/$slug_/rediger': typeof AppArrangementerSlugRedigerRoute
-  '/_app/nyheter/$slug_/rediger': typeof AppNyheterSlugRedigerRoute
+  '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -604,13 +595,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/form-test'
     | '/admin/annonser'
-    | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
-    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -633,6 +622,8 @@ export interface FileRouteTypes {
     | '/admin/database'
     | '/admin/logs'
     | '/admin/oauth-clients'
+    | '/admin/arrangementer/$eventId'
+    | '/admin/arrangementer/ny'
     | '/annonser/'
     | '/arrangementer/'
     | '/bedrift/'
@@ -640,8 +631,7 @@ export interface FileRouteTypes {
     | '/grupper/'
     | '/motetid/'
     | '/nyheter/'
-    | '/arrangementer/$slug/rediger'
-    | '/nyheter/$slug/rediger'
+    | '/admin/arrangementer/'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -666,13 +656,11 @@ export interface FileRouteTypes {
     | '/form-test'
     | '/admin'
     | '/admin/annonser'
-    | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
-    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -693,6 +681,8 @@ export interface FileRouteTypes {
     | '/admin/database'
     | '/admin/logs'
     | '/admin/oauth-clients'
+    | '/admin/arrangementer/$eventId'
+    | '/admin/arrangementer/ny'
     | '/annonser'
     | '/arrangementer'
     | '/bedrift'
@@ -700,8 +690,7 @@ export interface FileRouteTypes {
     | '/grupper'
     | '/motetid'
     | '/nyheter'
-    | '/arrangementer/$slug/rediger'
-    | '/nyheter/$slug/rediger'
+    | '/admin/arrangementer'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -729,13 +718,11 @@ export interface FileRouteTypes {
     | '/_dev/form-test'
     | '/admin/_super-admin'
     | '/admin/annonser'
-    | '/admin/arrangementer'
     | '/admin/bannere'
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
     | '/admin/nyheter'
-    | '/admin/oppmote'
     | '/admin/opptak'
     | '/admin/prikker'
     | '/admin/roller'
@@ -759,6 +746,8 @@ export interface FileRouteTypes {
     | '/admin/_super-admin/database'
     | '/admin/_super-admin/logs'
     | '/admin/_super-admin/oauth-clients'
+    | '/admin/arrangementer/$eventId'
+    | '/admin/arrangementer/ny'
     | '/_app/annonser/'
     | '/_app/arrangementer/'
     | '/_app/bedrift/'
@@ -766,8 +755,7 @@ export interface FileRouteTypes {
     | '/_app/grupper/'
     | '/_app/motetid/'
     | '/_app/nyheter/'
-    | '/_app/arrangementer/$slug_/rediger'
-    | '/_app/nyheter/$slug_/rediger'
+    | '/admin/arrangementer/'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
@@ -938,13 +926,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnonserRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/arrangementer': {
-      id: '/admin/arrangementer'
-      path: '/arrangementer'
-      fullPath: '/admin/arrangementer'
-      preLoaderRoute: typeof AdminArrangementerRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/bannere': {
       id: '/admin/bannere'
       path: '/bannere'
@@ -978,13 +959,6 @@ declare module '@tanstack/react-router' {
       path: '/nyheter'
       fullPath: '/admin/nyheter'
       preLoaderRoute: typeof AdminNyheterRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/oppmote': {
-      id: '/admin/oppmote'
-      path: '/oppmote'
-      fullPath: '/admin/oppmote'
-      preLoaderRoute: typeof AdminOppmoteRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/opptak': {
@@ -1183,19 +1157,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuperAdminOauthClientsRouteImport
       parentRoute: typeof AdminSuperAdminRoute
     }
-    '/_app/arrangementer/$slug_/rediger': {
-      id: '/_app/arrangementer/$slug_/rediger'
-      path: '/arrangementer/$slug/rediger'
-      fullPath: '/arrangementer/$slug/rediger'
-      preLoaderRoute: typeof AppArrangementerSlugRedigerRouteImport
-      parentRoute: typeof AppRoute
+    '/admin/arrangementer/': {
+      id: '/admin/arrangementer/'
+      path: '/arrangementer'
+      fullPath: '/admin/arrangementer/'
+      preLoaderRoute: typeof AdminArrangementerIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/_app/nyheter/$slug_/rediger': {
-      id: '/_app/nyheter/$slug_/rediger'
-      path: '/nyheter/$slug/rediger'
-      fullPath: '/nyheter/$slug/rediger'
-      preLoaderRoute: typeof AppNyheterSlugRedigerRouteImport
-      parentRoute: typeof AppRoute
+    '/admin/arrangementer/$eventId': {
+      id: '/admin/arrangementer/$eventId'
+      path: '/arrangementer/$eventId'
+      fullPath: '/admin/arrangementer/$eventId'
+      preLoaderRoute: typeof AdminArrangementerEventIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/arrangementer/ny': {
+      id: '/admin/arrangementer/ny'
+      path: '/arrangementer/ny'
+      fullPath: '/admin/arrangementer/ny'
+      preLoaderRoute: typeof AdminArrangementerNyRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_app/profil/$id/': {
       id: '/_app/profil/$id/'
@@ -1283,8 +1264,6 @@ interface AppRouteChildren {
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppMotetidIndexRoute: typeof AppMotetidIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
-  AppArrangementerSlugRedigerRoute: typeof AppArrangementerSlugRedigerRoute
-  AppNyheterSlugRedigerRoute: typeof AppNyheterSlugRedigerRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1315,8 +1294,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppMotetidIndexRoute: AppMotetidIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
-  AppArrangementerSlugRedigerRoute: AppArrangementerSlugRedigerRoute,
-  AppNyheterSlugRedigerRoute: AppNyheterSlugRedigerRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
@@ -1372,37 +1349,39 @@ const AdminSuperAdminRouteWithChildren = AdminSuperAdminRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminSuperAdminRoute: typeof AdminSuperAdminRouteWithChildren
   AdminAnnonserRoute: typeof AdminAnnonserRoute
-  AdminArrangementerRoute: typeof AdminArrangementerRoute
   AdminBannereRoute: typeof AdminBannereRoute
   AdminBrukereRoute: typeof AdminBrukereRoute
   AdminGalleriRoute: typeof AdminGalleriRoute
   AdminGrupperRoute: typeof AdminGrupperRoute
   AdminNyheterRoute: typeof AdminNyheterRoute
-  AdminOppmoteRoute: typeof AdminOppmoteRoute
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
   AdminRollerRoute: typeof AdminRollerRoute
   AdminSoknaderRoute: typeof AdminSoknaderRoute
   AdminToddelRoute: typeof AdminToddelRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminArrangementerEventIdRoute: typeof AdminArrangementerEventIdRoute
+  AdminArrangementerNyRoute: typeof AdminArrangementerNyRoute
+  AdminArrangementerIndexRoute: typeof AdminArrangementerIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSuperAdminRoute: AdminSuperAdminRouteWithChildren,
   AdminAnnonserRoute: AdminAnnonserRoute,
-  AdminArrangementerRoute: AdminArrangementerRoute,
   AdminBannereRoute: AdminBannereRoute,
   AdminBrukereRoute: AdminBrukereRoute,
   AdminGalleriRoute: AdminGalleriRoute,
   AdminGrupperRoute: AdminGrupperRoute,
   AdminNyheterRoute: AdminNyheterRoute,
-  AdminOppmoteRoute: AdminOppmoteRoute,
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,
   AdminRollerRoute: AdminRollerRoute,
   AdminSoknaderRoute: AdminSoknaderRoute,
   AdminToddelRoute: AdminToddelRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminArrangementerEventIdRoute: AdminArrangementerEventIdRoute,
+  AdminArrangementerNyRoute: AdminArrangementerNyRoute,
+  AdminArrangementerIndexRoute: AdminArrangementerIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

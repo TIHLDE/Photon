@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addHours } from "date-fns";
+import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
@@ -12,19 +12,22 @@ import { createEventMutation } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminNoAccess } from "#/components/admin-no-access";
+import { AdminPageHeader } from "#/components/admin-page-header";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { nextWholeHour } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 
-export const Route = createFileRoute("/admin/arrangementer")({
-    component: EventAdminPage,
-    loader: ({ context }) =>
-        Promise.all([
+export const Route = createFileRoute("/admin/arrangementer/ny")({
+    component: NewEventPage,
+    loader: async ({ context }) => {
+        await Promise.all([
             context.queryClient.ensureQueryData(getGroupsQuery(0)),
             context.queryClient.ensureQueryData(getInstitutesQuery()),
-        ]),
+        ]);
+        return { breadcrumbs: "Nytt arrangement" };
+    },
 });
 
 /** Date -> ISO string, or null when unset */
@@ -63,7 +66,8 @@ const emptyValues: EventFormValues = {
     imageAlt: "",
 };
 
-function EventAdminPage() {
+function NewEventPage() {
+    const navigate = useNavigate();
     const canCreate = useAnyScopePermission(["events:create", "events:manage"]);
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
@@ -158,69 +162,62 @@ function EventAdminPage() {
                 },
             },
             {
-                onSuccess() {
-                    const defaults = eventDateDefaults();
-                    setValues({ ...emptyValues, ...defaults });
+                // Rett til administrasjonssiden for det nye arrangementet, så
+                // påmeldte, oppmøte og betalinger er ett klikk unna.
+                onSuccess(created) {
+                    navigate({
+                        to: "/admin/arrangementer/$eventId",
+                        params: { eventId: created.eventId },
+                    });
                 },
             },
         );
     }
 
+    if (!canCreate) {
+        return (
+            <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+                <AdminPageHeader title="Nytt arrangement" />
+                <AdminNoAccess action="opprette arrangementer" />
+            </div>
+        );
+    }
+
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">Nytt arrangement</h1>
-                <p className="text-muted-foreground">
-                    Beskrivelsen lagres som markdown og formateringen vises
-                    direkte mens du skriver.
-                </p>
-            </div>
+            <AdminPageHeader
+                title="Nytt arrangement"
+                description="Beskrivelsen lagres som markdown og formateringen vises direkte mens du skriver."
+            />
 
-            {!canCreate ? (
-                <AdminNoAccess action="opprette arrangementer" />
-            ) : null}
-
-            {canCreate ? (
-                <EventForm
-                    values={values}
-                    onChange={handleChange}
-                    groups={groups}
-                    institutes={institutes}
-                    addressSuggestions={addressSuggestions ?? []}
-                    isSearchingAddress={isSearchingAddress}
-                    onSubmit={handleSubmit}
-                    submitLabel={
-                        isUploading ? "Laster opp bilde …" : "Publiser"
-                    }
-                    isSubmitting={createEvent.isPending || isUploading}
-                >
-                    {uploadError && (
-                        <Alert variant="destructive">
-                            <XCircle className="size-4" />
-                            <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
-                            <AlertDescription>{uploadError}</AlertDescription>
-                        </Alert>
-                    )}
-                    {createEvent.isSuccess && (
-                        <Alert>
-                            <CheckCircle2 className="size-4" />
-                            <AlertTitle>Publisert</AlertTitle>
-                            <AlertDescription>
-                                Arrangementet ble opprettet.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    {createEvent.isError && (
-                        <Alert variant="destructive">
-                            <XCircle className="size-4" />
-                            <AlertTitle>Kunne ikke publisere</AlertTitle>
-                            <AlertDescription>
-                                {createEvent.error.message}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                </EventForm>
-            ) : null}
+            <EventForm
+                values={values}
+                onChange={handleChange}
+                groups={groups}
+                institutes={institutes}
+                addressSuggestions={addressSuggestions ?? []}
+                isSearchingAddress={isSearchingAddress}
+                onSubmit={handleSubmit}
+                submitLabel={isUploading ? "Laster opp bilde …" : "Publiser"}
+                isSubmitting={createEvent.isPending || isUploading}
+            >
+                {uploadError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                        <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                )}
+                {createEvent.isError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke publisere</AlertTitle>
+                        <AlertDescription>
+                            {createEvent.error.message}
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </EventForm>
         </div>
     );
 }
