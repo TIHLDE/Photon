@@ -5,18 +5,23 @@ import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import {
-    useAnyScopePermission,
     useIsGroupLeaderOf,
+    useIsGroupMemberOf,
+    usePermission,
     useScopedPermission,
 } from "#/hooks/use-permission";
 import {
     createLawMutation,
+    deleteFineMutation,
     deleteLawMutation,
     getGroupBySlugQuery,
     getGroupFinesQuery,
     getGroupFormsQuery,
     getGroupLawsQuery,
     getGroupMembersQuery,
+    removeGroupMemberMutation,
+    updateFineMutation,
+    updateGroupMemberRoleMutation,
     updateLawMutation,
 } from "#/api/queries/groups";
 import {
@@ -69,19 +74,11 @@ function GroupDetailPage() {
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
     const { data: session } = useQuery(authQueryOptions);
     const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
-    const { data: apiFines } = useQuery({
-        ...getGroupFinesQuery(slug, 0),
-        enabled: Boolean(session),
-    });
-    const { data: apiForms } = useQuery({
-        ...getGroupFormsQuery(slug),
-        enabled: Boolean(session),
-    });
-    const { data: apiLaws } = useQuery({
-        ...getGroupLawsQuery(slug),
-        enabled: Boolean(session),
-    });
 
+    const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
+    const removeMember = useMutation(removeGroupMemberMutation);
+    const updateFine = useMutation(updateFineMutation);
+    const deleteFine = useMutation(deleteFineMutation);
     const createLaw = useMutation(createLawMutation);
     const updateLaw = useMutation(updateLawMutation);
     const deleteLaw = useMutation(deleteLawMutation);
@@ -102,17 +99,40 @@ function GroupDetailPage() {
         `group:${slug}`,
     );
     const canManageMembers = hasGroupsManage || isLeader;
-    // Creating forms: forms:create, or being the group's leader.
-    const hasFormsPermission = useAnyScopePermission([
-        "forms:create",
-        "forms:manage",
-    ]);
+    // Creating forms: a global forms:create/manage grant, or leadership of
+    // THIS group — exactly what POST /groups/:slug/form checks. The previous
+    // "in any scope" check let anyone holding forms:create for their own
+    // group manage forms on every other group's page.
+    const hasFormsPermission = usePermission(["forms:create", "forms:manage"]);
     const canManageForms = hasFormsPermission || isLeader;
+    const isMember = useIsGroupMemberOf(slug);
+    const hasFinesView = useScopedPermission("fines:view", `group:${slug}`);
     const hasFinesManage = useScopedPermission("fines:manage", `group:${slug}`);
     const hasFinesEdit = useScopedPermission(
         ["fines:update", "fines:delete", "fines:manage"],
         `group:${slug}`,
     );
+
+    const isFinesAdmin = Boolean(
+        session && apiGroup.finesAdminId === session.user?.id,
+    );
+    // Bøter og lovverk er lesbart for gruppens medlemmer, botsjefen og
+    // fines:view for denne gruppen — samme regel som GET-endepunktene. Uten
+    // dette sto fanene der for alle og spørringene svarte alltid 403.
+    const canViewFines = isMember || isFinesAdmin || hasFinesView;
+
+    const { data: apiFines } = useQuery({
+        ...getGroupFinesQuery(slug, 0),
+        enabled: canViewFines,
+    });
+    const { data: apiForms } = useQuery({
+        ...getGroupFormsQuery(slug),
+        enabled: Boolean(session),
+    });
+    const { data: apiLaws } = useQuery({
+        ...getGroupLawsQuery(slug),
+        enabled: canViewFines,
+    });
 
     const members = useMemo(
         () => (apiMembers ?? []).map(mapMember),
@@ -134,15 +154,27 @@ function GroupDetailPage() {
     const forms = useMemo(() => (apiForms ?? []).map(mapForm), [apiForms]);
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
-    const isFinesAdmin = Boolean(
-        session && apiGroup.finesAdminId === session.user?.id,
-    );
     // Lovverk: the fines admin (botsjef), the leader, or fines:manage for
     // this group — same as `canManageLaws` server-side.
     const canManageLaws = isLeader || isFinesAdmin || hasFinesManage;
     // Approving, editing and deleting fines: the fines admin, or the
     // matching fines:* permission for this group.
     const canManageFines = isFinesAdmin || hasFinesEdit;
+
+    const navItems = useMemo(
+        () =>
+            GROUP_NAV_ITEMS.filter((item) =>
+                item.key === "boter" || item.key === "lovverk"
+                    ? canViewFines
+                    : true,
+            ),
+        [canViewFines],
+    );
+    // ?tab=boter kan stå i URL-en fra før rettighetene ble sjekket, så en fane
+    // som ikke lenger finnes faller tilbake til «Om».
+    const activeTab = navItems.some((item) => item.key === active)
+        ? active
+        : "om";
 
     function openGiveFine() {
         setActive("boter");
@@ -161,29 +193,63 @@ function GroupDetailPage() {
                 }
             >
                 <DetailLayoutNav
-                    sections={[GROUP_NAV_ITEMS]}
-                    active={active}
+                    sections={[navItems]}
+                    active={activeTab}
                     onSelect={setActive}
                 />
 
                 <DetailLayoutContent>
-                    {active === "om" ? <GroupOmTab group={group} /> : null}
-                    {active === "medlemmer" ? (
+                    {activeTab === "om" ? <GroupOmTab group={group} /> : null}
+                    {activeTab === "medlemmer" ? (
                         <GroupMembersTab
                             leader={leader}
                             members={regularMembers}
                             isAdmin={canManageMembers}
+                            canPromote={hasGroupsManage}
+                            onPromote={(member) =>
+                                updateMemberRole.mutate({
+                                    groupSlug: slug,
+                                    userId: member.id,
+                                    data: { role: "leader" },
+                                })
+                            }
+                            onRemove={(member) =>
+                                removeMember.mutate({
+                                    groupSlug: slug,
+                                    userId: member.id,
+                                })
+                            }
                         />
                     ) : null}
-                    {active === "arrangementer" ? <GroupEventsTab /> : null}
-                    {active === "boter" ? (
+                    {activeTab === "arrangementer" ? <GroupEventsTab /> : null}
+                    {activeTab === "boter" ? (
                         <GroupFinesTab
                             fines={fines}
                             memberCount={members.length}
                             canManage={canManageFines}
+                            onApprove={(fine) =>
+                                updateFine.mutate({
+                                    groupSlug: slug,
+                                    fineId: fine.id,
+                                    data: { status: "approved" },
+                                })
+                            }
+                            onMarkPaid={(fine) =>
+                                updateFine.mutate({
+                                    groupSlug: slug,
+                                    fineId: fine.id,
+                                    data: { status: "paid" },
+                                })
+                            }
+                            onDelete={(fine) =>
+                                deleteFine.mutate({
+                                    groupSlug: slug,
+                                    fineId: fine.id,
+                                })
+                            }
                         />
                     ) : null}
-                    {active === "lovverk" ? (
+                    {activeTab === "lovverk" ? (
                         <GroupLawsTab
                             laws={laws}
                             canManage={canManageLaws}
@@ -206,7 +272,7 @@ function GroupDetailPage() {
                             }
                         />
                     ) : null}
-                    {active === "sporreskjema" ? (
+                    {activeTab === "sporreskjema" ? (
                         <GroupFormsTab forms={forms} isAdmin={canManageForms} />
                     ) : null}
                 </DetailLayoutContent>

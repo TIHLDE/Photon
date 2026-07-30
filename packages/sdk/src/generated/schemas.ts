@@ -130,6 +130,7 @@ export type MotetidEventListItem = Schemas["MotetidEventListItem"];
 export type MotetidGoogleConnectResponse = Schemas["MotetidGoogleConnectResponse"];
 export type MotetidSyncCalendarError = Schemas["MotetidSyncCalendarError"];
 export type MotetidSyncCalendarResponse = Schemas["MotetidSyncCalendarResponse"];
+export type MyEventHistory = Schemas["MyEventHistory"];
 export type MyGroup = Schemas["MyGroup"];
 export type MyGroupList = Schemas["MyGroupList"];
 export type NewsArticle = Schemas["NewsArticle"];

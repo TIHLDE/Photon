@@ -734,6 +734,33 @@ export const favoriteEventsSchema = Schema(
     ),
 );
 
+export const myEventHistorySchema = Schema(
+    "MyEventHistory",
+    z.object({
+        totalCount: z
+            .number()
+            .meta({ description: "Total number of past registrations" }),
+        pages: z.number().meta({ description: "Total number of pages" }),
+        nextPage: z
+            .number()
+            .nullable()
+            .meta({ description: "Next page number, or null if last page" }),
+        events: z.array(
+            z.object({
+                eventId: z.string().meta({ description: "Event ID" }),
+                title: z.string().meta({ description: "Event title" }),
+                slug: z.string().meta({ description: "Event slug" }),
+                startTime: z.iso
+                    .datetime()
+                    .meta({ description: "When the event started" }),
+                status: z.enum(["registered", "attended", "no_show"]).meta({
+                    description: "Your registration status for the event",
+                }),
+            }),
+        ),
+    }),
+);
+
 export const updateFavoriteResponseSchema = Schema(
     "UpdateFavoriteResponse",
     z.object({

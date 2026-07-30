@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict } from "date-fns";
 import { nb } from "date-fns/locale";
 
 // -- Shared display types (previously in mock/events) --
@@ -41,12 +41,18 @@ type ApiRegistration = {
 
 /**
  * Derive the UI registration state from the API event's `registration`
- * (the authenticated user's own registration) and whether registration is
- * closed.
+ * (the authenticated user's own registration), whether registration is
+ * closed, and when it opens.
+ *
+ * `registrationStart` matters even though the API rejects an early sign-up:
+ * without it the card showed an inviting "Meld deg på" for events whose
+ * registration had not opened yet. Null means "open immediately".
  */
 export function deriveRegistrationState(
     registration: ApiRegistration,
     closed: boolean,
+    registrationStart?: string | null,
+    now: Date = new Date(),
 ): EventRegistrationState {
     switch (registration?.status) {
         case "registered":
@@ -57,7 +63,11 @@ export function deriveRegistrationState(
         case "pending":
             return "awaiting-payment";
         default:
-            return closed ? "closed" : "open";
+            if (closed) return "closed";
+            if (registrationStart && new Date(registrationStart) > now) {
+                return "not-open";
+            }
+            return "open";
     }
 }
 
@@ -87,6 +97,21 @@ export function formatEventDate(iso: string): string {
  */
 export function formatEventTime(iso: string): string {
     return format(new Date(iso), "HH:mm", { locale: nb });
+}
+
+/**
+ * Split an ISO timestamp into the `{ day, time }` shape the registration
+ * card's timeline renders.
+ */
+export function toEventDeadline(iso: string): EventDeadline {
+    return { day: formatEventDate(iso), time: formatEventTime(iso) };
+}
+
+/**
+ * "2 dager", "3 timer" — the tail of "Påmelding åpner om …".
+ */
+export function formatTimeUntil(iso: string): string {
+    return formatDistanceToNowStrict(new Date(iso), { locale: nb });
 }
 
 /**

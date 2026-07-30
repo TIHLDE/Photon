@@ -554,7 +554,7 @@ export interface paths {
         };
         /**
          * List strikes
-         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission.
+         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission, except when filtering on your own user ID.
          */
         get: operations["listStrikes"];
         put?: never;
@@ -563,6 +563,26 @@ export interface paths {
          * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.
          */
         post: operations["createStrike"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/my-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my past event registrations
+         * @description Retrieve a paginated list of past events you were registered for, newest first.
+         */
+        get: operations["getMyEventHistory"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2822,6 +2842,8 @@ export interface components {
                 id: string;
                 /** @description Event title */
                 title: string;
+                /** @description Event slug */
+                slug: string;
             };
         };
         StrikeList: {
@@ -2832,6 +2854,32 @@ export interface components {
             /** @description Next page number, or null if last page */
             nextPage: number | null;
             strikes: components["schemas"]["Strike"][];
+        };
+        MyEventHistory: {
+            /** @description Total number of past registrations */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            events: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Event title */
+                title: string;
+                /** @description Event slug */
+                slug: string;
+                /**
+                 * Format: date-time
+                 * @description When the event started
+                 */
+                startTime: string;
+                /**
+                 * @description Your registration status for the event
+                 * @enum {string}
+                 */
+                status: "registered" | "attended" | "no_show";
+            }[];
         };
         CreateStrike: {
             /** @description User ID who receives the strike */
@@ -4833,7 +4881,7 @@ export interface components {
              * Format: date-time
              * @description Application deadline
              */
-            deadline?: string;
+            deadline: string;
             /**
              * @description Whether hiring is ongoing
              * @default false
@@ -4943,7 +4991,8 @@ export interface components {
             body?: string;
             company?: string;
             location?: string;
-            deadline?: string | null;
+            /** Format: date-time */
+            deadline?: string;
             isContinuouslyHiring?: boolean;
             /** @enum {string} */
             jobType?: "full_time" | "part_time" | "summer_job" | "other";
@@ -6268,7 +6317,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:strikes:view or events:manage permission */
+            /** @description Forbidden - Requires events:strikes:view or events:manage permission, unless reading your own strikes */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6321,6 +6370,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getMyEventHistory: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyEventHistory"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

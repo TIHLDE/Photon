@@ -36,10 +36,13 @@ export const createJobSchema = Schema(
                 .min(1)
                 .max(200)
                 .meta({ description: "Job location" }),
+            // Required even for "fortløpende" ads: the flag only changes how
+            // the deadline is presented, it does not exempt an ad from
+            // expiring. Without this, continuously-hiring ads stayed on the
+            // list indefinitely.
             deadline: z
                 .string()
                 .datetime()
-                .optional()
                 .meta({ description: "Application deadline" }),
             isContinuouslyHiring: z
                 .boolean()
@@ -110,7 +113,9 @@ export const updateJobSchema = Schema(
             body: z.string().optional(),
             company: z.string().min(1).max(200).optional(),
             location: z.string().min(1).max(200).optional(),
-            deadline: z.string().datetime().optional().nullable(),
+            // Not nullable: an existing ad may change its deadline, but it
+            // cannot give it up — see createJobSchema.
+            deadline: z.string().datetime().optional(),
             isContinuouslyHiring: z.boolean().optional(),
             jobType: z
                 .enum(["full_time", "part_time", "summer_job", "other"])

@@ -2,6 +2,10 @@
  * Group types that can hold a budget, and therefore appear in the group
  * dropdowns on the søknad forms. Study programmes and study years cannot.
  *
+ * `board` (Hovedstyret) is deliberately absent: HS is who you apply *to*, not
+ * a group you claim an utlegg from the way you would from an undergruppe or
+ * komité. Listing it there was misleading.
+ *
  * Stored values are the uppercase legacy strings from the Lepton import
  * ("SUBGROUP", "INTERESTGROUP", …), so comparisons are case-insensitive.
  */
@@ -9,7 +13,6 @@ const SELECTABLE_GROUP_TYPES = new Set([
     "subgroup",
     "committee",
     "interestgroup",
-    "board",
     "tihlde",
 ]);
 

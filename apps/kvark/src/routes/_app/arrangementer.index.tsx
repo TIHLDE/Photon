@@ -1,9 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { useDeferredValue, useMemo, useState } from "react";
+import z from "zod";
 
 import { getEventsQuery } from "#/api/queries/events";
+import { EventCalendar } from "#/components/event-calendar";
 import { EventCard } from "#/components/event-card";
 import {
     type Category,
@@ -66,8 +68,24 @@ const toEventListFilters = (
     category,
 });
 
+const VIEWS = [
+    { value: "liste", label: "Liste" },
+    { value: "kalender", label: "Kalender" },
+] as const;
+
+type EventView = (typeof VIEWS)[number]["value"];
+
+const searchSchema = z.object({
+    visning: z.enum(["liste", "kalender"]).default("liste").catch("liste"),
+});
+
+// Kalenderen viser en hel måned om gangen, så den trenger flere arrangementer
+// per side enn listen for ikke å ha hull i rutenettet.
+const CALENDAR_PAGE_SIZE = 100;
+
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
+    validateSearch: searchSchema,
     loader: ({ context }) =>
         context.queryClient.ensureQueryData(
             getEventsQuery(
@@ -82,6 +100,8 @@ export const Route = createFileRoute("/_app/arrangementer/")({
 });
 
 function EventsPage() {
+    const { visning } = Route.useSearch();
+    const navigate = useNavigate();
     const [tab, setTab] = useState<EventTab>("arrangementer");
     const [filters, setFilters] = useState<EventFiltersValue>(
         DEFAULT_EVENT_FILTERS,
@@ -122,8 +142,22 @@ function EventsPage() {
     // drop the list to a fallback on every search. Deferring keeps the current
     // results on screen until the next ones resolve.
     const deferredFilters = useDeferredValue(listFilters);
-    const { data } = useSuspenseQuery(getEventsQuery(0, deferredFilters));
+    const { data } = useSuspenseQuery(
+        getEventsQuery(
+            0,
+            deferredFilters,
+            visning === "kalender" ? CALENDAR_PAGE_SIZE : undefined,
+        ),
+    );
     const events = data.items;
+
+    const changeView = (next: EventView) => {
+        navigate({
+            to: "/arrangementer",
+            search: { visning: next },
+            replace: true,
+        });
+    };
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
@@ -144,39 +178,73 @@ function EventsPage() {
                 </aside>
 
                 <section className="flex flex-col gap-3">
-                    <Tabs
-                        value={tab}
-                        onValueChange={(next) => changeTab(next as EventTab)}
-                    >
-                        <TabsList>
-                            {TABS.map((t) => (
-                                <TabsTrigger key={t.value} value={t.value}>
-                                    {t.label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Tabs
+                            value={tab}
+                            onValueChange={(next) =>
+                                changeTab(next as EventTab)
+                            }
+                        >
+                            <TabsList>
+                                {TABS.map((t) => (
+                                    <TabsTrigger key={t.value} value={t.value}>
+                                        {t.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                        <Tabs
+                            className="ml-auto"
+                            value={visning}
+                            onValueChange={(next) =>
+                                changeView(next as EventView)
+                            }
+                        >
+                            <TabsList>
+                                {VIEWS.map((view) => (
+                                    <TabsTrigger
+                                        key={view.value}
+                                        value={view.value}
+                                    >
+                                        {view.label}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                         {data.totalCount} arrangementer funnet
                     </p>
-                    <ul className="flex flex-col gap-4 sm:gap-1">
-                        {events.map((event) => (
-                            <li key={event.id}>
-                                <EventCard
-                                    slug={event.slug}
-                                    title={event.title}
-                                    startsAt={formatEventDateTime(
-                                        event.startTime,
-                                    )}
-                                    location={event.location ?? ""}
-                                    organizer={event.organizer?.name ?? ""}
-                                    category={event.category?.label}
-                                    imageUrl={event.image || undefined}
-                                    imageAlt={event.imageAlt || undefined}
-                                />
-                            </li>
-                        ))}
-                    </ul>
+                    {visning === "kalender" ? (
+                        <EventCalendar
+                            events={events.map((event) => ({
+                                id: event.id,
+                                slug: event.slug,
+                                title: event.title,
+                                startTime: event.startTime,
+                                category: event.category?.label,
+                            }))}
+                        />
+                    ) : (
+                        <ul className="flex flex-col gap-4 sm:gap-1">
+                            {events.map((event) => (
+                                <li key={event.id}>
+                                    <EventCard
+                                        slug={event.slug}
+                                        title={event.title}
+                                        startsAt={formatEventDateTime(
+                                            event.startTime,
+                                        )}
+                                        location={event.location ?? ""}
+                                        organizer={event.organizer?.name ?? ""}
+                                        category={event.category?.label}
+                                        imageUrl={event.image || undefined}
+                                        imageAlt={event.imageAlt || undefined}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </section>
             </div>
         </div>

@@ -1,3 +1,13 @@
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@tihlde/ui/ui/alert-dialog";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -8,7 +18,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { ChevronLeft, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { Fine } from "#/lib/group";
 
@@ -22,6 +33,9 @@ type GroupFineDialogProps = {
      * action row is hidden rather than shown and rejected.
      */
     canManage: boolean;
+    onApprove: (fine: Fine) => void;
+    onMarkPaid: (fine: Fine) => void;
+    onDelete: (fine: Fine) => void;
 };
 
 export function GroupFineDialog({
@@ -29,15 +43,41 @@ export function GroupFineDialog({
     openIndex,
     onOpenChange,
     canManage,
+    onApprove,
+    onMarkPaid,
+    onDelete,
 }: GroupFineDialogProps) {
     const fine = openIndex !== null ? fines[openIndex] : null;
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
-    function go(delta: number) {
-        if (openIndex === null) return;
-        const next = openIndex + delta;
-        if (next < 0 || next >= fines.length) return;
-        onOpenChange(next);
-    }
+    const go = useCallback(
+        (delta: number) => {
+            if (openIndex === null) return;
+            const next = openIndex + delta;
+            if (next < 0 || next >= fines.length) return;
+            onOpenChange(next);
+        },
+        [openIndex, fines.length, onOpenChange],
+    );
+
+    // Å bla gjennom mange bøter med mus er tungvint. Piltastene er bundet så
+    // lenge dialogen står åpen, men ikke mens bekreftelsen på sletting vises.
+    useEffect(() => {
+        if (openIndex === null || confirmDelete) return;
+
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                go(-1);
+            } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                go(1);
+            }
+        }
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [openIndex, confirmDelete, go]);
 
     return (
         <Dialog
@@ -90,19 +130,32 @@ export function GroupFineDialog({
                                     className="max-h-80 w-full rounded-md object-contain"
                                 />
                             ) : null}
+                            {/* «Rediger bot» lå her, men PATCH-endepunktet tar
+                                bare status og forsvar — begrunnelse og beløp
+                                kan ikke endres, så knappen gjorde ingenting. */}
                             {canManage ? (
                                 <div className="flex flex-wrap gap-2">
-                                    <Button size="sm" variant="outline">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={fine.approved}
+                                        onClick={() => onApprove(fine)}
+                                    >
                                         Merk som godkjent
                                     </Button>
-                                    <Button size="sm" variant="outline">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={fine.paid}
+                                        onClick={() => onMarkPaid(fine)}
+                                    >
                                         Merk som betalt
                                     </Button>
-                                    <Button size="sm" variant="outline">
-                                        <Pencil />
-                                        Rediger bot
-                                    </Button>
-                                    <Button size="sm" variant="outline">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setConfirmDelete(true)}
+                                    >
                                         <Trash2 />
                                         Slett bot
                                     </Button>
@@ -138,6 +191,38 @@ export function GroupFineDialog({
                         </DialogFooter>
                     </>
                 ) : null}
+
+                <AlertDialog
+                    open={confirmDelete}
+                    onOpenChange={setConfirmDelete}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Slett boten?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Boten fjernes for godt og forsvinner fra
+                                gruppens oversikt.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel variant="outline" size="default">
+                                Avbryt
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                variant="destructive"
+                                onClick={() => {
+                                    if (!fine) return;
+                                    onDelete(fine);
+                                    // Boten finnes ikke lenger, så dialogen
+                                    // har ingenting å vise.
+                                    onOpenChange(null);
+                                }}
+                            >
+                                Slett bot
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </DialogContent>
         </Dialog>
     );

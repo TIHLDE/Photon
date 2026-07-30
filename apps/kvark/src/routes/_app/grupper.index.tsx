@@ -90,8 +90,18 @@ function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
             sectionFrom("komiteer", "Komitéer", 3, groups, "COMMITTEE"),
         ],
         // Sports teams sit alongside interest groups rather than inside them:
-        // same level in the organisation, but a category of their own.
+        // same level in the organisation, but a category of their own. They
+        // come first because they reach the widest — and the label carries
+        // IDKOM, since the chart otherwise reads as if the teams were their
+        // own top-level category rather than IDKOM's.
         branches: [
+            sectionFrom(
+                "idrettslag",
+                "Idrettslag (IDKOM)",
+                2,
+                groups,
+                "SPORTSTEAM",
+            ),
             sectionFrom(
                 "interessegrupper",
                 "Interessegrupper",
@@ -99,7 +109,6 @@ function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
                 groups,
                 "INTERESTGROUP",
             ),
-            sectionFrom("idrettslag", "Idrettslag", 2, groups, "SPORTSTEAM"),
         ],
     };
 }
