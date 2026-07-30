@@ -760,14 +760,27 @@ async function fetchValidStudyPrograms(
     const programs = parseValidStudyPrograms(groups);
 
     /**
-     * Groups came back, but none of them read as a TIHLDE cohort. That is
-     * either a member who really has finished studying, or a gap between what
-     * Feide sends and what {@link parseValidStudyPrograms} expects — and the
-     * two are indistinguishable in the data. Name the cohort groups we did
-     * see, plus a tally of the other types, so one login settles it. Group ids
-     * carry programme codes and years, not anything personal.
+     * Two different failures deserve the same dump of what Feide actually sent.
+     *
+     * No programme at all is either a member who really has finished studying
+     * or a gap between what Feide sends and what {@link parseValidStudyPrograms}
+     * expects — indistinguishable in the data.
+     *
+     * A programme with no start year is the one that matters now. 172 of the
+     * priority pools inherited from Lepton select on the cohort group, so a
+     * member without a year loses priority on every event aimed at their own
+     * intake. Existing members are covered by the year Lepton migrated in, so
+     * this only bites accounts created from scratch — i.e. the autumn intake.
+     *
+     * Until recently this branch was `programs.length === 0`, which stopped
+     * firing the moment programme parsing started working: every login now
+     * yields a programme, so the missing-year case logged nothing at all. That
+     * left us blind precisely where we still have an open question.
      */
-    if (groups.length > 0 && programs.length === 0) {
+    const yearMissing =
+        programs.length > 0 && programs.every((p) => p.startYear === null);
+
+    if (groups.length > 0 && (programs.length === 0 || yearMissing)) {
         const cohorts = groups.filter((g) => g.type === "fc:fs:kull");
         const typeCounts = Object.entries(
             groups.reduce<Record<string, number>>((acc, g) => {
@@ -779,22 +792,23 @@ async function fetchValidStudyPrograms(
             .join(", ");
 
         /**
-         * NTNU turned out not to hand this service any `fc:fs:kull` groups at
-         * all — a third-year ITBAITBEDR student came back with 18 `fc:fs:emne`
-         * and a single `fc:fs:prg`. The programme group is what we will have to
-         * read instead, but unlike a cohort it carries no start year, and
-         * `studyProgramMembership.startYear` is NOT NULL.
-         *
-         * So dump every non-course group whole: the id tells us where the
-         * programme code sits, and `displayName` plus whatever `membership`
-         * holds is the only place a year could still be hiding. Course groups
-         * are excluded because there are ~18 of them and they are already
-         * accounted for by the type tally.
+         * NTNU does not reliably hand this service `fc:fs:kull`: a third-year
+         * ITBAITBEDR student came back with 18 `fc:fs:emne` and a single
+         * `fc:fs:prg`, while a BIDATA alumnus did get a cohort. So dump every
+         * non-course group whole — the id tells us where the programme code
+         * sits, and `displayName` plus whatever `membership` holds is the only
+         * place a year could still be hiding. Course groups are excluded
+         * because there are ~18 of them and the type tally already counts them.
          */
         const nonCourse = groups.filter((g) => g.type !== "fc:fs:emne");
 
+        const problem =
+            programs.length === 0
+                ? "no TIHLDE study programme"
+                : `no cohort year for ${programs.map((p) => p.code).join(", ")}`;
+
         console.warn(
-            `Feide returned ${groups.length} groups but no TIHLDE cohort. Types: ${typeCounts}. Cohort ids: ${
+            `Feide returned ${groups.length} groups but ${problem}. Types: ${typeCounts}. Cohort ids: ${
                 cohorts.map((g) => g.id).join(", ") || "(none)"
             }. Non-course groups: ${
                 JSON.stringify(nonCourse).slice(0, 2000) || "(none)"
