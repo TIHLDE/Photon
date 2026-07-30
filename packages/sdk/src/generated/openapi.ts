@@ -3002,6 +3002,12 @@ export interface components {
             /** @description List of events */
             items: components["schemas"]["EventListItem"][];
         };
+        UpdateEventResponse: {
+            /** Format: uuid */
+            eventId: string;
+            /** @description The event slug after the update. Changing the title regenerates it, so clients must use this when linking to the event. */
+            slug: string;
+        };
         UpdateEventSchema: {
             /** @description Short title of the event */
             title?: string;
@@ -3091,6 +3097,8 @@ export interface components {
             slug: string;
             /** @description Event title */
             title: string;
+            /** @description Event description, stored as markdown */
+            description: string;
             /** @description Event location (nullable) */
             location?: string | null;
             /** @description Latitude of the location (nullable) */
@@ -3107,6 +3115,12 @@ export interface components {
              * @description Event end time (ISO 8601)
              */
             endTime: string;
+            /** @description When registration opens (ISO 8601). Null means it is open immediately. */
+            registrationStart: string | null;
+            /** @description When registration closes (ISO 8601). Null when the event has no sign-up. */
+            registrationEnd: string | null;
+            /** @description Last moment a registration can be cancelled without a strike (ISO 8601, nullable) */
+            cancellationDeadline: string | null;
             /** @description Event organizer (nullable) */
             organizer: {
                 /** @description Organizer name */
@@ -3120,6 +3134,14 @@ export interface components {
             } | null;
             /** @description Is registration closed */
             closed: boolean;
+            /** @description Do users need to sign up to attend the event? */
+            requiresSigningUp: boolean;
+            /** @description May users join a waitlist when the event is full? */
+            allowWaitlist: boolean;
+            /** @description Maximum number of participants. Null means no capacity limit. */
+            capacity: number | null;
+            /** @description Can this event give strikes for late cancellation or no-show? */
+            canCauseStrikes: boolean;
             /** @description Event image URL (nullable) */
             image: string | null;
             /** @description Alt text for the event image (nullable) */
@@ -6440,7 +6462,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UpdateEventResponse"];
+                };
             };
             /** @description Authentication required */
             401: {

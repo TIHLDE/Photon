@@ -165,6 +165,7 @@ export type ToddelList = Schemas["ToddelList"];
 export type UpdateApiKey = Schemas["UpdateApiKey"];
 export type UpdateApplicationStatus = Schemas["UpdateApplicationStatus"];
 export type UpdateBanner = Schemas["UpdateBanner"];
+export type UpdateEventResponse = Schemas["UpdateEventResponse"];
 export type UpdateEventSchema = Schemas["UpdateEventSchema"];
 export type UpdateFavoriteEvent = Schemas["UpdateFavoriteEvent"];
 export type UpdateFavoriteResponse = Schemas["UpdateFavoriteResponse"];

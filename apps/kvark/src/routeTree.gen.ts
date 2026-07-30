@@ -66,6 +66,7 @@ import { Route as AdminSuperAdminApiKeysRouteImport } from './routes/admin/_supe
 import { Route as AdminSuperAdminDatabaseRouteImport } from './routes/admin/_super-admin/database'
 import { Route as AdminSuperAdminLogsRouteImport } from './routes/admin/_super-admin/logs'
 import { Route as AdminSuperAdminOauthClientsRouteImport } from './routes/admin/_super-admin/oauth-clients'
+import { Route as AppArrangementerSlugRedigerRouteImport } from './routes/_app/arrangementer.$slug_.rediger'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
 import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
@@ -354,6 +355,12 @@ const AdminSuperAdminOauthClientsRoute =
     path: '/oauth-clients',
     getParentRoute: () => AdminSuperAdminRoute,
   } as any)
+const AppArrangementerSlugRedigerRoute =
+  AppArrangementerSlugRedigerRouteImport.update({
+    id: '/arrangementer/$slug_/rediger',
+    path: '/arrangementer/$slug/rediger',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppProfilIdIndexRoute = AppProfilIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -436,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/grupper/': typeof AppGrupperIndexRoute
   '/motetid/': typeof AppMotetidIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
+  '/arrangementer/$slug/rediger': typeof AppArrangementerSlugRedigerRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -494,6 +502,7 @@ export interface FileRoutesByTo {
   '/grupper': typeof AppGrupperIndexRoute
   '/motetid': typeof AppMotetidIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
+  '/arrangementer/$slug/rediger': typeof AppArrangementerSlugRedigerRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -559,6 +568,7 @@ export interface FileRoutesById {
   '/_app/grupper/': typeof AppGrupperIndexRoute
   '/_app/motetid/': typeof AppMotetidIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
+  '/_app/arrangementer/$slug_/rediger': typeof AppArrangementerSlugRedigerRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/grupper/'
     | '/motetid/'
     | '/nyheter/'
+    | '/arrangementer/$slug/rediger'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -679,6 +690,7 @@ export interface FileRouteTypes {
     | '/grupper'
     | '/motetid'
     | '/nyheter'
+    | '/arrangementer/$slug/rediger'
     | '/profil/$id/arrangementer'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
@@ -743,6 +755,7 @@ export interface FileRouteTypes {
     | '/_app/grupper/'
     | '/_app/motetid/'
     | '/_app/nyheter/'
+    | '/_app/arrangementer/$slug_/rediger'
     | '/_app/profil/$id/arrangementer'
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
@@ -1158,6 +1171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuperAdminOauthClientsRouteImport
       parentRoute: typeof AdminSuperAdminRoute
     }
+    '/_app/arrangementer/$slug_/rediger': {
+      id: '/_app/arrangementer/$slug_/rediger'
+      path: '/arrangementer/$slug/rediger'
+      fullPath: '/arrangementer/$slug/rediger'
+      preLoaderRoute: typeof AppArrangementerSlugRedigerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profil/$id/': {
       id: '/_app/profil/$id/'
       path: '/'
@@ -1244,6 +1264,7 @@ interface AppRouteChildren {
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppMotetidIndexRoute: typeof AppMotetidIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
+  AppArrangementerSlugRedigerRoute: typeof AppArrangementerSlugRedigerRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1274,6 +1295,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppMotetidIndexRoute: AppMotetidIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
+  AppArrangementerSlugRedigerRoute: AppArrangementerSlugRedigerRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
