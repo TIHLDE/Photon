@@ -7,9 +7,11 @@ import type { Form } from "#/lib/group";
 
 type GroupFormRowProps = {
     form: Form;
+    /** Whether the viewer may administer the form (edit it, see answers). */
+    canManage: boolean;
 };
 
-export function GroupFormRow({ form }: GroupFormRowProps) {
+export function GroupFormRow({ form, canManage }: GroupFormRowProps) {
     return (
         <Card>
             <CardHeader>
@@ -24,9 +26,11 @@ export function GroupFormRow({ form }: GroupFormRowProps) {
                     </p>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" size="sm">
-                        Administrer
-                    </Button>
+                    {canManage ? (
+                        <Button variant="outline" size="sm">
+                            Administrer
+                        </Button>
+                    ) : null}
                     <Button
                         variant="outline"
                         size="sm"

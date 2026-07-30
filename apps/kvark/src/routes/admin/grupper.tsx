@@ -37,6 +37,10 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    useIsGroupLeaderOf,
+    useScopedPermission,
+} from "#/hooks/use-permission";
 import { groupTypeLabel } from "#/lib/group";
 
 export const Route = createFileRoute("/admin/grupper")({
@@ -124,6 +128,12 @@ function GroupCard({
 
     const updateGroup = useMutation(updateGroupMutation);
     const { uploadImage, isUploading } = useImageUploader();
+    // The scope is known here, so this is exactly the check the API runs:
+    // `groups:update` globally or granted for this very group.
+    const canEdit = useScopedPermission(
+        ["groups:update", "groups:manage"],
+        `group:${group.slug}`,
+    );
 
     async function handleSave() {
         setError(null);
@@ -167,9 +177,15 @@ function GroupCard({
                         {group.finesActivated && (
                             <Badge variant="outline">Bøter aktivert</Badge>
                         )}
-                        <Button variant="outline" size="sm" onClick={onToggle}>
-                            {expanded ? "Lukk" : "Rediger"}
-                        </Button>
+                        {canEdit ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={onToggle}
+                            >
+                                {expanded ? "Lukk" : "Rediger"}
+                            </Button>
+                        ) : null}
                     </div>
                 </div>
             </CardHeader>
@@ -232,6 +248,12 @@ function MemberSigningTable({
     signatures: GroupSignatureList;
 }) {
     const revokeSignature = useMutation(revokeSignatureMutation);
+    // Mirrors revoke-signature server-side: `contracts:manage` (global or for
+    // this group) or being the group's leader.
+    const isLeader = useIsGroupLeaderOf(groupSlug);
+    const canRevoke =
+        useScopedPermission("contracts:manage", `group:${groupSlug}`) ||
+        isLeader;
 
     if (!signatures.members.length) {
         return <p>Ingen medlemmer i denne gruppen.</p>;
@@ -260,11 +282,14 @@ function MemberSigningTable({
                             key={member.userId}
                             member={member}
                             disabled={revokeSignature.isPending}
-                            onRevoke={() =>
-                                revokeSignature.mutate({
-                                    groupSlug,
-                                    userId: member.userId,
-                                })
+                            onRevoke={
+                                canRevoke
+                                    ? () =>
+                                          revokeSignature.mutate({
+                                              groupSlug,
+                                              userId: member.userId,
+                                          })
+                                    : undefined
                             }
                         />
                     ))}
@@ -281,7 +306,8 @@ function MemberRow({
 }: {
     member: GroupSignatureMember;
     disabled: boolean;
-    onRevoke: () => void;
+    /** Omitted when the viewer may not revoke — no button then. */
+    onRevoke?: () => void;
 }) {
     return (
         <TableRow>
@@ -310,7 +336,7 @@ function MemberRow({
                     : "—"}
             </TableCell>
             <TableCell>
-                {member.hasSigned && (
+                {member.hasSigned && onRevoke && (
                     <Button
                         size="sm"
                         variant="destructive"

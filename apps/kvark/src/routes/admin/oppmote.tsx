@@ -31,6 +31,8 @@ import {
     setAttendanceMutation,
 } from "#/api/queries/events";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AdminNoAccess } from "#/components/admin-no-access";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
 
@@ -58,6 +60,10 @@ export const Route = createFileRoute("/admin/oppmote")({
 });
 
 function AttendanceAdminPage() {
+    const canSetAttendance = useAnyScopePermission([
+        "events:update",
+        "events:manage",
+    ]);
     const { data: events } = useSuspenseQuery(getEventsQuery(0));
     const [eventId, setEventId] = useState<string | null>(
         events.items[0]?.id ?? null,
@@ -78,49 +84,58 @@ function AttendanceAdminPage() {
                 description="Registrer hvem som møtte opp. Deltakere som fortsatt står som påmeldt når arrangementet er over, kan få prikker for no-show."
             />
 
-            <Alert>
-                <InfoIcon className="size-4" />
-                <AlertTitle>Slik gis no-show-prikker</AlertTitle>
-                <AlertDescription>
-                    Huk av dem som møtte opp. Etter at arrangementet er slutt
-                    gir systemet automatisk 2 prikker til alle som fortsatt er
-                    påmeldt – men kun for arrangementer som kan gi prikker, og
-                    kun dersom minst én er huket av.
-                </AlertDescription>
-            </Alert>
-
-            <Field className="sm:max-w-96">
-                <FieldLabel>Arrangement</FieldLabel>
-                <Select
-                    items={eventOptions}
-                    value={eventId ?? ""}
-                    onValueChange={setEventId}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Velg arrangement" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {eventOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </Field>
-
-            {eventId ? (
-                <AttendanceSection eventId={eventId} />
+            {!canSetAttendance ? (
+                <AdminNoAccess action="registrere oppmøte" />
             ) : (
-                <Card>
-                    <CardContent>
-                        <AdminEmptyState
-                            icon={CircleCheckBigIcon}
-                            title="Ingen arrangementer"
-                            description="Det finnes ingen arrangementer å registrere oppmøte for."
-                        />
-                    </CardContent>
-                </Card>
+                <>
+                    <Alert>
+                        <InfoIcon className="size-4" />
+                        <AlertTitle>Slik gis no-show-prikker</AlertTitle>
+                        <AlertDescription>
+                            Huk av dem som møtte opp. Etter at arrangementet er
+                            slutt gir systemet automatisk 2 prikker til alle som
+                            fortsatt er påmeldt – men kun for arrangementer som
+                            kan gi prikker, og kun dersom minst én er huket av.
+                        </AlertDescription>
+                    </Alert>
+
+                    <Field className="sm:max-w-96">
+                        <FieldLabel>Arrangement</FieldLabel>
+                        <Select
+                            items={eventOptions}
+                            value={eventId ?? ""}
+                            onValueChange={setEventId}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Velg arrangement" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {eventOptions.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    {eventId ? (
+                        <AttendanceSection eventId={eventId} />
+                    ) : (
+                        <Card>
+                            <CardContent>
+                                <AdminEmptyState
+                                    icon={CircleCheckBigIcon}
+                                    title="Ingen arrangementer"
+                                    description="Det finnes ingen arrangementer å registrere oppmøte for."
+                                />
+                            </CardContent>
+                        </Card>
+                    )}
+                </>
             )}
         </div>
     );

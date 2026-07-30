@@ -151,6 +151,7 @@ export const getRoute = route().get(
             closed: event.isRegistrationClosed,
             image: event.imageUrl,
             imageAlt: event.imageAlt,
+            createdById: event.createdByUserId,
             createdAt: event.createdAt.toISOString(),
             updatedAt: event.updatedAt.toISOString(),
             reactions,

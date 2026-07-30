@@ -53,9 +53,7 @@ export function GroupLawsTab({
                         <GroupLawItem
                             key={law.id}
                             law={law}
-                            onEdit={() => {
-                                if (canManage) openEdit(law);
-                            }}
+                            onEdit={canManage ? () => openEdit(law) : undefined}
                         />
                     ))}
                 </div>

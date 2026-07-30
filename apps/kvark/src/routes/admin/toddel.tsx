@@ -35,6 +35,7 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/admin/toddel")({
     component: ToddelAdminPage,
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/admin/toddel")({
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function ToddelAdminPage() {
+    const canCreate = useAnyScopePermission(["toddel:create", "toddel:manage"]);
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; issue: ToddelIssue } | null
     >(null);
@@ -62,10 +64,12 @@ function ToddelAdminPage() {
                 title="TÖDDEL"
                 description="Legg ut nye utgaver av studentbladet, og rediger de som allerede ligger ute."
                 action={
-                    <Button onClick={() => setDialog({ mode: "create" })}>
-                        <PlusIcon className="size-4" />
-                        Ny utgave
-                    </Button>
+                    canCreate ? (
+                        <Button onClick={() => setDialog({ mode: "create" })}>
+                            <PlusIcon className="size-4" />
+                            Ny utgave
+                        </Button>
+                    ) : null
                 }
             />
 
@@ -103,6 +107,8 @@ function TableSkeleton() {
 function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
     const { data: issues } = useSuspenseQuery(getToddelIssuesQuery());
     const remove = useMutation(deleteToddelMutation);
+    const canEdit = useAnyScopePermission(["toddel:update", "toddel:manage"]);
+    const canDelete = useAnyScopePermission(["toddel:delete", "toddel:manage"]);
 
     if (issues.length === 0) {
         return (
@@ -177,22 +183,28 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => onEdit(issue)}
-                                        >
-                                            <PencilIcon className="size-4" />
-                                            Rediger
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={remove.isPending}
-                                            onClick={() => handleDelete(issue)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
+                                        {canEdit ? (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onEdit(issue)}
+                                            >
+                                                <PencilIcon className="size-4" />
+                                                Rediger
+                                            </Button>
+                                        ) : null}
+                                        {canDelete ? (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={remove.isPending}
+                                                onClick={() =>
+                                                    handleDelete(issue)
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        ) : null}
                                     </div>
                                 </TableCell>
                             </TableRow>

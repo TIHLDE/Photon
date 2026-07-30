@@ -38,6 +38,7 @@ import {
 } from "#/api/queries/banners";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/admin/bannere")({
     component: BannersAdminPage,
@@ -48,6 +49,10 @@ export const Route = createFileRoute("/admin/bannere")({
 });
 
 function BannersAdminPage() {
+    const canCreate = useAnyScopePermission([
+        "banners:create",
+        "banners:manage",
+    ]);
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; banner: Banner } | null
     >(null);
@@ -58,10 +63,12 @@ function BannersAdminPage() {
                 title="Bannere"
                 description="Tidsstyrte toppbannere for viktige beskjeder på forsiden."
                 action={
-                    <Button onClick={() => setDialog({ mode: "create" })}>
-                        <PlusIcon className="size-4" />
-                        Nytt banner
-                    </Button>
+                    canCreate ? (
+                        <Button onClick={() => setDialog({ mode: "create" })}>
+                            <PlusIcon className="size-4" />
+                            Nytt banner
+                        </Button>
+                    ) : null
                 }
             />
 
@@ -86,6 +93,11 @@ function BannersAdminPage() {
 function BannersTable({ onEdit }: { onEdit: (banner: Banner) => void }) {
     const { data: banners } = useSuspenseQuery(getBannersQuery());
     const remove = useMutation(deleteBannerMutation);
+    const canEdit = useAnyScopePermission(["banners:update", "banners:manage"]);
+    const canDelete = useAnyScopePermission([
+        "banners:delete",
+        "banners:manage",
+    ]);
 
     if (banners.length === 0) {
         return (
@@ -141,22 +153,28 @@ function BannersTable({ onEdit }: { onEdit: (banner: Banner) => void }) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => onEdit(banner)}
-                                        >
-                                            <PencilIcon className="size-4" />
-                                            Rediger
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={remove.isPending}
-                                            onClick={() => handleDelete(banner)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
+                                        {canEdit ? (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onEdit(banner)}
+                                            >
+                                                <PencilIcon className="size-4" />
+                                                Rediger
+                                            </Button>
+                                        ) : null}
+                                        {canDelete ? (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={remove.isPending}
+                                                onClick={() =>
+                                                    handleDelete(banner)
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        ) : null}
                                     </div>
                                 </TableCell>
                             </TableRow>

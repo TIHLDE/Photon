@@ -1332,7 +1332,7 @@ export interface paths {
         put?: never;
         /**
          * Add member to group
-         * @description Add a member to a group. Requires 'groups:manage' permission.
+         * @description Add a member to a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.
          */
         post: operations["addGroupMember"];
         delete?: never;
@@ -1353,7 +1353,7 @@ export interface paths {
         post?: never;
         /**
          * Remove member from group
-         * @description Remove a member from a group. Requires 'groups:manage' permission.
+         * @description Remove a member from a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.
          */
         delete: operations["removeGroupMember"];
         options?: never;
@@ -3104,6 +3104,8 @@ export interface components {
             image: string | null;
             /** @description Alt text for the event image (nullable) */
             imageAlt: string | null;
+            /** @description Creator user ID. The creator may update and delete their own event, so clients need it to decide whether to offer those actions. */
+            createdById: string | null;
             /**
              * Format: date-time
              * @description Event creation time (ISO 8601)

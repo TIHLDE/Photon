@@ -43,6 +43,7 @@ import {
 import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import {
     UserSearchCombobox,
     type UserSearchOption,
@@ -55,6 +56,10 @@ export const Route = createFileRoute("/admin/prikker")({
 });
 
 function StrikesAdminPage() {
+    const canCreate = useAnyScopePermission([
+        "events:strikes:create",
+        "events:manage",
+    ]);
     const [createOpen, setCreateOpen] = useState(false);
 
     return (
@@ -64,10 +69,12 @@ function StrikesAdminPage() {
                     title="Prikker"
                     description="Se og administrer prikker medlemmer har fått på arrangementer."
                 />
-                <Button onClick={() => setCreateOpen(true)}>
-                    <PlusIcon className="size-4" />
-                    Ny prikk
-                </Button>
+                {canCreate ? (
+                    <Button onClick={() => setCreateOpen(true)}>
+                        <PlusIcon className="size-4" />
+                        Ny prikk
+                    </Button>
+                ) : null}
             </div>
 
             <StrikesSection />
@@ -84,6 +91,10 @@ function StrikesSection() {
     const [page, setPage] = useState(0);
     const { data, isPending } = useQuery(getStrikesQuery(page));
     const remove = useMutation(deleteStrikeMutation);
+    const canDelete = useAnyScopePermission([
+        "events:strikes:delete",
+        "events:manage",
+    ]);
 
     if (isPending) {
         return (
@@ -173,16 +184,18 @@ function StrikesSection() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex justify-end">
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                disabled={remove.isPending}
-                                                onClick={() =>
-                                                    handleDelete(strike)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
+                                            {canDelete ? (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    disabled={remove.isPending}
+                                                    onClick={() =>
+                                                        handleDelete(strike)
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            ) : null}
                                         </div>
                                     </TableCell>
                                 </TableRow>

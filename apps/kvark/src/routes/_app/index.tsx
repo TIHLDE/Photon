@@ -8,15 +8,17 @@ import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
 import { authQueryOptions } from "#/api/auth";
-import { usePermission } from "#/hooks/use-permission";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { getEventsQuery } from "#/api/queries/events";
+import { getNewsQuery } from "#/api/queries/news";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
 import { InfoBanner } from "#/components/info-banner";
-import { NewsCard, type NewsCardProps } from "#/components/news-card";
+import { NewsCard } from "#/components/news-card";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { formatEventDateTime } from "#/lib/event";
+import { formatNewsDateRelative } from "#/lib/news";
 
 /** Enough events to fill a month in the calendar; the list shows a slice. */
 const EVENTS_PAGE_SIZE = 50;
@@ -27,37 +29,30 @@ const upcomingEventsQuery = () =>
 
 const LIST_PREVIEW_COUNT = 4;
 
+/** The three newest news items, ordered by the API. */
+const NEWS_PREVIEW_COUNT = 3;
+const latestNewsQuery = () => getNewsQuery(0, {}, NEWS_PREVIEW_COUNT);
+
 export const Route = createFileRoute("/_app/")({
     component: Home,
     loader: async ({ context }) => {
         await Promise.all([
             context.queryClient.ensureQueryData(upcomingEventsQuery()),
             context.queryClient.ensureQueryData(getVisibleBannersQuery()),
+            context.queryClient.ensureQueryData(latestNewsQuery()),
         ]);
     },
 });
 
-const NEWS: NewsCardProps[] = [
-    {
-        slug: "how-to-notion",
-        title: "How to Notion",
-        excerpt:
-            "Opplæring til Promo? Bruk Notion! Les vår nye guide om hvordan vi bruker Notion i undergrupper.",
-        publishedAt: "3 dager siden",
-    },
-    {
-        slug: "trivselsundersokelse-v26",
-        title: "TIHLDE Trivselsundersøkelse V26",
-        excerpt:
-            "Vinn gavekort ved å svare på den årlige trivselsundersøkelsen. Din stemme teller!",
-        publishedAt: "1 uke siden",
-    },
-];
-
 function Home() {
-    // Admin-only shortcuts — the API enforces these permissions server-side too.
-    const canCreateEvent = usePermission("events:create");
-    const canCreateNews = usePermission("news:create");
+    // Admin-only shortcuts — the API enforces these permissions server-side
+    // too. Any-scope: a group-scoped events:create is a real grant, and
+    // hiding the shortcut from that user would take away work they may do.
+    const canCreateEvent = useAnyScopePermission([
+        "events:create",
+        "events:manage",
+    ]);
+    const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
 
     return (
         <>
@@ -85,12 +80,9 @@ function Home() {
                     title="Nyheter"
                     actionLabel={canCreateNews ? "Ny nyhet" : undefined}
                 />
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {NEWS.map((item) => (
-                        // TODO: replace with a unique id field once wired up to the backend
-                        <NewsCard key={item.title} {...item} />
-                    ))}
-                </div>
+                <Suspense fallback={<NewsSkeleton />}>
+                    <NewsSection />
+                </Suspense>
             </section>
         </>
     );
@@ -159,6 +151,39 @@ function EventsSection() {
                 />
             </TabsContent>
         </Tabs>
+    );
+}
+
+function NewsSection() {
+    const { data } = useSuspenseQuery(latestNewsQuery());
+    const news = data.items;
+
+    if (news.length === 0) return null;
+
+    return (
+        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {news.map((item) => (
+                <li key={item.id}>
+                    <NewsCard
+                        slug={item.id}
+                        title={item.title}
+                        excerpt={item.header ?? ""}
+                        publishedAt={formatNewsDateRelative(item.createdAt)}
+                        imageUrl={item.imageUrl || undefined}
+                    />
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+function NewsSkeleton() {
+    return (
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: NEWS_PREVIEW_COUNT }, (_, i) => (
+                <Skeleton key={i} className="h-64 w-full" />
+            ))}
+        </div>
     );
 }
 

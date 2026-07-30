@@ -5,6 +5,11 @@ import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
 import {
+    useAnyScopePermission,
+    useIsGroupLeaderOf,
+    useScopedPermission,
+} from "#/hooks/use-permission";
+import {
     createLawMutation,
     deleteLawMutation,
     getGroupBySlugQuery,
@@ -51,8 +56,6 @@ export const Route = createFileRoute("/_app/grupper/$slug")({
         context.queryClient.ensureQueryData(getGroupBySlugQuery(params.slug)),
 });
 
-const ADMIN_PERMISSIONS = ["groups:update", "groups:manage", "groups:delete"];
-
 function GroupDetailPage() {
     const { slug } = Route.useParams();
     const { tab: active } = Route.useSearch();
@@ -83,15 +86,33 @@ function GroupDetailPage() {
     const updateLaw = useMutation(updateLawMutation);
     const deleteLaw = useMutation(deleteLawMutation);
 
-    const isAdmin = Boolean(
-        session?.permissions?.some(
-            (p) => ADMIN_PERMISSIONS.includes(p) || p === "root",
-        ),
+    // The scope is known here, so these mirror the API exactly: a grant for
+    // this group counts, a grant for another group does not.
+    const canEditGroup = useScopedPermission(
+        ["groups:update", "groups:manage", "groups:delete"],
+        `group:${slug}`,
     );
-    const isLeader = Boolean(
-        session?.groups?.some((g) => g.slug === slug && g.role === "leader"),
+    const isLeader = useIsGroupLeaderOf(slug);
+    const canManage = canEditGroup || isLeader;
+    // Roster changes: `groups:manage` for this group, or being its leader.
+    // Adding someone AS leader still needs `groups:manage` — the dialog only
+    // adds plain members, and the API refuses the rest.
+    const hasGroupsManage = useScopedPermission(
+        "groups:manage",
+        `group:${slug}`,
     );
-    const canManage = isAdmin || isLeader;
+    const canManageMembers = hasGroupsManage || isLeader;
+    // Creating forms: forms:create, or being the group's leader.
+    const hasFormsPermission = useAnyScopePermission([
+        "forms:create",
+        "forms:manage",
+    ]);
+    const canManageForms = hasFormsPermission || isLeader;
+    const hasFinesManage = useScopedPermission("fines:manage", `group:${slug}`);
+    const hasFinesEdit = useScopedPermission(
+        ["fines:update", "fines:delete", "fines:manage"],
+        `group:${slug}`,
+    );
 
     const members = useMemo(
         () => (apiMembers ?? []).map(mapMember),
@@ -116,7 +137,12 @@ function GroupDetailPage() {
     const isFinesAdmin = Boolean(
         session && apiGroup.finesAdminId === session.user?.id,
     );
-    const canManageLaws = canManage || isFinesAdmin;
+    // Lovverk: the fines admin (botsjef), the leader, or fines:manage for
+    // this group — same as `canManageLaws` server-side.
+    const canManageLaws = isLeader || isFinesAdmin || hasFinesManage;
+    // Approving, editing and deleting fines: the fines admin, or the
+    // matching fines:* permission for this group.
+    const canManageFines = isFinesAdmin || hasFinesEdit;
 
     function openGiveFine() {
         setActive("boter");
@@ -146,7 +172,7 @@ function GroupDetailPage() {
                         <GroupMembersTab
                             leader={leader}
                             members={regularMembers}
-                            isAdmin={canManage}
+                            isAdmin={canManageMembers}
                         />
                     ) : null}
                     {active === "arrangementer" ? <GroupEventsTab /> : null}
@@ -154,6 +180,7 @@ function GroupDetailPage() {
                         <GroupFinesTab
                             fines={fines}
                             memberCount={members.length}
+                            canManage={canManageFines}
                         />
                     ) : null}
                     {active === "lovverk" ? (
@@ -180,7 +207,7 @@ function GroupDetailPage() {
                         />
                     ) : null}
                     {active === "sporreskjema" ? (
-                        <GroupFormsTab forms={forms} isAdmin={canManage} />
+                        <GroupFormsTab forms={forms} isAdmin={canManageForms} />
                     ) : null}
                 </DetailLayoutContent>
             </DetailLayout>
