@@ -2,7 +2,7 @@ import { authQueryOptions } from "#/api/auth";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { groupTypeLabel } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
@@ -58,6 +58,12 @@ function RouteComponent() {
                     <Card
                         size="sm"
                         className="flex-row items-center gap-3 px-3"
+                        render={
+                            <Link
+                                to="/grupper/$slug"
+                                params={{ slug: group.slug }}
+                            />
+                        }
                     >
                         <Avatar className="size-10 shrink-0">
                             {group.imageUrl ? (

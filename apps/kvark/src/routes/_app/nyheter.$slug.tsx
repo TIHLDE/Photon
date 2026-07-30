@@ -38,6 +38,7 @@ function NewsDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
+                        nativeButton={false}
                         render={<Link to="/nyheter" />}
                     >
                         <ArrowLeft />
@@ -61,7 +62,17 @@ function NewsDetailPage() {
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center gap-2">
                             {canEdit ? (
-                                <Button variant="outline" size="sm">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    nativeButton={false}
+                                    render={
+                                        <Link
+                                            to="/admin/nyheter"
+                                            search={{ rediger: news.id }}
+                                        />
+                                    }
+                                >
                                     <PencilLine />
                                     Rediger nyhet
                                 </Button>

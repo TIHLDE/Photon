@@ -42,7 +42,7 @@ import {
     type ProfileHeaderUser,
     type ProfileLink,
 } from "#/components/profile-header";
-import { deriveStudy } from "#/lib/utils";
+import { deriveStudy, formatStudyLabel } from "#/lib/utils";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
@@ -103,11 +103,7 @@ function RouteComponent() {
     const [bioOpen, setBioOpen] = useState(false);
 
     const settings = session?.user.settings;
-    const { programme, classYear } = deriveStudy(profile.groups);
-    const studyLabel =
-        [programme, classYear ? `${classYear}. klasse` : null]
-            .filter(Boolean)
-            .join(" · ") || undefined;
+    const studyLabel = formatStudyLabel(deriveStudy(profile.groups));
     const user: ProfileHeaderUser = {
         name: profile.name,
         // E-post er ikke en del av den offentlige profilen — den vises bare for

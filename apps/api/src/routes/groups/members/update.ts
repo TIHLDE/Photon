@@ -29,7 +29,14 @@ export const updateMemberRoleRoute = route().patch(
         .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: "groups:manage" }),
+    // Scoped like add/remove: a `groups:manage` grant for this group counts.
+    // Unlike those two there is no leader ownership — appointing the next
+    // leader is not the sitting leader's own call, matching how adding a
+    // member AS leader is refused further down in members/add.ts.
+    requireAccess({
+        permission: "groups:manage",
+        scope: (c) => `group:${c.req.param("groupSlug")}`,
+    }),
     validator("json", updateMemberRoleSchema),
     async (c) => {
         const body = c.req.valid("json");

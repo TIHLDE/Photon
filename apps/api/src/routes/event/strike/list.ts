@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { and, desc, eq, gte } from "drizzle-orm";
+import { createMiddleware } from "hono/factory";
 import { validator } from "hono-openapi";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -14,6 +15,25 @@ import {
 import { getStrikeActiveCutoff } from "~/lib/event/strikes";
 import { strikeListResponseSchema } from "./schema";
 
+const requireStrikePermission = requireAccess({
+    permission: ["events:strikes:view", "events:manage"],
+});
+
+/**
+ * Everyone may read their own prikker — `?userId=<seg selv>` needs no grant.
+ * Anything wider (all strikes, or someone else's) still requires
+ * `events:strikes:view` / `events:manage`. Without this, the "Prikker" page on
+ * a member's own profile could never load anything.
+ */
+const requireStrikeAccess = createMiddleware(async (c, next) => {
+    const user = c.get("user");
+    if (user && c.req.query("userId") === user.id) {
+        await next();
+        return;
+    }
+    return requireStrikePermission(c, next);
+});
+
 export const listStrikesRoute = route().get(
     "/strikes",
     describeRoute({
@@ -21,7 +41,7 @@ export const listStrikesRoute = route().get(
         summary: "List strikes",
         operationId: "listStrikes",
         description:
-            "Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission.",
+            "Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission, except when filtering on your own user ID.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -30,11 +50,11 @@ export const listStrikesRoute = route().get(
         })
         .forbidden({
             description:
-                "Requires events:strikes:view or events:manage permission",
+                "Requires events:strikes:view or events:manage permission, unless reading your own strikes",
         })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["events:strikes:view", "events:manage"] }),
+    requireStrikeAccess,
     validator(
         "query",
         PaginationSchema.extend({
@@ -68,7 +88,7 @@ export const listStrikesRoute = route().get(
                     columns: { id: true, name: true, image: true },
                 },
                 event: {
-                    columns: { id: true, title: true },
+                    columns: { id: true, title: true, slug: true },
                 },
             },
         });

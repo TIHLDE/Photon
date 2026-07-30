@@ -13,6 +13,7 @@ import { listEventPaymentsRoute } from "./payment/list";
 import { refundEventPaymentRoute } from "./payment/refund";
 import { paymentWebhookRoute } from "./payment/webhook";
 import { setAttendanceRoute } from "./registration/attendance";
+import { getMyEventHistoryRoute } from "./registration/history";
 import { registerToEventRoute } from "./registration/create";
 import { deleteEventRegistrationRoute } from "./registration/delete";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
@@ -24,6 +25,8 @@ import { updateRoute } from "./update";
 export const eventRoutes = route()
     // Strikes (registered before "/:eventId" so the static /strikes path wins)
     .route("/", listStrikesRoute)
+    // Static path, so it has to beat "/:eventId" to the punch as well
+    .route("/", getMyEventHistoryRoute)
     .route("/", createStrikeRoute)
     .route("/", deleteStrikeRoute)
 

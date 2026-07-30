@@ -62,6 +62,9 @@ describe("Job Postings System", () => {
                     body: "This should not be created",
                     company: "Fail Corp",
                     location: "Oslo",
+                    deadline: new Date(
+                        Date.now() + 30 * 24 * 60 * 60 * 1000,
+                    ).toISOString(),
                     jobType: "other",
                 },
             });
@@ -96,6 +99,9 @@ describe("Job Postings System", () => {
                     body: "Join us on a part-time basis",
                     company: "Flexible Corp",
                     location: "Remote",
+                    deadline: new Date(
+                        Date.now() + 30 * 24 * 60 * 60 * 1000,
+                    ).toISOString(),
                     isContinuouslyHiring: true,
                     jobType: "part_time",
                     classStart: "first",
@@ -114,6 +120,9 @@ describe("Job Postings System", () => {
                         body: "Invalid validation",
                         company: "Fail Corp",
                         location: "Oslo",
+                        deadline: new Date(
+                            Date.now() + 30 * 24 * 60 * 60 * 1000,
+                        ).toISOString(),
                         jobType: "other",
                         classStart: "fifth",
                         classEnd: "first", // Invalid: fifth > first
@@ -371,6 +380,9 @@ describe("Job Postings System", () => {
                     body: "Will be deleted via scoped permission",
                     company: "Test Corp",
                     location: "Oslo",
+                    deadline: new Date(
+                        Date.now() + 30 * 24 * 60 * 60 * 1000,
+                    ).toISOString(),
                     jobType: "other",
                 },
             });
@@ -399,6 +411,9 @@ describe("Job Postings System", () => {
                     title: "Minimal Job",
                     company: "Min Corp",
                     location: "Oslo",
+                    deadline: new Date(
+                        Date.now() + 30 * 24 * 60 * 60 * 1000,
+                    ).toISOString(),
                     jobType: "other",
                 },
             });

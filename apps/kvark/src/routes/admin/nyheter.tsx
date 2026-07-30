@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { NewspaperIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import type { NewsListItem } from "@tihlde/sdk";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
@@ -28,6 +28,7 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import z from "zod";
 
 import { useImageUploader } from "#/api/queries/assets";
 import {
@@ -42,8 +43,16 @@ import { AdminPageHeader } from "#/components/admin-page-header";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
+// `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
+// nyhet» på nyhetssiden kan lenke rett til riktig artikkel i stedet for å
+// slippe deg av på listen.
+const searchSchema = z.object({
+    rediger: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/admin/nyheter")({
     component: NewsAdminPage,
+    validateSearch: searchSchema,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getNewsQuery(0));
         return { breadcrumbs: "Nyheter" };
@@ -52,9 +61,18 @@ export const Route = createFileRoute("/admin/nyheter")({
 
 function NewsAdminPage() {
     const canCreate = useAnyScopePermission(["news:create", "news:manage"]);
+    const { rediger } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; news: NewsListItem } | null
     >(null);
+
+    function closeDialog() {
+        setDialog(null);
+        // Ellers ville dialogen åpnet seg igjen med en gang, siden id-en
+        // fortsatt sto i URL-en.
+        if (rediger) navigate({ search: {}, replace: true });
+    }
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -73,6 +91,7 @@ function NewsAdminPage() {
 
             <Suspense fallback={<TableSkeleton />}>
                 <NewsTable
+                    autoEditId={rediger}
                     onEdit={(news) => setDialog({ mode: "edit", news })}
                 />
             </Suspense>
@@ -82,18 +101,34 @@ function NewsAdminPage() {
                 open={dialog !== null}
                 news={dialog?.mode === "edit" ? dialog.news : null}
                 onOpenChange={(open) => {
-                    if (!open) setDialog(null);
+                    if (!open) closeDialog();
                 }}
             />
         </div>
     );
 }
 
-function NewsTable({ onEdit }: { onEdit: (news: NewsListItem) => void }) {
+function NewsTable({
+    autoEditId,
+    onEdit,
+}: {
+    autoEditId?: string;
+    onEdit: (news: NewsListItem) => void;
+}) {
     const { data } = useSuspenseQuery(getNewsQuery(0, {}, 100));
     const remove = useMutation(deleteNewsMutation);
     const canEdit = useAnyScopePermission(["news:update", "news:manage"]);
     const canDelete = useAnyScopePermission(["news:delete", "news:manage"]);
+
+    // Listen ligger her, ikke i forelderen, så oppslaget av `?rediger=<id>`
+    // må også gjøres her. Kjører kun når id-en endrer seg, slik at dialogen
+    // ikke tvinges opp igjen etter at man har lukket den.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: onEdit er ny hver render
+    useEffect(() => {
+        if (!autoEditId || !canEdit) return;
+        const match = data.items.find((news) => news.id === autoEditId);
+        if (match) onEdit(match);
+    }, [autoEditId, canEdit, data.items]);
 
     if (data.items.length === 0) {
         return (

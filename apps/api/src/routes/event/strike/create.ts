@@ -48,7 +48,7 @@ export const createStrikeRoute = route().post(
         }
 
         const targetEvent = await db.query.event.findFirst({
-            columns: { id: true, title: true },
+            columns: { id: true, title: true, slug: true },
             where: eq(schema.event.id, body.eventId),
         });
 

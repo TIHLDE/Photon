@@ -1,17 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
-import { Share2 } from "lucide-react";
 
+import { ShareButton } from "#/components/share-button";
 import type { Form } from "#/lib/group";
 
 type GroupFormRowProps = {
     form: Form;
-    /** Whether the viewer may administer the form (edit it, see answers). */
-    canManage: boolean;
 };
 
-export function GroupFormRow({ form, canManage }: GroupFormRowProps) {
+export function GroupFormRow({ form }: GroupFormRowProps) {
     return (
         <Card>
             <CardHeader>
@@ -25,12 +23,10 @@ export function GroupFormRow({ form, canManage }: GroupFormRowProps) {
                         på og dele skjemaet.
                     </p>
                 ) : null}
+                {/* «Administrer» lå her, men det finnes ingen side for å se
+                    eller redigere svar ennå — knappen gjorde ingenting. Den
+                    kommer tilbake når administrasjonsgrensesnittet finnes. */}
                 <div className="flex flex-wrap items-center gap-2">
-                    {canManage ? (
-                        <Button variant="outline" size="sm">
-                            Administrer
-                        </Button>
-                    ) : null}
                     <Button
                         variant="outline"
                         size="sm"
@@ -44,10 +40,11 @@ export function GroupFormRow({ form, canManage }: GroupFormRowProps) {
                     >
                         Svar på/se skjema
                     </Button>
-                    <Button variant="outline" size="sm">
-                        <Share2 />
-                        Del
-                    </Button>
+                    <ShareButton
+                        showLabel
+                        label="Del skjema"
+                        url={`${typeof window === "undefined" ? "" : window.location.origin}/sporreskjema/${form.id}`}
+                    />
                 </div>
             </CardContent>
         </Card>

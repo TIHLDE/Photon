@@ -103,6 +103,17 @@ export function useIsGroupLeaderOf(slug: string): boolean {
 }
 
 /**
+ * Whether the current user is a member of `slug` at all. Bøter and lovverk are
+ * readable by a group's members without any grant (`isGroupMember` server-side),
+ * so the navigation has to know about membership to avoid offering tabs that
+ * only ever answer 403.
+ */
+export function useIsGroupMemberOf(slug: string): boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    return Boolean(session?.groups?.some((group) => group.slug === slug));
+}
+
+/**
  * Whether the current user leads at least one group. Group leaders may create
  * and assign group-scoped verv without holding any global `roles:*`
  * permission, so they have real work in the admin panel too.

@@ -1,0 +1,134 @@
+import { Link } from "@tanstack/react-router";
+import { Button } from "@tihlde/ui/ui/button";
+import {
+    addMonths,
+    eachDayOfInterval,
+    endOfMonth,
+    endOfWeek,
+    format,
+    isSameDay,
+    isSameMonth,
+    isToday,
+    startOfMonth,
+    startOfWeek,
+} from "date-fns";
+import { nb } from "date-fns/locale";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { cn } from "#/lib/utils";
+
+export type CalendarEvent = {
+    id: string;
+    slug: string;
+    title: string;
+    startTime: string;
+    category?: string;
+};
+
+type EventCalendarProps = {
+    events: CalendarEvent[];
+};
+
+const WEEKDAY_LABELS = ["man", "tir", "ons", "tor", "fre", "lør", "søn"];
+
+/**
+ * Månedskalender over arrangementene som er lastet inn. Rutenettet starter
+ * alltid på mandag og fylles ut med dagene fra nabomånedene, slik at ukene blir
+ * hele.
+ */
+export function EventCalendar({ events }: EventCalendarProps) {
+    const [month, setMonth] = useState(() => startOfMonth(new Date()));
+
+    const days = useMemo(() => {
+        const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
+        const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
+        return eachDayOfInterval({ start, end });
+    }, [month]);
+
+    const eventsByDay = useMemo(() => {
+        const map = new Map<string, CalendarEvent[]>();
+        for (const event of events) {
+            const key = format(new Date(event.startTime), "yyyy-MM-dd");
+            const list = map.get(key) ?? [];
+            list.push(event);
+            map.set(key, list);
+        }
+        return map;
+    }, [events]);
+
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Forrige måned"
+                    onClick={() => setMonth((m) => addMonths(m, -1))}
+                >
+                    <ChevronLeft />
+                </Button>
+                <span className="font-medium">
+                    {format(month, "LLLL yyyy", { locale: nb })}
+                </span>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Neste måned"
+                    onClick={() => setMonth((m) => addMonths(m, 1))}
+                >
+                    <ChevronRight />
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {WEEKDAY_LABELS.map((label) => (
+                    <span
+                        key={label}
+                        className="p-1 text-center text-xs text-muted-foreground"
+                    >
+                        {label}
+                    </span>
+                ))}
+
+                {days.map((day) => {
+                    const key = format(day, "yyyy-MM-dd");
+                    const dayEvents = eventsByDay.get(key) ?? [];
+                    return (
+                        <div
+                            key={key}
+                            className={cn(
+                                "flex min-h-24 flex-col gap-1 rounded-md p-1 ring-1 ring-card-border",
+                                !isSameMonth(day, month) && "opacity-50",
+                                isToday(day) && "bg-accent",
+                            )}
+                        >
+                            <span className="text-xs text-muted-foreground">
+                                {format(day, "d")}
+                            </span>
+                            {dayEvents.map((event) => (
+                                <Link
+                                    key={event.id}
+                                    to="/arrangementer/$slug"
+                                    params={{ slug: event.slug }}
+                                    className="truncate rounded-sm bg-secondary px-1 py-0.5 text-xs text-secondary-foreground"
+                                    title={event.title}
+                                >
+                                    {event.title}
+                                </Link>
+                            ))}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {events.some((event) =>
+                days.some((day) => isSameDay(new Date(event.startTime), day)),
+            ) ? null : (
+                <p className="text-sm text-muted-foreground">
+                    Ingen arrangementer denne måneden.
+                </p>
+            )}
+        </div>
+    );
+}

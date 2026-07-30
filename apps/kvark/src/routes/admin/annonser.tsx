@@ -378,7 +378,11 @@ function JobDialog({
         event.preventDefault();
         setError(null);
 
-        const deadlineIso = deadline ? deadline.toISOString() : null;
+        if (!deadline) {
+            setError("Velg en søknadsfrist.");
+            return;
+        }
+        const deadlineIso = deadline.toISOString();
 
         try {
             // Uploaded before the write, so a failing upload cannot save an ad
@@ -415,7 +419,7 @@ function JobDialog({
                         jobType,
                         classStart,
                         classEnd,
-                        deadline: deadlineIso ?? undefined,
+                        deadline: deadlineIso,
                         isContinuouslyHiring,
                         email: email || undefined,
                         link: link || undefined,
@@ -567,16 +571,19 @@ function JobDialog({
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Field>
                                 <FieldLabel htmlFor="job-deadline">
-                                    Søknadsfrist
+                                    Søknadsfrist *
                                 </FieldLabel>
                                 <DateTimePicker
                                     id="job-deadline"
                                     locale={nb}
                                     placeholder="Velg søknadsfrist"
                                     value={deadline}
-                                    disabled={isContinuouslyHiring}
                                     onValueChange={setDeadline}
                                 />
+                                <p className="text-xs text-muted-foreground">
+                                    Også fortløpende annonser trenger en frist,
+                                    ellers blir de liggende for alltid.
+                                </p>
                             </Field>
                             <div className="flex items-center gap-2 sm:self-end sm:pb-2">
                                 <Checkbox
