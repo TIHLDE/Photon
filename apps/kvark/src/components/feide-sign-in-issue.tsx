@@ -29,6 +29,14 @@ export type FeideSignInIssueProps = {
     onSendVerification: (email: string) => void;
     verificationSending?: boolean;
     verificationSent?: boolean;
+    /**
+     * Set when the request itself failed. Not "wrong address": the endpoint
+     * answers 200 either way, on purpose. Without this the form would sit
+     * there looking unpressed whenever the call did not go through.
+     */
+    verificationError?: string;
+    /** Clears the sent state so a wrong address can be corrected. */
+    onTryAnotherEmail?: () => void;
 
     onRequestHelp: (input: AccountLinkHelpInput) => void;
     helpSending?: boolean;
@@ -76,7 +84,9 @@ export function FeideSignInIssue(props: FeideSignInIssueProps) {
                 onSend={props.onSendVerification}
                 sending={props.verificationSending ?? false}
                 sent={props.verificationSent ?? false}
+                error={props.verificationError}
                 onNeedHelp={() => setStep("help")}
+                onTryAnother={props.onTryAnotherEmail}
             />
         );
     }
@@ -123,12 +133,16 @@ function VerifyEmailPrompt({
     onSend,
     sending,
     sent,
+    error,
     onNeedHelp,
+    onTryAnother,
 }: {
     onSend: (email: string) => void;
     sending: boolean;
     sent: boolean;
+    error?: string;
     onNeedHelp: () => void;
+    onTryAnother?: () => void;
 }) {
     const [email, setEmail] = useState("");
 
@@ -140,15 +154,39 @@ function VerifyEmailPrompt({
                     Finnes adressen hos oss, har vi sendt en lenke. Åpne den, så
                     kobler vi kontoen til Feide.
                 </AlertDescription>
+                {/* The endpoint answers the same whether or not the address
+                    exists, so a member who guessed wrong just sees nothing
+                    arrive. Without a way back they are stuck on a screen that
+                    looks like success. */}
+                <div className="mt-3 flex flex-col gap-2">
+                    {onTryAnother && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onTryAnother}
+                        >
+                            Kom ingen e-post? Prøv en annen adresse
+                        </Button>
+                    )}
+                    <Button type="button" variant="link" onClick={onNeedHelp}>
+                        Husker du ikke e-posten?
+                    </Button>
+                </div>
             </Alert>
         );
     }
 
     return (
         <Alert>
-            <AlertTitle>Bekreft e-posten din</AlertTitle>
+            {/* Asking which account, rather than "bekreft e-posten din",
+                because the mistake to prevent is answering with the address
+                they use today. Most migrated accounts predate the member
+                having an NTNU address at all: 986 of 1685 carry a private
+                one, so @stud.ntnu.no is the likeliest wrong answer and is
+                worth naming outright. */}
+            <AlertTitle>Hvilken e-post hadde den gamle brukeren?</AlertTitle>
             <AlertDescription>
-                Skriv inn e-posten du brukte på den gamle brukeren din.
+                Som regel en privat adresse — ikke @stud.ntnu.no.
             </AlertDescription>
             <form
                 className="mt-3 flex flex-col gap-2"
@@ -175,6 +213,7 @@ function VerifyEmailPrompt({
                         "Send lenke"
                     )}
                 </Button>
+                {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="button" variant="link" onClick={onNeedHelp}>
                     Husker du ikke e-posten?
                 </Button>
