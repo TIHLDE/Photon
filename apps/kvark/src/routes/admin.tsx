@@ -23,7 +23,6 @@ import {
     BookOpenIcon,
     BriefcaseBusinessIcon,
     CalendarIcon,
-    CircleCheckBigIcon,
     CrownIcon,
     DatabaseIcon,
     DotSquare,
@@ -118,12 +117,6 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 icon: CalendarIcon,
                 link: linkOptions({ to: "/admin/arrangementer" }),
                 permission: ADMIN_SECTION_PERMISSIONS.arrangementer,
-            },
-            {
-                label: "Oppmøte",
-                icon: CircleCheckBigIcon,
-                link: linkOptions({ to: "/admin/oppmote" }),
-                permission: ADMIN_SECTION_PERMISSIONS.oppmote,
             },
             {
                 label: "Nyheter",

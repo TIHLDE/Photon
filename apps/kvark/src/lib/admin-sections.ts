@@ -12,13 +12,16 @@
  * the scope does not match.
  */
 export const ADMIN_SECTION_PERMISSIONS = {
+    // Attendance, registrations and payments all live on the per-event admin
+    // page under this section, so their permissions unlock it too.
     arrangementer: [
         "events:create",
         "events:update",
         "events:delete",
         "events:manage",
+        "events:payments:view",
+        "events:payments:refund",
     ],
-    oppmote: ["events:update", "events:manage"],
     nyheter: ["news:create", "news:manage"],
     annonser: ["jobs:create", "jobs:update", "jobs:delete", "jobs:manage"],
     bannere: [

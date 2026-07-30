@@ -146,6 +146,12 @@ function EventDetailPage() {
                                 <IconActionButton
                                     icon={PencilLine}
                                     label="Rediger arrangement"
+                                    render={
+                                        <Link
+                                            to="/admin/arrangementer/$eventId"
+                                            params={{ eventId: event.id }}
+                                        />
+                                    }
                                 />
                             ) : null}
                         </div>

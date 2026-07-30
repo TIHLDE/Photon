@@ -142,6 +142,41 @@ export async function createPayment(
     return response.data.redirectUrl;
 }
 
+export interface CapturePaymentParams {
+    reference: string; // The provider payment reference to capture
+    amount: number; // Amount to capture in minor units (øre)
+    currency?: string;
+}
+
+/**
+ * Capture an authorized Vipps payment.
+ *
+ * A Vipps payment that reaches `AUTHORIZED` has only *reserved* the amount —
+ * the reservation expires after a few days and the money is never drawn. The
+ * funds are only actually collected once the payment is captured, and Vipps'
+ * refund endpoint only operates on captured amounts. We therefore capture as
+ * soon as the payment is authorized.
+ */
+export async function capturePayment(
+    params: CapturePaymentParams,
+): Promise<void> {
+    const token = await getVippsToken();
+    const vipps = getVippsClient();
+
+    const response = await vipps.payment.capture(token, params.reference, {
+        modificationAmount: {
+            currency: (params.currency || "NOK") as "NOK",
+            value: params.amount,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to capture payment: ${response.error instanceof Error ? response.error.message : "title" in response.error ? response.error.title : "Unknown error"}`,
+        );
+    }
+}
+
 export interface RefundPaymentParams {
     reference: string; // The provider payment reference to refund
     amount: number; // Amount to refund in minor units (øre)

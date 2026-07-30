@@ -20,6 +20,7 @@ const EventQueryKeys = {
     detail: ["events", "detail"] as const,
     favorites: ["events", "favorites"] as const,
     registrations: ["events", "registrations"] as const,
+    payments: ["events", "payments"] as const,
     forms: ["events", "forms"] as const,
     strikes: ["events", "strikes"] as const,
 } as const;
@@ -269,6 +270,56 @@ export const createEventPaymentMutation = mutationOptions({
             params: { eventId },
             json: data,
         }),
+});
+
+type PaymentListFilters = Omit<
+    QueryParamsHelper<"get", "/api/event/{eventId}/payments">,
+    "page" | "pageSize"
+>;
+
+export const getEventPaymentsQuery = (
+    eventId: string,
+    page: number,
+    filters: PaymentListFilters = {},
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    queryOptions({
+        queryKey: [
+            ...EventQueryKeys.payments,
+            eventId,
+            page,
+            pageSize,
+            filters,
+        ],
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/payments", {
+                params: { eventId },
+                searchParams: { page, pageSize, ...filters },
+            }),
+    });
+
+export const refundEventPaymentMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        paymentId,
+    }: {
+        eventId: string;
+        paymentId: string;
+    }) =>
+        apiClient.post("/api/event/{eventId}/payments/{paymentId}/refund", {
+            params: { eventId, paymentId },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.payments, vars.eventId],
+            exact: false,
+        });
+        // The registration list carries a payment status per registrant.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.registrations, vars.eventId],
+            exact: false,
+        });
+    },
 });
 
 // -- Event Forms --
