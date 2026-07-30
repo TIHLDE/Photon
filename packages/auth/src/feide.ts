@@ -259,138 +259,188 @@ export const syncFeideHook: (
         const session = middlewareContext.context.newSession;
         if (!session) {
             /**
-             * The callback did NOT authenticate anyone — an expired or reused
-             * state ("State mismatch: verification not found"), a denied
-             * consent, a provider error. Better Auth has already produced its
-             * own error response (and redirects to the sign-in's
+             * No *new* session, which happens for two very different reasons.
+             *
+             * The callback may have failed to authenticate anyone — an expired
+             * or reused state ("State mismatch: verification not found"), a
+             * denied consent, a provider error. Better Auth has already
+             * produced its own error response (and redirects to the sign-in's
              * errorCallbackURL when one was given); throwing here replaced
              * that with a bare 500 and an empty body, which is exactly what
              * users hit on photon.tihlde.org/api/auth/oauth2/callback/feide.
-             * There is nothing to sync, so leave the response alone.
+             *
+             * Or this was an account *link*, where the member was already
+             * signed in. Better Auth's link branch writes the account row and
+             * redirects without ever calling `setSessionCookie`, so there is
+             * no new session by construction — and this hook has no way to
+             * learn who was linked. Five members reached exactly this state in
+             * production on 2026-07-30: linked, but with no study programme,
+             * campus or cohort until they signed in with Feide again.
+             *
+             * The link case is therefore finished off from the outside, by
+             * `/koble-feide` calling the account-link sync endpoint, which runs
+             * {@link syncFeideForUser} for the session it does have.
              */
             console.warn(
-                "Feide callback finished without a session; skipping sync.",
+                "Feide callback finished without a new session; skipping sync. If this was an account link, /koble-feide completes it.",
             );
             return;
         }
 
-        const userId = session.user.id;
-
-        // Must filter by providerId: a user who also has an email/password
-        // account has multiple `account` rows, and only the Feide one carries
-        // the Dataporten access token needed below.
-        const feideAccount = await ctx.db
-            .select({ accessToken: account.accessToken })
-            .from(account)
-            .where(
-                and(
-                    eq(account.userId, userId),
-                    eq(account.providerId, FEIDE_PROVIDER_ID),
-                ),
-            )
-            .limit(1);
-
-        const token = feideAccount[0]?.accessToken;
-
-        if (!token) {
-            throw new Error("No Feide account linked to user");
-        }
-
-        const { programs, campus } = await fetchValidStudyPrograms(token);
-        const { allowed, campusRejected } = partitionByCampus(programs, campus);
-
-        if (needsCampusFollowUp(allowed, campus)) {
-            /**
-             * The user was let into a multi-campus programme without us being
-             * able to tell which campus they attend — see partitionByCampus for
-             * why that is allowed. Named here so the case can actually be
-             * followed up on: the pure parser has no user to point at.
-             */
-            console.warn(
-                `Could not resolve campus for user ${userId} (${session.user.username ?? "no username"}) on ${allowed.map((p) => p.code).join(", ")}; allowing.`,
-            );
-        }
-
-        // Add user to all valid study programs
-        await ctx.db.transaction(async (tx) => {
-            /**
-             * Campus only decides who gets *in*. A member whose reading came
-             * out as another campus this semester — an exchange, or courses
-             * taken at another campus — keeps the programme they already
-             * belong to, so the gate can never take away access it once gave.
-             */
-            const groups = [
-                ...allowed,
-                ...(await keepExistingMemberships(
-                    tx,
-                    userId,
-                    campusRejected,
-                    session.user.username ?? null,
-                )),
-            ];
-
-            for (const feideGroup of groups) {
-                const sp = await tx
-                    .select({ id: studyProgram.id, slug: studyProgram.slug })
-                    .from(studyProgram)
-                    .where(eq(studyProgram.feideCode, feideGroup.code))
-                    .limit(1);
-
-                if (!sp[0]) {
-                    console.warn(
-                        `User is part of unknown study program ${feideGroup}, skipping`,
-                    );
-                    continue;
-                }
-
-                const { id: studyProgramId, slug: programSlug } = sp[0];
-
-                /**
-                 * Additive by design: an existing row is left exactly as it
-                 * is, start year included. Feide only reports ACTIVE
-                 * memberships, so graduating removes the group from the
-                 * response — access history survives because rows are never
-                 * rewritten or deleted here. Baseline roles (member/alumni)
-                 * are what actually gate participation; see
-                 * syncBaselineRoles.
-                 */
-                await tx
-                    .insert(studyProgramMembership)
-                    .values({
-                        userId,
-                        studyProgramId,
-                        startYear: feideGroup.startYear,
-                        confirmedCampus: campus,
-                    })
-                    .onConflictDoNothing();
-
-                await confirmCampus(tx, userId, studyProgramId, campus);
-
-                await syncDerivedStudyGroups(
-                    tx,
-                    userId,
-                    programSlug,
-                    feideGroup.startYear,
-                );
-            }
-
-            /**
-             * Baseline roles follow the Feide result: active students get
-             * "member", former members get "alumni", strangers get neither.
-             *
-             * Keyed on `active`, not on how many groups came back. With
-             * `showAll=true` a member who finished years ago still has their
-             * old groups in the response, so counting groups would call
-             * everyone an active student forever.
-             */
-            await syncBaselineRoles(
-                tx,
-                userId,
-                groups.some((g) => g.active),
-            );
-        });
+        await syncFeideForUser(ctx.db, session.user.id);
     }
 };
+
+/**
+ * Raised when the user has no Feide account to read study data from.
+ *
+ * Its own type because the callers treat it as an expected outcome rather than
+ * a fault: the sync endpoint answers "you have not linked Feide yet", which is
+ * a different thing from Dataporten being unreachable.
+ */
+export class NoFeideAccountError extends Error {
+    constructor() {
+        super("No Feide account linked to user");
+        this.name = "NoFeideAccountError";
+    }
+}
+
+/**
+ * Bring a user's study programme, groups and baseline role in line with what
+ * Feide reports, using the access token stored on their Feide account.
+ *
+ * Extracted from {@link syncFeideHook} so the account-link flow can run the
+ * exact same work: linking produces no new session, so the hook cannot see who
+ * to sync, while the page the member lands on afterwards can.
+ */
+export async function syncFeideForUser(
+    db: AuthCreateContext["db"],
+    userId: string,
+): Promise<void> {
+    /**
+     * Must filter by providerId: a user who also has an email/password account
+     * has multiple `account` rows, and only the Feide one carries the
+     * Dataporten access token needed below.
+     *
+     * The username comes along for the ride purely so the warnings further
+     * down can name who they are about — worth the join, because those
+     * warnings are the only trace of a member who was let in without a
+     * resolved campus.
+     */
+    const [feideAccount] = await db
+        .select({ accessToken: account.accessToken, username: user.username })
+        .from(account)
+        .innerJoin(user, eq(user.id, account.userId))
+        .where(
+            and(
+                eq(account.userId, userId),
+                eq(account.providerId, FEIDE_PROVIDER_ID),
+            ),
+        )
+        .limit(1);
+
+    const token = feideAccount?.accessToken;
+
+    if (!token) {
+        throw new NoFeideAccountError();
+    }
+
+    const username = feideAccount.username;
+
+    const { programs, campus } = await fetchValidStudyPrograms(token);
+    const { allowed, campusRejected } = partitionByCampus(programs, campus);
+
+    if (needsCampusFollowUp(allowed, campus)) {
+        /**
+         * The user was let into a multi-campus programme without us being
+         * able to tell which campus they attend — see partitionByCampus for
+         * why that is allowed. Named here so the case can actually be
+         * followed up on: the pure parser has no user to point at.
+         */
+        console.warn(
+            `Could not resolve campus for user ${userId} (${username ?? "no username"}) on ${allowed.map((p) => p.code).join(", ")}; allowing.`,
+        );
+    }
+
+    // Add user to all valid study programs
+    await db.transaction(async (tx) => {
+        /**
+         * Campus only decides who gets *in*. A member whose reading came
+         * out as another campus this semester — an exchange, or courses
+         * taken at another campus — keeps the programme they already
+         * belong to, so the gate can never take away access it once gave.
+         */
+        const groups = [
+            ...allowed,
+            ...(await keepExistingMemberships(
+                tx,
+                userId,
+                campusRejected,
+                username,
+            )),
+        ];
+
+        for (const feideGroup of groups) {
+            const sp = await tx
+                .select({ id: studyProgram.id, slug: studyProgram.slug })
+                .from(studyProgram)
+                .where(eq(studyProgram.feideCode, feideGroup.code))
+                .limit(1);
+
+            if (!sp[0]) {
+                console.warn(
+                    `User is part of unknown study program ${feideGroup}, skipping`,
+                );
+                continue;
+            }
+
+            const { id: studyProgramId, slug: programSlug } = sp[0];
+
+            /**
+             * Additive by design: an existing row is left exactly as it
+             * is, start year included. Feide only reports ACTIVE
+             * memberships, so graduating removes the group from the
+             * response — access history survives because rows are never
+             * rewritten or deleted here. Baseline roles (member/alumni)
+             * are what actually gate participation; see
+             * syncBaselineRoles.
+             */
+            await tx
+                .insert(studyProgramMembership)
+                .values({
+                    userId,
+                    studyProgramId,
+                    startYear: feideGroup.startYear,
+                    confirmedCampus: campus,
+                })
+                .onConflictDoNothing();
+
+            await confirmCampus(tx, userId, studyProgramId, campus);
+
+            await syncDerivedStudyGroups(
+                tx,
+                userId,
+                programSlug,
+                feideGroup.startYear,
+            );
+        }
+
+        /**
+         * Baseline roles follow the Feide result: active students get
+         * "member", former members get "alumni", strangers get neither.
+         *
+         * Keyed on `active`, not on how many groups came back. With
+         * `showAll=true` a member who finished years ago still has their
+         * old groups in the response, so counting groups would call
+         * everyone an active student forever.
+         */
+        await syncBaselineRoles(
+            tx,
+            userId,
+            groups.some((g) => g.active),
+        );
+    });
+}
 
 /**
  * Keep a user's baseline RBAC role ("member" / "alumni") in sync with what

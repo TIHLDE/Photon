@@ -41,19 +41,37 @@ export function computeClassYear(startYear: number, now = new Date()): number {
 type StudyGroupLike = { name: string; type: string };
 
 /**
- * Avled studieprogram og klassetrinn fra brukerens gruppemedlemskap.
+ * Masterprogrammene ved TIHLDE. Alt annet (Dataingeniør, Digital
+ * forretningsutvikling, Digital infrastruktur og cybersikkerhet, Drift,
+ * Informasjonsbehandling) er treårig bachelor. Programnavnene har variert
+ * mellom Lepton-importen og Feide, så vi matcher på det særegne ordet.
+ */
+const MASTER_PROGRAMME_MARKERS = ["samhandling", "transformasjon", "master"];
+
+/** Antall år programmet varer — brukes til å avgjøre når noen er alumni. */
+export function programmeLength(programme: string | undefined): number {
+    if (!programme) return 3;
+    const name = programme.toLowerCase();
+    return MASTER_PROGRAMME_MARKERS.some((marker) => name.includes(marker))
+        ? 5
+        : 3;
+}
+
+/**
+ * Avled studieprogram, klassetrinn og kull fra brukerens gruppemedlemskap.
  * `study`- og `studyyear`-gruppene er en projeksjon av Feide-dataene; typen
  * lagres i UPPERCASE i databasen, så sammenlign case-insensitivt.
  *
- * Klassetrinn vises bare når det havner i intervallet 1–5 (bachelor 3 + master
- * 2). Utenfor dette (typisk alumni, siden medlemskap aldri fjernes) utelates
- * `classYear` slik at kun programnavnet vises. Vi kan ikke skille bachelor fra
- * master ut fra `session.groups`, så 1–5 er den pragmatiske grensen.
+ * Klassetrinn vises kun så lenge man faktisk går på studiet — til og med 3.
+ * klasse på bachelor, 5. på master. Er man forbi det, er man alumni, og da er
+ * kullet (oppstartsåret) det riktige å vise. Tidligere ble klassetrinnet vist
+ * så lenge det lå mellom 1 og 5, så en som startet i 2022 og var ferdig i 2025
+ * sto oppført som «4. klasse».
  */
 export function deriveStudy(
     groups: readonly StudyGroupLike[],
     now = new Date(),
-): { programme?: string; classYear?: number } {
+): { programme?: string; classYear?: number; startYear?: number } {
     const programme = groups.find(
         (g) => g.type.toLowerCase() === "study",
     )?.name;
@@ -63,13 +81,30 @@ export function deriveStudy(
         .map((g) => Number.parseInt(g.name, 10))
         .filter((year) => Number.isFinite(year));
 
-    let classYear: number | undefined;
-    if (startYears.length > 0) {
-        const computed = computeClassYear(Math.max(...startYears), now);
-        if (computed >= 1 && computed <= 5) {
-            classYear = computed;
-        }
-    }
+    if (startYears.length === 0) return { programme };
 
-    return { programme, classYear };
+    const startYear = Math.max(...startYears);
+    const computed = computeClassYear(startYear, now);
+    const isStudying = computed >= 1 && computed <= programmeLength(programme);
+
+    return {
+        programme,
+        classYear: isStudying ? computed : undefined,
+        startYear,
+    };
+}
+
+/**
+ * «Dataingeniør · 3. klasse» mens man studerer, «Dataingeniør · kull 2022»
+ * etterpå. Returnerer undefined når vi ikke vet noe om studiet.
+ */
+export function formatStudyLabel(
+    study: ReturnType<typeof deriveStudy>,
+): string | undefined {
+    const detail = study.classYear
+        ? `${study.classYear}. klasse`
+        : study.startYear
+          ? `kull ${study.startYear}`
+          : null;
+    return [study.programme, detail].filter(Boolean).join(" · ") || undefined;
 }

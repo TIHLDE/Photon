@@ -6,12 +6,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarIcon } from "lucide-react";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 
 import {
     getGalleryPicturesInfiniteQuery,
     getGalleryQuery,
 } from "#/api/queries/galleries";
+import { GalleryLightbox } from "#/components/gallery-lightbox";
 import { GalleryPicture } from "#/components/gallery-picture";
 import { LoadMoreButton } from "#/components/load-more-button";
 import { useMediaQuery } from "#/hooks/use-media-query";
@@ -60,6 +61,7 @@ function PictureGrid({ slug }: { slug: string }) {
 
     const pictures = data.pages.flatMap((page) => page.items);
     const columnCount = useColumnCount();
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
 
     const columns = useMemo(() => {
         const result: (typeof pictures)[] = Array.from(
@@ -105,7 +107,13 @@ function PictureGrid({ slug }: { slug: string }) {
                                 imageUrl={picture.imageUrl}
                                 imageAlt={picture.imageAlt}
                                 title={picture.title}
-                                description={picture.description}
+                                onOpen={() =>
+                                    setOpenIndex(
+                                        pictures.findIndex(
+                                            (p) => p.id === picture.id,
+                                        ),
+                                    )
+                                }
                             />
                         ))}
                     </div>
@@ -120,6 +128,14 @@ function PictureGrid({ slug }: { slug: string }) {
                     />
                 </div>
             )}
+
+            {/* Lightboxen ligger her, ikke i hvert bilde, slik at den kjenner
+                hele listen og kan bla videre. */}
+            <GalleryLightbox
+                pictures={pictures}
+                openIndex={openIndex}
+                onOpenChange={setOpenIndex}
+            />
         </div>
     );
 }

@@ -6,13 +6,21 @@ import type { Member } from "#/lib/group";
 type GroupMembersTabProps = {
     leader: Member | null;
     members: Member[];
+    /** Leder eller groups:manage for gruppen — kan legge til og fjerne medlemmer. */
     isAdmin: boolean;
+    /** Kun groups:manage — å utnevne en ny leder er ikke lederens eget kall. */
+    canPromote: boolean;
+    onPromote: (member: Member) => void;
+    onRemove: (member: Member) => void;
 };
 
 export function GroupMembersTab({
     leader,
     members,
     isAdmin,
+    canPromote,
+    onPromote,
+    onRemove,
 }: GroupMembersTabProps) {
     return (
         <div className="flex flex-col gap-6">
@@ -24,7 +32,11 @@ export function GroupMembersTab({
             {leader ? (
                 <div className="flex flex-col gap-2">
                     <h3 className="text-lg">Leder</h3>
-                    <GroupMemberRow member={leader} isLeader />
+                    <GroupMemberRow
+                        member={leader}
+                        isLeader
+                        onRemove={isAdmin ? onRemove : undefined}
+                    />
                 </div>
             ) : null}
 
@@ -33,7 +45,11 @@ export function GroupMembersTab({
                 <ul className="flex flex-col gap-2">
                     {members.map((m) => (
                         <li key={m.id}>
-                            <GroupMemberRow member={m} />
+                            <GroupMemberRow
+                                member={m}
+                                onPromote={canPromote ? onPromote : undefined}
+                                onRemove={isAdmin ? onRemove : undefined}
+                            />
                         </li>
                     ))}
                 </ul>

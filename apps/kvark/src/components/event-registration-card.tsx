@@ -112,7 +112,9 @@ function getStateRendering(
             return {
                 icon: AlertCircle,
                 message: `Påmelding åpner om ${props.registrationOpensInLabel ?? "en stund"}`,
-                actions: (
+                // Varslingen finnes ikke ennå, så knappen vises kun når noen
+                // faktisk har koblet på en handler.
+                actions: props.onNotify ? (
                     <Button
                         variant="outline"
                         className="w-full"
@@ -121,7 +123,7 @@ function getStateRendering(
                         <CalendarClock />
                         Varsle meg
                     </Button>
-                ),
+                ) : null,
             };
 
         case "joined":

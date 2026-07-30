@@ -2,6 +2,12 @@
  * Group types that can hold a budget, and therefore appear in the group
  * dropdowns on the søknad forms. Study programmes and study years cannot.
  *
+ * `board` (Hovedstyret) belongs here even though HS is also who a søknad is
+ * addressed *to*: the dropdown asks which group you are acting on behalf of,
+ * and HS holds its own budget. Someone on HS submits utlegg on HS' behalf,
+ * and HS submits søknader on its own behalf, so removing it would take away
+ * both — along with HS' økonomiansvarlig CC address.
+ *
  * Stored values are the uppercase legacy strings from the Lepton import
  * ("SUBGROUP", "INTERESTGROUP", …), so comparisons are case-insensitive.
  */

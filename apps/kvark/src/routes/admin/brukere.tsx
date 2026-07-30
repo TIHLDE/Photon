@@ -56,7 +56,7 @@ import {
     type UserSearchOption,
 } from "#/components/user-search-combobox";
 import { useDebounced } from "#/lib/use-debounced";
-import { computeClassYear, initials } from "#/lib/utils";
+import { computeClassYear, initials, programmeLength } from "#/lib/utils";
 
 const ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
@@ -76,8 +76,9 @@ const NO_STUDY = "__none__";
 
 /**
  * Studieprogram + klassetrinn på én linje, f.eks. "Dataingeniør · 3. klasse".
- * Klassetrinn vises bare i intervallet 1–5 (bachelor 3 + master 2) — utenfor
- * det er medlemmet i praksis alumni, siden medlemskap aldri fjernes.
+ * Klassetrinn vises kun mens studiet varer (3 år på bachelor, 5 på master);
+ * etterpå er medlemmet alumni, og kullet sier mer enn et klassetrinn som
+ * fortsetter å telle oppover.
  */
 function formatStudy(
     programme: string | null,
@@ -86,7 +87,9 @@ function formatStudy(
     if (!programme) return null;
     if (startYear === null) return programme;
     const classYear = computeClassYear(startYear);
-    if (classYear < 1 || classYear > 5) return programme;
+    if (classYear < 1 || classYear > programmeLength(programme)) {
+        return `${programme} · kull ${startYear}`;
+    }
     return `${programme} · ${classYear}. klasse`;
 }
 

@@ -20,8 +20,10 @@ const EventQueryKeys = {
     detail: ["events", "detail"] as const,
     favorites: ["events", "favorites"] as const,
     registrations: ["events", "registrations"] as const,
+    payments: ["events", "payments"] as const,
     forms: ["events", "forms"] as const,
     strikes: ["events", "strikes"] as const,
+    myHistory: ["events", "my-history"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -87,8 +89,14 @@ export const updateEventMutation = mutationOptions({
             params: { id: eventId },
             json: data,
         }),
-    onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(getEventByIdQuery(vars.eventId));
+    onSuccess(_, __, ___, ctx) {
+        // Detaljsiden caches på slug, mens vi oppdaterer på id — og en
+        // tittelendring gir dessuten ny slug. Derfor invalideres hele
+        // detail-nøkkelen, ikke bare den ene oppføringen.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.detail],
+            exact: false,
+        });
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.list],
             exact: false,
@@ -141,6 +149,23 @@ export const getFavoriteEventsQuery = () =>
     queryOptions({
         queryKey: [...EventQueryKeys.favorites],
         queryFn: () => apiClient.get("/api/event/favorite"),
+    });
+
+/**
+ * Arrangementene du faktisk har vært på — brukes i «Tidligere» på profilen.
+ * Avlyste og ubetalte påmeldinger og alt som ikke er over ennå er filtrert
+ * bort server-side.
+ */
+export const getMyEventHistoryQuery = (
+    page: number,
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.myHistory, page, pageSize] as const,
+        queryFn: () =>
+            apiClient.get("/api/event/my-registrations", {
+                searchParams: { page, pageSize },
+            }),
     });
 
 export const updateFavoriteEventMutation = mutationOptions({
@@ -269,6 +294,56 @@ export const createEventPaymentMutation = mutationOptions({
             params: { eventId },
             json: data,
         }),
+});
+
+type PaymentListFilters = Omit<
+    QueryParamsHelper<"get", "/api/event/{eventId}/payments">,
+    "page" | "pageSize"
+>;
+
+export const getEventPaymentsQuery = (
+    eventId: string,
+    page: number,
+    filters: PaymentListFilters = {},
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    queryOptions({
+        queryKey: [
+            ...EventQueryKeys.payments,
+            eventId,
+            page,
+            pageSize,
+            filters,
+        ],
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/payments", {
+                params: { eventId },
+                searchParams: { page, pageSize, ...filters },
+            }),
+    });
+
+export const refundEventPaymentMutation = mutationOptions({
+    mutationFn: ({
+        eventId,
+        paymentId,
+    }: {
+        eventId: string;
+        paymentId: string;
+    }) =>
+        apiClient.post("/api/event/{eventId}/payments/{paymentId}/refund", {
+            params: { eventId, paymentId },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.payments, vars.eventId],
+            exact: false,
+        });
+        // The registration list carries a payment status per registrant.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.registrations, vars.eventId],
+            exact: false,
+        });
+    },
 });
 
 // -- Event Forms --

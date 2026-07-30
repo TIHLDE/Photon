@@ -1,16 +1,9 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-    AlertCircleIcon,
-    BookOpenIcon,
-    PencilIcon,
-    PlusIcon,
-    Trash2,
-} from "lucide-react";
+import { BookOpenIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
 import { Suspense, useState } from "react";
 
 import type { ToddelIssue } from "@tihlde/sdk";
-import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
@@ -20,12 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import {
-    Field,
-    FieldDescription,
-    FieldGroup,
-    FieldLabel,
-} from "@tihlde/ui/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import {
@@ -57,24 +45,12 @@ export const Route = createFileRoute("/admin/toddel")({
     },
 });
 
-/** The upload route rejects anything larger, so say so before the round trip. */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
 /**
- * nginx in front of the API caps request bodies at 1 MB and answers 413 without
- * CORS headers, so the browser only ever sees a network error. Töddel PDFs are
- * always larger than that — cover images are compressed in the browser and slip
- * under — so publishing an issue cannot succeed until the proxy limit is
- * raised (`client_max_body_size 10M`). Everything that does not upload a PDF is
- * left working so the rest of the admin panel stays testable.
- *
- * Flip this back to `false` once the server config is fixed; nothing else has
- * to change.
+ * The upload route rejects anything larger, so say so before the round trip.
+ * Mirrors `MAX_FILE_SIZE` in the API's asset lib — the archive's largest issue
+ * is just under 40 MB, so 50 MB leaves real margin.
  */
-const PDF_UPLOAD_BLOCKED = true;
-
-const PDF_UPLOAD_BLOCKED_NOTE =
-    "Serveren avviser filer over 1 MB, og Töddel-PDF-er er større. Nye utgaver kan legges ut når grensen er hevet.";
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function ToddelAdminPage() {
     const canCreate = useAnyScopePermission(["toddel:create", "toddel:manage"]);
@@ -89,26 +65,13 @@ function ToddelAdminPage() {
                 description="Legg ut nye utgaver av studentbladet, og rediger de som allerede ligger ute."
                 action={
                     canCreate ? (
-                        <Button
-                            disabled={PDF_UPLOAD_BLOCKED}
-                            onClick={() => setDialog({ mode: "create" })}
-                        >
+                        <Button onClick={() => setDialog({ mode: "create" })}>
                             <PlusIcon className="size-4" />
                             Ny utgave
                         </Button>
                     ) : null
                 }
             />
-
-            {PDF_UPLOAD_BLOCKED && (
-                <Alert>
-                    <AlertCircleIcon />
-                    <AlertTitle>Opplasting av PDF er midlertidig av</AlertTitle>
-                    <AlertDescription>
-                        {PDF_UPLOAD_BLOCKED_NOTE}
-                    </AlertDescription>
-                </Alert>
-            )}
 
             <Suspense fallback={<TableSkeleton />}>
                 <IssuesTable
@@ -304,7 +267,7 @@ function IssueDialog({
         for (const file of [pdf, cover]) {
             if (file && file.size > MAX_FILE_SIZE) {
                 setError(
-                    `"${file.name}" er ${(file.size / 1024 / 1024).toFixed(1)} MB. Maks filstørrelse er 10 MB.`,
+                    `"${file.name}" er ${(file.size / 1024 / 1024).toFixed(1)} MB. Maks filstørrelse er ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
                 );
                 return;
             }
@@ -404,17 +367,11 @@ function IssueDialog({
                                 id="toddel-pdf"
                                 type="file"
                                 accept="application/pdf"
-                                required={!isEdit && !PDF_UPLOAD_BLOCKED}
-                                disabled={PDF_UPLOAD_BLOCKED}
+                                required={!isEdit}
                                 onChange={(event) =>
                                     setPdf(event.target.files?.[0] ?? null)
                                 }
                             />
-                            {PDF_UPLOAD_BLOCKED && (
-                                <FieldDescription>
-                                    {PDF_UPLOAD_BLOCKED_NOTE}
-                                </FieldDescription>
-                            )}
                         </Field>
                         <AdminImageField
                             label="Forsidebilde (valgfritt)"

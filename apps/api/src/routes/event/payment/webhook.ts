@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import {
+    capturePayment,
     getPaymentDetails,
     verifyVippsWebhookRequest,
 } from "../../../lib/vipps";
@@ -88,52 +89,69 @@ export const paymentWebhookRoute = route().post(
             // Fetch latest payment details from Vipps to verify
             const vippsPayment = await getPaymentDetails(reference);
 
+            const { capturedAmount, refundedAmount } = vippsPayment.aggregate;
+
             // Map Vipps payment state to our payment status
             let newStatus: "pending" | "paid" | "refunded" | "failed" =
                 "pending";
-            let receivedPaymentAt: Date | null = null;
+            let paymentReceived = false;
 
-            // Docs on state https://developer.vippsmobilepay.com/docs/APIs/epayment-api/api-guide/concepts/#payment-states
-            switch (vippsPayment.state) {
-                case "AUTHORIZED":
-                    newStatus = "paid";
-                    receivedPaymentAt = new Date();
-                    break;
-                case "TERMINATED":
-                    // Check if this was a refund or capture
-                    if (
-                        vippsPayment.aggregate.refundedAmount.value > 0 &&
-                        vippsPayment.aggregate.refundedAmount.value ===
-                            vippsPayment.aggregate.authorizedAmount.value
-                    ) {
-                        newStatus = "refunded";
-                    } else if (
-                        vippsPayment.aggregate.capturedAmount.value > 0
-                    ) {
+            // A refunded payment still reports a non-zero capturedAmount, so
+            // refunds must be checked *before* captures — otherwise a later
+            // webhook delivery flips a refunded payment back to "paid".
+            if (
+                refundedAmount.value > 0 &&
+                refundedAmount.value >= capturedAmount.value
+            ) {
+                newStatus = "refunded";
+            } else {
+                // Docs on state https://developer.vippsmobilepay.com/docs/APIs/epayment-api/api-guide/concepts/#payment-states
+                switch (vippsPayment.state) {
+                    case "AUTHORIZED":
+                        // AUTHORIZED only *reserves* the amount; the reservation
+                        // expires after a few days and the money is never drawn.
+                        // Capture it now so "paid" means actually collected — and
+                        // so refunds (which only work on captured amounts) work.
+                        if (capturedAmount.value < payment.amountMinor) {
+                            await capturePayment({
+                                reference,
+                                amount: payment.amountMinor,
+                                currency: payment.currency,
+                            });
+                        }
                         newStatus = "paid";
-                        receivedPaymentAt = new Date();
-                    } else {
+                        paymentReceived = true;
+                        break;
+                    case "TERMINATED":
+                        if (capturedAmount.value > 0) {
+                            newStatus = "paid";
+                            paymentReceived = true;
+                        } else {
+                            newStatus = "failed";
+                        }
+                        break;
+                    case "ABORTED":
                         newStatus = "failed";
-                    }
-                    break;
-                case "ABORTED":
-                    newStatus = "failed";
-                    break;
-                case "CREATED":
-                    newStatus = "pending";
-                    break;
-                case "EXPIRED":
-                    newStatus = "failed";
-                    break;
+                        break;
+                    case "CREATED":
+                        newStatus = "pending";
+                        break;
+                    case "EXPIRED":
+                        newStatus = "failed";
+                        break;
+                }
             }
 
-            // Update payment record using id
+            // Update payment record using id. `receivedPaymentAt` is only
+            // stamped once, so redelivered webhooks never move the recorded
+            // payment time.
             await db
                 .update(schema.eventPayment)
                 .set({
                     status: newStatus,
                     receivedPaymentAt:
-                        receivedPaymentAt || payment.receivedPaymentAt,
+                        payment.receivedPaymentAt ??
+                        (paymentReceived ? new Date() : null),
                 })
                 .where(eq(schema.eventPayment.id, payment.id));
 

@@ -5,7 +5,7 @@ import { Facebook, Instagram, Linkedin } from "lucide-react";
 export function SiteFooter() {
     return (
         <footer className="w-full">
-            <Separator />
+            <Separator variant="subtle" />
             <div className="container mx-auto grid gap-8 px-4 py-10 md:grid-cols-3">
                 <div className="flex flex-col gap-2">
                     <h3 className="font-heading text-sm font-semibold">
@@ -83,7 +83,7 @@ export function SiteFooter() {
                     </a>
                 </div>
             </div>
-            <Separator />
+            <Separator variant="subtle" />
             <div className="container mx-auto flex flex-col items-center justify-between gap-2 px-4 py-6 md:flex-row">
                 <p>© {new Date().getFullYear()} TIHLDE</p>
                 <Link to="/personvern">Personvernerklæring</Link>

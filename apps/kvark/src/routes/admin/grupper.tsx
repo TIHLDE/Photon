@@ -10,7 +10,28 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@tihlde/ui/ui/dialog";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
+import { Input } from "@tihlde/ui/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
+import { Textarea } from "@tihlde/ui/ui/textarea";
 import {
     Table,
     TableBody,
@@ -25,11 +46,15 @@ import type {
     GroupWithMemberCount,
 } from "@tihlde/sdk";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { CheckCircle2, UsersIcon, XCircle } from "lucide-react";
+import { CheckCircle2, PlusIcon, UsersIcon, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { useImageUploader } from "#/api/queries/assets";
-import { getGroupsQuery, updateGroupMutation } from "#/api/queries/groups";
+import {
+    createGroupMutation,
+    getGroupsQuery,
+    updateGroupMutation,
+} from "#/api/queries/groups";
 import {
     getGroupSignaturesQuery,
     revokeSignatureMutation,
@@ -38,6 +63,7 @@ import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
+    useAnyScopePermission,
     useIsGroupLeaderOf,
     useScopedPermission,
 } from "#/hooks/use-permission";
@@ -45,8 +71,10 @@ import { groupTypeLabel } from "#/lib/group";
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
-    loader: ({ context }) =>
-        context.queryClient.ensureQueryData(getGroupsQuery(0)),
+    loader: async ({ context }) => {
+        await context.queryClient.ensureQueryData(getGroupsQuery(0));
+        return { breadcrumbs: "Grupper" };
+    },
 });
 
 // Kontraktsignering gjelder kun verv (undergrupper, komiteer, styrer,
@@ -65,14 +93,29 @@ function GrupperAdminPage() {
     const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
     const [tab, setTab] = useState<TabType>("SUBGROUP");
     const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
+    const canCreate = useAnyScopePermission(["groups:create", "groups:manage"]);
 
     const groups = allGroups.filter((group) => group.type === tab);
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <AdminPageHeader
-                title="Grupper – kontraktinnstillinger"
-                description="Administrer kontraktsignering per gruppe og se signeringsstatus for medlemmer."
+                title="Grupper"
+                description="Opprett grupper, administrer kontraktsignering og se signeringsstatus for medlemmer."
+                action={
+                    canCreate ? (
+                        <Button onClick={() => setCreateOpen(true)}>
+                            <PlusIcon className="size-4" />
+                            Ny gruppe
+                        </Button>
+                    ) : null
+                }
+            />
+            <CreateGroupDialog
+                open={createOpen}
+                defaultType={tab}
+                onOpenChange={setCreateOpen}
             />
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabType)}>
                 <TabsList>
@@ -108,6 +151,170 @@ function GrupperAdminPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * Slugs are part of a group's public URL and are referenced by eight foreign
+ * keys, so they are set once at creation and never edited afterwards.
+ */
+function slugify(value: string) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replace(/[æ]/g, "ae")
+        .replace(/[ø]/g, "o")
+        .replace(/[å]/g, "a")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function CreateGroupDialog({
+    open,
+    defaultType,
+    onOpenChange,
+}: {
+    open: boolean;
+    defaultType: TabType;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [name, setName] = useState("");
+    const [slug, setSlug] = useState("");
+    const [slugTouched, setSlugTouched] = useState(false);
+    const [description, setDescription] = useState("");
+    const [type, setType] = useState<TabType>(defaultType);
+    const [error, setError] = useState<string | null>(null);
+
+    const createGroup = useMutation(createGroupMutation);
+
+    function handleNameChange(value: string) {
+        setName(value);
+        if (!slugTouched) setSlug(slugify(value));
+    }
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setError(null);
+        try {
+            await createGroup.mutateAsync({
+                data: {
+                    name,
+                    slug,
+                    type,
+                    description: description || undefined,
+                    finesInfo: "",
+                    finesActivated: false,
+                },
+            });
+            onOpenChange(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>Ny gruppe</DialogTitle>
+                    </DialogHeader>
+
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="group-name">Navn</FieldLabel>
+                            <Input
+                                id="group-name"
+                                type="text"
+                                required
+                                value={name}
+                                onChange={(e) =>
+                                    handleNameChange(e.target.value)
+                                }
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="group-slug">
+                                Slug (URL)
+                            </FieldLabel>
+                            <Input
+                                id="group-slug"
+                                type="text"
+                                required
+                                value={slug}
+                                onChange={(e) => {
+                                    setSlugTouched(true);
+                                    setSlug(e.target.value);
+                                }}
+                            />
+                            <FieldDescription>
+                                Kan ikke endres senere.
+                            </FieldDescription>
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="group-type">Type</FieldLabel>
+                            <Select
+                                items={GROUP_TYPE_TABS.map(
+                                    ({ type: value, label }) => ({
+                                        value,
+                                        label,
+                                    }),
+                                )}
+                                value={type}
+                                onValueChange={(value) =>
+                                    setType((value as TabType) ?? defaultType)
+                                }
+                            >
+                                <SelectTrigger id="group-type">
+                                    <SelectValue placeholder="Velg type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {GROUP_TYPE_TABS.map(
+                                        ({ type: value, label }) => (
+                                            <SelectItem
+                                                key={value}
+                                                value={value}
+                                            >
+                                                {label}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="group-description">
+                                Beskrivelse
+                            </FieldLabel>
+                            <Textarea
+                                id="group-description"
+                                rows={3}
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </Field>
+                    </FieldGroup>
+
+                    {error && <p role="alert">{error}</p>}
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createGroup.isPending || !slug}
+                        >
+                            Opprett gruppe
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 

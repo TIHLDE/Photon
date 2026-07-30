@@ -352,7 +352,7 @@ export interface paths {
          *     Requires either session authentication or a valid API key.
          *
          *     **Constraints:**
-         *     - Maximum file size: 10MB
+         *     - Maximum file size: 50MB
          *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
          *
          *     **Image optimization:**
@@ -505,6 +505,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/account-link/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync study data from Feide for the current user
+         * @description Reads the caller's study programmes, cohort and campus from Feide and applies them, including derived study groups and the member/alumni role. Run after linking a Feide account, which cannot sync on its own. Safe to repeat.
+         */
+        post: operations["syncFeideAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company/contact": {
         parameters: {
             query?: never;
@@ -554,7 +574,7 @@ export interface paths {
         };
         /**
          * List strikes
-         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission.
+         * @description Retrieve a paginated list of all strikes (prikker), including the affected user and the related event. Optionally filter by user. Requires 'events:strikes:view' or 'events:manage' permission, except when filtering on your own user ID.
          */
         get: operations["listStrikes"];
         put?: never;
@@ -563,6 +583,26 @@ export interface paths {
          * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.
          */
         post: operations["createStrike"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/my-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my past event registrations
+         * @description Retrieve a paginated list of past events you were registered for, newest first.
+         */
+        get: operations["getMyEventHistory"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -584,6 +624,46 @@ export interface paths {
          * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage' permission.
          */
         delete: operations["deleteStrike"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/favorite/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update event favorite
+         * @description Mark or unmark an event as a favorite for the authenticated user
+         */
+        put: operations["updateEventFavorite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all my favorite events
+         * @description Retrieve a list of all events you have marked as favorite.
+         */
+        get: operations["getFavoriteEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -657,46 +737,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/event/favorite/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update event favorite
-         * @description Mark or unmark an event as a favorite for the authenticated user
-         */
-        put: operations["updateEventFavorite"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/event/favorite": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get all my favorite events
-         * @description Retrieve a list of all events you have marked as favorite.
-         */
-        get: operations["getFavoriteEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/event/{eventId}/registration": {
         parameters: {
             query?: never;
@@ -706,7 +746,7 @@ export interface paths {
         };
         /**
          * Get event registrations
-         * @description Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts
+         * @description Retrieve a paginated list of users registered for a specific event. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.
          */
         get: operations["listEventRegistrations"];
         put?: never;
@@ -759,6 +799,46 @@ export interface paths {
          * @description Initiates a Vipps payment for an event registration. User must have a registered status for the event.
          */
         post: operations["createEventPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List event payments
+         * @description Retrieve a paginated list of every payment for an event, including the payer and a status summary. Requires 'events:payments:view', 'events:manage' or 'events:update' — or being the event's creator.
+         */
+        get: operations["listEventPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/payments/{paymentId}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund an event payment
+         * @description Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund'.
+         */
+        post: operations["refundEventPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2213,6 +2293,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user profile
+         * @description Public profile of a single user: name, bio, links, study programme and group memberships. Requires being signed in.
+         */
+        get: operations["getUserProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2708,6 +2808,9 @@ export interface components {
             /** @description What they remember about the old account */
             note?: string;
         };
+        AccountLinkSyncResponse: {
+            success: boolean;
+        };
         CompanyContactResponse: {
             success: boolean;
             message: string;
@@ -2802,6 +2905,8 @@ export interface components {
                 id: string;
                 /** @description Event title */
                 title: string;
+                /** @description Event slug */
+                slug: string;
             };
         };
         StrikeList: {
@@ -2812,6 +2917,32 @@ export interface components {
             /** @description Next page number, or null if last page */
             nextPage: number | null;
             strikes: components["schemas"]["Strike"][];
+        };
+        MyEventHistory: {
+            /** @description Total number of past registrations */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            events: {
+                /** @description Event ID */
+                eventId: string;
+                /** @description Event title */
+                title: string;
+                /** @description Event slug */
+                slug: string;
+                /**
+                 * Format: date-time
+                 * @description When the event started
+                 */
+                startTime: string;
+                /**
+                 * @description Your registration status for the event
+                 * @enum {string}
+                 */
+                status: "registered" | "attended" | "no_show";
+            }[];
         };
         CreateStrike: {
             /** @description User ID who receives the strike */
@@ -2832,6 +2963,26 @@ export interface components {
         DeleteStrikeResponse: {
             message: string;
         };
+        UpdateFavoriteResponse: {
+            success: boolean;
+        };
+        UpdateFavoriteEvent: {
+            /** @description Is favorite */
+            isFavorite: boolean;
+        };
+        FavoriteEvents: {
+            /** @description Event ID */
+            eventId: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event slug */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description When you added this event to your favorites
+             */
+            createdAt: string;
+        }[];
         CreateEventResponse: {
             /** Format: uuid */
             eventId: string;
@@ -2982,6 +3133,12 @@ export interface components {
             /** @description List of events */
             items: components["schemas"]["EventListItem"][];
         };
+        UpdateEventResponse: {
+            /** Format: uuid */
+            eventId: string;
+            /** @description The event slug after the update. Changing the title regenerates it, so clients must use this when linking to the event. */
+            slug: string;
+        };
         UpdateEventSchema: {
             /** @description Short title of the event */
             title?: string;
@@ -3071,6 +3228,8 @@ export interface components {
             slug: string;
             /** @description Event title */
             title: string;
+            /** @description Event description, stored as markdown */
+            description: string;
             /** @description Event location (nullable) */
             location?: string | null;
             /** @description Latitude of the location (nullable) */
@@ -3087,6 +3246,12 @@ export interface components {
              * @description Event end time (ISO 8601)
              */
             endTime: string;
+            /** @description When registration opens (ISO 8601). Null means it is open immediately. */
+            registrationStart: string | null;
+            /** @description When registration closes (ISO 8601). Null when the event has no sign-up. */
+            registrationEnd: string | null;
+            /** @description Last moment a registration can be cancelled without a strike (ISO 8601, nullable) */
+            cancellationDeadline: string | null;
             /** @description Event organizer (nullable) */
             organizer: {
                 /** @description Organizer name */
@@ -3100,6 +3265,14 @@ export interface components {
             } | null;
             /** @description Is registration closed */
             closed: boolean;
+            /** @description Do users need to sign up to attend the event? */
+            requiresSigningUp: boolean;
+            /** @description May users join a waitlist when the event is full? */
+            allowWaitlist: boolean;
+            /** @description Maximum number of participants. Null means no capacity limit. */
+            capacity: number | null;
+            /** @description Can this event give strikes for late cancellation or no-show? */
+            canCauseStrikes: boolean;
             /** @description Event image URL (nullable) */
             image: string | null;
             /** @description Alt text for the event image (nullable) */
@@ -3137,7 +3310,7 @@ export interface components {
             isPaidEvent: boolean;
             /** @description Payment info */
             payInfo: {
-                /** @description Event price in whole KR */
+                /** @description Event price in minor units (øre). Note the create/update endpoints take `price` in whole kroner instead. */
                 price: number;
                 /** @description Payment grace period in minutes */
                 paymentGracePeriodMinutes: number;
@@ -3191,26 +3364,6 @@ export interface components {
                 attendedAt: string | null;
             } | null;
         };
-        UpdateFavoriteResponse: {
-            success: boolean;
-        };
-        UpdateFavoriteEvent: {
-            /** @description Is favorite */
-            isFavorite: boolean;
-        };
-        FavoriteEvents: {
-            /** @description Event ID */
-            eventId: string;
-            /** @description Event title */
-            title: string;
-            /** @description Event slug */
-            slug: string;
-            /**
-             * Format: date-time
-             * @description When you added this event to your favorites
-             */
-            createdAt: string;
-        }[];
         EventRegistration: {
             /** Format: uuid */
             eventId: string;
@@ -3228,6 +3381,16 @@ export interface components {
              */
             allowPhoto: boolean;
         };
+        EventRegistrationPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            amountMinor: number;
+            currency: string;
+            expiresAt: string | null;
+            receivedPaymentAt: string | null;
+        };
         EventRegisteredUser: {
             /** @description User id */
             id: string;
@@ -3241,6 +3404,14 @@ export interface components {
             status?: string;
             /** @description When the user was checked in, if at all. Only included for event admins. */
             attendedAt?: string | null;
+            /** @description User email. Only included for event admins. */
+            email?: string;
+            /** @description When the user registered. Only included for event admins. */
+            registeredAt?: string;
+            /** @description Position on the waitlist, if waitlisted. Only included for event admins. */
+            waitlistPosition?: number | null;
+            /** @description The user's payment for this event, if any. Only included for event admins. */
+            payment?: components["schemas"]["EventRegistrationPayment"] | null;
         };
         EventRegistrationList: {
             /** @description Total number of items available */
@@ -3284,6 +3455,57 @@ export interface components {
              * @enum {string}
              */
             userFlow: "WEB_REDIRECT" | "NATIVE_REDIRECT";
+        };
+        EventPaymentAdmin: {
+            /** Format: uuid */
+            id: string;
+            userId: string;
+            user: {
+                id: string;
+                name: string;
+                image: string | null;
+                email: string;
+            };
+            /** @description Amount in minor units (øre) */
+            amountMinor: number;
+            currency: string;
+            provider: string | null;
+            /** @description Provider reference. Null means the obligation was never started with the provider. */
+            providerPaymentId: string | null;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            receivedPaymentAt: string | null;
+            expiresAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        EventPaymentList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of payments for the event (paginated) */
+            payments: components["schemas"]["EventPaymentAdmin"][];
+            /** @description Totals across every payment for the event */
+            summary: {
+                paidCount: number;
+                pendingCount: number;
+                refundedCount: number;
+                failedCount: number;
+                /** @description Sum of all completed (paid) payments, in minor units */
+                totalPaidMinor: number;
+            };
+        };
+        RefundEventPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            /** @description The amount that was refunded, in minor units */
+            refundedAmountMinor: number;
+            currency: string;
         };
         CreateEventFormResponse: {
             /** Format: uuid */
@@ -4791,7 +5013,7 @@ export interface components {
              * Format: date-time
              * @description Application deadline
              */
-            deadline?: string;
+            deadline: string;
             /**
              * @description Whether hiring is ongoing
              * @default false
@@ -4901,7 +5123,8 @@ export interface components {
             body?: string;
             company?: string;
             location?: string;
-            deadline?: string | null;
+            /** Format: date-time */
+            deadline?: string;
             isContinuouslyHiring?: boolean;
             /** @enum {string} */
             jobType?: "full_time" | "part_time" | "summer_job" | "other";
@@ -5038,6 +5261,36 @@ export interface components {
             /** @description The next page number that can be fetched */
             nextPage: number | null;
             items: components["schemas"]["UserListItem"][];
+        };
+        UserProfile: {
+            /** @description User ID */
+            id: string;
+            /** @description User display name */
+            name: string;
+            /** @description Username */
+            username: string | null;
+            /** @description Profile image URL — the uploaded avatar when there is one, otherwise the one from Feide */
+            image: string | null;
+            /** @description Free-text bio */
+            bio: string | null;
+            /** @description Link to the user's GitHub profile */
+            githubUrl: string | null;
+            /** @description Link to the user's LinkedIn profile */
+            linkedinUrl: string | null;
+            /** @description Name of the user's study programme, derived from their STUDY group membership. Null when they have none. */
+            studyProgram: string | null;
+            /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+            studyStartYear: number | null;
+            /** @description Every group the user belongs to, including the derived STUDY/STUDYYEAR groups */
+            groups: {
+                slug: string;
+                name: string;
+                type: string;
+                imageUrl: string | null;
+                role: string;
+            }[];
+            /** @description Account creation timestamp */
+            createdAt: string;
         };
     };
     responses: never;
@@ -6079,6 +6332,49 @@ export interface operations {
             };
         };
     };
+    syncFeideAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Study data synced */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkSyncResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description No Feide account is linked to this user */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Feide could not be reached */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     submitCompanyContact: {
         parameters: {
             query?: never;
@@ -6196,7 +6492,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:strikes:view or events:manage permission */
+            /** @description Forbidden - Requires events:strikes:view or events:manage permission, unless reading your own strikes */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -6252,6 +6548,40 @@ export interface operations {
             };
         };
     };
+    getMyEventHistory: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyEventHistory"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
     deleteStrike: {
         parameters: {
             query?: never;
@@ -6294,6 +6624,77 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    updateEventFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFavoriteEvent"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateFavoriteResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFavoriteEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of favorite events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteEvents"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -6390,7 +6791,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UpdateEventResponse"];
+                };
             };
             /** @description Authentication required */
             401: {
@@ -6484,77 +6887,6 @@ export interface operations {
             };
         };
     };
-    updateEventFavorite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateFavoriteEvent"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateFavoriteResponse"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Not Found - Event not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getFavoriteEvents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of favorite events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FavoriteEvents"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-        };
-    };
     listEventRegistrations: {
         parameters: {
             query?: {
@@ -6562,6 +6894,8 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
+                /** @description Comma-separated registration statuses to include. Admin only; defaults to registered,attended,no_show. */
+                status?: string;
             };
             header?: never;
             path: {
@@ -6579,6 +6913,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EventRegistrationList"];
                 };
+            };
+            /** @description Bad Request - Unknown registration status */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Filtering by status requires event admin permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -6766,6 +7114,118 @@ export interface operations {
             };
             /** @description Payment already exists for this user and event */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listEventPayments: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Only return payments with this status */
+                status?: "pending" | "paid" | "refunded" | "failed";
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventPaymentList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires permission to view the event's payments */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    refundEventPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment refunded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundEventPayment"];
+                };
+            };
+            /** @description Bad Request - Invalid event or payment id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:payments:refund */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Payment not found on this event */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment is not in a refundable state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The payment provider rejected the refund */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11086,6 +11546,44 @@ export interface operations {
             };
             /** @description Forbidden - Requires users:view */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfile"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -60,6 +60,8 @@ export const strikeSchema = Schema(
             .object({
                 id: z.string().meta({ description: "Event ID" }),
                 title: z.string().meta({ description: "Event title" }),
+                // Needed so a strike can link back to the event it came from.
+                slug: z.string().meta({ description: "Event slug" }),
             })
             .meta({ description: "Event the strike belongs to" }),
     }),

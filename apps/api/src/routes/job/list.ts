@@ -36,19 +36,23 @@ export const listRoute = route().get(
 
         const conditions = and(
             ...[
-                // Filter out expired unless explicitly requested
+                // Filter out expired unless explicitly requested.
+                //
+                // `isContinuouslyHiring` used to be OR-ed in here without any
+                // time bound, so every ad marked "fortløpende" stayed on the
+                // list forever — including ones posted in 2024. It is now a
+                // label only: every ad carries a deadline and falls off when
+                // it passes. Ads migrated from Lepton without a deadline are
+                // treated as expired.
                 !showExpired
-                    ? or(
-                          gt(
-                              schema.jobPost.deadline,
-                              (() => {
-                                  const d = new Date();
-                                  d.setDate(d.getDate() - 1);
-                                  d.setHours(23, 59, 59, 999);
-                                  return d;
-                              })(),
-                          ),
-                          schema.jobPost.isContinuouslyHiring,
+                    ? gt(
+                          schema.jobPost.deadline,
+                          (() => {
+                              const d = new Date();
+                              d.setDate(d.getDate() - 1);
+                              d.setHours(23, 59, 59, 999);
+                              return d;
+                          })(),
                       )
                     : undefined,
                 // Free text search on title and company

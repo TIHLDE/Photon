@@ -36,6 +36,8 @@ import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
 import {
     deriveRegistrationState,
+    formatTimeUntil,
+    toEventDeadline,
     formatEventDate,
     formatEventPrice,
     formatEventTime,
@@ -71,6 +73,7 @@ function EventDetailPage() {
     const registrationState = deriveRegistrationState(
         event.registration,
         event.closed,
+        event.registrationStart,
     );
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
     const registeredCount = registrations?.totalCount ?? 0;
@@ -120,6 +123,7 @@ function EventDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
+                        nativeButton={false}
                         render={<Link to="/arrangementer" />}
                     >
                         <ArrowLeft />
@@ -146,6 +150,12 @@ function EventDetailPage() {
                                 <IconActionButton
                                     icon={PencilLine}
                                     label="Rediger arrangement"
+                                    render={
+                                        <Link
+                                            to="/admin/arrangementer/$eventId"
+                                            params={{ eventId: event.id }}
+                                        />
+                                    }
                                 />
                             ) : null}
                         </div>
@@ -204,6 +214,22 @@ function EventDetailPage() {
 
                     <EventRegistrationCard
                         registrationState={registrationState}
+                        registrationOpensAt={
+                            event.registrationStart
+                                ? toEventDeadline(event.registrationStart)
+                                : undefined
+                        }
+                        registrationOpensInLabel={
+                            registrationState === "not-open" &&
+                            event.registrationStart
+                                ? formatTimeUntil(event.registrationStart)
+                                : undefined
+                        }
+                        registrationClosesAt={
+                            event.registrationEnd
+                                ? toEventDeadline(event.registrationEnd)
+                                : undefined
+                        }
                         capacity={null}
                         registeredCount={registeredCount}
                         waitlistCount={0}

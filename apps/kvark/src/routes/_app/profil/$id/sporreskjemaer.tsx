@@ -1,3 +1,4 @@
+import { requireOwnProfile } from "#/api/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import {
     Empty,
@@ -10,6 +11,8 @@ import { HelpCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/sporreskjemaer")({
     component: RouteComponent,
+    beforeLoad: ({ location, params }) =>
+        requireOwnProfile(params.id, location.href),
 });
 
 function RouteComponent() {

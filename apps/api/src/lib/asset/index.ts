@@ -3,7 +3,14 @@ import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+/**
+ * Sized for Töddel: the archive's largest issue is just under 40 MB, so 50 MB
+ * leaves real margin. Keep nginx's `client_max_body_size` on the API host at or
+ * above this — nginx rejects an oversized body with a 413 that carries no CORS
+ * headers, so the browser hides it and the user sees a bare network error
+ * instead of the message below.
+ */
+export const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 export const ALLOWED_MIME_TYPES = [
     "image/jpeg",

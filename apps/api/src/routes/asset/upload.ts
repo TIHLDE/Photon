@@ -22,7 +22,7 @@ export const uploadRoute = route().post(
 Requires either session authentication or a valid API key.
 
 **Constraints:**
-- Maximum file size: 10MB
+- Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB
 - Allowed MIME types: ${ALLOWED_MIME_TYPES.join(", ")}
 
 **Image optimization:**

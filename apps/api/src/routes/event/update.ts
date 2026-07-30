@@ -8,7 +8,7 @@ import { isEventOwner } from "../../lib/event/middleware";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { updateEventSchema } from "./schema";
+import { updateEventResponseSchema, updateEventSchema } from "./schema";
 
 export const updateRoute = route().put(
     "/:id",
@@ -19,7 +19,11 @@ export const updateRoute = route().put(
         description:
             "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
     })
-        .response({ statusCode: 200, description: "Updated" })
+        .schemaResponse({
+            statusCode: 200,
+            schema: updateEventResponseSchema,
+            description: "Updated",
+        })
         .forbidden({
             description:
                 "You must be the event creator or have events:update/events:manage permission",
@@ -38,7 +42,7 @@ export const updateRoute = route().put(
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
 
-        await db.transaction(async (tx) => {
+        const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event
             const existing = await tx
                 .select()
@@ -195,7 +199,6 @@ export const updateRoute = route().put(
                 organizerGroupSlug: body.organizerGroupSlug,
                 slug: slug,
                 capacity: body.capacity,
-                createdByUserId: userId,
                 imageUrl: body.imageUrl,
                 imageAlt: body.imageAlt,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
@@ -225,8 +228,10 @@ export const updateRoute = route().put(
                 .update(schema.event)
                 .set(updatedEvent)
                 .where(eq(schema.event.id, eventId));
+
+            return slug;
         });
 
-        return c.json("Event has been updated!", 200);
+        return c.json({ eventId, slug: updatedSlug }, 200);
     },
 );

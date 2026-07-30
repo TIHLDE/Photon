@@ -1,7 +1,8 @@
 import { authQueryOptions } from "#/api/auth";
+import { getUserProfileQuery } from "#/api/queries/user";
 import { groupTypeLabel } from "#/lib/group";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
@@ -19,13 +20,16 @@ export const Route = createFileRoute("/_app/profil/$id/medlemskap")({
 });
 
 function RouteComponent() {
+    const { id } = Route.useParams();
+    const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
-    const groups = session?.groups ?? [];
+    const isOwnProfile = session?.user.id === id;
+
     // study/studyyear er avledede grupper (projeksjon av Feide-data) og vises
     // ved profilbildet, ikke i medlemskapslisten. TIHLDE er ingen gruppe man
     // melder seg inn i – alle er med – så den skal heller ikke vises her.
     // Typen er UPPERCASE i DB.
-    const memberships = groups.filter(
+    const memberships = profile.groups.filter(
         (g) => !["study", "studyyear", "tihlde"].includes(g.type.toLowerCase()),
     );
 
@@ -38,7 +42,9 @@ function RouteComponent() {
                     </EmptyMedia>
                     <EmptyTitle>Ingen medlemskap</EmptyTitle>
                     <EmptyDescription>
-                        Du er ikke medlem i noen grupper ennå.
+                        {isOwnProfile
+                            ? "Du er ikke medlem i noen grupper ennå."
+                            : `${profile.name} er ikke medlem i noen grupper.`}
                     </EmptyDescription>
                 </EmptyHeader>
             </Empty>
@@ -52,6 +58,12 @@ function RouteComponent() {
                     <Card
                         size="sm"
                         className="flex-row items-center gap-3 px-3"
+                        render={
+                            <Link
+                                to="/grupper/$slug"
+                                params={{ slug: group.slug }}
+                            />
+                        }
                     >
                         <Avatar className="size-10 shrink-0">
                             {group.imageUrl ? (
