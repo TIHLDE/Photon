@@ -30,16 +30,16 @@ export const eventRoutes = route()
     .route("/", createStrikeRoute)
     .route("/", deleteStrikeRoute)
 
+    // Favorites (registered before "/:eventId" so the static /favorite path wins)
+    .route("/favorite", updateFavoriteEventsRoute)
+    .route("/favorite", getFavoriteEventsRoute)
+
     // Event routes
     .route("/", createRoute)
     .route("/", listRoute)
     .route("/", updateRoute)
     .route("/", deleteRoute)
     .route("/", getRoute)
-
-    // Favorites
-    .route("/favorite", updateFavoriteEventsRoute)
-    .route("/favorite", getFavoriteEventsRoute)
 
     // Registration
     // url prefix is delegated because we capture the :eventId there
