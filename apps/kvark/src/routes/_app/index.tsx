@@ -8,7 +8,7 @@ import { Plus } from "lucide-react";
 import { Suspense } from "react";
 
 import { authQueryOptions } from "#/api/auth";
-import { usePermission } from "#/hooks/use-permission";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { getEventsQuery } from "#/api/queries/events";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
@@ -55,9 +55,14 @@ const NEWS: NewsCardProps[] = [
 ];
 
 function Home() {
-    // Admin-only shortcuts — the API enforces these permissions server-side too.
-    const canCreateEvent = usePermission("events:create");
-    const canCreateNews = usePermission("news:create");
+    // Admin-only shortcuts — the API enforces these permissions server-side
+    // too. Any-scope: a group-scoped events:create is a real grant, and
+    // hiding the shortcut from that user would take away work they may do.
+    const canCreateEvent = useAnyScopePermission([
+        "events:create",
+        "events:manage",
+    ]);
+    const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
 
     return (
         <>

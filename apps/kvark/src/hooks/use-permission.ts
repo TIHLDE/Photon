@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 
-import { authQueryOptions, sessionHasPermission } from "#/api/auth";
+import {
+    authQueryOptions,
+    sessionHasPermission,
+    sessionHasPermissionInAnyScope,
+    sessionHasScopedPermission,
+} from "#/api/auth";
+import { ALL_ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 
 /**
  * Whether the current session holds `required` globally.
@@ -9,73 +16,111 @@ import { authQueryOptions, sessionHasPermission } from "#/api/auth";
  * so this is purely cosmetic. See {@link sessionHasPermission}: `"root"` grants
  * everything and a scoped grant does NOT satisfy a global check.
  */
-export function usePermission(required: string | string[]): boolean {
+export function usePermission(required: string | readonly string[]): boolean {
     const { data: session } = useQuery(authQueryOptions);
     return sessionHasPermission(session?.permissions, required);
 }
 
 /**
- * Permissions that grant access to at least one section of the admin
- * dashboard. Holding any of these (or `"root"`) makes a user an "admin" for
- * the purpose of showing admin entry points that live outside the dashboard
- * (e.g. the "Admin" links in the command menu and profile nav).
- *
- * View-only permissions are intentionally excluded — regular members hold
- * those, and they are not admins.
+ * Whether the current session holds `required` globally or within `scope`
+ * (e.g. `"group:fotball"`). Use this when the action's scope is known — it is
+ * exactly what the API checks. See {@link sessionHasScopedPermission}.
  */
-export const ADMIN_DASHBOARD_PERMISSIONS = [
-    "roles:create",
-    "roles:update",
-    "roles:delete",
-    "roles:assign",
-    "users:create",
-    "users:update",
-    "users:delete",
-    "users:manage",
-    "events:create",
-    "events:update",
-    "events:delete",
-    "events:manage",
-    "groups:create",
-    "groups:update",
-    "groups:delete",
-    "groups:manage",
-    "fines:create",
-    "fines:update",
-    "fines:delete",
-    "fines:manage",
-    "forms:create",
-    "forms:update",
-    "forms:delete",
-    "forms:manage",
-    "news:create",
-    "news:update",
-    "news:delete",
-    "news:manage",
-    "jobs:create",
-    "jobs:update",
-    "jobs:delete",
-    "jobs:manage",
-    "galleries:create",
-    "galleries:update",
-    "galleries:delete",
-    "galleries:manage",
-    "banners:create",
-    "banners:update",
-    "banners:delete",
-    "banners:manage",
-    "applications:manage",
-    "applications:expense:manage",
-    "applications:support:manage",
-    "applications:sports-support:manage",
-    "applications:hs-case:manage",
-] as const;
+export function useScopedPermission(
+    required: string | readonly string[],
+    scope: string,
+): boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    return sessionHasScopedPermission(session?.permissions, required, scope);
+}
 
 /**
- * Whether the current user is an admin, i.e. holds any management permission
- * across the admin dashboard sections (or `"root"`). Use this to decide
- * whether to show admin entry points outside the dashboard.
+ * Whether the current session holds `required` in any scope at all.
+ *
+ * For entry points that lead to a mixed listing (the admin sections), where
+ * hiding the entry from someone holding the permission for a single group
+ * would take away work they are allowed to do. Prefer
+ * {@link useScopedPermission} whenever the scope is known.
+ */
+export function useAnyScopePermission(
+    required: string | readonly string[],
+): boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    return sessionHasPermissionInAnyScope(session?.permissions, required);
+}
+
+/**
+ * Returns a predicate for "may act on this specific resource".
+ *
+ * News articles, job postings and events all let their creator edit and
+ * delete their own item without any permission — `requireAccess({ ownership })`
+ * server-side. Gating those buttons on the permission alone would hide them
+ * from the very person who wrote the item, so pass the resource's
+ * `createdById` and let the predicate account for that.
+ */
+export function useCanActOnResource(
+    required: string | readonly string[],
+): (createdById: string | null | undefined) => boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    const hasPermission = sessionHasPermissionInAnyScope(
+        session?.permissions,
+        required,
+    );
+    const userId = session?.user?.id;
+
+    return useCallback(
+        (createdById: string | null | undefined) =>
+            hasPermission || (Boolean(createdById) && createdById === userId),
+        [hasPermission, userId],
+    );
+}
+
+/**
+ * Permissions that grant access to at least one section of the admin panel.
+ * Holding any of these (or `"root"`) makes a user an "admin" for the purpose
+ * of showing admin entry points that live outside the panel (e.g. the "Admin"
+ * links in the command menu and profile nav).
+ *
+ * Derived from {@link ADMIN_SECTION_PERMISSIONS} so the entry points can never
+ * drift from what the sidebar actually shows. Deliberately does NOT include
+ * `fines:create` and the other permissions in the baseline `member` role —
+ * every student holds those, and they open no admin section.
+ */
+export const ADMIN_DASHBOARD_PERMISSIONS = ALL_ADMIN_SECTION_PERMISSIONS;
+
+/**
+ * Whether the current user is the leader of `slug`. Several endpoints let a
+ * group's leader act without any permission grant (`ownership: isGroupLeader`),
+ * so the UI has to know about it too.
+ */
+export function useIsGroupLeaderOf(slug: string): boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    return Boolean(
+        session?.groups?.some(
+            (group) => group.slug === slug && group.role === "leader",
+        ),
+    );
+}
+
+/**
+ * Whether the current user leads at least one group. Group leaders may create
+ * and assign group-scoped verv without holding any global `roles:*`
+ * permission, so they have real work in the admin panel too.
+ */
+export function useIsGroupLeader(): boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    return Boolean(session?.groups?.some((group) => group.role === "leader"));
+}
+
+/**
+ * Whether the current user has anything to do in the admin panel — any
+ * permission that opens a section (in any scope), or leadership of a group.
+ * Use this to decide whether to show admin entry points outside the panel.
  */
 export function useIsAdmin(): boolean {
-    return usePermission(ADMIN_DASHBOARD_PERMISSIONS as unknown as string[]);
+    const hasSectionPermission = useAnyScopePermission(
+        ADMIN_DASHBOARD_PERMISSIONS,
+    );
+    const isGroupLeader = useIsGroupLeader();
+    return hasSectionPermission || isGroupLeader;
 }

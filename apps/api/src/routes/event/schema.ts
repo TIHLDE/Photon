@@ -501,6 +501,10 @@ export const eventDetailSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "Alt text for the event image (nullable)" }),
+        createdById: z.string().nullable().meta({
+            description:
+                "Creator user ID. The creator may update and delete their own event, so clients need it to decide whether to offer those actions.",
+        }),
         createdAt: z.iso
             .datetime()
             .meta({ description: "Event creation time (ISO 8601)" }),

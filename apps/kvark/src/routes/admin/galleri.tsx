@@ -37,6 +37,7 @@ import {
 } from "#/api/queries/galleries";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { assetPublicUrl } from "#/lib/assets";
 import { imageDropzoneLabels } from "#/lib/image";
 
@@ -58,14 +59,23 @@ export const Route = createFileRoute("/admin/galleri")({
 });
 
 function GalleryAdminPage() {
+    const canCreateGallery = useAnyScopePermission([
+        "galleries:create",
+        "galleries:manage",
+    ]);
+    const canUploadPictures = useAnyScopePermission([
+        "galleries:pictures:create",
+        "galleries:manage",
+    ]);
+
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <AdminPageHeader
                 title="Galleri"
                 description="Opprett gallerier og last opp bilder fra arrangementer."
             />
-            <CreateGalleryCard />
-            <UploadPicturesCard />
+            {canCreateGallery ? <CreateGalleryCard /> : null}
+            {canUploadPictures ? <UploadPicturesCard /> : null}
             <GalleryListCard />
         </div>
     );
@@ -360,6 +370,10 @@ function UploadPicturesCard() {
 function GalleryListCard() {
     const { data } = useSuspenseQuery(getGalleriesQuery(0));
     const deleteGallery = useMutation(deleteGalleryMutation);
+    const canDelete = useAnyScopePermission([
+        "galleries:delete",
+        "galleries:manage",
+    ]);
 
     return (
         <Card>
@@ -397,27 +411,29 @@ function GalleryListCard() {
                                         : `${gallery.pictureCount} bilder`}
                                 </span>
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={deleteGallery.isPending}
-                                onClick={() => {
-                                    if (
-                                        !window.confirm(
-                                            `Slette "${gallery.title}" og alle bildene i det?`,
-                                        )
-                                    ) {
-                                        return;
-                                    }
-                                    deleteGallery.mutate({
-                                        slug: gallery.slug,
-                                    });
-                                }}
-                            >
-                                <Trash2Icon className="size-4" />
-                                Slett
-                            </Button>
+                            {canDelete ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={deleteGallery.isPending}
+                                    onClick={() => {
+                                        if (
+                                            !window.confirm(
+                                                `Slette "${gallery.title}" og alle bildene i det?`,
+                                            )
+                                        ) {
+                                            return;
+                                        }
+                                        deleteGallery.mutate({
+                                            slug: gallery.slug,
+                                        });
+                                    }}
+                                >
+                                    <Trash2Icon className="size-4" />
+                                    Slett
+                                </Button>
+                            ) : null}
                         </div>
                     ))
                 )}

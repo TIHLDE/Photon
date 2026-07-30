@@ -28,6 +28,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import {
     activateContractMutation,
     createContractMutation,
@@ -49,6 +50,14 @@ export const Route = createFileRoute("/admin/opptak")({
 function OpptakAdminPage() {
     const { data: contracts } = useSuspenseQuery(getContractListQuery());
     const activateContract = useMutation(activateContractMutation);
+    const canUpload = useAnyScopePermission([
+        "contracts:create",
+        "contracts:manage",
+    ]);
+    const canActivate = useAnyScopePermission([
+        "contracts:update",
+        "contracts:manage",
+    ]);
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -56,10 +65,14 @@ function OpptakAdminPage() {
                 title="Kontraktstyring"
                 description="Last opp og administrer frivillighetskontrakter."
             />
-            <UploadContractCard />
+            {canUpload ? <UploadContractCard /> : null}
             <ContractListCard
                 contracts={contracts}
-                onActivate={(id) => activateContract.mutate({ id })}
+                onActivate={
+                    canActivate
+                        ? (id) => activateContract.mutate({ id })
+                        : undefined
+                }
             />
         </div>
     );
@@ -227,7 +240,7 @@ function ContractListCard({
     onActivate,
 }: {
     contracts: Contract[];
-    onActivate: (id: string) => void;
+    onActivate?: (id: string) => void;
 }) {
     if (!contracts.length) {
         return (
@@ -282,7 +295,8 @@ function ContractRow({
     onActivate,
 }: {
     contract: Contract;
-    onActivate: (id: string) => void;
+    /** Omitted when the viewer may not activate contracts — no button then. */
+    onActivate?: (id: string) => void;
 }) {
     return (
         <TableRow>
@@ -299,7 +313,7 @@ function ContractRow({
                 {new Date(contract.createdAt).toLocaleDateString("nb-NO")}
             </TableCell>
             <TableCell>
-                {!contract.isActive && (
+                {!contract.isActive && onActivate && (
                     <Button
                         size="sm"
                         variant="outline"

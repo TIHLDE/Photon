@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { getJobByIdQuery } from "#/api/queries/jobs";
+import { useCanActOnResource } from "#/hooks/use-permission";
 import { DetailField } from "#/components/detail-field";
 import { DetailHero } from "#/components/detail-hero";
 import { DetailIdentity } from "#/components/detail-identity";
@@ -47,6 +48,10 @@ function JobDetailPage() {
     const { slug } = Route.useParams();
 
     const { data: job } = useSuspenseQuery(getJobByIdQuery(slug));
+    // Same rule as the API: the permission, or having created the posting.
+    const canEdit = useCanActOnResource(["jobs:update", "jobs:manage"])(
+        job.createdById,
+    );
 
     const applyUrl =
         job.link || (job.email ? `mailto:${job.email}` : undefined);
@@ -72,10 +77,12 @@ function JobDetailPage() {
                         <DetailIdentity name={job.company} />
                         <div className="flex items-center gap-1">
                             <ShareButton label="Del stilling" />
-                            <IconActionButton
-                                icon={PencilLine}
-                                label="Rediger annonse"
-                            />
+                            {canEdit ? (
+                                <IconActionButton
+                                    icon={PencilLine}
+                                    label="Rediger annonse"
+                                />
+                            ) : null}
                         </div>
                     </div>
                     <h1 className="text-3xl md:text-4xl">{job.title}</h1>

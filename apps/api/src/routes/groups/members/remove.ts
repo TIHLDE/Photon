@@ -5,6 +5,7 @@ import { isDerivedGroupType, removeUserFromGroup } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { requireAuth } from "~/middleware/auth";
 
 export const removeMemberRoute = route().delete(
@@ -14,7 +15,7 @@ export const removeMemberRoute = route().delete(
         summary: "Remove member from group",
         operationId: "removeGroupMember",
         description:
-            "Remove a member from a group. Requires 'groups:manage' permission.",
+            "Remove a member from a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader.",
     })
         .response({
             statusCode: 204,
@@ -23,7 +24,14 @@ export const removeMemberRoute = route().delete(
         .notFound({ description: "Group, user, or membership not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: "groups:manage" }),
+    // A group's leader manages their own roster; "groups:manage" scoped to the
+    // group does the same for anyone else. Derived (Feide) groups are refused
+    // further down regardless of who asks.
+    requireAccess({
+        permission: "groups:manage",
+        scope: (c) => `group:${c.req.param("groupSlug")}`,
+        ownership: { param: "groupSlug", check: isGroupLeader },
+    }),
     async (c) => {
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");
