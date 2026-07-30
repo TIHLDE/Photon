@@ -1,0 +1,374 @@
+import {
+    parseValidStudyPrograms,
+    partitionByCampus,
+    resolveCampus,
+    syncBaselineRoles,
+    syncDerivedStudyGroups,
+} from "@photon/auth/feide";
+import { type DbSchema, schema } from "@photon/db";
+import { and, eq, inArray } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { describe, expect } from "vitest";
+import { integrationTest } from "~/test/config/integration";
+
+/**
+ * A student who has never had a TIHLDE account.
+ *
+ * Every Feide login verified in production so far belonged to a member
+ * migrated from Lepton, so the path a first-year takes during fadderuka — no
+ * user row, no groups, no roles, nothing to bridge to — had never been
+ * exercised. These tests pin down what such a login actually produces, in
+ * particular whether the member lands in the groups that event priority reads.
+ *
+ * Priority is decided purely by group slug (see `lib/event/priority.ts`), and
+ * of the pools inherited from Lepton 172 select on a cohort group and 107 on a
+ * study group. So "did the right rows appear" is the whole question.
+ */
+
+const kull = (code: string, year: string) => ({
+    id: `fc:fs:fs:kull:ntnu.no:${code}:${year}`,
+    type: "fc:fs:kull",
+    displayName: `Kull for Høst ${year.slice(0, 4)} ${code}`,
+    membership: { active: true },
+});
+
+const prg = (code: string) => ({
+    id: `fc:fs:fs:prg:ntnu.no:${code}`,
+    type: "fc:fs:prg",
+    displayName: code,
+    membership: { active: true },
+});
+
+const emne = (code: string) => ({
+    id: `fc:fs:fs:emne:ntnu.no:${code}:1`,
+    type: "fc:fs:emne",
+    displayName: code,
+    membership: { active: true },
+});
+
+/** The courses a first-semester Dataingeniør student in Trondheim has. */
+const firstSemester = ["INGT1002", "IMAT1002", "IDATT1003", "IDATT1004"];
+
+type FeideGroups = Parameters<typeof parseValidStudyPrograms>[0];
+
+/**
+ * Seed the two rows a programme needs to exist at all: the study programme
+ * itself and the group it projects onto. `syncDerivedStudyGroups` deliberately
+ * refuses to invent study groups — they carry curated names and images — so
+ * without this seed a real login would log a warning and write nothing.
+ */
+const seedProgramme = async (db: NodePgDatabase<DbSchema>) => {
+    await db
+        .insert(schema.group)
+        .values({
+            slug: "dataingenior",
+            name: "Dataingeniør",
+            type: "STUDY",
+            finesInfo: "",
+            finesActivated: false,
+        })
+        .onConflictDoNothing();
+
+    await db
+        .insert(schema.studyProgram)
+        .values({
+            slug: "dataingenior",
+            feideCode: "BIDATA",
+            displayName: "Dataingeniør",
+            type: "bachelor",
+        })
+        .onConflictDoNothing();
+
+    await db
+        .insert(schema.role)
+        .values([{ name: "member" }, { name: "alumni" }])
+        .onConflictDoNothing();
+};
+
+/**
+ * The body of {@link syncFeideHook}'s transaction, driven directly so the Feide
+ * payload can be chosen. Everything network- and session-bound is stripped;
+ * what remains is exactly the sequence a callback runs.
+ */
+const signInWithFeide = async (
+    db: NodePgDatabase<DbSchema>,
+    userId: string,
+    groups: FeideGroups,
+) => {
+    const campus = resolveCampus(groups);
+    const { allowed } = partitionByCampus(
+        parseValidStudyPrograms(groups),
+        campus,
+    );
+
+    await db.transaction(async (tx) => {
+        for (const feideGroup of allowed) {
+            const sp = await tx
+                .select({
+                    id: schema.studyProgram.id,
+                    slug: schema.studyProgram.slug,
+                })
+                .from(schema.studyProgram)
+                .where(eq(schema.studyProgram.feideCode, feideGroup.code))
+                .limit(1);
+
+            if (!sp[0]) continue;
+
+            await tx
+                .insert(schema.studyProgramMembership)
+                .values({
+                    userId,
+                    studyProgramId: sp[0].id,
+                    startYear: feideGroup.startYear,
+                    confirmedCampus: campus,
+                })
+                .onConflictDoNothing();
+
+            await syncDerivedStudyGroups(
+                tx,
+                userId,
+                sp[0].slug,
+                feideGroup.startYear,
+            );
+        }
+
+        await syncBaselineRoles(
+            tx,
+            userId,
+            allowed.some((g) => g.active),
+        );
+    });
+};
+
+const groupSlugsOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+    const rows = await db
+        .select({ slug: schema.groupMembership.groupSlug })
+        .from(schema.groupMembership)
+        .where(eq(schema.groupMembership.userId, userId));
+    return rows.map((r) => r.slug).sort();
+};
+
+const rolesOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
+    const rows = await db
+        .select({ name: schema.role.name })
+        .from(schema.userRole)
+        .innerJoin(schema.role, eq(schema.role.id, schema.userRole.roleId))
+        .where(eq(schema.userRole.userId, userId));
+    return rows.map((r) => r.name).sort();
+};
+
+describe("a student with no prior TIHLDE account", () => {
+    integrationTest(
+        "lands in both the study and the cohort group when Feide gives a kull",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            // Nothing carried over: this is the fadderuka case.
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([]);
+            expect(await rolesOf(ctx.db, user.id)).toEqual([]);
+
+            await signInWithFeide(ctx.db, user.id, [
+                kull("BIDATA", "2026H"),
+                prg("BIDATA"),
+                ...firstSemester.map(emne),
+            ]);
+
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
+                "2026",
+                "dataingenior",
+            ]);
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+
+            const [membership] = await ctx.db
+                .select({
+                    startYear: schema.studyProgramMembership.startYear,
+                    campus: schema.studyProgramMembership.confirmedCampus,
+                })
+                .from(schema.studyProgramMembership)
+                .where(eq(schema.studyProgramMembership.userId, user.id));
+
+            expect(membership?.startYear).toBe(2026);
+            expect(membership?.campus).toBe("trondheim");
+        },
+    );
+
+    integrationTest(
+        "creates the cohort group for an intake nobody has joined before",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            const before = await ctx.db
+                .select({ slug: schema.group.slug })
+                .from(schema.group)
+                .where(eq(schema.group.slug, "2026"));
+            expect(before).toEqual([]);
+
+            await signInWithFeide(ctx.db, user.id, [
+                kull("BIDATA", "2026H"),
+                ...firstSemester.map(emne),
+            ]);
+
+            const [created] = await ctx.db
+                .select({ slug: schema.group.slug, type: schema.group.type })
+                .from(schema.group)
+                .where(eq(schema.group.slug, "2026"));
+
+            expect(created?.type).toBe("STUDYYEAR");
+        },
+    );
+
+    integrationTest(
+        "gets the study group but no cohort group when Feide omits the kull",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            /**
+             * NTNU does not hand this service a cohort for every student: a
+             * third-year ITBAITBEDR login came back with courses and a bare
+             * programme group. The member is still a member and still lands in
+             * the study group, so the 107 study-only pools work — but with no
+             * year there is no cohort group, and the 172 pools that select on
+             * one cannot match them.
+             *
+             * Asserted rather than fixed on purpose: no year may be invented
+             * here, because a guessed cohort is a granted priority.
+             */
+            await signInWithFeide(ctx.db, user.id, [
+                prg("BIDATA"),
+                ...firstSemester.map(emne),
+            ]);
+
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
+                "dataingenior",
+            ]);
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+
+            const [membership] = await ctx.db
+                .select({
+                    startYear: schema.studyProgramMembership.startYear,
+                })
+                .from(schema.studyProgramMembership)
+                .where(eq(schema.studyProgramMembership.userId, user.id));
+
+            expect(membership).toBeDefined();
+            expect(membership?.startYear).toBeNull();
+
+            // Nothing may conjure a STUDYYEAR group out of a missing year.
+            const invented = await ctx.db
+                .select({ slug: schema.group.slug })
+                .from(schema.group)
+                .where(eq(schema.group.type, "STUDYYEAR"));
+            expect(invented).toEqual([]);
+        },
+    );
+
+    integrationTest(
+        "is kept out entirely when the courses place them at another campus",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await signInWithFeide(ctx.db, user.id, [
+                kull("BIDATA", "2026H"),
+                emne("INGG1002"),
+                emne("IMAG1002"),
+                emne("IDATG1003"),
+            ]);
+
+            // A Gjøvik student gets no programme, no groups and no role — but
+            // the account itself still exists, so support can act on it.
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([]);
+            expect(await rolesOf(ctx.db, user.id)).toEqual([]);
+
+            const memberships = await ctx.db
+                .select({ userId: schema.studyProgramMembership.userId })
+                .from(schema.studyProgramMembership)
+                .where(eq(schema.studyProgramMembership.userId, user.id));
+            expect(memberships).toEqual([]);
+        },
+    );
+
+    integrationTest(
+        "does not become alumni on a first login that finds nothing",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            /**
+             * Someone outside TIHLDE's programmes entirely. They must end up
+             * with neither role: "alumni" would claim a history they never had,
+             * and the guard in syncBaselineRoles keys on a study-programme row
+             * precisely to avoid that.
+             */
+            await signInWithFeide(ctx.db, user.id, [
+                prg("MTDT"),
+                emne("TDT4100"),
+            ]);
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual([]);
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([]);
+        },
+    );
+
+    integrationTest(
+        "keeps its groups when a later login no longer reports the programme",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await signInWithFeide(ctx.db, user.id, [
+                kull("BIDATA", "2026H"),
+                ...firstSemester.map(emne),
+            ]);
+
+            // Three years on: the memberships have lapsed.
+            await signInWithFeide(ctx.db, user.id, [
+                {
+                    ...kull("BIDATA", "2026H"),
+                    membership: { active: false },
+                },
+                ...firstSemester.map(emne),
+            ]);
+
+            // "Én gang TIHLDE-medlem, alltid TIHLDE-medlem": the groups stay,
+            // only the baseline role moves.
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
+                "2026",
+                "dataingenior",
+            ]);
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+});
+
+describe("the groups a new student's priority depends on", () => {
+    integrationTest(
+        "matches a pool that requires both study and cohort group",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await signInWithFeide(ctx.db, user.id, [
+                kull("BIDATA", "2026H"),
+                ...firstSemester.map(emne),
+            ]);
+
+            // The shape 172 of the inherited pools have: study + studyyear.
+            const pool = ["dataingenior", "2026"];
+            const held = await ctx.db
+                .select({ slug: schema.groupMembership.groupSlug })
+                .from(schema.groupMembership)
+                .where(
+                    and(
+                        eq(schema.groupMembership.userId, user.id),
+                        inArray(schema.groupMembership.groupSlug, pool),
+                    ),
+                );
+
+            expect(held).toHaveLength(pool.length);
+        },
+    );
+});
