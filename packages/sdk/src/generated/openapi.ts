@@ -589,6 +589,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/favorite/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update event favorite
+         * @description Mark or unmark an event as a favorite for the authenticated user
+         */
+        put: operations["updateEventFavorite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get all my favorite events
+         * @description Retrieve a list of all events you have marked as favorite.
+         */
+        get: operations["getFavoriteEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event": {
         parameters: {
             query?: never;
@@ -652,46 +692,6 @@ export interface paths {
          * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.
          */
         delete: operations["deleteEvent"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/event/favorite/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update event favorite
-         * @description Mark or unmark an event as a favorite for the authenticated user
-         */
-        put: operations["updateEventFavorite"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/event/favorite": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get all my favorite events
-         * @description Retrieve a list of all events you have marked as favorite.
-         */
-        get: operations["getFavoriteEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2852,6 +2852,26 @@ export interface components {
         DeleteStrikeResponse: {
             message: string;
         };
+        UpdateFavoriteResponse: {
+            success: boolean;
+        };
+        UpdateFavoriteEvent: {
+            /** @description Is favorite */
+            isFavorite: boolean;
+        };
+        FavoriteEvents: {
+            /** @description Event ID */
+            eventId: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event slug */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description When you added this event to your favorites
+             */
+            createdAt: string;
+        }[];
         CreateEventResponse: {
             /** Format: uuid */
             eventId: string;
@@ -3233,26 +3253,6 @@ export interface components {
                 attendedAt: string | null;
             } | null;
         };
-        UpdateFavoriteResponse: {
-            success: boolean;
-        };
-        UpdateFavoriteEvent: {
-            /** @description Is favorite */
-            isFavorite: boolean;
-        };
-        FavoriteEvents: {
-            /** @description Event ID */
-            eventId: string;
-            /** @description Event title */
-            title: string;
-            /** @description Event slug */
-            slug: string;
-            /**
-             * Format: date-time
-             * @description When you added this event to your favorites
-             */
-            createdAt: string;
-        }[];
         EventRegistration: {
             /** Format: uuid */
             eventId: string;
@@ -6369,6 +6369,77 @@ export interface operations {
             };
         };
     };
+    updateEventFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFavoriteEvent"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateFavoriteResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFavoriteEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of favorite events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteEvents"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
     listEvents: {
         parameters: {
             query?: {
@@ -6555,77 +6626,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    updateEventFavorite: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateFavoriteEvent"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UpdateFavoriteResponse"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Not Found - Event not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    getFavoriteEvents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description List of favorite events */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FavoriteEvents"];
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
             };
         };
     };
