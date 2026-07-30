@@ -189,6 +189,7 @@ export type UpdateUserSettingsInput = Schemas["UpdateUserSettingsInput"];
 export type UploadResponse = Schemas["UploadResponse"];
 export type UserList = Schemas["UserList"];
 export type UserListItem = Schemas["UserListItem"];
+export type UserProfile = Schemas["UserProfile"];
 export type UserSearchResult = Schemas["UserSearchResult"];
 export type UserSettings = Schemas["UserSettings"];
 export type UserSettingsBase = Schemas["UserSettingsBase"];

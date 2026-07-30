@@ -1,3 +1,4 @@
+import { requireOwnProfile } from "#/api/auth";
 import { createFileRoute } from "@tanstack/react-router";
 import {
     Empty,
@@ -10,6 +11,8 @@ import { Ticket } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/prikker")({
     component: RouteComponent,
+    beforeLoad: ({ location, params }) =>
+        requireOwnProfile(params.id, location.href),
 });
 
 function RouteComponent() {

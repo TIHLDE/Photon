@@ -1,9 +1,10 @@
 import { authQueryOptions } from "#/api/auth";
+import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileOverviewHeader } from "#/components/profile-overview-header";
 import { ProfileStatCard } from "#/components/profile-stat-card";
 import type { ProfileLink } from "#/components/profile-header";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import type { SignatureStatus } from "@tihlde/sdk";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
@@ -21,30 +22,52 @@ export const Route = createFileRoute("/_app/profil/$id/")({
     component: RouteComponent,
 });
 
+/** Grupper som ikke er reelle medlemskap — de er avledet av Feide-dataene. */
+const DERIVED_GROUP_TYPES = ["study", "studyyear", "tihlde"];
+
 function RouteComponent() {
+    const { id } = Route.useParams();
+    const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
-    const settings = session?.user.settings;
+    const isOwnProfile = session?.user.id === id;
 
     const links: ProfileLink[] = [];
-    if (settings?.githubUrl) links.push({ kind: "github", label: "github" });
-    if (settings?.linkedinUrl)
-        links.push({ kind: "linkedin", label: "linkedin" });
+    if (profile.githubUrl)
+        links.push({ kind: "github", label: "github", url: profile.githubUrl });
+    if (profile.linkedinUrl)
+        links.push({
+            kind: "linkedin",
+            label: "linkedin",
+            url: profile.linkedinUrl,
+        });
 
-    const groups = session?.groups ?? [];
-    const membershipTitle = groups.length > 0 ? "Aktiv" : "Ingen medlemskap";
+    const memberships = profile.groups.filter(
+        (g) => !DERIVED_GROUP_TYPES.includes(g.type.toLowerCase()),
+    );
+    const membershipTitle =
+        memberships.length > 0 ? "Aktiv" : "Ingen medlemskap";
     const membershipDescription =
-        groups.length > 0
-            ? `${groups.length} ${groups.length === 1 ? "gruppe" : "grupper"}`
-            : "Du er ikke medlem i noen grupper";
+        memberships.length > 0
+            ? `${memberships.length} ${memberships.length === 1 ? "gruppe" : "grupper"}`
+            : isOwnProfile
+              ? "Du er ikke medlem i noen grupper"
+              : "Ikke medlem i noen grupper";
 
     return (
         <>
             <ProfileOverviewHeader
-                name={session?.user.name ?? ""}
+                name={profile.name}
+                isOwnProfile={isOwnProfile}
                 notifications={0}
             />
+            {profile.bio ? (
+                <div className="flex flex-col gap-2">
+                    <h3 className="text-xs text-muted-foreground">OM</h3>
+                    <p className="whitespace-pre-line text-sm">{profile.bio}</p>
+                </div>
+            ) : null}
             <ProfileLinksSection links={links} />
-            <ContractBanner signature={null} />
+            {isOwnProfile ? <ContractBanner signature={null} /> : null}
 
             <div className="grid gap-4 md:grid-cols-3">
                 <ProfileStatCard
@@ -54,37 +77,45 @@ function RouteComponent() {
                 />
             </div>
 
-            <div className="flex flex-col gap-3">
-                <h3>KOMMENDE</h3>
-                <Empty>
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <CalendarDays />
-                        </EmptyMedia>
-                        <EmptyTitle>Ingen kommende arrangementer</EmptyTitle>
-                        <EmptyDescription>
-                            Påmeldingene dine vises her når du melder deg på et
-                            arrangement.
-                        </EmptyDescription>
-                    </EmptyHeader>
-                </Empty>
-            </div>
+            {/* Kommende arrangementer og oppgaver er personlige og vises kun på
+                egen profil. */}
+            {isOwnProfile ? (
+                <>
+                    <div className="flex flex-col gap-3">
+                        <h3>KOMMENDE</h3>
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <CalendarDays />
+                                </EmptyMedia>
+                                <EmptyTitle>
+                                    Ingen kommende arrangementer
+                                </EmptyTitle>
+                                <EmptyDescription>
+                                    Påmeldingene dine vises her når du melder
+                                    deg på et arrangement.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    </div>
 
-            <div className="flex flex-col gap-3">
-                <h3>MÅ GJØRES</h3>
-                <Empty>
-                    <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <ListTodo />
-                        </EmptyMedia>
-                        <EmptyTitle>Ingenting å gjøre</EmptyTitle>
-                        <EmptyDescription>
-                            Oppgaver som spørreskjemaer og evalueringer dukker
-                            opp her.
-                        </EmptyDescription>
-                    </EmptyHeader>
-                </Empty>
-            </div>
+                    <div className="flex flex-col gap-3">
+                        <h3>MÅ GJØRES</h3>
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <ListTodo />
+                                </EmptyMedia>
+                                <EmptyTitle>Ingenting å gjøre</EmptyTitle>
+                                <EmptyDescription>
+                                    Oppgaver som spørreskjemaer og evalueringer
+                                    dukker opp her.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                        </Empty>
+                    </div>
+                </>
+            ) : null}
         </>
     );
 }
