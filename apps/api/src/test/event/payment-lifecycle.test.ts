@@ -12,6 +12,7 @@ import { integrationTest } from "~/test/config/integration";
 // exercised without a live payment processor.
 vi.mock("~/lib/vipps", () => ({
     refundPayment: vi.fn().mockResolvedValue(undefined),
+    capturePayment: vi.fn().mockResolvedValue(undefined),
     createPayment: vi.fn(),
     getPaymentDetails: vi.fn(),
     setupWebhooks: vi.fn(),
@@ -249,6 +250,17 @@ describe("Paid event payment lifecycle", () => {
             async ({ ctx }) => {
                 const refundMock = vi.mocked(vipps.refundPayment);
                 refundMock.mockClear();
+
+                // The refund amount is read back from the provider, so the
+                // payment must look fully captured and not yet refunded.
+                vi.mocked(vipps.getPaymentDetails).mockResolvedValue({
+                    aggregate: {
+                        authorizedAmount: { currency: "NOK", value: 7500 },
+                        capturedAmount: { currency: "NOK", value: 7500 },
+                        refundedAmount: { currency: "NOK", value: 0 },
+                        cancelledAmount: { currency: "NOK", value: 0 },
+                    },
+                } as Awaited<ReturnType<typeof vipps.getPaymentDetails>>);
 
                 await ctx.utils.setupEventCategories();
                 await ctx.utils.setupGroups();

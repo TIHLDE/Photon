@@ -558,9 +558,10 @@ export const eventDetailSchema = Schema(
         isPaidEvent: z.boolean().meta({ description: "Is this a paid event" }),
         payInfo: z
             .object({
-                price: z
-                    .number()
-                    .meta({ description: "Event price in whole KR" }),
+                price: z.number().meta({
+                    description:
+                        "Event price in minor units (øre). Note the create/update endpoints take `price` in whole kroner instead.",
+                }),
                 paymentGracePeriodMinutes: z
                     .number()
                     .meta({ description: "Payment grace period in minutes" }),
@@ -754,6 +755,23 @@ export const eventRegistrationResponseSchema = Schema(
     }),
 );
 
+const paymentStatusSchema = z.enum(["pending", "paid", "refunded", "failed"]);
+
+/**
+ * Slim payment view attached to an admin's registration listing.
+ */
+export const registrationPaymentSchema = Schema(
+    "EventRegistrationPayment",
+    z.object({
+        id: z.uuid(),
+        status: paymentStatusSchema,
+        amountMinor: z.number(),
+        currency: z.string(),
+        expiresAt: z.iso.datetime().nullable(),
+        receivedPaymentAt: z.iso.datetime().nullable(),
+    }),
+);
+
 export const registeredUserSchema = Schema(
     "EventRegisteredUser",
     z.object({
@@ -775,6 +793,21 @@ export const registeredUserSchema = Schema(
             description:
                 "When the user was checked in, if at all. Only included for event admins.",
         }),
+        email: z.string().optional().meta({
+            description: "User email. Only included for event admins.",
+        }),
+        registeredAt: z.string().optional().meta({
+            description:
+                "When the user registered. Only included for event admins.",
+        }),
+        waitlistPosition: z.number().nullable().optional().meta({
+            description:
+                "Position on the waitlist, if waitlisted. Only included for event admins.",
+        }),
+        payment: registrationPaymentSchema.nullable().optional().meta({
+            description:
+                "The user's payment for this event, if any. Only included for event admins.",
+        }),
     }),
 );
 
@@ -784,6 +817,66 @@ export const eventRegistrationListResponseSchema = Schema(
         registeredUsers: z
             .array(registeredUserSchema)
             .describe("List of registered users (paginated)"),
+    }),
+);
+
+export const eventPaymentAdminSchema = Schema(
+    "EventPaymentAdmin",
+    z.object({
+        id: z.uuid(),
+        userId: z.string(),
+        user: z.object({
+            id: z.string(),
+            name: z.string(),
+            image: z.string().nullable(),
+            email: z.string(),
+        }),
+        amountMinor: z.number().meta({
+            description: "Amount in minor units (øre)",
+        }),
+        currency: z.string(),
+        provider: z.string().nullable(),
+        providerPaymentId: z.string().nullable().meta({
+            description:
+                "Provider reference. Null means the obligation was never started with the provider.",
+        }),
+        status: paymentStatusSchema,
+        receivedPaymentAt: z.iso.datetime().nullable(),
+        expiresAt: z.iso.datetime().nullable(),
+        createdAt: z.iso.datetime(),
+    }),
+);
+
+export const eventPaymentListResponseSchema = Schema(
+    "EventPaymentList",
+    PagniationResponseSchema.extend({
+        payments: z
+            .array(eventPaymentAdminSchema)
+            .describe("List of payments for the event (paginated)"),
+        summary: z
+            .object({
+                paidCount: z.number(),
+                pendingCount: z.number(),
+                refundedCount: z.number(),
+                failedCount: z.number(),
+                totalPaidMinor: z.number().meta({
+                    description:
+                        "Sum of all completed (paid) payments, in minor units",
+                }),
+            })
+            .describe("Totals across every payment for the event"),
+    }),
+);
+
+export const refundEventPaymentResponseSchema = Schema(
+    "RefundEventPayment",
+    z.object({
+        id: z.uuid(),
+        status: paymentStatusSchema,
+        refundedAmountMinor: z.number().meta({
+            description: "The amount that was refunded, in minor units",
+        }),
+        currency: z.string(),
     }),
 );
 

@@ -149,8 +149,8 @@ function EventDetailPage() {
                                     label="Rediger arrangement"
                                     render={
                                         <Link
-                                            to="/arrangementer/$slug/rediger"
-                                            params={{ slug: event.slug }}
+                                            to="/admin/arrangementer/$eventId"
+                                            params={{ eventId: event.id }}
                                         />
                                     }
                                 />

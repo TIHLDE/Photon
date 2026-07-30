@@ -706,7 +706,7 @@ export interface paths {
         };
         /**
          * Get event registrations
-         * @description Retrieve a paginated list of users registered for a specific event, including registered and waitlist counts
+         * @description Retrieve a paginated list of users registered for a specific event. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.
          */
         get: operations["listEventRegistrations"];
         put?: never;
@@ -759,6 +759,46 @@ export interface paths {
          * @description Initiates a Vipps payment for an event registration. User must have a registered status for the event.
          */
         post: operations["createEventPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List event payments
+         * @description Retrieve a paginated list of every payment for an event, including the payer and a status summary. Requires 'events:payments:view', 'events:manage' or 'events:update' — or being the event's creator.
+         */
+        get: operations["listEventPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/{eventId}/payments/{paymentId}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund an event payment
+         * @description Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund'.
+         */
+        post: operations["refundEventPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3179,7 +3219,7 @@ export interface components {
             isPaidEvent: boolean;
             /** @description Payment info */
             payInfo: {
-                /** @description Event price in whole KR */
+                /** @description Event price in minor units (øre). Note the create/update endpoints take `price` in whole kroner instead. */
                 price: number;
                 /** @description Payment grace period in minutes */
                 paymentGracePeriodMinutes: number;
@@ -3270,6 +3310,16 @@ export interface components {
              */
             allowPhoto: boolean;
         };
+        EventRegistrationPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            amountMinor: number;
+            currency: string;
+            expiresAt: string | null;
+            receivedPaymentAt: string | null;
+        };
         EventRegisteredUser: {
             /** @description User id */
             id: string;
@@ -3283,6 +3333,14 @@ export interface components {
             status?: string;
             /** @description When the user was checked in, if at all. Only included for event admins. */
             attendedAt?: string | null;
+            /** @description User email. Only included for event admins. */
+            email?: string;
+            /** @description When the user registered. Only included for event admins. */
+            registeredAt?: string;
+            /** @description Position on the waitlist, if waitlisted. Only included for event admins. */
+            waitlistPosition?: number | null;
+            /** @description The user's payment for this event, if any. Only included for event admins. */
+            payment?: components["schemas"]["EventRegistrationPayment"] | null;
         };
         EventRegistrationList: {
             /** @description Total number of items available */
@@ -3326,6 +3384,57 @@ export interface components {
              * @enum {string}
              */
             userFlow: "WEB_REDIRECT" | "NATIVE_REDIRECT";
+        };
+        EventPaymentAdmin: {
+            /** Format: uuid */
+            id: string;
+            userId: string;
+            user: {
+                id: string;
+                name: string;
+                image: string | null;
+                email: string;
+            };
+            /** @description Amount in minor units (øre) */
+            amountMinor: number;
+            currency: string;
+            provider: string | null;
+            /** @description Provider reference. Null means the obligation was never started with the provider. */
+            providerPaymentId: string | null;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            receivedPaymentAt: string | null;
+            expiresAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        EventPaymentList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of payments for the event (paginated) */
+            payments: components["schemas"]["EventPaymentAdmin"][];
+            /** @description Totals across every payment for the event */
+            summary: {
+                paidCount: number;
+                pendingCount: number;
+                refundedCount: number;
+                failedCount: number;
+                /** @description Sum of all completed (paid) payments, in minor units */
+                totalPaidMinor: number;
+            };
+        };
+        RefundEventPayment: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "paid" | "refunded" | "failed";
+            /** @description The amount that was refunded, in minor units */
+            refundedAmountMinor: number;
+            currency: string;
         };
         CreateEventFormResponse: {
             /** Format: uuid */
@@ -6636,6 +6745,8 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
+                /** @description Comma-separated registration statuses to include. Admin only; defaults to registered,attended,no_show. */
+                status?: string;
             };
             header?: never;
             path: {
@@ -6653,6 +6764,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EventRegistrationList"];
                 };
+            };
+            /** @description Bad Request - Unknown registration status */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Filtering by status requires event admin permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -6840,6 +6965,118 @@ export interface operations {
             };
             /** @description Payment already exists for this user and event */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listEventPayments: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Only return payments with this status */
+                status?: "pending" | "paid" | "refunded" | "failed";
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventPaymentList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires permission to view the event's payments */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    refundEventPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Payment refunded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundEventPayment"];
+                };
+            };
+            /** @description Bad Request - Invalid event or payment id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires events:payments:refund */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Payment not found on this event */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment is not in a refundable state */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The payment provider rejected the refund */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -4,6 +4,7 @@ import {
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import type { Gallery } from "@tihlde/sdk";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -13,6 +14,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@tihlde/ui/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { ImageDropzone } from "@tihlde/ui/ui/image-dropzone";
 import { Input } from "@tihlde/ui/ui/input";
@@ -23,8 +31,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@tihlde/ui/ui/table";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import { CheckCircle2, ImagesIcon, Trash2Icon, XCircle } from "lucide-react";
+import {
+    CheckCircle2,
+    ImagesIcon,
+    PencilIcon,
+    PlusIcon,
+    Trash2Icon,
+    XCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 import { uploadAssetMutation } from "#/api/queries/assets";
@@ -34,6 +57,7 @@ import {
     createGalleryPicturesMutation,
     deleteGalleryMutation,
     getGalleriesQuery,
+    updateGalleryMutation,
 } from "#/api/queries/galleries";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -67,16 +91,37 @@ function GalleryAdminPage() {
         "galleries:pictures:create",
         "galleries:manage",
     ]);
+    const [dialog, setDialog] = useState<
+        { mode: "create" } | { mode: "edit"; gallery: Gallery } | null
+    >(null);
 
     return (
         <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
             <AdminPageHeader
                 title="Galleri"
                 description="Opprett gallerier og last opp bilder fra arrangementer."
+                action={
+                    canCreateGallery ? (
+                        <Button onClick={() => setDialog({ mode: "create" })}>
+                            <PlusIcon className="size-4" />
+                            Nytt galleri
+                        </Button>
+                    ) : null
+                }
             />
-            {canCreateGallery ? <CreateGalleryCard /> : null}
             {canUploadPictures ? <UploadPicturesCard /> : null}
-            <GalleryListCard />
+            <GalleryTable
+                onEdit={(gallery) => setDialog({ mode: "edit", gallery })}
+            />
+
+            <GalleryDialog
+                key={dialog?.mode === "edit" ? dialog.gallery.id : "create"}
+                open={dialog !== null}
+                gallery={dialog?.mode === "edit" ? dialog.gallery : null}
+                onOpenChange={(open) => {
+                    if (!open) setDialog(null);
+                }}
+            />
         </div>
     );
 }
@@ -84,45 +129,65 @@ function GalleryAdminPage() {
 /** Sentinel for the "no event" choice — Select cannot hold an empty value. */
 const NO_EVENT = "none";
 
-function CreateGalleryCard() {
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [eventId, setEventId] = useState(NO_EVENT);
+function GalleryDialog({
+    open,
+    gallery,
+    onOpenChange,
+}: {
+    open: boolean;
+    gallery: Gallery | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [title, setTitle] = useState(gallery?.title ?? "");
+    const [description, setDescription] = useState(gallery?.description ?? "");
+    const [eventId, setEventId] = useState(gallery?.event?.id ?? NO_EVENT);
+    const [error, setError] = useState<string | null>(null);
 
     const { data: events } = useSuspenseQuery(getEventsQuery(0));
     const createGallery = useMutation(createGalleryMutation);
+    const updateGallery = useMutation(updateGalleryMutation);
 
-    function handleSubmit(formEvent: React.FormEvent<HTMLFormElement>) {
+    const isPending = createGallery.isPending || updateGallery.isPending;
+
+    async function handleSubmit(formEvent: React.FormEvent<HTMLFormElement>) {
         formEvent.preventDefault();
-        createGallery.mutate(
-            {
-                data: {
-                    title,
-                    description: description || undefined,
-                    eventId: eventId === NO_EVENT ? undefined : eventId,
-                },
-            },
-            {
-                onSuccess() {
-                    setTitle("");
-                    setDescription("");
-                    setEventId(NO_EVENT);
-                },
-            },
-        );
+        setError(null);
+
+        try {
+            if (gallery) {
+                await updateGallery.mutateAsync({
+                    slug: gallery.slug,
+                    data: {
+                        title,
+                        description: description || null,
+                        eventId: eventId === NO_EVENT ? null : eventId,
+                    },
+                });
+            } else {
+                await createGallery.mutateAsync({
+                    data: {
+                        title,
+                        description: description || undefined,
+                        eventId: eventId === NO_EVENT ? undefined : eventId,
+                    },
+                });
+            }
+            onOpenChange(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        }
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Nytt galleri</CardTitle>
-                    <CardDescription>
-                        Galleriet får en URL basert på tittelen. Bilder legges
-                        til etterpå.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-6">
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {gallery ? "Rediger galleri" : "Nytt galleri"}
+                        </DialogTitle>
+                    </DialogHeader>
+
                     <FieldGroup>
                         <Field>
                             <FieldLabel htmlFor="gallery-title">
@@ -182,27 +247,23 @@ function CreateGalleryCard() {
                         </Field>
                     </FieldGroup>
 
-                    {createGallery.isError && (
-                        <Alert variant="destructive">
-                            <XCircle className="size-4" />
-                            <AlertTitle>Kunne ikke opprette galleri</AlertTitle>
-                            <AlertDescription>
-                                {createGallery.error.message}
-                            </AlertDescription>
-                        </Alert>
-                    )}
+                    {error && <p role="alert">{error}</p>}
 
-                    <div className="flex justify-end">
+                    <DialogFooter>
                         <Button
-                            type="submit"
-                            disabled={createGallery.isPending}
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
                         >
-                            Opprett galleri
+                            Avbryt
                         </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </form>
+                        <Button type="submit" disabled={isPending}>
+                            {gallery ? "Lagre" : "Opprett galleri"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -367,76 +428,104 @@ function UploadPicturesCard() {
     );
 }
 
-function GalleryListCard() {
+function GalleryTable({ onEdit }: { onEdit: (gallery: Gallery) => void }) {
     const { data } = useSuspenseQuery(getGalleriesQuery(0));
     const deleteGallery = useMutation(deleteGalleryMutation);
+    const canEdit = useAnyScopePermission([
+        "galleries:update",
+        "galleries:manage",
+    ]);
     const canDelete = useAnyScopePermission([
         "galleries:delete",
         "galleries:manage",
     ]);
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Gallerier</CardTitle>
-                <CardDescription>
-                    {data.totalCount === 1
-                        ? "1 galleri"
-                        : `${data.totalCount} gallerier`}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-                {data.items.length === 0 ? (
+    if (data.items.length === 0) {
+        return (
+            <Card>
+                <CardContent>
                     <AdminEmptyState
                         icon={ImagesIcon}
                         title="Ingen gallerier"
                         description="Gallerier du oppretter dukker opp her."
                     />
-                ) : (
-                    data.items.map((gallery) => (
-                        <div
-                            key={gallery.id}
-                            className="flex items-center justify-between gap-4"
-                        >
-                            <div className="flex flex-col">
-                                <Link
-                                    to="/galleri/$slug"
-                                    params={{ slug: gallery.slug }}
-                                >
-                                    {gallery.title}
-                                </Link>
-                                <span className="text-muted-foreground">
-                                    {gallery.pictureCount === 1
-                                        ? "1 bilde"
-                                        : `${gallery.pictureCount} bilder`}
-                                </span>
-                            </div>
-                            {canDelete ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={deleteGallery.isPending}
-                                    onClick={() => {
-                                        if (
-                                            !window.confirm(
-                                                `Slette "${gallery.title}" og alle bildene i det?`,
-                                            )
-                                        ) {
-                                            return;
-                                        }
-                                        deleteGallery.mutate({
-                                            slug: gallery.slug,
-                                        });
-                                    }}
-                                >
-                                    <Trash2Icon className="size-4" />
-                                    Slett
-                                </Button>
-                            ) : null}
-                        </div>
-                    ))
-                )}
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Tittel</TableHead>
+                            <TableHead>Arrangement</TableHead>
+                            <TableHead>Bilder</TableHead>
+                            <TableHead className="text-right">
+                                Handlinger
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.items.map((gallery) => (
+                            <TableRow key={gallery.id}>
+                                <TableCell>
+                                    <Link
+                                        to="/galleri/$slug"
+                                        params={{ slug: gallery.slug }}
+                                    >
+                                        {gallery.title}
+                                    </Link>
+                                </TableCell>
+                                <TableCell>
+                                    {gallery.event?.title ?? "—"}
+                                </TableCell>
+                                <TableCell>{gallery.pictureCount}</TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                        {canEdit ? (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onEdit(gallery)}
+                                            >
+                                                <PencilIcon className="size-4" />
+                                                Rediger
+                                            </Button>
+                                        ) : null}
+                                        {canDelete ? (
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                aria-label={`Slett ${gallery.title}`}
+                                                disabled={
+                                                    deleteGallery.isPending
+                                                }
+                                                onClick={() => {
+                                                    if (
+                                                        !window.confirm(
+                                                            `Slette "${gallery.title}" og alle bildene i det?`,
+                                                        )
+                                                    ) {
+                                                        return;
+                                                    }
+                                                    deleteGallery.mutate({
+                                                        slug: gallery.slug,
+                                                    });
+                                                }}
+                                            >
+                                                <Trash2Icon className="size-4" />
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );
