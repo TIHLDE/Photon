@@ -3,11 +3,14 @@ import { Bell } from "lucide-react";
 
 type ProfileOverviewHeaderProps = {
     name: string;
+    /** Velkomsthilsen og varsler gir bare mening på ens egen profil. */
+    isOwnProfile?: boolean;
     notifications?: number;
 };
 
 export function ProfileOverviewHeader({
     name,
+    isOwnProfile = true,
     notifications = 0,
 }: ProfileOverviewHeaderProps) {
     const firstName = name.split(" ")[0] ?? name;
@@ -16,14 +19,18 @@ export function ProfileOverviewHeader({
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="flex flex-col gap-1">
                 <h2 className="text-2xl">Oversikt</h2>
-                <p className="text-sm text-muted-foreground">
-                    Velkommen tilbake, {firstName}
-                </p>
+                {isOwnProfile ? (
+                    <p className="text-sm text-muted-foreground">
+                        Velkommen tilbake, {firstName}
+                    </p>
+                ) : null}
             </div>
-            <Badge variant="outline" className="gap-1.5">
-                <Bell />
-                {notifications} nye varsler
-            </Badge>
+            {isOwnProfile ? (
+                <Badge variant="outline" className="gap-1.5">
+                    <Bell />
+                    {notifications} nye varsler
+                </Badge>
+            ) : null}
         </div>
     );
 }

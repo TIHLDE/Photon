@@ -10,6 +10,7 @@ const UserQueryKeys = {
     settings: ["user", "settings"] as const,
     allergies: ["user", "allergies"] as const,
     listInfinite: ["user", "list-infinite"] as const,
+    profile: ["user", "profile"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -47,6 +48,18 @@ export const getUsersInfiniteQuery = (
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
+    });
+
+/**
+ * Another member's profile. Narrower than the session on purpose — it carries
+ * no e-mail, allergies or settings — so use the session when the profile being
+ * shown is the viewer's own.
+ */
+export const getUserProfileQuery = (userId: string) =>
+    queryOptions({
+        queryKey: [...UserQueryKeys.profile, userId],
+        queryFn: () =>
+            apiClient.get("/api/user/{id}", { params: { id: userId } }),
     });
 
 export const getUserSettingsQuery = () =>
