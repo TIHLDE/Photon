@@ -1,3 +1,4 @@
+import { requireOwnProfile } from "#/api/auth";
 import { getFavoriteEventsQuery } from "#/api/queries/events";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -14,6 +15,8 @@ import { CalendarDays, Star } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
     component: RouteComponent,
+    beforeLoad: ({ location, params }) =>
+        requireOwnProfile(params.id, location.href),
 });
 
 function RouteComponent() {

@@ -88,8 +88,14 @@ export const updateEventMutation = mutationOptions({
             params: { id: eventId },
             json: data,
         }),
-    onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(getEventByIdQuery(vars.eventId));
+    onSuccess(_, __, ___, ctx) {
+        // Detaljsiden caches på slug, mens vi oppdaterer på id — og en
+        // tittelendring gir dessuten ny slug. Derfor invalideres hele
+        // detail-nøkkelen, ikke bare den ene oppføringen.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.detail],
+            exact: false,
+        });
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.list],
             exact: false,

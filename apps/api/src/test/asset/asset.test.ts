@@ -296,6 +296,52 @@ describe("Asset Upload/Download System", () => {
             expect(noFileResponse.status).toBe(400);
             const noFileError = (await noFileResponse.json()) as any;
             expect(noFileError.message).toContain("No file provided");
+
+            // ===== TEST 4: A REAL-SIZED TÖDDEL PDF =====
+            // Deliberately a hard-coded size rather than one derived from
+            // MAX_FILE_SIZE: the point is that an actual Töddel issue fits, so
+            // lowering the cap back under it must fail this test. The archive's
+            // largest issue is 39.99 MB.
+            const { MAX_FILE_SIZE } = await import("~/lib/asset");
+            expect(MAX_FILE_SIZE).toBeGreaterThanOrEqual(50 * 1024 * 1024);
+
+            const toddelSizedPdf = 40 * 1024 * 1024;
+            const underLimitFormData = new FormData();
+            underLimitFormData.append(
+                "file",
+                new Blob([Buffer.alloc(toddelSizedPdf)], {
+                    type: "application/pdf",
+                }),
+                "toddel-large.pdf",
+            );
+
+            const underLimitResponse = await app.request("/api/assets", {
+                method: "POST",
+                body: underLimitFormData,
+                headers: authHeaders,
+            });
+
+            expect(underLimitResponse.status).toBe(201);
+
+            // ===== TEST 5: FILE OVER THE LIMIT =====
+            const overLimitFormData = new FormData();
+            overLimitFormData.append(
+                "file",
+                new Blob([Buffer.alloc(MAX_FILE_SIZE + 1024)], {
+                    type: "application/pdf",
+                }),
+                "toddel-too-large.pdf",
+            );
+
+            const overLimitResponse = await app.request("/api/assets", {
+                method: "POST",
+                body: overLimitFormData,
+                headers: authHeaders,
+            });
+
+            expect(overLimitResponse.status).toBe(400);
+            const overLimitError = (await overLimitResponse.json()) as any;
+            expect(overLimitError.message).toContain("exceeds maximum");
         },
         600_000,
     );

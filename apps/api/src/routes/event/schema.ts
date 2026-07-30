@@ -461,18 +461,7 @@ export const eventDetailSchema = Schema(
         title: z.string().meta({ description: "Event title" }),
         description: z
             .string()
-            .nullable()
-            .meta({ description: "Event description in markdown (nullable)" }),
-        capacity: z.number().nullable().meta({
-            description: "Maximum number of spots (null means unlimited)",
-        }),
-        registrationEndTime: z.iso.datetime().nullable().meta({
-            description: "When registration closes (ISO 8601, nullable)",
-        }),
-        canCauseStrikes: z.boolean().meta({
-            description:
-                "Whether this event issues strikes for late unregistration and no-shows",
-        }),
+            .meta({ description: "Event description, stored as markdown" }),
         location: z
             .string()
             .nullable()
@@ -494,6 +483,18 @@ export const eventDetailSchema = Schema(
         endTime: z.iso
             .datetime()
             .meta({ description: "Event end time (ISO 8601)" }),
+        registrationStart: z.iso.datetime().nullable().meta({
+            description:
+                "When registration opens (ISO 8601). Null means it is open immediately.",
+        }),
+        registrationEnd: z.iso.datetime().nullable().meta({
+            description:
+                "When registration closes (ISO 8601). Null when the event has no sign-up.",
+        }),
+        cancellationDeadline: z.iso.datetime().nullable().meta({
+            description:
+                "Last moment a registration can be cancelled without a strike (ISO 8601, nullable)",
+        }),
         organizer: z
             .object({
                 name: z.string().meta({ description: "Organizer name" }),
@@ -507,6 +508,20 @@ export const eventDetailSchema = Schema(
             .nullable()
             .meta({ description: "Event organizer (nullable)" }),
         closed: z.boolean().meta({ description: "Is registration closed" }),
+        requiresSigningUp: z.boolean().meta({
+            description: "Do users need to sign up to attend the event?",
+        }),
+        allowWaitlist: z.boolean().meta({
+            description: "May users join a waitlist when the event is full?",
+        }),
+        capacity: z.number().int().nullable().meta({
+            description:
+                "Maximum number of participants. Null means no capacity limit.",
+        }),
+        canCauseStrikes: z.boolean().meta({
+            description:
+                "Can this event give strikes for late cancellation or no-show?",
+        }),
         image: z
             .url()
             .nullable()
@@ -685,6 +700,17 @@ export const createEventResponseSchema = Schema(
     "CreateEventResponse",
     z.object({
         eventId: z.uuid(),
+    }),
+);
+
+export const updateEventResponseSchema = Schema(
+    "UpdateEventResponse",
+    z.object({
+        eventId: z.uuid(),
+        slug: z.string().meta({
+            description:
+                "The event slug after the update. Changing the title regenerates it, so clients must use this when linking to the event.",
+        }),
     }),
 );
 

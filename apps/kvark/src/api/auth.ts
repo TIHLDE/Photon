@@ -223,6 +223,27 @@ export async function authClientWithRedirect(url: string) {
 }
 
 /**
+ * Snarveien menyene bruker for «min profil», i stedet for å slå opp
+ * bruker-ID-en på hvert kallsted. `/_app/profil/$id` bytter den ut med den
+ * ekte ID-en før noe annet kjører.
+ */
+export const OWN_PROFILE_ALIAS = "me";
+
+/**
+ * Guards the personal sub-pages of a profile (favoritter, prikker,
+ * spørreskjemaer). They all read "me"-scoped endpoints, so on someone else's
+ * profile they would show the *viewer's* own data under a stranger's name.
+ * Anyone landing there by URL is sent to that profile's public overview.
+ */
+export async function requireOwnProfile(profileId: string, url: string) {
+    const auth = await authClientWithRedirect(url);
+    if (profileId !== OWN_PROFILE_ALIAS && auth.user.id !== profileId) {
+        throw redirect({ to: "/profil/$id", params: { id: profileId } });
+    }
+    return auth;
+}
+
+/**
  * Returns the URL to redirect to the login page with the current URL as the redirect target
  * @param request the current request object
  * @returns URL string to redirect to the login page

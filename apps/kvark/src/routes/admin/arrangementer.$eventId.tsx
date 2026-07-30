@@ -7,6 +7,7 @@ import {
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import {
+    CheckCircle2,
     CircleCheckBigIcon,
     UsersIcon,
     WalletIcon,
@@ -15,6 +16,7 @@ import {
 import { Suspense, useMemo, useState } from "react";
 import { z } from "zod";
 
+import type { Event, UpdateEventSchema } from "@tihlde/sdk";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -48,8 +50,11 @@ import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
 import type { EventFormValues } from "#/components/event-form";
-import { EventForm } from "#/components/event-form";
-import { useAnyScopePermission } from "#/hooks/use-permission";
+import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
+import {
+    useAnyScopePermission,
+    useCanActOnResource,
+} from "#/hooks/use-permission";
 import { useDebounced } from "#/lib/use-debounced";
 
 const TABS = ["detaljer", "pameldte", "oppmote", "betalinger"] as const;
@@ -144,32 +149,93 @@ function EventAdminDetailPage() {
 
 /* ------------------------------- Detaljer ------------------------------- */
 
+/** ISO-streng -> Date, eller null når feltet ikke er satt. */
+function toDate(iso: string | null | undefined): Date | null {
+    return iso ? new Date(iso) : null;
+}
+
+/** Fyller skjemaet med arrangementet slik det er lagret i dag. */
+function valuesFromEvent(event: Event): EventFormValues {
+    const location = event.location ?? "";
+    const hasCoords =
+        typeof event.locationLat === "number" &&
+        typeof event.locationLng === "number";
+
+    return {
+        title: event.title,
+        description: event.description,
+        categorySlug: event.category.slug,
+        organizerGroupSlug: event.organizer?.slug ?? "",
+        location,
+        locationCoords:
+            hasCoords && location
+                ? {
+                      label: location,
+                      lat: event.locationLat as number,
+                      lng: event.locationLng as number,
+                  }
+                : null,
+        start: toDate(event.startTime),
+        end: toDate(event.endTime),
+        registrationEnd: toDate(event.registrationEnd),
+        capacity: event.capacity === null ? "" : String(event.capacity),
+        visibility: event.visibility === "members" ? "members" : "public",
+        instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
+        isPaidEvent: event.isPaidEvent,
+        canCauseStrikes: event.canCauseStrikes,
+        // payInfo.price er i øre, mens skjemaet redigerer hele kroner.
+        price: event.payInfo
+            ? String(Math.round(event.payInfo.price / 100))
+            : "",
+        image: null,
+        imageAlt: event.imageAlt ?? "",
+    };
+}
+
 function DetailsTab({ eventId }: { eventId: string }) {
     const navigate = useNavigate();
     const { data: event } = useSuspenseQuery(getEventByIdQuery(eventId));
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
 
-    const canEdit = useAnyScopePermission(["events:update", "events:manage"]);
-    const canDelete = useAnyScopePermission(["events:delete", "events:manage"]);
+    // Samme regel som API-et: rettigheten (også gruppescopet), eller å ha
+    // opprettet arrangementet selv.
+    const canEdit = useCanActOnResource(["events:update", "events:manage"])(
+        event.createdById,
+    );
+    const canDelete = useCanActOnResource(["events:delete", "events:manage"])(
+        event.createdById,
+    );
 
-    const [addressQuery, setAddressQuery] = useState(event.location ?? "");
-    const debouncedAddress = useDebounced(addressQuery, 250);
+    const [values, setValues] = useState<EventFormValues>(() =>
+        valuesFromEvent(event),
+    );
+    const [uploadError, setUploadError] = useState<string | null>(null);
+
+    const debouncedLocation = useDebounced(values.location, 250);
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
-        useQuery(searchAddressQuery(debouncedAddress));
+        useQuery(searchAddressQuery(debouncedLocation));
 
     const updateEvent = useMutation(updateEventMutation);
     const removeEvent = useMutation(deleteEventMutation);
     const { uploadImage, isUploading } = useImageUploader();
-    const [uploadError, setUploadError] = useState<string | null>(null);
 
-    async function handleSubmit(values: EventFormValues, image: File | null) {
+    function handleChange(patch: Partial<EventFormValues>) {
+        setValues((current) => ({ ...current, ...patch }));
+    }
+
+    async function handleSubmit(formEvent: React.FormEvent<HTMLFormElement>) {
+        formEvent.preventDefault();
         setUploadError(null);
 
-        let imageUrl: string | null = null;
-        if (image) {
+        if (!values.start || !values.end || !values.registrationEnd) return;
+
+        // Lastes opp først: en feilet opplasting skal ikke lagre resten av
+        // endringene med et bilde som mangler.
+        let imageUrl: string | undefined;
+        if (values.image) {
             try {
-                imageUrl = await uploadImage(image);
+                imageUrl = await uploadImage(values.image);
             } catch (err) {
                 setUploadError(
                     err instanceof Error ? err.message : String(err),
@@ -178,27 +244,48 @@ function DetailsTab({ eventId }: { eventId: string }) {
             }
         }
 
-        updateEvent.mutate({
-            eventId,
-            data: {
-                ...values,
-                // Only send an image when a new one was picked, so saving the
-                // form never clears an existing cover.
-                ...(imageUrl ? { imageUrl, imageAlt: values.imageAlt } : {}),
-                registrationStart: null,
-                cancellationDeadline: null,
-                isRegistrationClosed: event.closed,
-                requiresSigningUp: true,
-                allowWaitlist: true,
-                priorityPools: null,
-                onlyAllowPrioritized: event.onlyAllowPrioritized,
-                enforcesPreviousStrikes: values.canCauseStrikes,
-                paymentGracePeriodMinutes:
-                    event.payInfo?.paymentGracePeriodMinutes ?? null,
-                contactPersonUserId: null,
-                reactionsAllowed: false,
-            },
-        });
+        const data: UpdateEventSchema = {
+            title: values.title,
+            description: values.description,
+            categorySlug: values.categorySlug,
+            organizerGroupSlug: values.organizerGroupSlug,
+            location: values.location,
+            locationLat: values.locationCoords?.lat ?? null,
+            locationLng: values.locationCoords?.lng ?? null,
+            // Utelatt når ingen ny fil er valgt, slik at det lagrede bildet
+            // blir stående.
+            ...(imageUrl ? { imageUrl } : {}),
+            imageAlt: values.imageAlt || null,
+            start: values.start.toISOString(),
+            end: values.end.toISOString(),
+            registrationStart: null,
+            registrationEnd: values.registrationEnd.toISOString(),
+            cancellationDeadline: null,
+            capacity: values.capacity ? Number(values.capacity) : null,
+            visibility: values.visibility,
+            restrictedToInstituteSlug:
+                values.instituteSlug === ALL_INSTITUTES
+                    ? null
+                    : values.instituteSlug,
+            isRegistrationClosed: event.closed,
+            requiresSigningUp: true,
+            allowWaitlist: true,
+            priorityPools: null,
+            onlyAllowPrioritized: event.onlyAllowPrioritized,
+            canCauseStrikes: values.canCauseStrikes,
+            enforcesPreviousStrikes: values.canCauseStrikes,
+            isPaidEvent: values.isPaidEvent,
+            price:
+                values.isPaidEvent && values.price
+                    ? Number(values.price)
+                    : null,
+            paymentGracePeriodMinutes:
+                event.payInfo?.paymentGracePeriodMinutes ?? null,
+            contactPersonUserId: null,
+            reactionsAllowed: false,
+        };
+
+        updateEvent.mutate({ eventId, data });
     }
 
     function handleDelete() {
@@ -211,9 +298,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
         }
         removeEvent.mutate(
             { eventId },
-            {
-                onSuccess: () => navigate({ to: "/admin/arrangementer" }),
-            },
+            { onSuccess: () => navigate({ to: "/admin/arrangementer" }) },
         );
     }
 
@@ -232,45 +317,50 @@ function DetailsTab({ eventId }: { eventId: string }) {
     }
 
     return (
-        <EventForm
-            key={event.updatedAt}
-            groups={groups}
-            institutes={institutes}
-            existingImageUrl={event.image}
-            initialValues={{
-                title: event.title,
-                description: event.description ?? "",
-                categorySlug: event.category.slug,
-                organizerGroupSlug: event.organizer?.slug ?? "",
-                location: event.location ?? "",
-                locationLat: event.locationLat ?? null,
-                locationLng: event.locationLng ?? null,
-                start: event.startTime,
-                end: event.endTime,
-                registrationEnd: event.registrationEndTime,
-                capacity: event.capacity,
-                visibility: event.visibility,
-                restrictedToInstituteSlug:
-                    event.restrictedToInstitute?.slug ?? null,
-                isPaidEvent: event.isPaidEvent,
-                // payInfo.price is in minor units (øre) while the form — and
-                // the update endpoint — work in whole kroner.
-                price:
-                    event.payInfo?.price != null
-                        ? Math.round(event.payInfo.price / 100)
-                        : null,
-                canCauseStrikes: event.canCauseStrikes,
-                imageAlt: event.imageAlt,
-            }}
-            submitLabel="Lagre endringer"
-            submitDisabledLabel="Lagrer …"
-            isSubmitting={updateEvent.isPending || isUploading}
-            addressSuggestions={addressSuggestions ?? []}
-            isSearchingAddress={isSearchingAddress}
-            onAddressQueryChange={setAddressQuery}
-            onSubmit={handleSubmit}
-            actions={
-                canDelete ? (
+        <div className="flex flex-col gap-4">
+            <EventForm
+                values={values}
+                onChange={handleChange}
+                groups={groups}
+                institutes={institutes}
+                existingImageUrl={event.image}
+                addressSuggestions={addressSuggestions ?? []}
+                isSearchingAddress={isSearchingAddress}
+                onSubmit={handleSubmit}
+                submitLabel={
+                    isUploading ? "Laster opp bilde …" : "Lagre endringer"
+                }
+                isSubmitting={updateEvent.isPending || isUploading}
+            >
+                {uploadError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
+                        <AlertDescription>{uploadError}</AlertDescription>
+                    </Alert>
+                )}
+                {updateEvent.isSuccess && (
+                    <Alert>
+                        <CheckCircle2 className="size-4" />
+                        <AlertTitle>Lagret</AlertTitle>
+                        <AlertDescription>
+                            Endringene ble lagret.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {updateEvent.isError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke lagre</AlertTitle>
+                        <AlertDescription>
+                            {updateEvent.error.message}
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </EventForm>
+
+            {canDelete && (
+                <div className="flex justify-end">
                     <Button
                         type="button"
                         variant="destructive"
@@ -279,26 +369,9 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     >
                         Slett arrangement
                     </Button>
-                ) : null
-            }
-        >
-            {uploadError && (
-                <Alert variant="destructive">
-                    <XCircle className="size-4" />
-                    <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
-                    <AlertDescription>{uploadError}</AlertDescription>
-                </Alert>
+                </div>
             )}
-            {updateEvent.isError && (
-                <Alert variant="destructive">
-                    <XCircle className="size-4" />
-                    <AlertTitle>Kunne ikke lagre</AlertTitle>
-                    <AlertDescription>
-                        {updateEvent.error.message}
-                    </AlertDescription>
-                </Alert>
-            )}
-        </EventForm>
+        </div>
     );
 }
 

@@ -107,3 +107,55 @@ export const userListResponseSchema = Schema(
         items: z.array(userListItemSchema),
     }),
 );
+
+/**
+ * What one member may see about another. Deliberately excludes e-mail, gender,
+ * allergies and notification settings — those belong to the session, not to a
+ * profile page someone else is looking at.
+ */
+export const userProfileSchema = Schema(
+    "UserProfile",
+    z.object({
+        id: z.string().meta({ description: "User ID" }),
+        name: z.string().meta({ description: "User display name" }),
+        username: z.string().nullable().meta({ description: "Username" }),
+        image: z.string().nullable().meta({
+            description:
+                "Profile image URL — the uploaded avatar when there is one, otherwise the one from Feide",
+        }),
+        bio: z.string().nullable().meta({ description: "Free-text bio" }),
+        githubUrl: z
+            .string()
+            .nullable()
+            .meta({ description: "Link to the user's GitHub profile" }),
+        linkedinUrl: z
+            .string()
+            .nullable()
+            .meta({ description: "Link to the user's LinkedIn profile" }),
+        studyProgram: z.string().nullable().meta({
+            description:
+                "Name of the user's study programme, derived from their STUDY group membership. Null when they have none.",
+        }),
+        studyStartYear: z.number().int().nullable().meta({
+            description:
+                "The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
+        }),
+        groups: z
+            .array(
+                z.object({
+                    slug: z.string(),
+                    name: z.string(),
+                    type: z.string(),
+                    imageUrl: z.string().nullable(),
+                    role: z.string(),
+                }),
+            )
+            .meta({
+                description:
+                    "Every group the user belongs to, including the derived STUDY/STUDYYEAR groups",
+            }),
+        createdAt: z
+            .string()
+            .meta({ description: "Account creation timestamp" }),
+    }),
+);

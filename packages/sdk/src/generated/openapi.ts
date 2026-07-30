@@ -352,7 +352,7 @@ export interface paths {
          *     Requires either session authentication or a valid API key.
          *
          *     **Constraints:**
-         *     - Maximum file size: 10MB
+         *     - Maximum file size: 50MB
          *     - Allowed MIME types: image/jpeg, image/png, image/gif, image/webp, application/pdf
          *
          *     **Image optimization:**
@@ -2253,6 +2253,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get user profile
+         * @description Public profile of a single user: name, bio, links, study programme and group memberships. Requires being signed in.
+         */
+        get: operations["getUserProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3022,6 +3042,12 @@ export interface components {
             /** @description List of events */
             items: components["schemas"]["EventListItem"][];
         };
+        UpdateEventResponse: {
+            /** Format: uuid */
+            eventId: string;
+            /** @description The event slug after the update. Changing the title regenerates it, so clients must use this when linking to the event. */
+            slug: string;
+        };
         UpdateEventSchema: {
             /** @description Short title of the event */
             title?: string;
@@ -3111,14 +3137,8 @@ export interface components {
             slug: string;
             /** @description Event title */
             title: string;
-            /** @description Event description in markdown (nullable) */
-            description: string | null;
-            /** @description Maximum number of spots (null means unlimited) */
-            capacity: number | null;
-            /** @description When registration closes (ISO 8601, nullable) */
-            registrationEndTime: string | null;
-            /** @description Whether this event issues strikes for late unregistration and no-shows */
-            canCauseStrikes: boolean;
+            /** @description Event description, stored as markdown */
+            description: string;
             /** @description Event location (nullable) */
             location?: string | null;
             /** @description Latitude of the location (nullable) */
@@ -3135,6 +3155,12 @@ export interface components {
              * @description Event end time (ISO 8601)
              */
             endTime: string;
+            /** @description When registration opens (ISO 8601). Null means it is open immediately. */
+            registrationStart: string | null;
+            /** @description When registration closes (ISO 8601). Null when the event has no sign-up. */
+            registrationEnd: string | null;
+            /** @description Last moment a registration can be cancelled without a strike (ISO 8601, nullable) */
+            cancellationDeadline: string | null;
             /** @description Event organizer (nullable) */
             organizer: {
                 /** @description Organizer name */
@@ -3148,6 +3174,14 @@ export interface components {
             } | null;
             /** @description Is registration closed */
             closed: boolean;
+            /** @description Do users need to sign up to attend the event? */
+            requiresSigningUp: boolean;
+            /** @description May users join a waitlist when the event is full? */
+            allowWaitlist: boolean;
+            /** @description Maximum number of participants. Null means no capacity limit. */
+            capacity: number | null;
+            /** @description Can this event give strikes for late cancellation or no-show? */
+            canCauseStrikes: boolean;
             /** @description Event image URL (nullable) */
             image: string | null;
             /** @description Alt text for the event image (nullable) */
@@ -5156,6 +5190,36 @@ export interface components {
             nextPage: number | null;
             items: components["schemas"]["UserListItem"][];
         };
+        UserProfile: {
+            /** @description User ID */
+            id: string;
+            /** @description User display name */
+            name: string;
+            /** @description Username */
+            username: string | null;
+            /** @description Profile image URL — the uploaded avatar when there is one, otherwise the one from Feide */
+            image: string | null;
+            /** @description Free-text bio */
+            bio: string | null;
+            /** @description Link to the user's GitHub profile */
+            githubUrl: string | null;
+            /** @description Link to the user's LinkedIn profile */
+            linkedinUrl: string | null;
+            /** @description Name of the user's study programme, derived from their STUDY group membership. Null when they have none. */
+            studyProgram: string | null;
+            /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+            studyStartYear: number | null;
+            /** @description Every group the user belongs to, including the derived STUDY/STUDYYEAR groups */
+            groups: {
+                slug: string;
+                name: string;
+                type: string;
+                imageUrl: string | null;
+                role: string;
+            }[];
+            /** @description Account creation timestamp */
+            createdAt: string;
+        };
     };
     responses: never;
     parameters: {
@@ -6507,7 +6571,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UpdateEventResponse"];
+                };
             };
             /** @description Authentication required */
             401: {
@@ -11331,6 +11397,44 @@ export interface operations {
             };
             /** @description Forbidden - Requires users:view */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfile"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

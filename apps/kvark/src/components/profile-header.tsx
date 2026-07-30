@@ -9,11 +9,13 @@ import { initials } from "#/lib/utils";
 export type ProfileLink = {
     kind: "github" | "linkedin";
     label: string;
+    url?: string;
 };
 
 export type ProfileHeaderUser = {
     name: string;
-    email: string;
+    /** Bare satt på egen profil — e-post er ikke en del av den offentlige profilen. */
+    email?: string;
     programme?: string;
     avatarUrl?: string;
     links: ProfileLink[];
@@ -22,7 +24,10 @@ export type ProfileHeaderUser = {
 type ProfileHeaderProps = {
     user: ProfileHeaderUser;
     actions?: ReactNode;
-    /** Åpner dialogen der GitHub-/LinkedIn-lenker redigeres. */
+    /**
+     * Åpner dialogen der GitHub-/LinkedIn-lenker redigeres. Utelates på andres
+     * profiler, som også skjuler «Legg til lenke».
+     */
     onAddLink?: () => void;
 };
 
@@ -54,13 +59,15 @@ export function ProfileHeader({
                             {user.programme}
                         </p>
                     ) : null}
-                    <a
-                        href={`mailto:${user.email}`}
-                        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground"
-                    >
-                        <Mail className="size-3.5 shrink-0" />
-                        {user.email}
-                    </a>
+                    {user.email ? (
+                        <a
+                            href={`mailto:${user.email}`}
+                            className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground"
+                        >
+                            <Mail className="size-3.5 shrink-0" />
+                            {user.email}
+                        </a>
+                    ) : null}
                 </div>
             }
             badges={
@@ -70,19 +77,32 @@ export function ProfileHeader({
                             key={link.kind}
                             variant="outline"
                             className="gap-1.5"
+                            render={
+                                link.url ? (
+                                    <a
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                    />
+                                ) : undefined
+                            }
                         >
                             {link.kind === "github" ? <Github /> : <Linkedin />}
                             {link.label}
                         </Badge>
                     ))}
-                    <Badge
-                        variant="secondary"
-                        className="gap-1.5"
-                        render={<button type="button" onClick={onAddLink} />}
-                    >
-                        <Plus />
-                        Legg til lenke
-                    </Badge>
+                    {onAddLink ? (
+                        <Badge
+                            variant="secondary"
+                            className="gap-1.5"
+                            render={
+                                <button type="button" onClick={onAddLink} />
+                            }
+                        >
+                            <Plus />
+                            Legg til lenke
+                        </Badge>
+                    ) : null}
                 </>
             }
             actions={actions}

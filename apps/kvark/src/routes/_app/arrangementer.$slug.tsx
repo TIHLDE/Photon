@@ -120,6 +120,7 @@ function EventDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
+                        nativeButton={false}
                         render={<Link to="/arrangementer" />}
                     >
                         <ArrowLeft />
@@ -148,8 +149,8 @@ function EventDetailPage() {
                                     label="Rediger arrangement"
                                     render={
                                         <Link
-                                            to="/admin/arrangementer/$eventId"
-                                            params={{ eventId: event.id }}
+                                            to="/arrangementer/$slug/rediger"
+                                            params={{ slug: event.slug }}
                                         />
                                     }
                                 />

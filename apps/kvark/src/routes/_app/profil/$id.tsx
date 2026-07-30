@@ -4,10 +4,11 @@ import {
     type LinkOptions,
     linkOptions,
     Outlet,
+    redirect,
     useMatchRoute,
     useNavigate,
 } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import {
@@ -27,8 +28,12 @@ import {
     authQueryOptions,
     invalidateAuth,
     logoutUser,
+    OWN_PROFILE_ALIAS,
 } from "#/api/auth";
-import { updateUserSettingsMutation } from "#/api/queries/user";
+import {
+    getUserProfileQuery,
+    updateUserSettingsMutation,
+} from "#/api/queries/user";
 import { useIsAdmin } from "#/hooks/use-permission";
 import { EditBioDialog } from "#/components/edit-bio-dialog";
 import { MembershipQrDialog } from "#/components/membership-qr-dialog";
@@ -41,7 +46,22 @@ import { deriveStudy } from "#/lib/utils";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
-    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
+    beforeLoad: async ({ location, params }) => {
+        const auth = await authClientWithRedirect(location.href);
+        // Menyene lenker til /profil/me som en snarvei til «min profil».
+        // Alt nedenfor forventer en ekte bruker-ID, så aliaset byttes ut med
+        // den innloggede brukerens ID her.
+        if (params.id === OWN_PROFILE_ALIAS) {
+            throw redirect({
+                to: "/profil/$id",
+                params: { id: auth.user.id },
+                replace: true,
+            });
+        }
+        return auth;
+    },
+    loader: ({ context, params }) =>
+        context.queryClient.ensureQueryData(getUserProfileQuery(params.id)),
 });
 
 type ProfileNavItem = {
@@ -61,8 +81,10 @@ function buildProfileLinks(
     linkedinUrl?: string | null,
 ): ProfileLink[] {
     const links: ProfileLink[] = [];
-    if (githubUrl) links.push({ kind: "github", label: "github" });
-    if (linkedinUrl) links.push({ kind: "linkedin", label: "linkedin" });
+    if (githubUrl)
+        links.push({ kind: "github", label: "github", url: githubUrl });
+    if (linkedinUrl)
+        links.push({ kind: "linkedin", label: "linkedin", url: linkedinUrl });
     return links;
 }
 
@@ -70,23 +92,30 @@ function RouteComponent() {
     const { id } = Route.useParams();
     const navigate = useNavigate();
 
+    // Everything on screen comes from the profile endpoint, so the page renders
+    // the same whoever is being looked at. The session only decides whether the
+    // viewer gets the edit affordances.
+    const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
+    const isOwnProfile = session?.user.id === id;
     const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
     const [bioOpen, setBioOpen] = useState(false);
 
     const settings = session?.user.settings;
-    const { programme, classYear } = deriveStudy(session?.groups ?? []);
+    const { programme, classYear } = deriveStudy(profile.groups);
     const studyLabel =
         [programme, classYear ? `${classYear}. klasse` : null]
             .filter(Boolean)
             .join(" · ") || undefined;
     const user: ProfileHeaderUser = {
-        name: session?.user.name ?? "",
-        email: session?.user.email ?? "",
-        avatarUrl: settings?.imageUrl ?? session?.user.image ?? undefined,
+        name: profile.name,
+        // E-post er ikke en del av den offentlige profilen — den vises bare for
+        // deg selv, der den uansett ligger i sesjonen.
+        email: isOwnProfile ? (session?.user.email ?? undefined) : undefined,
+        avatarUrl: profile.image ?? undefined,
         programme: studyLabel,
-        links: buildProfileLinks(settings?.githubUrl, settings?.linkedinUrl),
+        links: buildProfileLinks(profile.githubUrl, profile.linkedinUrl),
     };
 
     async function handleLogout() {
@@ -94,6 +123,8 @@ function RouteComponent() {
         await navigate({ to: "/" });
     }
 
+    // Prikker, spørreskjemaer og admin er den innloggede brukerens egne ting og
+    // gir ingen mening på en annens profil.
     const navGroups: ProfileNavGroup[] = [
         {
             id: "main",
@@ -104,14 +135,18 @@ function RouteComponent() {
                     link: linkOptions({ to: "/profil/$id", params: { id } }),
                     exact: true,
                 },
-                {
-                    label: "Arrangementer",
-                    icon: CalendarDays,
-                    link: linkOptions({
-                        to: "/profil/$id/arrangementer",
-                        params: { id },
-                    }),
-                },
+                ...(isOwnProfile
+                    ? [
+                          {
+                              label: "Arrangementer",
+                              icon: CalendarDays,
+                              link: linkOptions({
+                                  to: "/profil/$id/arrangementer",
+                                  params: { id },
+                              }),
+                          },
+                      ]
+                    : []),
                 {
                     label: "Medlemskap",
                     icon: UserCircle2,
@@ -120,26 +155,30 @@ function RouteComponent() {
                         params: { id },
                     }),
                 },
-                {
-                    label: "Prikker",
-                    icon: Ticket,
-                    link: linkOptions({
-                        to: "/profil/$id/prikker",
-                        params: { id },
-                    }),
-                },
-                {
-                    label: "Spørreskjemaer",
-                    icon: HelpCircle,
-                    link: linkOptions({
-                        to: "/profil/$id/sporreskjemaer",
-                        params: { id },
-                    }),
-                },
+                ...(isOwnProfile
+                    ? [
+                          {
+                              label: "Prikker",
+                              icon: Ticket,
+                              link: linkOptions({
+                                  to: "/profil/$id/prikker",
+                                  params: { id },
+                              }),
+                          },
+                          {
+                              label: "Spørreskjemaer",
+                              icon: HelpCircle,
+                              link: linkOptions({
+                                  to: "/profil/$id/sporreskjemaer",
+                                  params: { id },
+                              }),
+                          },
+                      ]
+                    : []),
             ],
         },
         // Admin entry point — only for admins. The API still enforces access.
-        ...(isAdmin
+        ...(isOwnProfile && isAdmin
             ? [
                   {
                       id: "secondary",
@@ -159,44 +198,51 @@ function RouteComponent() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <ProfileHeader
                 user={user}
-                onAddLink={() => setBioOpen(true)}
+                onAddLink={isOwnProfile ? () => setBioOpen(true) : undefined}
                 actions={
-                    <>
-                        <MembershipQrDialog
-                            name={user.name}
-                            userId={session?.user.id}
-                        />
-                        <Button onClick={() => setBioOpen(true)}>
-                            <Pencil />
-                            Rediger bio
-                        </Button>
-                    </>
+                    isOwnProfile ? (
+                        <>
+                            <MembershipQrDialog
+                                name={user.name}
+                                userId={session?.user.id}
+                            />
+                            <Button onClick={() => setBioOpen(true)}>
+                                <Pencil />
+                                Rediger bio
+                            </Button>
+                        </>
+                    ) : null
                 }
             />
             {/* Dialogen styres herfra slik at både «Rediger bio» og
                 «Legg til lenke» i headeren åpner den samme dialogen. */}
-            <EditBioDialog
-                open={bioOpen}
-                onOpenChange={setBioOpen}
-                defaultValues={{
-                    bio: settings?.bioDescription ?? "",
-                    github: settings?.githubUrl ?? "",
-                    linkedin: settings?.linkedinUrl ?? "",
-                }}
-                onSubmit={async (values) => {
-                    await updateSettings.mutateAsync({
-                        data: {
-                            bioDescription: values.bio || undefined,
-                            githubUrl: values.github || undefined,
-                            linkedinUrl: values.linkedin || undefined,
-                            allergies: settings?.allergies ?? [],
-                        },
-                    });
-                    await invalidateAuth();
-                }}
-            />
+            {isOwnProfile ? (
+                <EditBioDialog
+                    open={bioOpen}
+                    onOpenChange={setBioOpen}
+                    defaultValues={{
+                        bio: settings?.bioDescription ?? "",
+                        github: settings?.githubUrl ?? "",
+                        linkedin: settings?.linkedinUrl ?? "",
+                    }}
+                    onSubmit={async (values) => {
+                        await updateSettings.mutateAsync({
+                            data: {
+                                bioDescription: values.bio || undefined,
+                                githubUrl: values.github || undefined,
+                                linkedinUrl: values.linkedin || undefined,
+                                allergies: settings?.allergies ?? [],
+                            },
+                        });
+                        await invalidateAuth();
+                    }}
+                />
+            ) : null}
             <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
-                <ProfileNav navGroups={navGroups} onLogout={handleLogout} />
+                <ProfileNav
+                    navGroups={navGroups}
+                    onLogout={isOwnProfile ? handleLogout : undefined}
+                />
                 <section className="flex min-w-0 flex-col gap-6">
                     <Outlet />
                 </section>
@@ -226,6 +272,7 @@ function NavButton({
             variant={isActive ? "default" : "ghost"}
             size={size}
             className={className}
+            nativeButton={false}
             render={<Link {...item.link} />}
         >
             <item.icon />
@@ -239,7 +286,7 @@ function ProfileNav({
     onLogout,
 }: {
     navGroups: ProfileNavGroup[];
-    onLogout: () => void;
+    onLogout?: () => void;
 }) {
     const flatItems = navGroups.flatMap((g) => g.items);
 
@@ -274,15 +321,19 @@ function ProfileNav({
                             </ul>
                         </Fragment>
                     ))}
-                    <Separator className="my-2" />
-                    <Button
-                        variant="ghost"
-                        className="justify-start"
-                        onClick={onLogout}
-                    >
-                        <LogOut />
-                        Logg ut
-                    </Button>
+                    {onLogout ? (
+                        <>
+                            <Separator className="my-2" />
+                            <Button
+                                variant="ghost"
+                                className="justify-start"
+                                onClick={onLogout}
+                            >
+                                <LogOut />
+                                Logg ut
+                            </Button>
+                        </>
+                    ) : null}
                 </nav>
             </aside>
         </>

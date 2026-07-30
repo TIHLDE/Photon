@@ -132,7 +132,7 @@ export function EventCalendar({
     return (
         <div
             className={cn(
-                "flex w-full flex-col gap-4 overflow-hidden rounded-xl bg-card p-3 ring-1 ring-foreground/10 sm:p-4",
+                "flex w-full flex-col gap-4 overflow-hidden rounded-xl bg-card p-3 ring-1 ring-card-border sm:p-4",
                 className,
             )}
         >
