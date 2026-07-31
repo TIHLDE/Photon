@@ -166,6 +166,20 @@ describe("Job Postings System", () => {
             );
             expect(expiredJobInList?.expired).toBe(true);
 
+            // 8b. `expired=false` must behave like omitting the filter.
+            // z.coerce.boolean() made every non-empty string true, so the
+            // explicit opt-out returned expired ads — the opposite of the ask.
+            const listWithoutExpiredResponse = await userClient.api.jobs.$get({
+                query: { expired: "false" },
+            });
+
+            expect(listWithoutExpiredResponse.status).toBe(200);
+            const withoutExpired = await listWithoutExpiredResponse.json();
+            expect(withoutExpired.items.length).toBe(2);
+            expect(
+                withoutExpired.items.find((j) => j.id === expiredJob.id),
+            ).toBeUndefined();
+
             // 9. Search by title
             const searchByTitleResponse = await userClient.api.jobs.$get({
                 query: { search: "Developer" },
