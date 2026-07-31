@@ -216,6 +216,122 @@
         var(--tw-animation-fill-mode, none);
 }
 
+/* ── Entrance motion ──────────────────────────────────────────────────────
+   Content that mounts — a page section, a grid of cards — fades up instead of
+   snapping in. `<Reveal>` and `<Stagger>` (components/ui/motion.tsx) are the
+   only entry points; the timing lives here so it sits next to the easing
+   tokens above rather than drifting per component.
+
+   Three deliberate choices:
+
+   1. The keyframe declares only `from`. The implicit `to` is the element's own
+      computed style, so this composes with any layout without restating it —
+      the same trick tw-animate-css uses for its `enter` keyframe.
+   2. `backwards`, not `both`. A `both` animation keeps filling after it
+      finishes, which leaves `transform` permanently applied — and a
+      transformed element is a containing block for `position: fixed`
+      descendants forever. `backwards` covers the stagger delay and then
+      releases the element completely.
+   3. Movement is 0.5rem. Entrances are seen on every navigation, so this is
+      deliberately small: enough to read as motion, not enough to feel slow. */
+@keyframes reveal-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, var(--reveal-distance, 0.5rem), 0);
+    }
+}
+
+[data-slot="reveal"] {
+    animation: reveal-in var(--reveal-duration, 0.26s) var(--ease-out) backwards;
+}
+
+/* Stagger: children enter 40ms apart, capped at 5 steps (200ms). The cap does
+   double duty. Without it a 24-card grid would still be animating a second
+   after it rendered; and because the rule also covers children appended
+   later, the cap is exactly how long a "last inn mer" batch stays invisible
+   before it fades in — 200ms after a network round-trip is unnoticeable,
+   500ms would read as the button not working.
+
+   Every direct child gets an explicit index, including the first, because
+   `--reveal-index` inherits: leaving `:nth-child(1)` to the default would let
+   a nested <Stagger> pick up its parent's offset. */
+[data-slot="stagger"] > * {
+    animation: reveal-in var(--reveal-duration, 0.26s) var(--ease-out)
+        calc(var(--reveal-step, 0.04s) * var(--reveal-index, 0)) backwards;
+}
+[data-slot="stagger"] > *:nth-child(1) {
+    --reveal-index: 0;
+}
+[data-slot="stagger"] > *:nth-child(2) {
+    --reveal-index: 1;
+}
+[data-slot="stagger"] > *:nth-child(3) {
+    --reveal-index: 2;
+}
+[data-slot="stagger"] > *:nth-child(4) {
+    --reveal-index: 3;
+}
+[data-slot="stagger"] > *:nth-child(5) {
+    --reveal-index: 4;
+}
+[data-slot="stagger"] > *:nth-child(n + 6) {
+    --reveal-index: 5;
+}
+
+/* ── Interactive surfaces ─────────────────────────────────────────────────
+   A card that navigates should answer the pointer. Keyed off `data-slot`
+   rather than a class so every current and future link-card (news, gallery,
+   …) gets the same treatment without opting in — apps/kvark is not allowed to
+   add visual classes of its own, so the default has to be right here.
+
+   The lift and the shadow carry this on their own — the cover image is
+   deliberately left alone. Zooming artwork on hover fights the content: it
+   crops the poster the designer framed, and on a wall of cards the movement
+   competes with the card that is actually being pointed at.
+
+   `@media (hover: hover)` is mandatory on hand-written rules. Tailwind wraps
+   its own `hover:` utilities in this guard, but plain CSS gets no such help,
+   and on a touch device an unguarded `:hover` sticks after a tap until the
+   user taps somewhere else. */
+:is(a, button)[data-slot="card"],
+[data-slot="list-card"] {
+    transition:
+        translate 0.2s var(--ease-out),
+        box-shadow 0.2s var(--ease-out);
+}
+
+@media (hover: hover) {
+    :is(a, button)[data-slot="card"]:hover,
+    [data-slot="list-card"]:hover {
+        translate: 0 -2px;
+    }
+    /* Card carries `ring-1`, so its `box-shadow` is already Tailwind's stack
+       of `var(--tw-*)` slots. Feeding the elevation through `--tw-shadow`
+       layers it *under* that ring; setting `box-shadow` here would drop the
+       ring instead. ListCard has no ring — nothing declares `box-shadow` on
+       it — so `--tw-shadow` would go nowhere and it needs the real property.
+       Same visual result, two different plumbing paths. */
+    :is(a, button)[data-slot="card"]:hover {
+        --tw-shadow: 0 10px 24px -14px oklch(0 0 0 / 0.45);
+    }
+    /* Only from `sm` up, matching the breakpoint where ListCard stops being a
+       filled card and becomes a transparent row. A drop shadow under a
+       transparent row reads as a rendering artefact. */
+    @media (width >= 40rem) {
+        [data-slot="list-card"]:hover {
+            box-shadow: 0 10px 24px -14px oklch(0 0 0 / 0.45);
+        }
+    }
+}
+
+/* Press settles the card back down, faster than it rose — the system
+   responding should always outpace the user deciding. */
+:is(a, button)[data-slot="card"]:active,
+[data-slot="list-card"]:active {
+    translate: 0 0;
+    transition-duration: 0.1s;
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -289,5 +405,12 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+        /* Delays must go too, not just durations. A staggered entrance fills
+           `backwards` — opacity 0 — for the whole delay, so an untouched
+           320ms delay would leave the last cards in a grid blank for a third
+           of a second before snapping in. That reads as a loading bug, which
+           is the opposite of what reduced motion is asking for. */
+        animation-delay: 0ms !important;
+        transition-delay: 0ms !important;
     }
 }
