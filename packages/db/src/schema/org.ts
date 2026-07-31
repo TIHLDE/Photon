@@ -238,10 +238,11 @@ export const groupMembershipRelations = relations(
  * can join, leave and rejoin a group repeatedly, and each stint is its own
  * period.
  *
- * `role` is stored as free text rather than the enum: Lepton's history
- * (which this table is backfilled from) recorded board positions like
- * "TREASURER" that Photon's two-value enum has no room for, and the value is
- * only ever displayed.
+ * `role` is stored as free text rather than the enum on purpose. This is an
+ * append-only record of what was true at the time, so it should not move when
+ * `groupMembershipRole` gains or loses a value — a stint that ended as a role
+ * Photon no longer offers still ended as that role. The value is only ever
+ * displayed, never matched on.
  */
 export const groupMembershipHistory = pgTable(
     "group_membership_history",
