@@ -49,6 +49,10 @@
     --popover-foreground: oklch(0.145 0 0);
     --primary: var(--logo);
     --primary-foreground: oklch(0.985 0 0);
+    /* Tekstlenker følger --primary i lys modus — den mørke logoblåen har rikelig
+       kontrast mot hvitt (9.27:1) og leses fint som tynn tekst. Egen token
+       likevel, fordi mørk modus må avvike; se overstyringen i `.dark`. */
+    --link: var(--primary);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
@@ -90,6 +94,13 @@
     --popover-foreground: #f5f7f9;
     --primary: #1b61e4;
     --primary-foreground: #ffffff;
+    /* Her kan ikke lenker følge --primary: som tekst gir #1b61e4 bare 3.34:1 mot
+       --card (#061532), under WCAG AA. Dessuten leses en stor fylt flate lysere
+       enn tynne 14px-bokstaver i samme hex, så CTA-fyllet og lenketeksten ser
+       ulike ut. Neste trinn i navy-skalaen (hsl(219°, 75%, 60%)) løser begge:
+       5.30:1 mot --background og 4.87:1 mot --card. (Mot --popover, #091f49,
+       blir det 4.34:1 — så vidt under AA, men lenker i popovers er sjeldne.) */
+    --link: #4d82e6;
     --secondary: #0d3172;
     --secondary-foreground: #f5f7f9;
     --muted: #0d3172;
@@ -136,6 +147,7 @@
     --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-link: var(--link);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
@@ -242,7 +254,7 @@
     --tw-prose-body: var(--foreground);
     --tw-prose-headings: var(--foreground);
     --tw-prose-lead: var(--muted-foreground);
-    --tw-prose-links: var(--primary);
+    --tw-prose-links: var(--link);
     --tw-prose-bold: var(--foreground);
     --tw-prose-counters: var(--muted-foreground);
     --tw-prose-bullets: var(--muted-foreground);
