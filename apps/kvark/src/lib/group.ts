@@ -105,30 +105,6 @@ export function formatGroupDate(iso: string): string {
 }
 
 /**
- * Reduce a markdown group description to a short plain-text excerpt, for use
- * as a one-line subtitle. Strips headings, emphasis, links (keeping the link
- * text), images and horizontal rules, then truncates on a word boundary.
- */
-export function groupDescriptionExcerpt(
-    markdown: string,
-    maxLength = 160,
-): string {
-    const text = markdown
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // images
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links -> link text
-        .replace(/^#{1,6}\s+/gm, "") // headings
-        .replace(/^(-{3,}|\*{3,})\s*$/gm, "") // horizontal rules
-        .replace(/(\*\*|__|\*|_|`)/g, "") // emphasis/code markers
-        .replace(/^[-*+]\s+/gm, "") // list bullets
-        .replace(/&nbsp;/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-    if (text.length <= maxLength) return text;
-    const cut = text.slice(0, maxLength);
-    return `${cut.slice(0, cut.lastIndexOf(" "))}…`;
-}
-
-/**
  * Map an API group (detail response) to the display shape used by the header
  * and about tab. The list/detail endpoints do not expose a leader name, so
  * `leader` is left undefined unless supplied by the caller.
