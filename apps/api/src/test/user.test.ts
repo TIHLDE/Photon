@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -664,6 +665,44 @@ describe("user endpoints", () => {
             });
 
             expect(response.status).toBe(400);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "clears a profile link when an empty string is sent",
+        async ({ ctx }) => {
+            const { db } = ctx;
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await db.insert(schema.userSettings).values({
+                userId: user.id,
+                gender: "male",
+                allowsPhotosByDefault: false,
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+                isOnboarded: true,
+                githubUrl: "https://github.com/testuser",
+                linkedinUrl: "https://linkedin.com/in/testuser",
+            });
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { githubUrl: "" },
+            });
+
+            expect(response.status).toBe(200);
+
+            const settings = await db.query.userSettings.findFirst({
+                where: eq(schema.userSettings.userId, user.id),
+            });
+
+            // Tømt felt lagres som NULL, ikke tom streng — og feltene som ikke
+            // ble sendt med står urørt.
+            expect(settings?.githubUrl).toBeNull();
+            expect(settings?.linkedinUrl).toBe(
+                "https://linkedin.com/in/testuser",
+            );
         },
         500_000,
     );

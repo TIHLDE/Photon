@@ -19,15 +19,21 @@ import {
 import { Input } from "@tihlde/ui/ui/input";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import { Pencil } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
 const BIO_MAX = 500;
 
+/** Tomt felt betyr «fjern lenken», alt annet må være en gyldig URL. */
+const linkField = z.union([
+    z.url({ message: "Må være en gyldig URL" }),
+    z.literal(""),
+]);
+
 const editBioSchema = z.object({
     bio: z.string().max(BIO_MAX, `Maks ${BIO_MAX} tegn`),
-    github: z.string(),
-    linkedin: z.string(),
+    github: linkField,
+    linkedin: linkField,
 });
 
 type EditBioValues = z.infer<typeof editBioSchema>;
@@ -59,18 +65,25 @@ export function EditBioDialog({
         onOpenChange?.(next);
     }
 
+    const bio = defaultValues?.bio ?? "";
+    const github = defaultValues?.github ?? "";
+    const linkedin = defaultValues?.linkedin ?? "";
+
     const form = useForm({
-        defaultValues: {
-            bio: defaultValues?.bio ?? "",
-            github: defaultValues?.github ?? "",
-            linkedin: defaultValues?.linkedin ?? "",
-        } satisfies EditBioValues,
+        defaultValues: { bio, github, linkedin } satisfies EditBioValues,
         validators: { onChange: editBioSchema },
         onSubmit: async ({ value }) => {
             await onSubmit?.(value);
             setOpen(false);
         },
     });
+
+    // Dialogen monteres én gang og beholder skjemastaten sin, så feltene må
+    // fylles på nytt hver gang den åpnes — ellers viser den verdiene fra da
+    // komponenten ble montert, ikke de sist lagrede.
+    useEffect(() => {
+        if (open) form.reset({ bio, github, linkedin });
+    }, [open, bio, github, linkedin, form]);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -193,7 +206,7 @@ export function EditBioDialog({
                         >
                             {({ canSubmit, isSubmitting }) => (
                                 <Button type="submit" disabled={!canSubmit}>
-                                    {isSubmitting ? "Lagrer..." : "Opprett"}
+                                    {isSubmitting ? "Lagrer..." : "Lagre"}
                                 </Button>
                             )}
                         </form.Subscribe>

@@ -5192,10 +5192,8 @@ export interface components {
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
-            /** Format: uri */
-            githubUrl?: string;
-            /** Format: uri */
-            linkedinUrl?: string;
+            githubUrl?: string | "";
+            linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
             /** @default [] */
             allergies: string[];
@@ -5210,10 +5208,8 @@ export interface components {
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
-            /** Format: uri */
-            githubUrl?: string;
-            /** Format: uri */
-            linkedinUrl?: string;
+            githubUrl?: string | "";
+            linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
             /** @default [] */
             allergies: string[];
@@ -5226,10 +5222,8 @@ export interface components {
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
-            /** Format: uri */
-            githubUrl?: string;
-            /** Format: uri */
-            linkedinUrl?: string;
+            githubUrl?: string | "";
+            linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
             /** @default [] */
             allergies: string[];
@@ -5242,10 +5236,8 @@ export interface components {
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
-            /** Format: uri */
-            githubUrl?: string;
-            /** Format: uri */
-            linkedinUrl?: string;
+            githubUrl?: string | "";
+            linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
             /** @default [] */
             allergies: string[];
@@ -5258,10 +5250,8 @@ export interface components {
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
-            /** Format: uri */
-            githubUrl?: string;
-            /** Format: uri */
-            linkedinUrl?: string;
+            githubUrl?: string | "";
+            linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
             /** @default [] */
             allergies: string[];
