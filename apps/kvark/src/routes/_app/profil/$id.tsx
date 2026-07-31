@@ -82,9 +82,9 @@ function buildProfileLinks(
 ): ProfileLink[] {
     const links: ProfileLink[] = [];
     if (githubUrl)
-        links.push({ kind: "github", label: "github", url: githubUrl });
+        links.push({ kind: "github", label: "GitHub", url: githubUrl });
     if (linkedinUrl)
-        links.push({ kind: "linkedin", label: "linkedin", url: linkedinUrl });
+        links.push({ kind: "linkedin", label: "LinkedIn", url: linkedinUrl });
     return links;
 }
 
@@ -194,7 +194,6 @@ function RouteComponent() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <ProfileHeader
                 user={user}
-                onAddLink={isOwnProfile ? () => setBioOpen(true) : undefined}
                 actions={
                     isOwnProfile ? (
                         <>
@@ -210,8 +209,8 @@ function RouteComponent() {
                     ) : null
                 }
             />
-            {/* Dialogen styres herfra slik at både «Rediger bio» og
-                «Legg til lenke» i headeren åpner den samme dialogen. */}
+            {/* Dialogen styres herfra slik at «Rediger bio» i headeren kan
+                åpne den. */}
             {isOwnProfile ? (
                 <EditBioDialog
                     open={bioOpen}
@@ -224,9 +223,12 @@ function RouteComponent() {
                     onSubmit={async (values) => {
                         await updateSettings.mutateAsync({
                             data: {
-                                bioDescription: values.bio || undefined,
-                                githubUrl: values.github || undefined,
-                                linkedinUrl: values.linkedin || undefined,
+                                // Tomme strenger må sendes med — `undefined`
+                                // betyr «ikke endre», så feltene kunne aldri
+                                // tømmes igjen. API-et lagrer tomt som NULL.
+                                bioDescription: values.bio,
+                                githubUrl: values.github,
+                                linkedinUrl: values.linkedin,
                                 allergies: settings?.allergies ?? [],
                             },
                         });

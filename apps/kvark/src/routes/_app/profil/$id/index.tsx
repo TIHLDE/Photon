@@ -41,11 +41,11 @@ function RouteComponent() {
 
     const links: ProfileLink[] = [];
     if (profile.githubUrl)
-        links.push({ kind: "github", label: "github", url: profile.githubUrl });
+        links.push({ kind: "github", label: "GitHub", url: profile.githubUrl });
     if (profile.linkedinUrl)
         links.push({
             kind: "linkedin",
-            label: "linkedin",
+            label: "LinkedIn",
             url: profile.linkedinUrl,
         });
 
