@@ -86,9 +86,10 @@ export const ADMIN_SECTION_PERMISSIONS = {
         "applications:sports-support:manage",
         "applications:hs-case:view",
         "applications:hs-case:manage",
-        "applications:company-contact:view",
-        "applications:company-contact:manage",
     ],
+    // Bedriftshenvendelser have their own page and their own grant, so
+    // søknad-permissions do not unlock them.
+    kontaktskjema: ["company-contact:view", "company-contact:manage"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type AdminSection = keyof typeof ADMIN_SECTION_PERMISSIONS;

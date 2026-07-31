@@ -66,8 +66,8 @@ describe("Henvendelser fra bedrift", () => {
             // Næringslivsministeren.
             const handler = await ctx.utils.createTestUser();
             await ctx.utils.giveUserPermissions(handler, [
-                "applications:company-contact:view",
-                "applications:company-contact:manage",
+                "company-contact:view",
+                "company-contact:manage",
             ]);
             const handlerClient = await ctx.utils.clientForUser(handler);
 
@@ -99,6 +99,19 @@ describe("Henvendelser fra bedrift", () => {
                 query: {},
             });
             expect(await financeList.json()).toHaveLength(0);
+
+            // Neither does the all-types søknad grant: kontaktskjema is its
+            // own permission domain, not a søknad sub-type.
+            const allApplications = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(allApplications, [
+                "applications:view",
+                "applications:manage",
+            ]);
+            const allClient = await ctx.utils.clientForUser(allApplications);
+            const allList = await allClient.api.applications.$get({
+                query: {},
+            });
+            expect(await allList.json()).toHaveLength(0);
         },
     );
 
@@ -115,8 +128,8 @@ describe("Henvendelser fra bedrift", () => {
 
             const handler = await ctx.utils.createTestUser();
             await ctx.utils.giveUserPermissions(handler, [
-                "applications:company-contact:view",
-                "applications:company-contact:manage",
+                "company-contact:view",
+                "company-contact:manage",
             ]);
             const handlerClient = await ctx.utils.clientForUser(handler);
 
@@ -153,8 +166,8 @@ describe("Henvendelser fra bedrift", () => {
 
             const handler = await ctx.utils.createTestUser();
             await ctx.utils.giveUserPermissions(handler, [
-                "applications:company-contact:view",
-                "applications:company-contact:manage",
+                "company-contact:view",
+                "company-contact:manage",
             ]);
             const handlerClient = await ctx.utils.clientForUser(handler);
 

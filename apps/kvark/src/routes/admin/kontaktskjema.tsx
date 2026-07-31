@@ -10,14 +10,11 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { FileText } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { authQueryOptions, sessionHasPermission } from "#/api/auth";
 import {
-    type ApplicationType,
     fetchApplicationAttachmentUrl,
     fetchApplicationPdfUrl,
     getApplicationQuery,
@@ -26,91 +23,49 @@ import {
 } from "#/api/queries/applications";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
-import { useAnyScopePermission } from "#/hooks/use-permission";
 import { AdminDetailDialog } from "#/components/soknader/admin-detail-dialog";
 import { ApplicationStatusBadge } from "#/components/soknader/status-badge";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 
 const searchSchema = z.object({
-    /** Deep link from the notification email opens this søknad directly. */
+    /** Deep link from the notification email opens this henvendelse directly. */
     id: z.string().optional(),
-    type: z
-        .enum(["expense", "support", "sports_support", "hs_case"])
-        .optional(),
 });
 
-export const Route = createFileRoute("/admin/soknader")({
-    component: AdminApplicationsPage,
+export const Route = createFileRoute("/admin/kontaktskjema")({
+    component: AdminCompanyContactPage,
     validateSearch: searchSchema,
-    loader: () => ({ breadcrumbs: "Søknader" }),
+    loader: () => ({ breadcrumbs: "Kontaktskjema" }),
 });
 
 /**
- * Which type tab a viewer sees depends on what they may handle: the
- * Finansminister gets Utlegg and Støtte, HS gets Støtte and HS-saker, IdKom
- * only Idrettslag. The API narrows the data the same way — this just keeps
- * the UI from offering empty tabs. Bedriftshenvendelser are not here: they
- * live on /admin/kontaktskjema behind their own permission.
+ * Henvendelser bedrifter sender inn via kontaktskjemaet på bedriftssiden.
+ *
+ * These are stored as applications of type `company_contact`, but they are
+ * not søknader in any sense that matters to the people handling them, so
+ * they get their own page behind their own `company-contact:*` grant.
  */
-/** Every søknad type except bedriftshenvendelser, which have their own page. */
-type SoknadType = Exclude<ApplicationType, "company_contact">;
-
-const TYPE_TABS: {
-    value: SoknadType;
-    label: string;
-    permissions: string[];
-}[] = [
-    {
-        value: "expense",
-        label: "Utlegg",
-        permissions: ["applications:view", "applications:expense:view"],
-    },
-    {
-        value: "support",
-        label: "Støtte",
-        permissions: ["applications:view", "applications:support:view"],
-    },
-    {
-        value: "sports_support",
-        label: "Idrettslag",
-        permissions: ["applications:view", "applications:sports-support:view"],
-    },
-    {
-        value: "hs_case",
-        label: "Saker til HS",
-        permissions: ["applications:view", "applications:hs-case:view"],
-    },
-];
-
-function AdminApplicationsPage() {
+function AdminCompanyContactPage() {
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
 
-    const { data: session } = useQuery(authQueryOptions);
-    // The list and the detail view need `*:view`; changing the status needs
-    // `*:manage`. Without it the dialog is read-only and the row button says
-    // "Se" instead of promising a decision the viewer cannot make.
-    const canManage = useAnyScopePermission([
-        "applications:manage",
-        "applications:expense:manage",
-        "applications:support:manage",
-        "applications:sports-support:manage",
-        "applications:hs-case:manage",
+    const canView = useAnyScopePermission([
+        "company-contact:view",
+        "company-contact:manage",
     ]);
-    const visibleTabs = TYPE_TABS.filter((tab) =>
-        sessionHasPermission(session?.permissions, tab.permissions),
-    );
-
-    const activeType = search.type ?? visibleTabs[0]?.value;
+    // Reading the list needs `:view`; changing the status needs `:manage`.
+    // Without it the dialog is read-only and the row button says "Se".
+    const canManage = useAnyScopePermission(["company-contact:manage"]);
 
     const { data: applications, isLoading } = useQuery({
-        ...getApplicationsQuery(activeType ? { type: activeType } : undefined),
-        enabled: Boolean(session) && visibleTabs.length > 0,
+        ...getApplicationsQuery({ type: "company_contact" }),
+        enabled: canView,
     });
 
     const selectedId = search.id;
     const { data: selected, isLoading: isLoadingDetail } = useQuery({
         ...getApplicationQuery(selectedId ?? ""),
-        enabled: Boolean(selectedId),
+        enabled: Boolean(selectedId) && canView,
     });
 
     const updateStatus = useMutation(updateApplicationStatusMutation);
@@ -167,17 +122,21 @@ function AdminApplicationsPage() {
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
     }
 
-    if (visibleTabs.length === 0) {
+    const header = (
+        <AdminPageHeader
+            title="Kontaktskjema"
+            description="Henvendelser bedrifter har sendt inn via kontaktskjemaet."
+        />
+    );
+
+    if (!canView) {
         return (
             <div className="flex flex-col gap-6">
-                <AdminPageHeader
-                    title="Søknader"
-                    description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
-                />
+                {header}
                 <AdminEmptyState
-                    icon={FileText}
+                    icon={Building2}
                     title="Ingen tilgang"
-                    description="Du har ikke tilgang til å behandle noen søknadstyper."
+                    description="Du har ikke tilgang til å behandle henvendelser fra bedrifter."
                 />
             </div>
         );
@@ -185,36 +144,13 @@ function AdminApplicationsPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <AdminPageHeader
-                title="Søknader"
-                description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
-            />
-
-            <Tabs
-                value={activeType}
-                onValueChange={(value) =>
-                    navigate({
-                        search: (prev) => ({
-                            ...prev,
-                            type: value as SoknadType,
-                        }),
-                    })
-                }
-            >
-                <TabsList>
-                    {visibleTabs.map((tab) => (
-                        <TabsTrigger key={tab.value} value={tab.value}>
-                            {tab.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-            </Tabs>
+            {header}
 
             {!isLoading && (applications ?? []).length === 0 ? (
                 <AdminEmptyState
-                    icon={FileText}
-                    title="Ingen søknader"
-                    description="Det har ikke kommet inn noen søknader av denne typen ennå."
+                    icon={Building2}
+                    title="Ingen henvendelser"
+                    description="Det har ikke kommet inn noen henvendelser fra bedrifter ennå."
                 />
             ) : (
                 <Card>
@@ -222,8 +158,8 @@ function AdminApplicationsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Innsender</TableHead>
-                                    <TableHead>Beskrivelse</TableHead>
+                                    <TableHead>Kontaktperson</TableHead>
+                                    <TableHead>Emne</TableHead>
                                     <TableHead>Mottatt</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="text-right">

@@ -24,8 +24,15 @@ const headlines: Record<ApplicationWithDetails["type"], string> = {
 };
 
 const logoUrl = () => `${env.WEBSITE_URL}/logo512.png`;
-const adminUrl = (id: string) =>
-    `${env.WEBSITE_URL}/admin/soknader?id=${encodeURIComponent(id)}`;
+/**
+ * Where the handler lands when following the link in the notification email.
+ * Bedriftshenvendelser have their own admin page, the rest share Søknader.
+ */
+const adminUrl = (application: ApplicationWithDetails) => {
+    const page =
+        application.type === "company_contact" ? "kontaktskjema" : "soknader";
+    return `${env.WEBSITE_URL}/admin/${page}?id=${encodeURIComponent(application.id)}`;
+};
 const myApplicationsUrl = () => `${env.WEBSITE_URL}/soknader?tab=mine`;
 
 /**
@@ -60,7 +67,7 @@ export async function notifyApplicationSubmitted(
                 typeLabel,
                 submitterName: application.contactName,
                 details,
-                dashboardUrl: adminUrl(application.id),
+                dashboardUrl: adminUrl(application),
                 logoUrl: logoUrl(),
             },
         );
