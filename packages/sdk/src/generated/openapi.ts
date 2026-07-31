@@ -536,7 +536,7 @@ export interface paths {
         put?: never;
         /**
          * Submit company contact form
-         * @description Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/soknader, and emails it to TIHLDE's business contact. Rate limited per client.
+         * @description Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/kontaktskjema, and emails it to TIHLDE's business contact. Rate limited per client.
          */
         post: operations["submitCompanyContact"];
         delete?: never;
@@ -1395,6 +1395,26 @@ export interface paths {
          * @description Update a paragraph in a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
          */
         patch: operations["updateLaw"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/members/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List former group members
+         * @description Retrieve the group's ended memberships — the people who used to be members. Anyone currently in the group is excluded, and a member with several stints is listed once, by their most recent one.
+         */
+        get: operations["listGroupFormerMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/groups/{groupSlug}/members": {
@@ -4265,6 +4285,30 @@ export interface components {
             /** @description Default number of fine units */
             amount?: number;
         };
+        GroupFormerMember: {
+            /** @description Membership history entry ID */
+            id: string;
+            /** @description User ID */
+            userId: string;
+            /** @description Group slug */
+            groupSlug: string;
+            /** @description Role held when the membership ended */
+            role: string;
+            /** @description When the membership started */
+            startedAt: string;
+            /** @description When the membership ended */
+            endedAt: string;
+            /** @description Public user info for the former member */
+            user: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+            };
+        };
+        GroupFormerMemberList: components["schemas"]["GroupFormerMember"][];
         GroupMember: {
             /** @description User ID */
             userId: string;
@@ -9016,6 +9060,35 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Law or group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listGroupFormerMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of former members retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupFormerMemberList"];
+                };
+            };
+            /** @description Not Found - Group not found */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -13,6 +13,10 @@ import type { AppContext } from "~/lib/ctx";
  * bedriftshenvendelser with the Næringslivsminister — so each has its own
  * permission pair. `applications:view` / `applications:manage` are the
  * all-types grants held by root and admin.
+ *
+ * Bedriftshenvendelser sit outside the `applications` domain entirely: they
+ * are their own `company-contact:*` grant, so handling søknader — even with
+ * the all-types grant — does not hand out the kontaktskjema inbox.
  */
 const permissionsByType: Record<
     ApplicationType,
@@ -35,8 +39,8 @@ const permissionsByType: Record<
         manage: ["applications:manage", "applications:hs-case:manage"],
     },
     company_contact: {
-        view: ["applications:view", "applications:company-contact:view"],
-        manage: ["applications:manage", "applications:company-contact:manage"],
+        view: ["company-contact:view"],
+        manage: ["company-contact:manage"],
     },
 };
 

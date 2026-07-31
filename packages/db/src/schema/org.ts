@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
     boolean,
+    index,
     integer,
     jsonb,
     numeric,
@@ -222,6 +223,77 @@ export const groupMembershipRelations = relations(
         }),
         group: one(group, {
             fields: [groupMembership.groupSlug],
+            references: [group.slug],
+        }),
+    }),
+);
+
+/**
+ * Ended group memberships — the "tidligere medlemmer" list on a group page.
+ *
+ * `groupMembership` is the current roster and its rows are deleted outright
+ * when someone leaves, so the group's history would otherwise be lost. A row
+ * is appended here every time a membership is removed. It is a separate table
+ * rather than a nullable `endedAt` on the membership because the same person
+ * can join, leave and rejoin a group repeatedly, and each stint is its own
+ * period.
+ *
+ * `role` is stored as free text rather than the enum: Lepton's history
+ * (which this table is backfilled from) recorded board positions like
+ * "TREASURER" that Photon's two-value enum has no room for, and the value is
+ * only ever displayed.
+ */
+export const groupMembershipHistory = pgTable(
+    "group_membership_history",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, { onDelete: "cascade" }),
+        role: varchar("role", { length: 50 }).notNull().default("member"),
+        startedAt: timestamp("started_at").notNull(),
+        /**
+         * Stamped by the database, not by the API. These are `timestamp`
+         * columns without a time zone, so a `now()` default follows whatever
+         * zone the *database* runs in while a value sent from Node is written
+         * as UTC by the driver. `startedAt` is copied from the membership's
+         * `createdAt`, which `now()` stamped — so stamping `endedAt` from Node
+         * mixes two clocks, and on a database that is not in UTC (the test
+         * container is an hour ahead) a stint appears to end before it began.
+         * Keeping both ends on the database clock makes the pair consistent
+         * whatever zone it runs in.
+         */
+        endedAt: timestamp("ended_at").notNull().defaultNow(),
+        ...timestamps,
+    },
+    (t) => [
+        index("group_membership_history_group_slug_idx").on(t.groupSlug),
+        index("group_membership_history_user_id_idx").on(t.userId),
+        /**
+         * One row per stint. Re-running the Lepton backfill, or two removals
+         * racing, must not duplicate an entry — this mirrors Lepton's own
+         * unique_together on (user, group, end_date).
+         */
+        uniqueIndex("group_membership_history_stint_idx").on(
+            t.userId,
+            t.groupSlug,
+            t.endedAt,
+        ),
+    ],
+);
+
+export const groupMembershipHistoryRelations = relations(
+    groupMembershipHistory,
+    ({ one }) => ({
+        user: one(user, {
+            fields: [groupMembershipHistory.userId],
+            references: [user.id],
+        }),
+        group: one(group, {
+            fields: [groupMembershipHistory.groupSlug],
             references: [group.slug],
         }),
     }),

@@ -260,6 +260,20 @@
       "when": 1785361553033,
       "tag": "0036_melted_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1785492036273,
+      "tag": "0037_shocking_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1785578436273,
+      "tag": "0038_lonely_the_hand",
+      "breakpoints": true
     }
   ]
 }

@@ -35,6 +35,7 @@ import { Route as AdminBannereRouteImport } from './routes/admin/bannere'
 import { Route as AdminBrukereRouteImport } from './routes/admin/brukere'
 import { Route as AdminGalleriRouteImport } from './routes/admin/galleri'
 import { Route as AdminGrupperRouteImport } from './routes/admin/grupper'
+import { Route as AdminKontaktskjemaRouteImport } from './routes/admin/kontaktskjema'
 import { Route as AdminNyheterRouteImport } from './routes/admin/nyheter'
 import { Route as AdminOpptakRouteImport } from './routes/admin/opptak'
 import { Route as AdminPrikkerRouteImport } from './routes/admin/prikker'
@@ -197,6 +198,11 @@ const AdminGalleriRoute = AdminGalleriRouteImport.update({
 const AdminGrupperRoute = AdminGrupperRouteImport.update({
   id: '/grupper',
   path: '/grupper',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminKontaktskjemaRoute = AdminKontaktskjemaRouteImport.update({
+  id: '/kontaktskjema',
+  path: '/kontaktskjema',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminNyheterRoute = AdminNyheterRouteImport.update({
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
+  '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -472,6 +479,7 @@ export interface FileRoutesByTo {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
+  '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -535,6 +543,7 @@ export interface FileRoutesById {
   '/admin/brukere': typeof AdminBrukereRoute
   '/admin/galleri': typeof AdminGalleriRoute
   '/admin/grupper': typeof AdminGrupperRoute
+  '/admin/kontaktskjema': typeof AdminKontaktskjemaRoute
   '/admin/nyheter': typeof AdminNyheterRoute
   '/admin/opptak': typeof AdminOpptakRoute
   '/admin/prikker': typeof AdminPrikkerRoute
@@ -599,6 +608,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
+    | '/admin/kontaktskjema'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -660,6 +670,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
+    | '/admin/kontaktskjema'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -722,6 +733,7 @@ export interface FileRouteTypes {
     | '/admin/brukere'
     | '/admin/galleri'
     | '/admin/grupper'
+    | '/admin/kontaktskjema'
     | '/admin/nyheter'
     | '/admin/opptak'
     | '/admin/prikker'
@@ -952,6 +964,13 @@ declare module '@tanstack/react-router' {
       path: '/grupper'
       fullPath: '/admin/grupper'
       preLoaderRoute: typeof AdminGrupperRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/kontaktskjema': {
+      id: '/admin/kontaktskjema'
+      path: '/kontaktskjema'
+      fullPath: '/admin/kontaktskjema'
+      preLoaderRoute: typeof AdminKontaktskjemaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/nyheter': {
@@ -1353,6 +1372,7 @@ interface AdminRouteChildren {
   AdminBrukereRoute: typeof AdminBrukereRoute
   AdminGalleriRoute: typeof AdminGalleriRoute
   AdminGrupperRoute: typeof AdminGrupperRoute
+  AdminKontaktskjemaRoute: typeof AdminKontaktskjemaRoute
   AdminNyheterRoute: typeof AdminNyheterRoute
   AdminOpptakRoute: typeof AdminOpptakRoute
   AdminPrikkerRoute: typeof AdminPrikkerRoute
@@ -1372,6 +1392,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBrukereRoute: AdminBrukereRoute,
   AdminGalleriRoute: AdminGalleriRoute,
   AdminGrupperRoute: AdminGrupperRoute,
+  AdminKontaktskjemaRoute: AdminKontaktskjemaRoute,
   AdminNyheterRoute: AdminNyheterRoute,
   AdminOpptakRoute: AdminOpptakRoute,
   AdminPrikkerRoute: AdminPrikkerRoute,
