@@ -45,6 +45,16 @@ export function GalleryLightbox({
         if (openIndex === null) return;
 
         function onKeyDown(event: KeyboardEvent) {
+            // Skriving skal alltid vinne over bla-snarveien.
+            const target = event.target as HTMLElement | null;
+            if (
+                target?.isContentEditable ||
+                target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement
+            ) {
+                return;
+            }
+
             if (event.key === "ArrowLeft") {
                 event.preventDefault();
                 go(-1);
@@ -54,8 +64,12 @@ export function GalleryLightbox({
             }
         }
 
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
+        // Capture-fasen, ikke bobling: knappene i lightboxen kommer fra Base UI,
+        // som stopper propagering av piltaster. Har du nettopp klikket på en av
+        // pilene (eller lukkeknappen) står fokus der, og en vanlig
+        // window-lytter ville aldri sett tasten.
+        window.addEventListener("keydown", onKeyDown, true);
+        return () => window.removeEventListener("keydown", onKeyDown, true);
     }, [openIndex, go]);
 
     if (!picture) return null;

@@ -5,7 +5,7 @@ import { Crown, HandCoins, Mail } from "lucide-react";
 
 import { DetailHeader } from "#/components/detail-layout";
 import { GroupEditDialog } from "#/components/group-edit-dialog";
-import { groupDescriptionExcerpt, type Group } from "#/lib/group";
+import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
 
 type GroupDetailHeaderProps = {
@@ -42,11 +42,6 @@ export function GroupDetailHeader({
                         {group.contactEmail}
                     </a>
                 </div>
-            }
-            subtitle={
-                <p className="text-sm text-muted-foreground">
-                    {groupDescriptionExcerpt(group.description)}
-                </p>
             }
             badges={
                 <>
