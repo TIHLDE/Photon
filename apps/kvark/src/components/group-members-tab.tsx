@@ -1,11 +1,22 @@
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@tihlde/ui/ui/collapsible";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupMemberRow } from "#/components/group-member-row";
 import { GroupPageHeader } from "#/components/group-page-header";
 import type { Member } from "#/lib/group";
+import { cn } from "#/lib/utils";
 
 type GroupMembersTabProps = {
     leader: Member | null;
     members: Member[];
+    /** Avsluttede medlemskap. Tom liste skjuler seksjonen helt. */
+    formerMembers: Member[];
     /** Leder eller groups:manage for gruppen — kan legge til og fjerne medlemmer. */
     isAdmin: boolean;
     /** Kun groups:manage — å utnevne en ny leder er ikke lederens eget kall. */
@@ -17,11 +28,14 @@ type GroupMembersTabProps = {
 export function GroupMembersTab({
     leader,
     members,
+    formerMembers,
     isAdmin,
     canPromote,
     onPromote,
     onRemove,
 }: GroupMembersTabProps) {
+    const [showFormer, setShowFormer] = useState(false);
+
     return (
         <div className="flex flex-col gap-6">
             <GroupPageHeader
@@ -54,6 +68,38 @@ export function GroupMembersTab({
                     ))}
                 </ul>
             </div>
+
+            {formerMembers.length > 0 ? (
+                <Collapsible open={showFormer} onOpenChange={setShowFormer}>
+                    <CollapsibleTrigger
+                        render={
+                            <button
+                                type="button"
+                                className="flex w-full cursor-pointer items-center gap-2 text-left"
+                            />
+                        }
+                    >
+                        <h3 className="text-lg">
+                            Tidligere medlemmer ({formerMembers.length})
+                        </h3>
+                        <ChevronDown
+                            className={cn(
+                                "size-4 shrink-0 transition-transform",
+                                showFormer && "rotate-180",
+                            )}
+                        />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <ul className="flex flex-col gap-2 pt-2">
+                            {formerMembers.map((m) => (
+                                <li key={m.id}>
+                                    <GroupMemberRow member={m} historic />
+                                </li>
+                            ))}
+                        </ul>
+                    </CollapsibleContent>
+                </Collapsible>
+            ) : null}
         </div>
     );
 }

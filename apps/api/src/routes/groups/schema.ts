@@ -224,6 +224,37 @@ export const memberListSchema = Schema(
     z.array(memberSchema),
 );
 
+export const formerMemberSchema = Schema(
+    "GroupFormerMember",
+    z.object({
+        id: z.string().meta({ description: "Membership history entry ID" }),
+        userId: z.string().meta({ description: "User ID" }),
+        groupSlug: z.string().meta({ description: "Group slug" }),
+        role: z
+            .string()
+            .meta({ description: "Role held when the membership ended" }),
+        startedAt: z
+            .string()
+            .meta({ description: "When the membership started" }),
+        endedAt: z.string().meta({ description: "When the membership ended" }),
+        user: z
+            .object({
+                id: z.string().meta({ description: "User ID" }),
+                name: z.string().meta({ description: "User display name" }),
+                image: z
+                    .string()
+                    .nullable()
+                    .meta({ description: "User profile image URL" }),
+            })
+            .meta({ description: "Public user info for the former member" }),
+    }),
+);
+
+export const formerMemberListSchema = Schema(
+    "GroupFormerMemberList",
+    z.array(formerMemberSchema),
+);
+
 export const membershipResponseSchema = Schema(
     "GroupMembership",
     z.object({

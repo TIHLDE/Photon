@@ -31,7 +31,7 @@ export const contactRoute = route().post(
         summary: "Submit company contact form",
         operationId: "submitCompanyContact",
         description:
-            "Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/soknader, and emails it to TIHLDE's business contact. Rate limited per client.",
+            "Public endpoint used by the company landing page. Stores the enquiry as an application so the Næringslivsminister can handle it in /admin/kontaktskjema, and emails it to TIHLDE's business contact. Rate limited per client.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -95,7 +95,7 @@ export const contactRoute = route().post(
         });
 
         // Non-fatal from here on: the enquiry is already saved and visible in
-        // /admin/soknader, so a mail failure must not tell the company their
+        // /admin/kontaktskjema, so a mail failure must not tell the company their
         // submission was lost.
         try {
             await email.sendEmailTemplate(

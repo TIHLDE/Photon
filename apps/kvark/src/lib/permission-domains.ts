@@ -25,6 +25,7 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     { slug: "contracts", label: "Kontrakter" },
     { slug: "banners", label: "Bannere" },
     { slug: "applications", label: "Søknader" },
+    { slug: "company-contact", label: "Kontaktskjema" },
     { slug: "users", label: "Brukere" },
     { slug: "roles", label: "Roller" },
     { slug: "api-keys", label: "API-nøkler" },

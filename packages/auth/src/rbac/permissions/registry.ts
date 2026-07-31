@@ -106,11 +106,13 @@ export const PERMISSION_REGISTRY = {
      *
      * There is deliberately no "create" action — submitting an application is
      * a plain member right, so those routes only require authentication. The
-     * sub-domains exist because the four types are handled by different
-     * people: utlegg by the Finansminister, idrettslagsstøtte by IdKom, saker
-     * til HS by Hovedstyret, bedriftshenvendelser by the Næringslivsminister.
-     * The top-level view/manage pair is the all-types grant held by
-     * root/admin.
+     * sub-domains exist because the types are handled by different people:
+     * utlegg by the Finansminister, idrettslagsstøtte by IdKom, saker til HS
+     * by Hovedstyret. The top-level view/manage pair is the all-types grant
+     * held by root/admin.
+     *
+     * Bedriftshenvendelser are NOT part of this domain — see
+     * {@link PERMISSION_REGISTRY.company-contact}.
      */
     applications: {
         actions: ["view", "manage"],
@@ -126,9 +128,18 @@ export const PERMISSION_REGISTRY = {
         "hs-case": {
             actions: ["view", "manage"],
         },
-        "company-contact": {
-            actions: ["view", "manage"],
-        },
+    },
+
+    /**
+     * Kontaktskjema — henvendelser bedrifter sender inn via bedriftssiden.
+     *
+     * Its own top-level domain rather than a søknad sub-domain: the
+     * Næringslivsministeren handles these and nothing else, and whoever
+     * handles søknader has no business reading company enquiries. That
+     * separation is what makes it a checkbox of its own in the role admin.
+     */
+    "company-contact": {
+        actions: ["view", "manage"],
     },
 } as const;
 

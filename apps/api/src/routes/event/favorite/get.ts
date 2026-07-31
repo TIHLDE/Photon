@@ -31,18 +31,30 @@ export const getFavoriteEventsRoute = route().get(
             where: eq(schema.eventFavorite.userId, userId),
             with: {
                 event: {
-                    columns: { id: true, title: true, slug: true },
+                    columns: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        start: true,
+                        end: true,
+                    },
                 },
             },
         });
 
-        const returnFavorites: z.infer<typeof favoriteEventsSchema> =
-            favorites.map((fav) => ({
+        // Sorted by when the event happens, not by when it was favorited: the
+        // list is read as a calendar, and the client needs the times to tell a
+        // favorite that is still coming up from one that is over.
+        const returnFavorites: z.infer<typeof favoriteEventsSchema> = favorites
+            .map((fav) => ({
                 eventId: fav.eventId,
                 slug: fav.event.slug,
                 title: fav.event.title,
+                startTime: fav.event.start.toISOString(),
+                endTime: fav.event.end.toISOString(),
                 createdAt: fav.createdAt.toISOString(),
-            }));
+            }))
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
         return c.json(returnFavorites, 200);
     },

@@ -1,9 +1,9 @@
 import { requireOwnProfile } from "#/api/auth";
 import {
     getFavoriteEventsQuery,
-    getMyEventHistoryQuery,
+    getMyEventHistoryInfiniteQuery,
 } from "#/api/queries/events";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
@@ -17,6 +17,7 @@ import {
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarDays, Star } from "lucide-react";
 
+import { LoadMoreButton } from "#/components/load-more-button";
 import { formatEventDate } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
@@ -27,6 +28,13 @@ export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
 
 function RouteComponent() {
     const { data: favorites, isPending } = useQuery(getFavoriteEventsQuery());
+
+    // Favoritter er en huskeliste over noe som skal skje. Et arrangement som
+    // er over hører ikke hjemme der — det står allerede under «Tidligere».
+    const now = Date.now();
+    const upcomingFavorites = (favorites ?? []).filter(
+        (event) => new Date(event.endTime).getTime() >= now,
+    );
 
     return (
         <div className="flex flex-col gap-6">
@@ -40,9 +48,9 @@ function RouteComponent() {
                             </li>
                         ))}
                     </ul>
-                ) : favorites && favorites.length > 0 ? (
+                ) : upcomingFavorites.length > 0 ? (
                     <ul className="flex flex-col gap-3">
-                        {favorites.map((event) => (
+                        {upcomingFavorites.map((event) => (
                             <li key={event.eventId}>
                                 <Card
                                     size="sm"
@@ -58,6 +66,9 @@ function RouteComponent() {
                                         <span className="truncate font-medium">
                                             {event.title}
                                         </span>
+                                        <span className="truncate text-sm text-muted-foreground">
+                                            {formatEventDate(event.startTime)}
+                                        </span>
                                     </div>
                                     <Star className="size-4 shrink-0" />
                                 </Card>
@@ -72,8 +83,8 @@ function RouteComponent() {
                             </EmptyMedia>
                             <EmptyTitle>Ingen favorittarrangementer</EmptyTitle>
                             <EmptyDescription>
-                                Arrangementer du markerer som favoritt vises
-                                her.
+                                Kommende arrangementer du markerer som favoritt
+                                vises her.
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -93,8 +104,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 /** Arrangementene man har vært påmeldt, nyeste først. */
 function PastEventsSection() {
-    const { data, isPending } = useQuery(getMyEventHistoryQuery(0));
-    const events = data?.events ?? [];
+    const { data, isPending, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useInfiniteQuery(getMyEventHistoryInfiniteQuery());
+    const events = data?.pages.flatMap((page) => page.events) ?? [];
 
     return (
         <section className="flex flex-col gap-3">
@@ -136,6 +148,14 @@ function PastEventsSection() {
                             </Card>
                         </li>
                     ))}
+                    {hasNextPage ? (
+                        <li className="flex justify-center">
+                            <LoadMoreButton
+                                onClick={() => fetchNextPage()}
+                                isLoading={isFetchingNextPage}
+                            />
+                        </li>
+                    ) : null}
                 </ul>
             ) : (
                 <Empty>

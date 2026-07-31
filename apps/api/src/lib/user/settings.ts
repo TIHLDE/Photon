@@ -10,17 +10,31 @@ export const UserAllergySchema = z.object({
     description: z.string().optional(),
 });
 
+/**
+ * A profile link the user can clear again. Omitting the field leaves it
+ * untouched; an empty string is an explicit "remove this link" and is stored as
+ * NULL — without it there would be no way to undo a link once it was set.
+ */
+const clearableUrl = z
+    .union([z.url({ message: "Must be a valid URL" }), z.literal("")])
+    .optional();
+
 export const UserSettingsSchema = z.object({
     gender: z.enum(genderVariants),
     allowsPhotosByDefault: z.boolean(),
     acceptsEventRules: z.boolean(),
     imageUrl: z.url({ message: "Must be a valid URL" }).optional(),
     bioDescription: z.string().optional(),
-    githubUrl: z.url({ message: "Must be a valid URL" }).optional(),
-    linkedinUrl: z.url({ message: "Must be a valid URL" }).optional(),
+    githubUrl: clearableUrl,
+    linkedinUrl: clearableUrl,
     receiveMailCommunication: z.boolean(),
     allergies: z.array(z.string()).default([]),
 });
+
+/** Tomme strenger lagres som NULL, så «tømt felt» ikke blir en tom verdi i DB. */
+function emptyToNull<T extends string>(value: T | undefined) {
+    return value === undefined ? undefined : value === "" ? null : value;
+}
 
 export const UpdateUserSettingsSchema = UserSettingsSchema.partial();
 
@@ -79,9 +93,9 @@ export async function createUserSettings(
             allowsPhotosByDefault: settings.allowsPhotosByDefault,
             acceptsEventRules: settings.acceptsEventRules,
             imageUrl: settings.imageUrl ?? null,
-            bioDescription: settings.bioDescription ?? null,
-            githubUrl: settings.githubUrl ?? null,
-            linkedinUrl: settings.linkedinUrl ?? null,
+            bioDescription: emptyToNull(settings.bioDescription) ?? null,
+            githubUrl: emptyToNull(settings.githubUrl) ?? null,
+            linkedinUrl: emptyToNull(settings.linkedinUrl) ?? null,
             receiveMailCommunication: settings.receiveMailCommunication,
             isOnboarded: true, // Mark as onboarded when creating
         });
@@ -121,9 +135,9 @@ export async function updateUserSettings(
                 .set({
                     ...settingsUpdates,
                     imageUrl: settingsUpdates.imageUrl ?? undefined,
-                    bioDescription: settingsUpdates.bioDescription ?? undefined,
-                    githubUrl: settingsUpdates.githubUrl ?? undefined,
-                    linkedinUrl: settingsUpdates.linkedinUrl ?? undefined,
+                    bioDescription: emptyToNull(settingsUpdates.bioDescription),
+                    githubUrl: emptyToNull(settingsUpdates.githubUrl),
+                    linkedinUrl: emptyToNull(settingsUpdates.linkedinUrl),
                 })
                 .where(eq(userSettings.userId, userId));
         }

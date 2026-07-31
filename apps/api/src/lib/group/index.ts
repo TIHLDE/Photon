@@ -197,14 +197,33 @@ export async function removeUserFromGroup(
         (await isGroupLeader(ctx, userId, groupSlug));
 
     // Remove user from group
-    await db
+    const [removed] = await db
         .delete(schema.groupMembership)
         .where(
             and(
                 eq(schema.groupMembership.userId, userId),
                 eq(schema.groupMembership.groupSlug, groupSlug),
             ),
-        );
+        )
+        .returning();
+
+    // Keep the stint in the group's history ("tidligere medlemmer"). Nothing
+    // is written when there was no membership to delete, so calling this for
+    // a non-member stays a no-op. A repeated removal within the same
+    // millisecond would collide on the stint index — ignore it rather than
+    // fail the request, since the period is already recorded.
+    if (removed) {
+        await db
+            .insert(schema.groupMembershipHistory)
+            .values({
+                userId,
+                groupSlug,
+                role: removed.role,
+                startedAt: removed.createdAt,
+                // endedAt is left to the database clock — see the column.
+            })
+            .onConflictDoNothing();
+    }
 
     // If group has an associated role, auto-remove it
     if (group.roleId) {

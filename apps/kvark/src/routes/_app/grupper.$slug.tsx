@@ -16,6 +16,7 @@ import {
     deleteLawMutation,
     getGroupBySlugQuery,
     getGroupFinesQuery,
+    getGroupFormerMembersQuery,
     getGroupFormsQuery,
     getGroupLawsQuery,
     getGroupMembersQuery,
@@ -38,7 +39,14 @@ import { GroupLawsTab } from "#/components/group-laws-tab";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
-import { mapFine, mapForm, mapGroup, mapLaw, mapMember } from "#/lib/group";
+import {
+    mapFine,
+    mapForm,
+    mapFormerMember,
+    mapGroup,
+    mapLaw,
+    mapMember,
+} from "#/lib/group";
 
 const searchSchema = z.object({
     tab: z
@@ -74,6 +82,9 @@ function GroupDetailPage() {
     const { data: apiGroup } = useSuspenseQuery(getGroupBySlugQuery(slug));
     const { data: session } = useQuery(authQueryOptions);
     const { data: apiMembers } = useQuery(getGroupMembersQuery(slug, 0));
+    const { data: apiFormerMembers } = useQuery(
+        getGroupFormerMembersQuery(slug),
+    );
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
@@ -119,7 +130,12 @@ function GroupDetailPage() {
     // Bøter og lovverk er lesbart for gruppens medlemmer, botsjefen og
     // fines:view for denne gruppen — samme regel som GET-endepunktene. Uten
     // dette sto fanene der for alle og spørringene svarte alltid 403.
-    const canViewFines = isMember || isFinesAdmin || hasFinesView;
+    //
+    // `finesActivated` avgjør først: en gruppe som ikke bruker botsystemet har
+    // verken lovverk eller bøter å vise, og fanene sto likevel der for alle
+    // medlemmene.
+    const canViewFines =
+        apiGroup.finesActivated && (isMember || isFinesAdmin || hasFinesView);
 
     const { data: apiFines } = useQuery({
         ...getGroupFinesQuery(slug, 0),
@@ -145,6 +161,10 @@ function GroupDetailPage() {
     const regularMembers = useMemo(
         () => members.filter((m) => m.role !== "leader"),
         [members],
+    );
+    const formerMembers = useMemo(
+        () => (apiFormerMembers ?? []).map(mapFormerMember),
+        [apiFormerMembers],
     );
     const group = useMemo(
         () => mapGroup(apiGroup, leader?.name),
@@ -204,6 +224,7 @@ function GroupDetailPage() {
                         <GroupMembersTab
                             leader={leader}
                             members={regularMembers}
+                            formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={hasGroupsManage}
                             onPromote={(member) =>

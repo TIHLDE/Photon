@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
-import { Github, GraduationCap, Linkedin, Mail, Plus } from "lucide-react";
+import { Github, GraduationCap, Linkedin, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { DetailHeader } from "#/components/detail-layout";
@@ -24,18 +24,9 @@ export type ProfileHeaderUser = {
 type ProfileHeaderProps = {
     user: ProfileHeaderUser;
     actions?: ReactNode;
-    /**
-     * Åpner dialogen der GitHub-/LinkedIn-lenker redigeres. Utelates på andres
-     * profiler, som også skjuler «Legg til lenke».
-     */
-    onAddLink?: () => void;
 };
 
-export function ProfileHeader({
-    user,
-    actions,
-    onAddLink,
-}: ProfileHeaderProps) {
+export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
     return (
         <DetailHeader
             avatar={
@@ -91,18 +82,6 @@ export function ProfileHeader({
                             {link.label}
                         </Badge>
                     ))}
-                    {onAddLink ? (
-                        <Badge
-                            variant="secondary"
-                            className="gap-1.5"
-                            render={
-                                <button type="button" onClick={onAddLink} />
-                            }
-                        >
-                            <Plus />
-                            Legg til lenke
-                        </Badge>
-                    ) : null}
                 </>
             }
             actions={actions}

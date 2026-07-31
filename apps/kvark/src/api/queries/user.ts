@@ -91,6 +91,12 @@ export const updateUserSettingsMutation = mutationOptions({
             queryKey: [...UserQueryKeys.settings],
             exact: false,
         });
+        // Bio og lenker vises fra profil-endepunktet, ikke fra settings, så
+        // profilen må hentes på nytt for at endringene skal vises uten refresh.
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.profile],
+            exact: false,
+        });
     },
 });
 
