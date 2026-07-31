@@ -1,6 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
-import { Check, Share2 } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 type ShareButtonProps = {
@@ -16,6 +16,10 @@ type ShareButtonProps = {
  * Deler en lenke: mobil får den native delingsmenyen, alt annet får lenken
  * kopiert til utklippstavlen. Knappen hadde ingen standardhandling før, så
  * «Del»-knappene på nyheter, arrangementer og stillinger gjorde ingenting.
+ *
+ * Ikonet følger handlingen: et dele-ikon der nettleseren faktisk åpner en
+ * delingsmeny, ellers et kopier-ikon — «del» på en knapp som bare kopierer
+ * lover mer enn den holder.
  */
 export function ShareButton({
     url,
@@ -25,6 +29,15 @@ export function ShareButton({
 }: ShareButtonProps) {
     const [copied, setCopied] = useState(false);
     const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Sjekkes etter hydrering: `navigator` finnes ikke under SSR, og server og
+    // klient må rendre det samme ikonet i første pass.
+    const [canShareNatively, setCanShareNatively] = useState(false);
+
+    useEffect(() => {
+        setCanShareNatively(
+            typeof navigator !== "undefined" && !!navigator.share,
+        );
+    }, []);
 
     useEffect(
         () => () => {
@@ -56,7 +69,9 @@ export function ShareButton({
         }
     }
 
-    const tooltip = copied ? "Lenke kopiert" : label;
+    const actionLabel = canShareNatively ? label : "Kopier lenke";
+    const tooltip = copied ? "Lenke kopiert" : actionLabel;
+    const Icon = canShareNatively ? Share2 : Copy;
 
     return (
         <Tooltip>
@@ -66,10 +81,10 @@ export function ShareButton({
                         variant="outline"
                         size={showLabel ? "sm" : "icon"}
                         onClick={share}
-                        aria-label={label}
+                        aria-label={actionLabel}
                     >
-                        {copied ? <Check /> : <Share2 />}
-                        {showLabel ? (copied ? "Kopiert" : label) : null}
+                        {copied ? <Check /> : <Icon />}
+                        {showLabel ? (copied ? "Kopiert" : actionLabel) : null}
                     </Button>
                 }
             />

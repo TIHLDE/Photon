@@ -24,6 +24,7 @@ const EventQueryKeys = {
     forms: ["events", "forms"] as const,
     strikes: ["events", "strikes"] as const,
     myHistory: ["events", "my-history"] as const,
+    myHistoryInfinite: ["events", "my-history-infinite"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -166,6 +167,23 @@ export const getMyEventHistoryQuery = (
             apiClient.get("/api/event/my-registrations", {
                 searchParams: { page, pageSize },
             }),
+    });
+
+/**
+ * Samme liste som `getMyEventHistoryQuery`, men side for side — profilen viste
+ * bare de 25 nyeste og hadde ingen vei til resten.
+ */
+export const getMyEventHistoryInfiniteQuery = (
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    infiniteQueryOptions({
+        queryKey: [...EventQueryKeys.myHistoryInfinite, pageSize] as const,
+        queryFn: ({ pageParam }) =>
+            apiClient.get("/api/event/my-registrations", {
+                searchParams: { page: pageParam, pageSize },
+            }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPage,
     });
 
 export const updateFavoriteEventMutation = mutationOptions({

@@ -22,6 +22,7 @@ import {
     getFormByIdQuery,
 } from "#/api/queries/forms";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { useGoBack } from "#/hooks/use-go-back";
 import { formatEventDate } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/sporreskjema/$id")({
@@ -46,17 +47,13 @@ function byType(fields: FormField[], type: FormField["type"]) {
 function FormPage() {
     const { id } = Route.useParams();
     const { data: form } = useSuspenseQuery(getFormByIdQuery(id));
+    const goBack = useGoBack();
 
     return (
         <div className="container mx-auto flex max-w-3xl flex-col gap-6 px-4 py-12">
-            <Button
-                variant="outline"
-                className="self-start"
-                nativeButton={false}
-                render={<Link to="/" />}
-            >
+            <Button variant="outline" className="self-start" onClick={goBack}>
                 <ArrowLeft />
-                Til forsiden
+                Tilbake
             </Button>
             <Card>
                 <CardHeader>

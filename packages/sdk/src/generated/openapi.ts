@@ -2999,6 +2999,16 @@ export interface components {
             slug: string;
             /**
              * Format: date-time
+             * @description When the event starts (ISO 8601)
+             */
+            startTime: string;
+            /**
+             * Format: date-time
+             * @description When the event ends (ISO 8601)
+             */
+            endTime: string;
+            /**
+             * Format: date-time
              * @description When you added this event to your favorites
              */
             createdAt: string;

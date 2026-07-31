@@ -27,9 +27,18 @@ type ApiGroup = {
     imageUrl: string | null;
 };
 
+/**
+ * Grupper man ikke søker seg inn i, og som derfor ikke hører hjemme på
+ * opptakssiden. Hovedstyret velges på generalforsamlingen.
+ */
+const NOT_OPEN_FOR_ADMISSION = new Set(["hs"]);
+
 function toAdmissionGroups(groups: ApiGroup[], type: string): AdmissionGroup[] {
     return groups
-        .filter((group) => group.type === type)
+        .filter(
+            (group) =>
+                group.type === type && !NOT_OPEN_FOR_ADMISSION.has(group.slug),
+        )
         .map((group) => ({
             name: group.name,
             slug: group.slug,
