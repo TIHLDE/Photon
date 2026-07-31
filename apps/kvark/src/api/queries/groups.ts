@@ -23,6 +23,7 @@ const GroupQueryKeys = {
     mine: ["groups", "mine"] as const,
     detail: ["groups", "detail"] as const,
     members: ["groups", "members"] as const,
+    formerMembers: ["groups", "former-members"] as const,
     fines: ["groups", "fines"] as const,
     laws: ["groups", "laws"] as const,
     forms: ["groups", "forms"] as const,
@@ -164,6 +165,19 @@ export const getGroupMembersQuery = (
             }),
     });
 
+/**
+ * Avsluttede medlemskap i gruppen — «Tidligere medlemmer». Nåværende
+ * medlemmer er allerede filtrert bort av API-et.
+ */
+export const getGroupFormerMembersQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...GroupQueryKeys.formerMembers, groupSlug],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/members/history", {
+                params: { groupSlug },
+            }),
+    });
+
 export const addGroupMemberMutation = mutationOptions({
     mutationFn: ({
         groupSlug,
@@ -220,6 +234,11 @@ export const removeGroupMemberMutation = mutationOptions({
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...GroupQueryKeys.members, vars.groupSlug],
+            exact: false,
+        });
+        // Den fjernede havner i historikken med det samme.
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.formerMembers, vars.groupSlug],
             exact: false,
         });
     },

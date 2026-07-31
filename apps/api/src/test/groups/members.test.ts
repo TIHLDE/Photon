@@ -798,4 +798,179 @@ describe("group members", () => {
             500_000,
         );
     });
+
+    describe("former members (membership history)", () => {
+        integrationTest(
+            "records the stint when a member is removed",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup();
+                const member = await ctx.auth.api.createUser({
+                    body: {
+                        email: "former@test.com",
+                        name: "Former Member",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$delete({
+                    param: {
+                        groupSlug: group.slug,
+                        userId: member.user.id,
+                    },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json).toHaveLength(1);
+                expect(json[0]?.userId).toBe(member.user.id);
+                expect(json[0]?.role).toBe("leader");
+                expect(json[0]?.user.name).toBe("Former Member");
+                // The stint starts when they joined, not when they left.
+                expect(
+                    new Date(json[0]?.startedAt ?? 0).getTime(),
+                ).toBeLessThanOrEqual(
+                    new Date(json[0]?.endedAt ?? 0).getTime(),
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "excludes someone who rejoined the group",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup();
+                const member = await ctx.auth.api.createUser({
+                    body: {
+                        email: "rejoiner@test.com",
+                        name: "Rejoining Member",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+                await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$delete({
+                    param: { groupSlug: group.slug, userId: member.user.id },
+                });
+                await client.api.groups[":groupSlug"].members.$post({
+                    param: { groupSlug: group.slug },
+                    json: { userId: member.user.id, role: "member" },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+                expect(await response.json()).toHaveLength(0);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "lists a member with several stints once, by the most recent",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup();
+                const member = await ctx.auth.api.createUser({
+                    body: {
+                        email: "twostints@test.com",
+                        name: "Two Stints",
+                        password: "test123!",
+                    },
+                });
+
+                // First stint: an ordinary member.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+                await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$delete({
+                    param: { groupSlug: group.slug, userId: member.user.id },
+                });
+
+                // Second stint: back as leader, then gone again.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+                await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$delete({
+                    param: { groupSlug: group.slug, userId: member.user.id },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                const json = await response.json();
+                expect(json).toHaveLength(1);
+                expect(json[0]?.role).toBe("leader");
+
+                // Both periods are still stored — only the display folds them.
+                const stored =
+                    await ctx.db.query.groupMembershipHistory.findMany({
+                        where: (h, { eq }) => eq(h.userId, member.user.id),
+                    });
+                expect(stored).toHaveLength(2);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "returns 404 for an unknown group",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({
+                    param: { groupSlug: "does-not-exist" },
+                });
+
+                expect(response.status).toBe(404);
+            },
+            500_000,
+        );
+    });
 });

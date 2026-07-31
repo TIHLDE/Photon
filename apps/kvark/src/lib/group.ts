@@ -4,6 +4,7 @@ import { nb } from "date-fns/locale";
 import type {
     Group as ApiGroup,
     GroupMember as ApiGroupMember,
+    GroupFormerMember as ApiGroupFormerMember,
     Fine as ApiFine,
     Law as ApiLaw,
     GroupFormList,
@@ -151,6 +152,44 @@ export function mapMember(member: ApiGroupMember): Member {
         image: member.user?.image ?? undefined,
         role: member.role,
         joined: formatGroupDate(member.createdAt),
+    };
+}
+
+/**
+ * Norske navn på rollene et avsluttet medlemskap kan ha hatt. Photon har bare
+ * member/leader, men historikken er backfilt fra Lepton, som lagret styreverv
+ * i samme felt og i STORE BOKSTAVER.
+ */
+const MEMBER_ROLE_LABELS: Record<string, string> = {
+    leader: "Leder",
+    deputy_leader: "Nestleder",
+    treasurer: "Økonomiansvarlig",
+    chairman: "Styreleder",
+    vice_chairman: "Nestleder",
+};
+
+/**
+ * Norsk visningsnavn for en rolle i et avsluttet medlemskap, eller `undefined`
+ * for vanlige medlemmer — «· Medlem» bak datoene er bare støy.
+ */
+function formerMemberRoleLabel(role: string): string | undefined {
+    const key = role.toLowerCase();
+    if (key === "member" || key === "") return undefined;
+    return MEMBER_ROLE_LABELS[key] ?? role;
+}
+
+/**
+ * Map an avsluttet medlemskap to a display member. `until` er satt, som er
+ * det `GroupMemberRow` bruker for å vise «medlem fra → til».
+ */
+export function mapFormerMember(member: ApiGroupFormerMember): Member {
+    return {
+        id: member.userId,
+        name: member.user?.name ?? "Ukjent bruker",
+        image: member.user?.image ?? undefined,
+        role: formerMemberRoleLabel(member.role),
+        joined: formatGroupDate(member.startedAt),
+        until: formatGroupDate(member.endedAt),
     };
 }
 
