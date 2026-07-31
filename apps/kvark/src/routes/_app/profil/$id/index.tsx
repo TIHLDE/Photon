@@ -1,4 +1,5 @@
 import { authQueryOptions } from "#/api/auth";
+import { getUnreadNotificationCountQuery } from "#/api/queries/notifications";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileOverviewHeader } from "#/components/profile-overview-header";
@@ -31,6 +32,13 @@ function RouteComponent() {
     const { data: session } = useQuery(authQueryOptions);
     const isOwnProfile = session?.user.id === id;
 
+    // Varselmerket vises bare på egen profil, så andres profiler skal heller
+    // ikke koste et kall til det innloggede-scopede endepunktet.
+    const { data: unreadNotifications } = useQuery({
+        ...getUnreadNotificationCountQuery(),
+        enabled: isOwnProfile,
+    });
+
     const links: ProfileLink[] = [];
     if (profile.githubUrl)
         links.push({ kind: "github", label: "github", url: profile.githubUrl });
@@ -58,7 +66,7 @@ function RouteComponent() {
             <ProfileOverviewHeader
                 name={profile.name}
                 isOwnProfile={isOwnProfile}
-                notifications={0}
+                notifications={unreadNotifications}
             />
             {profile.bio ? (
                 <div className="flex flex-col gap-2">

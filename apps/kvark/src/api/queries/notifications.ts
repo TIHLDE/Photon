@@ -9,6 +9,7 @@ import type { QueryParamsHelper } from "@tihlde/sdk/types";
 const NotificationQueryKeys = {
     listInfinite: ["notifications", "list-infinite"] as const,
     list: ["notifications", "list-paged"] as const,
+    unreadCount: ["notifications", "unread-count"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -33,6 +34,20 @@ export const getNotificationsQuery = (
                     ...filters,
                 },
             }),
+    });
+
+/**
+ * Antall uleste varsler. Henter én rad og leser `totalCount` — serveren teller
+ * med samme filter, så vi slipper å laste ned varslene for å telle dem.
+ */
+export const getUnreadNotificationCountQuery = () =>
+    queryOptions({
+        queryKey: NotificationQueryKeys.unreadCount,
+        queryFn: () =>
+            apiClient.get("/api/notification", {
+                searchParams: { page: 0, pageSize: 1, isRead: false },
+            }),
+        select: (data) => data.totalCount,
     });
 
 export const getNotificationsInfiniteQuery = (
@@ -67,6 +82,10 @@ export const deleteNotificationMutation = mutationOptions({
             queryKey: [...NotificationQueryKeys.listInfinite],
             exact: false,
         });
+        // Både lesing og sletting endrer antallet uleste.
+        ctx.client.invalidateQueries({
+            queryKey: NotificationQueryKeys.unreadCount,
+        });
     },
 });
 
@@ -90,6 +109,10 @@ export const markNotificationReadMutation = mutationOptions({
         ctx.client.invalidateQueries({
             queryKey: [...NotificationQueryKeys.listInfinite],
             exact: false,
+        });
+        // Både lesing og sletting endrer antallet uleste.
+        ctx.client.invalidateQueries({
+            queryKey: NotificationQueryKeys.unreadCount,
         });
     },
 });

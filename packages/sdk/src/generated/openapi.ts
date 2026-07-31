@@ -1174,7 +1174,7 @@ export interface paths {
         };
         /**
          * List notifications for authenticated user
-         * @description Returns paginated list of notifications for the authenticated user, ordered by most recent first
+         * @description Returns paginated list of notifications for the authenticated user, ordered by most recent first. Pass isRead=false to count unread ones: totalCount answers that without fetching the notifications themselves.
          */
         get: operations["listNotifications"];
         put?: never;
@@ -8262,6 +8262,8 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
+                /** @description Filter on read state. False returns only unread notifications, true only read ones. Omit to return both. */
+                isRead?: boolean;
             };
             header?: never;
             path?: never;
