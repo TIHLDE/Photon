@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { useState } from "react";
 
 import { getJobsQuery } from "#/api/queries/jobs";
@@ -42,12 +43,12 @@ function JobsPage() {
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
+            <Reveal render={<div className="flex flex-col gap-1" />}>
                 <h1 className="text-3xl">Stillingsannonser</h1>
                 <p className="text-muted-foreground">
                     Finn relevante jobber for studenter
                 </p>
-            </div>
+            </Reveal>
 
             <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
                 <aside>
@@ -63,7 +64,9 @@ function JobsPage() {
                     <p className="text-sm text-muted-foreground">
                         {data.totalCount} stillinger funnet
                     </p>
-                    <ul className="flex flex-col gap-4 sm:gap-1">
+                    <Stagger
+                        render={<ul className="flex flex-col gap-4 sm:gap-1" />}
+                    >
                         {jobs.map((job) => (
                             <li key={job.id}>
                                 <JobCard
@@ -83,7 +86,7 @@ function JobsPage() {
                                 />
                             </li>
                         ))}
-                    </ul>
+                    </Stagger>
                 </section>
             </div>
         </div>

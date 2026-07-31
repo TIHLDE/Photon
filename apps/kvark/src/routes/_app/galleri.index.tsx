@@ -1,6 +1,7 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
+import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 
 import { getGalleriesInfiniteQuery } from "#/api/queries/galleries";
 import { GalleryCard } from "#/components/gallery-card";
@@ -22,12 +23,12 @@ function GalleriesPage() {
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
+            <Reveal render={<div className="flex flex-col gap-1" />}>
                 <h1 className="text-3xl">Galleri</h1>
                 <p className="text-muted-foreground">
                     Bilder fra arrangementene våre
                 </p>
-            </div>
+            </Reveal>
 
             {galleries.length === 0 ? (
                 <Empty>
@@ -38,7 +39,11 @@ function GalleriesPage() {
                     </EmptyDescription>
                 </Empty>
             ) : (
-                <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Stagger
+                    render={
+                        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+                    }
+                >
                     {galleries.map((gallery) => (
                         <li key={gallery.id}>
                             <GalleryCard
@@ -50,7 +55,7 @@ function GalleriesPage() {
                             />
                         </li>
                     ))}
-                </ul>
+                </Stagger>
             )}
 
             {hasNextPage && (

@@ -31,6 +31,10 @@ export function ListCard({
     return useRender({
         render: render ?? <div />,
         props: {
+            // Hover/press motion for this row lives in @tihlde/ui's styles.css
+            // and is keyed off this slot, so it stays with the rest of the
+            // motion system instead of as animation classes in this app.
+            "data-slot": "list-card",
             className:
                 "flex flex-col gap-3 overflow-hidden rounded-2xl bg-card sm:flex-row sm:gap-3 sm:overflow-visible sm:bg-transparent sm:p-2 sm:transition-colors sm:hover:bg-muted/50",
             children: (

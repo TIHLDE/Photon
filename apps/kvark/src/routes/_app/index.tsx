@@ -2,6 +2,7 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
+import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
@@ -119,7 +120,7 @@ function EventsSection() {
                 <TabsTrigger value="calendar">Kalender</TabsTrigger>
             </TabsList>
             <TabsContent value="list">
-                <div className="grid gap-4 md:grid-cols-2">
+                <Stagger render={<div className="grid gap-4 md:grid-cols-2" />}>
                     {events.slice(0, LIST_PREVIEW_COUNT).map((event) => (
                         <EventCard
                             key={event.id}
@@ -133,7 +134,7 @@ function EventsSection() {
                             imageAlt={event.imageAlt || undefined}
                         />
                     ))}
-                </div>
+                </Stagger>
             </TabsContent>
             <TabsContent value="calendar">
                 <EventCalendar
@@ -161,7 +162,11 @@ function NewsSection() {
     if (news.length === 0) return null;
 
     return (
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger
+            render={
+                <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+            }
+        >
             {news.map((item) => (
                 <li key={item.id}>
                     <NewsCard
@@ -173,7 +178,7 @@ function NewsSection() {
                     />
                 </li>
             ))}
-        </ul>
+        </Stagger>
     );
 }
 
@@ -204,7 +209,13 @@ function Hero() {
     return (
         <div className="relative">
             <HeroSectionBackground className="h-full text-primary -z-50" />
-            <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-50 text-center">
+            {/* Logo, blurb and actions are the section's three direct children,
+             * so Stagger walks them in that reading order on its own. */}
+            <Stagger
+                render={
+                    <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-50 text-center" />
+                }
+            >
                 <div
                     className="flex items-center gap-1"
                     style={{ color: "var(--color-logo, currentColor)" }}
@@ -222,7 +233,7 @@ function Hero() {
                     transformasjon og Informasjonsbehandling ved NTNU.
                 </p>
                 <HeroActions />
-            </section>
+            </Stagger>
         </div>
     );
 }
@@ -273,7 +284,9 @@ function SectionHeader({
     actionLabel?: string;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4">
+        <Reveal
+            render={<div className="flex items-center justify-between gap-4" />}
+        >
             <h2 className="text-2xl">{title}</h2>
             {actionLabel ? (
                 <Button variant="ghost" size="sm">
@@ -281,6 +294,6 @@ function SectionHeader({
                     {actionLabel}
                 </Button>
             ) : null}
-        </div>
+        </Reveal>
     );
 }

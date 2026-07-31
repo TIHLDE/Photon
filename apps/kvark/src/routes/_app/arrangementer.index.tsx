@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { useDeferredValue, useMemo, useState } from "react";
 import z from "zod";
@@ -161,12 +162,12 @@ function EventsPage() {
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
+            <Reveal render={<div className="flex flex-col gap-1" />}>
                 <h1 className="text-3xl">Arrangementer</h1>
                 <p className="text-muted-foreground">
                     Finn arrangementer for våren 2026
                 </p>
-            </div>
+            </Reveal>
 
             <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
                 <aside>
@@ -226,7 +227,11 @@ function EventsPage() {
                             }))}
                         />
                     ) : (
-                        <ul className="flex flex-col gap-4 sm:gap-1">
+                        <Stagger
+                            render={
+                                <ul className="flex flex-col gap-4 sm:gap-1" />
+                            }
+                        >
                             {events.map((event) => (
                                 <li key={event.id}>
                                     <EventCard
@@ -243,7 +248,7 @@ function EventsPage() {
                                     />
                                 </li>
                             ))}
-                        </ul>
+                        </Stagger>
                     )}
                 </section>
             </div>
