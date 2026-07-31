@@ -146,7 +146,7 @@ export const userProfileSchema = Schema(
                     slug: z.string(),
                     name: z.string(),
                     type: z.string(),
-                    imageUrl: z.string().nullable(),
+                    logoUrl: z.string().nullable(),
                     role: z.string(),
                 }),
             )

@@ -101,7 +101,7 @@ export const getUserRoute = route().get(
                 slug: m.groupSlug,
                 name: m.group.name,
                 type: m.group.type,
-                imageUrl: m.group.imageUrl ?? null,
+                logoUrl: m.group.logoUrl ?? null,
                 role: m.role,
             })),
             createdAt: user.createdAt.toISOString(),

@@ -17,7 +17,10 @@ export type Group = {
     name: string;
     description: string;
     contactEmail: string;
+    /** Gruppebilde: bredt bilde av gruppa, vises på Om-fanen. */
     imageUrl?: string;
+    /** Logo: kvadratisk merke, vises i avatarer og kort. */
+    logoUrl?: string;
     type?: string;
     leader?: string;
     finesInfo?: string;
@@ -116,6 +119,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         description: group.description ?? "",
         contactEmail: group.contactEmail ?? "",
         imageUrl: group.imageUrl ?? undefined,
+        logoUrl: group.logoUrl ?? undefined,
         type: group.type,
         leader,
         finesInfo: group.finesInfo,

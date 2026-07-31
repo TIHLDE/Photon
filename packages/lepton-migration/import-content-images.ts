@@ -67,7 +67,7 @@ const main = async () => {
         .from(schema.event);
 
     const groups = await db
-        .select({ slug: schema.group.slug, imageUrl: schema.group.imageUrl })
+        .select({ slug: schema.group.slug, logoUrl: schema.group.logoUrl })
         .from(schema.group);
 
     const jobs: Job[] = [];
@@ -94,7 +94,7 @@ const main = async () => {
     }
 
     for (const g of groups) {
-        const url = g.imageUrl?.trim();
+        const url = g.logoUrl?.trim();
         if (!url || !/^https?:\/\//.test(url)) continue;
         if (url.includes("/api/assets/")) {
             alreadyDone++;
@@ -107,7 +107,7 @@ const main = async () => {
             apply: async (newUrl) => {
                 await db
                     .update(schema.group)
-                    .set({ imageUrl: newUrl })
+                    .set({ logoUrl: newUrl })
                     .where(eq(schema.group.slug, g.slug));
             },
         });

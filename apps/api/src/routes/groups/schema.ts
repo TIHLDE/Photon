@@ -15,12 +15,12 @@ export const createGroupSchema = Schema(
                 "Slug must contain only lowercase letters, numbers, and hyphens",
             )
             .meta({ description: "Unique group slug identifier" }),
-        imageUrl: z
-            .string()
-            .url()
-            .max(600)
-            .optional()
-            .meta({ description: "Group image URL" }),
+        imageUrl: z.string().url().max(600).optional().meta({
+            description: "Gruppebilde URL, shown on the group's about page",
+        }),
+        logoUrl: z.string().url().max(600).optional().meta({
+            description: "Group logo URL, shown in avatars and cards",
+        }),
         name: z.string().min(1).max(128).meta({ description: "Group name" }),
         description: z
             .string()
@@ -53,12 +53,12 @@ export const createGroupSchema = Schema(
 export const updateGroupSchema = Schema(
     "UpdateGroup",
     z.object({
-        imageUrl: z
-            .string()
-            .url()
-            .max(600)
-            .optional()
-            .meta({ description: "Group image URL" }),
+        imageUrl: z.string().url().max(600).optional().meta({
+            description: "Gruppebilde URL, shown on the group's about page",
+        }),
+        logoUrl: z.string().url().max(600).optional().meta({
+            description: "Group logo URL, shown in avatars and cards",
+        }),
         name: z
             .string()
             .min(1)
@@ -127,10 +127,12 @@ export const groupSchema = Schema(
     "Group",
     z.object({
         slug: z.string().meta({ description: "Group slug" }),
-        imageUrl: z
-            .string()
-            .nullable()
-            .meta({ description: "Group image URL" }),
+        imageUrl: z.string().nullable().meta({
+            description: "Gruppebilde URL, shown on the group's about page",
+        }),
+        logoUrl: z.string().nullable().meta({
+            description: "Group logo URL, shown in avatars and cards",
+        }),
         name: z.string().meta({ description: "Group name" }),
         description: z
             .string()

@@ -66,9 +66,9 @@ function RouteComponent() {
                         }
                     >
                         <Avatar className="size-10 shrink-0">
-                            {group.imageUrl ? (
+                            {group.logoUrl ? (
                                 <AvatarImage
-                                    src={group.imageUrl}
+                                    src={group.logoUrl}
                                     alt={group.name}
                                 />
                             ) : null}

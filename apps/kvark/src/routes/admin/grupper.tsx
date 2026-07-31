@@ -330,6 +330,7 @@ function GroupCard({
     const [requiresSigning, setRequiresSigning] = useState(
         group.contractSigningRequired,
     );
+    const [logo, setLogo] = useState<File | null>(null);
     const [image, setImage] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -345,16 +346,21 @@ function GroupCard({
     async function handleSave() {
         setError(null);
         try {
-            const imageUrl = image ? await uploadImage(image) : undefined;
+            const [logoUrl, imageUrl] = await Promise.all([
+                logo ? uploadImage(logo) : undefined,
+                image ? uploadImage(image) : undefined,
+            ]);
             await updateGroup.mutateAsync({
                 slug: group.slug,
                 data: {
                     contractSigningRequired: requiresSigning,
                     // Omitted when unchanged, so saving the checkbox never
-                    // clears the group's existing logo.
+                    // clears the group's existing logo or gruppebilde.
+                    ...(logoUrl ? { logoUrl } : {}),
                     ...(imageUrl ? { imageUrl } : {}),
                 },
             });
+            setLogo(null);
             setImage(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -412,8 +418,18 @@ function GroupCard({
                             </FieldLabel>
                         </Field>
                         <AdminImageField
-                            label="Gruppebilde (la stå tom for å beholde)"
+                            label="Logo (la stå tom for å beholde)"
+                            description="Vises som profilbilde i avatarer, kort og lister."
                             preset="avatar"
+                            value={logo}
+                            onChange={setLogo}
+                            existingImageUrl={group.logoUrl}
+                            disabled={updateGroup.isPending || isUploading}
+                        />
+                        <AdminImageField
+                            label="Gruppebilde (la stå tom for å beholde)"
+                            description="Bilde av gruppa. Vises øverst på Om-fanen."
+                            preset="cover-video"
                             value={image}
                             onChange={setImage}
                             existingImageUrl={group.imageUrl}
