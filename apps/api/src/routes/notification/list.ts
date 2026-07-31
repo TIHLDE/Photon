@@ -1,16 +1,15 @@
 import { schema } from "@photon/db";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type { z } from "zod";
 import { describeRoute } from "~/lib/openapi";
-import {
-    PaginationSchema,
-    getPageOffset,
-    getTotalPages,
-} from "~/middleware/pagination";
+import { getPageOffset, getTotalPages } from "~/middleware/pagination";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
-import { notificationListResponseSchema } from "./schema";
+import {
+    notificationListQuerySchema,
+    notificationListResponseSchema,
+} from "./schema";
 
 export const listNotificationsRoute = route().get(
     "/",
@@ -19,7 +18,7 @@ export const listNotificationsRoute = route().get(
         summary: "List notifications for authenticated user",
         operationId: "listNotifications",
         description:
-            "Returns paginated list of notifications for the authenticated user, ordered by most recent first",
+            "Returns paginated list of notifications for the authenticated user, ordered by most recent first. Pass isRead=false to count unread ones: totalCount answers that without fetching the notifications themselves.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,14 +27,19 @@ export const listNotificationsRoute = route().get(
         })
         .build(),
     requireAuth,
-    validator("query", PaginationSchema),
+    validator("query", notificationListQuerySchema),
     async (c) => {
         const { db } = c.get("ctx");
         const userId = c.get("user").id;
-        const { pageSize, page } = c.req.valid("query");
+        const { pageSize, page, isRead } = c.req.valid("query");
         const pageOffset = getPageOffset(page, pageSize);
 
-        const notificationFilter = eq(schema.notification.userId, userId);
+        const notificationFilter = and(
+            eq(schema.notification.userId, userId),
+            isRead === undefined
+                ? undefined
+                : eq(schema.notification.isRead, isRead),
+        );
 
         const notificationCount = await db.$count(
             schema.notification,

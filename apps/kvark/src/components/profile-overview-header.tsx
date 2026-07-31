@@ -28,7 +28,9 @@ export function ProfileOverviewHeader({
             {isOwnProfile ? (
                 <Badge variant="outline" className="gap-1.5">
                     <Bell />
-                    {notifications} nye varsler
+                    {notifications === 1
+                        ? "1 nytt varsel"
+                        : `${notifications} nye varsler`}
                 </Badge>
             ) : null}
         </div>

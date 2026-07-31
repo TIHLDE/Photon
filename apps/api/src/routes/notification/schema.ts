@@ -1,8 +1,21 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
-import { PagniationResponseSchema } from "~/middleware/pagination";
+import {
+    PagniationResponseSchema,
+    PaginationSchema,
+} from "~/middleware/pagination";
 
 // ===== INPUT SCHEMAS =====
+
+export const notificationListQuerySchema = PaginationSchema.extend({
+    // stringbool parses the "true"/"false" a query string actually carries;
+    // z.coerce.boolean() would read "false" as true.
+    isRead: z.stringbool().optional().meta({
+        type: "boolean",
+        description:
+            "Filter on read state. False returns only unread notifications, true only read ones. Omit to return both.",
+    }),
+});
 
 export const markReadSchema = Schema(
     "MarkNotificationRead",
