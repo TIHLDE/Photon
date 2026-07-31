@@ -160,7 +160,11 @@ export const jobListFilterSchema = PaginationSchema.extend({
     search: z.string().optional().meta({
         description: "Search term to filter by title or company name",
     }),
-    expired: z.coerce.boolean().optional().meta({
+    // stringbool parses the "true"/"false" a query string actually carries;
+    // z.coerce.boolean() turned "false" into true. The meta type keeps it a
+    // boolean in OpenAPI, where that encoding is implied.
+    expired: z.stringbool().optional().meta({
+        type: "boolean",
         description: "Include expired job postings (default: false)",
     }),
     jobType: z.enum(schema.jobTypeVariants).optional().meta({
