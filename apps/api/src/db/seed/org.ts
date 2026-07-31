@@ -370,7 +370,7 @@ export default async ({ db }: AppContext) => {
                 contactEmail: group.contact_email,
                 createdAt: new Date(group.created_at),
                 updatedAt: new Date(group.updated_at),
-                imageUrl: group.image,
+                logoUrl: group.image,
                 finesAdminId: null,
                 roleId: linkedRole?.id ?? null,
             };

@@ -48,7 +48,7 @@ type ApiGroup = {
     slug: string;
     type: string;
     contactEmail: string | null;
-    imageUrl: string | null;
+    logoUrl: string | null;
 };
 
 function toGroups(groups: ApiGroup[], type: string): AdmissionGroup[] {
@@ -58,7 +58,7 @@ function toGroups(groups: ApiGroup[], type: string): AdmissionGroup[] {
             name: group.name,
             slug: group.slug,
             email: group.contactEmail ?? undefined,
-            logoUrl: group.imageUrl ?? undefined,
+            logoUrl: group.logoUrl ?? undefined,
         }));
 }
 

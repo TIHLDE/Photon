@@ -856,7 +856,7 @@ export const createSetupGroups = (ctx: TestUtilContext) => async () => {
                 contactEmail: group.contact_email,
                 createdAt: new Date(group.created_at),
                 updatedAt: new Date(group.updated_at),
-                imageUrl: group.image,
+                logoUrl: group.image,
                 finesAdminId: null,
             };
 

@@ -136,7 +136,17 @@ export type GroupPermissionMode =
     (typeof groupPermissionMode)["enumValues"][number];
 
 export const group = pgTable("group", {
+    /**
+     * Gruppebilde: the wide photo shown on the group's «Om»-page. A picture of
+     * the group, not its mark — use {@link group.logoUrl} for avatars.
+     */
     imageUrl: varchar("image_url", { length: 600 }),
+    /**
+     * Logo: the square mark rendered in avatars, chips and cards (circle or
+     * square). This is what the Lepton import filled — the old `image_url`
+     * values were logos and were moved here in migration 0039.
+     */
+    logoUrl: varchar("logo_url", { length: 600 }),
     name: varchar("name", { length: 128 }).notNull(),
     slug: varchar("slug", { length: 128 }).notNull().primaryKey(),
     description: text("description"),

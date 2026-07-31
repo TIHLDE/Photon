@@ -579,8 +579,8 @@ export const eventDetailSchema = Schema(
                             slug: z
                                 .string()
                                 .meta({ description: "Group slug" }),
-                            imageUrl: z.string().nullable().meta({
-                                description: "Group image URL (nullable)",
+                            logoUrl: z.string().nullable().meta({
+                                description: "Group logo URL (nullable)",
                             }),
                         }),
                     ),
