@@ -3352,8 +3352,8 @@ export interface components {
                     name: string;
                     /** @description Group slug */
                     slug: string;
-                    /** @description Group image URL (nullable) */
-                    imageUrl: string | null;
+                    /** @description Group logo URL (nullable) */
+                    logoUrl: string | null;
                 }[];
             }[];
             /** @description Does the event enforce previous strikes for registration */
@@ -4033,8 +4033,10 @@ export interface components {
         GroupWithMemberCount: {
             /** @description Group slug */
             slug: string;
-            /** @description Group image URL */
+            /** @description Gruppebilde URL, shown on the group's about page */
             imageUrl: string | null;
+            /** @description Group logo URL, shown in avatars and cards */
+            logoUrl: string | null;
             /** @description Group name */
             name: string;
             /** @description Group description */
@@ -4062,8 +4064,10 @@ export interface components {
         MyGroup: {
             /** @description Group slug */
             slug: string;
-            /** @description Group image URL */
+            /** @description Gruppebilde URL, shown on the group's about page */
             imageUrl: string | null;
+            /** @description Group logo URL, shown in avatars and cards */
+            logoUrl: string | null;
             /** @description Group name */
             name: string;
             /** @description Group description */
@@ -4095,8 +4099,10 @@ export interface components {
         Group: {
             /** @description Group slug */
             slug: string;
-            /** @description Group image URL */
+            /** @description Gruppebilde URL, shown on the group's about page */
             imageUrl: string | null;
+            /** @description Group logo URL, shown in avatars and cards */
+            logoUrl: string | null;
             /** @description Group name */
             name: string;
             /** @description Group description */
@@ -4123,9 +4129,14 @@ export interface components {
             slug: string;
             /**
              * Format: uri
-             * @description Group image URL
+             * @description Gruppebilde URL, shown on the group's about page
              */
             imageUrl?: string;
+            /**
+             * Format: uri
+             * @description Group logo URL, shown in avatars and cards
+             */
+            logoUrl?: string;
             /** @description Group name */
             name: string;
             /** @description Group description */
@@ -4156,9 +4167,14 @@ export interface components {
         UpdateGroup: {
             /**
              * Format: uri
-             * @description Group image URL
+             * @description Gruppebilde URL, shown on the group's about page
              */
             imageUrl?: string;
+            /**
+             * Format: uri
+             * @description Group logo URL, shown in avatars and cards
+             */
+            logoUrl?: string;
             /** @description Group name */
             name?: string;
             /** @description Group description */
@@ -5330,7 +5346,7 @@ export interface components {
                 slug: string;
                 name: string;
                 type: string;
-                imageUrl: string | null;
+                logoUrl: string | null;
                 role: string;
             }[];
             /** @description Account creation timestamp */

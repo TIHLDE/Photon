@@ -37,7 +37,7 @@ async function main() {
     const bucket = await createStorageClient({ db });
 
     const groups = await db.query.group.findMany({
-        where: isNotNull(schema.group.imageUrl),
+        where: isNotNull(schema.group.logoUrl),
     });
 
     let imported = 0;
@@ -45,7 +45,7 @@ async function main() {
     let failed = 0;
 
     for (const group of groups) {
-        const sourceUrl = group.imageUrl;
+        const sourceUrl = group.logoUrl;
         if (!sourceUrl) continue;
 
         if (sourceUrl.includes("/api/assets/")) {
@@ -76,7 +76,7 @@ async function main() {
             const newUrl = `${env.ROOT_URL}/api/assets/${key}`;
             await db
                 .update(schema.group)
-                .set({ imageUrl: newUrl })
+                .set({ logoUrl: newUrl })
                 .where(eq(schema.group.slug, group.slug));
 
             imported++;

@@ -229,11 +229,11 @@ async function restoreEvents(): Promise<void> {
 
 async function restoreGroups(): Promise<void> {
     const groups = await db
-        .select({ slug: schema.group.slug, imageUrl: schema.group.imageUrl })
+        .select({ slug: schema.group.slug, logoUrl: schema.group.logoUrl })
         .from(schema.group);
 
     const candidates = groups.flatMap((g) => {
-        const key = g.imageUrl ? keyOf(g.imageUrl) : null;
+        const key = g.logoUrl ? keyOf(g.logoUrl) : null;
         return key ? [{ ...g, key }] : [];
     });
     const live = await liveAssetKeys(candidates.map((c) => c.key));
@@ -281,7 +281,7 @@ async function restoreGroups(): Promise<void> {
         }
         await db
             .update(schema.group)
-            .set({ imageUrl: newUrl })
+            .set({ logoUrl: newUrl })
             .where(eq(schema.group.slug, group.slug));
         restored++;
     }

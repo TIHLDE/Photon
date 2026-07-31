@@ -52,7 +52,7 @@ export const getRoute = route().get(
                                     columns: {
                                         name: true,
                                         slug: true,
-                                        imageUrl: true,
+                                        logoUrl: true,
                                     },
                                 },
                             },
@@ -133,7 +133,7 @@ export const getRoute = route().get(
             groups: pool.groups.map((g) => ({
                 name: g.group.name,
                 slug: g.group.slug,
-                imageUrl: g.group.imageUrl,
+                logoUrl: g.group.logoUrl,
             })),
         }));
 

@@ -23,8 +23,8 @@ export function GroupDetailHeader({
         <DetailHeader
             avatar={
                 <Avatar className="size-16 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
-                    {group.imageUrl ? (
-                        <AvatarImage src={group.imageUrl} alt={group.name} />
+                    {group.logoUrl ? (
+                        <AvatarImage src={group.logoUrl} alt={group.name} />
                     ) : null}
                     <AvatarFallback className="text-2xl">
                         {initials(group.name)}

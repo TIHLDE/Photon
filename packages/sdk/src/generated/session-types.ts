@@ -45,7 +45,7 @@ export type ExtendedSession = {
         slug: string;
         name: string;
         type: string;
-        imageUrl: string | null;
+        logoUrl: string | null;
         role: "member" | "leader";
 
     }[];

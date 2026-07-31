@@ -29,6 +29,7 @@ export const mineRoute = route().get(
             .select({
                 slug: schema.group.slug,
                 imageUrl: schema.group.imageUrl,
+                logoUrl: schema.group.logoUrl,
                 name: schema.group.name,
                 description: schema.group.description,
                 contactEmail: schema.group.contactEmail,
@@ -53,6 +54,7 @@ export const mineRoute = route().get(
         const groups = results.map((row) => ({
             slug: row.slug,
             imageUrl: row.imageUrl,
+            logoUrl: row.logoUrl,
             name: row.name,
             description: row.description,
             contactEmail: row.contactEmail,
