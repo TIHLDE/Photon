@@ -39,19 +39,36 @@ type ApiRegistration = {
         | "pending";
 } | null;
 
+type RegistrationStateInput = {
+    /** The authenticated user's own registration, if any. */
+    registration: ApiRegistration;
+    /** The event's own `closed` flag. */
+    closed: boolean;
+    /** When registration opens. Null means "open immediately". */
+    registrationStart?: string | null;
+    /** Påmeldingsfristen. Null means "no deadline". */
+    registrationEnd?: string | null;
+    /** When the event itself ends. */
+    endTime?: string | null;
+};
+
 /**
- * Derive the UI registration state from the API event's `registration`
- * (the authenticated user's own registration), whether registration is
- * closed, and when it opens.
+ * Derive the UI registration state from the authenticated user's own
+ * registration and the event's registration window.
  *
- * `registrationStart` matters even though the API rejects an early sign-up:
- * without it the card showed an inviting "Meld deg på" for events whose
- * registration had not opened yet. Null means "open immediately".
+ * Every bound matters even though the API rejects a sign-up outside the
+ * window: without them the card showed an inviting "Meld deg på" both before
+ * registration opened and — for `registrationEnd`/`endTime` — long after the
+ * event was over, since `closed` is a manual flag arrangørene sjelden setter.
  */
 export function deriveRegistrationState(
-    registration: ApiRegistration,
-    closed: boolean,
-    registrationStart?: string | null,
+    {
+        registration,
+        closed,
+        registrationStart,
+        registrationEnd,
+        endTime,
+    }: RegistrationStateInput,
     now: Date = new Date(),
 ): EventRegistrationState {
     switch (registration?.status) {
@@ -64,6 +81,10 @@ export function deriveRegistrationState(
             return "awaiting-payment";
         default:
             if (closed) return "closed";
+            if (endTime && new Date(endTime) < now) return "closed";
+            if (registrationEnd && new Date(registrationEnd) < now) {
+                return "closed";
+            }
             if (registrationStart && new Date(registrationStart) > now) {
                 return "not-open";
             }

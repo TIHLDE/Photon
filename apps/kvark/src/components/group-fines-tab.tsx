@@ -65,6 +65,12 @@ export function GroupFinesTab({
         return map;
     }, [filtered]);
 
+    /** Åpner den første boten i en persons gruppe av bøter. */
+    function openGrouped(list: Fine[]) {
+        const index = filtered.findIndex((f) => f.id === (list[0]?.id ?? ""));
+        if (index >= 0) setOpenIndex(index);
+    }
+
     const stats = useMemo(() => {
         const ikkeGodkjent = fines
             .filter((f) => !f.approved)
@@ -162,11 +168,16 @@ export function GroupFinesTab({
                                     size="sm"
                                     className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
                                     role="button"
-                                    onClick={() => {
-                                        const i = filtered.findIndex(
-                                            (f) => f.id === (list[0]?.id ?? ""),
-                                        );
-                                        setOpenIndex(i);
+                                    tabIndex={0}
+                                    onClick={() => openGrouped(list)}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === "Enter" ||
+                                            event.key === " "
+                                        ) {
+                                            event.preventDefault();
+                                            openGrouped(list);
+                                        }
                                     }}
                                 >
                                     <Avatar className="size-10">

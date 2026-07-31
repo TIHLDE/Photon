@@ -728,6 +728,12 @@ export const favoriteEventsSchema = Schema(
             eventId: z.string().meta({ description: "Event ID" }),
             title: z.string().meta({ description: "Event title" }),
             slug: z.string().meta({ description: "Event slug" }),
+            startTime: z.iso.datetime().meta({
+                description: "When the event starts (ISO 8601)",
+            }),
+            endTime: z.iso.datetime().meta({
+                description: "When the event ends (ISO 8601)",
+            }),
             createdAt: z.iso.datetime().meta({
                 description: "When you added this event to your favorites",
             }),

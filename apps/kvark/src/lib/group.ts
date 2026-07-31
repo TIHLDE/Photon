@@ -76,16 +76,23 @@ const GROUP_TYPE_LABELS: Record<string, string> = {
     COMMITTEE: "Komité",
     BOARD: "Styre",
     INTERESTGROUP: "Interessegruppe",
+    SPORTSTEAM: "Idrettslag",
     STUDYYEAR: "Klassetrinn",
     STUDY: "Studie",
     TIHLDE: "TIHLDE",
     PRIVATE: "Privat",
 };
 
-/** Norsk visningsnavn for en gruppetype fra databasen (f.eks. "SUBGROUP"). */
+/**
+ * Norsk visningsnavn for en gruppetype fra databasen (f.eks. "SUBGROUP").
+ *
+ * Oppslaget er case-insensitivt: typen er en fritekstkolonne, og en gruppe
+ * lagret med annen skrivemåte skal ikke falle tilbake til det engelske ordet
+ * — det var slik idrettslagene endte opp som «Sportsteam».
+ */
 export function groupTypeLabel(type: string): string {
     return (
-        GROUP_TYPE_LABELS[type] ??
+        GROUP_TYPE_LABELS[type.toUpperCase()] ??
         type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()
     );
 }

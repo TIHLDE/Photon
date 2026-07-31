@@ -9,6 +9,8 @@ import {
     MapPin,
     PencilLine,
     QrCode,
+    Star,
+    StarOff,
     UsersRound,
 } from "lucide-react";
 
@@ -16,8 +18,10 @@ import { authQueryOptions } from "#/api/auth";
 import {
     getEventByIdQuery,
     getEventRegistrationsQuery,
+    getFavoriteEventsQuery,
     registerForEventMutation,
     unregisterFromEventMutation,
+    updateFavoriteEventMutation,
 } from "#/api/queries/events";
 import { DetailDateRange } from "#/components/detail-date-range";
 import { DetailField } from "#/components/detail-field";
@@ -61,6 +65,18 @@ function EventDetailPage() {
 
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
+    const favoriteMutation = useMutation(updateFavoriteEventMutation);
+
+    // Arrangementet sier ikke selv om det er en favoritt, så favorittlisten —
+    // som uansett ligger i cachen fra profilen — avgjør det.
+    const { data: favorites } = useQuery({
+        ...getFavoriteEventsQuery(),
+        enabled: Boolean(session),
+    });
+    const isFavorite = Boolean(
+        favorites?.some((favorite) => favorite.eventId === event.id),
+    );
+    const organizerSlug = event.organizer?.slug;
 
     // Same rule as the API: the permission (a group-scoped one counts), or
     // having created the event.
@@ -70,11 +86,13 @@ function EventDetailPage() {
         "events:delete",
     ])(event.createdById);
 
-    const registrationState = deriveRegistrationState(
-        event.registration,
-        event.closed,
-        event.registrationStart,
-    );
+    const registrationState = deriveRegistrationState({
+        registration: event.registration,
+        closed: event.closed,
+        registrationStart: event.registrationStart,
+        registrationEnd: event.registrationEnd,
+        endTime: event.endTime,
+    });
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
     const registeredCount = registrations?.totalCount ?? 0;
     const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
@@ -140,11 +158,42 @@ function EventDetailPage() {
             header={
                 <>
                     <div className="flex items-center justify-between gap-2">
-                        <DetailIdentity
-                            name={event.organizer?.name ?? "TIHLDE"}
-                            logoUrl={event.organizer?.image ?? undefined}
-                        />
+                        {organizerSlug ? (
+                            <Link
+                                to="/grupper/$slug"
+                                params={{ slug: organizerSlug }}
+                                className="flex min-w-0"
+                            >
+                                <DetailIdentity
+                                    name={event.organizer?.name ?? "TIHLDE"}
+                                    logoUrl={
+                                        event.organizer?.image ?? undefined
+                                    }
+                                />
+                            </Link>
+                        ) : (
+                            <DetailIdentity
+                                name={event.organizer?.name ?? "TIHLDE"}
+                                logoUrl={event.organizer?.image ?? undefined}
+                            />
+                        )}
                         <div className="flex items-center gap-1">
+                            {session ? (
+                                <IconActionButton
+                                    icon={isFavorite ? StarOff : Star}
+                                    label={
+                                        isFavorite
+                                            ? "Fjern fra favoritter"
+                                            : "Legg til i favoritter"
+                                    }
+                                    onClick={() =>
+                                        favoriteMutation.mutate({
+                                            eventId: event.id,
+                                            data: { isFavorite: !isFavorite },
+                                        })
+                                    }
+                                />
+                            ) : null}
                             <ShareButton label="Del arrangement" />
                             {isAdmin ? (
                                 <IconActionButton

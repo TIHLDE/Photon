@@ -100,6 +100,12 @@ export const studyProgramMembership = pgTable(
     (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],
 );
 
+/**
+ * NB: `group.type` is a `varchar`, not this enum, and holds upper-case values
+ * from the Lepton migration — including `SPORTSTEAM`, which is not listed
+ * here. Treat this list as indicative, compare types case-insensitively, and
+ * never assume a group's type is one of these values.
+ */
 export const groupType = pgEnum("org_group_type", [
     "studyyear",
     "interestgroup",

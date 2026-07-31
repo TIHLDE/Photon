@@ -47,11 +47,16 @@ export const updateFavoriteRoute = route().put(
         }
 
         if (body.isFavorite) {
-            // Add to favorites
-            await db.insert(schema.eventFavorite).values({
-                eventId,
-                userId,
-            });
+            // Add to favorites. (user_id, event_id) is the primary key, so a
+            // repeated "favorite" — a double tap, or a stale UI state — would
+            // otherwise fail on the unique violation rather than being a no-op.
+            await db
+                .insert(schema.eventFavorite)
+                .values({
+                    eventId,
+                    userId,
+                })
+                .onConflictDoNothing();
         } else {
             // Remove from favorites
             await db

@@ -130,7 +130,12 @@ function GroupDetailPage() {
     // Bøter og lovverk er lesbart for gruppens medlemmer, botsjefen og
     // fines:view for denne gruppen — samme regel som GET-endepunktene. Uten
     // dette sto fanene der for alle og spørringene svarte alltid 403.
-    const canViewFines = isMember || isFinesAdmin || hasFinesView;
+    //
+    // `finesActivated` avgjør først: en gruppe som ikke bruker botsystemet har
+    // verken lovverk eller bøter å vise, og fanene sto likevel der for alle
+    // medlemmene.
+    const canViewFines =
+        apiGroup.finesActivated && (isMember || isFinesAdmin || hasFinesView);
 
     const { data: apiFines } = useQuery({
         ...getGroupFinesQuery(slug, 0),
