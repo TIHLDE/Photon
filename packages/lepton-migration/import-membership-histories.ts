@@ -86,9 +86,16 @@ const main = async () => {
 
     for (const [leptonSlug, list] of Object.entries(histories)) {
         // Lepton's slug is not always Photon's — `kontkom` is `kok` here.
-        // Photon's own group list is the authority, so a slug the main
-        // migration excluded falls back to itself rather than being dropped.
-        const slug = resolveGroupSlug(leptonSlug) ?? leptonSlug;
+        // Photon's own group list is the authority: a slug the main migration
+        // excluded falls back to itself, and so does a remap whose target does
+        // not exist in this database. The rename only ever happened in prod,
+        // so without that second fallback a run against dev silently drops
+        // every kontkom row.
+        const mapped = resolveGroupSlug(leptonSlug) ?? leptonSlug;
+        const slug =
+            knownGroups.has(mapped) || !knownGroups.has(leptonSlug)
+                ? mapped
+                : leptonSlug;
         if (!knownGroups.has(slug)) {
             if (list.length > 0) {
                 unknownGroup += list.length;

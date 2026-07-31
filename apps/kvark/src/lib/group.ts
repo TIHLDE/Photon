@@ -156,16 +156,12 @@ export function mapMember(member: ApiGroupMember): Member {
 }
 
 /**
- * Norske navn på rollene et avsluttet medlemskap kan ha hatt. Photon har bare
- * member/leader, men historikken er backfilt fra Lepton, som lagret styreverv
- * i samme felt og i STORE BOKSTAVER.
+ * Norske navn på rollene et avsluttet medlemskap kan ha hatt. Både Photon og
+ * Lepton-historikken kjenner bare member/leader — kolonnen er fritekst, så en
+ * ukjent verdi vises som den er i stedet for å bli borte.
  */
 const MEMBER_ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
-    deputy_leader: "Nestleder",
-    treasurer: "Økonomiansvarlig",
-    chairman: "Styreleder",
-    vice_chairman: "Nestleder",
 };
 
 /**
