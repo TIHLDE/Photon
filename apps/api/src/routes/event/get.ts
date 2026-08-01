@@ -104,7 +104,9 @@ export const getRoute = route().get(
                   name: event.organizer.name,
                   slug: event.organizer.slug,
                   type: event.organizer.type,
-                  image: event.organizer.imageUrl,
+                  // The organizer is rendered as a round avatar, so this is the
+                  // logo — the gruppebilde belongs on the group's about tab.
+                  image: event.organizer.logoUrl,
               }
             : null;
 

@@ -3290,7 +3290,7 @@ export interface components {
                 slug: string;
                 /** @description Organizer type */
                 type: string;
-                /** @description Organizer image URL */
+                /** @description Organizer logo URL */
                 image: string | null;
             } | null;
             /** @description Is registration closed */
