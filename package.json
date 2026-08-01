@@ -58,6 +58,7 @@
         "format": "oxfmt --check",
         "format:fix": "oxfmt .",
         "db:push": "turbo db:push",
+        "db:check-order": "turbo db:check-order",
         "db:generate": "turbo db:generate",
         "db:migrate": "turbo db:migrate",
         "db:studio": "turbo db:studio",

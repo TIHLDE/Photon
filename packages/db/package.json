@@ -6,9 +6,11 @@
     "exports": {
         ".": "./src/index.ts",
         "./schema": "./src/schema/index.ts",
-        "./timestamps": "./src/timestamps.ts"
+        "./timestamps": "./src/timestamps.ts",
+        "./migration-journal": "./src/migration-journal.ts"
     },
     "scripts": {
+        "db:check-order": "bun run ./scripts/check-migration-order.ts",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",

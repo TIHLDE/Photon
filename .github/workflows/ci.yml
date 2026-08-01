@@ -29,6 +29,11 @@ jobs:
             - name: Check linting
               run: bun run lint
 
+            # Drizzle applies migrations by journal timestamp, not by index, and
+            # silently skips any that are not newer than the last one applied.
+            - name: Check migration order
+              run: bun run db:check-order
+
             - name: Check types
               run: bun run typecheck
 
