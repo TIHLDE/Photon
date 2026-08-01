@@ -24,20 +24,13 @@ function CollapsibleContent({
         <CollapsiblePrimitive.Panel
             data-slot="collapsible-content"
             // Mirror the accordion so expand/collapse feels identical across the
-            // library: tw-animate-css drives the height keyframe, and the inner
-            // wrapper carries the measured panel height (0 at the open/close
-            // boundary) so the reveal reads as a smooth roll rather than a pop.
-            className="overflow-hidden text-sm data-open:animate-collapsible-down data-closed:animate-collapsible-up"
+            // library: the panel transitions its own height between 0 and the
+            // measured `--collapsible-panel-height`, so the reveal reads as a
+            // smooth roll rather than a pop.
+            className="h-(--collapsible-panel-height) overflow-hidden text-sm transition-[height] duration-200 ease-out data-ending-style:h-0 data-starting-style:h-0"
             {...props}
         >
-            <div
-                className={cn(
-                    "h-(--collapsible-panel-height) data-ending-style:h-0 data-starting-style:h-0",
-                    className,
-                )}
-            >
-                {children}
-            </div>
+            <div className={cn(className)}>{children}</div>
         </CollapsiblePrimitive.Panel>
     );
 }
