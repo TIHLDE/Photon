@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { deriveStudyFromGroups } from "~/lib/user/study";
 import { requireAuth } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
@@ -66,23 +67,12 @@ export const getUserRoute = route().get(
             }),
         ]);
 
-        /**
-         * Study programme and cohort mirror `listUsers`: they are a projection
-         * of Feide onto ordinary groups (types STUDY/STUDYYEAR), not
-         * `studyProgramMembership` — that table only gets rows from a Feide
-         * login, so everyone migrated from Lepton is missing there. The type is
-         * stored in UPPERCASE from Lepton, hence the case-insensitive compare.
-         */
-        const study = memberships.find(
-            (m) => m.group.type.toLowerCase() === "study",
+        // Derived from the group projection, not `studyProgramMembership`;
+        // see `deriveStudyFromGroups` for why. The memberships are already
+        // loaded above, so this is the pure form rather than a second query.
+        const { studyProgram, studyStartYear } = deriveStudyFromGroups(
+            memberships.map((m) => m.group),
         );
-
-        // Several cohorts can linger on one account (a bachelor who continued
-        // into a master). The most recent one is the useful one.
-        const startYears = memberships
-            .filter((m) => m.group.type.toLowerCase() === "studyyear")
-            .map((m) => Number.parseInt(m.group.name, 10))
-            .filter((year) => Number.isFinite(year));
 
         return c.json({
             id: user.id,
@@ -94,9 +84,8 @@ export const getUserRoute = route().get(
             bio: settings?.bioDescription ?? null,
             githubUrl: settings?.githubUrl ?? null,
             linkedinUrl: settings?.linkedinUrl ?? null,
-            studyProgram: study?.group.name ?? null,
-            studyStartYear:
-                startYears.length > 0 ? Math.max(...startYears) : null,
+            studyProgram,
+            studyStartYear,
             groups: memberships.map((m) => ({
                 slug: m.groupSlug,
                 name: m.group.name,

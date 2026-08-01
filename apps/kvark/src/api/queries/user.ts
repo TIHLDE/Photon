@@ -105,3 +105,35 @@ export const getAllergiesQuery = () =>
         queryKey: [...UserQueryKeys.allergies],
         queryFn: () => apiClient.get("/api/user/allergy"),
     });
+
+/**
+ * Rett kullet til et medlem for hånd.
+ *
+ * Feide gir ikke kull for alle studier, så nye medlemmer antas å være
+ * 1. klassinger. Denne overstyrer den antakelsen permanent — synken rører
+ * aldri et kull som er satt manuelt.
+ */
+export const updateUserStudyYearMutation = mutationOptions({
+    mutationFn: ({
+        userId,
+        startYear,
+    }: {
+        userId: string;
+        startYear: number | null;
+    }) =>
+        apiClient.patch("/api/user/{id}/study-year", {
+            params: { id: userId },
+            json: { startYear },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        // Kullet vises både i admin-lista og på profilen.
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.profile],
+            exact: false,
+        });
+    },
+});

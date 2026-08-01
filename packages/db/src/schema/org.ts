@@ -60,6 +60,29 @@ export const campus = pgEnum("org_campus", ["trondheim", "gjovik", "alesund"]);
 
 export type Campus = (typeof campus)["enumValues"][number];
 
+/**
+ * Where a cohort start year came from, which decides who may overwrite it.
+ *
+ * NTNU does not hand out `fc:fs:kull` for every programme — ITBAITBEDR
+ * (Digital forretningsutvikling) never gets one — so a member who registers
+ * from scratch would otherwise land with no cohort at all, and 172 of the 258
+ * priority pools select on the cohort group. We therefore assume the current
+ * intake for active students we have no year for, and record that it was a
+ * guess rather than something Feide told us.
+ *
+ * Only `assumed` may be overwritten, and only by `feide`. `manual` is a
+ * deliberate correction by the board and outranks Feide; `migrated` is the
+ * year Lepton carried over, which is real data we have no better source for.
+ */
+export const studyYearSource = pgEnum("org_study_year_source", [
+    "feide",
+    "assumed",
+    "manual",
+    "migrated",
+]);
+
+export type StudyYearSource = (typeof studyYearSource)["enumValues"][number];
+
 export const studyProgramMembership = pgTable(
     "study_program_membership",
     {
@@ -80,6 +103,14 @@ export const studyProgramMembership = pgTable(
          * carries campus stickiness and proves enrolment later.
          */
         startYear: integer("start_year"),
+        /**
+         * Where {@link startYear} came from; see {@link studyYearSource}.
+         *
+         * NULL means we have a row but never resolved a year — an alumnus
+         * whose Feide membership is inactive, so guessing an intake for them
+         * would stamp someone who finished years ago as a fresh first-year.
+         */
+        startYearSource: studyYearSource("start_year_source"),
         /**
          * The campus we have positively confirmed the member studies at, from
          * their Feide course codes. NTNU runs BIDATA and BDIGSEC on several
