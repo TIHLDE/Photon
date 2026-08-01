@@ -62,6 +62,75 @@ export function UserMultiCombobox({
     );
 }
 
+/** Det minste en velger trenger for å kunne sende en ID videre. */
+export type ComboboxMember = {
+    id: string;
+    name: string;
+};
+
+type MemberMultiComboboxProps = {
+    items: ComboboxMember[];
+    value: ComboboxMember[];
+    onValueChange: (next: ComboboxMember[]) => void;
+    placeholder?: string;
+};
+
+/**
+ * Velg flere medlemmer, og få dem tilbake med ID.
+ *
+ * `UserMultiCombobox` over jobber med navn som tekst. Det holder ikke når
+ * valget skal sendes til API-et: to medlemmer kan hete det samme, og da er
+ * det ikke mulig å se hvem av dem som ble valgt.
+ */
+export function MemberMultiCombobox({
+    items,
+    value,
+    onValueChange,
+    placeholder,
+}: MemberMultiComboboxProps) {
+    const anchor = useComboboxAnchor();
+    return (
+        <Combobox
+            items={items}
+            multiple
+            value={value}
+            onValueChange={onValueChange}
+            itemToStringLabel={(item: ComboboxMember) => item.name}
+            itemToStringValue={(item: ComboboxMember) => item.id}
+            isItemEqualToValue={(a: ComboboxMember, b: ComboboxMember) =>
+                a.id === b.id
+            }
+        >
+            <ComboboxChips ref={anchor}>
+                <ComboboxValue>
+                    {(selected: ComboboxMember[]) => (
+                        <>
+                            {selected.map((member) => (
+                                <ComboboxChip key={member.id}>
+                                    {member.name}
+                                </ComboboxChip>
+                            ))}
+                            <ComboboxChipsInput placeholder={placeholder} />
+                        </>
+                    )}
+                </ComboboxValue>
+            </ComboboxChips>
+            <ComboboxContent anchor={anchor}>
+                <ComboboxList>
+                    <ComboboxEmpty>Ingen treff</ComboboxEmpty>
+                    <ComboboxCollection>
+                        {(item: ComboboxMember) => (
+                            <ComboboxItem key={item.id} value={item}>
+                                {item.name}
+                            </ComboboxItem>
+                        )}
+                    </ComboboxCollection>
+                </ComboboxList>
+            </ComboboxContent>
+        </Combobox>
+    );
+}
+
 type UserSingleComboboxProps = {
     items: string[];
     value: string | null;

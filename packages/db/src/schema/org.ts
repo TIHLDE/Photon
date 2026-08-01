@@ -15,6 +15,7 @@ import {
     varchar,
 } from "drizzle-orm/pg-core";
 import { pgEnum } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
 import { role } from "./rbac";
@@ -458,6 +459,17 @@ export const fine = pgTable("fine", {
         .references(() => group.slug, { onDelete: "cascade" }),
     reason: text("reason").notNull(),
     amount: integer("amount").notNull(), // Amount in NOK (or minor units)
+    /**
+     * The paragraph in the group's lovverk the fine was given under.
+     *
+     * Nullable, and deliberately so in both directions: the fines migrated
+     * from Lepton carry no paragraph, and a lovverk may be rewritten long
+     * after a fine was handed out — deleting the paragraph clears the link
+     * rather than the fine.
+     */
+    lawId: uuid("law_id").references((): AnyPgColumn => groupLaw.id, {
+        onDelete: "set null",
+    }),
     defense: text("defense"),
     /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
     image: varchar("image", { length: 600 }),
@@ -484,6 +496,10 @@ export const fineRelations = relations(fine, ({ one }) => ({
         fields: [fine.createdByUserId],
         references: [user.id],
         relationName: "fineCreatedByUser",
+    }),
+    law: one(groupLaw, {
+        fields: [fine.lawId],
+        references: [groupLaw.id],
     }),
 }));
 

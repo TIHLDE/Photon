@@ -51,7 +51,7 @@ export const getUserRoute = route().get(
             });
         }
 
-        const [settings, memberships] = await Promise.all([
+        const [settings, memberships, history] = await Promise.all([
             db.query.userSettings.findFirst({
                 where: (s, { eq }) => eq(s.userId, id),
                 columns: {
@@ -65,6 +65,11 @@ export const getUserRoute = route().get(
                 where: (gm, { eq }) => eq(gm.userId, id),
                 with: { group: true },
             }),
+            db.query.groupMembershipHistory.findMany({
+                where: (h, { eq }) => eq(h.userId, id),
+                orderBy: (h, { desc }) => [desc(h.endedAt)],
+                with: { group: true },
+            }),
         ]);
 
         // Derived from the group projection, not `studyProgramMembership`;
@@ -73,6 +78,28 @@ export const getUserRoute = route().get(
         const { studyProgram, studyStartYear } = deriveStudyFromGroups(
             memberships.map((m) => m.group),
         );
+
+        /**
+         * Ended memberships — the same rule the group page's "tidligere
+         * medlemmer" uses, applied per user instead of per group: a group the
+         * member rejoined is a current membership and not a former one, and
+         * the backfilled Lepton history also holds a row per role change for
+         * people who never left. Both fall away by dropping the groups the
+         * user is in today. History rows come back newest-first, so the first
+         * one seen per group is the most recent stint.
+         */
+        const currentSlugs = new Set(memberships.map((m) => m.groupSlug));
+        const seenSlugs = new Set<string>();
+        const formerGroups = history.filter((entry) => {
+            if (
+                currentSlugs.has(entry.groupSlug) ||
+                seenSlugs.has(entry.groupSlug)
+            ) {
+                return false;
+            }
+            seenSlugs.add(entry.groupSlug);
+            return true;
+        });
 
         return c.json({
             id: user.id,
@@ -92,6 +119,15 @@ export const getUserRoute = route().get(
                 type: m.group.type,
                 logoUrl: m.group.logoUrl ?? null,
                 role: m.role,
+            })),
+            formerGroups: formerGroups.map((entry) => ({
+                slug: entry.groupSlug,
+                name: entry.group.name,
+                type: entry.group.type,
+                logoUrl: entry.group.logoUrl ?? null,
+                role: entry.role,
+                startedAt: entry.startedAt.toISOString(),
+                endedAt: entry.endedAt.toISOString(),
             })),
             createdAt: user.createdAt.toISOString(),
         });

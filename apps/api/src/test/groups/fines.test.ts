@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -849,6 +850,204 @@ describe("fines", () => {
                 });
 
                 expect(response.status).toBe(404);
+            },
+            500_000,
+        );
+    });
+
+    describe("fine ↔ paragraph", () => {
+        integrationTest(
+            "carries the cited paragraph through create, list and get",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "law-linked-fines",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const [law] = await ctx.db
+                    .insert(schema.groupLaw)
+                    .values({
+                        groupSlug: group.slug,
+                        paragraph: "3.10",
+                        title: "Møtte ikke opp",
+                        amount: 2,
+                    })
+                    .returning();
+
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "law-fine-target@test.com",
+                        name: "Law Target",
+                        password: "test123!",
+                    },
+                });
+
+                const created = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "Kom ikke på møtet",
+                        amount: 2,
+                        lawId: law!.id,
+                    },
+                });
+
+                expect(created.status).toBe(201);
+                const createdJson = await created.json();
+                expect(createdJson.lawId).toBe(law!.id);
+                expect(createdJson.law?.paragraph).toBe("3.10");
+                expect(createdJson.law?.title).toBe("Møtte ikke opp");
+
+                const list = await client.api.groups[":groupSlug"].fines.$get({
+                    param: { groupSlug: group.slug },
+                });
+                const listJson = await list.json();
+                expect(listJson[0]?.law?.title).toBe("Møtte ikke opp");
+
+                const single = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$get({
+                    param: {
+                        groupSlug: group.slug,
+                        fineId: createdJson.id,
+                    },
+                });
+                const singleJson = await single.json();
+                expect(singleJson.law?.paragraph).toBe("3.10");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "rejects a paragraph from another group's lovverk",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "own-lovverk",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const otherGroup = await ctx.utils.createTestGroup({
+                    slug: "other-lovverk",
+                    finesActivated: true,
+                });
+                const [foreignLaw] = await ctx.db
+                    .insert(schema.groupLaw)
+                    .values({
+                        groupSlug: otherGroup.slug,
+                        paragraph: "1.00",
+                        title: "Fremmed paragraf",
+                    })
+                    .returning();
+
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "foreign-law-target@test.com",
+                        name: "Foreign Target",
+                        password: "test123!",
+                    },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "Feil lovverk",
+                        amount: 1,
+                        lawId: foreignLaw!.id,
+                    },
+                });
+
+                expect(response.status).toBe(404);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "keeps the fine when the paragraph it cites is deleted",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "law-deleted",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const [law] = await ctx.db
+                    .insert(schema.groupLaw)
+                    .values({
+                        groupSlug: group.slug,
+                        paragraph: "4.00",
+                        title: "Skal slettes",
+                    })
+                    .returning();
+
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "law-deleted-target@test.com",
+                        name: "Deleted Law Target",
+                        password: "test123!",
+                    },
+                });
+
+                const created = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "Boten overlever lovverket",
+                        amount: 1,
+                        lawId: law!.id,
+                    },
+                });
+                const createdJson = await created.json();
+
+                // Lovverk redigeres etter at bøter er gitt. Boten skal bli
+                // stående — bare koblingen forsvinner.
+                await ctx.db
+                    .delete(schema.groupLaw)
+                    .where(eq(schema.groupLaw.id, law!.id));
+
+                const single = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$get({
+                    param: { groupSlug: group.slug, fineId: createdJson.id },
+                });
+
+                expect(single.status).toBe(200);
+                const singleJson = await single.json();
+                expect(singleJson.law).toBeNull();
+                expect(singleJson.lawId).toBeNull();
+                expect(singleJson.reason).toBe("Boten overlever lovverket");
             },
             500_000,
         );
