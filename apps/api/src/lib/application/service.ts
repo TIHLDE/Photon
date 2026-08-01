@@ -3,6 +3,7 @@ import { schema } from "@photon/db";
 import type { ApplicationType } from "@photon/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
+import { getUserStudy } from "~/lib/user/study";
 import { renderApplicationPdf } from "./pdf";
 import type { ApplicationWithDetails } from "./types";
 
@@ -66,11 +67,17 @@ export async function listApplications(
  * The signature line stamped into the PDF, e.g.
  * "brotherman: Dataingeniør - 2023".
  *
- * Derived from the session and the user's study-program membership. The old
- * portal took these three values straight off the submitted form, which meant
- * anyone could sign as anyone; here the client cannot influence it. Falls
- * back to just the username when there is no study affiliation (alumni,
- * honorary members).
+ * Derived from the session and the member's study groups. The old portal took
+ * these values straight off the submitted form, which meant anyone could sign
+ * as anyone; here the client cannot influence it. Falls back to just the
+ * username when there is no study affiliation (alumni, honorary members).
+ *
+ * Reads the group projection rather than `studyProgramMembership` for the same
+ * reason every other study read does — see {@link getUserStudy}. It used to
+ * read the table, which has rows for 8 of 1707 members, so almost every
+ * application was signed with a bare username; and it interpolated the year
+ * unguarded, so the members who did have a row but no cohort were signed
+ * "Digital Forretningsutvikling - null".
  */
 export async function buildSignature(
     ctx: AppContext,
@@ -83,26 +90,14 @@ export async function buildSignature(
 
     const label = user?.username ?? user?.name ?? userId;
 
-    const membership = await ctx.db
-        .select({
-            displayName: schema.studyProgram.displayName,
-            startYear: schema.studyProgramMembership.startYear,
-        })
-        .from(schema.studyProgramMembership)
-        .innerJoin(
-            schema.studyProgram,
-            eq(
-                schema.studyProgramMembership.studyProgramId,
-                schema.studyProgram.id,
-            ),
-        )
-        .where(eq(schema.studyProgramMembership.userId, userId))
-        .limit(1)
-        .then((rows) => rows[0]);
+    const { studyProgram, studyStartYear } = await getUserStudy(ctx, userId);
 
-    if (!membership) return label;
+    if (!studyProgram) return label;
 
-    return `${label}: ${membership.displayName} - ${membership.startYear}`;
+    // A programme with no cohort still says more than the username alone.
+    if (studyStartYear === null) return `${label}: ${studyProgram}`;
+
+    return `${label}: ${studyProgram} - ${studyStartYear}`;
 }
 
 /**

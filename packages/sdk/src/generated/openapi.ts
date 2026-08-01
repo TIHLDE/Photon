@@ -2313,6 +2313,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/{id}/study-year": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct a member's cohort
+         * @description Set a member's cohort start year by hand, overriding what Feide reports. Moves their STUDYYEAR group to match. Requires 'users:manage'.
+         */
+        patch: operations["updateUserStudyYear"];
+        trace?: never;
+    };
     "/api/user/{id}": {
         parameters: {
             query?: never;
@@ -5321,6 +5341,15 @@ export interface components {
             /** @description The next page number that can be fetched */
             nextPage: number | null;
             items: components["schemas"]["UserListItem"][];
+        };
+        UpdateStudyYear: {
+            message: string;
+            /** @description The cohort year now stored */
+            startYear: number | null;
+        };
+        UpdateStudyYearInput: {
+            /** @description Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group. */
+            startYear: number | null;
         };
         UserProfile: {
             /** @description User ID */
@@ -11637,6 +11666,55 @@ export interface operations {
             };
             /** @description Forbidden - Requires users:view */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserStudyYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStudyYearInput"];
+            };
+        };
+        responses: {
+            /** @description Cohort updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStudyYear"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

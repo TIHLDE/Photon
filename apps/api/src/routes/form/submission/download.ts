@@ -1,10 +1,11 @@
 import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { STUDY_GROUP_TYPES, deriveStudyFromGroups } from "~/lib/user/study";
 import { requireAuth } from "~/middleware/auth";
 
 export const downloadSubmissionsRoute = route().get(
@@ -122,6 +123,52 @@ export const downloadSubmissionsRoute = route().get(
             );
         }
 
+        /**
+         * Study and cohort per respondent, from the group projection — see
+         * `deriveStudyFromGroups`. Fetched for the whole export in one query
+         * rather than per row, and grouped here so the derivation stays the
+         * shared one. These two columns shipped empty until now.
+         */
+        const submitterIds = [...new Set(submissions.map((s) => s.userId))];
+        const studyRows =
+            submitterIds.length === 0
+                ? []
+                : await db
+                      .select({
+                          userId: schema.groupMembership.userId,
+                          name: schema.group.name,
+                          type: schema.group.type,
+                      })
+                      .from(schema.groupMembership)
+                      .innerJoin(
+                          schema.group,
+                          eq(
+                              schema.group.slug,
+                              schema.groupMembership.groupSlug,
+                          ),
+                      )
+                      .where(
+                          and(
+                              inArray(
+                                  schema.groupMembership.userId,
+                                  submitterIds,
+                              ),
+                              inArray(sql`lower(${schema.group.type})`, [
+                                  ...STUDY_GROUP_TYPES,
+                              ]),
+                          ),
+                      );
+
+        const groupsByUser = new Map<
+            string,
+            { name: string; type: string }[]
+        >();
+        for (const row of studyRows) {
+            const entry = groupsByUser.get(row.userId) ?? [];
+            entry.push({ name: row.name, type: row.type });
+            groupsByUser.set(row.userId, entry);
+        }
+
         // Build CSV header
         const headers = [
             "name",
@@ -133,11 +180,17 @@ export const downloadSubmissionsRoute = route().get(
 
         // Build CSV rows
         const rows = submissions.map((submission) => {
+            const study = deriveStudyFromGroups(
+                groupsByUser.get(submission.userId) ?? [],
+            );
+
             const row: string[] = [
                 submission.user.name,
                 submission.user.email,
-                "", // study - would need to join with study program
-                "", // studyyear - would need to join with study program
+                study.studyProgram ?? "",
+                study.studyStartYear === null
+                    ? ""
+                    : String(study.studyStartYear),
             ];
 
             // Add answer for each field

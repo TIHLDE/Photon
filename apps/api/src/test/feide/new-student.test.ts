@@ -1,9 +1,8 @@
 import {
+    applyFeideStudyPrograms,
     parseValidStudyPrograms,
     partitionByCampus,
     resolveCampus,
-    syncBaselineRoles,
-    syncDerivedStudyGroups,
 } from "@photon/auth/feide";
 import { type DbSchema, schema } from "@photon/db";
 import { and, eq, inArray } from "drizzle-orm";
@@ -86,58 +85,37 @@ const seedProgramme = async (db: NodePgDatabase<DbSchema>) => {
 };
 
 /**
- * The body of {@link syncFeideHook}'s transaction, driven directly so the Feide
- * payload can be chosen. Everything network- and session-bound is stripped;
- * what remains is exactly the sequence a callback runs.
+ * A Feide callback, driven directly so the payload can be chosen.
+ *
+ * Only the network- and session-bound parts are stripped; everything that
+ * touches the database is the production function itself. This used to be a
+ * hand-written copy of that sequence, which stopped matching the moment the
+ * sync changed — the copy kept passing while production did something else.
+ *
+ * `now` is injectable because the cohort a member is assumed into depends on
+ * which side of August the login falls on.
  */
 const signInWithFeide = async (
     db: NodePgDatabase<DbSchema>,
     userId: string,
     groups: FeideGroups,
+    now = new Date(),
 ) => {
     const campus = resolveCampus(groups);
-    const { allowed } = partitionByCampus(
+    const { allowed, campusRejected } = partitionByCampus(
         parseValidStudyPrograms(groups),
         campus,
     );
 
-    await db.transaction(async (tx) => {
-        for (const feideGroup of allowed) {
-            const sp = await tx
-                .select({
-                    id: schema.studyProgram.id,
-                    slug: schema.studyProgram.slug,
-                })
-                .from(schema.studyProgram)
-                .where(eq(schema.studyProgram.feideCode, feideGroup.code))
-                .limit(1);
-
-            if (!sp[0]) continue;
-
-            await tx
-                .insert(schema.studyProgramMembership)
-                .values({
-                    userId,
-                    studyProgramId: sp[0].id,
-                    startYear: feideGroup.startYear,
-                    confirmedCampus: campus,
-                })
-                .onConflictDoNothing();
-
-            await syncDerivedStudyGroups(
-                tx,
-                userId,
-                sp[0].slug,
-                feideGroup.startYear,
-            );
-        }
-
-        await syncBaselineRoles(
-            tx,
-            userId,
-            allowed.some((g) => g.active),
-        );
-    });
+    await applyFeideStudyPrograms(
+        db,
+        userId,
+        allowed,
+        campusRejected,
+        campus,
+        null,
+        now,
+    );
 };
 
 const groupSlugsOf = async (db: NodePgDatabase<DbSchema>, userId: string) => {
@@ -220,28 +198,32 @@ describe("a student with no prior TIHLDE account", () => {
     );
 
     integrationTest(
-        "gets the study group but no cohort group when Feide omits the kull",
+        "is assumed into the current intake when Feide omits the kull",
         async ({ ctx }) => {
             await seedProgramme(ctx.db);
             const user = await ctx.utils.createTestUser();
 
             /**
-             * NTNU does not hand this service a cohort for every student: a
-             * third-year ITBAITBEDR login came back with courses and a bare
-             * programme group. The member is still a member and still lands in
-             * the study group, so the 107 study-only pools work — but with no
-             * year there is no cohort group, and the 172 pools that select on
-             * one cannot match them.
+             * NTNU does not hand this service a cohort for every programme.
+             * ITBAITBEDR never gets one — confirmed across every such login in
+             * production, including one from a student with no prior studies
+             * at all — so without a guess the member would land in no cohort,
+             * and the 172 pools that select on one could never match them.
              *
-             * Asserted rather than fixed on purpose: no year may be invented
-             * here, because a guessed cohort is a granted priority.
+             * The guess is the current intake, which is right for the autumn
+             * admission and for anyone transferring in. Someone further along
+             * who registers late is wrong, notices (they lose priority on their
+             * own graduation ball) and gets corrected by hand.
              */
-            await signInWithFeide(ctx.db, user.id, [
-                prg("BIDATA"),
-                ...firstSemester.map(emne),
-            ]);
+            await signInWithFeide(
+                ctx.db,
+                user.id,
+                [prg("BIDATA"), ...firstSemester.map(emne)],
+                new Date("2026-08-15T12:00:00Z"),
+            );
 
             expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
+                "2026",
                 "dataingenior",
             ]);
             expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
@@ -249,12 +231,55 @@ describe("a student with no prior TIHLDE account", () => {
             const [membership] = await ctx.db
                 .select({
                     startYear: schema.studyProgramMembership.startYear,
+                    source: schema.studyProgramMembership.startYearSource,
+                })
+                .from(schema.studyProgramMembership)
+                .where(eq(schema.studyProgramMembership.userId, user.id));
+
+            expect(membership?.startYear).toBe(2026);
+            // Recorded as a guess, so a real year from Feide can replace it
+            // later and a manual correction can outrank it.
+            expect(membership?.source).toBe("assumed");
+        },
+    );
+
+    integrationTest(
+        "is not assumed into an intake when the membership has lapsed",
+        async ({ ctx }) => {
+            await seedProgramme(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            /**
+             * An alumnus whose programme group is still in the response but no
+             * longer active. Guessing here would stamp someone who finished
+             * years ago as a fresh first-year and hand them priority on the
+             * intake's events.
+             */
+            await signInWithFeide(
+                ctx.db,
+                user.id,
+                [
+                    { ...prg("BIDATA"), membership: { active: false } },
+                    ...firstSemester.map(emne),
+                ],
+                new Date("2026-08-15T12:00:00Z"),
+            );
+
+            expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
+                "dataingenior",
+            ]);
+
+            const [membership] = await ctx.db
+                .select({
+                    startYear: schema.studyProgramMembership.startYear,
+                    source: schema.studyProgramMembership.startYearSource,
                 })
                 .from(schema.studyProgramMembership)
                 .where(eq(schema.studyProgramMembership.userId, user.id));
 
             expect(membership).toBeDefined();
             expect(membership?.startYear).toBeNull();
+            expect(membership?.source).toBeNull();
 
             // Nothing may conjure a STUDYYEAR group out of a missing year.
             const invented = await ctx.db

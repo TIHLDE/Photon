@@ -499,4 +499,81 @@ describe("parseValidStudyPrograms — programme and cohort groups", () => {
             ["BIDATA:2020", "ITMAIKTSA:2023"],
         );
     });
+
+    /**
+     * The exact non-course groups Feide returned for a real Digital
+     * forretningsutvikling login (2026-08-01 20:50:57 in production), kept
+     * verbatim as a fixture.
+     *
+     * It is the case the whole cohort assumption exists for: an active
+     * ITBAITBEDR membership, no `fc:fs:kull` anywhere in the response, and two
+     * lapsed programmes from an unrelated bachelor. Three of the four such
+     * logins in a month came from members who transferred in from another
+     * degree, so the shape is normal for this programme rather than exotic.
+     */
+    test("gives ITBAITBEDR no year, and ignores the lapsed programmes", () => {
+        const programs = parseValidStudyPrograms([
+            {
+                id: "fc:fs:fs:prg:ntnu.no:BMV",
+                type: "fc:fs:prg",
+                displayName: "Medievitenskap - bachelor",
+                membership: member(false),
+            },
+            {
+                id: "fc:fs:fs:prg:ntnu.no:ÅMV",
+                type: "fc:fs:prg",
+                displayName: "Medievitenskap - årsstudium",
+                membership: member(false),
+            },
+            {
+                id: "fc:fs:fs:prg:ntnu.no:ITBAITBEDR",
+                type: "fc:fs:prg",
+                displayName: "Digital forretningsutvikling - bachelor",
+                membership: member(true),
+            },
+        ]);
+
+        assert.lengthOf(programs, 1);
+        assert.equal(programs[0]?.code, "ITBAITBEDR");
+        assert.isTrue(programs[0]?.active);
+        // The gap the assumption fills: Feide knows the programme, not the year.
+        assert.isNull(programs[0]?.startYear);
+    });
+
+    /**
+     * The other real shape: a member who transferred from Bygg into Digital
+     * forretningsutvikling (2026-08-01 18:55:36). Feide *did* send a cohort —
+     * but for BIBYGG, the programme they left.
+     *
+     * BIBYGG is not a TIHLDE code, so it is dropped and the year with it. Were
+     * the old programme BIDATA instead, the cohort would attach to that entry
+     * and not to ITBAITBEDR, which is why the assumption is decided per
+     * programme rather than per member.
+     */
+    test("does not borrow a cohort from a programme the member left", () => {
+        const programs = parseValidStudyPrograms([
+            {
+                id: "fc:fs:fs:prg:ntnu.no:ITBAITBEDR",
+                type: "fc:fs:prg",
+                displayName: "Digital forretningsutvikling - bachelor",
+                membership: member(true),
+            },
+            {
+                id: "fc:fs:fs:prg:ntnu.no:BIBYGG",
+                type: "fc:fs:prg",
+                displayName: "Bygg - bachelor i ingeniørfag",
+                membership: member(false),
+            },
+            {
+                id: "fc:fs:fs:kull:ntnu.no:BIBYGG:2023H",
+                type: "fc:fs:kull",
+                displayName: "Kull for Høst 2023 Bygg - bachelor i ingeniørfag",
+                membership: member(false),
+            },
+        ]);
+
+        assert.lengthOf(programs, 1);
+        assert.equal(programs[0]?.code, "ITBAITBEDR");
+        assert.isNull(programs[0]?.startYear);
+    });
 });
