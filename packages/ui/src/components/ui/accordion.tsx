@@ -71,8 +71,13 @@ function AccordionContent({
             {...props}
         >
             <div
+                // Link styling is scoped to prose: a link sitting in a
+                // paragraph needs the underline to be findable mid-sentence,
+                // while a panel used as a list of links (a nav menu, a set of
+                // shortcuts) should look like the links around it, not like
+                // running text.
                 className={cn(
-                    "pt-0 pb-2.5 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+                    "pt-0 pb-2.5 [&_p_a]:underline [&_p_a]:underline-offset-3 [&_p_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
                     className,
                 )}
             >
