@@ -503,7 +503,7 @@ export const eventDetailSchema = Schema(
                 image: z
                     .url()
                     .nullable()
-                    .meta({ description: "Organizer image URL" }),
+                    .meta({ description: "Organizer logo URL" }),
             })
             .nullable()
             .meta({ description: "Event organizer (nullable)" }),
