@@ -55,6 +55,7 @@
             "cache": false,
             "interactive": true
         },
+        "db:check-order": {},
         "db:generate": { "cache": false },
         "db:migrate": {
             "dependsOn": ["@photon/docker#dev:up"],
