@@ -15,11 +15,17 @@ import { Input } from "@tihlde/ui/ui/input";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
 import {
     Select,
     SelectContent,
@@ -46,7 +52,10 @@ import {
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
 import { searchUsersQuery } from "#/api/queries/roles";
-import { getUsersInfiniteQuery } from "#/api/queries/user";
+import {
+    getUsersInfiniteQuery,
+    updateUserStudyYearMutation,
+} from "#/api/queries/user";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -219,6 +228,18 @@ function AllUsersTable({
     const [search, setSearch] = useState("");
     const [study, setStudy] = useState<string>(ALL);
     const [year, setYear] = useState<string>(ALL);
+    const [editing, setEditing] = useState<{
+        id: string;
+        name: string;
+        studyStartYear: number | null;
+    } | null>(null);
+
+    /**
+     * Kullet er en avledet gruppe, så medlemslista nekter å redigere det (400).
+     * `users:manage` er den eneste veien inn, og kravet er globalt — uten det
+     * skjuler vi handlingen i stedet for å vise en knapp som svarer 403.
+     */
+    const canEditCohort = usePermission("users:manage");
 
     const debouncedSearch = useDebounced(search);
 
@@ -320,6 +341,9 @@ function AllUsersTable({
                                         <TableHead>Brukernavn</TableHead>
                                         <TableHead>Studie</TableHead>
                                         <TableHead>Kull</TableHead>
+                                        {canEditCohort && (
+                                            <TableHead className="w-0" />
+                                        )}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -358,6 +382,24 @@ function AllUsersTable({
                                             <TableCell>
                                                 {user.studyStartYear ?? "—"}
                                             </TableCell>
+                                            {canEditCohort && (
+                                                <TableCell>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            setEditing({
+                                                                id: user.id,
+                                                                name: user.name,
+                                                                studyStartYear:
+                                                                    user.studyStartYear,
+                                                            })
+                                                        }
+                                                    >
+                                                        Rett kull
+                                                    </Button>
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -377,6 +419,14 @@ function AllUsersTable({
                     )}
                 </>
             )}
+
+            <EditCohortDialog
+                user={editing}
+                open={editing !== null}
+                onOpenChange={(open) => {
+                    if (!open) setEditing(null);
+                }}
+            />
         </div>
     );
 }
@@ -739,6 +789,111 @@ function FilterSelect({
                 ))}
             </SelectContent>
         </Select>
+    );
+}
+
+/**
+ * Rett kullet til ett medlem.
+ *
+ * Feide gir ikke kull for alle studier, så nye medlemmer antas å være
+ * 1. klassinger. Den antakelsen er riktig for høstopptaket og for alle som
+ * bytter studium, men feil for en som melder seg inn senere i løpet — og de
+ * merker det selv, fordi de mister prioritet på sitt eget kulls arrangementer.
+ */
+function EditCohortDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; studyStartYear: number | null } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [value, setValue] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
+    const update = useMutation(updateUserStudyYearMutation);
+
+    // Feltet følger medlemmet dialogen ble åpnet for, ikke forrige gang den var
+    // åpen — ellers rettes feil person når to rader åpnes etter hverandre.
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setValue(
+            user.studyStartYear === null ? "" : String(user.studyStartYear),
+        );
+        setError(null);
+    }
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user) return;
+
+        const trimmed = value.trim();
+        const startYear = trimmed === "" ? null : Number(trimmed);
+
+        if (startYear !== null && !Number.isInteger(startYear)) {
+            setError("Kullet må være et årstall, for eksempel 2026.");
+            return;
+        }
+
+        setError(null);
+        try {
+            await update.mutateAsync({ userId: user.id, startYear });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>Rett kull</DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="cohort-year">Kull</FieldLabel>
+                            <Input
+                                id="cohort-year"
+                                inputMode="numeric"
+                                value={value}
+                                onChange={(event) =>
+                                    setValue(event.target.value)
+                                }
+                                placeholder="2026"
+                            />
+                            <FieldDescription>
+                                Overstyrer Feide permanent. Medlemmet flyttes
+                                til kullgruppa med en gang, og senere
+                                innlogginger endrer den ikke tilbake. Tomt felt
+                                fjerner kullet.
+                            </FieldDescription>
+                        </Field>
+                    </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button type="submit" disabled={update.isPending}>
+                            Lagre
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 

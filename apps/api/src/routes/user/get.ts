@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { deriveStudyFromGroups } from "~/lib/user/study";
 import { requireAuth } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
@@ -50,7 +51,7 @@ export const getUserRoute = route().get(
             });
         }
 
-        const [settings, memberships] = await Promise.all([
+        const [settings, memberships, history] = await Promise.all([
             db.query.userSettings.findFirst({
                 where: (s, { eq }) => eq(s.userId, id),
                 columns: {
@@ -64,25 +65,41 @@ export const getUserRoute = route().get(
                 where: (gm, { eq }) => eq(gm.userId, id),
                 with: { group: true },
             }),
+            db.query.groupMembershipHistory.findMany({
+                where: (h, { eq }) => eq(h.userId, id),
+                orderBy: (h, { desc }) => [desc(h.endedAt)],
+                with: { group: true },
+            }),
         ]);
 
-        /**
-         * Study programme and cohort mirror `listUsers`: they are a projection
-         * of Feide onto ordinary groups (types STUDY/STUDYYEAR), not
-         * `studyProgramMembership` — that table only gets rows from a Feide
-         * login, so everyone migrated from Lepton is missing there. The type is
-         * stored in UPPERCASE from Lepton, hence the case-insensitive compare.
-         */
-        const study = memberships.find(
-            (m) => m.group.type.toLowerCase() === "study",
+        // Derived from the group projection, not `studyProgramMembership`;
+        // see `deriveStudyFromGroups` for why. The memberships are already
+        // loaded above, so this is the pure form rather than a second query.
+        const { studyProgram, studyStartYear } = deriveStudyFromGroups(
+            memberships.map((m) => m.group),
         );
 
-        // Several cohorts can linger on one account (a bachelor who continued
-        // into a master). The most recent one is the useful one.
-        const startYears = memberships
-            .filter((m) => m.group.type.toLowerCase() === "studyyear")
-            .map((m) => Number.parseInt(m.group.name, 10))
-            .filter((year) => Number.isFinite(year));
+        /**
+         * Ended memberships — the same rule the group page's "tidligere
+         * medlemmer" uses, applied per user instead of per group: a group the
+         * member rejoined is a current membership and not a former one, and
+         * the backfilled Lepton history also holds a row per role change for
+         * people who never left. Both fall away by dropping the groups the
+         * user is in today. History rows come back newest-first, so the first
+         * one seen per group is the most recent stint.
+         */
+        const currentSlugs = new Set(memberships.map((m) => m.groupSlug));
+        const seenSlugs = new Set<string>();
+        const formerGroups = history.filter((entry) => {
+            if (
+                currentSlugs.has(entry.groupSlug) ||
+                seenSlugs.has(entry.groupSlug)
+            ) {
+                return false;
+            }
+            seenSlugs.add(entry.groupSlug);
+            return true;
+        });
 
         return c.json({
             id: user.id,
@@ -94,15 +111,23 @@ export const getUserRoute = route().get(
             bio: settings?.bioDescription ?? null,
             githubUrl: settings?.githubUrl ?? null,
             linkedinUrl: settings?.linkedinUrl ?? null,
-            studyProgram: study?.group.name ?? null,
-            studyStartYear:
-                startYears.length > 0 ? Math.max(...startYears) : null,
+            studyProgram,
+            studyStartYear,
             groups: memberships.map((m) => ({
                 slug: m.groupSlug,
                 name: m.group.name,
                 type: m.group.type,
                 logoUrl: m.group.logoUrl ?? null,
                 role: m.role,
+            })),
+            formerGroups: formerGroups.map((entry) => ({
+                slug: entry.groupSlug,
+                name: entry.group.name,
+                type: entry.group.type,
+                logoUrl: entry.group.logoUrl ?? null,
+                role: entry.role,
+                startedAt: entry.startedAt.toISOString(),
+                endedAt: entry.endedAt.toISOString(),
             })),
             createdAt: user.createdAt.toISOString(),
         });

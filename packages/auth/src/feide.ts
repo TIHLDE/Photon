@@ -6,10 +6,10 @@ import type {
     OAuth2UserInfo,
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
-import type { Campus } from "@photon/db/schema";
+import type { Campus, StudyYearSource } from "@photon/db/schema";
 import {
     account,
     group,
@@ -53,6 +53,24 @@ type ProgramCode = (typeof ALLOWED_PROGRAM_CODES)[number];
 
 /** TIHLDE only covers students in Trondheim. */
 const TIHLDE_CAMPUS: Campus = "trondheim";
+
+/**
+ * The intake year someone registering right now belongs to.
+ *
+ * The Norwegian academic year starts in August, so a member who signs up in
+ * March 2027 started in the 2026 intake, not 2027. Month is zero-indexed, so
+ * `>= 7` is August onwards.
+ *
+ * Deliberately duplicated rather than shared: `computeClassYear` in
+ * `apps/kvark/src/lib/utils.ts` applies the same cutover, and this package
+ * cannot import from the frontend. Change both together, or a member's cohort
+ * and the class year shown on their profile will disagree for part of the year.
+ *
+ * Exported for testing.
+ */
+export function currentAcademicYear(now = new Date()): number {
+    return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+}
 
 /**
  * Programmes NTNU runs on more than one campus under a *single* FS programme
@@ -362,6 +380,36 @@ export async function syncFeideForUser(
         );
     }
 
+    await applyFeideStudyPrograms(
+        db,
+        userId,
+        allowed,
+        campusRejected,
+        campus,
+        username,
+    );
+}
+
+/**
+ * Write a parsed Feide result to the database.
+ *
+ * Split out from {@link syncFeideForUser} so the integration tests can drive
+ * the exact sequence a real callback runs while choosing the payload, instead
+ * of reimplementing it. They used to reimplement it, and the copy silently
+ * stopped matching the moment this file changed — a test asserting the old
+ * behaviour kept passing against code that no longer did it.
+ *
+ * Exported for testing.
+ */
+export async function applyFeideStudyPrograms(
+    db: AuthCreateContext["db"],
+    userId: string,
+    allowed: StudyProgram[],
+    campusRejected: StudyProgram[],
+    campus: Campus | null,
+    username: string | null,
+    now = new Date(),
+): Promise<void> {
     // Add user to all valid study programs
     await db.transaction(async (tx) => {
         /**
@@ -380,6 +428,15 @@ export async function syncFeideForUser(
             )),
         ];
 
+        /**
+         * Resolved once, before the loop, and deliberately not re-read inside
+         * it. A member can arrive with one programme that carries a cohort and
+         * another that does not — a transfer from Bygg into Digital
+         * forretningsutvikling is the real case — and re-checking per programme
+         * would make the outcome depend on which order Feide listed them in.
+         */
+        const knownCohort = await hasKnownCohort(tx, userId);
+
         for (const feideGroup of groups) {
             const sp = await tx
                 .select({ id: studyProgram.id, slug: studyProgram.slug })
@@ -397,23 +454,98 @@ export async function syncFeideForUser(
             const { id: studyProgramId, slug: programSlug } = sp[0];
 
             /**
-             * Additive by design: an existing row is left exactly as it
-             * is, start year included. Feide only reports ACTIVE
-             * memberships, so graduating removes the group from the
-             * response — access history survives because rows are never
-             * rewritten or deleted here. Baseline roles (member/alumni)
-             * are what actually gate participation; see
-             * syncBaselineRoles.
+             * NTNU does not issue `fc:fs:kull` for every programme —
+             * ITBAITBEDR never gets one, confirmed across every such login
+             * in production — so an active student can arrive with a
+             * programme and no intake. 172 of the 258 priority pools select
+             * on the cohort group, so leaving the year empty costs them
+             * priority on everything aimed at their own intake, including
+             * the matriculation ball.
+             *
+             * Assume the current intake instead, and record that it was a
+             * guess. Only for active memberships: an alumnus whose groups
+             * are all lapsed would otherwise be stamped a fresh first-year.
              */
-            await tx
+            const assumed =
+                feideGroup.startYear === null &&
+                feideGroup.active &&
+                !knownCohort;
+
+            const startYearSource: StudyYearSource | null =
+                feideGroup.startYear !== null
+                    ? "feide"
+                    : assumed
+                      ? "assumed"
+                      : null;
+
+            const [before] = await tx
+                .select({
+                    startYear: studyProgramMembership.startYear,
+                    startYearSource: studyProgramMembership.startYearSource,
+                })
+                .from(studyProgramMembership)
+                .where(
+                    and(
+                        eq(studyProgramMembership.userId, userId),
+                        eq(
+                            studyProgramMembership.studyProgramId,
+                            studyProgramId,
+                        ),
+                    ),
+                )
+                .limit(1);
+
+            /**
+             * Still additive for everything except a guess Feide has now
+             * answered. `setWhere` is what enforces that, in SQL rather than
+             * here, so no future caller can update a year it should not:
+             * `manual` is a deliberate correction that outranks Feide,
+             * `migrated` is the real year Lepton carried over, and `feide`
+             * is already the truth.
+             */
+            const [written] = await tx
                 .insert(studyProgramMembership)
                 .values({
                     userId,
                     studyProgramId,
-                    startYear: feideGroup.startYear,
+                    startYear:
+                        feideGroup.startYear ??
+                        (assumed ? currentAcademicYear(now) : null),
+                    startYearSource,
                     confirmedCampus: campus,
                 })
-                .onConflictDoNothing();
+                .onConflictDoUpdate({
+                    target: [
+                        studyProgramMembership.userId,
+                        studyProgramMembership.studyProgramId,
+                    ],
+                    set: {
+                        startYear: sql`excluded.start_year`,
+                        startYearSource: sql`excluded.start_year_source`,
+                    },
+                    setWhere: sql`${studyProgramMembership.startYearSource} = 'assumed' AND excluded.start_year_source = 'feide'`,
+                })
+                .returning({
+                    startYear: studyProgramMembership.startYear,
+                    startYearSource: studyProgramMembership.startYearSource,
+                });
+
+            /**
+             * No row back means the guard rejected our values, so what is
+             * already stored stands. Deriving the groups from the stored year
+             * rather than from Feide's is what keeps a `manual` correction
+             * from being silently undone on the member's next login.
+             */
+            const stored = written ?? before;
+            const effectiveStartYear = stored?.startYear ?? null;
+
+            if (
+                before?.startYearSource === "assumed" &&
+                before.startYear !== null &&
+                before.startYear !== effectiveStartYear
+            ) {
+                await removeCohortMembership(tx, userId, before.startYear);
+            }
 
             await confirmCampus(tx, userId, studyProgramId, campus);
 
@@ -421,7 +553,7 @@ export async function syncFeideForUser(
                 tx,
                 userId,
                 programSlug,
-                feideGroup.startYear,
+                effectiveStartYear,
             );
         }
 
@@ -607,6 +739,81 @@ export async function keepExistingMemberships(
 type Transaction = Parameters<
     Parameters<NodePgDatabase<DbSchema>["transaction"]>[0]
 >[0];
+
+/**
+ * Whether we already know which intake this member belongs to.
+ *
+ * Guards the assumption in {@link syncFeideForUser}. Guessing on top of a
+ * cohort we already have would put the member in two intakes at once, and both
+ * `deriveStudy` and the profile endpoint take `Math.max()` over the cohort
+ * groups — so the guess, always the current year, would beat the truth. That is
+ * not hypothetical: every ITBAITBEDR member in production carries a correct
+ * cohort from Lepton and gets no `fc:fs:kull` from Feide, so an unguarded
+ * assumption would demote all of them to first-years.
+ *
+ * Both sources are checked because they disagree by design: members migrated
+ * from Lepton have a cohort group and no study-programme row at all.
+ */
+async function hasKnownCohort(
+    tx: Transaction,
+    userId: string,
+): Promise<boolean> {
+    const [fromGroups] = await tx
+        .select({ slug: groupMembership.groupSlug })
+        .from(groupMembership)
+        .innerJoin(group, eq(group.slug, groupMembership.groupSlug))
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                // Type is a varchar holding upper-case values from Lepton, not
+                // the `groupType` enum; compare case-insensitively.
+                sql`upper(${group.type}) = 'STUDYYEAR'`,
+            ),
+        )
+        .limit(1);
+
+    if (fromGroups) return true;
+
+    const [fromTable] = await tx
+        .select({ userId: studyProgramMembership.userId })
+        .from(studyProgramMembership)
+        .where(
+            and(
+                eq(studyProgramMembership.userId, userId),
+                isNotNull(studyProgramMembership.startYear),
+            ),
+        )
+        .limit(1);
+
+    return Boolean(fromTable);
+}
+
+/**
+ * Drop the cohort group a superseded guess put the member in.
+ *
+ * {@link syncDerivedStudyGroups} only ever adds, on purpose — leaving a
+ * programme should never cost someone their history. A guessed cohort is the
+ * one exception: once Feide tells us the real intake, the guess is not history,
+ * it is a wrong answer, and leaving it would keep the member in two intakes
+ * with `Math.max()` picking whichever is higher.
+ *
+ * Matched on slug alone: cohort groups are the only ones slugged as a bare
+ * year, and `syncDerivedStudyGroups` is what created this one.
+ */
+async function removeCohortMembership(
+    tx: Transaction,
+    userId: string,
+    year: number,
+): Promise<void> {
+    await tx
+        .delete(groupMembership)
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.groupSlug, String(year)),
+            ),
+        );
+}
 
 /**
  * Mirror a Feide study programme onto the two groups that represent it.

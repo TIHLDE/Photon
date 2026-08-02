@@ -1804,7 +1804,7 @@ export interface paths {
         put?: never;
         /**
          * Create a scheduling event
-         * @description Create a when2meet-style scheduling event with candidate dates and a daily time window. Returns the share-link slug.
+         * @description Create a when2meet-style scheduling event with a daily time window and either candidate dates (a one-off activity) or candidate weekdays (a recurring weekly slot). Returns the share-link slug.
          */
         post: operations["createMotetidEvent"];
         delete?: never;
@@ -1908,7 +1908,7 @@ export interface paths {
         put?: never;
         /**
          * Sync Google Calendar busy times
-         * @description Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired.
+         * @description Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired. Weekday-mode boards have no calendar dates, so they always return empty.
          */
         post: operations["motetidSyncCalendar"];
         delete?: never;
@@ -2311,6 +2311,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/user/{id}/study-year": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct a member's cohort
+         * @description Set a member's cohort start year by hand, overriding what Feide reports. Moves their STUDYYEAR group to match. Requires 'users:manage'.
+         */
+        patch: operations["updateUserStudyYear"];
         trace?: never;
     };
     "/api/user/{id}": {
@@ -4239,6 +4259,17 @@ export interface components {
                 /** @description User profile image URL */
                 image: string | null;
             } | null;
+            /** @description ID of the paragraph the fine was given under */
+            lawId: string | null;
+            /** @description The paragraph in the group's lovverk. Null for fines migrated from Lepton and for fines given without one. */
+            law: {
+                /** @description Law ID */
+                id: string;
+                /** @description Paragraph number, e.g. 3.10 */
+                paragraph: string;
+                /** @description Paragraph title */
+                title: string;
+            } | null;
         };
         FineList: components["schemas"]["Fine"][];
         CreateFine: {
@@ -4257,6 +4288,11 @@ export interface components {
              * @description Evidence image URL
              */
             image?: string;
+            /**
+             * Format: uuid
+             * @description Paragraph in the group's lovverk the fine is given under. Optional: a group whose lovverk is empty can still hand out fines.
+             */
+            lawId?: string;
         };
         UpdateFineResponse: {
             message: string;
@@ -4621,6 +4657,11 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode: "DATES" | "WEEKDAYS";
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4644,7 +4685,12 @@ export interface components {
         CreateMotetidEvent: {
             /** @description Event title */
             title: string;
-            /** @description Candidate dates */
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode?: "DATES" | "WEEKDAYS";
+            /** @description Candidate columns: ISO dates, or weekday keys when dateMode is WEEKDAYS */
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4665,7 +4711,12 @@ export interface components {
             /** @description Share-link slug */
             slug: string;
             title: string;
-            /** @description Candidate dates, sorted */
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode: "DATES" | "WEEKDAYS";
+            /** @description Candidate columns, sorted chronologically (DATES) or Monday-first (WEEKDAYS) */
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4687,7 +4738,7 @@ export interface components {
                 /** @description Linked user id, null for anonymous participants */
                 userId: string | null;
                 slots: {
-                    /** @description ISO "YYYY-MM-DD" date string */
+                    /** @description Board column key: ISO "YYYY-MM-DD" date, or "MON".."SUN" on a weekday board */
                     date: string;
                     /** @description "HH:mm" time string */
                     time: string;
@@ -4716,7 +4767,7 @@ export interface components {
             name: string;
             /** @description The participant's full slot selection */
             slots: {
-                /** @description ISO "YYYY-MM-DD" date string */
+                /** @description Board column key: ISO "YYYY-MM-DD" date, or "MON".."SUN" on a weekday board */
                 date: string;
                 /** @description "HH:mm" time string */
                 time: string;
@@ -5322,6 +5373,15 @@ export interface components {
             nextPage: number | null;
             items: components["schemas"]["UserListItem"][];
         };
+        UpdateStudyYear: {
+            message: string;
+            /** @description The cohort year now stored */
+            startYear: number | null;
+        };
+        UpdateStudyYearInput: {
+            /** @description Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group. */
+            startYear: number | null;
+        };
         UserProfile: {
             /** @description User ID */
             id: string;
@@ -5348,6 +5408,16 @@ export interface components {
                 type: string;
                 logoUrl: string | null;
                 role: string;
+            }[];
+            /** @description Groups the user used to belong to, most recent first. Groups they rejoined appear under `groups` instead, and a group left more than once is listed once, by the latest stint. As public as the active memberships above. */
+            formerGroups: {
+                slug: string;
+                name: string;
+                type: string;
+                logoUrl: string | null;
+                role: string;
+                startedAt: string;
+                endedAt: string;
             }[];
             /** @description Account creation timestamp */
             createdAt: string;
@@ -10271,6 +10341,13 @@ export interface operations {
                     "application/json": components["schemas"]["SaveMotetidAvailabilityResponse"];
                 };
             };
+            /** @description Bad Request - A slot references a column not on the board */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Authentication required */
             401: {
                 headers: {
@@ -11637,6 +11714,55 @@ export interface operations {
             };
             /** @description Forbidden - Requires users:view */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserStudyYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStudyYearInput"];
+            };
+        };
+        responses: {
+            /** @description Cohort updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStudyYear"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

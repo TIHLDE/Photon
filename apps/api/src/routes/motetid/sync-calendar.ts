@@ -56,7 +56,7 @@ export const syncCalendarRoute = route().post(
         summary: "Sync Google Calendar busy times",
         operationId: "motetidSyncCalendar",
         description:
-            "Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired.",
+            "Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired. Weekday-mode boards have no calendar dates, so they always return empty.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -93,6 +93,12 @@ export const syncCalendarRoute = route().post(
         });
         if (!event) {
             throw new HTTPException(404, { message: "Event not found" });
+        }
+
+        // A weekday board has no calendar dates to look up: any busy overlay
+        // would come from one arbitrary week and misrepresent a recurring slot.
+        if (event.dateMode === "WEEKDAYS") {
+            return c.json({ blocked: [], events: [] }, 200);
         }
 
         const timeZone = EVENT_TIMEZONE;

@@ -57,6 +57,43 @@ export const updateUserSettingsResponseSchema = Schema(
     UpdateUserSettingsSchema,
 );
 
+/**
+ * Bounds on a hand-entered cohort year.
+ *
+ * The same window `parseValidStudyPrograms` accepts from Feide, so a
+ * correction cannot express an intake the sync would have rejected.
+ */
+const MIN_COHORT_YEAR = 2000;
+const MAX_COHORT_YEAR = 3000;
+
+export const updateStudyYearInputSchema = Schema(
+    "UpdateStudyYearInput",
+    z.object({
+        startYear: z
+            .number()
+            .int()
+            .min(MIN_COHORT_YEAR)
+            .max(MAX_COHORT_YEAR)
+            .nullable()
+            .meta({
+                description:
+                    "Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group.",
+            }),
+    }),
+);
+
+export const updateStudyYearResponseSchema = Schema(
+    "UpdateStudyYear",
+    z.object({
+        message: z.string(),
+        startYear: z
+            .number()
+            .int()
+            .nullable()
+            .meta({ description: "The cohort year now stored" }),
+    }),
+);
+
 /** Sentinel for "no study programme" in the `study` filter. */
 export const NO_STUDY_FILTER = "none";
 
@@ -153,6 +190,22 @@ export const userProfileSchema = Schema(
             .meta({
                 description:
                     "Every group the user belongs to, including the derived STUDY/STUDYYEAR groups",
+            }),
+        formerGroups: z
+            .array(
+                z.object({
+                    slug: z.string(),
+                    name: z.string(),
+                    type: z.string(),
+                    logoUrl: z.string().nullable(),
+                    role: z.string(),
+                    startedAt: z.string(),
+                    endedAt: z.string(),
+                }),
+            )
+            .meta({
+                description:
+                    "Groups the user used to belong to, most recent first. Groups they rejoined appear under `groups` instead, and a group left more than once is listed once, by the latest stint. As public as the active memberships above.",
             }),
         createdAt: z
             .string()

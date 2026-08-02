@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import {
     addMonths,
     eachDayOfInterval,
@@ -29,6 +30,12 @@ import { useRef, useState } from "react";
 
 import { authClientWithRedirect } from "#/api/auth";
 import { createMotetidEventMutation } from "#/api/queries/motetid";
+import {
+    type DateMode,
+    normalizeDates,
+    WEEKDAYS,
+    weekdayLabel,
+} from "#/lib/motetid-grid";
 
 export const Route = createFileRoute("/_app/motetid/ny")({
     component: CreateMotetidEventPage,
@@ -49,7 +56,10 @@ function CreateMotetidEventPage() {
 
     const [title, setTitle] = useState("");
     const [titleTouched, setTitleTouched] = useState(false);
+    const [dateMode, setDateMode] = useState<DateMode>("DATES");
+    // Kept apart so switching mode back and forth never discards a selection.
     const [dates, setDates] = useState<string[]>([]);
+    const [weekdays, setWeekdays] = useState<string[]>([]);
     const [startTime, setStartTime] = useState("09:00");
     const [endTime, setEndTime] = useState("17:00");
     const [submitted, setSubmitted] = useState(false);
@@ -61,9 +71,22 @@ function CreateMotetidEventPage() {
     const activePointerIdRef = useRef<number | null>(null);
     const today = startOfToday();
 
+    const isWeekdayMode = dateMode === "WEEKDAYS";
+    const selectedColumns = isWeekdayMode ? weekdays : dates;
     const titleError = title.trim().length < 2;
-    const datesError = dates.length === 0;
+    const datesError = selectedColumns.length === 0;
     const showErrors = submitted;
+
+    function toggleWeekday(key: string) {
+        setWeekdays((prev) =>
+            normalizeDates(
+                prev.includes(key)
+                    ? prev.filter((x) => x !== key)
+                    : [...prev, key],
+                "WEEKDAYS",
+            ),
+        );
+    }
 
     function applyDayWhileDragging(dateStr: string) {
         if (!isDraggingRef.current) return;
@@ -130,7 +153,13 @@ function CreateMotetidEventPage() {
         if (titleError || datesError) return;
         try {
             const created = await create.mutateAsync({
-                data: { title: title.trim(), dates, startTime, endTime },
+                data: {
+                    title: title.trim(),
+                    dateMode,
+                    dates: selectedColumns,
+                    startTime,
+                    endTime,
+                },
             });
             await navigate({
                 to: "/motetid/$slug",
@@ -234,92 +263,132 @@ function CreateMotetidEventPage() {
 
                 <div className="flex flex-col gap-2">
                     <h2 className="text-sm font-semibold">
-                        Hvilke datoer kan passe?
+                        {isWeekdayMode
+                            ? "Hvilke ukedager kan passe?"
+                            : "Hvilke datoer kan passe?"}
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                        Dra for å velge flere datoer
+                        {isWeekdayMode
+                            ? "Velg ukedager når dere skal finne et fast møtetidspunkt"
+                            : "Velg datoer når dere skal finne én dag som passer. Dra for å velge flere"}
                     </p>
 
-                    <div className="select-none rounded-lg border border-border p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Forrige måned"
-                                onClick={() =>
-                                    setViewMonth((m) => subMonths(m, 1))
-                                }
+                    <Tabs
+                        value={dateMode}
+                        onValueChange={(v) => setDateMode(v as DateMode)}
+                    >
+                        <TabsList>
+                            <TabsTrigger value="DATES">Datoer</TabsTrigger>
+                            <TabsTrigger value="WEEKDAYS">Ukedager</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
+                    {isWeekdayMode ? (
+                        <div className="grid grid-cols-2 gap-1 rounded-lg border border-border p-4 sm:grid-cols-4">
+                            {WEEKDAYS.map((key) => (
+                                <MotetidCalendarDay
+                                    key={key}
+                                    state={
+                                        weekdays.includes(key)
+                                            ? "selected"
+                                            : "default"
+                                    }
+                                    aria-pressed={weekdays.includes(key)}
+                                    onClick={() => toggleWeekday(key)}
+                                >
+                                    {weekdayLabel(key)}
+                                </MotetidCalendarDay>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="select-none rounded-lg border border-border p-4">
+                            <div className="mb-3 flex items-center justify-between">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Forrige måned"
+                                    onClick={() =>
+                                        setViewMonth((m) => subMonths(m, 1))
+                                    }
+                                >
+                                    ‹
+                                </Button>
+                                <span className="text-sm font-semibold">
+                                    {format(viewMonth, "MMMM yyyy", {
+                                        locale: nb,
+                                    })}
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Neste måned"
+                                    onClick={() =>
+                                        setViewMonth((m) => addMonths(m, 1))
+                                    }
+                                >
+                                    ›
+                                </Button>
+                            </div>
+
+                            <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
+                                {["M", "T", "O", "T", "F", "L", "S"].map(
+                                    (d, i) => (
+                                        <div key={i} className="py-1">
+                                            {d}
+                                        </div>
+                                    ),
+                                )}
+                            </div>
+
+                            <div
+                                className="grid grid-cols-7 gap-1"
+                                style={{ touchAction: "none" }}
                             >
-                                ‹
-                            </Button>
-                            <span className="text-sm font-semibold">
-                                {format(viewMonth, "MMMM yyyy", {
-                                    locale: nb,
+                                {Array.from(
+                                    { length: firstDayOffset },
+                                    (_, i) => (
+                                        <div key={`empty-${i}`} />
+                                    ),
+                                )}
+                                {daysInMonth.map((d) => {
+                                    const str = format(d, "yyyy-MM-dd");
+                                    const isPast = isBefore(d, today);
+                                    const isSelected = dates.includes(str);
+                                    const state = isPast
+                                        ? "past"
+                                        : isSelected
+                                          ? "selected"
+                                          : isToday(d)
+                                            ? "today"
+                                            : "default";
+                                    return (
+                                        <MotetidCalendarDay
+                                            key={str}
+                                            data-cal-day={str}
+                                            state={state}
+                                            disabled={isPast}
+                                            onPointerDown={(e) =>
+                                                handleDayPointerDown(e, d)
+                                            }
+                                            onPointerEnter={() =>
+                                                handleDayPointerEnter(d)
+                                            }
+                                        >
+                                            {format(d, "d")}
+                                        </MotetidCalendarDay>
+                                    );
                                 })}
-                            </span>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Neste måned"
-                                onClick={() =>
-                                    setViewMonth((m) => addMonths(m, 1))
-                                }
-                            >
-                                ›
-                            </Button>
+                            </div>
                         </div>
-
-                        <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
-                            {["M", "T", "O", "T", "F", "L", "S"].map((d, i) => (
-                                <div key={i} className="py-1">
-                                    {d}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div
-                            className="grid grid-cols-7 gap-1"
-                            style={{ touchAction: "none" }}
-                        >
-                            {Array.from({ length: firstDayOffset }, (_, i) => (
-                                <div key={`empty-${i}`} />
-                            ))}
-                            {daysInMonth.map((d) => {
-                                const str = format(d, "yyyy-MM-dd");
-                                const isPast = isBefore(d, today);
-                                const isSelected = dates.includes(str);
-                                const state = isPast
-                                    ? "past"
-                                    : isSelected
-                                      ? "selected"
-                                      : isToday(d)
-                                        ? "today"
-                                        : "default";
-                                return (
-                                    <MotetidCalendarDay
-                                        key={str}
-                                        data-cal-day={str}
-                                        state={state}
-                                        disabled={isPast}
-                                        onPointerDown={(e) =>
-                                            handleDayPointerDown(e, d)
-                                        }
-                                        onPointerEnter={() =>
-                                            handleDayPointerEnter(d)
-                                        }
-                                    >
-                                        {format(d, "d")}
-                                    </MotetidCalendarDay>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    )}
 
                     {showErrors && datesError && (
                         <p className="text-xs text-destructive">
-                            Velg minst én dato
+                            {isWeekdayMode
+                                ? "Velg minst én ukedag"
+                                : "Velg minst én dato"}
                         </p>
                     )}
                 </div>

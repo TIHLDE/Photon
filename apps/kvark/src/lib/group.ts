@@ -177,8 +177,19 @@ export function mapFormerMember(member: ApiGroupFormerMember): Member {
 }
 
 /**
+ * Paragrafnummeret slik det skal leses: databasen lagrer det som desimaltall
+ * ("3.10"), og etterfølgende nuller strippes for visning ("3.1", "1").
+ */
+function formatParagraph(paragraph: string): string {
+    return String(Number(paragraph));
+}
+
+/**
  * Map an API fine to the display shape used by the fines tab.
- * The backend has no law/paragraph system, so `paragraph`/`title` are empty.
+ *
+ * Bøter gitt uten paragraf — alt som ble migrert fra Lepton, og bøter i
+ * grupper uten lovverk — har ingen `law`. Da står paragrafen tom og
+ * begrunnelsen brukes som tittel, slik det var før koblingen fantes.
  * `status` is one of pending | approved | paid | rejected.
  */
 export function mapFine(fine: ApiFine): Fine {
@@ -187,8 +198,8 @@ export function mapFine(fine: ApiFine): Fine {
         userId: fine.userId,
         user: fine.user?.name ?? "Ukjent bruker",
         userImage: fine.user?.image ?? undefined,
-        paragraph: "",
-        title: fine.reason,
+        paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
+        title: fine.law?.title ?? fine.reason,
         amount: fine.amount,
         approved: fine.status === "approved" || fine.status === "paid",
         paid: fine.status === "paid",
@@ -207,7 +218,7 @@ export function mapFine(fine: ApiFine): Fine {
 export function mapLaw(law: ApiLaw): Law {
     return {
         id: law.id,
-        paragraph: String(Number(law.paragraph)),
+        paragraph: formatParagraph(law.paragraph),
         title: law.title,
         description: law.description,
         amount: law.amount,

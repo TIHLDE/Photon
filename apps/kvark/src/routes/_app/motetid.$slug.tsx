@@ -111,6 +111,7 @@ function MotetidEventBoardContainer() {
             <MotetidEventBoard
                 slug={event.slug}
                 shareUrl={shareUrl}
+                dateMode={event.dateMode}
                 dates={event.dates}
                 startTime={event.startTime}
                 endTime={event.endTime}

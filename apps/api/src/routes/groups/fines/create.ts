@@ -8,6 +8,7 @@ import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { createFineSchema, fineSchema } from "./schema";
+import { serializeFineLaw } from "./serialize";
 
 export const createFineRoute = route().post(
     "/:groupSlug/fines",
@@ -76,8 +77,28 @@ export const createFineRoute = route().post(
             });
         }
 
+        /**
+         * A paragraph belongs to exactly one group's lovverk. Without this
+         * check a fine could cite another group's paragraph — the response
+         * would then show a title from a lovverk the members cannot read.
+         */
+        if (body.lawId) {
+            const law = await db
+                .select()
+                .from(schema.groupLaw)
+                .where(eq(schema.groupLaw.id, body.lawId))
+                .limit(1)
+                .then((res) => res[0]);
+
+            if (!law || law.groupSlug !== body.groupSlug) {
+                throw new HTTPException(404, {
+                    message: `Law with ID "${body.lawId}" not found in group "${body.groupSlug}"`,
+                });
+            }
+        }
+
         // Create the fine
-        const [newFine] = await db
+        const [created] = await db
             .insert(schema.fine)
             .values({
                 ...body,
@@ -86,6 +107,29 @@ export const createFineRoute = route().post(
             })
             .returning();
 
-        return c.json(newFine, 201);
+        if (!created) {
+            throw new HTTPException(500, { message: "Failed to create fine" });
+        }
+
+        // Re-read with the relations the response schema promises — the insert
+        // itself returns the bare row, without user, creator or paragraph.
+        const newFine = await db.query.fine.findFirst({
+            where: eq(schema.fine.id, created.id),
+            with: {
+                user: { columns: { id: true, name: true, image: true } },
+                createdByUser: {
+                    columns: { id: true, name: true, image: true },
+                },
+                law: { columns: { id: true, paragraph: true, title: true } },
+            },
+        });
+
+        if (!newFine) {
+            throw new HTTPException(500, {
+                message: "Fine was created but could not be read back",
+            });
+        }
+
+        return c.json(serializeFineLaw(newFine), 201);
     },
 );

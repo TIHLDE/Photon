@@ -1,11 +1,9 @@
 import { authQueryOptions } from "#/api/auth";
 import { getUserProfileQuery } from "#/api/queries/user";
+import { ProfileMembershipCard } from "#/components/profile-membership-card";
 import { groupTypeLabel } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
-import { Badge } from "@tihlde/ui/ui/badge";
-import { Card } from "@tihlde/ui/ui/card";
+import { createFileRoute } from "@tanstack/react-router";
 import {
     Empty,
     EmptyDescription,
@@ -19,6 +17,25 @@ export const Route = createFileRoute("/_app/profil/$id/medlemskap")({
     component: RouteComponent,
 });
 
+/**
+ * Grupper man faktisk melder seg inn i. study/studyyear er projeksjoner av
+ * Feide-data, og TIHLDE har alle medlemmer — ingen av dem er verv.
+ * Typen er UPPERCASE i databasen.
+ */
+function isRealMembership(group: { type: string }): boolean {
+    return !["study", "studyyear", "tihlde"].includes(group.type.toLowerCase());
+}
+
+/**
+ * Perioden et avsluttet medlemskap varte, som årstall: «2023–2025», eller
+ * bare «2024» når det både startet og sluttet samme år.
+ */
+function membershipPeriod(startedAt: string, endedAt: string): string {
+    const from = new Date(startedAt).getFullYear();
+    const to = new Date(endedAt).getFullYear();
+    return from === to ? `${from}` : `${from}–${to}`;
+}
+
 function RouteComponent() {
     const { id } = Route.useParams();
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
@@ -29,11 +46,12 @@ function RouteComponent() {
     // ved profilbildet, ikke i medlemskapslisten. TIHLDE er ingen gruppe man
     // melder seg inn i – alle er med – så den skal heller ikke vises her.
     // Typen er UPPERCASE i DB.
-    const memberships = profile.groups.filter(
-        (g) => !["study", "studyyear", "tihlde"].includes(g.type.toLowerCase()),
-    );
+    const memberships = profile.groups.filter(isRealMembership);
+    // Samme filter på historikken: et kullbytte legger igjen en rad i
+    // STUDYYEAR-gruppa man forlot, og «Tidligere: 2023-kullet» er ikke et verv.
+    const formerMemberships = profile.formerGroups.filter(isRealMembership);
 
-    if (memberships.length === 0) {
+    if (memberships.length === 0 && formerMemberships.length === 0) {
         return (
             <Empty>
                 <EmptyHeader>
@@ -52,50 +70,47 @@ function RouteComponent() {
     }
 
     return (
-        <ul className="flex flex-col gap-3">
-            {memberships.map((group) => (
-                <li key={group.slug}>
-                    <Card
-                        size="sm"
-                        className="flex-row items-center gap-3 px-3"
-                        render={
-                            <Link
-                                to="/grupper/$slug"
-                                params={{ slug: group.slug }}
+        <div className="flex flex-col gap-6">
+            {memberships.length > 0 ? (
+                <ul className="flex flex-col gap-3">
+                    {memberships.map((group) => (
+                        <li key={group.slug}>
+                            <ProfileMembershipCard
+                                slug={group.slug}
+                                name={group.name}
+                                typeLabel={groupTypeLabel(group.type)}
+                                logoUrl={group.logoUrl}
+                                role={group.role}
                             />
-                        }
-                    >
-                        <Avatar className="size-10 shrink-0">
-                            {group.logoUrl ? (
-                                <AvatarImage
-                                    src={group.logoUrl}
-                                    alt={group.name}
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+
+            {formerMemberships.length > 0 ? (
+                <section className="flex flex-col gap-3">
+                    <h2 className="text-sm text-muted-foreground">
+                        Tidligere medlemskap
+                    </h2>
+                    <ul className="flex flex-col gap-3">
+                        {formerMemberships.map((group) => (
+                            <li key={group.slug}>
+                                <ProfileMembershipCard
+                                    slug={group.slug}
+                                    name={group.name}
+                                    typeLabel={groupTypeLabel(group.type)}
+                                    logoUrl={group.logoUrl}
+                                    role={group.role}
+                                    period={membershipPeriod(
+                                        group.startedAt,
+                                        group.endedAt,
+                                    )}
                                 />
-                            ) : null}
-                            <AvatarFallback>
-                                {group.name.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex min-w-0 flex-1 flex-col">
-                            <span className="truncate font-medium">
-                                {group.name}
-                            </span>
-                            <span className="truncate text-sm text-muted-foreground">
-                                {groupTypeLabel(group.type)}
-                            </span>
-                        </div>
-                        <Badge
-                            variant={
-                                group.role === "leader"
-                                    ? "default"
-                                    : "secondary"
-                            }
-                        >
-                            {group.role === "leader" ? "Leder" : "Medlem"}
-                        </Badge>
-                    </Card>
-                </li>
-            ))}
-        </ul>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            ) : null}
+        </div>
     );
 }

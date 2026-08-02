@@ -1,0 +1,2 @@
+ALTER TABLE "org_fine" ADD COLUMN "law_id" uuid;--> statement-breakpoint
+ALTER TABLE "org_fine" ADD CONSTRAINT "org_fine_law_id_org_group_law_id_fk" FOREIGN KEY ("law_id") REFERENCES "public"."org_group_law"("id") ON DELETE set null ON UPDATE no action;

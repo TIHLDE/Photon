@@ -35,8 +35,57 @@ export function buildTimeSlots(
     return slots;
 }
 
-/** Sort ISO "YYYY-MM-DD" date strings chronologically. */
-export function normalizeDates(dates: string[]): string[] {
+/**
+ * What a board's columns mean: concrete dates (a one-off activity) or
+ * recurring weekdays (a fixed weekly meeting slot).
+ */
+export type DateMode = "DATES" | "WEEKDAYS";
+
+/** Weekday column keys, Monday first. */
+export const WEEKDAYS = [
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+    "SAT",
+    "SUN",
+] as const;
+
+export type Weekday = (typeof WEEKDAYS)[number];
+
+const WEEKDAY_LABELS: Record<Weekday, { long: string; short: string }> = {
+    MON: { long: "Mandag", short: "Man" },
+    TUE: { long: "Tirsdag", short: "Tir" },
+    WED: { long: "Onsdag", short: "Ons" },
+    THU: { long: "Torsdag", short: "Tor" },
+    FRI: { long: "Fredag", short: "Fre" },
+    SAT: { long: "Lørdag", short: "Lør" },
+    SUN: { long: "Søndag", short: "Søn" },
+};
+
+export function weekdayLabel(
+    key: string,
+    form: "long" | "short" = "long",
+): string {
+    return WEEKDAY_LABELS[key as Weekday]?.[form] ?? key;
+}
+
+/**
+ * Sort board columns: chronologically for dates, Monday-first for weekdays.
+ * Weekday keys must not be sorted lexicographically — that would put Friday
+ * before Monday.
+ */
+export function normalizeDates(
+    dates: string[],
+    dateMode: DateMode = "DATES",
+): string[] {
+    if (dateMode === "WEEKDAYS") {
+        return [...dates].sort(
+            (a, b) =>
+                WEEKDAYS.indexOf(a as Weekday) - WEEKDAYS.indexOf(b as Weekday),
+        );
+    }
     return [...dates].sort(
         (a, b) => parseISO(a).getTime() - parseISO(b).getTime(),
     );

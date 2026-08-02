@@ -277,11 +277,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 />
                             }
                         >
-                            {/* size-8! slår sidebar-knappens [&_svg]:size-4-regel */}
-                            <TihldeLogo className="size-8! shrink-0" />
-                            <span className="text-sm font-stretch-condensed font-extrabold">
-                                TIHLDE
-                            </span>
+                            {/* h-6!/w-auto! slår sidebar-knappens [&_svg]:size-4-regel,
+                                som ellers ville klemt lockupen til en firkant */}
+                            <TihldeLogo
+                                variant="full"
+                                className="h-6! w-auto! shrink-0"
+                            />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

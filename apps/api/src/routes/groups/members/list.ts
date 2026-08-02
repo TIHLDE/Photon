@@ -3,6 +3,11 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import {
+    STUDY_GROUP_TYPES,
+    type UserStudy,
+    deriveStudyFromGroups,
+} from "~/lib/user/study";
 import { memberListSchema } from "../schema";
 
 export const listMembersRoute = route().get(
@@ -53,12 +58,10 @@ export const listMembersRoute = route().get(
         });
 
         /**
-         * Study programme and cohort are a projection of Feide onto ordinary
-         * groups (types STUDY/STUDYYEAR), so they come from the same
-         * membership table rather than `studyProgramMembership` — the latter
-         * is only ever written by a Feide login, which leaves everyone
-         * migrated from Lepton without a row. The type is stored in UPPERCASE
-         * from Lepton, so compare case-insensitively.
+         * Study programme and cohort come from the group projection rather
+         * than `studyProgramMembership`; see `deriveStudyFromGroups` for why.
+         * Fetched for the whole page in one query, then grouped per member so
+         * the derivation itself stays the shared one.
          */
         const userIds = members.map((m) => m.userId);
         const studyRows =
@@ -67,11 +70,8 @@ export const listMembersRoute = route().get(
                 : await db
                       .select({
                           userId: schema.groupMembership.userId,
-                          groupName: schema.group.name,
-                          groupType:
-                              sql<string>`lower(${schema.group.type})`.as(
-                                  "group_type",
-                              ),
+                          name: schema.group.name,
+                          type: schema.group.type,
                       })
                       .from(schema.groupMembership)
                       .innerJoin(
@@ -85,37 +85,24 @@ export const listMembersRoute = route().get(
                           and(
                               inArray(schema.groupMembership.userId, userIds),
                               inArray(sql`lower(${schema.group.type})`, [
-                                  "study",
-                                  "studyyear",
+                                  ...STUDY_GROUP_TYPES,
                               ]),
                           ),
                       );
 
-        const studyByUser = new Map<
+        const groupsByUser = new Map<
             string,
-            { studyProgram: string | null; studyStartYear: number | null }
+            { name: string; type: string }[]
         >();
         for (const row of studyRows) {
-            const entry = studyByUser.get(row.userId) ?? {
-                studyProgram: null,
-                studyStartYear: null,
-            };
-            if (row.groupType === "study") {
-                entry.studyProgram ??= row.groupName;
-            } else {
-                // Several cohorts can linger on one account (a bachelor who
-                // continued into a master). The most recent one is the useful
-                // one — it is what class year is computed from.
-                const year = Number.parseInt(row.groupName, 10);
-                if (
-                    Number.isFinite(year) &&
-                    (entry.studyStartYear === null ||
-                        year > entry.studyStartYear)
-                ) {
-                    entry.studyStartYear = year;
-                }
-            }
-            studyByUser.set(row.userId, entry);
+            const entry = groupsByUser.get(row.userId) ?? [];
+            entry.push({ name: row.name, type: row.type });
+            groupsByUser.set(row.userId, entry);
+        }
+
+        const studyByUser = new Map<string, UserStudy>();
+        for (const [userId, groups] of groupsByUser) {
+            studyByUser.set(userId, deriveStudyFromGroups(groups));
         }
 
         return c.json(

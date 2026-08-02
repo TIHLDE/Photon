@@ -7,6 +7,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { fineListSchema } from "./schema";
+import { serializeFineLaw } from "./serialize";
 
 export const listFinesRoute = route().get(
     "/:groupSlug/fines",
@@ -111,9 +112,18 @@ export const listFinesRoute = route().get(
                         image: true,
                     },
                 },
+                // The paragraph the fine cites, so the list can show
+                // "3.10 - Møtte ikke opp" instead of the bare reason.
+                law: {
+                    columns: {
+                        id: true,
+                        paragraph: true,
+                        title: true,
+                    },
+                },
             },
         });
 
-        return c.json(fines);
+        return c.json(fines.map(serializeFineLaw));
     },
 );

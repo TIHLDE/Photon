@@ -281,6 +281,27 @@
       "when": 1785506586548,
       "tag": "0039_exotic_human_fly",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1785614877548,
+      "tag": "0040_cynical_echo",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1785626578016,
+      "tag": "0041_living_killraven",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1785658908827,
+      "tag": "0042_adorable_galactus",
+      "breakpoints": true
     }
   ]
 }

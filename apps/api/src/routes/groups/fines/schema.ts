@@ -29,6 +29,10 @@ export const createFineSchema = Schema(
             .max(600)
             .optional()
             .meta({ description: "Evidence image URL" }),
+        lawId: z.uuid().optional().meta({
+            description:
+                "Paragraph in the group's lovverk the fine is given under. Optional: a group whose lovverk is empty can still hand out fines.",
+        }),
     }),
 );
 
@@ -117,6 +121,22 @@ export const fineSchema = Schema(
             .nullable()
             .meta({
                 description: "Public user info for the fine creator",
+            }),
+        lawId: z.string().nullable().meta({
+            description: "ID of the paragraph the fine was given under",
+        }),
+        law: z
+            .object({
+                id: z.string().meta({ description: "Law ID" }),
+                paragraph: z
+                    .string()
+                    .meta({ description: "Paragraph number, e.g. 3.10" }),
+                title: z.string().meta({ description: "Paragraph title" }),
+            })
+            .nullable()
+            .meta({
+                description:
+                    "The paragraph in the group's lovverk. Null for fines migrated from Lepton and for fines given without one.",
             }),
     }),
 );

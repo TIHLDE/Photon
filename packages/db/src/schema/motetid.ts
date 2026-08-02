@@ -25,13 +25,36 @@ export const motetidSlotStatus = pgEnum(
     motetidSlotStatusVariants,
 );
 
+export const motetidDateModeVariants = ["DATES", "WEEKDAYS"] as const;
+
+/**
+ * What the board's columns mean: concrete calendar dates (a one-off activity)
+ * or recurring weekdays (a fixed weekly meeting slot).
+ */
+export const motetidDateMode = pgEnum(
+    "motetid_date_mode",
+    motetidDateModeVariants,
+);
+
+/** Weekday column keys, Monday first — the WEEKDAYS-mode counterpart to dates. */
+export const motetidWeekdays = [
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+    "SAT",
+    "SUN",
+] as const;
+
 /**
  * A scheduling event ("når passer det?") — a when2meet-style availability
  * board. Ported from the standalone time.tihlde.org app.
  *
  * Dates and times are intentionally stored as strings ("YYYY-MM-DD" / "HH:mm")
  * — the whole grid model is string-keyed, and native types would only invite
- * timezone drift.
+ * timezone drift. A weekday board reuses the same string columns with
+ * "MON".."SUN" keys, so the grid, slots and heatmap need no parallel model.
  */
 export const motetidEvent = pgTable(
     "motetid_event",
@@ -47,7 +70,12 @@ export const motetidEvent = pgTable(
         createdById: text("created_by_id").references(() => user.id, {
             onDelete: "set null",
         }),
-        /** Candidate dates as ISO "YYYY-MM-DD" strings. */
+        /** Whether `dates` holds calendar dates or weekday keys. */
+        dateMode: motetidDateMode("date_mode").notNull().default("DATES"),
+        /**
+         * Candidate columns: ISO "YYYY-MM-DD" strings in DATES mode,
+         * `motetidWeekdays` keys ("MON".."SUN") in WEEKDAYS mode.
+         */
         dates: text("dates").array().notNull(),
         /** Daily window start, "HH:mm". */
         startTime: varchar("start_time", { length: 5 }).notNull(),
@@ -91,7 +119,7 @@ export const motetidSlot = pgTable(
         eventId: uuid("event_id")
             .notNull()
             .references(() => motetidEvent.id, { onDelete: "cascade" }),
-        /** "YYYY-MM-DD" */
+        /** "YYYY-MM-DD", or a weekday key on a WEEKDAYS-mode board. */
         date: varchar("date", { length: 10 }).notNull(),
         /** "HH:mm" */
         time: varchar("time", { length: 5 }).notNull(),
@@ -170,5 +198,7 @@ export type MotetidEvent = typeof motetidEvent.$inferSelect;
 export type MotetidParticipant = typeof motetidParticipant.$inferSelect;
 export type MotetidSlot = typeof motetidSlot.$inferSelect;
 export type MotetidSlotStatus = (typeof motetidSlotStatusVariants)[number];
+export type MotetidDateMode = (typeof motetidDateModeVariants)[number];
+export type MotetidWeekday = (typeof motetidWeekdays)[number];
 export type MotetidGoogleCredential =
     typeof motetidGoogleCredential.$inferSelect;
