@@ -6,6 +6,8 @@ import { useState } from "react";
 
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export type UserSearchOption = {
     id: string;
     name: string | null;
@@ -56,7 +58,9 @@ export function UserSearchCombobox({
                 {holder ? (
                     <>
                         <Avatar className="size-7">
-                            <AvatarImage src={holder.image ?? undefined} />
+                            <AvatarImage
+                                src={avatarImageUrl(holder.image ?? undefined)}
+                            />
                             <AvatarFallback>
                                 {initials(holder.name ?? "?")}
                             </AvatarFallback>
@@ -107,7 +111,9 @@ export function UserSearchCombobox({
                                 >
                                     <Avatar className="size-7">
                                         <AvatarImage
-                                            src={user.image ?? undefined}
+                                            src={avatarImageUrl(
+                                                user.image ?? undefined,
+                                            )}
                                         />
                                         <AvatarFallback>
                                             {initials(user.name ?? "?")}

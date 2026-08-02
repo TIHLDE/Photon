@@ -15,6 +15,8 @@ import {
 } from "#/components/group-admission-card";
 import { HeroSectionBackground } from "#/components/hero-section";
 
+import { assetImageProps } from "#/lib/assets";
+
 export const Route = createFileRoute("/_app/ny-student")({
     component: NewStudentPage,
     loader: ({ context }) =>
@@ -282,10 +284,11 @@ function LatestToddelSection() {
             </h2>
             <Link to="/toddel" className="mx-auto w-full max-w-md">
                 <img
-                    src={latest.imageUrl}
+                    {...assetImageProps(latest.imageUrl, "card")}
                     alt={latest.title}
                     className="w-full"
                     loading="lazy"
+                    decoding="async"
                 />
             </Link>
         </section>

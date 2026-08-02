@@ -67,6 +67,8 @@ import {
 import { useDebounced } from "#/lib/use-debounced";
 import { computeClassYear, initials, programmeLength } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 const ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
     member: "Medlem",
@@ -353,10 +355,10 @@ function AllUsersTable({
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="size-7">
                                                         <AvatarImage
-                                                            src={
+                                                            src={avatarImageUrl(
                                                                 user.image ??
-                                                                undefined
-                                                            }
+                                                                    undefined,
+                                                            )}
                                                         />
                                                         <AvatarFallback>
                                                             {initials(
@@ -640,10 +642,10 @@ function MembersTable({
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="size-7">
                                                     <AvatarImage
-                                                        src={
+                                                        src={avatarImageUrl(
                                                             member.user.image ??
-                                                            undefined
-                                                        }
+                                                                undefined,
+                                                        )}
                                                     />
                                                     <AvatarFallback>
                                                         {initials(

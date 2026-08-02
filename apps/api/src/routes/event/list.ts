@@ -1,5 +1,16 @@
 import { schema } from "@photon/db";
-import { and, eq, gte, ilike, inArray, lt, lte, sql } from "drizzle-orm";
+import {
+    and,
+    asc,
+    desc,
+    eq,
+    gte,
+    ilike,
+    inArray,
+    lt,
+    lte,
+    sql,
+} from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -11,6 +22,39 @@ import {
     type eventListItemSchema,
     eventListResponseSchema,
 } from "./schema";
+
+type EventOrdering = z.infer<typeof eventListFilterSchema>["ordering"];
+
+/**
+ * Ordering for the event list.
+ *
+ * `upcoming` is what an admin wants by default: whatever is happening right now
+ * or next sits on top, and everything already held follows below it with the
+ * most recent first. A plain `asc(start)` cannot do that, since an ongoing event
+ * started in the past — so the first key splits held from not-yet-held events,
+ * and the two groups are then sorted in opposite directions.
+ *
+ * Without `ordering` the legacy behaviour is kept: ascending when the caller
+ * asked for upcoming events only, descending otherwise.
+ */
+function buildOrderBy(ordering: EventOrdering, expired: boolean | undefined) {
+    switch (ordering) {
+        case "newest":
+            return [desc(schema.event.start)];
+        case "oldest":
+            return [asc(schema.event.start)];
+        case "upcoming":
+            return [
+                sql`${schema.event.end} < NOW()`,
+                sql`CASE WHEN ${schema.event.end} >= NOW() THEN ${schema.event.start} END ASC NULLS LAST`,
+                desc(schema.event.start),
+            ];
+        default:
+            return expired === false
+                ? [asc(schema.event.start)]
+                : [desc(schema.event.start)];
+    }
+}
 
 export const listRoute = route().get(
     "/",
@@ -31,8 +75,15 @@ export const listRoute = route().get(
     validator("query", eventListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
-        const { page, pageSize, search, expired, openSignUp, category } =
-            c.req.valid("query");
+        const {
+            page,
+            pageSize,
+            search,
+            expired,
+            openSignUp,
+            category,
+            ordering,
+        } = c.req.valid("query");
 
         // Members-only events are hidden from unauthenticated (non-member)
         // callers. Any authenticated user counts as a member.
@@ -67,9 +118,7 @@ export const listRoute = route().get(
         const totalPages = getTotalPages(eventCount, pageSize);
 
         const events = await db.query.event.findMany({
-            // Upcoming events read best soonest-first; past events most-recent-first.
-            orderBy: (event, { asc, desc }) =>
-                expired === false ? [asc(event.start)] : [desc(event.start)],
+            orderBy: buildOrderBy(ordering, expired),
             with: {
                 organizer: true,
                 category: true,

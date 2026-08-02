@@ -3,6 +3,8 @@ import { Dialog, DialogContent } from "@tihlde/ui/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
+import { assetImageUrl } from "#/lib/assets";
+
 export type LightboxPicture = {
     id: string;
     imageUrl: string;
@@ -101,9 +103,15 @@ export function GalleryLightbox({
                         go(distance < 0 ? 1 : -1);
                     }}
                 >
+                    {/*
+                     * The lightbox caps at 85vh inside a max-w-5xl dialog, so
+                     * even on a large screen 1920 px is more than it can show
+                     * — no reason to pull the multi-megabyte original.
+                     */}
                     <img
-                        src={picture.imageUrl}
+                        src={assetImageUrl(picture.imageUrl, 1920)}
                         alt={alt}
+                        decoding="async"
                         className="block h-auto max-h-[85vh] w-full object-contain"
                     />
 

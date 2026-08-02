@@ -1,3 +1,5 @@
+import { assetImageProps } from "#/lib/assets";
+
 export type GalleryPictureProps = {
     imageUrl: string;
     imageAlt?: string | null;
@@ -24,10 +26,16 @@ export function GalleryPicture({
             onClick={onOpen}
             className="mb-4 block w-full overflow-hidden"
         >
+            {/*
+             * A thumbnail here is one column of a masonry grid, never more
+             * than ~400 px wide, while the originals are camera-sized JPEGs.
+             * Pointing straight at those made an album cost hundreds of MB.
+             */}
             <img
-                src={imageUrl}
+                {...assetImageProps(imageUrl, "galleryThumb")}
                 alt={alt}
                 loading="lazy"
+                decoding="async"
                 className="block h-auto w-full object-cover"
             />
         </button>

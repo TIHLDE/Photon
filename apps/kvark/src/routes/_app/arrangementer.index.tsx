@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { useDeferredValue, useMemo, useState } from "react";
 import z from "zod";
 
-import { getEventsQuery } from "#/api/queries/events";
+import { getEventsInfiniteQuery } from "#/api/queries/events";
 import { EventCalendar } from "#/components/event-calendar";
 import { EventCard } from "#/components/event-card";
 import {
@@ -14,6 +14,7 @@ import {
     EventFilters,
     type EventFiltersValue,
 } from "#/components/event-filters";
+import { LoadMoreButton } from "#/components/load-more-button";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { formatEventDateTime } from "#/lib/event";
 
@@ -88,9 +89,8 @@ export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
     validateSearch: searchSchema,
     loader: ({ context }) =>
-        context.queryClient.ensureQueryData(
-            getEventsQuery(
-                0,
+        context.queryClient.ensureInfiniteQueryData(
+            getEventsInfiniteQuery(
                 toEventListFilters(
                     DEFAULT_EVENT_FILTERS.query,
                     DEFAULT_EVENT_FILTERS.showPast,
@@ -143,14 +143,15 @@ function EventsPage() {
     // drop the list to a fallback on every search. Deferring keeps the current
     // results on screen until the next ones resolve.
     const deferredFilters = useDeferredValue(listFilters);
-    const { data } = useSuspenseQuery(
-        getEventsQuery(
-            0,
-            deferredFilters,
-            visning === "kalender" ? CALENDAR_PAGE_SIZE : undefined,
-        ),
-    );
-    const events = data.items;
+    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(
+            getEventsInfiniteQuery(
+                deferredFilters,
+                visning === "kalender" ? CALENDAR_PAGE_SIZE : undefined,
+            ),
+        );
+    const events = data.pages.flatMap((page) => page.items);
+    const totalCount = data.pages[0]?.totalCount ?? 0;
 
     const changeView = (next: EventView) => {
         navigate({
@@ -214,7 +215,7 @@ function EventsPage() {
                         </Tabs>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                        {data.totalCount} arrangementer funnet
+                        {totalCount} arrangementer funnet
                     </p>
                     {visning === "kalender" ? (
                         <EventCalendar
@@ -249,6 +250,14 @@ function EventsPage() {
                                 </li>
                             ))}
                         </Stagger>
+                    )}
+                    {hasNextPage && (
+                        <div className="flex justify-center pt-2">
+                            <LoadMoreButton
+                                onClick={() => fetchNextPage()}
+                                isLoading={isFetchingNextPage}
+                            />
+                        </div>
                     )}
                 </section>
             </div>

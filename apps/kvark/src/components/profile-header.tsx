@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 import { DetailHeader } from "#/components/detail-layout";
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export type ProfileLink = {
     kind: "github" | "linkedin";
     label: string;
@@ -32,7 +34,10 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
             avatar={
                 <Avatar className="size-16 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
                     {user.avatarUrl ? (
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarImage
+                            src={avatarImageUrl(user.avatarUrl)}
+                            alt={user.name}
+                        />
                     ) : null}
                     <AvatarFallback className="text-2xl">
                         {initials(user.name)}

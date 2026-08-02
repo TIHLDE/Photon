@@ -12,6 +12,8 @@ import { TriStateFilter, type TriState } from "#/components/tri-state-filter";
 import type { Fine } from "#/lib/group";
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 type GroupingMode = "all" | "per-member";
 
 type GroupFinesTabProps = {
@@ -183,7 +185,9 @@ export function GroupFinesTab({
                                     <Avatar className="size-10">
                                         {list[0]?.userImage ? (
                                             <AvatarImage
-                                                src={list[0].userImage}
+                                                src={avatarImageUrl(
+                                                    list[0].userImage,
+                                                )}
                                                 alt={list[0].user}
                                             />
                                         ) : null}
