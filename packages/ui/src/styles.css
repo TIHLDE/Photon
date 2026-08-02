@@ -313,26 +313,14 @@
 }
 
 @media (hover: hover) {
+    /* Both surfaces carry `ring-1`, so their `box-shadow` is already Tailwind's
+       stack of `var(--tw-*)` slots. Feeding the elevation through `--tw-shadow`
+       layers it *under* that ring; setting `box-shadow` here would drop the
+       ring instead. */
     :is(a, button)[data-slot="card"]:hover,
     [data-slot="list-card"]:hover {
         translate: 0 -2px;
-    }
-    /* Card carries `ring-1`, so its `box-shadow` is already Tailwind's stack
-       of `var(--tw-*)` slots. Feeding the elevation through `--tw-shadow`
-       layers it *under* that ring; setting `box-shadow` here would drop the
-       ring instead. ListCard has no ring — nothing declares `box-shadow` on
-       it — so `--tw-shadow` would go nowhere and it needs the real property.
-       Same visual result, two different plumbing paths. */
-    :is(a, button)[data-slot="card"]:hover {
         --tw-shadow: 0 10px 24px -14px oklch(0 0 0 / 0.45);
-    }
-    /* Only from `sm` up, matching the breakpoint where ListCard stops being a
-       filled card and becomes a transparent row. A drop shadow under a
-       transparent row reads as a rendering artefact. */
-    @media (width >= 40rem) {
-        [data-slot="list-card"]:hover {
-            box-shadow: 0 10px 24px -14px oklch(0 0 0 / 0.45);
-        }
     }
 }
 
