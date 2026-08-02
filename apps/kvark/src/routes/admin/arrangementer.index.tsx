@@ -1,9 +1,9 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { CalendarDaysIcon, PlusIcon } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useDeferredValue, useMemo, useState } from "react";
 
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -21,15 +21,31 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 
-import { getEventsQuery } from "#/api/queries/events";
+import { getEventsInfiniteQuery } from "#/api/queries/events";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { LoadMoreButton } from "#/components/load-more-button";
+import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+
+const SEARCH_DEBOUNCE_MS = 300;
+const PAGE_SIZE = 50;
+
+// Søk og tidsavgrensning gjøres server-side. Tidligere hentet siden bare de
+// 100 nyeste arrangementene og filtrerte i klienten, så alt eldre enn det var
+// utilgjengelig når «Vis tidligere» var på.
+const toEventListFilters = (search: string, showPast: boolean) => ({
+    search: search.trim() || undefined,
+    // Uten `expired` returnerer API-et både kommende og tidligere.
+    ...(showPast ? {} : { expired: false }),
+});
 
 export const Route = createFileRoute("/admin/arrangementer/")({
     component: EventsAdminPage,
     loader: async ({ context }) => {
-        await context.queryClient.ensureQueryData(getEventsQuery(0));
+        await context.queryClient.ensureInfiniteQueryData(
+            getEventsInfiniteQuery(toEventListFilters("", false), PAGE_SIZE),
+        );
         return { breadcrumbs: "Arrangementer" };
     },
 });
@@ -95,21 +111,21 @@ function EventsTable({
     search: string;
     showPast: boolean;
 }) {
-    const { data } = useSuspenseQuery(getEventsQuery(0, {}, 100));
+    const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+    const filters = useMemo(
+        () => toEventListFilters(debouncedSearch, showPast),
+        [debouncedSearch, showPast],
+    );
 
-    const events = useMemo(() => {
-        const now = Date.now();
-        const term = search.trim().toLowerCase();
-        return data.items.filter((event) => {
-            if (!showPast && new Date(event.endTime).getTime() < now) {
-                return false;
-            }
-            if (term && !event.title.toLowerCase().includes(term)) {
-                return false;
-            }
-            return true;
-        });
-    }, [data.items, search, showPast]);
+    // useSuspenseInfiniteQuery har ingen placeholderData, så en endret nøkkel
+    // ville ellers droppe tabellen til skjelettet ved hvert tastetrykk.
+    const deferredFilters = useDeferredValue(filters);
+    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(
+            getEventsInfiniteQuery(deferredFilters, PAGE_SIZE),
+        );
+
+    const events = data.pages.flatMap((page) => page.items);
 
     if (events.length === 0) {
         return (
@@ -126,56 +142,71 @@ function EventsTable({
     }
 
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Dato</TableHead>
-                            <TableHead>Arrangør</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {events.map((event) => (
-                            <TableRow key={event.id}>
-                                <TableCell>{event.title}</TableCell>
-                                <TableCell>
-                                    {formatDateTime(event.startTime)}
-                                </TableCell>
-                                <TableCell>
-                                    {event.organizer?.name ?? "—"}
-                                </TableCell>
-                                <TableCell>
-                                    <EventStatusBadge
-                                        endTime={event.endTime}
-                                        closed={event.closed}
-                                    />
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        render={
-                                            <Link
-                                                to="/admin/arrangementer/$eventId"
-                                                params={{ eventId: event.id }}
-                                            />
-                                        }
-                                    >
-                                        Administrer
-                                    </Button>
-                                </TableCell>
+        <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+                Viser {events.length} av {data.pages[0]?.totalCount ?? 0}
+            </p>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Dato</TableHead>
+                                <TableHead>Arrangør</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {events.map((event) => (
+                                <TableRow key={event.id}>
+                                    <TableCell>{event.title}</TableCell>
+                                    <TableCell>
+                                        {formatDateTime(event.startTime)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {event.organizer?.name ?? "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                        <EventStatusBadge
+                                            endTime={event.endTime}
+                                            closed={event.closed}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            render={
+                                                <Link
+                                                    to="/admin/arrangementer/$eventId"
+                                                    params={{
+                                                        eventId: event.id,
+                                                    }}
+                                                />
+                                            }
+                                        >
+                                            Administrer
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            {hasNextPage && (
+                <div className="flex justify-center">
+                    <LoadMoreButton
+                        onClick={() => fetchNextPage()}
+                        isLoading={isFetchingNextPage}
+                    />
+                </div>
+            )}
+        </div>
     );
 }
 
