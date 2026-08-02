@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 
+import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
 export type IssueCardProps = {
@@ -25,10 +26,11 @@ export function IssueCard({
              * the image. The ratio goes on the image itself instead.
              */}
             <img
-                src={coverUrl || DEFAULT_COVER_IMAGE}
+                {...assetImageProps(coverUrl || DEFAULT_COVER_IMAGE, "card")}
                 alt={title}
                 className={`${IMAGE_PRESETS["cover-portrait"].aspectClassName} w-full object-cover`}
                 loading="lazy"
+                decoding="async"
             />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>

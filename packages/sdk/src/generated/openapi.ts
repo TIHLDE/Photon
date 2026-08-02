@@ -407,6 +407,13 @@ export interface paths {
          *
          *     Private assets (e.g. contract signatures) are never served here — they are only
          *     reachable through routes that perform their own authorization.
+         *
+         *     **Resized variants:**
+         *     Pass `?w=` with one of 160, 320, 480, 640, 960, 1280, 1920 to get the image
+         *     re-encoded as WebP at that width, keeping its aspect ratio and never upscaling.
+         *     Variants are generated on first request and cached, so a card never has to
+         *     download a full-resolution original. Any other width is rejected, and the
+         *     parameter is ignored for non-image assets (PDF, GIF).
          */
         get: operations["downloadAsset"];
         put?: never;
@@ -6220,6 +6227,13 @@ export interface operations {
         responses: {
             /** @description File content with appropriate Content-Type header */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - Unsupported width */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

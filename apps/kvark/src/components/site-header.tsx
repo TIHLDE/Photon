@@ -13,6 +13,8 @@ import { ExternalLinkIcon, User } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
 import { TihldeLogo } from "./icons/tihlde";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export type InternalLink = {
     kind: "internal";
     label: string;
@@ -119,7 +121,7 @@ export function SiteHeader({ navItems, user }: SiteHeaderProps) {
                         <Avatar className="size-8">
                             {user?.avatarUrl ? (
                                 <AvatarImage
-                                    src={user.avatarUrl}
+                                    src={avatarImageUrl(user.avatarUrl)}
                                     alt={user.name}
                                     // Make picture funny by squashing the image :)
                                     className="object-fill"

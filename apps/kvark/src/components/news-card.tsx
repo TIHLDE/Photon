@@ -8,6 +8,7 @@ import {
 } from "@tihlde/ui/ui/card";
 import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 
+import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
 export type NewsCardProps = {
@@ -36,8 +37,10 @@ export function NewsCard({
              * leaves a strip of card above the image. The ratio goes here.
              */}
             <img
-                src={imageUrl || DEFAULT_COVER_IMAGE}
+                {...assetImageProps(imageUrl || DEFAULT_COVER_IMAGE, "card")}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className={`${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full object-cover`}
             />
             <CardHeader>
