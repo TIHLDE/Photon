@@ -50,7 +50,7 @@ function CompanyLandingPage() {
                     <p className="text-muted-foreground">
                         Møt morgendagens IT-talenter!
                     </p>
-                    <h1 className="text-4xl md:text-6xl">
+                    <h1 className="text-4xl font-bold md:text-6xl">
                         Samarbeid med TIHLDE
                     </h1>
                     <p className="text-muted-foreground">
