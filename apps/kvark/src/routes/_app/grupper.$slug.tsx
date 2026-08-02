@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
+import { useImageUploader } from "#/api/queries/assets";
 import {
     useIsGroupLeaderOf,
     useIsGroupMemberOf,
@@ -11,6 +12,7 @@ import {
     useScopedPermission,
 } from "#/hooks/use-permission";
 import {
+    createFineMutation,
     createLawMutation,
     deleteFineMutation,
     deleteLawMutation,
@@ -34,7 +36,10 @@ import { GroupDetailHeader } from "#/components/group-detail-header";
 import { GroupEventsTab } from "#/components/group-events-tab";
 import { GroupFinesTab } from "#/components/group-fines-tab";
 import { GroupFormsTab } from "#/components/group-forms-tab";
-import { GroupGiveFineDialog } from "#/components/group-give-fine-dialog";
+import {
+    GroupGiveFineDialog,
+    type GiveFineValues,
+} from "#/components/group-give-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
@@ -74,6 +79,7 @@ function GroupDetailPage() {
     const { tab: active } = Route.useSearch();
     const navigate = Route.useNavigate();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
+    const [fineError, setFineError] = useState<string | null>(null);
 
     function setActive(tab: GroupNavKey) {
         navigate({ search: (prev) => ({ ...prev, tab }) });
@@ -88,6 +94,8 @@ function GroupDetailPage() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const createFine = useMutation(createFineMutation);
+    const { uploadImage, isUploading } = useImageUploader();
     const updateFine = useMutation(updateFineMutation);
     const deleteFine = useMutation(deleteFineMutation);
     const createLaw = useMutation(createLawMutation);
@@ -198,7 +206,44 @@ function GroupDetailPage() {
 
     function openGiveFine() {
         setActive("boter");
+        setFineError(null);
         setFineDialogOpen(true);
+    }
+
+    /**
+     * Én bot per mottaker: API-et tar én bruker om gangen, mens dialogen lar
+     * deg bøtelegge flere som brøt samme paragraf samtidig. Bildet lastes opp
+     * én gang og deles av alle botene.
+     */
+    async function handleGiveFine(values: GiveFineValues) {
+        setFineError(null);
+        try {
+            const imageUrl = values.image
+                ? await uploadImage(values.image)
+                : undefined;
+
+            for (const userId of values.userIds) {
+                await createFine.mutateAsync({
+                    groupSlug: slug,
+                    data: {
+                        userId,
+                        groupSlug: slug,
+                        reason: values.reason,
+                        amount: values.amount,
+                        ...(values.lawId ? { lawId: values.lawId } : {}),
+                        ...(imageUrl ? { image: imageUrl } : {}),
+                    },
+                });
+            }
+
+            setFineDialogOpen(false);
+        } catch (error) {
+            setFineError(
+                error instanceof Error
+                    ? error.message
+                    : "Ukjent feil da boten skulle opprettes",
+            );
+        }
     }
 
     return (
@@ -302,8 +347,11 @@ function GroupDetailPage() {
             <GroupGiveFineDialog
                 open={fineDialogOpen}
                 onOpenChange={setFineDialogOpen}
-                users={[]}
+                members={members}
                 laws={laws}
+                onSubmit={handleGiveFine}
+                isSubmitting={createFine.isPending || isUploading}
+                error={fineError}
             />
         </>
     );

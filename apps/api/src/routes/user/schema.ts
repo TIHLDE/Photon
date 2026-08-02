@@ -191,6 +191,22 @@ export const userProfileSchema = Schema(
                 description:
                     "Every group the user belongs to, including the derived STUDY/STUDYYEAR groups",
             }),
+        formerGroups: z
+            .array(
+                z.object({
+                    slug: z.string(),
+                    name: z.string(),
+                    type: z.string(),
+                    logoUrl: z.string().nullable(),
+                    role: z.string(),
+                    startedAt: z.string(),
+                    endedAt: z.string(),
+                }),
+            )
+            .meta({
+                description:
+                    "Groups the user used to belong to, most recent first. Groups they rejoined appear under `groups` instead, and a group left more than once is listed once, by the latest stint. As public as the active memberships above.",
+            }),
         createdAt: z
             .string()
             .meta({ description: "Account creation timestamp" }),

@@ -8,6 +8,7 @@ import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
 import { fineSchema } from "./schema";
+import { serializeFineLaw } from "./serialize";
 
 export const getFineRoute = route().get(
     "/:groupSlug/fines/:fineId",
@@ -59,6 +60,13 @@ export const getFineRoute = route().get(
                         image: true,
                     },
                 },
+                law: {
+                    columns: {
+                        id: true,
+                        paragraph: true,
+                        title: true,
+                    },
+                },
             },
         });
 
@@ -108,6 +116,6 @@ export const getFineRoute = route().get(
             }
         }
 
-        return c.json(fine);
+        return c.json(serializeFineLaw(fine));
     },
 );

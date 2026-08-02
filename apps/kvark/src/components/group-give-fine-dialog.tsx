@@ -8,36 +8,91 @@ import {
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import { ImageDropzone } from "@tihlde/ui/ui/image-dropzone";
 import { Input } from "@tihlde/ui/ui/input";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { ImageDropzone } from "#/components/image-dropzone";
 import { LawCombobox } from "#/components/law-combobox";
-import { UserMultiCombobox } from "#/components/user-combobox";
+import {
+    MemberMultiCombobox,
+    type ComboboxMember,
+} from "#/components/user-combobox";
 import type { Law } from "#/lib/group";
+import { imageDropzoneLabels } from "#/lib/image";
+
+export type GiveFineValues = {
+    /** Én bot opprettes per mottaker. */
+    userIds: string[];
+    lawId: string | null;
+    amount: number;
+    reason: string;
+    image: File | null;
+};
 
 type GroupGiveFineDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    users: string[];
+    members: ComboboxMember[];
     laws: Law[];
+    onSubmit: (values: GiveFineValues) => void;
+    isSubmitting?: boolean;
+    /** Feilmelding fra opprettelsen, vist i dialogen så skjemaet beholdes. */
+    error?: string | null;
 };
 
 export function GroupGiveFineDialog({
     open,
     onOpenChange,
-    users,
+    members,
     laws,
+    onSubmit,
+    isSubmitting,
+    error,
 }: GroupGiveFineDialogProps) {
-    const [recipients, setRecipients] = useState<string[]>([]);
+    const [recipients, setRecipients] = useState<ComboboxMember[]>([]);
     const [law, setLaw] = useState<Law | null>(null);
     const [amount, setAmount] = useState<number>(1);
+    const [reason, setReason] = useState("");
+    const [image, setImage] = useState<File | null>(null);
+
+    // Dialogen blir stående montert mellom hver gang den åpnes, så uten dette
+    // møter neste bot forrige bots mottakere og begrunnelse.
+    useEffect(() => {
+        if (open) return;
+        setRecipients([]);
+        setLaw(null);
+        setAmount(1);
+        setReason("");
+        setImage(null);
+    }, [open]);
 
     function handleLawChange(next: Law | null) {
         setLaw(next);
         if (next) setAmount(next.amount);
+    }
+
+    // En gruppe uten lovverk skal fortsatt kunne gi bøter — da er det ingen
+    // paragraf å velge, og feltet er ikke påkrevd.
+    const lawRequired = laws.length > 0;
+    const canSubmit =
+        recipients.length > 0 &&
+        reason.trim().length > 0 &&
+        amount > 0 &&
+        (!lawRequired || law !== null) &&
+        !isSubmitting;
+
+    function handleSubmit(event: React.FormEvent) {
+        event.preventDefault();
+        if (!canSubmit) return;
+        onSubmit({
+            userIds: recipients.map((member) => member.id),
+            lawId: law?.id ?? null,
+            amount,
+            reason: reason.trim(),
+            image,
+        });
     }
 
     return (
@@ -49,25 +104,32 @@ export function GroupGiveFineDialog({
                         Opprett en ny bot for et lovbrudd
                     </DialogDescription>
                 </DialogHeader>
-                <form className="flex flex-col gap-4">
+                <form
+                    id="give-fine-form"
+                    className="flex flex-col gap-4"
+                    onSubmit={handleSubmit}
+                >
                     <FieldGroup>
                         <Field>
                             <FieldLabel>
                                 Hvem har begått et lovbrudd? *
                             </FieldLabel>
-                            <UserMultiCombobox
-                                items={users}
+                            <MemberMultiCombobox
+                                items={members}
                                 value={recipients}
                                 onValueChange={setRecipients}
                                 placeholder="Velg bruker..."
                             />
                             <p className="text-xs text-muted-foreground">
-                                Du kan velge flere personer
+                                Du kan velge flere personer. Alle får hver sin
+                                bot.
                             </p>
                         </Field>
 
                         <Field>
-                            <FieldLabel>Lovbrudd *</FieldLabel>
+                            <FieldLabel>
+                                Lovbrudd {lawRequired ? "*" : null}
+                            </FieldLabel>
                             <LawCombobox
                                 items={laws}
                                 value={law}
@@ -84,6 +146,12 @@ export function GroupGiveFineDialog({
                                     </p>
                                 </div>
                             ) : null}
+                            {lawRequired ? null : (
+                                <p className="text-xs text-muted-foreground">
+                                    Gruppa har ikke lagt inn noe lovverk ennå,
+                                    så boten gis uten paragraf.
+                                </p>
+                            )}
                         </Field>
 
                         <Field>
@@ -93,6 +161,7 @@ export function GroupGiveFineDialog({
                             <Input
                                 id="fine-amount"
                                 type="number"
+                                min={1}
                                 value={amount}
                                 onChange={(e) =>
                                     setAmount(Number(e.target.value))
@@ -107,24 +176,43 @@ export function GroupGiveFineDialog({
                             <Textarea
                                 id="fine-reason"
                                 rows={3}
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
                                 placeholder="Skriv en kort begrunnelse..."
                             />
                         </Field>
 
                         <Field>
                             <FieldLabel>Bilde</FieldLabel>
-                            <ImageDropzone />
+                            <ImageDropzone
+                                preset="natural"
+                                value={image ? [image] : []}
+                                onValueChange={(next) =>
+                                    setImage(next[0] ?? null)
+                                }
+                                accept={{ "image/*": [] }}
+                                disabled={isSubmitting}
+                                labels={imageDropzoneLabels}
+                            />
                         </Field>
                     </FieldGroup>
+                    {error ? <p role="alert">{error}</p> : null}
                 </form>
                 <DialogFooter>
                     <Button
+                        type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
                         Avbryt
                     </Button>
-                    <Button>Opprett bot</Button>
+                    <Button
+                        type="submit"
+                        form="give-fine-form"
+                        disabled={!canSubmit}
+                    >
+                        {isSubmitting ? "Oppretter …" : "Opprett bot"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

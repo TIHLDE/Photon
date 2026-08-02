@@ -4259,6 +4259,17 @@ export interface components {
                 /** @description User profile image URL */
                 image: string | null;
             } | null;
+            /** @description ID of the paragraph the fine was given under */
+            lawId: string | null;
+            /** @description The paragraph in the group's lovverk. Null for fines migrated from Lepton and for fines given without one. */
+            law: {
+                /** @description Law ID */
+                id: string;
+                /** @description Paragraph number, e.g. 3.10 */
+                paragraph: string;
+                /** @description Paragraph title */
+                title: string;
+            } | null;
         };
         FineList: components["schemas"]["Fine"][];
         CreateFine: {
@@ -4277,6 +4288,11 @@ export interface components {
              * @description Evidence image URL
              */
             image?: string;
+            /**
+             * Format: uuid
+             * @description Paragraph in the group's lovverk the fine is given under. Optional: a group whose lovverk is empty can still hand out fines.
+             */
+            lawId?: string;
         };
         UpdateFineResponse: {
             message: string;
@@ -5377,6 +5393,16 @@ export interface components {
                 type: string;
                 logoUrl: string | null;
                 role: string;
+            }[];
+            /** @description Groups the user used to belong to, most recent first. Groups they rejoined appear under `groups` instead, and a group left more than once is listed once, by the latest stint. As public as the active memberships above. */
+            formerGroups: {
+                slug: string;
+                name: string;
+                type: string;
+                logoUrl: string | null;
+                role: string;
+                startedAt: string;
+                endedAt: string;
             }[];
             /** @description Account creation timestamp */
             createdAt: string;
