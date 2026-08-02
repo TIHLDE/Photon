@@ -217,15 +217,10 @@ function Hero() {
                 }
             >
                 <div
-                    className="flex items-center gap-1"
+                    className="flex items-center"
                     style={{ color: "var(--color-logo, currentColor)" }}
                 >
-                    <div className="size-20">
-                        <TihldeLogo />
-                    </div>
-                    <span className="text-5xl font-stretch-condensed font-extrabold">
-                        TIHLDE
-                    </span>
+                    <TihldeLogo variant="full" className="h-14 w-auto" />
                 </div>
                 <p className="max-w-2xl text-balance">
                     Linjeforeningen for Dataingeniør, Digital infrastruktur og
