@@ -2,7 +2,7 @@
  * Fallback TIHLDE cover image, used everywhere content is missing its own
  * image (event/job/news cards, detail heroes, Töddel covers).
  */
-export const DEFAULT_COVER_IMAGE = "/browser-icons/cover-image.jpg";
+export const DEFAULT_COVER_IMAGE = "/browser-icons/cover-image.webp";
 
 /**
  * Norwegian labels for the shared image dropzone. Kept here so every upload

@@ -4,6 +4,7 @@ import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
 export type ListCardMetaRow = {
@@ -48,8 +49,13 @@ export function ListCard({
                         className={`relative ${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg`}
                     >
                         <img
-                            src={imageUrl || DEFAULT_COVER_IMAGE}
+                            {...assetImageProps(
+                                imageUrl || DEFAULT_COVER_IMAGE,
+                                "listRow",
+                            )}
                             alt={imageAlt ?? ""}
+                            loading="lazy"
+                            decoding="async"
                             className="size-full object-cover"
                         />
                         {imageBadge ? (

@@ -452,6 +452,95 @@ describe("Asset Upload/Download System", () => {
     );
 
     integrationTest(
+        "Download serves resized WebP variants and rejects unlisted widths",
+        async ({ ctx }) => {
+            const { app, bucket } = ctx;
+
+            const testUser = await ctx.utils.createTestUser();
+            const sharp = (await import("sharp")).default;
+
+            // Stands in for the migrated gallery: a full-resolution photo that
+            // cards used to load in full just to render a thumbnail.
+            const originalPng = await sharp({
+                create: {
+                    width: 2000,
+                    height: 1500,
+                    channels: 3,
+                    background: { r: 20, g: 120, b: 200 },
+                },
+            })
+                .png()
+                .toBuffer();
+
+            const key = "uploads/2026/01/variant_test.png";
+            await bucket.upload(key, originalPng, {
+                originalFilename: "variant_test.png",
+                contentType: "image/png",
+                uploadedById: testUser.id,
+            });
+
+            const variantResponse = await app.request(
+                `/api/assets/${key}?w=320`,
+            );
+
+            expect(variantResponse.status).toBe(200);
+            expect(variantResponse.headers.get("Content-Type")).toBe(
+                "image/webp",
+            );
+
+            const variantBytes = Buffer.from(
+                await variantResponse.arrayBuffer(),
+            );
+            const variantMeta = await sharp(variantBytes).metadata();
+            expect(variantMeta.format).toBe("webp");
+            expect(variantMeta.width).toBe(320);
+            expect(variantMeta.height).toBe(240);
+            expect(variantBytes.length).toBeLessThan(originalPng.length);
+
+            // The variant is cached, so the second request never re-encodes.
+            expect(
+                await bucket.getObject(`derivatives/w320/${key}.webp`),
+            ).not.toBeNull();
+
+            // Without ?w= the original is served unchanged — the lightbox and
+            // direct links still get exactly what was uploaded.
+            const originalResponse = await app.request(`/api/assets/${key}`);
+            expect(originalResponse.status).toBe(200);
+            expect(originalResponse.headers.get("Content-Type")).toBe(
+                "image/png",
+            );
+
+            // An arbitrary width would let anyone fill the bucket with
+            // one-off re-encodes, so only the allowlist is accepted.
+            const badWidthResponse = await app.request(
+                `/api/assets/${key}?w=317`,
+            );
+            expect(badWidthResponse.status).toBe(400);
+
+            // Non-images ignore the parameter rather than failing.
+            const pdfKey = "uploads/2026/01/variant_test.pdf";
+            const pdfBytes = Buffer.from("%PDF-1.4 fake pdf body");
+            await bucket.upload(pdfKey, pdfBytes, {
+                originalFilename: "variant_test.pdf",
+                contentType: "application/pdf",
+                uploadedById: testUser.id,
+            });
+
+            const pdfResponse = await app.request(
+                `/api/assets/${pdfKey}?w=320`,
+            );
+            expect(pdfResponse.status).toBe(200);
+            expect(pdfResponse.headers.get("Content-Type")).toBe(
+                "application/pdf",
+            );
+            expect(Buffer.from(await pdfResponse.arrayBuffer())).toEqual(
+                pdfBytes,
+            );
+        },
+        600_000,
+    );
+
+    integrationTest(
         "Cleanup removes staged assets older than 2 days",
         async ({ ctx }) => {
             const { db, bucket } = ctx;

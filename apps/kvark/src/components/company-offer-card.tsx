@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 
+import { assetImageProps } from "#/lib/assets";
+
 export interface CompanyOfferCardProps {
     title: string;
     description: string;
@@ -27,9 +29,10 @@ export function CompanyOfferCard({
                 </div>
                 <div className="w-full md:w-1/2">
                     <img
-                        src={imageUrl}
+                        {...assetImageProps(imageUrl, "card")}
                         alt={title}
                         loading="lazy"
+                        decoding="async"
                         className="aspect-video h-auto w-full rounded-lg object-cover"
                     />
                 </div>

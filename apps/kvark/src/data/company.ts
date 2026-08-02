@@ -10,25 +10,25 @@ export const COMPANY_OFFERS = [
         title: "Bedriftspresentasjoner",
         description:
             "En bedriftspresentasjon lar dere introdusere organisasjonen for TIHLDE-studentene, vise hva dere tilbyr og hvordan dere jobber. Etter presentasjonen følger middag og mingling med bedriftsrepresentanter.",
-        imageUrl: "/bedrift/bedriftspresentasjon.jpeg",
+        imageUrl: "/bedrift/bedriftspresentasjon.webp",
     },
     {
         title: "Kurs og workshop",
         description:
             "Et kurs introduserer studentene for relevante faglige erfaringer til arbeidslivet. Det kan for eksempel være en spennende case, kodekurs, eller capture the flag. Dere kan tilpasse innholdet etter hvilke studenter som kommer. Vi legger til rette for matservering på skolen eller restaurantbesøk etter kurset.",
-        imageUrl: "/bedrift/kurs-workshop.jpeg",
+        imageUrl: "/bedrift/kurs-workshop.webp",
     },
     {
         title: "Bedriftsbesøk",
         description:
             "Under et bedriftsbesøk besøker studentene deres lokaler for et valgfritt arrangement. Dette gir dere en mulighet til å vise frem arbeidsplassen og bli bedre kjent med dem.",
-        imageUrl: "/bedrift/bedriftsbesok.jpeg",
+        imageUrl: "/bedrift/bedriftsbesok.webp",
     },
     {
         title: "Bedriftsekskursjon til Oslo",
         description:
             "Hver høst arrangerer TIHLDE en bedriftsekskursjon til Oslo med 30 studenter. Dette gir bedrifter en god mulighet å vise frem lokalene sine og vise hvordan en typisk arbeidsdag hos dem ser ut. Etter besøket legger vi til rette for bespisning og mingling.",
-        imageUrl: "/bedrift/bedriftsekskursjon.jpg",
+        imageUrl: "/bedrift/bedriftsekskursjon.webp",
     },
 ] as const;
 

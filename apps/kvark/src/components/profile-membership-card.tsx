@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 type ProfileMembershipCardProps = {
     slug: string;
     name: string;
@@ -33,7 +35,9 @@ export function ProfileMembershipCard({
             render={<Link to="/grupper/$slug" params={{ slug }} />}
         >
             <Avatar className="size-10 shrink-0">
-                {logoUrl ? <AvatarImage src={logoUrl} alt={name} /> : null}
+                {logoUrl ? (
+                    <AvatarImage src={avatarImageUrl(logoUrl)} alt={name} />
+                ) : null}
                 <AvatarFallback>
                     {name.slice(0, 2).toUpperCase()}
                 </AvatarFallback>

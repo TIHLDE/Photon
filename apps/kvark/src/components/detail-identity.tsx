@@ -1,3 +1,5 @@
+import { avatarImageUrl } from "#/lib/assets";
+
 type DetailIdentityProps = {
     name: string;
     logoUrl?: string;
@@ -9,7 +11,9 @@ export function DetailIdentity({ name, logoUrl }: DetailIdentityProps) {
             {logoUrl ? (
                 <img
                     alt={name}
-                    src={logoUrl}
+                    src={avatarImageUrl(logoUrl)}
+                    loading="lazy"
+                    decoding="async"
                     className="size-12 shrink-0 rounded-lg object-cover"
                 />
             ) : null}

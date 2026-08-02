@@ -1,5 +1,7 @@
 import { Mail, User } from "lucide-react";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export type GroupIdentityProps = {
     name: string;
     leader?: string;
@@ -19,7 +21,9 @@ export function GroupIdentity({
                 <img
                     alt={name}
                     className="size-16 shrink-0 rounded-lg object-cover"
-                    src={logoUrl}
+                    src={avatarImageUrl(logoUrl)}
+                    loading="lazy"
+                    decoding="async"
                 />
             ) : (
                 <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-medium">

@@ -20,7 +20,7 @@ function StudiesPage() {
                 </div>
                 <div className="md:w-1/2">
                     <img
-                        src="/bedrift/tihlde.jpg"
+                        src="/bedrift/tihlde.webp"
                         alt="TIHLDE"
                         className="h-auto w-full rounded-lg object-cover"
                     />

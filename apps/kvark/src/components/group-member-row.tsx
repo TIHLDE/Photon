@@ -32,6 +32,8 @@ import { useState } from "react";
 import { initials } from "#/lib/utils";
 import type { Member } from "#/lib/group";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 type GroupMemberRowProps = {
     member: Member;
     historic?: boolean;
@@ -61,7 +63,10 @@ export function GroupMemberRow({
             >
                 <Avatar className="size-10">
                     {member.image ? (
-                        <AvatarImage src={member.image} alt={member.name} />
+                        <AvatarImage
+                            src={avatarImageUrl(member.image)}
+                            alt={member.name}
+                        />
                     ) : null}
                     <AvatarFallback>{initials(member.name)}</AvatarFallback>
                 </Avatar>

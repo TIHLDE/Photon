@@ -23,6 +23,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Fine } from "#/lib/group";
 
+import { assetImageUrl } from "#/lib/assets";
+
 type GroupFineDialogProps = {
     fines: Fine[];
     openIndex: number | null;
@@ -125,8 +127,10 @@ export function GroupFineDialog({
                             </div>
                             {fine.image ? (
                                 <img
-                                    src={fine.image}
+                                    src={assetImageUrl(fine.image, 960)}
                                     alt="Bevis for boten"
+                                    loading="lazy"
+                                    decoding="async"
                                     className="max-h-80 w-full rounded-md object-contain"
                                 />
                             ) : null}
