@@ -137,6 +137,76 @@ export async function optimizeImage(
     }
 }
 
+/**
+ * Widths a caller may ask for through `GET /api/assets/:key?w=`.
+ *
+ * An allowlist rather than an arbitrary number: every distinct width is a
+ * separate re-encode and a separate stored object, so a free-form parameter
+ * would let anyone fill the bucket and pin the CPU with `?w=1`, `?w=2`, …
+ *
+ * The values cover the surfaces the site actually renders — avatars and group
+ * logos (160), card thumbnails (320/480), list rows and gallery columns
+ * (640/960), detail heroes (1280) and the gallery lightbox (1920) — each also
+ * serving as the 2x source for the width below it.
+ */
+export const IMAGE_VARIANT_WIDTHS = [
+    160, 320, 480, 640, 960, 1280, 1920,
+] as const;
+
+export type ImageVariantWidth = (typeof IMAGE_VARIANT_WIDTHS)[number];
+
+export function isImageVariantWidth(width: number): width is ImageVariantWidth {
+    return (IMAGE_VARIANT_WIDTHS as readonly number[]).includes(width);
+}
+
+/**
+ * Quality for generated variants. Lower than {@link IMAGE_WEBP_QUALITY}: a
+ * variant is always displayed smaller than the original, and downscaling hides
+ * compression artefacts that would be visible at full size.
+ */
+export const IMAGE_VARIANT_WEBP_QUALITY = 72;
+
+/**
+ * Storage key a generated variant is cached under.
+ *
+ * Kept under its own prefix so variants are never mistaken for uploads: they
+ * carry no `asset` row, which means the staged-asset cleanup job cannot see
+ * them and the open download route cannot address them directly.
+ */
+export function imageVariantKey(key: string, width: ImageVariantWidth): string {
+    return `derivatives/w${width}/${key}.webp`;
+}
+
+/**
+ * Re-encode an image to WebP at `width`, keeping its aspect ratio.
+ *
+ * Images narrower than `width` are returned at their own size rather than
+ * upscaled, so asking for a variant is never worse than serving the original.
+ * Returns `null` when sharp is unavailable or the input cannot be decoded —
+ * callers then fall back to the original bytes.
+ */
+export async function resizeImage(
+    buffer: Buffer,
+    width: ImageVariantWidth,
+    logger?: LoggerType,
+): Promise<Buffer | null> {
+    const sharp = await loadSharp(logger);
+    if (!sharp) {
+        return null;
+    }
+
+    try {
+        return await sharp(buffer, { failOn: "none" })
+            .rotate()
+            .resize({ width, withoutEnlargement: true })
+            .webp({ quality: IMAGE_VARIANT_WEBP_QUALITY })
+            .toBuffer();
+    } catch (error) {
+        logger?.warn({ err: error, width }, "Image resize failed");
+        return null;
+    }
+}
+
 /** Swap a filename's extension, appending one when it has none. */
 export function replaceExtension(filename: string, extension: string): string {
     const dot = filename.lastIndexOf(".");

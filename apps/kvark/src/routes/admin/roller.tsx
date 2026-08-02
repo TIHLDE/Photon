@@ -71,6 +71,8 @@ import {
 import { useDebounced } from "#/lib/use-debounced";
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export const Route = createFileRoute("/admin/roller")({
     component: RolesAdminPage,
     loader: async ({ context }) => {
@@ -198,7 +200,7 @@ function HolderChip({
     return (
         <Badge variant="secondary" className="gap-1.5 py-1 pl-1">
             <Avatar className="size-5">
-                <AvatarImage src={image ?? undefined} />
+                <AvatarImage src={avatarImageUrl(image ?? undefined)} />
                 <AvatarFallback>{initials(name ?? "?")}</AvatarFallback>
             </Avatar>
             {name}

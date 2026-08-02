@@ -30,6 +30,15 @@ export interface AssetStorageService {
     delete(key: string): Promise<void>;
     exists(key: string): Promise<boolean>;
     getAsset(key: string): Promise<schema.Asset | null>;
+    /**
+     * Read a cached image variant, or `null` when it has not been generated.
+     *
+     * Variants live in the object store only — no `asset` row — because they
+     * are a cache: derivable from the original at any time, and never anything
+     * a user uploaded or can address directly.
+     */
+    getObject(key: string): Promise<Buffer | null>;
+    putObject(key: string, body: Buffer, contentType: string): Promise<void>;
     listAssets(options?: {
         uploadedById?: string;
         limit?: number;
@@ -106,6 +115,24 @@ export class DatabaseAssetStorageService implements AssetStorageService {
         });
 
         return asset ?? null;
+    }
+
+    async getObject(key: string): Promise<Buffer | null> {
+        try {
+            return await this.objectStorage.get(key);
+        } catch {
+            // A missing variant is the normal path on first request, not an
+            // error worth propagating — the caller regenerates it.
+            return null;
+        }
+    }
+
+    async putObject(
+        key: string,
+        body: Buffer,
+        contentType: string,
+    ): Promise<void> {
+        await this.objectStorage.put(key, body, { contentType });
     }
 
     async listAssets(options?: {

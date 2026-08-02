@@ -3,6 +3,7 @@ import { MarkdownView } from "@tihlde/ui/complex/markdown";
 
 import { GroupPageHeader } from "#/components/group-page-header";
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { assetImageProps } from "#/lib/assets";
 import type { Group } from "#/lib/group";
 
 type GroupOmTabProps = {
@@ -16,8 +17,9 @@ export function GroupOmTab({ group }: GroupOmTabProps) {
             {group.imageUrl ? (
                 <Card className="max-w-2xl overflow-hidden p-0">
                     <img
-                        src={group.imageUrl}
+                        {...assetImageProps(group.imageUrl, "hero")}
                         alt={group.name}
+                        decoding="async"
                         className="aspect-video size-full object-cover"
                     />
                 </Card>

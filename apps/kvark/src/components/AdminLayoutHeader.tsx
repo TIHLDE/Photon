@@ -16,6 +16,8 @@ import React, { useMemo } from "react";
 import { authQueryOptions } from "#/api/auth";
 import { ThemeSwitcher } from "./theme-switcher";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export function AdminLayoutHeader() {
     const { data: session } = useQuery(authQueryOptions);
     const user = session?.user ?? null;
@@ -80,11 +82,11 @@ export function AdminLayoutHeader() {
                         <Avatar>
                             <AvatarImage
                                 alt={user?.name ?? ""}
-                                src={
+                                src={avatarImageUrl(
                                     user?.settings?.imageUrl ??
-                                    user?.image ??
-                                    ""
-                                }
+                                        user?.image ??
+                                        "",
+                                )}
                             />
                             <AvatarFallback>
                                 {user?.name

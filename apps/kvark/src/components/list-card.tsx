@@ -4,6 +4,7 @@ import { IMAGE_PRESETS } from "@tihlde/ui/ui/image-preset";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { assetImageProps } from "#/lib/assets";
 import { DEFAULT_COVER_IMAGE } from "#/lib/image";
 
 export type ListCardMetaRow = {
@@ -35,8 +36,11 @@ export function ListCard({
             // and is keyed off this slot, so it stays with the rest of the
             // motion system instead of as animation classes in this app.
             "data-slot": "list-card",
+            // Same card surface as `Card` from @tihlde/ui — filled, rounded and
+            // outlined with `ring-card-border` — so an event or job row reads as
+            // a card next to the news cards instead of a borderless list row.
             className:
-                "flex flex-col gap-3 overflow-hidden rounded-2xl bg-card sm:flex-row sm:gap-3 sm:overflow-visible sm:bg-transparent sm:p-2 sm:transition-colors sm:hover:bg-muted/50",
+                "flex flex-col gap-3 overflow-hidden rounded-2xl bg-card ring-1 ring-card-border sm:flex-row sm:gap-3 sm:p-2 sm:transition-colors sm:hover:bg-muted/50",
             children: (
                 <>
                     {/*
@@ -48,8 +52,13 @@ export function ListCard({
                         className={`relative ${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg`}
                     >
                         <img
-                            src={imageUrl || DEFAULT_COVER_IMAGE}
+                            {...assetImageProps(
+                                imageUrl || DEFAULT_COVER_IMAGE,
+                                "listRow",
+                            )}
                             alt={imageAlt ?? ""}
+                            loading="lazy"
+                            decoding="async"
                             className="size-full object-cover"
                         />
                         {imageBadge ? (

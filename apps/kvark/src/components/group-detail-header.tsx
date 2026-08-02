@@ -8,6 +8,8 @@ import { GroupEditDialog } from "#/components/group-edit-dialog";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 type GroupDetailHeaderProps = {
     group: Group;
     isAdmin: boolean;
@@ -24,7 +26,10 @@ export function GroupDetailHeader({
             avatar={
                 <Avatar className="size-16 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
                     {group.logoUrl ? (
-                        <AvatarImage src={group.logoUrl} alt={group.name} />
+                        <AvatarImage
+                            src={avatarImageUrl(group.logoUrl)}
+                            alt={group.name}
+                        />
                     ) : null}
                     <AvatarFallback className="text-2xl">
                         {initials(group.name)}

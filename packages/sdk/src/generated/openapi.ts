@@ -407,6 +407,13 @@ export interface paths {
          *
          *     Private assets (e.g. contract signatures) are never served here — they are only
          *     reachable through routes that perform their own authorization.
+         *
+         *     **Resized variants:**
+         *     Pass `?w=` with one of 160, 320, 480, 640, 960, 1280, 1920 to get the image
+         *     re-encoded as WebP at that width, keeping its aspect ratio and never upscaling.
+         *     Variants are generated on first request and cached, so a card never has to
+         *     download a full-resolution original. Any other width is rejected, and the
+         *     parameter is ignored for non-image assets (PDF, GIF).
          */
         get: operations["downloadAsset"];
         put?: never;
@@ -6225,6 +6232,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Bad Request - Unsupported width */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Asset not found */
             404: {
                 headers: {
@@ -6843,6 +6857,8 @@ export interface operations {
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;
+                /** @description How to order the result. 'upcoming' puts ongoing and future events first, soonest first, with past events after them most-recent-first. 'newest' and 'oldest' sort every event by start time, descending and ascending respectively. Omit to keep the legacy default: ascending when expired=false, descending otherwise. */
+                ordering?: "upcoming" | "newest" | "oldest";
             };
             header?: never;
             path?: never;

@@ -50,6 +50,8 @@ import {
 } from "#/components/user-search-combobox";
 import { initials } from "#/lib/utils";
 
+import { avatarImageUrl } from "#/lib/assets";
+
 export const Route = createFileRoute("/admin/prikker")({
     component: StrikesAdminPage,
     loader: () => ({ breadcrumbs: "Prikker" }),
@@ -154,10 +156,10 @@ function StrikesSection() {
                                         <div className="flex items-center gap-2">
                                             <Avatar className="size-7">
                                                 <AvatarImage
-                                                    src={
+                                                    src={avatarImageUrl(
                                                         strike.user.image ??
-                                                        undefined
-                                                    }
+                                                            undefined,
+                                                    )}
                                                 />
                                                 <AvatarFallback>
                                                     {initials(
