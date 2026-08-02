@@ -25,6 +25,9 @@ export const saveAvailabilityRoute = route().put(
             schema: saveAvailabilityResponseSchema,
             description: "Availability saved",
         })
+        .badRequest({
+            description: "A slot references a column not on the board",
+        })
         .notFound({ description: "Event not found" })
         .build(),
     requireAuth,
@@ -46,6 +49,16 @@ export const saveAvailabilityRoute = route().put(
         if (event.deadline && new Date() > event.deadline) {
             throw new HTTPException(403, {
                 message: "Arrangementet er skrivebeskyttet etter fristen",
+            });
+        }
+
+        // The slot `date` is a date string on a DATES board and a weekday key
+        // on a WEEKDAYS one — both live in the same column, so the board's own
+        // columns are the only thing that can tell a valid key from junk.
+        const boardColumns = new Set(event.dates);
+        if (slots.some((slot) => !boardColumns.has(slot.date))) {
+            throw new HTTPException(400, {
+                message: "Tilgjengelighet utenfor arrangementets kolonner",
             });
         }
 

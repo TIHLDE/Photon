@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
+import { normalizeDates } from "~/lib/motetid/time";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
@@ -56,7 +57,8 @@ export const getRoute = route().get(
                 id: event.id,
                 slug: event.slug,
                 title: event.title,
-                dates: [...event.dates].sort(),
+                dateMode: event.dateMode,
+                dates: normalizeDates(event.dates, event.dateMode),
                 startTime: event.startTime,
                 endTime: event.endTime,
                 slotDuration: event.slotDuration,

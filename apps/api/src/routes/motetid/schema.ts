@@ -16,27 +16,76 @@ const timeString = z
     .regex(/^\d{2}:\d{2}$/)
     .meta({ description: '"HH:mm" time string' });
 
-const dateString = z
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const WEEKDAY_KEY = /^(MON|TUE|WED|THU|FRI|SAT|SUN)$/;
+
+export const dateModeSchema = z.enum(["DATES", "WEEKDAYS"]).meta({
+    description:
+        'Whether the board\'s columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)',
+});
+
+/**
+ * A board column key: an ISO date, or a weekday key on a WEEKDAYS board.
+ * Which of the two is valid depends on the event's `dateMode`, so the union
+ * is narrowed per-request rather than in the shape itself.
+ */
+const dateKeyString = z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .meta({ description: 'ISO "YYYY-MM-DD" date string' });
+    .regex(/^(\d{4}-\d{2}-\d{2}|MON|TUE|WED|THU|FRI|SAT|SUN)$/)
+    .meta({
+        description:
+            'Board column key: ISO "YYYY-MM-DD" date, or "MON".."SUN" on a weekday board',
+    });
 
 export const createMotetidEventSchema = Schema(
     "CreateMotetidEvent",
-    z.object({
-        title: z.string().min(2).max(200).meta({ description: "Event title" }),
-        dates: z
-            .array(dateString)
-            .min(1)
-            .max(62)
-            .meta({ description: "Candidate dates" }),
-        startTime: timeString,
-        endTime: timeString,
-        deadline: z.iso.datetime().optional().meta({
-            description:
-                "Optional deadline; the board becomes read-only after this instant",
+    z
+        .object({
+            title: z
+                .string()
+                .min(2)
+                .max(200)
+                .meta({ description: "Event title" }),
+            // Optional rather than `.default()`: the emitted OpenAPI schema
+            // would otherwise mark it required and break existing clients.
+            dateMode: dateModeSchema.optional(),
+            dates: z.array(dateKeyString).min(1).max(62).meta({
+                description:
+                    "Candidate columns: ISO dates, or weekday keys when dateMode is WEEKDAYS",
+            }),
+            startTime: timeString,
+            endTime: timeString,
+            deadline: z.iso.datetime().optional().meta({
+                description:
+                    "Optional deadline; the board becomes read-only after this instant",
+            }),
+        })
+        .check((ctx) => {
+            const { dates } = ctx.value;
+            const isWeekdays = ctx.value.dateMode === "WEEKDAYS";
+            const matchesMode = (value: string) =>
+                isWeekdays ? WEEKDAY_KEY.test(value) : ISO_DATE.test(value);
+
+            if (!dates.every(matchesMode)) {
+                ctx.issues.push({
+                    code: "custom",
+                    input: dates,
+                    path: ["dates"],
+                    message: isWeekdays
+                        ? 'dates must be weekday keys ("MON".."SUN") when dateMode is WEEKDAYS'
+                        : 'dates must be ISO "YYYY-MM-DD" strings when dateMode is DATES',
+                });
+            }
+
+            if (new Set(dates).size !== dates.length) {
+                ctx.issues.push({
+                    code: "custom",
+                    input: dates,
+                    path: ["dates"],
+                    message: "dates must not contain duplicates",
+                });
+            }
         }),
-    }),
 );
 
 export const slotStatusSchema = z
@@ -54,7 +103,7 @@ export const saveAvailabilitySchema = Schema(
         slots: z
             .array(
                 z.object({
-                    date: dateString,
+                    date: dateKeyString,
                     time: timeString,
                     status: slotStatusSchema,
                 }),
@@ -74,7 +123,7 @@ export const googleConnectQuerySchema = z.object({
 // ===== RESPONSE SCHEMAS =====
 
 const participantSlotSchema = z.object({
-    date: dateString,
+    date: dateKeyString,
     time: timeString,
     status: slotStatusSchema,
 });
@@ -94,9 +143,11 @@ export const motetidEventSchema = Schema(
         id: z.uuidv4().meta({ description: "Event ID" }),
         slug: z.string().meta({ description: "Share-link slug" }),
         title: z.string(),
-        dates: z
-            .array(dateString)
-            .meta({ description: "Candidate dates, sorted" }),
+        dateMode: dateModeSchema,
+        dates: z.array(dateKeyString).meta({
+            description:
+                "Candidate columns, sorted chronologically (DATES) or Monday-first (WEEKDAYS)",
+        }),
         startTime: timeString,
         endTime: timeString,
         slotDuration: z
@@ -127,7 +178,8 @@ export const motetidEventListItemSchema = Schema(
         id: z.uuidv4(),
         slug: z.string(),
         title: z.string(),
-        dates: z.array(dateString),
+        dateMode: dateModeSchema,
+        dates: z.array(dateKeyString),
         startTime: timeString,
         endTime: timeString,
         deadline: z.iso.datetime().nullable(),

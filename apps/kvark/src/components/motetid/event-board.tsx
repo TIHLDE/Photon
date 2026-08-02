@@ -25,6 +25,7 @@ import { Switch } from "@tihlde/ui/ui/switch";
 import {
     areSelectionsEqual,
     buildTimeSlots,
+    type DateMode,
     type DragAction,
     type FillMode,
     getCellVisual,
@@ -32,6 +33,7 @@ import {
     resolveDragAction,
     type SlotStatus,
     slotIndicesOverlappingEventOnDate,
+    weekdayLabel,
 } from "#/lib/motetid-grid";
 
 const calendarBoardCacheKey = (eventSlug: string) =>
@@ -63,6 +65,8 @@ export type SyncCalendarResult =
 type EventBoardProps = {
     slug: string;
     shareUrl: string;
+    /** Whether `dates` holds calendar dates or weekday keys. */
+    dateMode: DateMode;
     dates: string[];
     startTime: string;
     endTime: string;
@@ -89,6 +93,7 @@ type CellVisualVariant = NonNullable<MotetidCellProps["visual"]>;
 export function MotetidEventBoard({
     slug,
     shareUrl,
+    dateMode,
     dates,
     startTime,
     endTime,
@@ -129,6 +134,7 @@ export function MotetidEventBoard({
     const [countIfNeeded, setCountIfNeeded] = useState(true);
 
     const displayName = viewer.name?.trim() ?? "";
+    const isWeekdayMode = dateMode === "WEEKDAYS";
 
     const isDraggingRef = useRef(false);
     const gridScrollRef = useRef<HTMLDivElement | null>(null);
@@ -781,7 +787,7 @@ export function MotetidEventBoard({
                     >
                         {copied ? "Kopiert!" : "Del lenke"}
                     </Button>
-                    {viewer.isAuthenticated ? (
+                    {viewer.isAuthenticated && !isWeekdayMode ? (
                         <div className="flex min-w-0 flex-col">
                             <Button
                                 type="button"
@@ -911,6 +917,23 @@ export function MotetidEventBoard({
                                 Tid
                             </MotetidGridHeadCell>
                             {visibleDates.map((date) => {
+                                if (isWeekdayMode) {
+                                    return (
+                                        <MotetidGridHeadCell
+                                            key={date}
+                                            className="flex flex-col items-center justify-center text-center"
+                                        >
+                                            <span className="text-xs font-medium">
+                                                {weekdayLabel(
+                                                    date,
+                                                    narrowGrid
+                                                        ? "short"
+                                                        : "long",
+                                                )}
+                                            </span>
+                                        </MotetidGridHeadCell>
+                                    );
+                                }
                                 const d = parseISO(date);
                                 return (
                                     <MotetidGridHeadCell
