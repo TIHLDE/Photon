@@ -1804,7 +1804,7 @@ export interface paths {
         put?: never;
         /**
          * Create a scheduling event
-         * @description Create a when2meet-style scheduling event with candidate dates and a daily time window. Returns the share-link slug.
+         * @description Create a when2meet-style scheduling event with a daily time window and either candidate dates (a one-off activity) or candidate weekdays (a recurring weekly slot). Returns the share-link slug.
          */
         post: operations["createMotetidEvent"];
         delete?: never;
@@ -1908,7 +1908,7 @@ export interface paths {
         put?: never;
         /**
          * Sync Google Calendar busy times
-         * @description Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired.
+         * @description Fetch the authenticated member's primary Google Calendar over the event's date range and return which grid slots overlap busy events. Refreshes the access token automatically when expired. Weekday-mode boards have no calendar dates, so they always return empty.
          */
         post: operations["motetidSyncCalendar"];
         delete?: never;
@@ -4657,6 +4657,11 @@ export interface components {
             id: string;
             slug: string;
             title: string;
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode: "DATES" | "WEEKDAYS";
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4680,7 +4685,12 @@ export interface components {
         CreateMotetidEvent: {
             /** @description Event title */
             title: string;
-            /** @description Candidate dates */
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode?: "DATES" | "WEEKDAYS";
+            /** @description Candidate columns: ISO dates, or weekday keys when dateMode is WEEKDAYS */
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4701,7 +4711,12 @@ export interface components {
             /** @description Share-link slug */
             slug: string;
             title: string;
-            /** @description Candidate dates, sorted */
+            /**
+             * @description Whether the board's columns are calendar dates ("DATES", a one-off activity) or recurring weekdays ("WEEKDAYS", a fixed weekly slot)
+             * @enum {string}
+             */
+            dateMode: "DATES" | "WEEKDAYS";
+            /** @description Candidate columns, sorted chronologically (DATES) or Monday-first (WEEKDAYS) */
             dates: string[];
             /** @description "HH:mm" time string */
             startTime: string;
@@ -4723,7 +4738,7 @@ export interface components {
                 /** @description Linked user id, null for anonymous participants */
                 userId: string | null;
                 slots: {
-                    /** @description ISO "YYYY-MM-DD" date string */
+                    /** @description Board column key: ISO "YYYY-MM-DD" date, or "MON".."SUN" on a weekday board */
                     date: string;
                     /** @description "HH:mm" time string */
                     time: string;
@@ -4752,7 +4767,7 @@ export interface components {
             name: string;
             /** @description The participant's full slot selection */
             slots: {
-                /** @description ISO "YYYY-MM-DD" date string */
+                /** @description Board column key: ISO "YYYY-MM-DD" date, or "MON".."SUN" on a weekday board */
                 date: string;
                 /** @description "HH:mm" time string */
                 time: string;
@@ -10325,6 +10340,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SaveMotetidAvailabilityResponse"];
                 };
+            };
+            /** @description Bad Request - A slot references a column not on the board */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {

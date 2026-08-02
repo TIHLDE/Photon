@@ -18,8 +18,39 @@ export function buildTimeSlots(
     return slots;
 }
 
-/** Sort ISO "YYYY-MM-DD" date strings chronologically. */
-export function normalizeDates(dates: string[]): string[] {
+/** Weekday column keys, Monday first. */
+export const MOTETID_WEEKDAYS = [
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+    "SAT",
+    "SUN",
+] as const;
+
+export type MotetidWeekday = (typeof MOTETID_WEEKDAYS)[number];
+
+export function isMotetidWeekday(value: string): value is MotetidWeekday {
+    return (MOTETID_WEEKDAYS as readonly string[]).includes(value);
+}
+
+/**
+ * Sort board columns: chronologically for dates, Monday-first for weekdays.
+ * Weekday keys must not be sorted lexicographically — that would put Friday
+ * before Monday.
+ */
+export function normalizeDates(
+    dates: string[],
+    dateMode: "DATES" | "WEEKDAYS" = "DATES",
+): string[] {
+    if (dateMode === "WEEKDAYS") {
+        return [...dates].sort(
+            (a, b) =>
+                MOTETID_WEEKDAYS.indexOf(a as MotetidWeekday) -
+                MOTETID_WEEKDAYS.indexOf(b as MotetidWeekday),
+        );
+    }
     return [...dates].sort(
         (a, b) => parseISO(a).getTime() - parseISO(b).getTime(),
     );

@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { desc, eq, inArray, or } from "drizzle-orm";
+import { normalizeDates } from "~/lib/motetid/time";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -50,7 +51,8 @@ export const listRoute = route().get(
                 id: event.id,
                 slug: event.slug,
                 title: event.title,
-                dates: [...event.dates].sort(),
+                dateMode: event.dateMode,
+                dates: normalizeDates(event.dates, event.dateMode),
                 startTime: event.startTime,
                 endTime: event.endTime,
                 deadline: event.deadline?.toISOString() ?? null,

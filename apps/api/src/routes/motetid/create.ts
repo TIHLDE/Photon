@@ -24,7 +24,7 @@ export const createRoute = route().post(
         summary: "Create a scheduling event",
         operationId: "createMotetidEvent",
         description:
-            "Create a when2meet-style scheduling event with candidate dates and a daily time window. Returns the share-link slug.",
+            "Create a when2meet-style scheduling event with a daily time window and either candidate dates (a one-off activity) or candidate weekdays (a recurring weekly slot). Returns the share-link slug.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -38,6 +38,7 @@ export const createRoute = route().post(
         const { db } = c.get("ctx");
         const userId = c.get("user").id;
         const body = c.req.valid("json");
+        const dateMode = body.dateMode ?? "DATES";
 
         // Retry on the (unlikely) slug collision instead of surfacing a 500.
         for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt++) {
@@ -49,7 +50,8 @@ export const createRoute = route().post(
                         slug,
                         title: body.title,
                         createdById: userId,
-                        dates: normalizeDates(body.dates),
+                        dateMode,
+                        dates: normalizeDates(body.dates, dateMode),
                         startTime: body.startTime,
                         endTime: body.endTime,
                         deadline: body.deadline
