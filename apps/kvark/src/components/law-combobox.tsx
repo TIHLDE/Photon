@@ -39,9 +39,14 @@ export function LawCombobox({ items, value, onValueChange }: LawComboboxProps) {
                                     <span className="min-w-0 flex-1 break-words">
                                         {item.paragraph} - {item.title}
                                     </span>
-                                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                                        {item.amount} bøter
-                                    </span>
+                                    {/* Se GroupLawItem: 0 bøter betyr
+                                        overskrift/forklaring, ikke «null
+                                        bøter». */}
+                                    {item.amount > 0 ? (
+                                        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                                            {item.amount} bøter
+                                        </span>
+                                    ) : null}
                                 </span>
                             </ComboboxItem>
                         )}
