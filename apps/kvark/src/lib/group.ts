@@ -143,6 +143,26 @@ export function mapMember(member: ApiGroupMember): Member {
 }
 
 /**
+ * Medlemsendepunktet har ingen `orderBy`, så radene kommer i den rekkefølgen
+ * Postgres finner dem — i praksis innsettingsrekkefølge. Det ser nesten
+ * alfabetisk ut fordi Lepton-importen la dem inn slik, mens alle som er meldt
+ * inn etterpå havner bakerst.
+ *
+ * Sorteringen gjøres her og ikke i SQL fordi Postgres' standardkollasjon
+ * sorterer Æ, Ø og Å før Z. `Intl.Collator("nb")` gir riktig norsk rekkefølge:
+ * Zara, Ærlend, Øystein, Åse.
+ */
+const memberNameCollator = new Intl.Collator("nb");
+
+export function sortMembersByName<T extends { name: string }>(
+    members: T[],
+): T[] {
+    return [...members].sort((a, b) =>
+        memberNameCollator.compare(a.name, b.name),
+    );
+}
+
+/**
  * Norske navn på rollene et avsluttet medlemskap kan ha hatt. Både Photon og
  * Lepton-historikken kjenner bare member/leader — kolonnen er fritekst, så en
  * ukjent verdi vises som den er i stedet for å bli borte.
