@@ -53,9 +53,9 @@ const eventMutationSchema = z.object({
         description:
             "Timestamp for when registrations open. If null, open immediately.",
     }),
-    registrationEnd: z.iso.datetime().meta({
+    registrationEnd: z.iso.datetime().nullable().meta({
         description:
-            "When the registration for the event ends. After this time, users cannot sign up.",
+            "When the registration for the event ends. After this time, users cannot sign up. Null for events without sign-up (requiresSigningUp false).",
     }),
     cancellationDeadline: z.iso.datetime().nullable().meta({
         description:
@@ -219,6 +219,16 @@ export const createEventSchema = Schema(
                     path: ["allowWaitlist"],
                 });
             }
+        } else if (!val.registrationEnd) {
+            // Motstykket til regelen over: `registrationEnd` er nullable for at
+            // arrangementer uten påmelding skal kunne opprettes, så et
+            // arrangement med påmelding må fortsatt oppgi en frist.
+            ctx.addIssue({
+                code: "custom",
+                message:
+                    "registrationEnd is required if requiresSigningUp is true",
+                path: ["registrationEnd"],
+            });
         }
 
         if (
@@ -232,7 +242,9 @@ export const createEventSchema = Schema(
             });
         }
 
-        if (!val.requiresSigningUp && val.capacity !== undefined) {
+        // `capacity` er et påkrevd felt, så et arrangement uten påmelding må
+        // kunne sende null. Det er bare et faktisk tak som ikke gir mening.
+        if (!val.requiresSigningUp && val.capacity != null) {
             ctx.addIssue({
                 code: "custom",
                 message: "capacity cannot be set if requiresSigningUp is false",
@@ -338,7 +350,8 @@ export const updateEventSchema = Schema(
                     path: ["allowWaitlist"],
                 });
             }
-            if (val.capacity !== undefined) {
+            // Se kommentaren i create-skjemaet: null betyr «ingen kapasitet».
+            if (val.capacity != null) {
                 ctx.addIssue({
                     code: "custom",
                     message:
@@ -511,6 +524,20 @@ export const eventDetailSchema = Schema(
             })
             .nullable()
             .meta({ description: "Event organizer (nullable)" }),
+        contactPerson: z
+            .object({
+                id: z.string().meta({ description: "Contact person user ID" }),
+                name: z.string().meta({ description: "Contact person name" }),
+                email: z.string().nullable().meta({
+                    description:
+                        "Contact person e-mail. Null for unauthenticated callers, so members' addresses are not exposed to the open internet.",
+                }),
+            })
+            .nullable()
+            .meta({
+                description:
+                    "Who to ask about the event (nullable). Set with contactPersonUserId.",
+            }),
         closed: z.boolean().meta({ description: "Is registration closed" }),
         requiresSigningUp: z.boolean().meta({
             description: "Do users need to sign up to attend the event?",

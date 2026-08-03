@@ -16,6 +16,10 @@ export type RichEditorProps = {
     placeholder?: string;
     autoFocus?: boolean;
     className?: string;
+    /** Ordboken nettleseren staveretter mot. Innholdet er norsk. */
+    lang?: string;
+    /** Rød strek under skrivefeil. På som standard. */
+    spellCheck?: boolean;
 };
 
 export function RichEditor({
@@ -25,6 +29,8 @@ export function RichEditor({
     placeholder,
     autoFocus,
     className,
+    lang = "nb",
+    spellCheck = true,
 }: RichEditorProps) {
     const lastEmitted = useRef(value);
 
@@ -45,6 +51,15 @@ export function RichEditor({
         content: initialContent,
         immediatelyRender: false,
         autofocus: autoFocus ? "end" : false,
+        editorProps: {
+            attributes: {
+                // Innholdet skrives på norsk, og stavekontrollen slås på
+                // eksplisitt: teksten her ender opp på arrangementer og
+                // nyheter, der skrivefeil blir stående lenge.
+                lang,
+                spellcheck: String(spellCheck),
+            },
+        },
         onUpdate: ({ editor: instance }) => {
             const json = instance.getJSON();
             const mdast = tiptapToMdast(json, registry);

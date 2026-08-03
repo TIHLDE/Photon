@@ -11,6 +11,7 @@ import {
     QrCode,
     Star,
     StarOff,
+    UserRound,
     UsersRound,
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ import {
     formatEventDate,
     formatEventPrice,
     formatEventTime,
+    registrationErrorMessage,
 } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/arrangementer/$slug")({
@@ -57,7 +59,18 @@ function EventDetailPage() {
     const { slug } = Route.useParams();
     const navigate = useNavigate();
 
-    const { data: event } = useSuspenseQuery(getEventByIdQuery(slug));
+    // En fersk påmelding ligger som «pending» til cron-en på serveren har
+    // avgjort plass eller venteliste. Vi poller til den er avklart, ellers
+    // ville brukeren blitt stående i behandling til de lastet siden på nytt.
+    const { data: event } = useSuspenseQuery({
+        ...getEventByIdQuery(slug),
+        refetchInterval: (query) =>
+            query.state.data?.registration?.status === "pending" ? 2000 : false,
+        // Pollingen står ellers stille når fanen ikke er i forgrunnen, og en
+        // bruker som bytter fane mens vi behandler ville kommet tilbake til
+        // «Behandler påmeldingen din …» som aldri gikk videre.
+        refetchIntervalInBackground: true,
+    });
     const { data: session } = useQuery(authQueryOptions);
     const { data: registrations } = useQuery(
         getEventRegistrationsQuery(event.id, 0),
@@ -89,10 +102,19 @@ function EventDetailPage() {
     const registrationState = deriveRegistrationState({
         registration: event.registration,
         closed: event.closed,
+        requiresSigningUp: event.requiresSigningUp,
+        isPaidEvent: event.isPaidEvent,
         registrationStart: event.registrationStart,
         registrationEnd: event.registrationEnd,
         endTime: event.endTime,
     });
+    // Feil fra på- eller avmelding. Uten dette så knappen ut til å ikke gjøre
+    // noe når API-et avviste forsøket.
+    const failedAction = registerMutation.error ?? unregisterMutation.error;
+    const registrationError = failedAction
+        ? registrationErrorMessage(failedAction)
+        : null;
+
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
     const registeredCount = registrations?.totalCount ?? 0;
     const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
@@ -258,6 +280,28 @@ function EventDetailPage() {
                                       />,
                                   ]
                                 : []),
+                            ...(event.contactPerson
+                                ? [
+                                      <DetailField
+                                          icon={UserRound}
+                                          label="Kontaktperson"
+                                          value={
+                                              // E-posten deles kun med innloggede
+                                              // medlemmer, så den mangler for
+                                              // utloggede besøkende.
+                                              event.contactPerson.email ? (
+                                                  <a
+                                                      href={`mailto:${event.contactPerson.email}`}
+                                                  >
+                                                      {event.contactPerson.name}
+                                                  </a>
+                                              ) : (
+                                                  event.contactPerson.name
+                                              )
+                                          }
+                                      />,
+                                  ]
+                                : []),
                         ]}
                     />
 
@@ -286,6 +330,11 @@ function EventDetailPage() {
                         price={price}
                         onRegister={handleRegister}
                         onUnregister={handleUnregister}
+                        isSubmitting={
+                            registerMutation.isPending ||
+                            unregisterMutation.isPending
+                        }
+                        actionError={registrationError}
                         waitlistPosition={
                             event.registration?.waitlistPosition ?? undefined
                         }

@@ -185,6 +185,98 @@ describe("create event", () => {
     );
 
     integrationTest(
+        "Test that creating an event without sign-up works",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            await ctx.utils.giveUserPermissions(user, ["events:create"]);
+
+            // Arrangementer man bare møter opp på. Både frist og kapasitet må
+            // kunne være null her — ellers er de umulige å opprette.
+            const response = await client.api.event.$post({
+                json: {
+                    title: "Facebook-vegg",
+                    description: "Ingen påmelding, bare møt opp",
+                    categorySlug: "bedpres",
+                    organizerGroupSlug: "index",
+                    location: "Oslo, Norway",
+                    imageUrl: null,
+                    start: "2025-12-01T18:00:00Z",
+                    end: "2025-12-01T20:00:00Z",
+                    registrationStart: null,
+                    registrationEnd: null,
+                    cancellationDeadline: null,
+                    capacity: null,
+                    isRegistrationClosed: false,
+                    requiresSigningUp: false,
+                    allowWaitlist: false,
+                    priorityPools: null,
+                    onlyAllowPrioritized: false,
+                    canCauseStrikes: false,
+                    enforcesPreviousStrikes: false,
+                    isPaidEvent: false,
+                    price: null,
+                    paymentGracePeriodMinutes: null,
+                    contactPersonUserId: null,
+                    reactionsAllowed: true,
+                },
+            });
+
+            expect(response.status).toBe(201);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "Test that an event with sign-up must have a registration deadline",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            await ctx.utils.giveUserPermissions(user, ["events:create"]);
+
+            const response = await client.api.event.$post({
+                json: {
+                    title: "Test Event",
+                    description: "A test event description",
+                    categorySlug: "bedpres",
+                    organizerGroupSlug: "index",
+                    location: "Oslo, Norway",
+                    imageUrl: null,
+                    start: "2025-12-01T18:00:00Z",
+                    end: "2025-12-01T20:00:00Z",
+                    registrationStart: null,
+                    registrationEnd: null,
+                    cancellationDeadline: null,
+                    capacity: 50,
+                    isRegistrationClosed: false,
+                    requiresSigningUp: true,
+                    allowWaitlist: true,
+                    priorityPools: null,
+                    onlyAllowPrioritized: false,
+                    canCauseStrikes: false,
+                    enforcesPreviousStrikes: false,
+                    isPaidEvent: false,
+                    price: null,
+                    paymentGracePeriodMinutes: null,
+                    contactPersonUserId: null,
+                    reactionsAllowed: true,
+                },
+            });
+
+            expect(response.status).toBe(400);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "Test that creating an event without events:create permission returns forbidden",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();

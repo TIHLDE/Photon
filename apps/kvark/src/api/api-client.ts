@@ -240,11 +240,35 @@ class Client<Paths extends object> {
 
             return response.text();
         } catch (error) {
+            useApiErrorMessage(error);
+
             for (const hook of this.beforeAnyErrorHooks) {
                 hook(error);
             }
             throw error;
         }
+    }
+}
+
+/**
+ * Løft API-ets egen feilmelding opp i `error.message`.
+ *
+ * Uten dette blir forklaringen liggende igjen i responskroppen, og alt kallere
+ * har å vise brukeren er ky sin generiske «Request failed with status code
+ * 403». API-et svarer alltid `{ status, message }` (se `globalErrorHandler`).
+ */
+function useApiErrorMessage(error: unknown): void {
+    if (!(error instanceof Error)) return;
+
+    // ky leser kroppen selv og legger den ferdig parset på `data` — etter det
+    // er `response.json()` tom. Duck-typet i stedet for `instanceof HTTPError`,
+    // siden SSR og klienten kan ende opp med hver sin kopi av ky.
+    const data = (error as { data?: unknown }).data;
+    if (!data || typeof data !== "object") return;
+
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === "string" && message) {
+        error.message = message;
     }
 }
 

@@ -86,9 +86,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     shellComponent: RootDocument,
 });
 
+/**
+ * Språket er norsk. Med `lang="en"` slo nettleseren opp all tekst i den
+ * engelske ordboka, og da fikk ingen skrivefeil rød strek i skjemaene våre.
+ */
 function RootDocument({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="nb" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
                 <HeadContent />

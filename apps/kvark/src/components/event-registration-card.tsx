@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { VippsButton } from "@tihlde/ui/ui/vipps-button";
@@ -8,6 +9,7 @@ import { Progress } from "@tihlde/ui/ui/progress";
 import {
     AlertCircle,
     Ban,
+    CalendarCheck,
     CalendarClock,
     CheckCircle2,
     CreditCard,
@@ -47,12 +49,21 @@ type EventRegistrationCardProps = {
     headerSlot?: ReactNode;
     notEligibleReason?: string;
     waitlistPosition?: number;
+    /** Satt mens en på-/avmelding er underveis, så knappen ikke kan dobbeltklikkes. */
+    isSubmitting?: boolean;
+    /**
+     * Feilmeldingen fra siste forsøk på å melde seg på eller av. Uten denne
+     * så knappen ut til å ikke gjøre noe når API-et avviste påmeldingen.
+     */
+    actionError?: string | null;
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
     const [allowPhoto, setAllowPhoto] = useState(true);
     const timeline = buildTimeline(props);
     const state = getStateRendering(props, { allowPhoto, setAllowPhoto });
+    // Uten påmelding er både tidslinjen og «0/∞ påmeldte» bare støy.
+    const showRegistrationDetails = props.registrationState !== "no-signup";
 
     return (
         <Card>
@@ -69,10 +80,12 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-                {timeline.length >= 2 ? (
+                {showRegistrationDetails && timeline.length >= 2 ? (
                     <RegistrationTimeline points={timeline} />
                 ) : null}
-                <RegistrationStats {...props} />
+                {showRegistrationDetails ? (
+                    <RegistrationStats {...props} />
+                ) : null}
                 {state.message ? (
                     <InfoRow icon={state.icon}>
                         <span>{state.message}</span>
@@ -84,6 +97,13 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                     </InfoRow>
                 ) : null}
                 {state.actions}
+                {props.actionError ? (
+                    <Alert variant="destructive">
+                        <AlertCircle className="size-4" />
+                        <AlertTitle>Påmeldingen gikk ikke gjennom</AlertTitle>
+                        <AlertDescription>{props.actionError}</AlertDescription>
+                    </Alert>
+                ) : null}
             </CardContent>
         </Card>
     );
@@ -108,6 +128,20 @@ function getStateRendering(
     const state = props.registrationState;
 
     switch (state) {
+        case "no-signup":
+            return {
+                icon: CalendarCheck,
+                message: "Dette arrangementet har ikke påmelding",
+                secondary: "Bare møt opp.",
+            };
+
+        case "processing":
+            return {
+                icon: Hourglass,
+                message: "Behandler påmeldingen din …",
+                secondary: "Vi gir deg beskjed så snart plassen er klar.",
+            };
+
         case "not-open":
             return {
                 icon: AlertCircle,
@@ -237,13 +271,16 @@ function getStateRendering(
                         </Label>
                         <Button
                             className="w-full"
+                            disabled={props.isSubmitting}
                             onClick={() =>
                                 props.onRegister?.({
                                     allowPhoto: photoConsent.allowPhoto,
                                 })
                             }
                         >
-                            Meld deg på
+                            {props.isSubmitting
+                                ? "Melder deg på …"
+                                : "Meld deg på"}
                         </Button>
                     </>
                 ),

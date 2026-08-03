@@ -36,6 +36,9 @@ export const getRoute = route().get(
             with: {
                 category: true,
                 organizer: true,
+                contactPerson: {
+                    columns: { id: true, name: true, email: true },
+                },
                 reactions: {
                     columns: { userId: true, emoji: true },
                     with: { user: { columns: { name: true } } },
@@ -110,6 +113,16 @@ export const getRoute = route().get(
               }
             : null;
 
+        // Navnet er offentlig, e-posten er det ikke: adressen deles bare med
+        // innloggede medlemmer, så den ikke kan høstes fra de åpne sidene.
+        const contactPerson = event.contactPerson
+            ? {
+                  id: event.contactPerson.id,
+                  name: event.contactPerson.name,
+                  email: user ? event.contactPerson.email : null,
+              }
+            : null;
+
         const category = {
             slug: event.category.slug,
             label: event.category.label,
@@ -154,6 +167,7 @@ export const getRoute = route().get(
             cancellationDeadline:
                 event.cancellationDeadline?.toISOString() ?? null,
             organizer,
+            contactPerson,
             category,
             closed: event.isRegistrationClosed,
             requiresSigningUp: event.requiresSigningUp,

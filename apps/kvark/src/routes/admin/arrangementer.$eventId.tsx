@@ -44,7 +44,7 @@ import {
     setAttendanceMutation,
     updateEventMutation,
 } from "#/api/queries/events";
-import { getGroupsQuery } from "#/api/queries/groups";
+import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -166,6 +166,7 @@ function valuesFromEvent(event: Event): EventFormValues {
         description: event.description,
         categorySlug: event.category.slug,
         organizerGroupSlug: event.organizer?.slug ?? "",
+        contactPersonUserId: event.contactPerson?.id ?? "",
         location,
         locationCoords:
             hasCoords && location
@@ -177,6 +178,7 @@ function valuesFromEvent(event: Event): EventFormValues {
                 : null,
         start: toDate(event.startTime),
         end: toDate(event.endTime),
+        requiresSigningUp: event.requiresSigningUp,
         registrationEnd: toDate(event.registrationEnd),
         capacity: event.capacity === null ? "" : String(event.capacity),
         visibility: event.visibility === "members" ? "members" : "public",
@@ -216,6 +218,16 @@ function DetailsTab({ eventId }: { eventId: string }) {
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
         useQuery(searchAddressQuery(debouncedLocation));
 
+    // Kontaktpersonen velges blant medlemmene i arrangørgruppen.
+    const { data: organizerMembers } = useQuery({
+        ...getGroupMembersQuery(values.organizerGroupSlug, 0),
+        enabled: Boolean(values.organizerGroupSlug),
+    });
+    const contactPersonCandidates = (organizerMembers ?? []).map((member) => ({
+        id: member.user.id,
+        name: member.user.name,
+    }));
+
     const updateEvent = useMutation(updateEventMutation);
     const removeEvent = useMutation(deleteEventMutation);
     const { uploadImage, isUploading } = useImageUploader();
@@ -228,7 +240,8 @@ function DetailsTab({ eventId }: { eventId: string }) {
         formEvent.preventDefault();
         setUploadError(null);
 
-        if (!values.start || !values.end || !values.registrationEnd) return;
+        if (!values.start || !values.end) return;
+        if (values.requiresSigningUp && !values.registrationEnd) return;
 
         // Lastes opp først: en feilet opplasting skal ikke lagre resten av
         // endringene med et bilde som mangler.
@@ -259,17 +272,23 @@ function DetailsTab({ eventId }: { eventId: string }) {
             start: values.start.toISOString(),
             end: values.end.toISOString(),
             registrationStart: null,
-            registrationEnd: values.registrationEnd.toISOString(),
+            // Uten påmelding avviser API-et både frist og kapasitet.
+            registrationEnd: values.requiresSigningUp
+                ? (values.registrationEnd?.toISOString() ?? null)
+                : null,
             cancellationDeadline: null,
-            capacity: values.capacity ? Number(values.capacity) : null,
+            capacity:
+                values.requiresSigningUp && values.capacity
+                    ? Number(values.capacity)
+                    : null,
             visibility: values.visibility,
             restrictedToInstituteSlug:
                 values.instituteSlug === ALL_INSTITUTES
                     ? null
                     : values.instituteSlug,
             isRegistrationClosed: event.closed,
-            requiresSigningUp: true,
-            allowWaitlist: true,
+            requiresSigningUp: values.requiresSigningUp,
+            allowWaitlist: values.requiresSigningUp,
             priorityPools: null,
             onlyAllowPrioritized: event.onlyAllowPrioritized,
             canCauseStrikes: values.canCauseStrikes,
@@ -281,7 +300,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     : null,
             paymentGracePeriodMinutes:
                 event.payInfo?.paymentGracePeriodMinutes ?? null,
-            contactPersonUserId: null,
+            contactPersonUserId: values.contactPersonUserId || null,
             reactionsAllowed: false,
         };
 
@@ -323,6 +342,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 onChange={handleChange}
                 groups={groups}
                 institutes={institutes}
+                contactPersonCandidates={contactPersonCandidates}
                 existingImageUrl={event.image}
                 addressSuggestions={addressSuggestions ?? []}
                 isSearchingAddress={isSearchingAddress}
