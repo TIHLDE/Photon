@@ -165,6 +165,10 @@ export const eventRelations = relations(event, ({ one, many }) => ({
         fields: [event.restrictedToInstituteId],
         references: [institute.id],
     }),
+    contactPerson: one(user, {
+        fields: [event.contactPersonId],
+        references: [user.id],
+    }),
     reactions: many(eventReaction),
     pools: many(eventPriorityPool),
     favorites: many(eventFavorite),

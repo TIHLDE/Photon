@@ -28,6 +28,9 @@ import { richRegistry } from "#/components/markdown/directives/presets";
 /** Sentinel for "no institute restriction" — Select has no empty value. */
 export const ALL_INSTITUTES = "all";
 
+/** Samme grunn: Select trenger en verdi for «ingen kontaktperson». */
+const NO_CONTACT = "none";
+
 export type EventFormValues = {
     title: string;
     description: string;
@@ -39,8 +42,12 @@ export type EventFormValues = {
      * ("Digitalt", "R1") gir null, og da vises stedet uten kartlenke.
      */
     locationCoords: { label: string; lat: number; lng: number } | null;
+    /** Bruker-ID til den som skal svare på spørsmål. Tom streng = ingen valgt. */
+    contactPersonUserId: string;
     start: Date | null;
     end: Date | null;
+    /** Om arrangementet har påmelding i det hele tatt. */
+    requiresSigningUp: boolean;
     registrationEnd: Date | null;
     capacity: string;
     visibility: "public" | "members";
@@ -57,6 +64,8 @@ type EventFormProps = {
     onChange: (patch: Partial<EventFormValues>) => void;
     groups: Array<{ slug: string; name: string }>;
     institutes: Array<{ slug: string; shortName: string; name: string }>;
+    /** Medlemmene i den valgte arrangørgruppen — kandidatene til kontaktperson. */
+    contactPersonCandidates: Array<{ id: string; name: string }>;
     addressSuggestions: AddressSuggestion[];
     isSearchingAddress: boolean;
     /** Bilde som allerede ligger på arrangementet, vist til et nytt velges. */
@@ -78,6 +87,7 @@ export function EventForm({
     onChange,
     groups,
     institutes,
+    contactPersonCandidates,
     addressSuggestions,
     isSearchingAddress,
     existingImageUrl,
@@ -99,6 +109,31 @@ export function EventForm({
                     : null,
         });
     }
+
+    /**
+     * Kandidatene er medlemmene i arrangørgruppen. En kontaktperson som er
+     * lagret fra før, men ikke lenger står i lista — f.eks. etter et
+     * lederskifte — legges til, slik at redigering ikke stille nullstiller
+     * feltet.
+     */
+    const contactPersonOptions = [
+        { value: NO_CONTACT, label: "Ingen kontaktperson" },
+        ...contactPersonCandidates.map((member) => ({
+            value: member.id,
+            label: member.name,
+        })),
+        ...(values.contactPersonUserId &&
+        !contactPersonCandidates.some(
+            (member) => member.id === values.contactPersonUserId,
+        )
+            ? [
+                  {
+                      value: values.contactPersonUserId,
+                      label: "Nåværende kontaktperson",
+                  },
+              ]
+            : []),
+    ];
 
     function handleSelectAddress(suggestion: AddressSuggestion) {
         onChange({
@@ -182,6 +217,42 @@ export function EventForm({
                             </Select>
                         </Field>
                         <Field>
+                            <FieldLabel htmlFor="event-contact">
+                                Kontaktperson (valgfritt)
+                            </FieldLabel>
+                            <Select
+                                items={contactPersonOptions}
+                                value={values.contactPersonUserId || NO_CONTACT}
+                                onValueChange={(value) =>
+                                    onChange({
+                                        contactPersonUserId:
+                                            !value || value === NO_CONTACT
+                                                ? ""
+                                                : value,
+                                    })
+                                }
+                            >
+                                <SelectTrigger id="event-contact">
+                                    <SelectValue placeholder="Ingen kontaktperson" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {contactPersonOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldDescription>
+                                Vises på arrangementssiden, med e-post for
+                                innloggede medlemmer. Velg blant medlemmene i
+                                arrangørgruppen.
+                            </FieldDescription>
+                        </Field>
+                        <Field>
                             <FieldLabel htmlFor="event-location">
                                 Sted
                             </FieldLabel>
@@ -225,35 +296,55 @@ export function EventForm({
                                 onValueChange={(end) => onChange({ end })}
                             />
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-reg-end">
-                                Påmeldingsfrist
-                            </FieldLabel>
-                            <DateTimePicker
-                                id="event-reg-end"
-                                locale={nb}
-                                placeholder="Velg påmeldingsfrist"
-                                maxDate={values.start ?? undefined}
-                                value={values.registrationEnd}
-                                onValueChange={(registrationEnd) =>
-                                    onChange({ registrationEnd })
+                        <Field orientation="horizontal" className="gap-3">
+                            <Checkbox
+                                id="event-requires-signup"
+                                checked={values.requiresSigningUp}
+                                onCheckedChange={(checked) =>
+                                    onChange({
+                                        requiresSigningUp: Boolean(checked),
+                                    })
                                 }
                             />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-capacity">
-                                Kapasitet (valgfritt)
+                            <FieldLabel htmlFor="event-requires-signup">
+                                Arrangementet har påmelding
                             </FieldLabel>
-                            <Input
-                                id="event-capacity"
-                                type="number"
-                                min={1}
-                                value={values.capacity}
-                                onChange={(event) =>
-                                    onChange({ capacity: event.target.value })
-                                }
-                            />
                         </Field>
+                        {values.requiresSigningUp ? (
+                            <>
+                                <Field>
+                                    <FieldLabel htmlFor="event-reg-end">
+                                        Påmeldingsfrist
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="event-reg-end"
+                                        locale={nb}
+                                        placeholder="Velg påmeldingsfrist"
+                                        maxDate={values.start ?? undefined}
+                                        value={values.registrationEnd}
+                                        onValueChange={(registrationEnd) =>
+                                            onChange({ registrationEnd })
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="event-capacity">
+                                        Kapasitet (valgfritt)
+                                    </FieldLabel>
+                                    <Input
+                                        id="event-capacity"
+                                        type="number"
+                                        min={1}
+                                        value={values.capacity}
+                                        onChange={(event) =>
+                                            onChange({
+                                                capacity: event.target.value,
+                                            })
+                                        }
+                                    />
+                                </Field>
+                            </>
+                        ) : null}
                         <Field>
                             <FieldLabel htmlFor="event-visibility">
                                 Synlighet

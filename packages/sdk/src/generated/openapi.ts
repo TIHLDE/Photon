@@ -3075,11 +3075,8 @@ export interface components {
             end: string;
             /** @description Timestamp for when registrations open. If null, open immediately. */
             registrationStart: string | null;
-            /**
-             * Format: date-time
-             * @description When the registration for the event ends. After this time, users cannot sign up.
-             */
-            registrationEnd: string;
+            /** @description When the registration for the event ends. After this time, users cannot sign up. Null for events without sign-up (requiresSigningUp false). */
+            registrationEnd: string | null;
             /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
             cancellationDeadline: string | null;
             /** @description Maximum number of participants allowed. If null, no capacity limit. */
@@ -3227,11 +3224,8 @@ export interface components {
             end?: string;
             /** @description Timestamp for when registrations open. If null, open immediately. */
             registrationStart?: string | null;
-            /**
-             * Format: date-time
-             * @description When the registration for the event ends. After this time, users cannot sign up.
-             */
-            registrationEnd?: string;
+            /** @description When the registration for the event ends. After this time, users cannot sign up. Null for events without sign-up (requiresSigningUp false). */
+            registrationEnd?: string | null;
             /** @description Deadline timestamp for when users cannot cancel anymore. After this, no-shows may receive strikes. */
             cancellationDeadline?: string | null;
             /** @description Maximum number of participants allowed. If null, no capacity limit. */
@@ -3319,6 +3313,15 @@ export interface components {
                 type: string;
                 /** @description Organizer logo URL */
                 image: string | null;
+            } | null;
+            /** @description Who to ask about the event (nullable). Set with contactPersonUserId. */
+            contactPerson: {
+                /** @description Contact person user ID */
+                id: string;
+                /** @description Contact person name */
+                name: string;
+                /** @description Contact person e-mail. Null for unauthenticated callers, so members' addresses are not exposed to the open internet. */
+                email: string | null;
             } | null;
             /** @description Is registration closed */
             closed: boolean;
