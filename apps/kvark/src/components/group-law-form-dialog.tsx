@@ -142,7 +142,7 @@ export function GroupLawFormDialog({
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="law-amount">
-                                Veiledende antall bøter *
+                                Veiledende antall bøter
                             </FieldLabel>
                             <Input
                                 id="law-amount"
@@ -152,7 +152,8 @@ export function GroupLawFormDialog({
                             />
                             <p className="text-xs text-muted-foreground">
                                 Brukes for å forhåndsutfylle antall bøter når
-                                det lages en ny
+                                det lages en ny. Sett 0 for overskrifter og
+                                forklaringer — da vises ingen bøteteller.
                             </p>
                         </Field>
                     </FieldGroup>

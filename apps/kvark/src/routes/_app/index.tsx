@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, type LinkProps, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
@@ -70,6 +70,7 @@ function Home() {
                     actionLabel={
                         canCreateEvent ? "Nytt arrangement" : undefined
                     }
+                    actionTo="/admin/arrangementer/ny"
                 />
                 <Suspense fallback={<EventsSkeleton />}>
                     <EventsSection />
@@ -80,6 +81,7 @@ function Home() {
                 <SectionHeader
                     title="Nyheter"
                     actionLabel={canCreateNews ? "Ny nyhet" : undefined}
+                    actionTo="/admin/nyheter"
                 />
                 <Suspense fallback={<NewsSkeleton />}>
                     <NewsSection />
@@ -274,17 +276,24 @@ function HeroActions() {
 function SectionHeader({
     title,
     actionLabel,
+    actionTo,
 }: {
     title: string;
     actionLabel?: string;
+    /** Målruta for handlingsknappen. Uten den rendres ingen knapp. */
+    actionTo?: LinkProps["to"];
 }) {
     return (
         <Reveal
             render={<div className="flex items-center justify-between gap-4" />}
         >
             <h2 className="text-2xl">{title}</h2>
-            {actionLabel ? (
-                <Button variant="ghost" size="sm">
+            {actionLabel && actionTo ? (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    render={<Link to={actionTo} />}
+                >
                     <Plus />
                     {actionLabel}
                 </Button>

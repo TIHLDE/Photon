@@ -18,9 +18,14 @@ export function GroupLawItem({ law, onEdit }: GroupLawItemProps) {
                 <h3 className="font-medium">
                     {law.paragraph} - {law.title}
                 </h3>
-                <span className="text-sm text-muted-foreground">
-                    Bøter: {law.amount}
-                </span>
+                {/* 0 bøter brukes for overskrifter og forklarende paragrafer.
+                    «Bøter: 0» leser da som en paragraf man kan bøtelegges
+                    etter — skjul tellingen helt i stedet. */}
+                {law.amount > 0 ? (
+                    <span className="text-sm text-muted-foreground">
+                        Bøter: {law.amount}
+                    </span>
+                ) : null}
             </div>
             <p className="pl-6 text-sm text-muted-foreground">
                 {law.description}
