@@ -73,7 +73,10 @@ export function DetailLayoutNav<K extends string>({
     const flatItems = sections.flat();
 
     return (
-        <nav className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        // overflow-y-hidden er ikke overflødig: per CSS-spec beregnes den andre
+        // aksen til `auto` når én akse settes, så `overflow-x-auto` alene gjør
+        // fanene til en vertikal scrollcontainer og lar dem rubberband-e på iOS.
+        <nav className="-mx-4 min-w-0 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Tabs
                 value={active}
                 onValueChange={(value) => onSelect(value as K)}
