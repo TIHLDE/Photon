@@ -131,7 +131,7 @@ export function useSiteNavItems(isAuthenticated: boolean): NavItem[] {
                                   {
                                       kind: "external",
                                       label: "Kontres",
-                                      href: "https://new-kontres.tihlde.org",
+                                      href: "https://kontres.tihlde.org",
                                       description:
                                           "Reserver kontor og utstyr fra TIHLDE",
                                   },

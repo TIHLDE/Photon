@@ -1,10 +1,11 @@
-import { authQueryOptions } from "#/api/auth";
+import { authQueryOptions, sessionHasScopedPermission } from "#/api/auth";
 import { getUnreadNotificationCountQuery } from "#/api/queries/notifications";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
+import { ProfileMembershipChips } from "#/components/profile-membership-chips";
 import { ProfileOverviewHeader } from "#/components/profile-overview-header";
-import { ProfileStatCard } from "#/components/profile-stat-card";
 import type { ProfileLink } from "#/components/profile-header";
+import { isPrivateGroupType } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import type { SignatureStatus } from "@tihlde/sdk";
@@ -52,8 +53,22 @@ function RouteComponent() {
     const memberships = profile.groups.filter(
         (g) => !DERIVED_GROUP_TYPES.includes(g.type.toLowerCase()),
     );
-    const membershipTitle =
-        memberships.length > 0 ? "Aktiv" : "Ingen medlemskap";
+
+    /**
+     * Om den som ser på kan åpne gruppesiden. Speiler `assertGroupVisible` i
+     * API-et — samme regel som medlemskapsfanen bruker. Uten dette ville
+     * chipsene lenket private grupper rett i en 403.
+     */
+    const canOpenGroup = (group: { slug: string; type: string }): boolean => {
+        if (!isPrivateGroupType(group.type)) return true;
+        if (session?.groups?.some((g) => g.slug === group.slug)) return true;
+        return sessionHasScopedPermission(
+            session?.permissions,
+            "groups:manage",
+            `group:${group.slug}`,
+        );
+    };
+
     const membershipDescription =
         memberships.length > 0
             ? `${memberships.length} ${memberships.length === 1 ? "gruppe" : "grupper"}`
@@ -77,12 +92,24 @@ function RouteComponent() {
             <ProfileLinksSection links={links} />
             {isOwnProfile ? <ContractBanner signature={null} /> : null}
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <ProfileStatCard
-                    label="MEDLEMSKAP"
-                    title={membershipTitle}
-                    description={membershipDescription}
-                />
+            {/* Gruppene vises direkte i stedet for et telle-kort. Kortet så
+                klikkbart ut uten å være det, og på andres profil var det alt
+                sidens innhold besto av. */}
+            <div className="flex flex-col gap-3">
+                <h3>MEDLEMSKAP</h3>
+                {memberships.length > 0 ? (
+                    <ProfileMembershipChips
+                        groups={memberships.map((group) => ({
+                            slug: group.slug,
+                            name: group.name,
+                            canOpen: canOpenGroup(group),
+                        }))}
+                    />
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        {membershipDescription}
+                    </p>
+                )}
             </div>
 
             {/* Kommende arrangementer og oppgaver er personlige og vises kun på

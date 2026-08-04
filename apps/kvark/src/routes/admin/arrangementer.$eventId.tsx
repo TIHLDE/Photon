@@ -10,6 +10,7 @@ import { nb } from "date-fns/locale";
 import {
     CheckCircle2,
     CircleCheckBigIcon,
+    ExternalLink,
     PlusIcon,
     UsersIcon,
     WalletIcon,
@@ -142,6 +143,21 @@ function EventAdminDetailPage() {
             <AdminPageHeader
                 title={event.title}
                 description={`${formatDateTime(event.startTime)} · ${event.organizer?.name ?? "Ingen arrangør"}`}
+                action={
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                            <Link
+                                to="/arrangementer/$slug"
+                                params={{ slug: event.slug }}
+                            />
+                        }
+                    >
+                        <ExternalLink />
+                        Se arrangementet
+                    </Button>
+                }
             />
 
             <Tabs
