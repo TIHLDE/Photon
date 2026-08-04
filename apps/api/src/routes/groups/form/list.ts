@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { userHasSubmitted } from "~/lib/form/service";
+import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -21,10 +22,14 @@ export const listGroupFormsRoute = route().get(
             description: "Success",
         })
         .notFound({ description: "Group not found" })
+        .forbidden({
+            description: "The group is private and you are not a member",
+        })
         .build(),
     requireAuth,
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const user = c.get("user");
         const groupSlug = c.req.param("slug");
 
@@ -44,6 +49,8 @@ export const listGroupFormsRoute = route().get(
                 message: "Group not found",
             });
         }
+
+        await assertGroupVisible(ctx, group, user.id);
 
         // Check if user is group leader or member
         const membership = await db.query.groupMembership.findFirst({

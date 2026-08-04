@@ -1,3 +1,4 @@
+import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -280,6 +281,131 @@ describe("groups", () => {
                 const response = await client(`/api/groups/${group.slug}`);
 
                 expect(response.status).toBe(200);
+            },
+            500_000,
+        );
+    });
+
+    /**
+     * A `private` group is the members' own — the digital
+     * transformasjon-faddergruppa is the standing example. Its name still
+     * appears wherever memberships are listed, so the page and the roster are
+     * what actually have to be closed.
+     */
+    describe("private groups", () => {
+        integrationTest(
+            "a member may open a private group and see its roster",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "private-member-group",
+                    type: "PRIVATE",
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+
+                const detail = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+                expect(detail.status).toBe(200);
+
+                const members = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({ param: { groupSlug: group.slug } });
+                expect(members.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a signed-in non-member is refused the group and its roster",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "private-outsider-group",
+                    type: "PRIVATE",
+                });
+
+                const detail = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+                expect(detail.status).toBe(403);
+
+                const members = await client.api.groups[
+                    ":groupSlug"
+                ].members.$get({ param: { groupSlug: group.slug } });
+                expect(members.status).toBe(403);
+
+                const former = await client.api.groups[
+                    ":groupSlug"
+                ].members.history.$get({ param: { groupSlug: group.slug } });
+                expect(former.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a signed-out visitor is refused a private group",
+            async ({ ctx }) => {
+                const group = await ctx.utils.createTestGroup({
+                    slug: "private-anonymous-group",
+                    type: "PRIVATE",
+                });
+
+                const response = await ctx.app.request(
+                    `/api/groups/${group.slug}`,
+                );
+
+                expect(response.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "groups:manage still opens a private group, so the admin panel works",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "private-admin-group",
+                    type: "PRIVATE",
+                });
+
+                const response = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "groups:view — which every member holds — does not open one",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["groups:view"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "private-viewer-group",
+                    type: "PRIVATE",
+                });
+
+                const response = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+
+                expect(response.status).toBe(403);
             },
             500_000,
         );

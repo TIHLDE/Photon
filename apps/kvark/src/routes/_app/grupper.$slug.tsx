@@ -1,5 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Button } from "@tihlde/ui/ui/button";
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@tihlde/ui/ui/empty";
+import { LockIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -71,11 +80,54 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
     validateSearch: searchSchema,
-    loader: ({ context, params }) =>
-        context.queryClient.ensureQueryData(getGroupBySlugQuery(params.slug)),
+    loader: async ({ context, params }) => {
+        try {
+            await context.queryClient.ensureQueryData(
+                getGroupBySlugQuery(params.slug),
+            );
+            return { restricted: false };
+        } catch (error) {
+            // Private grupper svarer 403 for alle andre enn medlemmene. Det
+            // avgjøres her og ikke i en errorComponent fordi statuskoden ikke
+            // overlever hydreringen — bare selve feilmeldingen gjør det.
+            if (errorStatus(error) === 403) return { restricted: true };
+            throw error;
+        }
+    },
 });
 
+/** HTTP-statusen bak en feil fra API-klienten, om den finnes. */
+function errorStatus(error: unknown): number | undefined {
+    const response = (error as { response?: { status?: number } })?.response;
+    return typeof response?.status === "number" ? response.status : undefined;
+}
+
+/** Vist i stedet for gruppesiden når gruppa er privat og du står utenfor. */
+function GroupRestricted() {
+    return (
+        <Empty>
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <LockIcon />
+                </EmptyMedia>
+                <EmptyTitle>Privat gruppe</EmptyTitle>
+                <EmptyDescription>
+                    Denne gruppen er bare for medlemmene sine.
+                </EmptyDescription>
+            </EmptyHeader>
+            <Button render={<Link to="/grupper" />}>Se alle grupper</Button>
+        </Empty>
+    );
+}
+
 function GroupDetailPage() {
+    const { restricted } = Route.useLoaderData();
+    // Egen komponent: den henter gruppa med useSuspenseQuery, som ville kastet
+    // den samme 403-en på nytt hvis den ble montert her.
+    return restricted ? <GroupRestricted /> : <GroupDetail />;
+}
+
+function GroupDetail() {
     const { slug } = Route.useParams();
     const { tab: active } = Route.useSearch();
     const navigate = Route.useNavigate();
