@@ -35,8 +35,12 @@ export function RichEditor({
     const lastEmitted = useRef(value);
 
     const extensions = useMemo(
-        () => buildTiptapExtensions(registry, { placeholder }),
-        [registry, placeholder],
+        () =>
+            buildTiptapExtensions(registry, {
+                placeholder,
+                spellcheck: spellCheck,
+            }),
+        [registry, placeholder, spellCheck],
     );
 
     const initialContent = useMemo(
@@ -58,6 +62,14 @@ export function RichEditor({
                 // nyheter, der skrivefeil blir stående lenge.
                 lang,
                 spellcheck: String(spellCheck),
+                // Be Grammarly holde seg unna. Utvidelsen overtar felt den
+                // kobler seg på og slår av nettleserens egen stavekontroll,
+                // men retter bare engelsk — resultatet på et norsk felt er
+                // ingen rød strek i det hele tatt. Uten Grammarly installert
+                // gjør attributtene ingenting.
+                "data-gramm": "false",
+                "data-gramm_editor": "false",
+                "data-enable-grammarly": "false",
             },
         },
         onUpdate: ({ editor: instance }) => {

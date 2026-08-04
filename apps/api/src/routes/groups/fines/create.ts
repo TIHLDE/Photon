@@ -5,6 +5,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isGroupMember } from "~/lib/group";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { promoteAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -45,7 +46,7 @@ export const createFineRoute = route().post(
     async (c) => {
         const body = c.req.valid("json");
         const ctx = c.get("ctx");
-        const { db } = ctx;
+        const { db, bucket } = ctx;
         const user = c.get("user");
         const groupSlug = c.req.param("groupSlug");
 
@@ -143,6 +144,10 @@ export const createFineRoute = route().post(
                 });
             }
         }
+
+        // Uploaded pictures are staged until a row claims them; without
+        // this the cleanup cron deletes the file after two days.
+        await promoteAssetUrls(bucket, [body.image]);
 
         // Create the fine
         const [created] = await db

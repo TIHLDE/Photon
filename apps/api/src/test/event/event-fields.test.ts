@@ -136,7 +136,7 @@ describe("event imageAlt and onlyAllowPrioritized", () => {
 
 describe("registration allowPhoto", () => {
     integrationTest(
-        "allowPhoto is stored on sign-up and defaults to true",
+        "allowPhoto is stored on sign-up and defaults to true without settings",
         async ({ ctx }) => {
             await ctx.utils.setupGroups();
             await ctx.utils.setupEventCategories();
@@ -147,6 +147,7 @@ describe("registration allowPhoto", () => {
             await ctx.utils.giveUserPermissions(decliningUser, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(decliningUser.id);
             const decliningClient =
                 await ctx.utils.clientForUser(decliningUser);
 
@@ -164,6 +165,7 @@ describe("registration allowPhoto", () => {
             await ctx.utils.giveUserPermissions(defaultUser, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(defaultUser.id);
             const defaultClient = await ctx.utils.clientForUser(defaultUser);
 
             const defaultResponse = await defaultClient.api.event[
@@ -183,6 +185,48 @@ describe("registration allowPhoto", () => {
             const defaulted = rows.find((r) => r.userId === defaultUser.id);
             expect(declined?.allowPhoto).toBe(false);
             expect(defaulted?.allowPhoto).toBe(true);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "allowPhoto falls back to the account-level allowsPhotosByDefault",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const event = await ctx.utils.createTestEvent();
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:registrations:create",
+            ]);
+            // Samtykket styres fra profilinnstillingene, ikke per arrangement.
+            await ctx.db.insert(schema.userSettings).values({
+                userId: user.id,
+                gender: "other",
+                allowsPhotosByDefault: false,
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+                isOnboarded: true,
+            });
+            const client = await ctx.utils.clientForUser(user);
+
+            const response = await client.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: event.id },
+                json: {},
+            });
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            expect(json.allowPhoto).toBe(false);
+
+            const row = await ctx.db.query.eventRegistration.findFirst({
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, event.id), eq(reg.userId, user.id)),
+            });
+            expect(row?.allowPhoto).toBe(false);
         },
         500_000,
     );
@@ -269,6 +313,8 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             await ctx.utils.giveUserPermissions(outsider, [
                 "events:registrations:create",
             ]);
+            // Accepted, so the 403 below can only come from the priority pool.
+            await ctx.utils.acceptEventRules(outsider.id);
             const outsiderClient = await ctx.utils.clientForUser(outsider);
 
             const outsiderResponse = await outsiderClient.api.event[
@@ -283,6 +329,7 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             await ctx.utils.giveUserPermissions(member, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(member.id);
             await ctx.db.insert(schema.groupMembership).values({
                 userId: member.id,
                 groupSlug: "index",

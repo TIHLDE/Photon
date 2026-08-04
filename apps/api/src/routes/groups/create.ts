@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -28,7 +29,7 @@ export const createRoute = route().post(
     validator("json", createGroupSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
 
         // Check if slug already exists
         const existingGroup = await db
@@ -57,6 +58,9 @@ export const createRoute = route().post(
                 });
             }
         }
+
+        // Both pictures are staged uploads until something claims them.
+        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
 
         const [newGroup] = await db
             .insert(schema.group)
