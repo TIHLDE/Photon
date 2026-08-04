@@ -57,6 +57,7 @@ describe("event institute restriction", () => {
             await ctx.utils.giveUserPermissions(user, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(user.id);
             await ctx.db.insert(schema.groupMembership).values({
                 userId: user.id,
                 groupSlug: digsec.slug,
@@ -101,6 +102,7 @@ describe("event institute restriction", () => {
             await ctx.utils.giveUserPermissions(user, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(user.id);
             await ctx.db.insert(schema.groupMembership).values({
                 userId: user.id,
                 groupSlug: dataing.slug,
@@ -140,6 +142,7 @@ describe("event institute restriction", () => {
             await ctx.utils.giveUserPermissions(user, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(user.id);
 
             const client = await ctx.utils.clientForUser(user);
             const response = await client.api.event[
@@ -169,6 +172,7 @@ describe("event institute restriction", () => {
             await ctx.utils.giveUserPermissions(user, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(user.id);
 
             const client = await ctx.utils.clientForUser(user);
             const response = await client.api.event[

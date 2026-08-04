@@ -47,6 +47,13 @@ type EventRegistrationCardProps = {
     onPay?: () => void;
     qrSlot?: ReactNode;
     headerSlot?: ReactNode;
+    /**
+     * Satt når medlemmet ikke har godkjent arrangementsreglene. Da vises
+     * `eventRulesSlot` i stedet for påmeldingsknappen — også før påmeldingen
+     * åpner, som er hele poenget: de skal oppdage det i god tid.
+     */
+    requiresEventRulesConsent?: boolean;
+    eventRulesSlot?: ReactNode;
     notEligibleReason?: string;
     waitlistPosition?: number;
     /** Satt mens en på-/avmelding er underveis, så knappen ikke kan dobbeltklikkes. */
@@ -61,7 +68,18 @@ type EventRegistrationCardProps = {
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
     const [allowPhoto, setAllowPhoto] = useState(true);
     const timeline = buildTimeline(props);
-    const state = getStateRendering(props, { allowPhoto, setAllowPhoto });
+    // Bare tilstandene der medlemmet ellers kunne ha meldt seg på — å be noen
+    // godkjenne reglene på et arrangement som er stengt hjelper ingen.
+    const blockedByEventRules =
+        props.requiresEventRulesConsent === true &&
+        (props.registrationState === "open" ||
+            props.registrationState === "not-open" ||
+            props.registrationState === "full");
+    const state = getStateRendering(
+        props,
+        { allowPhoto, setAllowPhoto },
+        blockedByEventRules,
+    );
     // Uten påmelding er både tidslinjen og «0/∞ påmeldte» bare støy.
     const showRegistrationDetails = props.registrationState !== "no-signup";
 
@@ -96,6 +114,7 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                         ) : null}
                     </InfoRow>
                 ) : null}
+                {blockedByEventRules ? props.eventRulesSlot : null}
                 {state.actions}
                 {props.actionError ? (
                     <Alert variant="destructive">
@@ -124,6 +143,7 @@ type PhotoConsentState = {
 function getStateRendering(
     props: EventRegistrationCardProps,
     photoConsent: PhotoConsentState,
+    blockedByEventRules: boolean,
 ): StateRendering {
     const state = props.registrationState;
 
@@ -232,7 +252,9 @@ function getStateRendering(
             return {
                 icon: AlertCircle,
                 message: "Arrangementet er fullt",
-                actions: (
+                // Ventelista går gjennom samme påmelding, så den er stengt av
+                // samme grunn — knappen ville bare gitt en avvisning.
+                actions: blockedByEventRules ? null : (
                     <Button
                         variant="outline"
                         className="w-full"
@@ -253,6 +275,10 @@ function getStateRendering(
             };
 
         case "open":
+            // Varselet forklarer hvorfor, og har handlingen som låser opp
+            // påmeldingen. En knapp ved siden av ville bare blitt avvist.
+            if (blockedByEventRules) return {};
+
             return {
                 actions: (
                     <>

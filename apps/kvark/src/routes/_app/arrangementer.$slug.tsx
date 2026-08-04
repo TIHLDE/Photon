@@ -33,9 +33,11 @@ import { DetailsCard } from "#/components/details-card";
 import { EventQrDialog } from "#/components/event-qr-dialog";
 import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { EventRegistrationCard } from "#/components/event-registration-card";
+import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
 import { MapLink } from "#/components/map-link";
 import { ShareButton } from "#/components/share-button";
+import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useCanActOnResource } from "#/hooks/use-permission";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
@@ -76,6 +78,7 @@ function EventDetailPage() {
         getEventRegistrationsQuery(event.id, 0),
     );
 
+    const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
     const favoriteMutation = useMutation(updateFavoriteEventMutation);
@@ -335,6 +338,20 @@ function EventDetailPage() {
                             unregisterMutation.isPending
                         }
                         actionError={registrationError}
+                        requiresEventRulesConsent={eventRules.mustAccept}
+                        eventRulesSlot={
+                            <EventRulesConsent
+                                variant="inline"
+                                message={
+                                    registrationState === "not-open"
+                                        ? "Gjør det nå, så er du klar når påmeldingen åpner."
+                                        : "Huk av, så kan du melde deg på med én gang."
+                                }
+                                onAccept={eventRules.acceptEventRules}
+                                isSubmitting={eventRules.isSubmitting}
+                                error={eventRules.error}
+                            />
+                        }
                         waitlistPosition={
                             event.registration?.waitlistPosition ?? undefined
                         }
