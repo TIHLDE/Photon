@@ -2,6 +2,7 @@ import { genderVariants, userAllergy, userSettings } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { promoteAssetUrls } from "../asset";
 import type { AppContext } from "../ctx";
 
 export const UserAllergySchema = z.object({
@@ -89,6 +90,10 @@ export async function createUserSettings(
 ): Promise<UserSettings> {
     const { db } = ctx;
 
+    // The profile picture is staged until a row claims it; without this the
+    // cleanup cron deletes the file after two days.
+    await promoteAssetUrls(ctx.bucket, [settings.imageUrl]);
+
     // Use transaction for atomicity
     return await db.transaction(async (tx) => {
         // Create settings
@@ -128,6 +133,8 @@ export async function updateUserSettings(
     ctx: AppContext,
 ): Promise<UserSettings> {
     const { db } = ctx;
+
+    await promoteAssetUrls(ctx.bucket, [updates.imageUrl]);
 
     return await db.transaction(async (tx) => {
         // Separate allergies from other updates

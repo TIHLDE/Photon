@@ -1,3 +1,5 @@
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -364,6 +366,56 @@ describe("groups", () => {
 
                 const json = await response.json();
                 expect(json.message).toBe("Group updated successfully");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "promotes gruppebilde and logo so the staging cleanup spares them",
+            async ({ ctx }) => {
+                const { db, bucket } = ctx;
+
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["groups:update"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "picture-test",
+                });
+
+                const imageKey = await bucket.upload(
+                    "uploads/2026/08/gruppebilde.png",
+                    Buffer.from("wide photo"),
+                    {
+                        originalFilename: "gruppebilde.png",
+                        contentType: "image/png",
+                    },
+                );
+                const logoKey = await bucket.upload(
+                    "uploads/2026/08/logo.png",
+                    Buffer.from("square mark"),
+                    {
+                        originalFilename: "logo.png",
+                        contentType: "image/png",
+                    },
+                );
+
+                const response = await client.api.groups[":slug"].$patch({
+                    param: { slug: group.slug },
+                    json: {
+                        imageUrl: `http://localhost/api/assets/${imageKey}`,
+                        logoUrl: `http://localhost/api/assets/${logoKey}`,
+                    },
+                });
+
+                expect(response.status).toBe(200);
+
+                const promoted = await db.query.asset.findMany({
+                    where: eq(schema.asset.status, "ready"),
+                });
+                expect(promoted.map((a) => a.key)).toEqual(
+                    expect.arrayContaining([imageKey, logoKey]),
+                );
             },
             500_000,
         );

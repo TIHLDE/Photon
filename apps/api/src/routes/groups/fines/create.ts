@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isGroupLeader } from "~/lib/group/middleware";
+import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -41,7 +42,7 @@ export const createFineRoute = route().post(
     validator("json", createFineSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
         const user = c.get("user");
 
         // Validate group exists and has fines activated
@@ -96,6 +97,10 @@ export const createFineRoute = route().post(
                 });
             }
         }
+
+        // Uploaded pictures are staged until a row claims them; without
+        // this the cleanup cron deletes the file after two days.
+        await promoteAssetUrls(bucket, [body.image]);
 
         // Create the fine
         const [created] = await db
