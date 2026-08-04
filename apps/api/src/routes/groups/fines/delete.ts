@@ -7,6 +7,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
+import { requireFinesGroup } from "./permissions";
 
 export const deleteFineRoute = route().delete(
     "/:groupSlug/fines/:fineId",
@@ -56,14 +57,9 @@ export const deleteFineRoute = route().delete(
         }
 
         // Check authorization: must be fines admin OR have fines:delete permission
-        const group = await db
-            .select()
-            .from(schema.group)
-            .where(eq(schema.group.slug, groupSlug))
-            .limit(1)
-            .then((res) => res[0]);
+        const group = await requireFinesGroup(ctx, groupSlug);
 
-        const isFinesAdmin = group?.finesAdminId === user.id;
+        const isFinesAdmin = group.finesAdminId === user.id;
 
         // Check for global or scoped fines:delete permission
         const hasGlobalPerm = await hasPermission(ctx, user.id, "fines:delete");

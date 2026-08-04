@@ -1,5 +1,6 @@
 import type { TestAppContext } from "..";
 import type { createApp } from "../../../..";
+import { createAcceptEventRules } from "./accept-event-rules";
 import { createCreatePendingRegistration } from "./create-pending-registration";
 import { createSetupEventCategories } from "./create-setup-event-categories";
 import { createCreateTestEvent } from "./create-test-event";
@@ -25,5 +26,6 @@ export const createTestUtils = (ctx: TestUtilContext) => {
         createTestGroup: createCreateTestGroup(ctx),
         createPendingRegistration: createCreatePendingRegistration(ctx),
         giveUserPermissions: createGiveUserPermissions(ctx),
+        acceptEventRules: createAcceptEventRules(ctx),
     };
 };

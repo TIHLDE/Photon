@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -21,14 +22,18 @@ export const listPositionsRoute = route().get(
             description: "List of positions",
         })
         .notFound({ description: "Group not found" })
+        .forbidden({
+            description: "The group is private and you are not a member",
+        })
         .build(),
     requireAuth,
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const groupSlug = c.req.param("groupSlug");
 
         const [group] = await db
-            .select({ slug: schema.group.slug })
+            .select({ slug: schema.group.slug, type: schema.group.type })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);
@@ -38,6 +43,8 @@ export const listPositionsRoute = route().get(
                 message: `Group with slug "${groupSlug}" not found`,
             });
         }
+
+        await assertGroupVisible(ctx, group, c.get("user").id);
 
         const positions = await db.query.groupPosition.findMany({
             where: eq(schema.groupPosition.groupSlug, groupSlug),

@@ -1,12 +1,11 @@
-import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { isGroupMember } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
+import { canViewFines, requireFinesGroup } from "./permissions";
 import { fineSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
 
@@ -40,6 +39,8 @@ export const getFineRoute = route().get(
                 message: `Fine with ID "${fineId}" not found`,
             });
         }
+
+        const group = await requireFinesGroup(ctx, groupSlug);
 
         // Include public user info (name/image) so the UI can display names
         // instead of user IDs
@@ -86,34 +87,10 @@ export const getFineRoute = route().get(
         // parity), fines admin, or fines:view (globally or scoped).
         const isOwner = fine.userId === user.id;
 
-        if (!isOwner) {
-            const isMember = await isGroupMember(ctx, user.id, groupSlug);
-
-            let allowed = isMember;
-            if (!allowed) {
-                const group = await db
-                    .select()
-                    .from(schema.group)
-                    .where(eq(schema.group.slug, groupSlug))
-                    .limit(1)
-                    .then((res) => res[0]);
-
-                const isFinesAdmin = group?.finesAdminId === user.id;
-                allowed =
-                    isFinesAdmin ||
-                    (await hasScopedPermission(
-                        ctx,
-                        user.id,
-                        "fines:view",
-                        `group:${groupSlug}`,
-                    ));
-            }
-
-            if (!allowed) {
-                throw new HTTPException(403, {
-                    message: "Not authorized to view this fine",
-                });
-            }
+        if (!isOwner && !(await canViewFines(ctx, user.id, group))) {
+            throw new HTTPException(403, {
+                message: "Not authorized to view this fine",
+            });
         }
 
         return c.json(serializeFineLaw(fine));

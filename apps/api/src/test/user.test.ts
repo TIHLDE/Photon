@@ -469,25 +469,57 @@ describe("user endpoints", () => {
     );
 
     integrationTest(
-        "returns 404 when user hasn't onboarded",
+        "creates settings when user hasn't onboarded",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();
             const client = await ctx.utils.clientForUser(user);
 
+            // A member who never onboarded must still be able to accept the
+            // event rules — otherwise they cannot register for anything.
             const response = await client.api.user.me.settings.$patch({
                 json: {
-                    gender: "female",
+                    acceptsEventRules: true,
                 },
             });
 
-            expect(response.status).toBe(404);
+            expect(response.status).toBe(200);
 
-            const json = (await response.json()) as unknown as {
-                message: string;
-            };
-            expect(json.message).toBe(
-                "User settings not found. Please complete onboarding first.",
-            );
+            const json = await response.json();
+            expect(json.acceptsEventRules).toBe(true);
+
+            const settings = await ctx.db.query.userSettings.findFirst({
+                where: (s, { eq }) => eq(s.userId, user.id),
+            });
+            // The placeholder row is not a completed onboarding.
+            expect(settings?.isOnboarded).toBe(false);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "lets a user onboard after accepting the event rules",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await client.api.user.me.settings.$patch({
+                json: { acceptsEventRules: true },
+            });
+
+            const response = await client.api.user.me.settings.$post({
+                json: {
+                    gender: "female",
+                    allowsPhotosByDefault: true,
+                    acceptsEventRules: true,
+                    receiveMailCommunication: true,
+                    allergies: [],
+                },
+            });
+
+            expect(response.status).toBe(201);
+
+            const json = await response.json();
+            expect(json.gender).toBe("female");
         },
         500_000,
     );

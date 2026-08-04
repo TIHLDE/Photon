@@ -12,6 +12,7 @@ import {
 } from "../../../lib/event/priority";
 import { getUserStrikeCount } from "../../../lib/event/strikes";
 import { route } from "../../../lib/route";
+import { hasAcceptedEventRules } from "../../../lib/user/settings";
 import { requireAccess } from "../../../middleware/access";
 import { requireAuth } from "../../../middleware/auth";
 import {
@@ -36,7 +37,7 @@ export const registerToEventRoute = route().post(
         .notFound({ description: "Event not found" })
         .forbidden({
             description:
-                "Event only allows members covered by a priority pool, or members of a specific institute, to register",
+                "User has not accepted the event rules, or the event only allows members covered by a priority pool or members of a specific institute to register",
         })
         .response({
             statusCode: 409,
@@ -52,7 +53,7 @@ export const registerToEventRoute = route().post(
         const eventId = c.req.param("eventId");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
-        const { allowPhoto } = c.req.valid("json");
+        const body = c.req.valid("json");
 
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
@@ -73,6 +74,16 @@ export const registerToEventRoute = route().post(
         if (event.isRegistrationClosed || !event.requiresSigningUp) {
             throw new HTTPException(409, {
                 message: "Event is not open for registration",
+            });
+        }
+
+        // Checked before every event-specific rule so the message a member
+        // gets is the one thing they can act on. The frontend shows the same
+        // block ahead of time — hitting it here means they went around it.
+        if (!(await hasAcceptedEventRules(userId, c.get("ctx")))) {
+            throw new HTTPException(403, {
+                message:
+                    "You must accept the event rules before registering for events",
             });
         }
 
@@ -130,6 +141,19 @@ export const registerToEventRoute = route().post(
                 message: "User is already registered for this event",
             });
         }
+
+        // Bildesamtykket bor på profilen, ikke på arrangementet. Uten et
+        // eksplisitt felt i kallet er kontoinnstillingen fasit; brukere uten
+        // innstillinger (ikke onboardet) faller tilbake på kolonnedefaulten.
+        const allowPhoto =
+            body.allowPhoto ??
+            (
+                await db.query.userSettings.findFirst({
+                    where: (settings, { eq }) => eq(settings.userId, userId),
+                    columns: { allowsPhotosByDefault: true },
+                })
+            )?.allowsPhotosByDefault ??
+            true;
 
         // Create pending registration in database
         await db.insert(schema.eventRegistration).values({

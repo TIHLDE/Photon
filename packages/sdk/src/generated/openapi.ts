@@ -1313,7 +1313,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a list of fines for a group. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Supports filtering by status and user.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Filter with 'status' and 'userId'.
          */
         get: operations["listFines"];
         put?: never;
@@ -1326,6 +1326,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fine totals for a group
+         * @description Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. Same audience as the fine list.
+         */
+        get: operations["getFineStatistics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a group's members with their fine totals
+         * @description Paginated list of the group's members with the sum of their fine amounts, highest first. Members without fines are included with a total of 0. Filter the totals with 'status'.
+         */
+        get: operations["listFineUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update several fines at once
+         * @description Set the same status on a list of fines. Every fine must belong to the group in the path. Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.
+         */
+        patch: operations["batchUpdateFines"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/users/{userId}/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update all of one member's fines
+         * @description Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.
+         */
+        patch: operations["batchUpdateUserFines"];
         trace?: never;
     };
     "/api/groups/{groupSlug}/fines/{fineId}": {
@@ -2255,7 +2335,7 @@ export interface paths {
         head?: never;
         /**
          * Update user settings
-         * @description Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.
+         * @description Partially update the authenticated user's settings. Only provided fields will be updated. Settings are created on first update for users who have not onboarded, so a member can accept the event rules without filling in a full profile.
          */
         patch: operations["updateUserSettings"];
         trace?: never;
@@ -3435,11 +3515,8 @@ export interface components {
             allowPhoto: boolean;
         };
         CreateEventRegistrationBody: {
-            /**
-             * @description Photo consent for this event, overriding the account-level allowsPhotosByDefault
-             * @default true
-             */
-            allowPhoto: boolean;
+            /** @description Photo consent for this event. Omit it to use the account-level allowsPhotosByDefault, which is where members manage their consent. */
+            allowPhoto?: boolean;
         };
         EventRegistrationPayment: {
             /** Format: uuid */
@@ -4281,7 +4358,15 @@ export interface components {
                 title: string;
             } | null;
         };
-        FineList: components["schemas"]["Fine"][];
+        FineList: {
+            /** @description Total number of fines */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            fines: components["schemas"]["Fine"][];
+        };
         CreateFine: {
             /** @description User ID who receives the fine */
             userId: string;
@@ -4304,6 +4389,55 @@ export interface components {
              */
             lawId?: string;
         };
+        FineStatistics: {
+            /** @description Sum of amounts for fines awaiting approval */
+            notApproved: number;
+            /** @description Sum of amounts for approved, unpaid fines */
+            approvedNotPaid: number;
+            /** @description Sum of amounts for paid fines */
+            paid: number;
+        };
+        FineUserList: {
+            /** @description Total number of members */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            users: {
+                /** @description User ID */
+                id: string;
+                /** @description User display name */
+                name: string;
+                /** @description User profile image URL */
+                image: string | null;
+                /** @description Sum of the member's fine amounts in this group, 0 when they have none */
+                finesAmount: number;
+                /** @description Number of fines the member has */
+                finesCount: number;
+            }[];
+        };
+        BatchUpdateFinesResponse: {
+            message: string;
+            /** @description Number of fines that were updated */
+            updated: number;
+        };
+        BatchUpdateFines: {
+            /** @description The fines to update */
+            fineIds: string[];
+            /**
+             * @description Fine status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "paid" | "rejected";
+        };
+        BatchUpdateUserFines: {
+            /**
+             * @description Fine status
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "paid" | "rejected";
+        };
         UpdateFineResponse: {
             message: string;
         };
@@ -4315,8 +4449,6 @@ export interface components {
              * @enum {string}
              */
             status?: "pending" | "approved" | "paid" | "rejected";
-            /** @description User who approved the fine */
-            approvedByUserId?: string;
         };
         Law: {
             /** @description Law ID */
@@ -5326,8 +5458,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
-            /** @default [] */
-            allergies: string[];
+            allergies?: string[];
         };
         UpdateUserSettingsInput: {
             /** @enum {string} */
@@ -5340,8 +5471,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
-            /** @default [] */
-            allergies: string[];
+            allergies?: string[];
         };
         Allergy: {
             /** @description Unique identifier for the allergy */
@@ -7112,7 +7242,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Event only allows members covered by a priority pool, or members of a specific institute, to register */
+            /** @description Forbidden - User has not accepted the event rules, or the event only allows members covered by a priority pool or members of a specific institute to register */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -8629,6 +8759,13 @@ export interface operations {
                     "application/json": components["schemas"]["Group"];
                 };
             };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Group with the specified slug does not exist */
             404: {
                 headers: {
@@ -8739,7 +8876,16 @@ export interface operations {
     };
     listFines: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Only return fines with this status */
+                status?: "pending" | "approved" | "paid" | "rejected";
+                /** @description Only return fines given to this user */
+                userId?: string;
+            };
             header?: never;
             path: {
                 groupSlug: string;
@@ -8773,7 +8919,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Not Found - Group not found */
+            /** @description Not Found - Group not found, or fines not activated for it */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -8830,6 +8976,209 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Group or user not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFineStatistics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statistics retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FineStatistics"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to view fines for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found, or fines not activated for it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFineUsers: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                /** @description Only count fines with this status */
+                status?: "pending" | "approved" | "paid" | "rejected";
+            };
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members with fine totals retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FineUserList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to view fines for this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found, or fines not activated for it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    batchUpdateFines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchUpdateFines"];
+            };
+        };
+        responses: {
+            /** @description Fines updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchUpdateFinesResponse"];
+                };
+            };
+            /** @description Bad Request - A fine does not belong to this group */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to settle this group's fines */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found, or fines not activated for it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    batchUpdateUserFines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchUpdateUserFines"];
+            };
+        };
+        responses: {
+            /** @description Fines updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchUpdateFinesResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to settle this group's fines */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found, or fines not activated for it */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -9193,6 +9542,13 @@ export interface operations {
                     "application/json": components["schemas"]["GroupFormerMemberList"];
                 };
             };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Group not found */
             404: {
                 headers: {
@@ -9221,6 +9577,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GroupMemberList"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {
@@ -9388,6 +9751,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {
@@ -9703,6 +10073,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {
@@ -11624,13 +12001,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
-            };
-            /** @description Not Found - User settings do not exist (user needs to complete onboarding first) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

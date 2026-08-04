@@ -18,6 +18,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
+import { Label } from "@tihlde/ui/ui/label";
+import { Textarea } from "@tihlde/ui/ui/textarea";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -35,9 +37,15 @@ type GroupFineDialogProps = {
      * action row is hidden rather than shown and rejected.
      */
     canManage: boolean;
+    /**
+     * Den innloggede brukeren. Bare den bøtelagte kan skrive forsvar, så uten
+     * dette vet dialogen ikke om feltet skal vises eller bare leses.
+     */
+    currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
+    onSaveDefense: (fine: Fine, defense: string) => void;
 };
 
 export function GroupFineDialog({
@@ -45,12 +53,29 @@ export function GroupFineDialog({
     openIndex,
     onOpenChange,
     canManage,
+    currentUserId,
     onApprove,
     onMarkPaid,
     onDelete,
+    onSaveDefense,
 }: GroupFineDialogProps) {
     const fine = openIndex !== null ? fines[openIndex] : null;
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [defenseDraft, setDefenseDraft] = useState<string | null>(null);
+
+    // Utkastet hører til én bot. Uten dette ville teksten du skrev fulgt med
+    // når du blar videre med piltastene.
+    const fineId = fine?.id ?? null;
+    useEffect(() => {
+        setDefenseDraft(null);
+    }, [fineId]);
+
+    const isOwnFine = Boolean(
+        fine && currentUserId && fine.userId === currentUserId,
+    );
+    const defenseValue = defenseDraft ?? fine?.defense ?? "";
+    const defenseChanged =
+        defenseDraft !== null && defenseDraft !== fine?.defense;
 
     const go = useCallback(
         (delta: number) => {
@@ -68,6 +93,17 @@ export function GroupFineDialog({
         if (openIndex === null || confirmDelete) return;
 
         function onKeyDown(event: KeyboardEvent) {
+            // Piltastene flytter markøren mens du skriver forsvaret. Uten
+            // dette hoppet dialogen til neste bot midt i setningen.
+            const target = event.target as HTMLElement | null;
+            if (
+                target?.tagName === "TEXTAREA" ||
+                target?.tagName === "INPUT" ||
+                target?.isContentEditable
+            ) {
+                return;
+            }
+
             if (event.key === "ArrowLeft") {
                 event.preventDefault();
                 go(-1);
@@ -133,6 +169,40 @@ export function GroupFineDialog({
                                     decoding="async"
                                     className="max-h-80 w-full rounded-md object-contain"
                                 />
+                            ) : null}
+                            {isOwnFine ? (
+                                <div className="flex flex-col gap-2">
+                                    <Label htmlFor="fine-defense">
+                                        Ditt forsvar
+                                    </Label>
+                                    <Textarea
+                                        id="fine-defense"
+                                        rows={3}
+                                        placeholder="Forklar din side av saken"
+                                        value={defenseValue}
+                                        onChange={(event) =>
+                                            setDefenseDraft(event.target.value)
+                                        }
+                                    />
+                                    <Button
+                                        size="sm"
+                                        className="self-start"
+                                        disabled={!defenseChanged}
+                                        onClick={() => {
+                                            onSaveDefense(fine, defenseValue);
+                                            setDefenseDraft(null);
+                                        }}
+                                    >
+                                        Lagre forsvar
+                                    </Button>
+                                </div>
+                            ) : fine.defense ? (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-xs text-muted-foreground">
+                                        Forsvar
+                                    </span>
+                                    <p className="text-sm">{fine.defense}</p>
+                                </div>
                             ) : null}
                             {/* «Rediger bot» lå her, men PATCH-endepunktet tar
                                 bare status og forsvar — begrunnelse og beløp

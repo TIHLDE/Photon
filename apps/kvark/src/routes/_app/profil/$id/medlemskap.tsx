@@ -1,7 +1,7 @@
-import { authQueryOptions } from "#/api/auth";
+import { authQueryOptions, sessionHasScopedPermission } from "#/api/auth";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileMembershipCard } from "#/components/profile-membership-card";
-import { groupTypeLabel } from "#/lib/group";
+import { groupTypeLabel, isPrivateGroupType } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -42,6 +42,21 @@ function RouteComponent() {
     const { data: session } = useQuery(authQueryOptions);
     const isOwnProfile = session?.user.id === id;
 
+    /**
+     * Om den som ser på kan åpne gruppesiden. Speiler `assertGroupVisible` i
+     * API-et: en privat gruppe er bare for medlemmene, og `groups:manage` er
+     * eneste vei inn utenfra. Uten dette lenker profilen til en 403.
+     */
+    const canOpenGroup = (group: { slug: string; type: string }): boolean => {
+        if (!isPrivateGroupType(group.type)) return true;
+        if (session?.groups?.some((g) => g.slug === group.slug)) return true;
+        return sessionHasScopedPermission(
+            session?.permissions,
+            "groups:manage",
+            `group:${group.slug}`,
+        );
+    };
+
     // study/studyyear er avledede grupper (projeksjon av Feide-data) og vises
     // ved profilbildet, ikke i medlemskapslisten. TIHLDE er ingen gruppe man
     // melder seg inn i – alle er med – så den skal heller ikke vises her.
@@ -81,6 +96,7 @@ function RouteComponent() {
                                 typeLabel={groupTypeLabel(group.type)}
                                 logoUrl={group.logoUrl}
                                 role={group.role}
+                                canOpen={canOpenGroup(group)}
                             />
                         </li>
                     ))}
@@ -105,6 +121,7 @@ function RouteComponent() {
                                         group.startedAt,
                                         group.endedAt,
                                     )}
+                                    canOpen={canOpenGroup(group)}
                                 />
                             </li>
                         ))}

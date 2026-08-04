@@ -252,16 +252,12 @@ export const getEventRegistrationsQuery = (
     });
 
 export const registerForEventMutation = mutationOptions({
-    mutationFn: ({
-        eventId,
-        allowPhoto = true,
-    }: {
-        eventId: string;
-        allowPhoto?: boolean;
-    }) =>
+    // Bildesamtykket sendes ikke med: API-et bruker kontoinnstillingen
+    // (`allowsPhotosByDefault`), som medlemmene styrer fra profilen sin.
+    mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.post("/api/event/{eventId}/registration", {
             params: { eventId },
-            json: { allowPhoto },
+            json: {},
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({

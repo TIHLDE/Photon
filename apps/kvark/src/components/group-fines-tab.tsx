@@ -1,38 +1,78 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import { Button } from "@tihlde/ui/ui/button";
 import { Card } from "@tihlde/ui/ui/card";
+import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronRight, X } from "lucide-react";
+import { useState } from "react";
 
 import { GroupFineDialog } from "#/components/group-fine-dialog";
 import { GroupFineRow } from "#/components/group-fine-row";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
 import { GroupPageHeader } from "#/components/group-page-header";
-import { TriStateFilter, type TriState } from "#/components/tri-state-filter";
-import type { Fine } from "#/lib/group";
+import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { richRegistry } from "#/components/markdown/directives/presets";
+import type { Fine, FineStatistics, FineStatus, FineUser } from "#/lib/group";
 import { initials } from "#/lib/utils";
 
 import { avatarImageUrl } from "#/lib/assets";
 
-type GroupingMode = "all" | "per-member";
+export type FineGrouping = "alle" | "per-medlem";
+export type FineStatusFilter = FineStatus | "alle";
+
+/**
+ * Ett statusfilter, ikke to boolske.
+ *
+ * Gamle Kvark hadde «Godkjent»- og «Betalt»-filtre hver for seg fordi Lepton
+ * lagret to uavhengige kolonner. Photon lagrer én status, så halvparten av de
+ * gamle kombinasjonene («betalt, men ikke godkjent») finnes ikke — de sto der
+ * bare og ga tomme lister.
+ */
+const STATUS_OPTIONS: Array<{ value: FineStatusFilter; label: string }> = [
+    { value: "alle", label: "Alle bøter" },
+    { value: "pending", label: "Ikke godkjent" },
+    { value: "approved", label: "Godkjent, ikke betalt" },
+    { value: "paid", label: "Betalt" },
+    { value: "rejected", label: "Avvist" },
+];
 
 type GroupFinesTabProps = {
+    /** Botene som er lastet inn så langt for gjeldende filter. */
     fines: Fine[];
+    /** Gruppens medlemmer med bøtesummen sin, for «Per medlem». */
+    fineUsers: FineUser[];
+    statistics?: FineStatistics;
     memberCount: number;
-    /** Whether the viewer may approve, edit or delete the group's fines. */
+    /** Markdown om hvordan botsystemet praktiseres i gruppa. */
+    finesInfo?: string;
+    grouping: FineGrouping;
+    onGroupingChange: (grouping: FineGrouping) => void;
+    status: FineStatusFilter;
+    onStatusChange: (status: FineStatusFilter) => void;
+    /** Satt når listen er begrenset til én persons bøter. */
+    selectedUserId?: string;
+    selectedUserName?: string;
+    onSelectUser: (userId: string | undefined) => void;
+    hasMore: boolean;
+    isLoadingMore: boolean;
+    onLoadMore: () => void;
+    /** Whether the viewer may approve, settle or delete the group's fines. */
     canManage: boolean;
+    /** Den innloggede brukeren, som er den eneste som kan skrive forsvar. */
+    currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
+    onSaveDefense: (fine: Fine, defense: string) => void;
+    onSettleAllForUser: (userId: string, status: "approved" | "paid") => void;
 };
-
-function fineFilterMatches(fine: Fine, approved: TriState, paid: TriState) {
-    if (approved === "yes" && !fine.approved) return false;
-    if (approved === "no" && fine.approved) return false;
-    if (paid === "yes" && !fine.paid) return false;
-    if (paid === "no" && fine.paid) return false;
-    return true;
-}
 
 function perMember(value: number, memberCount: number): string {
     if (memberCount <= 0) return "0.0";
@@ -41,184 +81,322 @@ function perMember(value: number, memberCount: number): string {
 
 export function GroupFinesTab({
     fines,
+    fineUsers,
+    statistics,
     memberCount,
+    finesInfo,
+    grouping,
+    onGroupingChange,
+    status,
+    onStatusChange,
+    selectedUserId,
+    selectedUserName,
+    onSelectUser,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
     canManage,
+    currentUserId,
     onApprove,
     onMarkPaid,
     onDelete,
+    onSaveDefense,
+    onSettleAllForUser,
 }: GroupFinesTabProps) {
-    const [grouping, setGrouping] = useState<GroupingMode>("all");
-    const [approved, setApproved] = useState<TriState>("all");
-    const [paid, setPaid] = useState<TriState>("all");
     const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-    const filtered = useMemo(
-        () => fines.filter((f) => fineFilterMatches(f, approved, paid)),
-        [fines, approved, paid],
-    );
-
-    const grouped = useMemo(() => {
-        const map = new Map<string, Fine[]>();
-        for (const fine of filtered) {
-            const list = map.get(fine.userId) ?? [];
-            list.push(fine);
-            map.set(fine.userId, list);
-        }
-        return map;
-    }, [filtered]);
-
-    /** Åpner den første boten i en persons gruppe av bøter. */
-    function openGrouped(list: Fine[]) {
-        const index = filtered.findIndex((f) => f.id === (list[0]?.id ?? ""));
-        if (index >= 0) setOpenIndex(index);
-    }
-
-    const stats = useMemo(() => {
-        const ikkeGodkjent = fines
-            .filter((f) => !f.approved)
-            .reduce((sum, f) => sum + f.amount, 0);
-        const godkjentIkkeBetalt = fines
-            .filter((f) => f.approved && !f.paid)
-            .reduce((sum, f) => sum + f.amount, 0);
-        const betalt = fines
-            .filter((f) => f.paid)
-            .reduce((sum, f) => sum + f.amount, 0);
-        return {
-            ikkeGodkjent,
-            godkjentIkkeBetalt,
-            betalt,
-            avgIkkeGodkjent: perMember(ikkeGodkjent, memberCount),
-            avgGodkjentIkkeBetalt: perMember(godkjentIkkeBetalt, memberCount),
-            avgBetalt: perMember(betalt, memberCount),
-        };
-    }, [fines, memberCount]);
+    const notApproved = statistics?.notApproved ?? 0;
+    const approvedNotPaid = statistics?.approvedNotPaid ?? 0;
+    const paid = statistics?.paid ?? 0;
 
     return (
         <div className="flex flex-col gap-6">
             <GroupPageHeader title="Bøter" />
 
+            {finesInfo ? (
+                <Card size="sm" className="p-4">
+                    <MarkdownView registry={richRegistry} source={finesInfo} />
+                </Card>
+            ) : null}
+
+            {/* Summene gjelder hele gruppa, ikke det som er filtrert fram —
+                ellers ville «Betalt» falt til 0 så snart du så på ubetalte. */}
             <div className="grid gap-4 md:grid-cols-3">
                 <GroupFineStatCard
                     label="Ikke godkjent"
-                    value={stats.ikkeGodkjent}
-                    perMember={stats.avgIkkeGodkjent}
+                    value={notApproved}
+                    perMember={perMember(notApproved, memberCount)}
                 />
                 <GroupFineStatCard
                     label="Godkjent, ikke betalt"
-                    value={stats.godkjentIkkeBetalt}
-                    perMember={stats.avgGodkjentIkkeBetalt}
+                    value={approvedNotPaid}
+                    perMember={perMember(approvedNotPaid, memberCount)}
                 />
                 <GroupFineStatCard
                     label="Betalt"
-                    value={stats.betalt}
-                    perMember={stats.avgBetalt}
+                    value={paid}
+                    perMember={perMember(paid, memberCount)}
                 />
             </div>
 
             <div className="flex flex-col gap-3">
                 <Tabs
                     value={grouping}
-                    onValueChange={(v) => setGrouping(v as GroupingMode)}
+                    onValueChange={(v) => onGroupingChange(v as FineGrouping)}
                 >
                     <div className="flex flex-wrap items-center gap-3">
                         <TabsList>
-                            <TabsTrigger value="all">Alle bøter</TabsTrigger>
-                            <TabsTrigger value="per-member">
+                            <TabsTrigger value="alle">Alle bøter</TabsTrigger>
+                            <TabsTrigger value="per-medlem">
                                 Per medlem
                             </TabsTrigger>
                         </TabsList>
                         <div className="ml-auto flex flex-wrap items-center gap-2">
-                            <TriStateFilter
-                                value={approved}
-                                onChange={setApproved}
-                                options={{
-                                    all: "Alle",
-                                    yes: "Godkjente",
-                                    no: "Ikke godkjente",
-                                }}
-                            />
-                            <TriStateFilter
-                                value={paid}
-                                onChange={setPaid}
-                                options={{
-                                    all: "Alle",
-                                    yes: "Betalte",
-                                    no: "Ikke betalte",
-                                }}
-                            />
+                            <Select
+                                value={status}
+                                onValueChange={(v) =>
+                                    onStatusChange(v as FineStatusFilter)
+                                }
+                            >
+                                <SelectTrigger className="w-56">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {STATUS_OPTIONS.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </Tabs>
 
-                {grouping === "all" ? (
-                    <ul className="flex flex-col gap-2">
-                        {filtered.map((fine, index) => (
-                            <li key={fine.id}>
-                                <GroupFineRow
-                                    fine={fine}
-                                    index={index + 1}
-                                    onOpen={() => setOpenIndex(index)}
-                                />
-                            </li>
-                        ))}
-                    </ul>
+                {selectedUserId && grouping === "alle" ? (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                            Viser bøter for {selectedUserName ?? "medlem"}
+                        </span>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onSelectUser(undefined)}
+                        >
+                            <X />
+                            Vis alle
+                        </Button>
+                    </div>
+                ) : null}
+
+                {grouping === "alle" ? (
+                    <FineList
+                        fines={fines}
+                        onOpen={setOpenIndex}
+                        hasMore={hasMore}
+                        isLoadingMore={isLoadingMore}
+                        onLoadMore={onLoadMore}
+                    />
                 ) : (
-                    <ul className="flex flex-col gap-2">
-                        {Array.from(grouped.entries()).map(([userId, list]) => (
-                            <li key={userId}>
-                                <Card
-                                    size="sm"
-                                    className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => openGrouped(list)}
-                                    onKeyDown={(event) => {
-                                        if (
-                                            event.key === "Enter" ||
-                                            event.key === " "
-                                        ) {
-                                            event.preventDefault();
-                                            openGrouped(list);
-                                        }
-                                    }}
-                                >
-                                    <Avatar className="size-10">
-                                        {list[0]?.userImage ? (
-                                            <AvatarImage
-                                                src={avatarImageUrl(
-                                                    list[0].userImage,
-                                                )}
-                                                alt={list[0].user}
-                                            />
-                                        ) : null}
-                                        <AvatarFallback>
-                                            {initials(list[0]?.user ?? "")}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex min-w-0 flex-1 flex-col">
-                                        <span className="truncate font-medium">
-                                            {list[0]?.user}
-                                        </span>
-                                        <span className="truncate text-sm text-muted-foreground">
-                                            {list.length} bøter
-                                        </span>
-                                    </div>
-                                    <ChevronRight />
-                                </Card>
-                            </li>
-                        ))}
-                    </ul>
+                    <FineUserList
+                        users={fineUsers}
+                        canManage={canManage}
+                        onSelectUser={onSelectUser}
+                        onSettleAllForUser={onSettleAllForUser}
+                        hasMore={hasMore}
+                        isLoadingMore={isLoadingMore}
+                        onLoadMore={onLoadMore}
+                    />
                 )}
             </div>
 
             <GroupFineDialog
-                fines={filtered}
+                fines={fines}
                 openIndex={openIndex}
                 onOpenChange={setOpenIndex}
                 canManage={canManage}
+                currentUserId={currentUserId}
                 onApprove={onApprove}
                 onMarkPaid={onMarkPaid}
                 onDelete={onDelete}
+                onSaveDefense={onSaveDefense}
+            />
+        </div>
+    );
+}
+
+function LoadMore({
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+}: {
+    hasMore: boolean;
+    isLoadingMore: boolean;
+    onLoadMore: () => void;
+}) {
+    if (!hasMore) return null;
+    return (
+        <Button
+            variant="outline"
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            className="self-center"
+        >
+            {isLoadingMore ? "Laster …" : "Last inn mer"}
+        </Button>
+    );
+}
+
+function FineList({
+    fines,
+    onOpen,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+}: {
+    fines: Fine[];
+    onOpen: (index: number) => void;
+    hasMore: boolean;
+    isLoadingMore: boolean;
+    onLoadMore: () => void;
+}) {
+    if (fines.length === 0) {
+        return (
+            <Empty>
+                <EmptyTitle>Fant ingen bøter</EmptyTitle>
+                <EmptyDescription>
+                    Du finner kanskje bøter med en annen filtrering.
+                </EmptyDescription>
+            </Empty>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2">
+                {fines.map((fine, index) => (
+                    <li key={fine.id}>
+                        <GroupFineRow
+                            fine={fine}
+                            index={index + 1}
+                            onOpen={() => onOpen(index)}
+                        />
+                    </li>
+                ))}
+            </ul>
+            <LoadMore
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={onLoadMore}
+            />
+        </div>
+    );
+}
+
+function FineUserList({
+    users,
+    canManage,
+    onSelectUser,
+    onSettleAllForUser,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+}: {
+    users: FineUser[];
+    canManage: boolean;
+    onSelectUser: (userId: string) => void;
+    onSettleAllForUser: (userId: string, status: "approved" | "paid") => void;
+    hasMore: boolean;
+    isLoadingMore: boolean;
+    onLoadMore: () => void;
+}) {
+    if (users.length === 0) {
+        return (
+            <Empty>
+                <EmptyTitle>Ingen medlemmer</EmptyTitle>
+                <EmptyDescription>
+                    Gruppen har ingen medlemmer å vise bøter for.
+                </EmptyDescription>
+            </Empty>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-2">
+                {users.map((user) => (
+                    <li key={user.id}>
+                        <Card
+                            size="sm"
+                            className="flex-row flex-wrap items-center gap-3 px-3 py-2"
+                        >
+                            <Avatar className="size-10">
+                                {user.image ? (
+                                    <AvatarImage
+                                        src={avatarImageUrl(user.image)}
+                                        alt={user.name}
+                                    />
+                                ) : null}
+                                <AvatarFallback>
+                                    {initials(user.name)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="flex min-w-0 flex-1 flex-col">
+                                <span className="truncate font-medium">
+                                    {user.name}
+                                </span>
+                                <span className="truncate text-sm text-muted-foreground">
+                                    {user.finesAmount} bøter fordelt på{" "}
+                                    {user.finesCount}{" "}
+                                    {user.finesCount === 1
+                                        ? "hendelse"
+                                        : "hendelser"}
+                                </span>
+                            </div>
+                            {canManage && user.finesCount > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            onSettleAllForUser(
+                                                user.id,
+                                                "approved",
+                                            )
+                                        }
+                                    >
+                                        Godkjenn alle
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            onSettleAllForUser(user.id, "paid")
+                                        }
+                                    >
+                                        Betal alle
+                                    </Button>
+                                </div>
+                            ) : null}
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Vis bøtene til ${user.name}`}
+                                onClick={() => onSelectUser(user.id)}
+                            >
+                                <ChevronRight />
+                            </Button>
+                        </Card>
+                    </li>
+                ))}
+            </ul>
+            <LoadMore
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={onLoadMore}
             />
         </div>
     );

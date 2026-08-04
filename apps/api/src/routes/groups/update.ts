@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { promoteAssetUrls } from "~/lib/asset";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -42,7 +43,7 @@ export const updateRoute = route().patch(
     async (c) => {
         const body = c.req.valid("json");
         const slug = c.req.param("slug");
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
 
         // Check if group exists
         const existingGroup = await db
@@ -71,6 +72,11 @@ export const updateRoute = route().patch(
                 });
             }
         }
+
+        // Gruppebilde and logo are uploaded before this call and are still
+        // staged, so the cleanup cron would delete them two days later and
+        // leave the group's «Om»-side pointing at a 404.
+        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
 
         await db
             .update(schema.group)

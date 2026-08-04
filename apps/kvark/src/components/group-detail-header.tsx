@@ -4,7 +4,11 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Crown, HandCoins, Mail } from "lucide-react";
 
 import { DetailHeader } from "#/components/detail-layout";
-import { GroupEditDialog } from "#/components/group-edit-dialog";
+import {
+    GroupEditDialog,
+    type GroupEditValues,
+} from "#/components/group-edit-dialog";
+import type { ComboboxMember } from "#/components/user-combobox";
 import type { Group } from "#/lib/group";
 import { initials } from "#/lib/utils";
 
@@ -13,13 +17,29 @@ import { avatarImageUrl } from "#/lib/assets";
 type GroupDetailHeaderProps = {
     group: Group;
     isAdmin: boolean;
+    /**
+     * Om den innloggede kan gi bot. Lepton lot ethvert gruppemedlem bøtelegge
+     * et annet, og `member`-rollen har fortsatt `fines:create` — knappen sto
+     * likevel bare for ledere.
+     */
+    canGiveFine: boolean;
     onGiveFine: () => void;
+    /** Medlemmene botsjefen kan velges blant i redigeringsdialogen. */
+    members: ComboboxMember[];
+    onSaveGroup: (values: GroupEditValues) => void;
+    isSavingGroup?: boolean;
+    saveGroupError?: string | null;
 };
 
 export function GroupDetailHeader({
     group,
     isAdmin,
+    canGiveFine,
     onGiveFine,
+    members,
+    onSaveGroup,
+    isSavingGroup,
+    saveGroupError,
 }: GroupDetailHeaderProps) {
     return (
         <DetailHeader
@@ -73,15 +93,23 @@ export function GroupDetailHeader({
                 </>
             }
             actions={
-                isAdmin ? (
+                canGiveFine || isAdmin ? (
                     <>
-                        {group.finesActivated ? (
+                        {canGiveFine ? (
                             <Button onClick={onGiveFine}>
                                 <HandCoins />
                                 Gi bot
                             </Button>
                         ) : null}
-                        <GroupEditDialog group={group} />
+                        {isAdmin ? (
+                            <GroupEditDialog
+                                group={group}
+                                members={members}
+                                onSubmit={onSaveGroup}
+                                isSubmitting={isSavingGroup}
+                                error={saveGroupError}
+                            />
+                        ) : null}
                     </>
                 ) : null
             }

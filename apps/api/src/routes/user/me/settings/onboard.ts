@@ -2,7 +2,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { createUserSettings, getUserSettings } from "~/lib/user/settings";
+import { createUserSettings } from "~/lib/user/settings";
 import { requireAuth } from "~/middleware/auth";
 import { onboardUserInputSchema, userSettingsSchema } from "../../schema";
 
@@ -29,10 +29,16 @@ export const onboardRoute = route().post(
         const body = c.req.valid("json");
         const ctx = c.get("ctx");
 
-        // Check if user already has settings
-        const existingSettings = await getUserSettings(userId, ctx);
+        // Only a completed onboarding blocks a new one. A settings row on its
+        // own does not: accepting the event rules creates a placeholder row
+        // with `isOnboarded` false, and that must not lock the user out of
+        // ever answering the real questions.
+        const existing = await ctx.db.query.userSettings.findFirst({
+            where: (settings, { eq }) => eq(settings.userId, userId),
+            columns: { isOnboarded: true },
+        });
 
-        if (existingSettings) {
+        if (existing?.isOnboarded) {
             throw new HTTPException(400, {
                 message: "User has already completed onboarding",
             });

@@ -35,6 +35,10 @@ describe("fines", () => {
                         password: "test123!",
                     },
                 });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: targetUser.user.id,
+                    groupSlug: group.slug,
+                });
 
                 const response = await client.api.groups[
                     ":groupSlug"
@@ -61,7 +65,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "successfully creates a fine with global fines:create permission",
+            "successfully creates a fine as a member with fines:create",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -71,6 +75,10 @@ describe("fines", () => {
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
                 });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
 
                 const targetUser = await ctx.auth.api.createUser({
                     body: {
@@ -78,6 +86,10 @@ describe("fines", () => {
                         name: "Target User 2",
                         password: "test123!",
                     },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: targetUser.user.id,
+                    groupSlug: group.slug,
                 });
 
                 const response = await client.api.groups[
@@ -243,12 +255,21 @@ describe("fines", () => {
                     finesActivated: true,
                 });
 
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+
                 const targetUser = await ctx.auth.api.createUser({
                     body: {
                         email: "defense@test.com",
                         name: "Defense User",
                         password: "test123!",
                     },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: targetUser.user.id,
+                    groupSlug: group.slug,
                 });
 
                 const response = await client.api.groups[
@@ -268,6 +289,129 @@ describe("fines", () => {
 
                 const json = await response.json();
                 expect(json.defense).toBe("Traffic was terrible");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "refuses an outsider who only holds the member role's fines:create",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                // Samme grant som `member`-rollen deler ut til alle: uten
+                // scope treffer den enhver gruppe.
+                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "outsider-cannot-fine",
+                    finesActivated: true,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "outsider-victim@test.com",
+                        name: "Outsider Victim",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: group.slug,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "Utenforstående",
+                        amount: 1,
+                    },
+                });
+
+                expect(response.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "refuses to fine someone who is not in the group",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "members-only-fines",
+                    finesActivated: true,
+                });
+
+                const outsider = await ctx.auth.api.createUser({
+                    body: {
+                        email: "outsider-fine@test.com",
+                        name: "Outsider",
+                        password: "test123!",
+                    },
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: outsider.user.id,
+                        groupSlug: group.slug,
+                        reason: "Ikke medlem",
+                        amount: 1,
+                    },
+                });
+
+                expect(response.status).toBe(400);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "refuses a body that points at another group than the URL",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "slug-in-url",
+                    finesActivated: true,
+                });
+                const otherGroup = await ctx.utils.createTestGroup({
+                    slug: "slug-in-body",
+                    finesActivated: true,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "slug-mismatch@test.com",
+                        name: "Slug Mismatch",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: otherGroup.slug,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: target.user.id,
+                        groupSlug: otherGroup.slug,
+                        reason: "Feil gruppe",
+                        amount: 1,
+                    },
+                });
+
+                expect(response.status).toBe(400);
             },
             500_000,
         );
@@ -585,13 +729,59 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
 
                 expect(response.status).toBe(200);
 
                 const json = await response.json();
-                expect(Array.isArray(json)).toBe(true);
-                expect(json.length).toBe(2);
+                expect(json.totalCount).toBe(2);
+                expect(json.fines.length).toBe(2);
+                expect(json.nextPage).toBeNull();
+
+                // Filtrene brukes til å plukke ut én status og én person.
+                const pending = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
+                    param: { groupSlug: group.slug },
+                    query: { status: "pending" },
+                });
+                const pendingJson = await pending.json();
+                expect(pendingJson.totalCount).toBe(1);
+                expect(pendingJson.fines[0]?.reason).toBe("Fine 1");
+
+                const byUser = await client.api.groups[":groupSlug"].fines.$get(
+                    {
+                        param: { groupSlug: group.slug },
+                        query: { userId: targetUser2.user.id },
+                    },
+                );
+                const byUserJson = await byUser.json();
+                expect(byUserJson.totalCount).toBe(1);
+                expect(byUserJson.fines[0]?.reason).toBe("Fine 2");
+
+                // En side om gangen: siden det finnes to bøter skal side 0
+                // gi én rad og peke videre til side 1.
+                const firstPage = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
+                    param: { groupSlug: group.slug },
+                    query: { pageSize: "1", page: "0" },
+                });
+                const firstPageJson = await firstPage.json();
+                expect(firstPageJson.fines.length).toBe(1);
+                expect(firstPageJson.pages).toBe(2);
+                expect(firstPageJson.nextPage).toBe(1);
+
+                const lastPage = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
+                    param: { groupSlug: group.slug },
+                    query: { pageSize: "1", page: "1" },
+                });
+                const lastPageJson = await lastPage.json();
+                expect(lastPageJson.fines.length).toBe(1);
+                expect(lastPageJson.nextPage).toBeNull();
             },
             500_000,
         );
@@ -612,13 +802,40 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
 
                 expect(response.status).toBe(200);
 
                 const json = await response.json();
-                expect(Array.isArray(json)).toBe(true);
-                expect(json.length).toBe(0);
+                expect(json.totalCount).toBe(0);
+                expect(json.fines.length).toBe(0);
+                expect(json.nextPage).toBeNull();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "hides fines when the group has the fine system switched off",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-off",
+                    finesActivated: false,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
+                    param: { groupSlug: group.slug },
+                    query: {},
+                });
+
+                expect(response.status).toBe(404);
             },
             500_000,
         );
@@ -637,6 +854,7 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
 
                 expect(response.status).toBe(403);
@@ -656,6 +874,7 @@ describe("fines", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: "non-existent" },
+                    query: {},
                 });
 
                 expect(response.status).toBe(404);
@@ -853,6 +1072,67 @@ describe("fines", () => {
             },
             500_000,
         );
+
+        integrationTest(
+            "only the fined member may write a defense, empty string included",
+            async ({ ctx }) => {
+                const owner = await ctx.utils.createTestUser();
+                const ownerClient = await ctx.utils.clientForUser(owner);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "defense-owner",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: owner.id,
+                    groupSlug: group.slug,
+                });
+
+                const [fine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: owner.id,
+                        groupSlug: group.slug,
+                        reason: "Har et forsvar",
+                        amount: 1,
+                        status: "pending",
+                        defense: "Opprinnelig forsvar",
+                    })
+                    .returning();
+
+                const mine = await ownerClient.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { defense: "Jeg var syk" },
+                });
+                expect(mine.status).toBe(200);
+
+                // En annen bruker skal ikke kunne tømme forsvaret. Tidligere
+                // slapp `defense: ""` gjennom fordi sjekken var på truthiness.
+                const other = await ctx.utils.createTestUser();
+                const otherClient = await ctx.utils.clientForUser(other);
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: other.id,
+                    groupSlug: group.slug,
+                });
+
+                const wiped = await otherClient.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine!.id },
+                    json: { defense: "" },
+                });
+                expect(wiped.status).toBe(403);
+
+                const [after] = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.id, fine!.id));
+                expect(after?.defense).toBe("Jeg var syk");
+            },
+            500_000,
+        );
     });
 
     describe("fine ↔ paragraph", () => {
@@ -889,6 +1169,10 @@ describe("fines", () => {
                         password: "test123!",
                     },
                 });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: group.slug,
+                });
 
                 const created = await client.api.groups[
                     ":groupSlug"
@@ -911,9 +1195,10 @@ describe("fines", () => {
 
                 const list = await client.api.groups[":groupSlug"].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
                 const listJson = await list.json();
-                expect(listJson[0]?.law?.title).toBe("Møtte ikke opp");
+                expect(listJson.fines[0]?.law?.title).toBe("Møtte ikke opp");
 
                 const single = await client.api.groups[":groupSlug"].fines[
                     ":fineId"
@@ -964,6 +1249,10 @@ describe("fines", () => {
                         name: "Foreign Target",
                         password: "test123!",
                     },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: group.slug,
                 });
 
                 const response = await client.api.groups[
@@ -1016,6 +1305,10 @@ describe("fines", () => {
                         password: "test123!",
                     },
                 });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: group.slug,
+                });
 
                 const created = await client.api.groups[
                     ":groupSlug"
@@ -1048,6 +1341,292 @@ describe("fines", () => {
                 expect(singleJson.law).toBeNull();
                 expect(singleJson.lawId).toBeNull();
                 expect(singleJson.reason).toBe("Boten overlever lovverket");
+            },
+            500_000,
+        );
+    });
+
+    describe("statistics", () => {
+        integrationTest(
+            "sums each settlement stage and leaves rejected fines out",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats",
+                    finesActivated: true,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-target@test.com",
+                        name: "Stats Target",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 3,
+                        status: "pending",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 4,
+                        status: "approved",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "c",
+                        amount: 5,
+                        status: "paid",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "d",
+                        amount: 99,
+                        status: "rejected",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(3);
+                expect(json.approvedNotPaid).toBe(4);
+                expect(json.paid).toBe(5);
+            },
+            500_000,
+        );
+    });
+
+    describe("fines per member", () => {
+        integrationTest(
+            "lists every member, sums their amounts and honours the status filter",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-per-member",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const fined = await ctx.auth.api.createUser({
+                    body: {
+                        email: "per-member-fined@test.com",
+                        name: "Aaa Fined",
+                        password: "test123!",
+                    },
+                });
+                const clean = await ctx.auth.api.createUser({
+                    body: {
+                        email: "per-member-clean@test.com",
+                        name: "Bbb Clean",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: fined.user.id, groupSlug: group.slug },
+                    { userId: clean.user.id, groupSlug: group.slug },
+                ]);
+
+                // To bøter på samme person: tallet skal være summen av
+                // beløpene (2 + 5 = 7), ikke antall rader.
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 2,
+                        status: "pending",
+                    },
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 5,
+                        status: "paid",
+                    },
+                ]);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.users.$get({
+                    param: { groupSlug: group.slug },
+                    query: {},
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                // Lederen teller også som medlem.
+                expect(json.totalCount).toBe(3);
+
+                const finedRow = json.users.find((u) => u.id === fined.user.id);
+                expect(finedRow?.finesAmount).toBe(7);
+                expect(finedRow?.finesCount).toBe(2);
+
+                // Medlemmer uten bøter skal stå i lista med 0, ikke mangle.
+                const cleanRow = json.users.find((u) => u.id === clean.user.id);
+                expect(cleanRow?.finesAmount).toBe(0);
+                expect(cleanRow?.finesCount).toBe(0);
+
+                const paidOnly = await client.api.groups[
+                    ":groupSlug"
+                ].fines.users.$get({
+                    param: { groupSlug: group.slug },
+                    query: { status: "paid" },
+                });
+                const paidJson = await paidOnly.json();
+                expect(
+                    paidJson.users.find((u) => u.id === fined.user.id)
+                        ?.finesAmount,
+                ).toBe(5);
+            },
+            500_000,
+        );
+    });
+
+    describe("batch update", () => {
+        integrationTest(
+            "settles every fine a member has, and refuses callers without fines:update",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["fines:update"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-batch",
+                    finesActivated: true,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "batch-target@test.com",
+                        name: "Batch Target",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "a",
+                        amount: 1,
+                        status: "pending",
+                    },
+                    {
+                        userId: target.user.id,
+                        groupSlug: group.slug,
+                        reason: "b",
+                        amount: 1,
+                        status: "pending",
+                    },
+                ]);
+
+                const response = await adminClient.api.groups[
+                    ":groupSlug"
+                ].fines.users[":userId"].batch.$patch({
+                    param: { groupSlug: group.slug, userId: target.user.id },
+                    json: { status: "approved" },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.updated).toBe(2);
+
+                const rows = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.groupSlug, group.slug));
+                expect(rows.every((row) => row.status === "approved")).toBe(
+                    true,
+                );
+                expect(rows.every((row) => row.approvedAt !== null)).toBe(true);
+
+                // Et vanlig medlem skal ikke kunne gjøre opp andres bøter.
+                const outsider = await ctx.utils.createTestUser();
+                const outsiderClient = await ctx.utils.clientForUser(outsider);
+                const forbidden = await outsiderClient.api.groups[
+                    ":groupSlug"
+                ].fines.users[":userId"].batch.$patch({
+                    param: { groupSlug: group.slug, userId: target.user.id },
+                    json: { status: "paid" },
+                });
+                expect(forbidden.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "rejects a batch that names a fine from another group",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, ["fines:update"]);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-batch-own",
+                    finesActivated: true,
+                });
+                const otherGroup = await ctx.utils.createTestGroup({
+                    slug: "fines-batch-other",
+                    finesActivated: true,
+                });
+                const target = await ctx.auth.api.createUser({
+                    body: {
+                        email: "batch-foreign@test.com",
+                        name: "Batch Foreign",
+                        password: "test123!",
+                    },
+                });
+
+                const [foreignFine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: target.user.id,
+                        groupSlug: otherGroup.slug,
+                        reason: "fremmed",
+                        amount: 1,
+                        status: "pending",
+                    })
+                    .returning();
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.batch.$patch({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        fineIds: [foreignFine!.id],
+                        status: "approved",
+                    },
+                });
+
+                expect(response.status).toBe(400);
+
+                const [unchanged] = await ctx.db
+                    .select()
+                    .from(schema.fine)
+                    .where(eq(schema.fine.id, foreignFine!.id));
+                expect(unchanged?.status).toBe("pending");
             },
             500_000,
         );

@@ -1,5 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
+import { Button } from "@tihlde/ui/ui/button";
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@tihlde/ui/ui/empty";
+import { LockIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -12,12 +26,15 @@ import {
     useScopedPermission,
 } from "#/hooks/use-permission";
 import {
+    batchUpdateUserFinesMutation,
     createFineMutation,
     createLawMutation,
     deleteFineMutation,
     deleteLawMutation,
     getGroupBySlugQuery,
-    getGroupFinesQuery,
+    getGroupFineStatisticsQuery,
+    getGroupFineUsersInfiniteQuery,
+    getGroupFinesInfiniteQuery,
     getGroupFormerMembersQuery,
     getGroupFormsQuery,
     getGroupLawsQuery,
@@ -25,6 +42,7 @@ import {
     removeGroupMemberMutation,
     updateFineMutation,
     updateGroupMemberRoleMutation,
+    updateGroupMutation,
     updateLawMutation,
 } from "#/api/queries/groups";
 import {
@@ -33,6 +51,7 @@ import {
     DetailLayoutNav,
 } from "#/components/detail-layout";
 import { GroupDetailHeader } from "#/components/group-detail-header";
+import type { GroupEditValues } from "#/components/group-edit-dialog";
 import { GroupEventsTab } from "#/components/group-events-tab";
 import { GroupFinesTab } from "#/components/group-fines-tab";
 import { GroupFormsTab } from "#/components/group-forms-tab";
@@ -46,6 +65,7 @@ import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
 import {
     mapFine,
+    mapFineUser,
     mapForm,
     mapFormerMember,
     mapGroup,
@@ -66,21 +86,73 @@ const searchSchema = z.object({
         ])
         .default("om")
         .catch("om"),
+    // Botfiltrene ligger i URL-en, ikke i komponenttilstand: da overlever de
+    // en refresh, og en botsjef kan sende «ubetalte bøter for X» som lenke.
+    botStatus: z
+        .enum(["alle", "pending", "approved", "paid", "rejected"])
+        .default("alle")
+        .catch("alle"),
+    botVisning: z.enum(["alle", "per-medlem"]).default("alle").catch("alle"),
+    botBruker: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/_app/grupper/$slug")({
     component: GroupDetailPage,
     validateSearch: searchSchema,
-    loader: ({ context, params }) =>
-        context.queryClient.ensureQueryData(getGroupBySlugQuery(params.slug)),
+    loader: async ({ context, params }) => {
+        try {
+            await context.queryClient.ensureQueryData(
+                getGroupBySlugQuery(params.slug),
+            );
+            return { restricted: false };
+        } catch (error) {
+            // Private grupper svarer 403 for alle andre enn medlemmene. Det
+            // avgjøres her og ikke i en errorComponent fordi statuskoden ikke
+            // overlever hydreringen — bare selve feilmeldingen gjør det.
+            if (errorStatus(error) === 403) return { restricted: true };
+            throw error;
+        }
+    },
 });
 
+/** HTTP-statusen bak en feil fra API-klienten, om den finnes. */
+function errorStatus(error: unknown): number | undefined {
+    const response = (error as { response?: { status?: number } })?.response;
+    return typeof response?.status === "number" ? response.status : undefined;
+}
+
+/** Vist i stedet for gruppesiden når gruppa er privat og du står utenfor. */
+function GroupRestricted() {
+    return (
+        <Empty>
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <LockIcon />
+                </EmptyMedia>
+                <EmptyTitle>Privat gruppe</EmptyTitle>
+                <EmptyDescription>
+                    Denne gruppen er bare for medlemmene sine.
+                </EmptyDescription>
+            </EmptyHeader>
+            <Button render={<Link to="/grupper" />}>Se alle grupper</Button>
+        </Empty>
+    );
+}
+
 function GroupDetailPage() {
+    const { restricted } = Route.useLoaderData();
+    // Egen komponent: den henter gruppa med useSuspenseQuery, som ville kastet
+    // den samme 403-en på nytt hvis den ble montert her.
+    return restricted ? <GroupRestricted /> : <GroupDetail />;
+}
+
+function GroupDetail() {
     const { slug } = Route.useParams();
-    const { tab: active } = Route.useSearch();
+    const { tab: active, botStatus, botVisning, botBruker } = Route.useSearch();
     const navigate = Route.useNavigate();
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
+    const [groupError, setGroupError] = useState<string | null>(null);
 
     function setActive(tab: GroupNavKey) {
         navigate({ search: (prev) => ({ ...prev, tab }) });
@@ -95,9 +167,11 @@ function GroupDetailPage() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const updateGroup = useMutation(updateGroupMutation);
     const createFine = useMutation(createFineMutation);
     const { uploadImage, isUploading } = useImageUploader();
     const updateFine = useMutation(updateFineMutation);
+    const batchUpdateUserFines = useMutation(batchUpdateUserFinesMutation);
     const deleteFine = useMutation(deleteFineMutation);
     const createLaw = useMutation(createLawMutation);
     const updateLaw = useMutation(updateLawMutation);
@@ -146,8 +220,41 @@ function GroupDetailPage() {
     const canViewFines =
         apiGroup.finesActivated && (isMember || isFinesAdmin || hasFinesView);
 
-    const { data: apiFines } = useQuery({
-        ...getGroupFinesQuery(slug, 0),
+    // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
+    // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
+    const fineFilters = useMemo(
+        () => ({
+            ...(botStatus === "alle" ? {} : { status: botStatus }),
+            ...(botBruker ? { userId: botBruker } : {}),
+        }),
+        [botStatus, botBruker],
+    );
+
+    const {
+        data: apiFinePages,
+        hasNextPage: hasMoreFines,
+        isFetchingNextPage: isLoadingMoreFines,
+        fetchNextPage: fetchMoreFines,
+    } = useInfiniteQuery({
+        ...getGroupFinesInfiniteQuery(slug, fineFilters),
+        enabled: canViewFines && botVisning === "alle",
+    });
+
+    const {
+        data: apiFineUserPages,
+        hasNextPage: hasMoreFineUsers,
+        isFetchingNextPage: isLoadingMoreFineUsers,
+        fetchNextPage: fetchMoreFineUsers,
+    } = useInfiniteQuery({
+        ...getGroupFineUsersInfiniteQuery(
+            slug,
+            botStatus === "alle" ? {} : { status: botStatus },
+        ),
+        enabled: canViewFines && botVisning === "per-medlem",
+    });
+
+    const { data: apiFineStatistics } = useQuery({
+        ...getGroupFineStatisticsQuery(slug),
         enabled: canViewFines,
     });
     const { data: apiForms } = useQuery({
@@ -179,7 +286,28 @@ function GroupDetailPage() {
         () => mapGroup(apiGroup, leader?.name),
         [apiGroup, leader],
     );
-    const fines = useMemo(() => (apiFines ?? []).map(mapFine), [apiFines]);
+    const fines = useMemo(
+        () =>
+            (apiFinePages?.pages ?? []).flatMap((page) =>
+                page.fines.map(mapFine),
+            ),
+        [apiFinePages],
+    );
+    const fineUsers = useMemo(
+        () =>
+            (apiFineUserPages?.pages ?? []).flatMap((page) =>
+                page.users.map(mapFineUser),
+            ),
+        [apiFineUserPages],
+    );
+    const selectedFineUserName = useMemo(
+        () =>
+            botBruker
+                ? (fineUsers.find((u) => u.id === botBruker)?.name ??
+                  members.find((m) => m.id === botBruker)?.name)
+                : undefined,
+        [botBruker, fineUsers, members],
+    );
     const forms = useMemo(() => (apiForms ?? []).map(mapForm), [apiForms]);
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
@@ -189,6 +317,19 @@ function GroupDetailPage() {
     // Approving, editing and deleting fines: the fines admin, or the
     // matching fines:* permission for this group.
     const canManageFines = isFinesAdmin || hasFinesEdit;
+    // Å gi bot: `member`-rollen har `fines:create`, og API-et lar dessuten
+    // gruppelederen gjøre det uten grant. Samme regel som POST-endepunktet.
+    const hasFinesCreate = useScopedPermission(
+        ["fines:create", "fines:manage"],
+        `group:${slug}`,
+    );
+    const canGiveFine = Boolean(
+        apiGroup.finesActivated &&
+        (isLeader ||
+            isFinesAdmin ||
+            hasFinesManage ||
+            (isMember && hasFinesCreate)),
+    );
 
     const navItems = useMemo(
         () =>
@@ -204,6 +345,29 @@ function GroupDetailPage() {
     const activeTab = navItems.some((item) => item.key === active)
         ? active
         : "om";
+
+    async function handleSaveGroup(values: GroupEditValues) {
+        setGroupError(null);
+        try {
+            await updateGroup.mutateAsync({
+                slug,
+                data: {
+                    name: values.name,
+                    description: values.description,
+                    contactEmail: values.contactEmail,
+                    finesActivated: values.finesActivated,
+                    finesAdminId: values.finesAdminId,
+                    finesInfo: values.finesInfo,
+                },
+            });
+        } catch (error) {
+            setGroupError(
+                error instanceof Error
+                    ? error.message
+                    : "Ukjent feil da gruppen skulle lagres",
+            );
+        }
+    }
 
     function openGiveFine() {
         setActive("boter");
@@ -254,7 +418,12 @@ function GroupDetailPage() {
                     <GroupDetailHeader
                         group={group}
                         isAdmin={canManage}
+                        canGiveFine={canGiveFine}
                         onGiveFine={openGiveFine}
+                        members={members}
+                        onSaveGroup={handleSaveGroup}
+                        isSavingGroup={updateGroup.isPending}
+                        saveGroupError={groupError}
                     />
                 }
             >
@@ -292,8 +461,61 @@ function GroupDetailPage() {
                     {activeTab === "boter" ? (
                         <GroupFinesTab
                             fines={fines}
+                            fineUsers={fineUsers}
+                            statistics={apiFineStatistics}
                             memberCount={members.length}
+                            finesInfo={group.finesInfo}
+                            grouping={botVisning}
+                            onGroupingChange={(botVisning) =>
+                                navigate({
+                                    search: (prev) => ({
+                                        ...prev,
+                                        botVisning,
+                                        // Personfilteret hører til den flate
+                                        // listen; det gir ingen mening i
+                                        // medlemsoversikten.
+                                        botBruker: undefined,
+                                    }),
+                                })
+                            }
+                            status={botStatus}
+                            onStatusChange={(botStatus) =>
+                                navigate({
+                                    search: (prev) => ({ ...prev, botStatus }),
+                                })
+                            }
+                            selectedUserId={botBruker}
+                            selectedUserName={selectedFineUserName}
+                            onSelectUser={(botBruker) =>
+                                navigate({
+                                    search: (prev) => ({
+                                        ...prev,
+                                        botBruker,
+                                        botVisning: botBruker
+                                            ? "alle"
+                                            : prev.botVisning,
+                                    }),
+                                })
+                            }
+                            hasMore={
+                                botVisning === "alle"
+                                    ? hasMoreFines
+                                    : hasMoreFineUsers
+                            }
+                            isLoadingMore={
+                                botVisning === "alle"
+                                    ? isLoadingMoreFines
+                                    : isLoadingMoreFineUsers
+                            }
+                            onLoadMore={() => {
+                                if (botVisning === "alle") {
+                                    void fetchMoreFines();
+                                } else {
+                                    void fetchMoreFineUsers();
+                                }
+                            }}
                             canManage={canManageFines}
+                            currentUserId={session?.user?.id}
                             onApprove={(fine) =>
                                 updateFine.mutate({
                                     groupSlug: slug,
@@ -312,6 +534,20 @@ function GroupDetailPage() {
                                 deleteFine.mutate({
                                     groupSlug: slug,
                                     fineId: fine.id,
+                                })
+                            }
+                            onSaveDefense={(fine, defense) =>
+                                updateFine.mutate({
+                                    groupSlug: slug,
+                                    fineId: fine.id,
+                                    data: { defense },
+                                })
+                            }
+                            onSettleAllForUser={(userId, status) =>
+                                batchUpdateUserFines.mutate({
+                                    groupSlug: slug,
+                                    userId,
+                                    data: { status },
                                 })
                             }
                         />
