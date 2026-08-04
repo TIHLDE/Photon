@@ -8759,6 +8759,13 @@ export interface operations {
                     "application/json": components["schemas"]["Group"];
                 };
             };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Group with the specified slug does not exist */
             404: {
                 headers: {
@@ -9535,6 +9542,13 @@ export interface operations {
                     "application/json": components["schemas"]["GroupFormerMemberList"];
                 };
             };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Not Found - Group not found */
             404: {
                 headers: {
@@ -9563,6 +9577,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GroupMemberList"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {
@@ -9730,6 +9751,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10045,6 +10073,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Forbidden - The group is private and you are not a member */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - Group not found */
             404: {

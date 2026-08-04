@@ -129,6 +129,21 @@ export function groupTypeLabel(type: string): string {
 }
 
 /**
+ * Om gruppa bare er for medlemmene sine.
+ *
+ * En PRIVAT gruppe (digital transformasjon-faddergruppa er eksempelet) står
+ * fortsatt oppført der medlemskap listes, men siden, medlemslista og vervene
+ * svarer 403 for alle andre enn medlemmene. Bruk denne til å la være å lenke
+ * dit i stedet for å sende folk til en feilmelding.
+ *
+ * Case-insensitiv: typen er en fritekstkolonne, og radene fra Lepton er
+ * store bokstaver.
+ */
+export function isPrivateGroupType(type: string): boolean {
+    return type.toUpperCase() === "PRIVATE";
+}
+
+/**
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 30. apr. 2026".
  */
 export function formatGroupDate(iso: string): string {
