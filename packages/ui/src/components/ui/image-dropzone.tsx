@@ -337,11 +337,21 @@ export function ImageDropzone({
 
                 {previews.length > 0 && showSingleFrame && (
                     <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-muted-foreground">
-                            {previews[0]?.file.name}
-                            {previews[0]
-                                ? ` · ${formatSize(previews[0].file.size)}`
-                                : ""}
+                        {/* The name is the only part allowed to grow, so a long
+                            filename is cut instead of wrapping the row onto a
+                            second line and pushing the size out of view. */}
+                        <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                            <span
+                                className="truncate"
+                                title={previews[0]?.file.name}
+                            >
+                                {previews[0]?.file.name}
+                            </span>
+                            {previews[0] ? (
+                                <span className="shrink-0">
+                                    {`· ${formatSize(previews[0].file.size)}`}
+                                </span>
+                            ) : null}
                         </span>
                         <Button
                             type="button"
@@ -349,6 +359,7 @@ export function ImageDropzone({
                             variant="ghost"
                             onClick={() => removeAt(0)}
                             disabled={disabled}
+                            className="shrink-0"
                         >
                             {labels.removeLabel}
                         </Button>

@@ -60,13 +60,20 @@ import { GroupDetailHeader } from "#/components/group-detail-header";
 import type { GroupEditValues } from "#/components/group-edit-dialog";
 import { GroupEventsTab } from "#/components/group-events-tab";
 import { GroupFinesTab } from "#/components/group-fines-tab";
-import type { GroupFormEditValues } from "#/components/group-form-edit-dialog";
+import {
+    GroupFormEditDialog,
+    type GroupFormEditValues,
+} from "#/components/group-form-edit-dialog";
 import { GroupFormsTab } from "#/components/group-forms-tab";
 import {
     GroupGiveFineDialog,
     type GiveFineValues,
 } from "#/components/group-give-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
+import {
+    GroupNewFormDialog,
+    type NewFormValues,
+} from "#/components/group-new-form-dialog";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
@@ -157,8 +164,8 @@ function GroupDetail() {
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
-    const [newFormOpen, setNewFormOpen] = useState(false);
-    const [newFormError, setNewFormError] = useState<string | null>(null);
+    const [formDialogOpen, setFormDialogOpen] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
     const [editFormError, setEditFormError] = useState<string | null>(null);
 
@@ -181,10 +188,10 @@ function GroupDetail() {
     const updateFine = useMutation(updateFineMutation);
     const batchUpdateUserFines = useMutation(batchUpdateUserFinesMutation);
     const deleteFine = useMutation(deleteFineMutation);
+    const createGroupForm = useMutation(createGroupFormMutation);
     const createLaw = useMutation(createLawMutation);
     const updateLaw = useMutation(updateLawMutation);
     const deleteLaw = useMutation(deleteLawMutation);
-    const createGroupForm = useMutation(createGroupFormMutation);
     const updateForm = useMutation(updateFormMutation);
 
     // The scope is known here, so these mirror the API exactly: a grant for
@@ -400,29 +407,61 @@ function GroupDetail() {
         }
     }
 
-    async function handleCreateForm(values: { title: string }) {
-        setNewFormError(null);
+    function openNewForm() {
+        setFormError(null);
+        setFormDialogOpen(true);
+    }
+
+    /**
+     * Rekkefølgen på spørsmål og alternativer er posisjonen i lista: API-et
+     * sorterer på `order`, så uten den ville skjemaet vist spørsmålene i
+     * vilkårlig rekkefølge.
+     */
+    async function handleCreateForm(values: NewFormValues) {
+        setFormError(null);
         try {
             await createGroupForm.mutateAsync({
                 slug,
                 data: {
-                    title: values.title,
                     group: slug,
+                    title: values.title,
                     template: false,
-                    fields: [],
-                    // Skjemaet er stengt til spørsmålene er på plass; resten er
-                    // de samme verdiene som API-et ville satt selv.
-                    can_submit_multiple: true,
-                    is_open_for_submissions: false,
-                    only_for_group_members: false,
+                    can_submit_multiple: values.canSubmitMultiple,
+                    is_open_for_submissions: values.isOpenForSubmissions,
+                    only_for_group_members: values.onlyForGroupMembers,
+                    ...(values.description
+                        ? { description: values.description }
+                        : {}),
+                    ...(values.emailReceiverOnSubmit
+                        ? {
+                              email_receiver_on_submit:
+                                  values.emailReceiverOnSubmit,
+                          }
+                        : {}),
+                    fields: values.questions.map((question, order) => ({
+                        title: question.title,
+                        type: question.type,
+                        required: question.required,
+                        order,
+                        options:
+                            question.type === "text_answer"
+                                ? []
+                                : question.options.map(
+                                      (option, optionOrder) => ({
+                                          title: option.title,
+                                          order: optionOrder,
+                                      }),
+                                  ),
+                    })),
                 },
             });
-            setNewFormOpen(false);
+
+            setFormDialogOpen(false);
         } catch (error) {
-            setNewFormError(
+            setFormError(
                 error instanceof Error
                     ? error.message
-                    : "Ukjent feil da skjemaet skulle opprettes",
+                    : "Ukjent feil da spørreskjemaet skulle opprettes",
             );
         }
     }
@@ -433,7 +472,7 @@ function GroupDetail() {
     }
 
     /**
-     * Spørsmålene sendes bare når de faktisk er endret av noen som har lov:
+     * Spørsmålene sendes bare når dialogen faktisk lot noen endre dem:
      * `updateFieldsAndOptions` sletter spørsmål som mangler i lista, og med
      * dem svarene som hører til.
      */
@@ -675,24 +714,8 @@ function GroupDetail() {
                         <GroupFormsTab
                             forms={forms}
                             isAdmin={canManageForms}
-                            isCreateOpen={newFormOpen}
-                            onOpenCreate={() => {
-                                setNewFormError(null);
-                                setNewFormOpen(true);
-                            }}
-                            onCloseCreate={() => setNewFormOpen(false)}
-                            onCreate={handleCreateForm}
-                            isCreating={createGroupForm.isPending}
-                            createError={newFormError}
-                            editingForm={editingForm}
-                            editingQuestions={editingQuestions}
-                            editingAnswerCount={
-                                apiEditingSubmissions?.length ?? 0
-                            }
+                            onNewForm={openNewForm}
                             onEditForm={handleEditForm}
-                            onSave={handleSaveForm}
-                            isSaving={updateForm.isPending}
-                            saveError={editFormError}
                         />
                     ) : null}
                 </DetailLayoutContent>
@@ -706,6 +729,25 @@ function GroupDetail() {
                 onSubmit={handleGiveFine}
                 isSubmitting={createFine.isPending || isUploading}
                 error={fineError}
+            />
+
+            <GroupNewFormDialog
+                open={formDialogOpen}
+                onOpenChange={setFormDialogOpen}
+                onSubmit={handleCreateForm}
+                isSubmitting={createGroupForm.isPending}
+                error={formError}
+            />
+
+            <GroupFormEditDialog
+                open={editingForm !== null}
+                form={editingForm}
+                questions={editingQuestions}
+                answerCount={apiEditingSubmissions?.length ?? 0}
+                onClose={() => handleEditForm(null)}
+                onSubmit={handleSaveForm}
+                isSubmitting={updateForm.isPending}
+                error={editFormError}
             />
         </>
     );
