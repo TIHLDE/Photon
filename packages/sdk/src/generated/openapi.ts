@@ -2255,7 +2255,7 @@ export interface paths {
         head?: never;
         /**
          * Update user settings
-         * @description Partially update the authenticated user's settings. Only provided fields will be updated. User must have completed onboarding first.
+         * @description Partially update the authenticated user's settings. Only provided fields will be updated. Settings are created on first update for users who have not onboarded, so a member can accept the event rules without filling in a full profile.
          */
         patch: operations["updateUserSettings"];
         trace?: never;
@@ -7107,7 +7107,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Event only allows members covered by a priority pool, or members of a specific institute, to register */
+            /** @description Forbidden - User has not accepted the event rules, or the event only allows members covered by a priority pool or members of a specific institute to register */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -11619,13 +11619,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
-            };
-            /** @description Not Found - User settings do not exist (user needs to complete onboarding first) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

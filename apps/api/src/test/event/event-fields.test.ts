@@ -147,6 +147,7 @@ describe("registration allowPhoto", () => {
             await ctx.utils.giveUserPermissions(decliningUser, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(decliningUser.id);
             const decliningClient =
                 await ctx.utils.clientForUser(decliningUser);
 
@@ -164,6 +165,7 @@ describe("registration allowPhoto", () => {
             await ctx.utils.giveUserPermissions(defaultUser, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(defaultUser.id);
             const defaultClient = await ctx.utils.clientForUser(defaultUser);
 
             const defaultResponse = await defaultClient.api.event[
@@ -311,6 +313,8 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             await ctx.utils.giveUserPermissions(outsider, [
                 "events:registrations:create",
             ]);
+            // Accepted, so the 403 below can only come from the priority pool.
+            await ctx.utils.acceptEventRules(outsider.id);
             const outsiderClient = await ctx.utils.clientForUser(outsider);
 
             const outsiderResponse = await outsiderClient.api.event[
@@ -325,6 +329,7 @@ describe("onlyAllowPrioritized sign-up enforcement", () => {
             await ctx.utils.giveUserPermissions(member, [
                 "events:registrations:create",
             ]);
+            await ctx.utils.acceptEventRules(member.id);
             await ctx.db.insert(schema.groupMembership).values({
                 userId: member.id,
                 groupSlug: "index",
