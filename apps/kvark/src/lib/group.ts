@@ -55,6 +55,12 @@ export type Fine = {
     userImage?: string;
     paragraph: string;
     title: string;
+    /**
+     * Om boten er koblet til en paragraf i gruppens lovverk. Uten kobling
+     * faller `title` tilbake på begrunnelsen, og da må dialogen la være å
+     * vise den samme teksten to ganger.
+     */
+    hasLaw: boolean;
     amount: number;
     status: FineStatus;
     approved: boolean;
@@ -274,6 +280,7 @@ export function mapFine(fine: ApiFine): Fine {
         userImage: fine.user?.image ?? undefined,
         paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
         title: fine.law?.title ?? fine.reason,
+        hasLaw: fine.law != null,
         amount: fine.amount,
         status: (fine.status as FineStatus) ?? "pending",
         approved: fine.status === "approved" || fine.status === "paid",

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     addMonths,
@@ -100,22 +101,36 @@ export function EventCalendar({ events }: EventCalendarProps) {
                             className={cn(
                                 "flex min-h-24 flex-col gap-1 rounded-md p-1 ring-1 ring-card-border",
                                 !isSameMonth(day, month) && "opacity-50",
-                                isToday(day) && "bg-accent",
+                                // Dagens dato markeres med en ring i
+                                // primærfargen. `bg-accent` er grå i begge
+                                // temaer og forsvant i rutenettet.
+                                isToday(day) && "ring-2 ring-primary",
                             )}
                         >
-                            <span className="text-xs text-muted-foreground">
+                            <span
+                                className={cn(
+                                    "text-xs text-muted-foreground",
+                                    isToday(day) && "font-medium text-primary",
+                                )}
+                            >
                                 {format(day, "d")}
                             </span>
                             {dayEvents.map((event) => (
-                                <Link
+                                <Badge
                                     key={event.id}
-                                    to="/arrangementer/$slug"
-                                    params={{ slug: event.slug }}
-                                    className="truncate rounded-sm bg-secondary px-1 py-0.5 text-xs text-secondary-foreground"
+                                    className="w-full min-w-0 justify-start"
                                     title={event.title}
+                                    render={
+                                        <Link
+                                            to="/arrangementer/$slug"
+                                            params={{ slug: event.slug }}
+                                        />
+                                    }
                                 >
-                                    {event.title}
-                                </Link>
+                                    <span className="truncate">
+                                        {event.title}
+                                    </span>
+                                </Badge>
                             ))}
                         </div>
                     );
