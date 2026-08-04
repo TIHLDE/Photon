@@ -74,6 +74,7 @@ import { Route as AppProfilIdInnstillingerRouteImport } from './routes/_app/prof
 import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
 import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
+import { Route as AppSporreskjemaIdSvarRouteImport } from './routes/_app/sporreskjema.$id_.svar'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -401,6 +402,11 @@ const AppProfilIdSporreskjemaerRoute =
     path: '/sporreskjemaer',
     getParentRoute: () => AppProfilIdRoute,
   } as any)
+const AppSporreskjemaIdSvarRoute = AppSporreskjemaIdSvarRouteImport.update({
+  id: '/sporreskjema/$id_/svar',
+  path: '/sporreskjema/$id/svar',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -463,6 +469,7 @@ export interface FileRoutesByFullPath {
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id/': typeof AppProfilIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -524,6 +531,7 @@ export interface FileRoutesByTo {
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/sporreskjema/$id/svar': typeof AppSporreskjemaIdSvarRoute
   '/profil/$id': typeof AppProfilIdIndexRoute
 }
 export interface FileRoutesById {
@@ -592,6 +600,7 @@ export interface FileRoutesById {
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/_app/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
+  '/_app/sporreskjema/$id_/svar': typeof AppSporreskjemaIdSvarRoute
   '/_app/profil/$id/': typeof AppProfilIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -657,6 +666,7 @@ export interface FileRouteTypes {
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
+    | '/sporreskjema/$id/svar'
     | '/profil/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -718,6 +728,7 @@ export interface FileRouteTypes {
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
+    | '/sporreskjema/$id/svar'
     | '/profil/$id'
   id:
     | '__root__'
@@ -785,6 +796,7 @@ export interface FileRouteTypes {
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
     | '/_app/profil/$id/sporreskjemaer'
+    | '/_app/sporreskjema/$id_/svar'
     | '/_app/profil/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -1252,6 +1264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdSporreskjemaerRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
+    '/_app/sporreskjema/$id_/svar': {
+      id: '/_app/sporreskjema/$id_/svar'
+      path: '/sporreskjema/$id/svar'
+      fullPath: '/sporreskjema/$id/svar'
+      preLoaderRoute: typeof AppSporreskjemaIdSvarRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -1305,6 +1324,7 @@ interface AppRouteChildren {
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppMotetidIndexRoute: typeof AppMotetidIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
+  AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1335,6 +1355,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppMotetidIndexRoute: AppMotetidIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
+  AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

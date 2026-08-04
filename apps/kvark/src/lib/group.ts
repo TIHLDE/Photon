@@ -93,7 +93,13 @@ export type Law = {
 export type Form = {
     id: string;
     title: string;
+    description: string;
     isOpen: boolean;
+    /** Om samme person kan sende inn flere svar. */
+    canSubmitMultiple: boolean;
+    onlyForMembers: boolean;
+    /** E-post som varsles ved nye svar. Tom streng når ingen er satt. */
+    emailReceiver: string;
 };
 
 type ApiGroupForm = GroupFormList[number];
@@ -309,6 +315,10 @@ export function mapForm(form: ApiGroupForm): Form {
     return {
         id: form.id,
         title: form.title,
+        description: form.description ?? "",
         isOpen: form.is_open_for_submissions,
+        canSubmitMultiple: form.can_submit_multiple,
+        onlyForMembers: form.only_for_group_members,
+        emailReceiver: form.email_receiver_on_submit ?? "",
     };
 }

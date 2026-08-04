@@ -1012,26 +1012,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forms/{formId}/submissions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get submission
-         * @description Get a specific submission. Can view own submission or requires permission to manage the form.
-         */
-        get: operations["getFormSubmission"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/forms/{formId}/submissions/download": {
         parameters: {
             query?: never;
@@ -1044,6 +1024,26 @@ export interface paths {
          * @description Download all submissions for a form as CSV. Requires permission to manage the form.
          */
         get: operations["downloadFormSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get submission
+         * @description Get a specific submission. Can view own submission or requires permission to manage the form.
+         */
+        get: operations["getFormSubmission"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3843,6 +3843,10 @@ export interface components {
                     order: number;
                 }[];
             }[];
+            email_receiver_on_submit?: string | null;
+            can_submit_multiple?: boolean | null;
+            is_open_for_submissions?: boolean | null;
+            only_for_group_members?: boolean | null;
         };
         UpdateForm: {
             title?: string;
@@ -3866,6 +3870,10 @@ export interface components {
                     order: number;
                 }[];
             }[];
+            email_receiver_on_submit?: string | null;
+            can_submit_multiple?: boolean;
+            is_open_for_submissions?: boolean;
+            only_for_group_members?: boolean;
         };
         DeleteFormResponse: {
             detail: string;
@@ -8031,6 +8039,51 @@ export interface operations {
             };
         };
     };
+    downloadFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success - Returns CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getFormSubmission: {
         parameters: {
             query?: never;
@@ -8069,51 +8122,6 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Submission not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    downloadFormSubmissions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                formId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success - Returns CSV file */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/csv": unknown;
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Form not found */
             404: {
                 headers: {
                     [name: string]: unknown;
