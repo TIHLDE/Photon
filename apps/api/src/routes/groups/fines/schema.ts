@@ -36,6 +36,10 @@ export const createFineSchema = Schema(
     }),
 );
 
+export const fineStatusSchema = z
+    .enum(["pending", "approved", "paid", "rejected"])
+    .meta({ description: "Fine status" });
+
 export const updateFineSchema = Schema(
     "UpdateFine",
     z.object({
@@ -43,14 +47,25 @@ export const updateFineSchema = Schema(
             .string()
             .optional()
             .meta({ description: "User's defense text" }),
-        status: z
-            .enum(["pending", "approved", "paid", "rejected"])
-            .optional()
-            .meta({ description: "Fine status" }),
-        approvedByUserId: z
-            .string()
-            .optional()
-            .meta({ description: "User who approved the fine" }),
+        status: fineStatusSchema.optional(),
+    }),
+);
+
+export const batchUpdateFinesSchema = Schema(
+    "BatchUpdateFines",
+    z.object({
+        fineIds: z
+            .array(z.uuid())
+            .min(1)
+            .meta({ description: "The fines to update" }),
+        status: fineStatusSchema,
+    }),
+);
+
+export const batchUpdateUserFinesSchema = Schema(
+    "BatchUpdateUserFines",
+    z.object({
+        status: fineStatusSchema,
     }),
 );
 
@@ -141,11 +156,81 @@ export const fineSchema = Schema(
     }),
 );
 
-export const fineListSchema = Schema("FineList", z.array(fineSchema));
+export const fineListResponseSchema = Schema(
+    "FineList",
+    z.object({
+        totalCount: z.number().meta({ description: "Total number of fines" }),
+        pages: z.number().meta({ description: "Total number of pages" }),
+        nextPage: z
+            .number()
+            .nullable()
+            .meta({ description: "Next page number, or null if last page" }),
+        fines: z.array(fineSchema),
+    }),
+);
+
+/**
+ * Group totals, one bucket per status. The buckets are mutually exclusive
+ * because a fine has exactly one status — unlike Lepton, where `payed` and
+ * `approved` were independent booleans and an unapproved-but-paid fine was
+ * counted twice. `rejected` is deliberately left out of every bucket: a
+ * rejected fine is not owed.
+ */
+export const fineStatisticsSchema = Schema(
+    "FineStatistics",
+    z.object({
+        notApproved: z.number().meta({
+            description: "Sum of amounts for fines awaiting approval",
+        }),
+        approvedNotPaid: z
+            .number()
+            .meta({ description: "Sum of amounts for approved, unpaid fines" }),
+        paid: z.number().meta({ description: "Sum of amounts for paid fines" }),
+    }),
+);
+
+export const fineUserListResponseSchema = Schema(
+    "FineUserList",
+    z.object({
+        totalCount: z.number().meta({ description: "Total number of members" }),
+        pages: z.number().meta({ description: "Total number of pages" }),
+        nextPage: z
+            .number()
+            .nullable()
+            .meta({ description: "Next page number, or null if last page" }),
+        users: z.array(
+            z.object({
+                id: z.string().meta({ description: "User ID" }),
+                name: z.string().meta({ description: "User display name" }),
+                image: z
+                    .string()
+                    .nullable()
+                    .meta({ description: "User profile image URL" }),
+                finesAmount: z.number().meta({
+                    description:
+                        "Sum of the member's fine amounts in this group, 0 when they have none",
+                }),
+                finesCount: z
+                    .number()
+                    .meta({ description: "Number of fines the member has" }),
+            }),
+        ),
+    }),
+);
 
 export const updateFineResponseSchema = Schema(
     "UpdateFineResponse",
     z.object({
         message: z.string(),
+    }),
+);
+
+export const batchUpdateFinesResponseSchema = Schema(
+    "BatchUpdateFinesResponse",
+    z.object({
+        message: z.string(),
+        updated: z
+            .number()
+            .meta({ description: "Number of fines that were updated" }),
     }),
 );

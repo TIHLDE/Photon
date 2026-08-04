@@ -6,9 +6,12 @@ import type {
     GroupMember as ApiGroupMember,
     GroupFormerMember as ApiGroupFormerMember,
     Fine as ApiFine,
+    FineUserList,
     Law as ApiLaw,
     GroupFormList,
 } from "@tihlde/sdk";
+
+type ApiFineUser = FineUserList["users"][number];
 
 // -- Shared display types (previously in mock/group-detail) --
 
@@ -25,8 +28,8 @@ export type Group = {
     leader?: string;
     finesInfo?: string;
     finesActivated?: boolean;
-    botSjef?: string;
-    botSystemPraktisk?: string;
+    /** Botsjefen. Null når gruppen ikke har utpekt noen. */
+    finesAdminId?: string | null;
 };
 
 export type Member = {
@@ -38,6 +41,13 @@ export type Member = {
     image?: string;
 };
 
+/**
+ * Botens tilstand. Ett felt, ikke to boolske — «godkjent» og «betalt» er
+ * trinn i samme forløp, og kombinasjoner som «betalt, men ikke godkjent»
+ * finnes ikke.
+ */
+export type FineStatus = "pending" | "approved" | "paid" | "rejected";
+
 export type Fine = {
     id: string;
     userId: string;
@@ -46,12 +56,30 @@ export type Fine = {
     paragraph: string;
     title: string;
     amount: number;
+    status: FineStatus;
     approved: boolean;
     paid: boolean;
     createdBy: string;
     date: string;
     reason: string;
+    defense: string;
     image?: string;
+};
+
+/** Ett medlem i «Per medlem»-visningen. */
+export type FineUser = {
+    id: string;
+    name: string;
+    image?: string;
+    /** Summen av medlemmets bøter, 0 for medlemmer uten bøter. */
+    finesAmount: number;
+    finesCount: number;
+};
+
+export type FineStatistics = {
+    notApproved: number;
+    approvedNotPaid: number;
+    paid: number;
 };
 
 export type Law = {
@@ -139,6 +167,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         leader,
         finesInfo: group.finesInfo,
         finesActivated: group.finesActivated,
+        finesAdminId: group.finesAdminId ?? null,
     };
 }
 
@@ -236,12 +265,25 @@ export function mapFine(fine: ApiFine): Fine {
         paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
         title: fine.law?.title ?? fine.reason,
         amount: fine.amount,
+        status: (fine.status as FineStatus) ?? "pending",
         approved: fine.status === "approved" || fine.status === "paid",
         paid: fine.status === "paid",
         createdBy: fine.createdByUser?.name ?? "",
         date: fine.createdAt ? formatGroupDate(fine.createdAt) : "",
         reason: fine.reason,
+        defense: fine.defense ?? "",
         image: fine.image ?? undefined,
+    };
+}
+
+/** Map a member row from the "bøter per medlem" endpoint. */
+export function mapFineUser(user: ApiFineUser): FineUser {
+    return {
+        id: user.id,
+        name: user.name,
+        image: user.image ?? undefined,
+        finesAmount: user.finesAmount,
+        finesCount: user.finesCount,
     };
 }
 

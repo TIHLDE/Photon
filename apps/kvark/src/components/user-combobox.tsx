@@ -131,6 +131,52 @@ export function MemberMultiCombobox({
     );
 }
 
+type MemberSingleComboboxProps = {
+    items: ComboboxMember[];
+    value: ComboboxMember | null;
+    onValueChange: (next: ComboboxMember | null) => void;
+    placeholder?: string;
+};
+
+/**
+ * Velg ett medlem, og få det tilbake med ID. Enkeltvalgs-varianten av
+ * `MemberMultiCombobox` — brukes der API-et vil ha én bruker-ID, slik som
+ * botsjefen på en gruppe.
+ */
+export function MemberSingleCombobox({
+    items,
+    value,
+    onValueChange,
+    placeholder,
+}: MemberSingleComboboxProps) {
+    return (
+        <Combobox
+            items={items}
+            value={value}
+            onValueChange={onValueChange}
+            itemToStringLabel={(item: ComboboxMember) => item.name}
+            itemToStringValue={(item: ComboboxMember) => item.id}
+            isItemEqualToValue={(a: ComboboxMember, b: ComboboxMember) =>
+                a.id === b.id
+            }
+        >
+            <ComboboxInput placeholder={placeholder} />
+            <ComboboxContent>
+                <ComboboxList>
+                    <ComboboxEmpty>Ingen treff</ComboboxEmpty>
+                    <ComboboxCollection>
+                        {(item: ComboboxMember) => (
+                            <ComboboxItem key={item.id} value={item}>
+                                {item.name}
+                            </ComboboxItem>
+                        )}
+                    </ComboboxCollection>
+                </ComboboxList>
+            </ComboboxContent>
+        </Combobox>
+    );
+}
+
 type UserSingleComboboxProps = {
     items: string[];
     value: string | null;

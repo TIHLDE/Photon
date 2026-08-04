@@ -892,6 +892,7 @@ describe("group positions", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
                 expect(memberResponse.status).toBe(200);
 
@@ -900,6 +901,7 @@ describe("group positions", () => {
                     ":groupSlug"
                 ].fines.$get({
                     param: { groupSlug: group.slug },
+                    query: {},
                 });
                 expect(outsiderResponse.status).toBe(403);
             },

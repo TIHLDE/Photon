@@ -1,0 +1,116 @@
+import { schema } from "@photon/db";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { validator } from "hono-openapi";
+import { HTTPException } from "hono/http-exception";
+import { describeRoute } from "~/lib/openapi";
+import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
+import {
+    PaginationSchema,
+    getPageOffset,
+    getTotalPages,
+} from "~/middleware/pagination";
+import { canViewFines, requireFinesGroup } from "./permissions";
+import { fineStatusSchema, fineUserListResponseSchema } from "./schema";
+
+export const listFineUsersRoute = route().get(
+    "/:groupSlug/fines/users",
+    describeRoute({
+        tags: ["fines"],
+        summary: "List a group's members with their fine totals",
+        operationId: "listFineUsers",
+        description:
+            "Paginated list of the group's members with the sum of their fine amounts, highest first. Members without fines are included with a total of 0. Filter the totals with 'status'.",
+    })
+        .schemaResponse({
+            statusCode: 200,
+            schema: fineUserListResponseSchema,
+            description: "Members with fine totals retrieved successfully",
+        })
+        .forbidden({
+            description: "Not authorized to view fines for this group",
+        })
+        .notFound({
+            description: "Group not found, or fines not activated for it",
+        })
+        .build(),
+    requireAuth,
+    validator(
+        "query",
+        PaginationSchema.extend({
+            status: fineStatusSchema
+                .optional()
+                .describe("Only count fines with this status"),
+        }),
+    ),
+    async (c) => {
+        const ctx = c.get("ctx");
+        const { db } = ctx;
+        const groupSlug = c.req.param("groupSlug");
+        const user = c.get("user");
+        const { page, pageSize, status } = c.req.valid("query");
+
+        const group = await requireFinesGroup(ctx, groupSlug);
+
+        if (!(await canViewFines(ctx, user.id, group))) {
+            throw new HTTPException(403, {
+                message: "Not authorized to view fines for this group",
+            });
+        }
+
+        /**
+         * Lepton parity: the list is driven by the membership table, not by the
+         * fines, so a member who has stayed out of trouble still shows up with
+         * 0. That is what makes "per medlem" a roster rather than a rap sheet.
+         */
+        const fineJoin = status
+            ? and(
+                  eq(schema.fine.userId, schema.groupMembership.userId),
+                  eq(schema.fine.groupSlug, groupSlug),
+                  eq(schema.fine.status, status),
+              )
+            : and(
+                  eq(schema.fine.userId, schema.groupMembership.userId),
+                  eq(schema.fine.groupSlug, groupSlug),
+              );
+
+        const totalCount = await db.$count(
+            schema.groupMembership,
+            eq(schema.groupMembership.groupSlug, groupSlug),
+        );
+
+        const finesAmount = sql<number>`coalesce(sum(${schema.fine.amount}), 0)::int`;
+        const finesCount = sql<number>`count(${schema.fine.id})::int`;
+
+        const rows = await db
+            .select({
+                id: schema.user.id,
+                name: schema.user.name,
+                image: schema.user.image,
+                finesAmount,
+                finesCount,
+            })
+            .from(schema.groupMembership)
+            .innerJoin(
+                schema.user,
+                eq(schema.user.id, schema.groupMembership.userId),
+            )
+            .leftJoin(schema.fine, fineJoin)
+            .where(eq(schema.groupMembership.groupSlug, groupSlug))
+            .groupBy(schema.user.id, schema.user.name, schema.user.image)
+            // Lepton left this unordered, which makes paging skip and repeat
+            // rows. Name breaks ties so the order is total.
+            .orderBy(desc(finesAmount), asc(schema.user.name))
+            .limit(pageSize)
+            .offset(getPageOffset(page, pageSize));
+
+        const totalPages = getTotalPages(totalCount, pageSize);
+
+        return c.json({
+            totalCount,
+            pages: totalPages,
+            nextPage: page + 1 >= totalPages ? null : page + 1,
+            users: rows,
+        });
+    },
+);

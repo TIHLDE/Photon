@@ -1,12 +1,18 @@
-import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, desc, eq } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { isGroupMember } from "~/lib/group";
+import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { fineListSchema } from "./schema";
+import {
+    PaginationSchema,
+    getPageOffset,
+    getTotalPages,
+} from "~/middleware/pagination";
+import { canViewFines, requireFinesGroup } from "./permissions";
+import { fineListResponseSchema, fineStatusSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
 
 export const listFinesRoute = route().get(
@@ -16,87 +22,68 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a list of fines for a group. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Supports filtering by status and user.",
+            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Filter with 'status' and 'userId'.",
     })
         .schemaResponse({
             statusCode: 200,
-            schema: fineListSchema,
+            schema: fineListResponseSchema,
             description: "List of fines retrieved successfully",
         })
         .forbidden({
             description: "Not authorized to view fines for this group",
         })
-        .notFound({ description: "Group not found" })
+        .notFound({
+            description: "Group not found, or fines not activated for it",
+        })
         .build(),
     requireAuth,
+    validator(
+        "query",
+        PaginationSchema.extend({
+            status: fineStatusSchema
+                .optional()
+                .describe("Only return fines with this status"),
+            userId: z
+                .string()
+                .optional()
+                .describe("Only return fines given to this user"),
+        }),
+    ),
     async (c) => {
         const ctx = c.get("ctx");
         const { db } = ctx;
         const groupSlug = c.req.param("groupSlug");
         const user = c.get("user");
-        const statusFilter = c.req.query("status");
-        const userIdFilter = c.req.query("userId");
+        const { page, pageSize, status, userId } = c.req.valid("query");
 
-        // Validate group exists
-        const group = await db
-            .select()
-            .from(schema.group)
-            .where(eq(schema.group.slug, groupSlug))
-            .limit(1)
-            .then((res) => res[0]);
+        const group = await requireFinesGroup(ctx, groupSlug);
 
-        if (!group) {
-            throw new HTTPException(404, {
-                message: `Group with slug "${groupSlug}" not found`,
-            });
-        }
-
-        // Check authorization: group members see their own group's fines
-        // (Lepton parity — the membership itself is the access), fines admin
-        // and fines:view holders see them too.
-        const isMember = await isGroupMember(ctx, user.id, groupSlug);
-        const isFinesAdmin = group.finesAdminId === user.id;
-
-        const hasViewPermission =
-            isMember ||
-            isFinesAdmin ||
-            (await hasScopedPermission(
-                ctx,
-                user.id,
-                "fines:view",
-                `group:${groupSlug}`,
-            ));
-
-        if (!hasViewPermission) {
+        if (!(await canViewFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message: "Not authorized to view fines for this group",
             });
         }
 
-        // Build query conditions
         const conditions = [eq(schema.fine.groupSlug, groupSlug)];
 
-        // Fines admin or users with fines:view permission can filter by specific user
-        if (userIdFilter) {
-            conditions.push(eq(schema.fine.userId, userIdFilter));
+        if (userId) {
+            conditions.push(eq(schema.fine.userId, userId));
         }
 
-        // Add status filter if provided
-        if (
-            statusFilter &&
-            (statusFilter === "pending" ||
-                statusFilter === "approved" ||
-                statusFilter === "paid" ||
-                statusFilter === "rejected")
-        ) {
-            conditions.push(eq(schema.fine.status, statusFilter));
+        if (status) {
+            conditions.push(eq(schema.fine.status, status));
         }
+
+        const filters = and(...conditions);
+        const totalCount = await db.$count(schema.fine, filters);
 
         // Include public user info (name/image) so the UI can display names
         // instead of user IDs
         const fines = await db.query.fine.findMany({
-            where: and(...conditions),
+            where: filters,
             orderBy: desc(schema.fine.createdAt),
+            limit: pageSize,
+            offset: getPageOffset(page, pageSize),
             with: {
                 user: {
                     columns: {
@@ -124,6 +111,13 @@ export const listFinesRoute = route().get(
             },
         });
 
-        return c.json(fines.map(serializeFineLaw));
+        const totalPages = getTotalPages(totalCount, pageSize);
+
+        return c.json({
+            totalCount,
+            pages: totalPages,
+            nextPage: page + 1 >= totalPages ? null : page + 1,
+            fines: fines.map(serializeFineLaw),
+        });
     },
 );
