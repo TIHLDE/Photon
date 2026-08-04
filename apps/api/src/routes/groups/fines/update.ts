@@ -8,6 +8,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
+import { requireFinesGroup } from "./permissions";
 import { updateFineResponseSchema, updateFineSchema } from "./schema";
 
 export const updateFineRoute = route().patch(
@@ -64,19 +65,7 @@ export const updateFineRoute = route().patch(
             });
         }
 
-        // Get group
-        const group = await db
-            .select()
-            .from(schema.group)
-            .where(eq(schema.group.slug, groupSlug))
-            .limit(1)
-            .then((res) => res[0]);
-
-        if (!group) {
-            throw new HTTPException(404, {
-                message: `Group with slug "${groupSlug}" not found`,
-            });
-        }
+        const group = await requireFinesGroup(ctx, groupSlug);
 
         const isOwner = fine.userId === user.id;
         const isFinesAdmin = group.finesAdminId === user.id;
@@ -92,8 +81,8 @@ export const updateFineRoute = route().patch(
         const hasUpdatePermission = hasGlobalPerm || hasScopedPerm;
 
         // Authorization checks
-        if (body.status || body.approvedByUserId) {
-            // Only fines admin or users with fines:update permission can change status or approver
+        if (body.status) {
+            // Only fines admin or users with fines:update permission can change status
             if (!isFinesAdmin && !hasUpdatePermission) {
                 throw new HTTPException(403, {
                     message:
@@ -102,7 +91,9 @@ export const updateFineRoute = route().patch(
             }
         }
 
-        if (body.defense) {
+        // `!== undefined`, not truthiness: clearing a defense by sending "" is
+        // still writing to someone's fine, and must not skip the owner check.
+        if (body.defense !== undefined) {
             // Only the fine owner can add defense
             if (!isOwner) {
                 throw new HTTPException(403, {

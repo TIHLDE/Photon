@@ -12,6 +12,7 @@ import type {
     UpdateGroupMemberRole,
     CreateFine,
     UpdateFine,
+    BatchUpdateUserFines,
     CreateLaw,
     UpdateLaw,
     CreateGroupForm,
@@ -251,16 +252,89 @@ type FineListFilters = Omit<
     "page" | "pageSize"
 >;
 
-export const getGroupFinesQuery = (
+/**
+ * ky refuses `undefined` in `searchParams`, and an absent filter must not be
+ * sent as an empty value either — `?status=` is not the same request as no
+ * `status` at all.
+ */
+function definedParams<T extends Record<string, unknown>>(params: T) {
+    return Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined),
+    ) as { [K in keyof T]: NonNullable<T[K]> };
+}
+
+/** Backs the "Last inn mer"-button on the bøter tab. */
+export const getGroupFinesInfiniteQuery = (
     groupSlug: string,
-    page: number,
     filters: FineListFilters = {},
     pageSize: number = DEFAULT_PAGE_SIZE,
 ) =>
-    queryOptions({
-        queryKey: [...GroupQueryKeys.fines, groupSlug, page, pageSize, filters],
-        queryFn: () =>
+    infiniteQueryOptions({
+        queryKey: [
+            ...GroupQueryKeys.fines,
+            groupSlug,
+            "infinite",
+            pageSize,
+            filters,
+        ],
+        queryFn: ({ pageParam }) =>
             apiClient.get("/api/groups/{groupSlug}/fines", {
+                params: { groupSlug },
+                searchParams: definedParams({
+                    page: pageParam,
+                    pageSize,
+                    ...filters,
+                }),
+            }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+    });
+
+type FineUserListFilters = Omit<
+    QueryParamsHelper<"get", "/api/groups/{groupSlug}/fines/users">,
+    "page" | "pageSize"
+>;
+
+/**
+ * The group's members with their fine totals, including members with none.
+ * Backs the "Per medlem" view, which cannot be derived from the fine list: a
+ * page of fines only knows about people who have been fined.
+ */
+export const getGroupFineUsersInfiniteQuery = (
+    groupSlug: string,
+    filters: FineUserListFilters = {},
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    infiniteQueryOptions({
+        queryKey: [
+            ...GroupQueryKeys.fines,
+            groupSlug,
+            "users-infinite",
+            pageSize,
+            filters,
+        ],
+        queryFn: ({ pageParam }) =>
+            apiClient.get("/api/groups/{groupSlug}/fines/users", {
+                params: { groupSlug },
+                searchParams: definedParams({
+                    page: pageParam,
+                    pageSize,
+                    ...filters,
+                }),
+            }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+    });
+
+/**
+ * Group totals. Computed server-side over every fine, so the numbers stay put
+ * when the list is filtered or paged.
+ */
+export const getGroupFineStatisticsQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...GroupQueryKeys.fines, groupSlug, "statistics"],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/fines/statistics", {
                 params: { groupSlug },
             }),
     });
@@ -312,6 +386,28 @@ export const updateFineMutation = mutationOptions({
         ctx.client.invalidateQueries(
             getGroupFineByIdQuery(vars.groupSlug, vars.fineId),
         );
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
+            exact: false,
+        });
+    },
+});
+
+export const batchUpdateUserFinesMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        userId,
+        data,
+    }: {
+        groupSlug: string;
+        userId: string;
+        data: BatchUpdateUserFines;
+    }) =>
+        apiClient.patch("/api/groups/{groupSlug}/fines/users/{userId}/batch", {
+            params: { groupSlug, userId },
+            json: data,
+        }),
+    onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...GroupQueryKeys.fines, vars.groupSlug],
             exact: false,
