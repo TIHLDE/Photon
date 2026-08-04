@@ -15,11 +15,14 @@ import type {
     DirectiveRegistry,
 } from "../directive";
 
+import { NorwegianSpellcheck } from "./spellcheck-extension";
 import { TableNodeView } from "./table-node-view";
 import { attrsFromSchema } from "./zod-to-attrs";
 
 export type BuildOptions = {
     placeholder?: string;
+    /** Norsk stavekontroll i appen. På som standard. */
+    spellcheck?: boolean;
 };
 
 /**
@@ -56,6 +59,7 @@ export function buildTiptapExtensions(
         TableRow,
         TableHeader,
         TableCell,
+        ...(options.spellcheck === false ? [] : [NorwegianSpellcheck]),
     ];
 
     const directiveExtensions = registry.directives.map((directive) =>

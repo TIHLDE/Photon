@@ -53,7 +53,7 @@ export const registerToEventRoute = route().post(
         const eventId = c.req.param("eventId");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
-        const { allowPhoto } = c.req.valid("json");
+        const body = c.req.valid("json");
 
         const event = await db.query.event.findFirst({
             where: (event, { eq }) => eq(event.id, eventId),
@@ -141,6 +141,19 @@ export const registerToEventRoute = route().post(
                 message: "User is already registered for this event",
             });
         }
+
+        // Bildesamtykket bor på profilen, ikke på arrangementet. Uten et
+        // eksplisitt felt i kallet er kontoinnstillingen fasit; brukere uten
+        // innstillinger (ikke onboardet) faller tilbake på kolonnedefaulten.
+        const allowPhoto =
+            body.allowPhoto ??
+            (
+                await db.query.userSettings.findFirst({
+                    where: (settings, { eq }) => eq(settings.userId, userId),
+                    columns: { allowsPhotosByDefault: true },
+                })
+            )?.allowsPhotosByDefault ??
+            true;
 
         // Create pending registration in database
         await db.insert(schema.eventRegistration).values({

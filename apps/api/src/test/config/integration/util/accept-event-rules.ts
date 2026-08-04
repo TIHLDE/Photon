@@ -13,9 +13,12 @@ export const createAcceptEventRules =
         await ctx.db
             .insert(schema.userSettings)
             .values({
+                // Samme plassholdere som API-et selv skriver når reglene
+                // godkjennes uten onboarding — særlig allowsPhotosByDefault,
+                // så en godkjenning ikke endrer bildesamtykket på veien.
                 userId,
                 gender: "other",
-                allowsPhotosByDefault: false,
+                allowsPhotosByDefault: true,
                 acceptsEventRules: true,
                 receiveMailCommunication: true,
                 isOnboarded: false,

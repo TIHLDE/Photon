@@ -407,9 +407,9 @@ export const registerSchema = Schema(
 export const createRegistrationBodySchema = Schema(
     "CreateEventRegistrationBody",
     z.object({
-        allowPhoto: z.boolean().default(true).meta({
+        allowPhoto: z.boolean().optional().meta({
             description:
-                "Photo consent for this event, overriding the account-level allowsPhotosByDefault",
+                "Photo consent for this event. Omit it to use the account-level allowsPhotosByDefault, which is where members manage their consent.",
         }),
     }),
 );

@@ -36,12 +36,9 @@ function emptyToNull<T extends string>(value: T | undefined) {
     return value === undefined ? undefined : value === "" ? null : value;
 }
 
-/**
- * `allergies` overstyres eksplisitt: `.default([])` gjør feltet påkrevd i den
- * genererte OpenAPI-typen selv etter `.partial()`, og da måtte enhver klient
- * som endrer én innstilling sende hele allergilista på nytt — eller slette den
- * ved et uhell.
- */
+// `allergies` har `.default([])`, som overlever `.partial()` og gjør feltet
+// påkrevd for klientene. Uten dette måtte enhver delvis oppdatering sende
+// allergiene på nytt — glemmer den det, tømmes de.
 export const UpdateUserSettingsSchema = UserSettingsSchema.partial().extend({
     allergies: z.array(z.string()).optional(),
 });
@@ -59,10 +56,15 @@ export type UpdateUserSettings = z.infer<typeof UpdateUserSettingsSchema>;
  *
  * `isOnboarded` stays false, so these placeholders are recognisable as "never
  * answered" rather than "answered like this".
+ *
+ * `allowsPhotosByDefault` is true to match what påmeldingen already does for a
+ * member without a row (`?? true` in the registration route). Otherwise the row
+ * this creates would silently revoke their photo consent the moment they
+ * accepted the event rules — two unrelated settings, one click.
  */
 const IMPLICIT_SETTINGS_DEFAULTS = {
     gender: "other",
-    allowsPhotosByDefault: false,
+    allowsPhotosByDefault: true,
     acceptsEventRules: false,
     receiveMailCommunication: true,
     isOnboarded: false,

@@ -3,8 +3,6 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { VippsButton } from "@tihlde/ui/ui/vipps-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
-import { Checkbox } from "@tihlde/ui/ui/checkbox";
-import { Label } from "@tihlde/ui/ui/label";
 import { Progress } from "@tihlde/ui/ui/progress";
 import {
     AlertCircle,
@@ -20,7 +18,7 @@ import {
     Users,
     type LucideIcon,
 } from "lucide-react";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type {
     EventDeadline,
@@ -40,7 +38,7 @@ type EventRegistrationCardProps = {
     waitlistCount: number;
     isAdmin: boolean;
     price: EventPrice;
-    onRegister?: (opts: { allowPhoto: boolean }) => void;
+    onRegister?: () => void;
     onUnregister?: () => void;
     onJoinWaitlist?: () => void;
     onNotify?: () => void;
@@ -66,7 +64,6 @@ type EventRegistrationCardProps = {
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
-    const [allowPhoto, setAllowPhoto] = useState(true);
     const timeline = buildTimeline(props);
     // Bare tilstandene der medlemmet ellers kunne ha meldt seg på — å be noen
     // godkjenne reglene på et arrangement som er stengt hjelper ingen.
@@ -75,11 +72,7 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
         (props.registrationState === "open" ||
             props.registrationState === "not-open" ||
             props.registrationState === "full");
-    const state = getStateRendering(
-        props,
-        { allowPhoto, setAllowPhoto },
-        blockedByEventRules,
-    );
+    const state = getStateRendering(props, blockedByEventRules);
     // Uten påmelding er både tidslinjen og «0/∞ påmeldte» bare støy.
     const showRegistrationDetails = props.registrationState !== "no-signup";
 
@@ -135,14 +128,8 @@ type StateRendering = {
     actions?: ReactNode;
 };
 
-type PhotoConsentState = {
-    allowPhoto: boolean;
-    setAllowPhoto: (allowPhoto: boolean) => void;
-};
-
 function getStateRendering(
     props: EventRegistrationCardProps,
-    photoConsent: PhotoConsentState,
     blockedByEventRules: boolean,
 ): StateRendering {
     const state = props.registrationState;
@@ -281,34 +268,13 @@ function getStateRendering(
 
             return {
                 actions: (
-                    <>
-                        <Label className="flex items-start gap-3">
-                            <Checkbox
-                                className="shrink-0"
-                                checked={photoConsent.allowPhoto}
-                                onCheckedChange={(checked) =>
-                                    photoConsent.setAllowPhoto(checked === true)
-                                }
-                            />
-                            <span>
-                                Jeg samtykker til at bilder av meg fra
-                                arrangementet kan publiseres
-                            </span>
-                        </Label>
-                        <Button
-                            className="w-full"
-                            disabled={props.isSubmitting}
-                            onClick={() =>
-                                props.onRegister?.({
-                                    allowPhoto: photoConsent.allowPhoto,
-                                })
-                            }
-                        >
-                            {props.isSubmitting
-                                ? "Melder deg på …"
-                                : "Meld deg på"}
-                        </Button>
-                    </>
+                    <Button
+                        className="w-full"
+                        disabled={props.isSubmitting}
+                        onClick={() => props.onRegister?.()}
+                    >
+                        {props.isSubmitting ? "Melder deg på …" : "Meld deg på"}
+                    </Button>
                 ),
             };
 

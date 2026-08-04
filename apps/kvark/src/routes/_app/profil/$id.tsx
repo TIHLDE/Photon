@@ -17,6 +17,7 @@ import {
     LayoutGrid,
     LogOut,
     Pencil,
+    Settings,
     ShieldCheck,
     Ticket,
     UserCircle2,
@@ -166,6 +167,14 @@ function RouteComponent() {
                               icon: HelpCircle,
                               link: linkOptions({
                                   to: "/profil/$id/sporreskjemaer",
+                                  params: { id },
+                              }),
+                          },
+                          {
+                              label: "Innstillinger",
+                              icon: Settings,
+                              link: linkOptions({
+                                  to: "/profil/$id/innstillinger",
                                   params: { id },
                               }),
                           },
