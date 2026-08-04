@@ -114,21 +114,8 @@ export const listMembersRoute = route().get(
             studyByUser.set(userId, deriveStudyFromGroups(groups));
         }
 
-        /**
-         * Ledere først, deretter alfabetisk på navn. Uten dette ga databasen
-         * den rekkefølgen den tilfeldigvis hadde, så lista så ulik ut fra gang
-         * til gang. Sorteringen gjøres her og ikke med `orderBy` fordi Postgres
-         * trenger en ICU-collation for å få æ, ø og å riktig — `localeCompare`
-         * med "nb" gjør det uten å stille krav til databaseoppsettet.
-         */
-        const collator = new Intl.Collator("nb", { sensitivity: "base" });
-        const sorted = [...members].sort((a, b) => {
-            if (a.role !== b.role) return a.role === "leader" ? -1 : 1;
-            return collator.compare(a.user.name ?? "", b.user.name ?? "");
-        });
-
         return c.json(
-            sorted.map((member) => ({
+            members.map((member) => ({
                 ...member,
                 user: {
                     ...member.user,
