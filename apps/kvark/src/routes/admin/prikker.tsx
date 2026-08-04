@@ -40,6 +40,8 @@ import {
     getEventsQuery,
     getStrikesQuery,
 } from "#/api/queries/events";
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -65,7 +67,11 @@ function StrikesAdminPage() {
     const [createOpen, setCreateOpen] = useState(false);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <AdminPageHeader
                     title="Prikker"
@@ -85,7 +91,7 @@ function StrikesAdminPage() {
                 open={createOpen}
                 onOpenChange={setCreateOpen}
             />
-        </div>
+        </Stagger>
     );
 }
 

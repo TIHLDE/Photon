@@ -15,6 +15,8 @@ import { FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { authQueryOptions, sessionHasPermission } from "#/api/auth";
 import {
     type ApplicationType,
@@ -169,7 +171,7 @@ function AdminApplicationsPage() {
 
     if (visibleTabs.length === 0) {
         return (
-            <div className="flex flex-col gap-6">
+            <Stagger render={<div className="flex flex-col gap-6" />}>
                 <AdminPageHeader
                     title="Søknader"
                     description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
@@ -179,12 +181,12 @@ function AdminApplicationsPage() {
                     title="Ingen tilgang"
                     description="Du har ikke tilgang til å behandle noen søknadstyper."
                 />
-            </div>
+            </Stagger>
         );
     }
 
     return (
-        <div className="flex flex-col gap-6">
+        <Stagger render={<div className="flex flex-col gap-6" />}>
             <AdminPageHeader
                 title="Søknader"
                 description="Utlegg, søknader om støtte og saker meldt inn til Hovedstyret."
@@ -302,6 +304,6 @@ function AdminApplicationsPage() {
                     });
                 }}
             />
-        </div>
+        </Stagger>
     );
 }

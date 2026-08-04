@@ -41,6 +41,8 @@ import {
     regenerateApiKeyMutation,
     updateApiKeyMutation,
 } from "#/api/queries/api-keys";
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
@@ -58,7 +60,11 @@ function ApiKeysPage() {
     const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="API Nøkler"
                 description="Nøkler gir tjenester programmatisk tilgang til API-et. Hemmeligheten vises kun én gang."
@@ -94,7 +100,7 @@ function ApiKeysPage() {
                 secret={revealedSecret}
                 onClose={() => setRevealedSecret(null)}
             />
-        </div>
+        </Stagger>
     );
 }
 

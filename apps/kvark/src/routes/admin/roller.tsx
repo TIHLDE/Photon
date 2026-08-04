@@ -34,6 +34,8 @@ import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { MoreHorizontalIcon, PlusIcon, ShieldIcon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import {
     assignPositionMutation,
@@ -112,7 +114,11 @@ function RolesAdminPage() {
     ]);
 
     return (
-        <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Roller og verv"
                 description="Administrer verv i grupper og globale roller."
@@ -132,7 +138,7 @@ function RolesAdminPage() {
             ) : (
                 <RolesSection />
             )}
-        </div>
+        </Stagger>
     );
 }
 

@@ -3,6 +3,8 @@ import { LogsIcon } from "lucide-react";
 
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
@@ -13,7 +15,11 @@ export const Route = createFileRoute("/admin/_super-admin/logs")({
 
 function LogsPage() {
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Logs"
                 description="Applikasjons- og revisjonslogger."
@@ -28,6 +34,6 @@ function LogsPage() {
                     />
                 </CardContent>
             </Card>
-        </div>
+        </Stagger>
     );
 }

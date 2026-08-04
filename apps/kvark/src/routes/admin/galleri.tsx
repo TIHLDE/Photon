@@ -50,6 +50,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { getEventsQuery } from "#/api/queries/events";
 import {
@@ -96,7 +98,11 @@ function GalleryAdminPage() {
     >(null);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Galleri"
                 description="Opprett gallerier og last opp bilder fra arrangementer."
@@ -122,7 +128,7 @@ function GalleryAdminPage() {
                     if (!open) setDialog(null);
                 }}
             />
-        </div>
+        </Stagger>
     );
 }
 

@@ -51,6 +51,8 @@ import {
     removeGroupMemberMutation,
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { searchUsersQuery } from "#/api/queries/roles";
 import {
     getUsersInfiniteQuery,
@@ -172,7 +174,11 @@ function UsersAdminPage() {
         : !canManageMembers;
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Brukere"
                 description="Søk i alle brukere, eller velg et studie for å administrere medlemskap og roller."
@@ -212,7 +218,7 @@ function UsersAdminPage() {
                     onOpenChange={setAddOpen}
                 />
             )}
-        </div>
+        </Stagger>
     );
 }
 

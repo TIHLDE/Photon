@@ -26,6 +26,8 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CheckCircle2, Upload, XCircle, Zap } from "lucide-react";
 import { Suspense, lazy, useEffect, useState } from "react";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -60,7 +62,11 @@ function OpptakAdminPage() {
     ]);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Kontraktstyring"
                 description="Last opp og administrer frivillighetskontrakter."
@@ -74,7 +80,7 @@ function OpptakAdminPage() {
                         : undefined
                 }
             />
-        </div>
+        </Stagger>
     );
 }
 

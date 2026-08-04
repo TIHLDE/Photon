@@ -11,6 +11,11 @@ import {
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@tihlde/ui/ui/collapsible";
+import {
     Dialog,
     DialogContent,
     DialogFooter,
@@ -48,6 +53,8 @@ import type {
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { CheckCircle2, PlusIcon, UsersIcon, XCircle } from "lucide-react";
 import { useState } from "react";
+
+import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { useImageUploader } from "#/api/queries/assets";
 import {
@@ -99,7 +106,11 @@ function GrupperAdminPage() {
     const groups = allGroups.filter((group) => group.type === tab);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Grupper"
                 description="Opprett grupper, administrer kontraktsignering og se signeringsstatus for medlemmer."
@@ -150,7 +161,7 @@ function GrupperAdminPage() {
                     ))}
                 </div>
             )}
-        </div>
+        </Stagger>
     );
 }
 
@@ -373,7 +384,15 @@ function GroupCard({
     });
 
     return (
-        <Card>
+        <Card
+            // The card *is* the collapsible root, so the panel below can roll
+            // its height open instead of the content popping into place.
+            // `gap-0` because the card's own gap would otherwise sit between the
+            // header and a zero-height panel; the panel brings its own top
+            // padding once it is open.
+            className="gap-0"
+            render={<Collapsible open={expanded} onOpenChange={onToggle} />}
+        >
             <CardHeader>
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
@@ -391,19 +410,17 @@ function GroupCard({
                             <Badge variant="outline">Bøter aktivert</Badge>
                         )}
                         {canEdit ? (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={onToggle}
+                            <CollapsibleTrigger
+                                render={<Button variant="outline" size="sm" />}
                             >
                                 {expanded ? "Lukk" : "Rediger"}
-                            </Button>
+                            </CollapsibleTrigger>
                         ) : null}
                     </div>
                 </div>
             </CardHeader>
-            {expanded && (
-                <CardContent className="flex flex-col gap-6">
+            <CollapsibleContent>
+                <CardContent className="flex flex-col gap-6 pt-4">
                     <FieldGroup>
                         <Field orientation="horizontal" className="gap-3">
                             <Checkbox
@@ -458,7 +475,7 @@ function GroupCard({
                             <p>Laster signeringsstatus…</p>
                         ))}
                 </CardContent>
-            )}
+            </CollapsibleContent>
         </Card>
     );
 }
