@@ -14,6 +14,12 @@ type ProfileMembershipCardProps = {
     role: string;
     /** «Medlem 2023–2025» for avsluttede medlemskap. Utelates for aktive. */
     period?: string;
+    /**
+     * Om gruppesiden er åpen for den som ser på. Privat gruppe man ikke er
+     * medlem av svarer 403, så da vises kortet uten lenke i stedet for å sende
+     * folk til en feilmelding.
+     */
+    canOpen?: boolean;
 };
 
 /**
@@ -27,12 +33,17 @@ export function ProfileMembershipCard({
     logoUrl,
     role,
     period,
+    canOpen = true,
 }: ProfileMembershipCardProps) {
     return (
         <Card
             size="sm"
             className="flex-row items-center gap-3 px-3"
-            render={<Link to="/grupper/$slug" params={{ slug }} />}
+            render={
+                canOpen ? (
+                    <Link to="/grupper/$slug" params={{ slug }} />
+                ) : undefined
+            }
         >
             <Avatar className="size-10 shrink-0">
                 {logoUrl ? (

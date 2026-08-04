@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
@@ -8,6 +9,7 @@ import {
     type UserStudy,
     deriveStudyFromGroups,
 } from "~/lib/user/study";
+import { captureAuth } from "~/middleware/auth";
 import { memberListSchema } from "../schema";
 
 export const listMembersRoute = route().get(
@@ -24,9 +26,14 @@ export const listMembersRoute = route().get(
             description: "List of members retrieved successfully",
         })
         .notFound({ description: "Group not found" })
+        .forbidden({
+            description: "The group is private and you are not a member",
+        })
         .build(),
+    captureAuth,
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const groupSlug = c.req.param("groupSlug");
 
         // Validate group exists
@@ -42,6 +49,8 @@ export const listMembersRoute = route().get(
                 message: `Group with slug "${groupSlug}" not found`,
             });
         }
+
+        await assertGroupVisible(ctx, group, c.get("user")?.id);
 
         // Get members with their public user info (name/image for display)
         const members = await db.query.groupMembership.findMany({

@@ -8,7 +8,7 @@
  * - Checking if users can manage group resources
  */
 
-import { hasPermission } from "@photon/auth/rbac";
+import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import {
     assignUserRole,
     getRoleById,
@@ -17,6 +17,7 @@ import {
 import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
+import { HTTPAppException } from "~/lib/errors";
 
 /**
  * Group types whose membership is a projection of Feide, not an editable list.
@@ -34,6 +35,63 @@ const DERIVED_GROUP_TYPES = new Set(["study", "studyyear"]);
 /** True when membership of this group is derived and must not be hand-edited. */
 export function isDerivedGroupType(type: string): boolean {
     return DERIVED_GROUP_TYPES.has(type.toLowerCase());
+}
+
+/**
+ * Group types whose page is for members only.
+ *
+ * A `PRIVATE` group is not a group the organisation presents outwards — the
+ * digital transformasjon-faddergruppa is the standing example. Its name still
+ * shows up wherever memberships are listed (a profile says which groups the
+ * person is in), but the page itself, the roster and the verv are the members'
+ * own. Everything that reads them therefore goes through
+ * {@link assertGroupVisible}.
+ *
+ * Compared case-insensitively: the column is a varchar rather than the
+ * `groupType` enum, and the rows migrated from Lepton are upper case.
+ */
+const PRIVATE_GROUP_TYPES = new Set(["private"]);
+
+/** True when only the group's own members may open it. */
+export function isPrivateGroupType(type: string): boolean {
+    return PRIVATE_GROUP_TYPES.has(type.toLowerCase());
+}
+
+/**
+ * Whether `userId` may read a private group's page, roster and verv.
+ *
+ * Members always may. `groups:manage` — globally or scoped to this group — is
+ * the only way in from the outside, and it exists so the admin panel keeps
+ * working; no ordinary member, and nobody signed out, gets past this.
+ */
+export async function canViewGroup(
+    ctx: AppContext,
+    group: { slug: string; type: string },
+    userId: string | null | undefined,
+): Promise<boolean> {
+    if (!isPrivateGroupType(group.type)) return true;
+    if (!userId) return false;
+    if (await isGroupMember(ctx, userId, group.slug)) return true;
+
+    return hasScopedPermission(
+        ctx,
+        userId,
+        "groups:manage",
+        `group:${group.slug}`,
+    );
+}
+
+/** {@link canViewGroup}, as a guard: throws 403 instead of returning false. */
+export async function assertGroupVisible(
+    ctx: AppContext,
+    group: { slug: string; type: string },
+    userId: string | null | undefined,
+): Promise<void> {
+    if (await canViewGroup(ctx, group, userId)) return;
+
+    throw HTTPAppException.Forbidden(
+        "Denne gruppen er privat — bare medlemmene har tilgang.",
+    );
 }
 
 /**
