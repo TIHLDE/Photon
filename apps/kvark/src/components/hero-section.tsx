@@ -1,3 +1,4 @@
+import { useMediaQuery } from "#/hooks/use-media-query";
 import { cn } from "#/lib/utils";
 import React from "react";
 
@@ -93,6 +94,13 @@ export function HeroSectionBackground({ className }: { className?: string }) {
     const pulseGradientId = `${fadeId}-pulse-gradient`;
     const pulseMaskId = `${fadeId}-pulse-mask`;
     const pulseGlowId = `${fadeId}-pulse-glow`;
+
+    // Ingen bevegelse for de som har bedt om det. Pulslaget droppes helt i
+    // stedet for bare å stoppes: uten animasjonen ville glødebåndet blitt
+    // stående som en statisk stripe midt i bildet.
+    const prefersReducedMotion = useMediaQuery(
+        "(prefers-reduced-motion: reduce)",
+    );
 
     const paths = React.useMemo(
         () =>
@@ -222,14 +230,16 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                 mask={`url(#${vignetteMaskId})`}
             >
                 <g>
-                    <animateTransform
-                        attributeName="transform"
-                        dur={`${scrollDurationSeconds}s`}
-                        from="0 0"
-                        repeatCount="indefinite"
-                        to={`-${waveLoopDistance} 0`}
-                        type="translate"
-                    />
+                    {prefersReducedMotion ? null : (
+                        <animateTransform
+                            attributeName="transform"
+                            dur={`${scrollDurationSeconds}s`}
+                            from="0 0"
+                            repeatCount="indefinite"
+                            to={`-${waveLoopDistance} 0`}
+                            type="translate"
+                        />
+                    )}
                     {paths.map((path, i) => (
                         <path
                             key={i}
@@ -241,40 +251,50 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                     ))}
                 </g>
             </g>
-            <g mask={`url(#${pulseMaskId})`}>
-                <g mask={`url(#${vignetteMaskId})`}>
-                    <g>
-                        <animateTransform
-                            attributeName="transform"
-                            dur={`${scrollDurationSeconds}s`}
-                            from="0 0"
-                            repeatCount="indefinite"
-                            to={`-${waveLoopDistance} 0`}
-                            type="translate"
-                        />
-                        {paths.map((path, i) => (
-                            <path
-                                key={`glow-${i}`}
-                                d={path}
-                                fill="none"
-                                stroke={pulseGlowColor}
-                                strokeWidth={7}
-                                strokeOpacity={0.7}
-                                filter={`url(#${pulseGlowId})`}
+            {prefersReducedMotion ? null : (
+                <g mask={`url(#${pulseMaskId})`}>
+                    <g mask={`url(#${vignetteMaskId})`}>
+                        <g>
+                            <animateTransform
+                                attributeName="transform"
+                                dur={`${scrollDurationSeconds}s`}
+                                from="0 0"
+                                repeatCount="indefinite"
+                                to={`-${waveLoopDistance} 0`}
+                                type="translate"
                             />
-                        ))}
-                        {paths.map((path, i) => (
-                            <path
-                                key={`beat-${i}`}
-                                d={path}
-                                fill="none"
-                                stroke={pulseCoreColor}
-                                strokeWidth={1.6}
-                            />
-                        ))}
+                            {/*
+                             * Filteret ligger på gruppen, ikke på hver path.
+                             * Per path ble det ett Gaussian-blur-pass per linje
+                             * per frame (32 stk) og forsiden falt til ~29 FPS på
+                             * mobil. Linjene overlapper knapt, så ett felles
+                             * pass ser tilnærmet likt ut.
+                             */}
+                            <g filter={`url(#${pulseGlowId})`}>
+                                {paths.map((path, i) => (
+                                    <path
+                                        key={`glow-${i}`}
+                                        d={path}
+                                        fill="none"
+                                        stroke={pulseGlowColor}
+                                        strokeWidth={7}
+                                        strokeOpacity={0.7}
+                                    />
+                                ))}
+                            </g>
+                            {paths.map((path, i) => (
+                                <path
+                                    key={`beat-${i}`}
+                                    d={path}
+                                    fill="none"
+                                    stroke={pulseCoreColor}
+                                    strokeWidth={1.6}
+                                />
+                            ))}
+                        </g>
                     </g>
                 </g>
-            </g>
+            )}
         </svg>
     );
 }

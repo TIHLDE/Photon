@@ -128,11 +128,20 @@ export function GroupFineDialog({
                 {fine ? (
                     <>
                         <DialogHeader>
+                            {/* Uten paragraf er `title` den samme teksten som
+                                begrunnelsen lenger ned. Da brukes en generisk
+                                overskrift i stedet for å gjenta seg selv. */}
                             <DialogTitle>
-                                {fine.paragraph ? `${fine.paragraph} - ` : ""}
-                                {fine.title}
+                                {fine.hasLaw
+                                    ? `${fine.paragraph ? `${fine.paragraph} - ` : ""}${fine.title}`
+                                    : "Bot"}
                             </DialogTitle>
-                            <DialogDescription>{fine.user}</DialogDescription>
+                            <DialogDescription>
+                                Til {fine.user}
+                                {fine.createdBy
+                                    ? ` · Fra ${fine.createdBy}`
+                                    : ""}
+                            </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap gap-2">
@@ -151,15 +160,18 @@ export function GroupFineDialog({
                                     {fine.paid ? "Betalt" : "Ikke betalt"}
                                 </Badge>
                             </div>
+                            {/* «Opprettet av» er flyttet opp i Til/Fra-paret i
+                                headeren, så her står bare datoen igjen. */}
                             <div className="text-sm">
-                                <p>Opprettet av: {fine.createdBy}</p>
                                 <p>Dato: {fine.date}</p>
                             </div>
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs text-muted-foreground">
                                     Begrunnelse
                                 </span>
-                                <p className="text-sm">{fine.reason}</p>
+                                <p className="wrap-anywhere text-sm">
+                                    {fine.reason}
+                                </p>
                             </div>
                             {fine.image ? (
                                 <img
@@ -201,17 +213,27 @@ export function GroupFineDialog({
                                     <span className="text-xs text-muted-foreground">
                                         Forsvar
                                     </span>
-                                    <p className="text-sm">{fine.defense}</p>
+                                    <p className="wrap-anywhere text-sm">
+                                        {fine.defense}
+                                    </p>
                                 </div>
                             ) : null}
                             {/* «Rediger bot» lå her, men PATCH-endepunktet tar
                                 bare status og forsvar — begrunnelse og beløp
                                 kan ikke endres, så knappen gjorde ingenting. */}
                             {canManage ? (
+                                /* Hierarki i handlingsraden: neste steg i
+                                   botens livsløp er fylt, det andre er dempet
+                                   og sletting er destruktiv. Før var alle tre
+                                   «outline» og raden forsvant i bakgrunnen. */
                                 <div className="flex flex-wrap gap-2">
                                     <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant={
+                                            fine.approved
+                                                ? "outline"
+                                                : "default"
+                                        }
                                         disabled={fine.approved}
                                         onClick={() => onApprove(fine)}
                                     >
@@ -219,7 +241,11 @@ export function GroupFineDialog({
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant={
+                                            !fine.approved || fine.paid
+                                                ? "outline"
+                                                : "default"
+                                        }
                                         disabled={fine.paid}
                                         onClick={() => onMarkPaid(fine)}
                                     >
@@ -227,7 +253,8 @@ export function GroupFineDialog({
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant="destructive"
+                                        className="ml-auto"
                                         onClick={() => setConfirmDelete(true)}
                                     >
                                         <Trash2 />

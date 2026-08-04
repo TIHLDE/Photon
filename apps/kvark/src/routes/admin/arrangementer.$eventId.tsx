@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
     createFileRoute,
+    Link,
     useNavigate,
     useSearch,
 } from "@tanstack/react-router";
@@ -9,6 +10,7 @@ import { nb } from "date-fns/locale";
 import {
     CheckCircle2,
     CircleCheckBigIcon,
+    ExternalLink,
     UsersIcon,
     WalletIcon,
     XCircle,
@@ -122,6 +124,21 @@ function EventAdminDetailPage() {
             <AdminPageHeader
                 title={event.title}
                 description={`${formatDateTime(event.startTime)} · ${event.organizer?.name ?? "Ingen arrangør"}`}
+                action={
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                            <Link
+                                to="/arrangementer/$slug"
+                                params={{ slug: event.slug }}
+                            />
+                        }
+                    >
+                        <ExternalLink />
+                        Se arrangementet
+                    </Button>
+                }
             />
 
             <Tabs
