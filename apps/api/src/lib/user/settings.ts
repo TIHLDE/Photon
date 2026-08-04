@@ -36,7 +36,12 @@ function emptyToNull<T extends string>(value: T | undefined) {
     return value === undefined ? undefined : value === "" ? null : value;
 }
 
-export const UpdateUserSettingsSchema = UserSettingsSchema.partial();
+// `allergies` har `.default([])`, som overlever `.partial()` og gjør feltet
+// påkrevd for klientene. Uten dette måtte enhver delvis oppdatering sende
+// allergiene på nytt — glemmer den det, tømmes de.
+export const UpdateUserSettingsSchema = UserSettingsSchema.partial().extend({
+    allergies: z.array(z.string()).optional(),
+});
 
 export type UserAllergy = z.infer<typeof UserAllergySchema>;
 export type UserSettings = z.infer<typeof UserSettingsSchema>;

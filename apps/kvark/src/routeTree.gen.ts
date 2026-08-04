@@ -70,6 +70,7 @@ import { Route as AdminArrangementerEventIdRouteImport } from './routes/admin/ar
 import { Route as AdminArrangementerNyRouteImport } from './routes/admin/arrangementer.ny'
 import { Route as AppProfilIdIndexRouteImport } from './routes/_app/profil/$id/index'
 import { Route as AppProfilIdArrangementerRouteImport } from './routes/_app/profil/$id/arrangementer'
+import { Route as AppProfilIdInnstillingerRouteImport } from './routes/_app/profil/$id/innstillinger'
 import { Route as AppProfilIdMedlemskapRouteImport } from './routes/_app/profil/$id/medlemskap'
 import { Route as AppProfilIdPrikkerRouteImport } from './routes/_app/profil/$id/prikker'
 import { Route as AppProfilIdSporreskjemaerRouteImport } from './routes/_app/profil/$id/sporreskjemaer'
@@ -378,6 +379,12 @@ const AppProfilIdArrangementerRoute =
     path: '/arrangementer',
     getParentRoute: () => AppProfilIdRoute,
   } as any)
+const AppProfilIdInnstillingerRoute =
+  AppProfilIdInnstillingerRouteImport.update({
+    id: '/innstillinger',
+    path: '/innstillinger',
+    getParentRoute: () => AppProfilIdRoute,
+  } as any)
 const AppProfilIdMedlemskapRoute = AppProfilIdMedlemskapRouteImport.update({
   id: '/medlemskap',
   path: '/medlemskap',
@@ -452,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
@@ -512,6 +520,7 @@ export interface FileRoutesByTo {
   '/nyheter': typeof AppNyheterIndexRoute
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
   '/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
@@ -579,6 +588,7 @@ export interface FileRoutesById {
   '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/profil/$id/arrangementer': typeof AppProfilIdArrangementerRoute
+  '/_app/profil/$id/innstillinger': typeof AppProfilIdInnstillingerRoute
   '/_app/profil/$id/medlemskap': typeof AppProfilIdMedlemskapRoute
   '/_app/profil/$id/prikker': typeof AppProfilIdPrikkerRoute
   '/_app/profil/$id/sporreskjemaer': typeof AppProfilIdSporreskjemaerRoute
@@ -643,6 +653,7 @@ export interface FileRouteTypes {
     | '/nyheter/'
     | '/admin/arrangementer/'
     | '/profil/$id/arrangementer'
+    | '/profil/$id/innstillinger'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
@@ -703,6 +714,7 @@ export interface FileRouteTypes {
     | '/nyheter'
     | '/admin/arrangementer'
     | '/profil/$id/arrangementer'
+    | '/profil/$id/innstillinger'
     | '/profil/$id/medlemskap'
     | '/profil/$id/prikker'
     | '/profil/$id/sporreskjemaer'
@@ -769,6 +781,7 @@ export interface FileRouteTypes {
     | '/_app/nyheter/'
     | '/admin/arrangementer/'
     | '/_app/profil/$id/arrangementer'
+    | '/_app/profil/$id/innstillinger'
     | '/_app/profil/$id/medlemskap'
     | '/_app/profil/$id/prikker'
     | '/_app/profil/$id/sporreskjemaer'
@@ -1211,6 +1224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProfilIdArrangementerRouteImport
       parentRoute: typeof AppProfilIdRoute
     }
+    '/_app/profil/$id/innstillinger': {
+      id: '/_app/profil/$id/innstillinger'
+      path: '/innstillinger'
+      fullPath: '/profil/$id/innstillinger'
+      preLoaderRoute: typeof AppProfilIdInnstillingerRouteImport
+      parentRoute: typeof AppProfilIdRoute
+    }
     '/_app/profil/$id/medlemskap': {
       id: '/_app/profil/$id/medlemskap'
       path: '/medlemskap'
@@ -1237,6 +1257,7 @@ declare module '@tanstack/react-router' {
 
 interface AppProfilIdRouteChildren {
   AppProfilIdArrangementerRoute: typeof AppProfilIdArrangementerRoute
+  AppProfilIdInnstillingerRoute: typeof AppProfilIdInnstillingerRoute
   AppProfilIdMedlemskapRoute: typeof AppProfilIdMedlemskapRoute
   AppProfilIdPrikkerRoute: typeof AppProfilIdPrikkerRoute
   AppProfilIdSporreskjemaerRoute: typeof AppProfilIdSporreskjemaerRoute
@@ -1245,6 +1266,7 @@ interface AppProfilIdRouteChildren {
 
 const AppProfilIdRouteChildren: AppProfilIdRouteChildren = {
   AppProfilIdArrangementerRoute: AppProfilIdArrangementerRoute,
+  AppProfilIdInnstillingerRoute: AppProfilIdInnstillingerRoute,
   AppProfilIdMedlemskapRoute: AppProfilIdMedlemskapRoute,
   AppProfilIdPrikkerRoute: AppProfilIdPrikkerRoute,
   AppProfilIdSporreskjemaerRoute: AppProfilIdSporreskjemaerRoute,

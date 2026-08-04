@@ -144,12 +144,14 @@ function EventDetailPage() {
         end: { iso: event.endTime },
     });
 
-    function handleRegister({ allowPhoto }: { allowPhoto: boolean }) {
+    function handleRegister() {
         if (!session) {
             navigate({ to: "/login", search: { redirectTo: location.href } });
             return;
         }
-        registerMutation.mutate({ eventId: event.id, allowPhoto });
+        // Bildesamtykket ligger på profilen, så påmeldingen sender det ikke —
+        // API-et henter kontoinnstillingen selv.
+        registerMutation.mutate({ eventId: event.id });
     }
 
     function handleUnregister() {
