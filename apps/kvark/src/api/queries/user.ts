@@ -10,6 +10,7 @@ const UserQueryKeys = {
     settings: ["user", "settings"] as const,
     allergies: ["user", "allergies"] as const,
     userAllergies: ["user", "allergies-for-user"] as const,
+    unansweredEvaluations: ["user", "unanswered-evaluations"] as const,
     listInfinite: ["user", "list-infinite"] as const,
     profile: ["user", "profile"] as const,
 } as const;
@@ -100,6 +101,18 @@ export const updateUserSettingsMutation = mutationOptions({
         });
     },
 });
+
+/**
+ * Evalueringene medlemmet skylder svar på.
+ *
+ * Så lenge lista ikke er tom nekter API-et nye påmeldinger, så den er både
+ * en huskeliste og forklaringen på hvorfor påmelding plutselig ikke går.
+ */
+export const getUnansweredEvaluationsQuery = () =>
+    queryOptions({
+        queryKey: [...UserQueryKeys.unansweredEvaluations],
+        queryFn: () => apiClient.get("/api/user/me/unanswered-evaluations"),
+    });
 
 export const getAllergiesQuery = () =>
     queryOptions({

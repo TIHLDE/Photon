@@ -57,6 +57,21 @@ export const updateUserSettingsResponseSchema = Schema(
     UpdateUserSettingsSchema,
 );
 
+export const unansweredEvaluationsSchema = Schema(
+    "UnansweredEvaluations",
+    z.array(
+        z.object({
+            formId: z.string().meta({ description: "Form to answer" }),
+            formTitle: z.string(),
+            eventId: z.string(),
+            eventTitle: z.string(),
+            eventEndTime: z
+                .string()
+                .meta({ description: "When the event ended" }),
+        }),
+    ),
+);
+
 /**
  * An admin edits allergies and nothing else about the profile.
  *

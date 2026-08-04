@@ -2340,6 +2340,26 @@ export interface paths {
         patch: operations["updateUserSettings"];
         trace?: never;
     };
+    "/api/user/me/unanswered-evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the member's unanswered evaluations
+         * @description Evaluation forms for events the member attended but never answered. These block registration for new events.
+         */
+        get: operations["listUnansweredEvaluations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/allergy": {
         parameters: {
             query?: never;
@@ -5525,6 +5545,15 @@ export interface components {
             receiveMailCommunication?: boolean;
             allergies?: string[];
         };
+        UnansweredEvaluations: {
+            /** @description Form to answer */
+            formId: string;
+            formTitle: string;
+            eventId: string;
+            eventTitle: string;
+            /** @description When the event ended */
+            eventEndTime: string;
+        }[];
         Allergy: {
             /** @description Unique identifier for the allergy */
             slug: string;
@@ -7313,7 +7342,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - User has not accepted the event rules, or the event only allows members covered by a priority pool or members of a specific institute to register */
+            /** @description Forbidden - User has not accepted the event rules, owes an answer to an evaluation, or the event only allows members covered by a priority pool or members of a specific institute to register */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -12063,6 +12092,35 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    listUnansweredEvaluations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unanswered evaluations, newest event first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnansweredEvaluations"];
+                };
             };
             /** @description Authentication required */
             401: {

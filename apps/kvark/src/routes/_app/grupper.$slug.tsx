@@ -71,9 +71,9 @@ import {
 } from "#/components/group-give-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
 import {
-    GroupNewFormDialog,
+    NewFormDialog,
     type NewFormValues,
-} from "#/components/group-new-form-dialog";
+} from "#/components/new-form-dialog";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
@@ -731,7 +731,7 @@ function GroupDetail() {
                 error={fineError}
             />
 
-            <GroupNewFormDialog
+            <NewFormDialog
                 open={formDialogOpen}
                 onOpenChange={setFormDialogOpen}
                 onSubmit={handleCreateForm}

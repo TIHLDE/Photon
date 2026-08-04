@@ -175,6 +175,7 @@ export type SubmissionDetail = Schemas["SubmissionDetail"];
 export type SubmissionList = Schemas["SubmissionList"];
 export type ToddelIssue = Schemas["ToddelIssue"];
 export type ToddelList = Schemas["ToddelList"];
+export type UnansweredEvaluations = Schemas["UnansweredEvaluations"];
 export type UpdateApiKey = Schemas["UpdateApiKey"];
 export type UpdateApplicationStatus = Schemas["UpdateApplicationStatus"];
 export type UpdateBanner = Schemas["UpdateBanner"];

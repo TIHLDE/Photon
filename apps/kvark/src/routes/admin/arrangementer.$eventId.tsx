@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     CircleCheckBigIcon,
     ExternalLink,
+    PlusIcon,
     UsersIcon,
     WalletIcon,
     XCircle,
@@ -22,7 +23,13 @@ import type { Event, UpdateEventSchema } from "@tihlde/sdk";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
-import { Card, CardContent } from "@tihlde/ui/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import {
@@ -40,8 +47,10 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import {
+    createEventFormMutation,
     deleteEventMutation,
     getEventByIdQuery,
+    getEventFormsQuery,
     getEventPaymentsQuery,
     getEventRegistrationsQuery,
     refundEventPaymentMutation,
@@ -55,13 +64,22 @@ import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
+import type { NewFormValues } from "#/components/new-form-dialog";
+import { NewFormDialog } from "#/components/new-form-dialog";
 import {
     useAnyScopePermission,
     useCanActOnResource,
 } from "#/hooks/use-permission";
+import { extractErrorMessage } from "#/lib/api-error";
 import { useDebounced } from "#/lib/use-debounced";
 
-const TABS = ["detaljer", "pameldte", "oppmote", "betalinger"] as const;
+const TABS = [
+    "detaljer",
+    "pameldte",
+    "oppmote",
+    "skjemaer",
+    "betalinger",
+] as const;
 type TabValue = (typeof TABS)[number];
 
 /** The API caps pageSize at 100; asking for more is a 400. */
@@ -103,6 +121,7 @@ function EventAdminDetailPage() {
             { value: "detaljer" as const, label: "Detaljer" },
             { value: "pameldte" as const, label: "Påmeldte" },
             { value: "oppmote" as const, label: "Oppmøte" },
+            { value: "skjemaer" as const, label: "Skjemaer" },
             ...(canSeePayments
                 ? [{ value: "betalinger" as const, label: "Betalinger" }]
                 : []),
@@ -161,6 +180,7 @@ function EventAdminDetailPage() {
             {activeTab === "detaljer" && <DetailsTab eventId={eventId} />}
             {activeTab === "pameldte" && <RegistrationsTab eventId={eventId} />}
             {activeTab === "oppmote" && <AttendanceTab eventId={eventId} />}
+            {activeTab === "skjemaer" && <FormsTab eventId={eventId} />}
             {activeTab === "betalinger" && canSeePayments && (
                 <Suspense fallback={<TableSkeleton />}>
                     <PaymentsTab eventId={eventId} />
@@ -698,6 +718,151 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                     </Table>
                 </CardContent>
             </Card>
+        </div>
+    );
+}
+
+/* -------------------------------- Skjemaer ------------------------------- */
+
+/**
+ * Påmeldingsskjema og evalueringsskjema for arrangementet.
+ *
+ * Evalueringen er den som betyr noe i praksis: den kan bare besvares av dem
+ * som er markert «Ankommet», og et ubesvart evalueringsskjema sperrer for
+ * påmelding til alt annet. Det er slik en bedpres faktisk får svar.
+ */
+const EVENT_FORM_KINDS = [
+    {
+        type: "survey" as const,
+        label: "Påmeldingsskjema",
+        description:
+            "Besvares når man melder seg på. Brukes til allergier, ønsker og lignende.",
+        dialogTitle: "Nytt påmeldingsskjema",
+    },
+    {
+        type: "evaluation" as const,
+        label: "Evalueringsskjema",
+        description:
+            "Kan bare besvares av dem som er markert «Ankommet». Så lenge det står ubesvart kan deltakeren ikke melde seg på nye arrangementer.",
+        dialogTitle: "Nytt evalueringsskjema",
+    },
+];
+
+function FormsTab({ eventId }: { eventId: string }) {
+    const { data: forms, isPending } = useQuery(getEventFormsQuery(eventId));
+    const createForm = useMutation(createEventFormMutation);
+
+    const [creating, setCreating] = useState<"survey" | "evaluation" | null>(
+        null,
+    );
+    const [error, setError] = useState<string | null>(null);
+
+    const kind = EVENT_FORM_KINDS.find((k) => k.type === creating);
+
+    async function handleCreate(values: NewFormValues) {
+        if (!creating) return;
+        setError(null);
+        try {
+            await createForm.mutateAsync({
+                eventId,
+                data: {
+                    event: eventId,
+                    type: creating,
+                    title: values.title,
+                    template: false,
+                    ...(values.description
+                        ? { description: values.description }
+                        : {}),
+                    fields: values.questions.map((question, order) => ({
+                        title: question.title,
+                        type: question.type,
+                        required: question.required,
+                        order,
+                        options:
+                            question.type === "text_answer"
+                                ? []
+                                : question.options.map(
+                                      (option, optionOrder) => ({
+                                          title: option.title,
+                                          order: optionOrder,
+                                      }),
+                                  ),
+                    })),
+                },
+            });
+            setCreating(null);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    if (isPending) return <TableSkeleton />;
+
+    return (
+        <div className="flex flex-col gap-4">
+            {EVENT_FORM_KINDS.map(({ type, label, description }) => {
+                const existing = forms?.find((form) => form.type === type);
+
+                return (
+                    <Card key={type}>
+                        <CardHeader>
+                            <CardTitle>{label}</CardTitle>
+                            <CardDescription>{description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-3">
+                            {existing ? (
+                                <>
+                                    <p className="text-sm">{existing.title}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            nativeButton={false}
+                                            render={
+                                                <Link
+                                                    to="/sporreskjema/$id"
+                                                    params={{
+                                                        id: existing.id,
+                                                    }}
+                                                />
+                                            }
+                                        >
+                                            Se skjema
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            setError(null);
+                                            setCreating(type);
+                                        }}
+                                    >
+                                        <PlusIcon className="size-4" />
+                                        Opprett {label.toLowerCase()}
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                );
+            })}
+
+            <NewFormDialog
+                open={creating !== null}
+                onOpenChange={(open) => {
+                    if (!open) setCreating(null);
+                }}
+                onSubmit={handleCreate}
+                isSubmitting={createForm.isPending}
+                error={error}
+                title={kind?.dialogTitle ?? "Nytt skjema"}
+                description={kind?.description ?? ""}
+                submitLabel="Opprett skjema"
+                showGroupSettings={false}
+            />
         </div>
     );
 }
