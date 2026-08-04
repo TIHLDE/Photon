@@ -241,11 +241,15 @@ export function mapFormerMember(member: ApiGroupFormerMember): Member {
 }
 
 /**
- * Paragrafnummeret slik det skal leses: databasen lagrer det som desimaltall
- * ("3.10"), og etterfølgende nuller strippes for visning ("3.1", "1").
+ * Paragrafnummeret slik det skal leses. Desimalene er et paragrafnummer på to
+ * siffer, ikke en brøkdel: 3.01 og 3.10 er to forskjellige paragrafer, så
+ * begge desimalene må stå ("3.10", aldri "3.1"). Heltall er overskrifter og
+ * vises uten desimaler ("1").
  */
 function formatParagraph(paragraph: string): string {
-    return String(Number(paragraph));
+    const value = Number(paragraph);
+    if (!Number.isFinite(value)) return paragraph;
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 /**
@@ -289,8 +293,8 @@ export function mapFineUser(user: ApiFineUser): FineUser {
 
 /**
  * Map an API law to the display shape used by the laws tab and fine dialogs.
- * The backend stores `paragraph` as a decimal string ("3.10"); trailing
- * zeros are stripped for display ("3.1", "1").
+ * The backend stores `paragraph` as a decimal string ("3.10"), som vises slik
+ * den er lagret — se {@link formatParagraph}.
  */
 export function mapLaw(law: ApiLaw): Law {
     return {
