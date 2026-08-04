@@ -107,6 +107,12 @@ export const listGroupFormsRoute = route().get(
             }),
         );
 
+        // Uten en sortering kommer radene i den rekkefølgen Postgres finner
+        // dem, og et skjema hopper nedover i lista hver gang det redigeres.
+        formsWithAnswers.sort((a, b) =>
+            b.created_at.localeCompare(a.created_at),
+        );
+
         return c.json(formsWithAnswers);
     },
 );
