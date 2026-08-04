@@ -6,8 +6,8 @@
         "#/*": "./src/*"
     },
     "scripts": {
-        "dev": "vite dev --port 3000",
-        "build": "vite build",
+        "dev": "bun run scripts/copy-dictionary.ts && vite dev --port 3000",
+        "build": "bun run scripts/copy-dictionary.ts && vite build",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
         "format": "oxfmt .",
@@ -30,7 +30,7 @@
         "@tanstack/react-router-devtools": "latest",
         "@tanstack/react-router-ssr-query": "latest",
         "@tanstack/react-start": "latest",
-        "@tanstack/react-table": "latest",
+        "@tanstack/react-table": "^8.21.3",
         "@tanstack/router-plugin": "^1.132.0",
         "@tihlde/sdk": "workspace:*",
         "@tihlde/ui": "workspace:*",
@@ -41,6 +41,7 @@
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
+        "dictionary-nb": "^3.0.0",
         "ky": "^2.0.2",
         "lucide-react": "^0.577.0",
         "nitro": "latest",
