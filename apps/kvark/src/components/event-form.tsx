@@ -271,31 +271,35 @@ export function EventForm({
                                     : "Søk opp en adresse for å legge ved kartlenke, eller skriv fritt (f.eks. «Digitalt»)."}
                             </FieldDescription>
                         </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-start">
-                                Starttidspunkt
-                            </FieldLabel>
-                            <DateTimePicker
-                                id="event-start"
-                                locale={nb}
-                                placeholder="Velg starttidspunkt"
-                                value={values.start}
-                                onValueChange={(start) => onChange({ start })}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-end">
-                                Sluttidspunkt
-                            </FieldLabel>
-                            <DateTimePicker
-                                id="event-end"
-                                locale={nb}
-                                placeholder="Velg sluttidspunkt"
-                                minDate={values.start ?? undefined}
-                                value={values.end}
-                                onValueChange={(end) => onChange({ end })}
-                            />
-                        </Field>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <Field>
+                                <FieldLabel htmlFor="event-start">
+                                    Starttidspunkt
+                                </FieldLabel>
+                                <DateTimePicker
+                                    id="event-start"
+                                    locale={nb}
+                                    placeholder="Velg startdato"
+                                    value={values.start}
+                                    onValueChange={(start) =>
+                                        onChange({ start })
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="event-end">
+                                    Sluttidspunkt
+                                </FieldLabel>
+                                <DateTimePicker
+                                    id="event-end"
+                                    locale={nb}
+                                    placeholder="Velg sluttdato"
+                                    minDate={values.start ?? undefined}
+                                    value={values.end}
+                                    onValueChange={(end) => onChange({ end })}
+                                />
+                            </Field>
+                        </div>
                         <Field orientation="horizontal" className="gap-3">
                             <Checkbox
                                 id="event-requires-signup"
@@ -319,7 +323,7 @@ export function EventForm({
                                     <DateTimePicker
                                         id="event-reg-end"
                                         locale={nb}
-                                        placeholder="Velg påmeldingsfrist"
+                                        placeholder="Velg dato"
                                         maxDate={values.start ?? undefined}
                                         value={values.registrationEnd}
                                         onValueChange={(registrationEnd) =>

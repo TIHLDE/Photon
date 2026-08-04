@@ -8,6 +8,19 @@ export class DuplicateSubmissionException extends HTTPException {
     }
 }
 
+/**
+ * Rewriting the questions deletes the answers that belong to them, so a group
+ * form is frozen from the first submission.
+ */
+export class FormHasSubmissionsException extends HTTPException {
+    constructor() {
+        super(409, {
+            message:
+                "Spørsmålene kan ikke endres etter at noen har svart på skjemaet",
+        });
+    }
+}
+
 export class FormNotOpenForSubmissionException extends HTTPException {
     constructor() {
         super(403, {

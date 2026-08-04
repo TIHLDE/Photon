@@ -20,6 +20,11 @@ import { z } from "zod";
 import { authQueryOptions } from "#/api/auth";
 import { useImageUploader } from "#/api/queries/assets";
 import {
+    getFormByIdQuery,
+    getFormSubmissionsQuery,
+    updateFormMutation,
+} from "#/api/queries/forms";
+import {
     useIsGroupLeaderOf,
     useIsGroupMemberOf,
     usePermission,
@@ -28,6 +33,7 @@ import {
 import {
     batchUpdateUserFinesMutation,
     createFineMutation,
+    createGroupFormMutation,
     createLawMutation,
     deleteFineMutation,
     deleteLawMutation,
@@ -54,16 +60,26 @@ import { GroupDetailHeader } from "#/components/group-detail-header";
 import type { GroupEditValues } from "#/components/group-edit-dialog";
 import { GroupEventsTab } from "#/components/group-events-tab";
 import { GroupFinesTab } from "#/components/group-fines-tab";
+import {
+    GroupFormEditDialog,
+    type GroupFormEditValues,
+} from "#/components/group-form-edit-dialog";
 import { GroupFormsTab } from "#/components/group-forms-tab";
 import {
     GroupGiveFineDialog,
     type GiveFineValues,
 } from "#/components/group-give-fine-dialog";
 import { GroupLawsTab } from "#/components/group-laws-tab";
+import {
+    NewFormDialog,
+    type NewFormValues,
+} from "#/components/new-form-dialog";
 import { GroupMembersTab } from "#/components/group-members-tab";
 import { GROUP_NAV_ITEMS, type GroupNavKey } from "#/components/group-nav";
 import { GroupOmTab } from "#/components/group-om-tab";
+import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import {
+    type Form,
     mapFine,
     mapFineUser,
     mapForm,
@@ -73,6 +89,7 @@ import {
     mapMember,
     sortMembersByName,
 } from "#/lib/group";
+import { errorStatus } from "#/lib/utils";
 
 const searchSchema = z.object({
     tab: z
@@ -115,12 +132,6 @@ export const Route = createFileRoute("/_app/grupper/$slug")({
     },
 });
 
-/** HTTP-statusen bak en feil fra API-klienten, om den finnes. */
-function errorStatus(error: unknown): number | undefined {
-    const response = (error as { response?: { status?: number } })?.response;
-    return typeof response?.status === "number" ? response.status : undefined;
-}
-
 /** Vist i stedet for gruppesiden når gruppa er privat og du står utenfor. */
 function GroupRestricted() {
     return (
@@ -153,6 +164,10 @@ function GroupDetail() {
     const [fineDialogOpen, setFineDialogOpen] = useState(false);
     const [fineError, setFineError] = useState<string | null>(null);
     const [groupError, setGroupError] = useState<string | null>(null);
+    const [formDialogOpen, setFormDialogOpen] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [editingForm, setEditingForm] = useState<Form | null>(null);
+    const [editFormError, setEditFormError] = useState<string | null>(null);
 
     function setActive(tab: GroupNavKey) {
         navigate({ search: (prev) => ({ ...prev, tab }) });
@@ -173,9 +188,11 @@ function GroupDetail() {
     const updateFine = useMutation(updateFineMutation);
     const batchUpdateUserFines = useMutation(batchUpdateUserFinesMutation);
     const deleteFine = useMutation(deleteFineMutation);
+    const createGroupForm = useMutation(createGroupFormMutation);
     const createLaw = useMutation(createLawMutation);
     const updateLaw = useMutation(updateLawMutation);
     const deleteLaw = useMutation(deleteLawMutation);
+    const updateForm = useMutation(updateFormMutation);
 
     // The scope is known here, so these mirror the API exactly: a grant for
     // this group counts, a grant for another group does not.
@@ -266,6 +283,18 @@ function GroupDetail() {
         enabled: canViewFines,
     });
 
+    // Spørsmålene ligger bare i detaljsvaret, og svarene avgjør om de kan
+    // endres i det hele tatt. Begge hentes først når et skjema faktisk åpnes
+    // for redigering.
+    const { data: apiEditingForm } = useQuery({
+        ...getFormByIdQuery(editingForm?.id ?? ""),
+        enabled: editingForm !== null,
+    });
+    const { data: apiEditingSubmissions } = useQuery({
+        ...getFormSubmissionsQuery(editingForm?.id ?? "", 0),
+        enabled: editingForm !== null,
+    });
+
     const members = useMemo(
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
@@ -309,6 +338,15 @@ function GroupDetail() {
         [botBruker, fineUsers, members],
     );
     const forms = useMemo(() => (apiForms ?? []).map(mapForm), [apiForms]);
+    // Redigeringsdialogen venter på begge: uten svarene vet den ikke om
+    // spørsmålene er låst, og da ville de rukket å bli redigerbare først.
+    const editingQuestions = useMemo(
+        () =>
+            apiEditingForm && apiEditingSubmissions
+                ? mapFormQuestions(apiEditingForm.fields)
+                : null,
+        [apiEditingForm, apiEditingSubmissions],
+    );
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
     // Lovverk: the fines admin (botsjef), the leader, or fines:manage for
@@ -365,6 +403,103 @@ function GroupDetail() {
                 error instanceof Error
                     ? error.message
                     : "Ukjent feil da gruppen skulle lagres",
+            );
+        }
+    }
+
+    function openNewForm() {
+        setFormError(null);
+        setFormDialogOpen(true);
+    }
+
+    /**
+     * Rekkefølgen på spørsmål og alternativer er posisjonen i lista: API-et
+     * sorterer på `order`, så uten den ville skjemaet vist spørsmålene i
+     * vilkårlig rekkefølge.
+     */
+    async function handleCreateForm(values: NewFormValues) {
+        setFormError(null);
+        try {
+            await createGroupForm.mutateAsync({
+                slug,
+                data: {
+                    group: slug,
+                    title: values.title,
+                    template: false,
+                    can_submit_multiple: values.canSubmitMultiple,
+                    is_open_for_submissions: values.isOpenForSubmissions,
+                    only_for_group_members: values.onlyForGroupMembers,
+                    ...(values.description
+                        ? { description: values.description }
+                        : {}),
+                    ...(values.emailReceiverOnSubmit
+                        ? {
+                              email_receiver_on_submit:
+                                  values.emailReceiverOnSubmit,
+                          }
+                        : {}),
+                    fields: values.questions.map((question, order) => ({
+                        title: question.title,
+                        type: question.type,
+                        required: question.required,
+                        order,
+                        options:
+                            question.type === "text_answer"
+                                ? []
+                                : question.options.map(
+                                      (option, optionOrder) => ({
+                                          title: option.title,
+                                          order: optionOrder,
+                                      }),
+                                  ),
+                    })),
+                },
+            });
+
+            setFormDialogOpen(false);
+        } catch (error) {
+            setFormError(
+                error instanceof Error
+                    ? error.message
+                    : "Ukjent feil da spørreskjemaet skulle opprettes",
+            );
+        }
+    }
+
+    function handleEditForm(form: Form | null) {
+        setEditFormError(null);
+        setEditingForm(form);
+    }
+
+    /**
+     * Spørsmålene sendes bare når dialogen faktisk lot noen endre dem:
+     * `updateFieldsAndOptions` sletter spørsmål som mangler i lista, og med
+     * dem svarene som hører til.
+     */
+    async function handleSaveForm(values: GroupFormEditValues) {
+        if (!editingForm) return;
+        setEditFormError(null);
+        try {
+            await updateForm.mutateAsync({
+                formId: editingForm.id,
+                data: {
+                    title: values.title,
+                    description: values.description,
+                    is_open_for_submissions: values.isOpen,
+                    can_submit_multiple: values.canSubmitMultiple,
+                    only_for_group_members: values.onlyForMembers,
+                    email_receiver_on_submit: values.emailReceiver || null,
+                    ...(values.questions
+                        ? { fields: toFormFieldsPayload(values.questions) }
+                        : {}),
+                },
+            });
+            setEditingForm(null);
+        } catch (error) {
+            setEditFormError(
+                error instanceof Error
+                    ? error.message
+                    : "Ukjent feil da skjemaet skulle lagres",
             );
         }
     }
@@ -576,7 +711,12 @@ function GroupDetail() {
                         />
                     ) : null}
                     {activeTab === "sporreskjema" ? (
-                        <GroupFormsTab forms={forms} isAdmin={canManageForms} />
+                        <GroupFormsTab
+                            forms={forms}
+                            isAdmin={canManageForms}
+                            onNewForm={openNewForm}
+                            onEditForm={handleEditForm}
+                        />
                     ) : null}
                 </DetailLayoutContent>
             </DetailLayout>
@@ -589,6 +729,25 @@ function GroupDetail() {
                 onSubmit={handleGiveFine}
                 isSubmitting={createFine.isPending || isUploading}
                 error={fineError}
+            />
+
+            <NewFormDialog
+                open={formDialogOpen}
+                onOpenChange={setFormDialogOpen}
+                onSubmit={handleCreateForm}
+                isSubmitting={createGroupForm.isPending}
+                error={formError}
+            />
+
+            <GroupFormEditDialog
+                open={editingForm !== null}
+                form={editingForm}
+                questions={editingQuestions}
+                answerCount={apiEditingSubmissions?.length ?? 0}
+                onClose={() => handleEditForm(null)}
+                onSubmit={handleSaveForm}
+                isSubmitting={updateForm.isPending}
+                error={editFormError}
             />
         </>
     );

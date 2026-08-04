@@ -31,6 +31,7 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Stagger } from "@tihlde/ui/ui/motion";
 
 import {
     createOAuthClientMutation,
@@ -80,7 +81,11 @@ function OAuthClientsPage() {
     }
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <div className="flex items-end justify-between gap-4">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-3xl">OAuth-klienter</h1>
@@ -118,7 +123,7 @@ function OAuthClientsPage() {
                 secret={revealedSecret}
                 onClose={() => setRevealedSecret(null)}
             />
-        </div>
+        </Stagger>
     );
 }
 

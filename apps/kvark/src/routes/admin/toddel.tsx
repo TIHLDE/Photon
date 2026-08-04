@@ -25,6 +25,8 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { uploadAssetMutation } from "#/api/queries/assets";
 import {
     createToddelMutation,
@@ -59,7 +61,11 @@ function ToddelAdminPage() {
     >(null);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="TÖDDEL"
                 description="Legg ut nye utgaver av studentbladet, og rediger de som allerede ligger ute."
@@ -88,7 +94,7 @@ function ToddelAdminPage() {
                     onClose={() => setDialog(null)}
                 />
             )}
-        </div>
+        </Stagger>
     );
 }
 

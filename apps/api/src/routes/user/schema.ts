@@ -57,6 +57,70 @@ export const updateUserSettingsResponseSchema = Schema(
     UpdateUserSettingsSchema,
 );
 
+export const unansweredEvaluationsSchema = Schema(
+    "UnansweredEvaluations",
+    z.array(
+        z.object({
+            formId: z.string().meta({ description: "Form to answer" }),
+            formTitle: z.string(),
+            eventId: z.string(),
+            eventTitle: z.string(),
+            eventEndTime: z
+                .string()
+                .meta({ description: "When the event ended" }),
+        }),
+    ),
+);
+
+/**
+ * An admin edits allergies and nothing else about the profile.
+ *
+ * Everything else in {@link UpdateUserSettingsSchema} — gender, bio, links,
+ * mail preferences — is the member's own answer, and `acceptsEventRules` is a
+ * consent nobody can give on their behalf. Allergies are the exception because
+ * they are read by whoever orders the food: a member who wrote nonsense, or
+ * whose allergies changed while they were unreachable, is an arrangør's
+ * problem to fix.
+ */
+export const updateUserAllergiesInputSchema = Schema(
+    "UpdateUserAllergiesInput",
+    z.object({
+        allergies: z.array(z.string().max(64)).max(50).meta({
+            description:
+                "Allergy slugs the member should have. Replaces the current set.",
+        }),
+    }),
+);
+
+export const userAllergiesResponseSchema = Schema(
+    "UserAllergies",
+    z.object({
+        allergies: z.array(allergySchema),
+    }),
+);
+
+export const updateUserStatusInputSchema = Schema(
+    "UpdateUserStatusInput",
+    z.object({
+        isActive: z.boolean().meta({
+            description:
+                "False deactivates the account: the member can no longer sign in, and their sessions are ended.",
+        }),
+        reason: z.string().max(500).optional().meta({
+            description:
+                "Why the account was deactivated. Ignored when activating.",
+        }),
+    }),
+);
+
+export const updateUserStatusResponseSchema = Schema(
+    "UpdateUserStatus",
+    z.object({
+        message: z.string(),
+        isActive: z.boolean(),
+    }),
+);
+
 /**
  * Bounds on a hand-entered cohort year.
  *
@@ -131,6 +195,10 @@ export const userListItemSchema = Schema(
         studyStartYear: z.number().int().nullable().meta({
             description:
                 "The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
+        }),
+        isActive: z.boolean().meta({
+            description:
+                "False when the account is deactivated — the member cannot sign in.",
         }),
         createdAt: z
             .string()

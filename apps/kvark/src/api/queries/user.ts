@@ -9,6 +9,8 @@ import type { UpdateUserSettingsInput, OnboardUserInput } from "@tihlde/sdk";
 const UserQueryKeys = {
     settings: ["user", "settings"] as const,
     allergies: ["user", "allergies"] as const,
+    userAllergies: ["user", "allergies-for-user"] as const,
+    unansweredEvaluations: ["user", "unanswered-evaluations"] as const,
     listInfinite: ["user", "list-infinite"] as const,
     profile: ["user", "profile"] as const,
 } as const;
@@ -100,11 +102,84 @@ export const updateUserSettingsMutation = mutationOptions({
     },
 });
 
+/**
+ * Evalueringene medlemmet skylder svar på.
+ *
+ * Så lenge lista ikke er tom nekter API-et nye påmeldinger, så den er både
+ * en huskeliste og forklaringen på hvorfor påmelding plutselig ikke går.
+ */
+export const getUnansweredEvaluationsQuery = () =>
+    queryOptions({
+        queryKey: [...UserQueryKeys.unansweredEvaluations],
+        queryFn: () => apiClient.get("/api/user/me/unanswered-evaluations"),
+    });
+
 export const getAllergiesQuery = () =>
     queryOptions({
         queryKey: [...UserQueryKeys.allergies],
         queryFn: () => apiClient.get("/api/user/allergy"),
     });
+
+/**
+ * Allergiene til ett medlem. Bare for `users:manage` — profilendepunktet
+ * holder allergier utenfor med vilje.
+ */
+export const getUserAllergiesQuery = (userId: string) =>
+    queryOptions({
+        queryKey: [...UserQueryKeys.userAllergies, userId],
+        queryFn: () =>
+            apiClient.get("/api/user/{id}/allergies", {
+                params: { id: userId },
+            }),
+    });
+
+export const updateUserAllergiesMutation = mutationOptions({
+    mutationFn: ({
+        userId,
+        allergies,
+    }: {
+        userId: string;
+        allergies: string[];
+    }) =>
+        apiClient.put("/api/user/{id}/allergies", {
+            params: { id: userId },
+            json: { allergies },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.userAllergies, vars.userId],
+            exact: false,
+        });
+    },
+});
+
+/**
+ * Steng et medlem ute, eller slipp dem inn igjen.
+ *
+ * Kontoen består — påmeldinger, bøter og vervhistorikk peker på den — men
+ * medlemmet kan ikke logge inn, og sesjonene deres avsluttes umiddelbart.
+ */
+export const updateUserStatusMutation = mutationOptions({
+    mutationFn: ({
+        userId,
+        isActive,
+        reason,
+    }: {
+        userId: string;
+        isActive: boolean;
+        reason?: string;
+    }) =>
+        apiClient.patch("/api/user/{id}/status", {
+            params: { id: userId },
+            json: { isActive, ...(reason ? { reason } : {}) },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+    },
+});
 
 /**
  * Rett kullet til et medlem for hånd.

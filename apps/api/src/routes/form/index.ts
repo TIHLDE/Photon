@@ -22,9 +22,10 @@ export const formRoutes = route()
     // Form statistics
     .route("/", statisticsRoute)
 
-    // Submissions
+    // Submissions. `/submissions/download` må stå før `/submissions/:id`, ellers
+    // matcher id-ruten først og «download» brukes som innsendings-id.
     .route("/", createSubmissionRoute)
     .route("/", listSubmissionsRoute)
-    .route("/", getSubmissionRoute)
     .route("/", downloadSubmissionsRoute)
+    .route("/", getSubmissionRoute)
     .route("/", deleteSubmissionWithReasonRoute);

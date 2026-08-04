@@ -10,6 +10,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
+import { Stagger } from "@tihlde/ui/ui/motion";
 import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -131,19 +132,19 @@ function AdminCompanyContactPage() {
 
     if (!canView) {
         return (
-            <div className="flex flex-col gap-6">
+            <Stagger render={<div className="flex flex-col gap-6" />}>
                 {header}
                 <AdminEmptyState
                     icon={Building2}
                     title="Ingen tilgang"
                     description="Du har ikke tilgang til å behandle henvendelser fra bedrifter."
                 />
-            </div>
+            </Stagger>
         );
     }
 
     return (
-        <div className="flex flex-col gap-6">
+        <Stagger render={<div className="flex flex-col gap-6" />}>
             {header}
 
             {!isLoading && (applications ?? []).length === 0 ? (
@@ -238,6 +239,6 @@ function AdminCompanyContactPage() {
                     });
                 }}
             />
-        </div>
+        </Stagger>
     );
 }

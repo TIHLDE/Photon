@@ -53,24 +53,24 @@ interface DateRangePickerProps extends CommonProps {
     formatLabel?: (value: DateRange, view: DatePickerView) => string;
 }
 
-function defaultDayFormat(date: Date): string {
-    return formatDateFn(date, "PPP");
+function defaultDayFormat(date: Date, locale?: Locale): string {
+    return formatDateFn(date, "PPP", { locale });
 }
 
-function defaultMonthFormat(date: Date): string {
-    return formatDateFn(date, "LLLL yyyy");
+function defaultMonthFormat(date: Date, locale?: Locale): string {
+    return formatDateFn(date, "LLLL yyyy", { locale });
 }
 
-function defaultRangeDayFormat(range: DateRange): string {
-    if (!range.to) return defaultDayFormat(range.from);
-    return `${defaultDayFormat(range.from)} – ${defaultDayFormat(range.to)}`;
+function defaultRangeDayFormat(range: DateRange, locale?: Locale): string {
+    if (!range.to) return defaultDayFormat(range.from, locale);
+    return `${defaultDayFormat(range.from, locale)} – ${defaultDayFormat(range.to, locale)}`;
 }
 
-function defaultRangeMonthFormat(range: DateRange): string {
+function defaultRangeMonthFormat(range: DateRange, locale?: Locale): string {
     if (!range.to || isSameMonth(range.from, range.to)) {
-        return defaultMonthFormat(range.from);
+        return defaultMonthFormat(range.from, locale);
     }
-    return `${defaultMonthFormat(range.from)} – ${defaultMonthFormat(range.to)}`;
+    return `${defaultMonthFormat(range.from, locale)} – ${defaultMonthFormat(range.to, locale)}`;
 }
 
 export function DatePicker({
@@ -92,8 +92,8 @@ export function DatePicker({
         ? formatLabel
             ? formatLabel(value, view)
             : view === "month"
-              ? defaultMonthFormat(value)
-              : defaultDayFormat(value)
+              ? defaultMonthFormat(value, locale)
+              : defaultDayFormat(value, locale)
         : placeholder;
 
     return (
@@ -173,8 +173,8 @@ export function DateRangePicker({
         ? formatLabel
             ? formatLabel(value, view)
             : view === "month"
-              ? defaultRangeMonthFormat(value)
-              : defaultRangeDayFormat(value)
+              ? defaultRangeMonthFormat(value, locale)
+              : defaultRangeDayFormat(value, locale)
         : placeholder;
 
     return (

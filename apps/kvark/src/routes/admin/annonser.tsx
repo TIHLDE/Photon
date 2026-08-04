@@ -44,6 +44,8 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createJobMutation,
@@ -109,7 +111,11 @@ function JobsAdminPage() {
     >(null);
 
     return (
-        <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Annonser"
                 description="Opprett og administrer stillingsannonser fra bedrifter."
@@ -193,7 +199,7 @@ function JobsAdminPage() {
                     if (!open) setDialog(null);
                 }}
             />
-        </div>
+        </Stagger>
     );
 }
 
@@ -576,7 +582,7 @@ function JobDialog({
                                 <DateTimePicker
                                     id="job-deadline"
                                     locale={nb}
-                                    placeholder="Velg søknadsfrist"
+                                    placeholder="Velg dato"
                                     value={deadline}
                                     onValueChange={setDeadline}
                                 />

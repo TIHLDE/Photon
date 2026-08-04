@@ -9,6 +9,7 @@ import { PlusIcon, Trash2, UsersIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Input } from "@tihlde/ui/ui/input";
@@ -51,11 +52,18 @@ import {
     removeGroupMemberMutation,
     updateGroupMemberRoleMutation,
 } from "#/api/queries/groups";
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { searchUsersQuery } from "#/api/queries/roles";
 import {
+    getAllergiesQuery,
+    getUserAllergiesQuery,
     getUsersInfiniteQuery,
+    updateUserAllergiesMutation,
+    updateUserStatusMutation,
     updateUserStudyYearMutation,
 } from "#/api/queries/user";
+import { AdminAllergyPicker } from "#/components/admin-allergy-picker";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -64,6 +72,7 @@ import {
     UserSearchCombobox,
     type UserSearchOption,
 } from "#/components/user-search-combobox";
+import { extractErrorMessage } from "#/lib/api-error";
 import { useDebounced } from "#/lib/use-debounced";
 import { computeClassYear, initials, programmeLength } from "#/lib/utils";
 
@@ -102,29 +111,6 @@ function formatStudy(
         return `${programme} · kull ${startYear}`;
     }
     return `${programme} · ${classYear}. klasse`;
-}
-
-/** Prefer the API's own error message over ky's generic HTTP status text. */
-async function extractErrorMessage(error: unknown): Promise<string> {
-    // Structural check instead of `instanceof HTTPError` — Vite can bundle
-    // duplicate ky instances, which breaks instanceof across modules.
-    const response =
-        error && typeof error === "object" && "response" in error
-            ? error.response
-            : null;
-    if (response instanceof Response) {
-        try {
-            const body = (await response.clone().json()) as {
-                message?: string;
-            };
-            if (body.message) {
-                return body.message;
-            }
-        } catch {
-            // Fall through to the generic message.
-        }
-    }
-    return error instanceof Error ? error.message : String(error);
 }
 
 export const Route = createFileRoute("/admin/brukere")({
@@ -172,7 +158,11 @@ function UsersAdminPage() {
         : !canManageMembers;
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Brukere"
                 description="Søk i alle brukere, eller velg et studie for å administrere medlemskap og roller."
@@ -212,7 +202,7 @@ function UsersAdminPage() {
                     onOpenChange={setAddOpen}
                 />
             )}
-        </div>
+        </Stagger>
     );
 }
 
@@ -235,11 +225,21 @@ function AllUsersTable({
         name: string;
         studyStartYear: number | null;
     } | null>(null);
+    const [editingAllergies, setEditingAllergies] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
+    const [changingStatus, setChangingStatus] = useState<{
+        id: string;
+        name: string;
+        isActive: boolean;
+    } | null>(null);
 
     /**
      * Kullet er en avledet gruppe, så medlemslista nekter å redigere det (400).
      * `users:manage` er den eneste veien inn, og kravet er globalt — uten det
      * skjuler vi handlingen i stedet for å vise en knapp som svarer 403.
+     * Allergier og aktivering ligger bak samme rettighet.
      */
     const canEditCohort = usePermission("users:manage");
 
@@ -341,6 +341,7 @@ function AllUsersTable({
                                     <TableRow>
                                         <TableHead>Navn</TableHead>
                                         <TableHead>Brukernavn</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead>Studie</TableHead>
                                         <TableHead>Kull</TableHead>
                                         {canEditCohort && (
@@ -376,6 +377,15 @@ function AllUsersTable({
                                                 {user.username ?? "—"}
                                             </TableCell>
                                             <TableCell>
+                                                {user.isActive ? (
+                                                    "Aktiv"
+                                                ) : (
+                                                    <Badge variant="destructive">
+                                                        Deaktivert
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
                                                 {formatStudy(
                                                     user.studyProgram,
                                                     user.studyStartYear,
@@ -386,20 +396,54 @@ function AllUsersTable({
                                             </TableCell>
                                             {canEditCohort && (
                                                 <TableCell>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            setEditing({
-                                                                id: user.id,
-                                                                name: user.name,
-                                                                studyStartYear:
-                                                                    user.studyStartYear,
-                                                            })
-                                                        }
-                                                    >
-                                                        Rett kull
-                                                    </Button>
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                setEditing({
+                                                                    id: user.id,
+                                                                    name: user.name,
+                                                                    studyStartYear:
+                                                                        user.studyStartYear,
+                                                                })
+                                                            }
+                                                        >
+                                                            Rett kull
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                setEditingAllergies(
+                                                                    {
+                                                                        id: user.id,
+                                                                        name: user.name,
+                                                                    },
+                                                                )
+                                                            }
+                                                        >
+                                                            Allergier
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                setChangingStatus(
+                                                                    {
+                                                                        id: user.id,
+                                                                        name: user.name,
+                                                                        isActive:
+                                                                            user.isActive,
+                                                                    },
+                                                                )
+                                                            }
+                                                        >
+                                                            {user.isActive
+                                                                ? "Deaktiver"
+                                                                : "Aktiver"}
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -429,7 +473,244 @@ function AllUsersTable({
                     if (!open) setEditing(null);
                 }}
             />
+
+            <EditAllergiesDialog
+                user={editingAllergies}
+                open={editingAllergies !== null}
+                onOpenChange={(open) => {
+                    if (!open) setEditingAllergies(null);
+                }}
+            />
+
+            <ChangeStatusDialog
+                user={changingStatus}
+                open={changingStatus !== null}
+                onOpenChange={(open) => {
+                    if (!open) setChangingStatus(null);
+                }}
+            />
         </div>
+    );
+}
+
+/**
+ * Rett allergiene til ett medlem.
+ *
+ * Den ene innstillingen noen andre må kunne fikse: arrangører bestiller mat
+ * etter den, og et medlem som har skrevet tull — eller som har fått en ny
+ * allergi mens de var utilgjengelige — er arrangørens problem.
+ */
+function EditAllergiesDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Allergier</DialogTitle>
+                    <DialogDescription>{user?.name}</DialogDescription>
+                </DialogHeader>
+                {/* Nøkkelen remonterer skjemaet per medlem, så feltet aldri
+                    står igjen med forrige rads allergier. */}
+                {user ? (
+                    <EditAllergiesForm
+                        key={user.id}
+                        userId={user.id}
+                        onDone={() => onOpenChange(false)}
+                    />
+                ) : null}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function EditAllergiesForm({
+    userId,
+    onDone,
+}: {
+    userId: string;
+    onDone: () => void;
+}) {
+    const { data: catalogue } = useQuery(getAllergiesQuery());
+    const { data: current, isPending } = useQuery(
+        getUserAllergiesQuery(userId),
+    );
+    const update = useMutation(updateUserAllergiesMutation);
+
+    const [selected, setSelected] = useState<string[] | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Utgangspunktet settes én gang, når medlemmets allergier er lastet.
+    const value =
+        selected ?? (current?.allergies ?? []).map((allergy) => allergy.slug);
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setError(null);
+        try {
+            await update.mutateAsync({ userId, allergies: value });
+            onDone();
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    if (isPending || !catalogue) {
+        return (
+            <div className="flex flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-9 w-full" />
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <FieldGroup>
+                <Field>
+                    <FieldLabel>Allergier</FieldLabel>
+                    <AdminAllergyPicker
+                        options={catalogue}
+                        selected={value}
+                        onChange={setSelected}
+                        disabled={update.isPending}
+                    />
+                    <FieldDescription>
+                        Vises til arrangører ved påmelding. Medlemmet kan endre
+                        dem selv under innstillinger.
+                    </FieldDescription>
+                </Field>
+            </FieldGroup>
+            {error && (
+                <p className="text-sm text-destructive" role="alert">
+                    {error}
+                </p>
+            )}
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onDone}>
+                    Avbryt
+                </Button>
+                <Button type="submit" disabled={update.isPending}>
+                    Lagre
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+}
+
+/**
+ * Steng et medlem ute, eller slipp dem inn igjen.
+ *
+ * Kontoen slettes ikke — påmeldinger, bøter og vervhistorikk peker på den —
+ * men innlogging blokkeres og sesjonene avsluttes med en gang.
+ */
+function ChangeStatusDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; isActive: boolean } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [reason, setReason] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const update = useMutation(updateUserStatusMutation);
+
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setReason("");
+        setError(null);
+    }
+
+    const deactivating = user?.isActive ?? true;
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user) return;
+
+        setError(null);
+        try {
+            await update.mutateAsync({
+                userId: user.id,
+                isActive: !user.isActive,
+                reason: deactivating ? reason.trim() || undefined : undefined,
+            });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {deactivating ? "Deaktiver konto" : "Aktiver konto"}
+                        </DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    {deactivating ? (
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="deactivate-reason">
+                                    Begrunnelse
+                                </FieldLabel>
+                                <Input
+                                    id="deactivate-reason"
+                                    value={reason}
+                                    onChange={(event) =>
+                                        setReason(event.target.value)
+                                    }
+                                    placeholder="Valgfritt"
+                                />
+                                <FieldDescription>
+                                    Medlemmet mister tilgangen med en gang og
+                                    kan ikke logge inn igjen. Kontoen og all
+                                    historikk beholdes, og du kan aktivere den
+                                    igjen når som helst.
+                                </FieldDescription>
+                            </Field>
+                        </FieldGroup>
+                    ) : (
+                        <p className="text-sm">
+                            Medlemmet kan logge inn igjen med en gang.
+                        </p>
+                    )}
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant={deactivating ? "destructive" : "default"}
+                            disabled={update.isPending}
+                        >
+                            {deactivating ? "Deaktiver" : "Aktiver"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 

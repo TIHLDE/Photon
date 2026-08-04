@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { XCircle } from "lucide-react";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
@@ -197,15 +199,23 @@ function NewEventPage() {
 
     if (!canCreate) {
         return (
-            <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+            <Stagger
+                render={
+                    <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+                }
+            >
                 <AdminPageHeader title="Nytt arrangement" />
                 <AdminNoAccess action="opprette arrangementer" />
-            </div>
+            </Stagger>
         );
     }
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Nytt arrangement"
                 description="Beskrivelsen lagres som markdown og formateringen vises direkte mens du skriver."
@@ -240,6 +250,6 @@ function NewEventPage() {
                     </Alert>
                 )}
             </EventForm>
-        </div>
+        </Stagger>
     );
 }

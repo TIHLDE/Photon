@@ -55,6 +55,12 @@ export type Fine = {
     userImage?: string;
     paragraph: string;
     title: string;
+    /**
+     * Om boten er koblet til en paragraf i gruppens lovverk. Uten kobling
+     * faller `title` tilbake på begrunnelsen, og da må dialogen la være å
+     * vise den samme teksten to ganger.
+     */
+    hasLaw: boolean;
     amount: number;
     status: FineStatus;
     approved: boolean;
@@ -93,7 +99,13 @@ export type Law = {
 export type Form = {
     id: string;
     title: string;
+    description: string;
     isOpen: boolean;
+    /** Om samme person kan sende inn flere svar. */
+    canSubmitMultiple: boolean;
+    onlyForMembers: boolean;
+    /** E-post som varsles ved nye svar. Tom streng når ingen er satt. */
+    emailReceiver: string;
 };
 
 type ApiGroupForm = GroupFormList[number];
@@ -241,11 +253,15 @@ export function mapFormerMember(member: ApiGroupFormerMember): Member {
 }
 
 /**
- * Paragrafnummeret slik det skal leses: databasen lagrer det som desimaltall
- * ("3.10"), og etterfølgende nuller strippes for visning ("3.1", "1").
+ * Paragrafnummeret slik det skal leses. Desimalene er et paragrafnummer på to
+ * siffer, ikke en brøkdel: 3.01 og 3.10 er to forskjellige paragrafer, så
+ * begge desimalene må stå ("3.10", aldri "3.1"). Heltall er overskrifter og
+ * vises uten desimaler ("1").
  */
 function formatParagraph(paragraph: string): string {
-    return String(Number(paragraph));
+    const value = Number(paragraph);
+    if (!Number.isFinite(value)) return paragraph;
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 /**
@@ -264,6 +280,7 @@ export function mapFine(fine: ApiFine): Fine {
         userImage: fine.user?.image ?? undefined,
         paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
         title: fine.law?.title ?? fine.reason,
+        hasLaw: fine.law != null,
         amount: fine.amount,
         status: (fine.status as FineStatus) ?? "pending",
         approved: fine.status === "approved" || fine.status === "paid",
@@ -289,8 +306,8 @@ export function mapFineUser(user: ApiFineUser): FineUser {
 
 /**
  * Map an API law to the display shape used by the laws tab and fine dialogs.
- * The backend stores `paragraph` as a decimal string ("3.10"); trailing
- * zeros are stripped for display ("3.1", "1").
+ * The backend stores `paragraph` as a decimal string ("3.10"), som vises slik
+ * den er lagret — se {@link formatParagraph}.
  */
 export function mapLaw(law: ApiLaw): Law {
     return {
@@ -309,6 +326,10 @@ export function mapForm(form: ApiGroupForm): Form {
     return {
         id: form.id,
         title: form.title,
+        description: form.description ?? "",
         isOpen: form.is_open_for_submissions,
+        canSubmitMultiple: form.can_submit_multiple,
+        onlyForMembers: form.only_for_group_members,
+        emailReceiver: form.email_receiver_on_submit ?? "",
     };
 }

@@ -30,6 +30,8 @@ import {
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import z from "zod";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createNewsMutation,
@@ -75,7 +77,11 @@ function NewsAdminPage() {
     }
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Nyheter"
                 description="Alle publiserte nyheter. Brødteksten lagres som markdown."
@@ -104,7 +110,7 @@ function NewsAdminPage() {
                     if (!open) closeDialog();
                 }}
             />
-        </div>
+        </Stagger>
     );
 }
 

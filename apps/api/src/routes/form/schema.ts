@@ -49,7 +49,27 @@ const updateFormBase = z.object({
     fields: z.array(updateFieldSchema).optional(),
 });
 
-export const updateFormSchema = Schema("UpdateForm", updateFormBase);
+/**
+ * The submission rules a group owns for its own forms. They live on the
+ * group_form row, not on the form, so they are only written when the form
+ * being updated is a group form.
+ */
+const groupFormSettings = {
+    // `null` tømmer mottakeren; utelatt lar den stå som den er.
+    email_receiver_on_submit: z.string().email().nullable().optional(),
+    can_submit_multiple: z.boolean().optional(),
+    is_open_for_submissions: z.boolean().optional(),
+    only_for_group_members: z.boolean().optional(),
+};
+
+/**
+ * PATCH /forms/:id is the only update endpoint a group form has, so it also
+ * carries the group settings. They are ignored for event forms and templates.
+ */
+export const updateFormSchema = Schema(
+    "UpdateForm",
+    updateFormBase.extend(groupFormSettings),
+);
 
 // ===== EVENT FORM INPUT SCHEMAS =====
 
@@ -83,12 +103,7 @@ export const createGroupFormSchema = Schema(
 
 export const updateGroupFormSchema = Schema(
     "UpdateGroupForm",
-    updateFormBase.extend({
-        email_receiver_on_submit: z.string().email().optional(),
-        can_submit_multiple: z.boolean().optional(),
-        is_open_for_submissions: z.boolean().optional(),
-        only_for_group_members: z.boolean().optional(),
-    }),
+    updateFormBase.extend(groupFormSettings),
 );
 
 // ===== SUBMISSION INPUT SCHEMAS =====
@@ -228,6 +243,11 @@ export const updateFormResponseSchema = Schema(
         created_at: z.string().optional(),
         updated_at: z.string().optional(),
         fields: z.array(formFieldResponseSchema).optional(),
+        // Null for everything that is not a group form.
+        email_receiver_on_submit: z.string().nullable().optional(),
+        can_submit_multiple: z.boolean().nullable().optional(),
+        is_open_for_submissions: z.boolean().nullable().optional(),
+        only_for_group_members: z.boolean().nullable().optional(),
     }),
 );
 

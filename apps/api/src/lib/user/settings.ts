@@ -215,6 +215,11 @@ export async function updateUserSettings(
 
         // Update allergies if provided
         if (allergies !== undefined) {
+            // `user_setting_allergy.user_id` points at the settings row, not
+            // at the user, so allergies cannot be written for a member who
+            // never onboarded — and an update carrying nothing but allergies
+            // skips the upsert above.
+            await ensureUserSettingsRow(userId, { ...ctx, db: tx });
             await setUserAllergies(userId, allergies, { ...ctx, db: tx });
         }
 
@@ -248,6 +253,23 @@ export async function updateUserSettings(
             allergies: updated.allergies.map((ua) => ua.allergySlug),
         };
     });
+}
+
+/**
+ * Make sure the member has a settings row, without changing one that exists.
+ *
+ * Rows are only created by onboarding, by the Lepton migration, or by an
+ * update that carries a settings field — so most migrated members have none.
+ * Anything with a foreign key into `user_settings` has to call this first.
+ */
+export async function ensureUserSettingsRow(
+    userId: string,
+    ctx: AppContext,
+): Promise<void> {
+    await ctx.db
+        .insert(userSettings)
+        .values({ ...IMPLICIT_SETTINGS_DEFAULTS, userId })
+        .onConflictDoNothing({ target: userSettings.userId });
 }
 
 export async function setUserAllergies(

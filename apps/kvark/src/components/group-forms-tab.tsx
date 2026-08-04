@@ -1,26 +1,30 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Plus } from "lucide-react";
-import { useState } from "react";
 
 import { GroupFormRow } from "#/components/group-form-row";
-import { GroupNewFormDialog } from "#/components/group-new-form-dialog";
 import { GroupPageHeader } from "#/components/group-page-header";
 import type { Form } from "#/lib/group";
 
 type GroupFormsTabProps = {
     forms: Form[];
     isAdmin: boolean;
+    onNewForm: () => void;
+    onEditForm: (form: Form) => void;
 };
 
-export function GroupFormsTab({ forms, isAdmin }: GroupFormsTabProps) {
-    const [creating, setCreating] = useState(false);
+export function GroupFormsTab({
+    forms,
+    isAdmin,
+    onNewForm,
+    onEditForm,
+}: GroupFormsTabProps) {
     return (
         <div className="flex flex-col gap-6">
             <GroupPageHeader
                 title="Spørreskjema"
                 action={
                     isAdmin ? (
-                        <Button onClick={() => setCreating(true)}>
+                        <Button onClick={onNewForm}>
                             <Plus />
                             Nytt spørreskjema
                         </Button>
@@ -31,7 +35,11 @@ export function GroupFormsTab({ forms, isAdmin }: GroupFormsTabProps) {
                 <ul className="flex flex-col gap-3">
                     {forms.map((form) => (
                         <li key={form.id}>
-                            <GroupFormRow form={form} />
+                            <GroupFormRow
+                                form={form}
+                                canManage={isAdmin}
+                                onEdit={() => onEditForm(form)}
+                            />
                         </li>
                     ))}
                 </ul>
@@ -40,10 +48,6 @@ export function GroupFormsTab({ forms, isAdmin }: GroupFormsTabProps) {
                     Ingen spørreskjema tilgjengelig ennå.
                 </p>
             )}
-            <GroupNewFormDialog
-                open={creating}
-                onClose={() => setCreating(false)}
-            />
         </div>
     );
 }

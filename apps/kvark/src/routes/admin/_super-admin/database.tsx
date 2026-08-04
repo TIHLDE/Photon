@@ -4,6 +4,8 @@ import { DatabaseIcon } from "lucide-react";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
@@ -14,7 +16,11 @@ export const Route = createFileRoute("/admin/_super-admin/database")({
 
 function DatabaseViewerPage() {
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Database Viewer"
                 description="Inspiser databasen direkte for feilsøking."
@@ -42,6 +48,6 @@ function DatabaseViewerPage() {
                     </AdminEmptyState>
                 </CardContent>
             </Card>
-        </div>
+        </Stagger>
     );
 }

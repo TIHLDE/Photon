@@ -1,6 +1,6 @@
 import { Button } from "@tihlde/ui/ui/button";
 import { Dialog, DialogContent } from "@tihlde/ui/ui/dialog";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { useCallback, useEffect, useRef } from "react";
 
 import { assetImageUrl } from "#/lib/assets";
@@ -18,6 +18,9 @@ type GalleryLightboxProps = {
     /** Index into `pictures`, or null when the lightbox is closed. */
     openIndex: number | null;
     onOpenChange: (index: number | null) => void;
+    /** Viser «Rediger»-knappen. Uten `onEdit` skjules den uansett. */
+    canEdit?: boolean;
+    onEdit?: (picture: LightboxPicture) => void;
 };
 
 /**
@@ -28,6 +31,8 @@ export function GalleryLightbox({
     pictures,
     openIndex,
     onOpenChange,
+    canEdit = false,
+    onEdit,
 }: GalleryLightboxProps) {
     const index = openIndex ?? -1;
     const picture = pictures[index] ?? null;
@@ -139,16 +144,29 @@ export function GalleryLightbox({
                     ) : null}
                 </div>
 
-                <div className="flex flex-col gap-1 px-2 pb-2">
-                    {picture.title ? <p>{picture.title}</p> : null}
-                    {picture.description ? (
-                        <p className="text-muted-foreground">
-                            {picture.description}
+                <div className="flex items-end justify-between gap-4 px-2 pb-2">
+                    <div className="flex min-w-0 flex-col gap-1">
+                        {picture.title ? <p>{picture.title}</p> : null}
+                        {picture.description ? (
+                            <p className="text-muted-foreground">
+                                {picture.description}
+                            </p>
+                        ) : null}
+                        <p className="text-sm text-muted-foreground">
+                            {index + 1} / {pictures.length}
                         </p>
+                    </div>
+                    {canEdit && onEdit ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => onEdit(picture)}
+                        >
+                            <Pencil />
+                            Rediger
+                        </Button>
                     ) : null}
-                    <p className="text-sm text-muted-foreground">
-                        {index + 1} / {pictures.length}
-                    </p>
                 </div>
             </DialogContent>
         </Dialog>

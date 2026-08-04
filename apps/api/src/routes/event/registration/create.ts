@@ -11,6 +11,7 @@ import {
     isUserPrioritized,
 } from "../../../lib/event/priority";
 import { getUserStrikeCount } from "../../../lib/event/strikes";
+import { getUnansweredEvaluations } from "../../../lib/form/evaluation";
 import { route } from "../../../lib/route";
 import { hasAcceptedEventRules } from "../../../lib/user/settings";
 import { requireAccess } from "../../../middleware/access";
@@ -37,7 +38,7 @@ export const registerToEventRoute = route().post(
         .notFound({ description: "Event not found" })
         .forbidden({
             description:
-                "User has not accepted the event rules, or the event only allows members covered by a priority pool or members of a specific institute to register",
+                "User has not accepted the event rules, owes an answer to an evaluation, or the event only allows members covered by a priority pool or members of a specific institute to register",
         })
         .response({
             statusCode: 409,
@@ -84,6 +85,24 @@ export const registerToEventRoute = route().post(
             throw new HTTPException(403, {
                 message:
                     "You must accept the event rules before registering for events",
+            });
+        }
+
+        /**
+         * An evaluation the member owes an answer to blocks every new
+         * registration, exactly as it did in Lepton. It is the only thing that
+         * makes an evaluation mandatory in practice — without it a bedpres
+         * gets answers from whoever happens to feel like it.
+         *
+         * The events are named in the message: "you have unanswered
+         * evaluations" is useless if you cannot tell which.
+         */
+        const unanswered = await getUnansweredEvaluations(c.get("ctx"), userId);
+
+        if (unanswered.length > 0) {
+            const titles = unanswered.map((e) => e.eventTitle).join(", ");
+            throw new HTTPException(403, {
+                message: `Du må svare på evalueringen for ${titles} før du kan melde deg på flere arrangementer`,
             });
         }
 
