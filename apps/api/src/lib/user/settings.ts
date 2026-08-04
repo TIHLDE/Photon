@@ -2,6 +2,7 @@ import { genderVariants, userAllergy, userSettings } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import { promoteAssetUrls } from "../asset";
 import type { AppContext } from "../ctx";
 
 export const UserAllergySchema = z.object({
@@ -47,6 +48,47 @@ export type UserAllergy = z.infer<typeof UserAllergySchema>;
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
 export type UpdateUserSettings = z.infer<typeof UpdateUserSettingsSchema>;
 
+/**
+ * Fallbacks for the columns that are `NOT NULL` but that a partial update need
+ * not carry, used when a user updates a single setting before they have a
+ * settings row at all — which is the normal state, since nothing creates the
+ * row at sign-up. Without them a new member could never accept the event rules,
+ * as the only paths to a row were full onboarding or the Lepton migration.
+ *
+ * `isOnboarded` stays false, so these placeholders are recognisable as "never
+ * answered" rather than "answered like this".
+ *
+ * `allowsPhotosByDefault` is true to match what påmeldingen already does for a
+ * member without a row (`?? true` in the registration route). Otherwise the row
+ * this creates would silently revoke their photo consent the moment they
+ * accepted the event rules — two unrelated settings, one click.
+ */
+const IMPLICIT_SETTINGS_DEFAULTS = {
+    gender: "other",
+    allowsPhotosByDefault: true,
+    acceptsEventRules: false,
+    receiveMailCommunication: true,
+    isOnboarded: false,
+} as const;
+
+/**
+ * Whether the user has accepted the event rules.
+ *
+ * No settings row means they never answered, which counts as "not accepted" —
+ * the rules are an active choice, so the absence of one can't grant it.
+ */
+export async function hasAcceptedEventRules(
+    userId: string,
+    ctx: AppContext,
+): Promise<boolean> {
+    const settings = await ctx.db.query.userSettings.findFirst({
+        where: (s, { eq }) => eq(s.userId, userId),
+        columns: { acceptsEventRules: true },
+    });
+
+    return settings?.acceptsEventRules ?? false;
+}
+
 export async function getUserSettings(
     userId: string,
     ctx: AppContext,
@@ -89,11 +131,13 @@ export async function createUserSettings(
 ): Promise<UserSettings> {
     const { db } = ctx;
 
+    // The profile picture is staged until a row claims it; without this the
+    // cleanup cron deletes the file after two days.
+    await promoteAssetUrls(ctx.bucket, [settings.imageUrl]);
+
     // Use transaction for atomicity
     return await db.transaction(async (tx) => {
-        // Create settings
-        await tx.insert(userSettings).values({
-            userId,
+        const values = {
             gender: settings.gender,
             allowsPhotosByDefault: settings.allowsPhotosByDefault,
             acceptsEventRules: settings.acceptsEventRules,
@@ -103,7 +147,15 @@ export async function createUserSettings(
             linkedinUrl: emptyToNull(settings.linkedinUrl) ?? null,
             receiveMailCommunication: settings.receiveMailCommunication,
             isOnboarded: true, // Mark as onboarded when creating
-        });
+        };
+
+        // Onboarding overwrites any placeholder row left behind by an earlier
+        // single-setting update (accepting the event rules creates one), so
+        // answering the real questions is never blocked by it.
+        await tx
+            .insert(userSettings)
+            .values({ ...values, userId })
+            .onConflictDoUpdate({ target: userSettings.userId, set: values });
 
         // Set allergies
         if (settings.allergies.length > 0) {
@@ -129,22 +181,36 @@ export async function updateUserSettings(
 ): Promise<UserSettings> {
     const { db } = ctx;
 
+    await promoteAssetUrls(ctx.bucket, [updates.imageUrl]);
+
     return await db.transaction(async (tx) => {
         // Separate allergies from other updates
         const { allergies, ...settingsUpdates } = updates;
 
         // Update settings if there are any field updates
         if (Object.keys(settingsUpdates).length > 0) {
+            const values = {
+                ...settingsUpdates,
+                imageUrl: settingsUpdates.imageUrl ?? undefined,
+                bioDescription: emptyToNull(settingsUpdates.bioDescription),
+                githubUrl: emptyToNull(settingsUpdates.githubUrl),
+                linkedinUrl: emptyToNull(settingsUpdates.linkedinUrl),
+            };
+
+            // Upsert rather than update: members who never onboarded have no
+            // row, and a plain UPDATE silently matched nothing — so accepting
+            // the event rules appeared to work and changed nothing.
             await tx
-                .update(userSettings)
-                .set({
-                    ...settingsUpdates,
-                    imageUrl: settingsUpdates.imageUrl ?? undefined,
-                    bioDescription: emptyToNull(settingsUpdates.bioDescription),
-                    githubUrl: emptyToNull(settingsUpdates.githubUrl),
-                    linkedinUrl: emptyToNull(settingsUpdates.linkedinUrl),
+                .insert(userSettings)
+                .values({
+                    ...IMPLICIT_SETTINGS_DEFAULTS,
+                    ...values,
+                    userId,
                 })
-                .where(eq(userSettings.userId, userId));
+                .onConflictDoUpdate({
+                    target: userSettings.userId,
+                    set: values,
+                });
         }
 
         // Update allergies if provided

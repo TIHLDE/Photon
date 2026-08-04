@@ -2,6 +2,7 @@ import { type DbSchema, schema } from "@photon/db";
 import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
 import { isEventOwner } from "../../lib/event/middleware";
@@ -40,7 +41,11 @@ export const updateRoute = route().put(
         const body = c.req.valid("json");
         const eventId = c.req.param("id");
         const userId = c.get("user").id;
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
+
+        // Uploaded pictures are staged until a row claims them; without this
+        // the cleanup cron deletes the file after two days.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event

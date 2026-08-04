@@ -123,6 +123,9 @@ export function registrationErrorMessage(error: unknown): string {
     if (message.includes("already registered")) {
         return "Du er allerede påmeldt. Last siden på nytt for å se påmeldingen din.";
     }
+    if (message.includes("accept the event rules")) {
+        return "Du må godkjenne arrangementsreglene før du kan melde deg på. Huk av i varselet over.";
+    }
     if (message.includes("priority pool")) {
         return "Dette arrangementet er forbeholdt medlemmer i en prioritert gruppe.";
     }
