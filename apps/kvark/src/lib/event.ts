@@ -4,8 +4,10 @@ import { nb } from "date-fns/locale";
 // -- Shared display types (previously in mock/events) --
 
 export type EventRegistrationState =
+    | "no-signup"
     | "not-open"
     | "open"
+    | "processing"
     | "joined"
     | "awaiting-payment"
     | "on-waitlist"
@@ -44,6 +46,10 @@ type RegistrationStateInput = {
     registration: ApiRegistration;
     /** The event's own `closed` flag. */
     closed: boolean;
+    /** Whether the event has sign-up at all. */
+    requiresSigningUp: boolean;
+    /** Whether the event costs money — a pending registration then awaits payment. */
+    isPaidEvent: boolean;
     /** When registration opens. Null means "open immediately". */
     registrationStart?: string | null;
     /** Påmeldingsfristen. Null means "no deadline". */
@@ -65,20 +71,29 @@ export function deriveRegistrationState(
     {
         registration,
         closed,
+        requiresSigningUp,
+        isPaidEvent,
         registrationStart,
         registrationEnd,
         endTime,
     }: RegistrationStateInput,
     now: Date = new Date(),
 ): EventRegistrationState {
+    // Arrangementer uten påmelding har ingenting å melde seg på. Uten dette
+    // sto det en helt vanlig «Meld deg på»-knapp der, og API-et svarte 409.
+    if (!requiresSigningUp) return "no-signup";
+
     switch (registration?.status) {
         case "registered":
         case "attended":
             return "joined";
         case "waitlisted":
             return "on-waitlist";
+        // Påmeldingen ligger som «pending» til cron-en har avgjort om den ble
+        // plass eller venteliste. På et gratis arrangement er det bare noen
+        // sekunders behandling — «venter på betaling» ville vært feil.
         case "pending":
-            return "awaiting-payment";
+            return isPaidEvent ? "awaiting-payment" : "processing";
         default:
             if (closed) return "closed";
             if (endTime && new Date(endTime) < now) return "closed";
@@ -90,6 +105,44 @@ export function deriveRegistrationState(
             }
             return "open";
     }
+}
+
+/**
+ * Oversett en feil fra påmeldings-endepunktet til noe et medlem forstår.
+ *
+ * API-meldingene er engelske og skrevet for utviklere. De vanligste årsakene
+ * får en norsk forklaring; resten faller tilbake på API-meldingen, som fortsatt
+ * er langt bedre enn ingenting.
+ */
+export function registrationErrorMessage(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes("not open for registration")) {
+        return "Dette arrangementet er ikke åpent for påmelding.";
+    }
+    if (message.includes("already registered")) {
+        return "Du er allerede påmeldt. Last siden på nytt for å se påmeldingen din.";
+    }
+    if (message.includes("priority pool")) {
+        return "Dette arrangementet er forbeholdt medlemmer i en prioritert gruppe.";
+    }
+    if (message.includes("only open to students at")) {
+        const institute = message.split("only open to students at")[1]?.trim();
+        return institute
+            ? `Dette arrangementet er kun for studenter ved ${institute}.`
+            : "Dette arrangementet er kun for studenter ved ett bestemt institutt.";
+    }
+    if (message.includes("requires permission")) {
+        return "Kontoen din har ikke tilgang til å melde seg på arrangementer. Ta kontakt med Index hvis dette ser feil ut.";
+    }
+    if (message.includes("Authentication required")) {
+        return "Du må være innlogget for å melde deg på.";
+    }
+    if (message.includes("not registered")) {
+        return "Du er ikke påmeldt dette arrangementet.";
+    }
+
+    return message;
 }
 
 /**

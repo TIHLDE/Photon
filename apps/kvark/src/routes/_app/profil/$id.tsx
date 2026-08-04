@@ -291,7 +291,9 @@ function ProfileNav({
     return (
         <>
             {/* Mobile: horizontal scroll */}
-            <nav className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+            {/* overflow-y-hidden: se DetailLayoutNav — én akse satt gjør den
+                andre til `auto`, og fanene blir vertikalt scrollbare. */}
+            <nav className="-mx-4 min-w-0 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
                 <ul className="flex w-max gap-2">
                     {flatItems.map((item) => (
                         <li key={item.label} className="shrink-0">

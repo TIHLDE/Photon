@@ -1,4 +1,5 @@
 import {
+    type QueryClient,
     infiniteQueryOptions,
     mutationOptions,
     queryOptions,
@@ -78,6 +79,22 @@ export const getEventByIdQuery = (eventId: string) =>
             }),
     });
 
+/**
+ * Frisk opp arrangementsdetaljene, uansett om de ligger i cachen under slug
+ * eller ID.
+ *
+ * Endepunktet tar imot begge, og de offentlige sidene slår opp på slug mens
+ * mutasjonene bare kjenner ID-en. Å invalidere på ID alene bommet derfor på
+ * nøkkelen siden faktisk brukte: påmeldingskortet ble stående uendret til
+ * brukeren lastet siden på nytt.
+ */
+function invalidateEventDetails(client: QueryClient): Promise<void> {
+    return client.invalidateQueries({
+        queryKey: [...EventQueryKeys.detail],
+        exact: false,
+    });
+}
+
 export const updateEventMutation = mutationOptions({
     mutationFn: ({
         eventId,
@@ -91,13 +108,9 @@ export const updateEventMutation = mutationOptions({
             json: data,
         }),
     onSuccess(_, __, ___, ctx) {
-        // Detaljsiden caches på slug, mens vi oppdaterer på id — og en
-        // tittelendring gir dessuten ny slug. Derfor invalideres hele
-        // detail-nøkkelen, ikke bare den ene oppføringen.
-        ctx.client.invalidateQueries({
-            queryKey: [...EventQueryKeys.detail],
-            exact: false,
-        });
+        // En tittelendring gir dessuten ny slug, så hele detail-nøkkelen må
+        // friskes opp.
+        invalidateEventDetails(ctx.client);
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.list],
             exact: false,
@@ -114,8 +127,8 @@ export const deleteEventMutation = mutationOptions({
         apiClient.delete(`/api/event/{eventId}`, {
             params: { eventId: eventId },
         }),
-    onSuccess(_, vars, __, ctx) {
-        ctx.client.invalidateQueries(getEventByIdQuery(vars.eventId));
+    onSuccess(_, __, ___, ctx) {
+        invalidateEventDetails(ctx.client);
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.list],
             exact: false,
@@ -255,7 +268,7 @@ export const registerForEventMutation = mutationOptions({
             queryKey: [...EventQueryKeys.registrations, vars.eventId],
             exact: false,
         });
-        ctx.client.invalidateQueries(getEventByIdQuery(vars.eventId));
+        invalidateEventDetails(ctx.client);
     },
 });
 
@@ -269,7 +282,7 @@ export const unregisterFromEventMutation = mutationOptions({
             queryKey: [...EventQueryKeys.registrations, vars.eventId],
             exact: false,
         });
-        ctx.client.invalidateQueries(getEventByIdQuery(vars.eventId));
+        invalidateEventDetails(ctx.client);
     },
 });
 

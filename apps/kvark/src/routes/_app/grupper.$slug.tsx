@@ -51,6 +51,7 @@ import {
     mapGroup,
     mapLaw,
     mapMember,
+    sortMembersByName,
 } from "#/lib/group";
 
 const searchSchema = z.object({
@@ -159,7 +160,7 @@ function GroupDetailPage() {
     });
 
     const members = useMemo(
-        () => (apiMembers ?? []).map(mapMember),
+        () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
     const leader = useMemo(

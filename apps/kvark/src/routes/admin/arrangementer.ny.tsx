@@ -9,7 +9,7 @@ import { XCircle } from "lucide-react";
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
-import { getGroupsQuery } from "#/api/queries/groups";
+import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminNoAccess } from "#/components/admin-no-access";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -51,10 +51,12 @@ const emptyValues: EventFormValues = {
     description: "",
     categorySlug: "",
     organizerGroupSlug: "",
+    contactPersonUserId: "",
     location: "",
     locationCoords: null,
     start: null,
     end: null,
+    requiresSigningUp: true,
     registrationEnd: null,
     capacity: "",
     visibility: "public",
@@ -79,6 +81,13 @@ function NewEventPage() {
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
         useQuery(searchAddressQuery(debouncedLocation));
 
+    // Kontaktpersonen velges blant medlemmene i arrangørgruppen, så lista
+    // følger gruppevalget over.
+    const { data: organizerMembers } = useQuery({
+        ...getGroupMembersQuery(values.organizerGroupSlug, 0),
+        enabled: Boolean(values.organizerGroupSlug),
+    });
+
     // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
     useEffect(() => {
         const defaults = eventDateDefaults();
@@ -90,6 +99,11 @@ function NewEventPage() {
                 current.registrationEnd ?? defaults.registrationEnd,
         }));
     }, []);
+
+    const contactPersonCandidates = (organizerMembers ?? []).map((member) => ({
+        id: member.user.id,
+        name: member.user.name,
+    }));
 
     const createEvent = useMutation(createEventMutation);
     const { uploadImage, isUploading } = useImageUploader();
@@ -104,8 +118,12 @@ function NewEventPage() {
 
         const startIso = toIso(values.start);
         const endIso = toIso(values.end);
-        const registrationEndIso = toIso(values.registrationEnd);
-        if (!startIso || !endIso || !registrationEndIso) return;
+        // Uten påmelding avviser API-et både frist og kapasitet, så de utelates.
+        const registrationEndIso = values.requiresSigningUp
+            ? toIso(values.registrationEnd)
+            : null;
+        if (!startIso || !endIso) return;
+        if (values.requiresSigningUp && !registrationEndIso) return;
 
         // Uploaded first: a failed upload must not leave an event behind that
         // silently lost its cover.
@@ -138,15 +156,18 @@ function NewEventPage() {
                     registrationStart: null,
                     registrationEnd: registrationEndIso,
                     cancellationDeadline: null,
-                    capacity: values.capacity ? Number(values.capacity) : null,
+                    capacity:
+                        values.requiresSigningUp && values.capacity
+                            ? Number(values.capacity)
+                            : null,
                     visibility: values.visibility,
                     restrictedToInstituteSlug:
                         values.instituteSlug === ALL_INSTITUTES
                             ? null
                             : values.instituteSlug,
                     isRegistrationClosed: false,
-                    requiresSigningUp: true,
-                    allowWaitlist: true,
+                    requiresSigningUp: values.requiresSigningUp,
+                    allowWaitlist: values.requiresSigningUp,
                     priorityPools: null,
                     onlyAllowPrioritized: false,
                     canCauseStrikes: values.canCauseStrikes,
@@ -157,7 +178,7 @@ function NewEventPage() {
                             ? Number(values.price)
                             : null,
                     paymentGracePeriodMinutes: null,
-                    contactPersonUserId: null,
+                    contactPersonUserId: values.contactPersonUserId || null,
                     reactionsAllowed: false,
                 },
             },
@@ -195,6 +216,7 @@ function NewEventPage() {
                 onChange={handleChange}
                 groups={groups}
                 institutes={institutes}
+                contactPersonCandidates={contactPersonCandidates}
                 addressSuggestions={addressSuggestions ?? []}
                 isSearchingAddress={isSearchingAddress}
                 onSubmit={handleSubmit}
