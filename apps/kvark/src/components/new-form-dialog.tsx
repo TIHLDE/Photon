@@ -93,22 +93,42 @@ function emptyQuestion(): NewFormQuestion {
     };
 }
 
-type GroupNewFormDialogProps = {
+type NewFormDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (values: NewFormValues) => void | Promise<void>;
     isSubmitting?: boolean;
     /** Feil fra opprettelsen, vist i dialogen så skjemaet beholdes. */
     error?: string | null;
+    title?: string;
+    description?: string;
+    submitLabel?: string;
+    /**
+     * Innstillingene som bare finnes på gruppeskjemaer: hvem som kan svare,
+     * hvor mange ganger, og hvem som varsles. Et arrangementsskjema har ingen
+     * av dem — hvem som kan svare følger av påmeldingen og oppmøtet.
+     */
+    showGroupSettings?: boolean;
 };
 
-export function GroupNewFormDialog({
+/**
+ * Opprett et spørreskjema med spørsmålene sine.
+ *
+ * Brukes både for gruppeskjemaer og for arrangementenes påmeldings- og
+ * evalueringsskjema. Spørsmålsbyggeren er den samme; det er bare
+ * gruppeinnstillingene som skiller dem.
+ */
+export function NewFormDialog({
     open,
     onOpenChange,
     onSubmit,
     isSubmitting,
     error,
-}: GroupNewFormDialogProps) {
+    title = "Nytt spørreskjema",
+    description = "Legg til spørsmålene du vil ha svar på. Spørsmålene kan endres helt til noen har svart på skjemaet.",
+    submitLabel = "Opprett spørreskjema",
+    showGroupSettings = true,
+}: NewFormDialogProps) {
     const form = useAppForm({
         defaultValues: EMPTY_VALUES,
         validators: { onDynamic: newFormSchema },
@@ -127,14 +147,11 @@ export function GroupNewFormDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Nytt spørreskjema</DialogTitle>
-                    <DialogDescription>
-                        Legg til spørsmålene du vil ha svar på. Spørsmålene kan
-                        endres helt til noen har svart på skjemaet.
-                    </DialogDescription>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
                 <form
-                    id="new-group-form"
+                    id="new-form-dialog"
                     {...formHandlers(form)}
                     className="flex flex-col gap-4"
                 >
@@ -357,53 +374,60 @@ export function GroupNewFormDialog({
                             )}
                         </form.Field>
 
-                        <FieldSeparator />
+                        {showGroupSettings ? (
+                            <>
+                                <FieldSeparator />
 
-                        <form.AppField name="isOpenForSubmissions">
-                            {(field) => (
-                                <field.Field orientation="horizontal">
-                                    <field.Label>Åpent for svar</field.Label>
-                                    <field.Switch />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                                <form.AppField name="isOpenForSubmissions">
+                                    {(field) => (
+                                        <field.Field orientation="horizontal">
+                                            <field.Label>
+                                                Åpent for svar
+                                            </field.Label>
+                                            <field.Switch />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
 
-                        <form.AppField name="canSubmitMultiple">
-                            {(field) => (
-                                <field.Field orientation="horizontal">
-                                    <field.Label>
-                                        Kan svare flere ganger
-                                    </field.Label>
-                                    <field.Switch />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                                <form.AppField name="canSubmitMultiple">
+                                    {(field) => (
+                                        <field.Field orientation="horizontal">
+                                            <field.Label>
+                                                Kan svare flere ganger
+                                            </field.Label>
+                                            <field.Switch />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
 
-                        <form.AppField name="onlyForGroupMembers">
-                            {(field) => (
-                                <field.Field orientation="horizontal">
-                                    <field.Label>
-                                        Kun for gruppens medlemmer
-                                    </field.Label>
-                                    <field.Switch />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                                <form.AppField name="onlyForGroupMembers">
+                                    {(field) => (
+                                        <field.Field orientation="horizontal">
+                                            <field.Label>
+                                                Kun for gruppens medlemmer
+                                            </field.Label>
+                                            <field.Switch />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
 
-                        <form.AppField name="emailReceiverOnSubmit">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>
-                                        Varsle denne e-postadressen ved nye svar
-                                    </field.Label>
-                                    <field.Input
-                                        type="email"
-                                        placeholder="valgfritt@tihlde.org"
-                                    />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                                <form.AppField name="emailReceiverOnSubmit">
+                                    {(field) => (
+                                        <field.Field>
+                                            <field.Label>
+                                                Varsle denne e-postadressen ved
+                                                nye svar
+                                            </field.Label>
+                                            <field.Input
+                                                type="email"
+                                                placeholder="valgfritt@tihlde.org"
+                                            />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                            </>
+                        ) : null}
                     </FieldGroup>
                     {error ? <p role="alert">{error}</p> : null}
                 </form>
@@ -417,7 +441,7 @@ export function GroupNewFormDialog({
                     </Button>
                     <Button
                         type="submit"
-                        form="new-group-form"
+                        form="new-form-dialog"
                         disabled={isSubmitting}
                     >
                         {isSubmitting ? (
@@ -426,7 +450,7 @@ export function GroupNewFormDialog({
                                 <span>Oppretter...</span>
                             </>
                         ) : (
-                            "Opprett spørreskjema"
+                            submitLabel
                         )}
                     </Button>
                 </DialogFooter>

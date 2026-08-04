@@ -66,6 +66,7 @@ import {
     UserSearchCombobox,
     type UserSearchOption,
 } from "#/components/user-search-combobox";
+import { extractErrorMessage } from "#/lib/api-error";
 import { useDebounced } from "#/lib/use-debounced";
 import { computeClassYear, initials, programmeLength } from "#/lib/utils";
 
@@ -104,29 +105,6 @@ function formatStudy(
         return `${programme} · kull ${startYear}`;
     }
     return `${programme} · ${classYear}. klasse`;
-}
-
-/** Prefer the API's own error message over ky's generic HTTP status text. */
-async function extractErrorMessage(error: unknown): Promise<string> {
-    // Structural check instead of `instanceof HTTPError` — Vite can bundle
-    // duplicate ky instances, which breaks instanceof across modules.
-    const response =
-        error && typeof error === "object" && "response" in error
-            ? error.response
-            : null;
-    if (response instanceof Response) {
-        try {
-            const body = (await response.clone().json()) as {
-                message?: string;
-            };
-            if (body.message) {
-                return body.message;
-            }
-        } catch {
-            // Fall through to the generic message.
-        }
-    }
-    return error instanceof Error ? error.message : String(error);
 }
 
 export const Route = createFileRoute("/admin/brukere")({

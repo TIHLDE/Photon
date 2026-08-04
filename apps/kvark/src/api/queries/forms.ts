@@ -193,6 +193,12 @@ export const createSubmissionMutation = mutationOptions({
             queryKey: [...FormQueryKeys.statistics, vars.formId],
             exact: false,
         });
+        // Svaret kan ha vært evalueringen som sperret for påmelding, så
+        // huskelista på profilen må hentes på nytt.
+        ctx.client.invalidateQueries({
+            queryKey: ["user", "unanswered-evaluations"],
+            exact: false,
+        });
     },
 });
 
