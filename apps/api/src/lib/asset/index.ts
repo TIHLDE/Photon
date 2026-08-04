@@ -48,6 +48,44 @@ export async function getStagedAssetsForCleanup(
 }
 
 /**
+ * The asset key a stored URL refers to, or null when the URL points somewhere
+ * else (an external image, or the Azure blobs the old site used).
+ */
+export function assetKeyFromUrl(url: string): string | null {
+    try {
+        const { pathname } = new URL(url);
+        const marker = "/api/assets/";
+        const index = pathname.indexOf(marker);
+        if (index === -1) return null;
+
+        const key = decodeURIComponent(
+            pathname.slice(index + marker.length),
+        ).trim();
+        return key.length > 0 ? key : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Claim the uploaded assets a row now points at.
+ *
+ * Uploads land as "staged" and the cleanup cron deletes them two days later,
+ * so every URL a row stores has to be promoted or the picture vanishes from
+ * the page a couple of days after someone set it. URLs that are not our own
+ * assets are left alone.
+ */
+export async function promoteAssetUrls(
+    bucket: StorageService,
+    urls: (string | null | undefined)[],
+): Promise<void> {
+    for (const url of urls) {
+        const key = url ? assetKeyFromUrl(url) : null;
+        if (key) await bucket.promoteAsset(key);
+    }
+}
+
+/**
  * Delete an asset from both storage and database
  */
 export async function deleteAsset(

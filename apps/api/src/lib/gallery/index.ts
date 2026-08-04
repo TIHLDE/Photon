@@ -124,26 +124,6 @@ export async function findAlbumEvent(
     return found ?? null;
 }
 
-/**
- * The asset key a picture URL refers to, or null when the picture lives
- * somewhere else (e.g. the Azure blobs the old site used).
- */
-export function assetKeyFromUrl(imageUrl: string): string | null {
-    try {
-        const { pathname } = new URL(imageUrl);
-        const marker = "/api/assets/";
-        const index = pathname.indexOf(marker);
-        if (index === -1) return null;
-
-        const key = decodeURIComponent(
-            pathname.slice(index + marker.length),
-        ).trim();
-        return key.length > 0 ? key : null;
-    } catch {
-        return null;
-    }
-}
-
 /** Whether the given user created the album (used for ownership checks). */
 export async function isAlbumCreator(
     ctx: AppContext,

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isNewsCreator } from "~/lib/news/middleware";
+import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -35,7 +36,7 @@ export const updateRoute = route().patch(
     validator("json", updateNewsSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db } = c.get("ctx");
+        const { db, bucket } = c.get("ctx");
         const { id } = c.req.param();
 
         // Fetch the news article to verify it exists
@@ -48,6 +49,10 @@ export const updateRoute = route().patch(
                 message: "News article not found",
             });
         }
+
+        // Uploaded pictures are staged until a row claims them; without
+        // this the cleanup cron deletes the file after two days.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         // Update the news article
         const [updatedNews] = await db

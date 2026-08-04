@@ -2,7 +2,8 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { assetKeyFromUrl, findAlbumBySlugOrId } from "~/lib/gallery";
+import { promoteAssetUrls } from "~/lib/asset";
+import { findAlbumBySlugOrId } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -44,15 +45,12 @@ export const createPicturesRoute = route().post(
             throw new HTTPException(404, { message: "Fant ikke galleriet" });
         }
 
-        /**
-         * Uploads land in the asset store as "staged" and are deleted after
-         * two days unless something claims them. Promote the ones that point
-         * back at our own asset route, or every picture would disappear from
-         * the album two days after it was added.
-         */
-        for (const key of pictures.map((p) => assetKeyFromUrl(p.imageUrl))) {
-            if (key) await ctx.bucket.promoteAsset(key);
-        }
+        // Without this every picture disappears from the album two days after
+        // it was added.
+        await promoteAssetUrls(
+            ctx.bucket,
+            pictures.map((p) => p.imageUrl),
+        );
 
         const inserted = await ctx.db
             .insert(schema.galleryPicture)
