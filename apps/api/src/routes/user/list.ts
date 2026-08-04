@@ -116,6 +116,7 @@ export const listUsersRoute = route().get(
                 name: schema.user.name,
                 username: schema.user.username,
                 image: schema.user.image,
+                banned: schema.user.banned,
                 createdAt: schema.user.createdAt,
                 studyProgram: studyProgram.name,
                 studyStartYear: cohort.startYear,
@@ -132,8 +133,11 @@ export const listUsersRoute = route().get(
             totalCount,
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
-            items: rows.map((row) => ({
+            items: rows.map(({ banned, ...row }) => ({
                 ...row,
+                // `banned` is nullable in Better Auth's schema; only an
+                // explicit true means deactivated.
+                isActive: banned !== true,
                 createdAt: row.createdAt.toISOString(),
             })),
         } satisfies z.infer<typeof userListResponseSchema>);
