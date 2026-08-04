@@ -1,4 +1,5 @@
 import {
+    useMutation,
     useSuspenseInfiniteQuery,
     useSuspenseQuery,
 } from "@tanstack/react-query";
@@ -9,13 +10,18 @@ import { CalendarIcon } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 
 import {
+    deleteGalleryPictureMutation,
     getGalleryPicturesInfiniteQuery,
     getGalleryQuery,
+    updateGalleryPictureMutation,
 } from "#/api/queries/galleries";
 import { GalleryLightbox } from "#/components/gallery-lightbox";
+import type { LightboxPicture } from "#/components/gallery-lightbox";
 import { GalleryPicture } from "#/components/gallery-picture";
+import { GalleryPictureEditorDialog } from "#/components/gallery-picture-editor-dialog";
 import { LoadMoreButton } from "#/components/load-more-button";
 import { useMediaQuery } from "#/hooks/use-media-query";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/_app/galleri/$slug")({
     component: GalleryDetailPage,
@@ -62,6 +68,25 @@ function PictureGrid({ slug }: { slug: string }) {
     const pictures = data.pages.flatMap((page) => page.items);
     const columnCount = useColumnCount();
     const [openIndex, setOpenIndex] = useState<number | null>(null);
+    const [editing, setEditing] = useState<LightboxPicture | null>(null);
+
+    const canEdit = useAnyScopePermission([
+        "galleries:pictures:update",
+        "galleries:manage",
+    ]);
+    const canDelete = useAnyScopePermission([
+        "galleries:pictures:delete",
+        "galleries:manage",
+    ]);
+
+    const updatePicture = useMutation(updateGalleryPictureMutation);
+    const deletePicture = useMutation(deleteGalleryPictureMutation);
+
+    function closeEditor() {
+        setEditing(null);
+        updatePicture.reset();
+        deletePicture.reset();
+    }
 
     const columns = useMemo(() => {
         const result: (typeof pictures)[] = Array.from(
@@ -135,6 +160,52 @@ function PictureGrid({ slug }: { slug: string }) {
                 pictures={pictures}
                 openIndex={openIndex}
                 onOpenChange={setOpenIndex}
+                canEdit={canEdit}
+                onEdit={(picture) => {
+                    // Lightboxen lukkes: redigeringsdialogen har sitt eget
+                    // forhåndsvisningsbilde, og to dialoger oppå hverandre
+                    // stabler to fokusfeller.
+                    setOpenIndex(null);
+                    setEditing(picture);
+                }}
+            />
+
+            <GalleryPictureEditorDialog
+                open={editing !== null}
+                picture={editing}
+                canDelete={canDelete}
+                isSaving={updatePicture.isPending}
+                isDeleting={deletePicture.isPending}
+                error={
+                    updatePicture.error?.message ??
+                    deletePicture.error?.message ??
+                    null
+                }
+                onClose={closeEditor}
+                onSubmit={(values) => {
+                    if (!editing) return;
+                    updatePicture.mutate(
+                        {
+                            slug,
+                            pictureId: editing.id,
+                            data: {
+                                // Tomt felt betyr «ingen verdi», ikke tom
+                                // streng — API-et lagrer null.
+                                title: values.title || null,
+                                description: values.description || null,
+                                imageAlt: values.imageAlt || null,
+                            },
+                        },
+                        { onSuccess: closeEditor },
+                    );
+                }}
+                onDelete={() => {
+                    if (!editing) return;
+                    deletePicture.mutate(
+                        { slug, pictureId: editing.id },
+                        { onSuccess: closeEditor },
+                    );
+                }}
             />
         </div>
     );
