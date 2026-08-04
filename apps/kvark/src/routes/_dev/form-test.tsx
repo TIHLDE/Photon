@@ -815,8 +815,8 @@ function FormTestPage() {
                         <CardTitle>Datoer og tider</CardTitle>
                         <CardDescription>
                             DatePicker (enkelt + range, dag- og månedsvisning)
-                            paret med TimePicker, og DateTimePicker som
-                            kombinerer dato + tid — 24-timers norsk klokke.
+                            paret med TimePicker, og DateTimePicker som viser
+                            dato og tid som to felt — 24-timers norsk klokke.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -883,7 +883,7 @@ function FormTestPage() {
                                         </field.Label>
                                         <field.DateTimePicker
                                             locale={nb}
-                                            placeholder="Velg dato og tid"
+                                            placeholder="Velg dato"
                                         />
                                         <field.Error />
                                     </field.Field>

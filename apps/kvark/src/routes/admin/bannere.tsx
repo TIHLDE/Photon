@@ -280,7 +280,7 @@ function BannerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <DialogHeader>
                         <DialogTitle>
@@ -351,7 +351,7 @@ function BannerDialog({
                                 <DateTimePicker
                                     id="banner-visible-from"
                                     locale={nb}
-                                    placeholder="Velg dato og tid"
+                                    placeholder="Velg dato"
                                     value={visibleFrom}
                                     onValueChange={setVisibleFrom}
                                 />
@@ -363,7 +363,7 @@ function BannerDialog({
                                 <DateTimePicker
                                     id="banner-visible-until"
                                     locale={nb}
-                                    placeholder="Velg dato og tid"
+                                    placeholder="Velg dato"
                                     minDate={visibleFrom ?? undefined}
                                     value={visibleUntil}
                                     onValueChange={setVisibleUntil}

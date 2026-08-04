@@ -576,7 +576,7 @@ function JobDialog({
                                 <DateTimePicker
                                     id="job-deadline"
                                     locale={nb}
-                                    placeholder="Velg søknadsfrist"
+                                    placeholder="Velg dato"
                                     value={deadline}
                                     onValueChange={setDeadline}
                                 />
