@@ -3,8 +3,6 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { VippsButton } from "@tihlde/ui/ui/vipps-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
-import { Checkbox } from "@tihlde/ui/ui/checkbox";
-import { Label } from "@tihlde/ui/ui/label";
 import { Progress } from "@tihlde/ui/ui/progress";
 import {
     AlertCircle,
@@ -20,7 +18,7 @@ import {
     Users,
     type LucideIcon,
 } from "lucide-react";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type {
     EventDeadline,
@@ -40,7 +38,7 @@ type EventRegistrationCardProps = {
     waitlistCount: number;
     isAdmin: boolean;
     price: EventPrice;
-    onRegister?: (opts: { allowPhoto: boolean }) => void;
+    onRegister?: () => void;
     onUnregister?: () => void;
     onJoinWaitlist?: () => void;
     onNotify?: () => void;
@@ -59,9 +57,8 @@ type EventRegistrationCardProps = {
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
-    const [allowPhoto, setAllowPhoto] = useState(true);
     const timeline = buildTimeline(props);
-    const state = getStateRendering(props, { allowPhoto, setAllowPhoto });
+    const state = getStateRendering(props);
     // Uten påmelding er både tidslinjen og «0/∞ påmeldte» bare støy.
     const showRegistrationDetails = props.registrationState !== "no-signup";
 
@@ -116,15 +113,7 @@ type StateRendering = {
     actions?: ReactNode;
 };
 
-type PhotoConsentState = {
-    allowPhoto: boolean;
-    setAllowPhoto: (allowPhoto: boolean) => void;
-};
-
-function getStateRendering(
-    props: EventRegistrationCardProps,
-    photoConsent: PhotoConsentState,
-): StateRendering {
+function getStateRendering(props: EventRegistrationCardProps): StateRendering {
     const state = props.registrationState;
 
     switch (state) {
@@ -255,34 +244,13 @@ function getStateRendering(
         case "open":
             return {
                 actions: (
-                    <>
-                        <Label className="flex items-start gap-3">
-                            <Checkbox
-                                className="shrink-0"
-                                checked={photoConsent.allowPhoto}
-                                onCheckedChange={(checked) =>
-                                    photoConsent.setAllowPhoto(checked === true)
-                                }
-                            />
-                            <span>
-                                Jeg samtykker til at bilder av meg fra
-                                arrangementet kan publiseres
-                            </span>
-                        </Label>
-                        <Button
-                            className="w-full"
-                            disabled={props.isSubmitting}
-                            onClick={() =>
-                                props.onRegister?.({
-                                    allowPhoto: photoConsent.allowPhoto,
-                                })
-                            }
-                        >
-                            {props.isSubmitting
-                                ? "Melder deg på …"
-                                : "Meld deg på"}
-                        </Button>
-                    </>
+                    <Button
+                        className="w-full"
+                        disabled={props.isSubmitting}
+                        onClick={() => props.onRegister?.()}
+                    >
+                        {props.isSubmitting ? "Melder deg på …" : "Meld deg på"}
+                    </Button>
                 ),
             };
 

@@ -3435,11 +3435,8 @@ export interface components {
             allowPhoto: boolean;
         };
         CreateEventRegistrationBody: {
-            /**
-             * @description Photo consent for this event, overriding the account-level allowsPhotosByDefault
-             * @default true
-             */
-            allowPhoto: boolean;
+            /** @description Photo consent for this event. Omit it to use the account-level allowsPhotosByDefault, which is where members manage their consent. */
+            allowPhoto?: boolean;
         };
         EventRegistrationPayment: {
             /** Format: uuid */
@@ -5326,8 +5323,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
-            /** @default [] */
-            allergies: string[];
+            allergies?: string[];
         };
         UpdateUserSettingsInput: {
             /** @enum {string} */
@@ -5340,8 +5336,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
-            /** @default [] */
-            allergies: string[];
+            allergies?: string[];
         };
         Allergy: {
             /** @description Unique identifier for the allergy */
