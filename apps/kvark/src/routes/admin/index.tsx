@@ -16,6 +16,8 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
@@ -58,7 +60,11 @@ function DashboardPage() {
     ]);
 
     return (
-        <div className="container mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Dashboard"
                 description="Oversikt over innhold og administrasjon i Kvark."
@@ -86,7 +92,7 @@ function DashboardPage() {
                     <RecentNews />
                 </Suspense>
             </div>
-        </div>
+        </Stagger>
     );
 }
 

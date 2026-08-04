@@ -33,6 +33,8 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import {
@@ -112,7 +114,11 @@ function EventAdminDetailPage() {
         : "detaljer";
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title={event.title}
                 description={`${formatDateTime(event.startTime)} · ${event.organizer?.name ?? "Ingen arrangør"}`}
@@ -143,7 +149,7 @@ function EventAdminDetailPage() {
                     <PaymentsTab eventId={eventId} />
                 </Suspense>
             )}
-        </div>
+        </Stagger>
     );
 }
 

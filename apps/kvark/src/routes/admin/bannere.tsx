@@ -36,6 +36,8 @@ import {
     getBannersQuery,
     updateBannerMutation,
 } from "#/api/queries/banners";
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -58,7 +60,11 @@ function BannersAdminPage() {
     >(null);
 
     return (
-        <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Bannere"
                 description="Tidsstyrte toppbannere for viktige beskjeder på forsiden."
@@ -86,7 +92,7 @@ function BannersAdminPage() {
                     if (!open) setDialog(null);
                 }}
             />
-        </div>
+        </Stagger>
     );
 }
 

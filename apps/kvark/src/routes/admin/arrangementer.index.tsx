@@ -28,6 +28,8 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 
+import { Stagger } from "@tihlde/ui/ui/motion";
+
 import { getEventsQuery } from "#/api/queries/events";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -82,7 +84,11 @@ function EventsAdminPage() {
     const resetPage = () => setPage(0);
 
     return (
-        <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
+        <Stagger
+            render={
+                <div className="container mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8" />
+            }
+        >
             <AdminPageHeader
                 title="Arrangementer"
                 description="Alle arrangementer. Velg et for å redigere det, se påmeldte, registrere oppmøte og håndtere betalinger."
@@ -161,7 +167,7 @@ function EventsAdminPage() {
                     onPageChange={setPage}
                 />
             </Suspense>
-        </div>
+        </Stagger>
     );
 }
 
