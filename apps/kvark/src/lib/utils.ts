@@ -108,3 +108,15 @@ export function formatStudyLabel(
           : null;
     return [study.programme, detail].filter(Boolean).join(" · ") || undefined;
 }
+
+/**
+ * HTTP-statusen bak en feil fra API-klienten, om den finnes.
+ *
+ * Ligger her og ikke i rutefilene: rutene kodesplittes, og en hjelpefunksjon
+ * som bare står i modulen rundt komponenten blir ikke med inn i komponent-
+ * chunken — den kaster «is not defined» først i nettleseren.
+ */
+export function errorStatus(error: unknown): number | undefined {
+    const response = (error as { response?: { status?: number } })?.response;
+    return typeof response?.status === "number" ? response.status : undefined;
+}

@@ -18,7 +18,9 @@ import type {
     CreateGroupForm,
 } from "@tihlde/sdk";
 
-const GroupQueryKeys = {
+// Eksportert fordi et gruppeskjema også oppdateres gjennom /api/forms, og den
+// mutasjonen må kunne invalidere gruppas skjemaliste.
+export const GroupQueryKeys = {
     listInfinite: ["groups", "list-infinite"] as const,
     list: ["groups", "list-paged"] as const,
     mine: ["groups", "mine"] as const,

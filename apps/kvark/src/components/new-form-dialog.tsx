@@ -70,9 +70,9 @@ const EMPTY_VALUES: NewFormValues = {
     description: "",
     emailReceiverOnSubmit: "",
     canSubmitMultiple: true,
-    // Et nyopprettet skjema er åpent med en gang: det finnes ingen egen side
-    // for å åpne det i etterkant, så et lukket skjema ville vært et skjema
-    // ingen kan svare på.
+    // Et nyopprettet skjema er åpent med en gang — det vanlige er at man
+    // lager et skjema fordi man vil ha svar nå. Det kan stenges igjen under
+    // «Rediger».
     isOpenForSubmissions: true,
     onlyForGroupMembers: false,
     questions: [],

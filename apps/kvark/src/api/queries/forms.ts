@@ -4,6 +4,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
+import { GroupQueryKeys } from "#/api/queries/groups";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
 
@@ -100,6 +101,12 @@ export const updateFormMutation = mutationOptions({
         });
         ctx.client.invalidateQueries({
             queryKey: [...FormQueryKeys.statistics, vars.formId],
+            exact: false,
+        });
+        // Tittelen og innstillingene til et gruppeskjema vises i gruppas egen
+        // skjemaliste, som ligger under en helt annen nøkkel.
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.forms],
             exact: false,
         });
     },

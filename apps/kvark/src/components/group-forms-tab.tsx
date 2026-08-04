@@ -9,12 +9,14 @@ type GroupFormsTabProps = {
     forms: Form[];
     isAdmin: boolean;
     onNewForm: () => void;
+    onEditForm: (form: Form) => void;
 };
 
 export function GroupFormsTab({
     forms,
     isAdmin,
     onNewForm,
+    onEditForm,
 }: GroupFormsTabProps) {
     return (
         <div className="flex flex-col gap-6">
@@ -33,7 +35,11 @@ export function GroupFormsTab({
                 <ul className="flex flex-col gap-3">
                     {forms.map((form) => (
                         <li key={form.id}>
-                            <GroupFormRow form={form} />
+                            <GroupFormRow
+                                form={form}
+                                canManage={isAdmin}
+                                onEdit={() => onEditForm(form)}
+                            />
                         </li>
                     ))}
                 </ul>

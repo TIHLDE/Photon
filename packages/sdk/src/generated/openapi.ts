@@ -1012,26 +1012,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/forms/{formId}/submissions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get submission
-         * @description Get a specific submission. Can view own submission or requires permission to manage the form.
-         */
-        get: operations["getFormSubmission"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/forms/{formId}/submissions/download": {
         parameters: {
             query?: never;
@@ -1044,6 +1024,26 @@ export interface paths {
          * @description Download all submissions for a form as CSV. Requires permission to manage the form.
          */
         get: operations["downloadFormSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/forms/{formId}/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get submission
+         * @description Get a specific submission. Can view own submission or requires permission to manage the form.
+         */
+        get: operations["getFormSubmission"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2438,6 +2438,50 @@ export interface paths {
          * @description Set a member's cohort start year by hand, overriding what Feide reports. Moves their STUDYYEAR group to match. Requires 'users:manage'.
          */
         patch: operations["updateUserStudyYear"];
+        trace?: never;
+    };
+    "/api/user/{id}/allergies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a member's allergies
+         * @description The allergies registered on one member. Requires 'users:manage'.
+         */
+        get: operations["getUserAllergies"];
+        /**
+         * Set a member's allergies
+         * @description Replace the allergies registered on one member. Requires 'users:manage'.
+         */
+        put: operations["updateUserAllergies"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Activate or deactivate a member
+         * @description Deactivating blocks sign-in and ends the member's sessions; the account and its history are kept. Requires 'users:manage'.
+         */
+        patch: operations["updateUserStatus"];
         trace?: never;
     };
     "/api/user/{id}": {
@@ -3863,6 +3907,10 @@ export interface components {
                     order: number;
                 }[];
             }[];
+            email_receiver_on_submit?: string | null;
+            can_submit_multiple?: boolean | null;
+            is_open_for_submissions?: boolean | null;
+            only_for_group_members?: boolean | null;
         };
         UpdateForm: {
             title?: string;
@@ -3886,6 +3934,10 @@ export interface components {
                     order: number;
                 }[];
             }[];
+            email_receiver_on_submit?: string | null;
+            can_submit_multiple?: boolean;
+            is_open_for_submissions?: boolean;
+            only_for_group_members?: boolean;
         };
         DeleteFormResponse: {
             detail: string;
@@ -5530,6 +5582,8 @@ export interface components {
             studyProgram: string | null;
             /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
             studyStartYear: number | null;
+            /** @description False when the account is deactivated — the member cannot sign in. */
+            isActive: boolean;
             /** @description Account creation timestamp */
             createdAt: string;
         };
@@ -5550,6 +5604,23 @@ export interface components {
         UpdateStudyYearInput: {
             /** @description Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group. */
             startYear: number | null;
+        };
+        UserAllergies: {
+            allergies: components["schemas"]["Allergy"][];
+        };
+        UpdateUserAllergiesInput: {
+            /** @description Allergy slugs the member should have. Replaces the current set. */
+            allergies: string[];
+        };
+        UpdateUserStatus: {
+            message: string;
+            isActive: boolean;
+        };
+        UpdateUserStatusInput: {
+            /** @description False deactivates the account: the member can no longer sign in, and their sessions are ended. */
+            isActive: boolean;
+            /** @description Why the account was deactivated. Ignored when activating. */
+            reason?: string;
         };
         UserProfile: {
             /** @description User ID */
@@ -8060,6 +8131,51 @@ export interface operations {
             };
         };
     };
+    downloadFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success - Returns CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getFormSubmission: {
         parameters: {
             query?: never;
@@ -8098,51 +8214,6 @@ export interface operations {
                 content?: never;
             };
             /** @description Not Found - Submission not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    downloadFormSubmissions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                formId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Success - Returns CSV file */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/csv": unknown;
-                };
-            };
-            /** @description Authentication required */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPAppException"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Form not found */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12191,6 +12262,163 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UpdateStudyYear"];
                 };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getUserAllergies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The member's allergies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAllergies"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserAllergies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserAllergiesInput"];
+            };
+        };
+        responses: {
+            /** @description The allergies now registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAllergies"];
+                };
+            };
+            /** @description Bad Request - Unknown allergy slug */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserStatusInput"];
+            };
+        };
+        responses: {
+            /** @description Status updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateUserStatus"];
+                };
+            };
+            /** @description Bad Request - Cannot deactivate your own account */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {

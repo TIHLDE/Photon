@@ -3,6 +3,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { FormHasSubmissionsException } from "~/lib/form/exceptions";
 import { canManageForm, updateFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -69,15 +70,56 @@ export const updateRoute = route().patch(
             });
         }
 
-        // Update form
-        await db
-            .update(schema.form)
-            .set({
-                title: body.title,
-                description: body.description,
-                isTemplate: body.template,
-            })
-            .where(eq(schema.form.id, formId));
+        // The submission rules live on the group_form row, so they can only be
+        // written when the form actually belongs to a group.
+        const groupForm = await db.query.formGroupForm.findFirst({
+            where: eq(schema.formGroupForm.formId, formId),
+        });
+
+        // Rewriting the questions deletes the answers hanging off them. Event
+        // forms are left alone here — organisers may edit a survey while
+        // registrations are open, and re-submitting replaces the old answer.
+        if (body.fields && groupForm) {
+            const answered = await db.query.formSubmission.findFirst({
+                where: eq(schema.formSubmission.formId, formId),
+            });
+            if (answered) {
+                throw new FormHasSubmissionsException();
+            }
+        }
+
+        // Both updates are skipped when the body carries nothing for them:
+        // Drizzle rejects a `set` where every value is undefined, so a patch
+        // that only flips «åpent for svar» must not touch the form row.
+        const formValues = {
+            title: body.title,
+            description: body.description,
+            isTemplate: body.template,
+        };
+
+        if (Object.values(formValues).some((value) => value !== undefined)) {
+            await db
+                .update(schema.form)
+                .set(formValues)
+                .where(eq(schema.form.id, formId));
+        }
+
+        const groupFormValues = {
+            emailReceiverOnSubmit: body.email_receiver_on_submit,
+            canSubmitMultiple: body.can_submit_multiple,
+            isOpenForSubmissions: body.is_open_for_submissions,
+            onlyForGroupMembers: body.only_for_group_members,
+        };
+
+        if (
+            groupForm &&
+            Object.values(groupFormValues).some((value) => value !== undefined)
+        ) {
+            await db
+                .update(schema.formGroupForm)
+                .set(groupFormValues)
+                .where(eq(schema.formGroupForm.formId, formId));
+        }
 
         // Update fields if provided
         if (body.fields) {
@@ -99,11 +141,24 @@ export const updateRoute = route().patch(
             },
         });
 
+        const updatedGroupForm = groupForm
+            ? await db.query.formGroupForm.findFirst({
+                  where: eq(schema.formGroupForm.formId, formId),
+              })
+            : undefined;
+
         return c.json({
             id: updatedForm?.id,
             title: updatedForm?.title,
             description: updatedForm?.description,
             template: updatedForm?.isTemplate,
+            email_receiver_on_submit:
+                updatedGroupForm?.emailReceiverOnSubmit ?? null,
+            can_submit_multiple: updatedGroupForm?.canSubmitMultiple ?? null,
+            is_open_for_submissions:
+                updatedGroupForm?.isOpenForSubmissions ?? null,
+            only_for_group_members:
+                updatedGroupForm?.onlyForGroupMembers ?? null,
             created_at: updatedForm?.createdAt.toISOString(),
             updated_at: updatedForm?.updatedAt.toISOString(),
             fields: updatedForm?.fields.map((field) => ({
