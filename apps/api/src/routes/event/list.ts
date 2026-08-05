@@ -82,6 +82,7 @@ export const listRoute = route().get(
             expired,
             openSignUp,
             category,
+            organizerGroupSlug,
             ordering,
         } = c.req.valid("query");
 
@@ -95,6 +96,9 @@ export const listRoute = route().get(
                 search ? ilike(schema.event.title, `%${search}%`) : undefined,
                 category
                     ? inArray(schema.event.categorySlug, category)
+                    : undefined,
+                organizerGroupSlug
+                    ? eq(schema.event.organizerGroupSlug, organizerGroupSlug)
                     : undefined,
                 expired != null
                     ? expired
