@@ -143,7 +143,7 @@ const envSchema = z
             WEBSITE_URL:
                 vals.WEBSITE_URL ||
                 (vals.NODE_ENV === "production"
-                    ? "https://new.tihlde.org"
+                    ? "https://tihlde.org"
                     : "http://localhost:3000"),
         };
 

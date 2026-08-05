@@ -6,6 +6,18 @@ import type {
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 
+/**
+ * Notification links are stored relative so the website can route internally,
+ * but an email client has no origin to resolve them against — a relative href
+ * makes the "Se mer" button dead. Absolutise before handing the link to the
+ * email template; already-absolute links are passed through untouched.
+ */
+function toAbsoluteLink(link: string | undefined) {
+    if (!link) return link;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(link)) return link;
+    return `${env.WEBSITE_URL}${link.startsWith("/") ? "" : "/"}${link}`;
+}
+
 type EmailTemplateOverride = {
     [TName in EmailTemplateName]: {
         name: TName;
@@ -110,7 +122,7 @@ export async function sendNotification(
             props: {
                 title,
                 description,
-                link,
+                link: toAbsoluteLink(link),
                 logoUrl: `${env.WEBSITE_URL}/logo512.png`,
             },
         };
