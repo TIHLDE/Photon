@@ -42,12 +42,46 @@ const toBoolean =
         return val.toLowerCase() === "true" || val === "1";
     };
 
+/**
+ * Frontend origins production trusts in addition to WEBSITE_URL.
+ *
+ * The website moves from new.tihlde.org to tihlde.org, but WEBSITE_URL lives
+ * in Drift's environment rather than this repo — the Vercel domain move and
+ * that variable cannot flip in the same instant. Trusting the whole set makes
+ * the cutover order-independent, and keeps links that still point at
+ * new.tihlde.org (sent emails, Vipps return URLs) working afterwards.
+ */
+const PRODUCTION_WEBSITE_ORIGINS = [
+    "https://tihlde.org",
+    "https://www.tihlde.org",
+    "https://new.tihlde.org",
+];
+
+/**
+ * Origin form of a URL ("https://tihlde.org/" -> "https://tihlde.org"), so
+ * comparisons against a browser's Origin header — which never carries a path
+ * or trailing slash — do not fail on a stray slash in configuration.
+ * Unparseable values are passed through for the caller to reject.
+ */
+function toOrigin(url: string): string {
+    try {
+        return new URL(url).origin;
+    } catch {
+        return url;
+    }
+}
+
 const envSchema = z
     .object({
         // CONFIG
         ROOT_URL: z.string().default("http://localhost:4000"),
         /** Frontend origin. Defaulted per NODE_ENV below, not here. */
         WEBSITE_URL: z.string().optional(),
+        /**
+         * Comma-separated extra frontend origins to trust alongside
+         * WEBSITE_URL. Defaulted per NODE_ENV below, not here.
+         */
+        EXTRA_WEBSITE_ORIGINS: z.string().optional(),
         PORT: z
             .string()
             .default("4000")
@@ -135,16 +169,34 @@ const envSchema = z
             .transform(toBoolean({ defaultVal: false })),
     })
     .transform((vals) => {
+        // A localhost frontend in production is never right: WEBSITE_URL
+        // anchors the allowed CORS origins there (see app.ts), so falling back
+        // to the dev default would block the real site from its own API.
+        const websiteUrl =
+            vals.WEBSITE_URL ||
+            (vals.NODE_ENV === "production"
+                ? "https://tihlde.org"
+                : "http://localhost:3000");
+
+        const extraOrigins = vals.EXTRA_WEBSITE_ORIGINS
+            ? vals.EXTRA_WEBSITE_ORIGINS.split(",")
+                  .map((origin) => origin.trim())
+                  .filter(Boolean)
+            : vals.NODE_ENV === "production"
+              ? PRODUCTION_WEBSITE_ORIGINS
+              : [];
+
         const resolved = {
             ...vals,
-            // A localhost frontend in production is never right: WEBSITE_URL is
-            // the sole allowed CORS origin there (see app.ts), so falling back
-            // to the dev default would block the real site from its own API.
-            WEBSITE_URL:
-                vals.WEBSITE_URL ||
-                (vals.NODE_ENV === "production"
-                    ? "https://tihlde.org"
-                    : "http://localhost:3000"),
+            WEBSITE_URL: websiteUrl,
+            /**
+             * Every frontend origin the API accepts, WEBSITE_URL first. Only
+             * WEBSITE_URL is used to *build* links (emails, redirects); the
+             * rest are accepted on the way in.
+             */
+            WEBSITE_ORIGINS: [
+                ...new Set([websiteUrl, ...extraOrigins].map(toOrigin)),
+            ],
         };
 
         if (!resolved.WEBHOOK_URL) {
@@ -189,9 +241,17 @@ function withLegacyAliases(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     return resolved;
 }
 
+/**
+ * Validate an environment without touching the cached singleton.
+ * Exported for testing; application code should use `env`.
+ */
+export function parseEnv(source: NodeJS.ProcessEnv): Env {
+    return envSchema.parse(withLegacyAliases(source));
+}
+
 function getEnv(): Env {
     if (!_env) {
-        _env = envSchema.parse(withLegacyAliases(process.env));
+        _env = parseEnv(process.env);
     }
     return _env;
 }
