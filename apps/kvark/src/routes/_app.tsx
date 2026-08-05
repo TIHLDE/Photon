@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { authQueryOptions } from "#/api/auth";
 import { EventRulesConsent } from "#/components/event-rules-consent";
+import { NotificationBell } from "#/components/notification-bell";
 import { SiteBottomBar } from "#/components/site-bottom-bar";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader } from "#/components/site-header";
@@ -33,7 +34,13 @@ function AppLayout() {
         // The bottom padding keeps the footer clear of the fixed bottom bar,
         // which only exists below md.
         <div className="flex min-h-screen flex-col pb-16 md:pb-0">
-            <SiteHeader navItems={navItems} user={currentUser} />
+            <SiteHeader
+                navItems={navItems}
+                user={currentUser}
+                // Bjella spør etter uleste varsler, så den vises bare for
+                // innloggede — ellers ville hver besøkende få en 401.
+                actions={isAuthenticated ? <NotificationBell /> : null}
+            />
             {eventRules.mustAccept ? (
                 <div className="container mx-auto px-4 pt-4">
                     <EventRulesConsent

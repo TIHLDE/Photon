@@ -9,6 +9,7 @@ import {
     NavigationMenuTrigger,
 } from "@tihlde/ui/ui/navigation-menu";
 import { ExternalLinkIcon, User } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { ThemeSwitcher } from "./theme-switcher";
 import { TihldeLogo } from "./icons/tihlde";
@@ -42,9 +43,15 @@ export type NavItem = NavLink | NavGroup;
 type SiteHeaderProps = {
     navItems: NavItem[];
     user?: { name: string; avatarUrl?: string } | null;
+    /**
+     * Knapper som legges til venstre for temabryteren. En slot fordi headeren
+     * ikke skal hente data selv — varselbjella gjør det, og hører hjemme i
+     * layout-ruten.
+     */
+    actions?: ReactNode;
 };
 
-export function SiteHeader({ navItems, user }: SiteHeaderProps) {
+export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
@@ -111,6 +118,7 @@ export function SiteHeader({ navItems, user }: SiteHeaderProps) {
                 </NavigationMenu>
 
                 <div className="flex items-center gap-2">
+                    {actions}
                     <ThemeSwitcher />
                     <Link
                         {...(user
