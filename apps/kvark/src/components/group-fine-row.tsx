@@ -6,11 +6,10 @@ import type { Fine } from "#/lib/group";
 
 type GroupFineRowProps = {
     fine: Fine;
-    index: number;
     onOpen: () => void;
 };
 
-export function GroupFineRow({ fine, index, onOpen }: GroupFineRowProps) {
+export function GroupFineRow({ fine, onOpen }: GroupFineRowProps) {
     return (
         // Raden er et klikkbart kort, ikke en <button>, så den må selv si fra
         // at den kan få tastaturfokus og svare på Enter/mellomrom. Uten dette
@@ -28,7 +27,11 @@ export function GroupFineRow({ fine, index, onOpen }: GroupFineRowProps) {
                 }
             }}
         >
-            <span className="w-6 text-center font-medium">{index}</span>
+            {/* Her sto radnummeret, som så ut som et antall. Nå står det som
+                faktisk betyr noe: hvor mange bøter personen fikk. */}
+            <Badge variant="secondary" className="min-w-16 justify-center">
+                {fine.amount} {fine.amount === 1 ? "bot" : "bøter"}
+            </Badge>
             <div className="flex min-w-0 flex-1 flex-col">
                 <span className="flex items-center gap-1 truncate font-medium">
                     {fine.user}

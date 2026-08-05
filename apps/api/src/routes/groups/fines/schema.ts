@@ -18,8 +18,10 @@ export const createFineSchema = Schema(
         amount: z
             .number()
             .int()
-            .positive()
-            .meta({ description: "Fine amount in NOK" }),
+            // 0 er lov: en bot kan registreres som en advarsel som ikke teller
+            // i summene, selv om paragrafen foreslår én eller flere.
+            .min(0)
+            .meta({ description: "Number of fines given (0 or more)" }),
         defense: z
             .string()
             .optional()

@@ -4466,7 +4466,7 @@ export interface components {
             groupSlug: string;
             /** @description Reason for the fine */
             reason: string;
-            /** @description Fine amount in NOK */
+            /** @description Number of fines given (0 or more) */
             amount: number;
             /** @description User's defense text */
             defense?: string;
