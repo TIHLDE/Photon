@@ -111,12 +111,14 @@ export const createApp = async (variables?: Variables) => {
             "*",
             cors({
                 // Credentialed requests need an explicit origin — never "*".
+                // WEBSITE_ORIGINS is WEBSITE_URL plus the other frontend
+                // origins this deployment answers on (see env.ts).
                 // Outside production, keep localhost usable even when
                 // WEBSITE_URL points somewhere else (an ngrok tunnel, say).
                 // Any localhost port is accepted in dev so worktrees/dev
                 // servers on non-default ports can talk to the API.
                 origin: (origin) => {
-                    if (origin === env.WEBSITE_URL) return origin;
+                    if (env.WEBSITE_ORIGINS.includes(origin)) return origin;
                     if (
                         env.NODE_ENV !== "production" &&
                         /^http:\/\/localhost(:\d+)?$/.test(origin)
