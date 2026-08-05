@@ -304,6 +304,17 @@ export async function signInWithFeide(
         callbackURL: toFrontendUrl(callbackURL),
         errorCallbackURL: toFrontendUrl("/login"),
         /**
+         * Better Auth sends a login that *created* the account here instead of
+         * to callbackURL, which is the only moment we can tell a first Feide
+         * login from every later one. A Feide account has no password, and the
+         * login page's password form is the only fallback when Feide is down
+         * or unreachable — so offer to set one now, and carry the original
+         * destination along so skipping still lands where they were going.
+         */
+        newUserCallbackURL: toFrontendUrl(
+            `/velg-passord?redirectTo=${encodeURIComponent(sanitizeRedirectTo(callbackURL))}`,
+        ),
+        /**
          * The backend runs the Feide provider with `disableImplicitSignUp`, so
          * a login that matches no existing member fails with
          * `signup_disabled` rather than quietly creating a second account.

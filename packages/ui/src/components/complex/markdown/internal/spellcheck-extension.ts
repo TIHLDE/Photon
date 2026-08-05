@@ -3,6 +3,7 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { EditorState, Transaction } from "@tiptap/pm/state";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { EditorView } from "@tiptap/pm/view";
 
 import { loadSpeller, type Speller } from "./speller";
 
@@ -14,6 +15,30 @@ const spellcheckKey = new PluginKey<DecorationSet>("norsk-stavekontroll");
  */
 const WORD_PATTERN = /[\p{L}][\p{L}'’-]*/gu;
 
+/** Et ord i teksten som ordboka ikke kjenner igjen. */
+export type Misspelling = {
+    word: string;
+    /** Posisjonen ordet starter og slutter på i dokumentet. */
+    from: number;
+    to: number;
+};
+
+/** Skrivefeilen brukeren klikket på, klar til å vises i en boble. */
+export type SpellcheckSelection = Misspelling & {
+    /** Ordboka sine forslag, tom når den ikke har noen. */
+    suggestions: string[];
+    /** Hvor ordet står på skjermen, i koordinater fra `getBoundingClientRect`. */
+    rect: { top: number; bottom: number; left: number; right: number };
+};
+
+export type SpellcheckOptions = {
+    /**
+     * Kalles når brukeren klikker på et ord med rød strek, og med `null` når
+     * klikket havnet et sted uten skrivefeil. Uten denne markeres feilene bare.
+     */
+    onSelect?: (selection: SpellcheckSelection | null) => void;
+};
+
 /** Ord med tall eller versaler i seg — koder, forkortelser, TIHLDE-slang. */
 function shouldSkip(word: string): boolean {
     if (word.length < 3) return true;
@@ -22,9 +47,12 @@ function shouldSkip(word: string): boolean {
     return false;
 }
 
-function buildDecorations(doc: ProseMirrorNode, speller: Speller) {
-    const decorations: Decoration[] = [];
-
+/** Gå gjennom hver skrivefeil i dokumentet én gang. */
+function forEachMisspelling(
+    doc: ProseMirrorNode,
+    speller: Speller,
+    visit: (misspelling: Misspelling) => void,
+) {
     doc.descendants((node, position) => {
         if (!node.isText || !node.text) return;
 
@@ -34,30 +62,102 @@ function buildDecorations(doc: ProseMirrorNode, speller: Speller) {
             if (!speller.isMisspelled(word)) continue;
 
             const from = position + match.index;
-            decorations.push(
-                Decoration.inline(from, from + word.length, {
-                    class: "spelling-error",
-                }),
-            );
+            visit({ word, from, to: from + word.length });
         }
+    });
+}
+
+function buildDecorations(doc: ProseMirrorNode, speller: Speller) {
+    const decorations: Decoration[] = [];
+
+    forEachMisspelling(doc, speller, ({ word, from, to }) => {
+        decorations.push(
+            Decoration.inline(from, to, {
+                class: "spelling-error",
+                // Hjelper også de som bare holder musa over ordet, og de som
+                // ikke ser forskjell på en rød og en svart bølgestrek.
+                title: `«${word}» står ikke i ordboka. Klikk for forslag.`,
+            }),
+        );
     });
 
     return DecorationSet.create(doc, decorations);
 }
 
+/** Skrivefeilen som dekker posisjonen, om det er noen der. */
+function misspellingAt(
+    doc: ProseMirrorNode,
+    speller: Speller,
+    position: number,
+): Misspelling | null {
+    let found: Misspelling | null = null;
+    forEachMisspelling(doc, speller, (misspelling) => {
+        if (found) return;
+        if (position >= misspelling.from && position <= misspelling.to) {
+            found = misspelling;
+        }
+    });
+    return found;
+}
+
+/** Legg til forslag og skjermplassering, slik boblen trenger det. */
+function describe(
+    view: EditorView,
+    speller: Speller,
+    misspelling: Misspelling,
+): SpellcheckSelection {
+    const start = view.coordsAtPos(misspelling.from);
+    const end = view.coordsAtPos(misspelling.to);
+
+    return {
+        ...misspelling,
+        suggestions: speller.suggest(misspelling.word),
+        rect: {
+            top: Math.min(start.top, end.top),
+            bottom: Math.max(start.bottom, end.bottom),
+            left: Math.min(start.left, end.left),
+            right: Math.max(start.right, end.right),
+        },
+    };
+}
+
 /**
  * Marker skrivefeil med rød bølgestrek, på samme måte som nettleseren ville
- * gjort om brukeren hadde norsk ordbok installert.
+ * gjort om brukeren hadde norsk ordbok installert, og si fra når noen klikker
+ * på en av dem så editoren kan vise forslag til retting.
  *
  * Ordboka lastes i bakgrunnen. Fram til den er klar — og hvis den aldri blir
  * det — ligger dekorasjonene tomme, og nettleserens egen stavekontroll står
  * for det den måtte klare.
  */
-export const NorwegianSpellcheck = Extension.create({
+export const NorwegianSpellcheck = Extension.create<SpellcheckOptions>({
     name: "norwegianSpellcheck",
+
+    addOptions() {
+        return { onSelect: undefined };
+    },
 
     addProseMirrorPlugins() {
         let speller: Speller | null = null;
+        const options = this.options;
+
+        /** Svarer true når klikket traff en skrivefeil. */
+        function report(view: EditorView, position: number): boolean {
+            const { onSelect } = options;
+            if (!onSelect) return false;
+
+            const misspelling = speller
+                ? misspellingAt(view.state.doc, speller, position)
+                : null;
+
+            if (!misspelling || !speller) {
+                onSelect(null);
+                return false;
+            }
+
+            onSelect(describe(view, speller, misspelling));
+            return true;
+        }
 
         return [
             new Plugin<DecorationSet>({
@@ -114,6 +214,28 @@ export const NorwegianSpellcheck = Extension.create({
                 props: {
                     decorations(state) {
                         return spellcheckKey.getState(state);
+                    },
+
+                    handleClick(view, position) {
+                        report(view, position);
+                        // Markøren skal fortsatt flytte seg dit man klikket.
+                        return false;
+                    },
+
+                    handleDOMEvents: {
+                        // Høyreklikk er der folk er vant til å lete etter
+                        // stavekontrollens forslag. Nettlesermenyen får stå i
+                        // fred når ordet ikke har en feil å rette.
+                        contextmenu(view, event) {
+                            const position = view.posAtCoords({
+                                left: event.clientX,
+                                top: event.clientY,
+                            });
+                            if (!position) return false;
+                            if (!report(view, position.pos)) return false;
+                            event.preventDefault();
+                            return true;
+                        },
                     },
                 },
             }),

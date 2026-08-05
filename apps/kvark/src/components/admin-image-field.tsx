@@ -18,6 +18,8 @@ type AdminImageFieldProps = {
     /** Image already saved on the resource, shown until a new one is picked. */
     existingImageUrl?: string | null;
     disabled?: boolean;
+    /** Layout-only classes for the field wrapper, e.g. a grid column span. */
+    className?: string;
 };
 
 /**
@@ -35,9 +37,10 @@ export function AdminImageField({
     onChange,
     existingImageUrl,
     disabled,
+    className,
 }: AdminImageFieldProps) {
     return (
-        <Field>
+        <Field className={className}>
             <FieldLabel>{label}</FieldLabel>
             {description ? (
                 <FieldDescription>{description}</FieldDescription>

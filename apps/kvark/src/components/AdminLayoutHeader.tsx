@@ -14,6 +14,7 @@ import { PanelLeftIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import React, { useMemo } from "react";
 import { authQueryOptions } from "#/api/auth";
+import { NotificationBell } from "./notification-bell";
 import { ThemeSwitcher } from "./theme-switcher";
 
 import { avatarImageUrl } from "#/lib/assets";
@@ -77,6 +78,7 @@ export function AdminLayoutHeader() {
                     </BreadcrumbList>
                 </Breadcrumb>
                 <div className="ml-auto flex items-center gap-4">
+                    <NotificationBell />
                     <ThemeSwitcher />
                     <Link to="/profil/$id" params={{ id: "me" }}>
                         <Avatar>

@@ -592,7 +592,9 @@ function GroupDetail() {
                             }
                         />
                     ) : null}
-                    {activeTab === "arrangementer" ? <GroupEventsTab /> : null}
+                    {activeTab === "arrangementer" ? (
+                        <GroupEventsTab slug={slug} />
+                    ) : null}
                     {activeTab === "boter" ? (
                         <GroupFinesTab
                             fines={fines}
@@ -611,12 +613,18 @@ function GroupDetail() {
                                         // medlemsoversikten.
                                         botBruker: undefined,
                                     }),
+                                    // Filtrene ligger i URL-en, men å bytte
+                                    // fane er ikke å gå til en ny side: uten
+                                    // dette kastet ruteren deg til toppen midt
+                                    // i botlista.
+                                    resetScroll: false,
                                 })
                             }
                             status={botStatus}
                             onStatusChange={(botStatus) =>
                                 navigate({
                                     search: (prev) => ({ ...prev, botStatus }),
+                                    resetScroll: false,
                                 })
                             }
                             selectedUserId={botBruker}
@@ -630,6 +638,7 @@ function GroupDetail() {
                                             ? "alle"
                                             : prev.botVisning,
                                     }),
+                                    resetScroll: false,
                                 })
                             }
                             hasMore={

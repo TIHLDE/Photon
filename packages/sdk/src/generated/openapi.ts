@@ -2340,6 +2340,26 @@ export interface paths {
         patch: operations["updateUserSettings"];
         trace?: never;
     };
+    "/api/user/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a password for an account that has none
+         * @description Adds a username/password login to the authenticated user, for accounts created through Feide. Refuses if the account already has a password — use the password reset flow to change an existing one.
+         */
+        post: operations["setPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/me/unanswered-evaluations": {
         parameters: {
             query?: never;
@@ -4446,7 +4466,7 @@ export interface components {
             groupSlug: string;
             /** @description Reason for the fine */
             reason: string;
-            /** @description Fine amount in NOK */
+            /** @description Number of fines given (0 or more) */
             amount: number;
             /** @description User's defense text */
             defense?: string;
@@ -5544,6 +5564,13 @@ export interface components {
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
             allergies?: string[];
+        };
+        SetPasswordResponse: {
+            success: boolean;
+        };
+        SetPasswordInput: {
+            /** @description The password to set. Length is checked against Better Auth's own bounds, since those are what sign-in enforces. */
+            newPassword: string;
         };
         UnansweredEvaluations: {
             /** @description Form to answer */
@@ -7090,6 +7117,8 @@ export interface operations {
                 expired?: boolean;
                 /** @description Whether to include only events with open sign-ups */
                 openSignUp?: boolean;
+                /** @description Only return events organised by this group. Omit to return events from every organizer. */
+                organizerGroupSlug?: string;
                 /** @description How to order the result. 'upcoming' puts ongoing and future events first, soonest first, with past events after them most-recent-first. 'newest' and 'oldest' sort every event by start time, descending and ascending respectively. Omit to keep the legacy default: ascending when expired=false, descending otherwise. */
                 ordering?: "upcoming" | "newest" | "oldest";
             };
@@ -12101,6 +12130,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+        };
+    };
+    setPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPasswordInput"];
+            };
+        };
+        responses: {
+            /** @description Password set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetPasswordResponse"];
+                };
+            };
+            /** @description Bad Request - Invalid password */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description The account already has a password */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

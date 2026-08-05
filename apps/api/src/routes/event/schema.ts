@@ -462,6 +462,10 @@ export const eventListFilterSchema = PaginationSchema.extend({
         type: "boolean",
         description: "Whether to include only events with open sign-ups",
     }),
+    organizerGroupSlug: z.string().optional().meta({
+        description:
+            "Only return events organised by this group. Omit to return events from every organizer.",
+    }),
     ordering: z.enum(["upcoming", "newest", "oldest"]).optional().meta({
         description:
             "How to order the result. 'upcoming' puts ongoing and future events first, soonest first, with past events after them most-recent-first. 'newest' and 'oldest' sort every event by start time, descending and ascending respectively. Omit to keep the legacy default: ascending when expired=false, descending otherwise.",
