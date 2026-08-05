@@ -57,6 +57,23 @@ export const updateUserSettingsResponseSchema = Schema(
     UpdateUserSettingsSchema,
 );
 
+export const setPasswordInputSchema = Schema(
+    "SetPasswordInput",
+    z.object({
+        newPassword: z.string().meta({
+            description:
+                "The password to set. Length is checked against Better Auth's own bounds, since those are what sign-in enforces.",
+        }),
+    }),
+);
+
+export const setPasswordResponseSchema = Schema(
+    "SetPasswordResponse",
+    z.object({
+        success: z.boolean(),
+    }),
+);
+
 export const unansweredEvaluationsSchema = Schema(
     "UnansweredEvaluations",
     z.array(

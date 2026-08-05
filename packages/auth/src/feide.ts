@@ -363,7 +363,8 @@ export async function syncFeideForUser(
         throw new NoFeideAccountError();
     }
 
-    const username = feideAccount.username;
+    const username =
+        feideAccount.username ?? (await backfillUsername(db, userId, token));
 
     const { programs, campus } = await fetchValidStudyPrograms(token);
     const { allowed, campusRejected } = partitionByCampus(programs, campus);
@@ -1336,6 +1337,91 @@ export async function resolveMigratedEmail(
 }
 
 /**
+ * Read the OpenID profile Dataporten holds for an access token.
+ *
+ * Shared by the sign-in profile fetcher and the username backfill, which need
+ * the exact same document: one to decide *which* account a login belongs to,
+ * the other to fill in the username that decision depends on next time.
+ */
+async function fetchFeideProfile(accessToken: string): Promise<OpenIDProfile> {
+    const response = await fetch("https://auth.dataporten.no/openid/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch user info");
+    }
+
+    return (await response.json()) as OpenIDProfile;
+}
+
+/**
+ * Give a Feide-created account the NTNU username it never got, and return it.
+ *
+ * Better Auth builds a new OAuth user from name, email and image only, so a
+ * member who signs up through Feide lands with `username` null — and username
+ * sign-in is the *only* password route the login page offers, so that member
+ * can never use a password even after setting one. The username is not ours to
+ * invent: it is the local part of the Feide id, which Dataporten has already
+ * authenticated.
+ *
+ * Runs from the sync on every Feide sign-in rather than at creation, so it
+ * also repairs the accounts already created without one.
+ *
+ * Returns null rather than throwing on every failure it can meet — a missing
+ * `userid_sec` claim, or a username already held by someone else. This is a
+ * side errand of a sync whose real job is study data, and none of those cases
+ * is worth costing the member their login. A taken username in particular is
+ * the migrated-member collision {@link resolveMigratedEmail} guards: two
+ * different people, one name, and picking wrong is worse than picking nothing.
+ */
+async function backfillUsername(
+    db: AuthCreateContext["db"],
+    userId: string,
+    accessToken: string,
+): Promise<string | null> {
+    let username: string | null = null;
+    try {
+        username = feideUsernameOf(await fetchFeideProfile(accessToken));
+    } catch (error) {
+        console.warn(
+            `Could not read the Feide profile to fill in a username for user ${userId}:`,
+            error,
+        );
+        return null;
+    }
+
+    if (!username) {
+        console.warn(
+            `Feide userinfo carried no usable userid_sec claim, so user ${userId} keeps an empty username and cannot sign in with a password.`,
+        );
+        return null;
+    }
+
+    const [taken] = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.username, username))
+        .limit(1);
+
+    if (taken) {
+        if (taken.id !== userId) {
+            console.warn(
+                `Feide username ${username} already belongs to user ${taken.id}; leaving user ${userId} without one.`,
+            );
+        }
+        return null;
+    }
+
+    await db
+        .update(user)
+        .set({ username, displayUsername: username })
+        .where(and(eq(user.id, userId), isNull(user.username)));
+
+    return username;
+}
+
+/**
  * Creates the profile fetcher for the Feide provider.
  *
  * Needs the database because a first-time login may belong to a migrated
@@ -1348,18 +1434,7 @@ const createGetUserInfo =
             throw new Error("No access token provided");
         }
 
-        const response = await fetch(
-            "https://auth.dataporten.no/openid/userinfo",
-            {
-                headers: { Authorization: `Bearer ${tokens.accessToken}` },
-            },
-        );
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch user info");
-        }
-
-        const profile = (await response.json()) as OpenIDProfile;
+        const profile = await fetchFeideProfile(tokens.accessToken);
 
         /**
          * `userid_sec` is the only thing that ties a first-time Feide login to
