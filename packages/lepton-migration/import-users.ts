@@ -16,6 +16,7 @@
  * a rollback. With --commit it creates and adopts.
  *
  * Usage: DATABASE_URL=... [AUTH_SECRET=...] bun import-users.ts [--commit]
+ *        [--rename-adopted]
  */
 import { createAuth, drizzleAdapter } from "@photon/auth";
 import { slugifyText } from "@photon/core/slug";
@@ -25,6 +26,18 @@ import { InMemoryCache } from "@photon/core/services/cache";
 import { eq } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
+
+/**
+ * Rewrite an existing account's username to the one derived from its Lepton
+ * id. Off by default.
+ *
+ * This mattered for the first migration, where the username had to be
+ * established as the join key back to Lepton's rows. Re-running the import as
+ * a delta is a different job: every adopted account already has its key, so a
+ * rename is pure churn at best — and at worst it changes the handle of an
+ * active member, or collides with an account that legitimately holds the name.
+ */
+const renameAdopted = process.argv.includes("--rename-adopted");
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -144,9 +157,23 @@ const main = async () => {
         return fromEmail.length >= 3 ? fromEmail : `legacy.${fromId || "user"}`;
     };
 
+    /** True when `username` belongs to some account other than `selfId`. */
+    const usernameOwner = new Map(
+        existing
+            .filter((r) => r.username)
+            .map((r) => [r.username?.toLowerCase() as string, r.id]),
+    );
+    const takenByOther = (username: string, selfId: string): boolean => {
+        const owner = usernameOwner.get(username.toLowerCase());
+        return owner !== undefined && owner !== selfId;
+    };
+
     let created = 0;
     let adopted = 0;
     let failed = 0;
+    let renamed = 0;
+    let skippedRenames = 0;
+    let collisions = 0;
 
     for (const u of unique) {
         const email = u.email.trim().toLowerCase();
@@ -164,14 +191,33 @@ const main = async () => {
 
         if (match) {
             adopted++;
-            if (commit && match.username !== username) {
-                await db
-                    .update(schema.user)
-                    .set({
-                        username,
-                        displayUsername: username,
-                    })
-                    .where(eq(schema.user.id, match.id));
+            if (match.username !== username) {
+                if (!renameAdopted) {
+                    skippedRenames++;
+                    console.log(
+                        `  BEHOLDER brukernavn ${match.username} (Lepton ville satt ${username})`,
+                    );
+                } else if (takenByOther(username, match.id)) {
+                    // Sunniva has both a real `sunnho` account and a legacy
+                    // `sunnhø` duplicate that sanitizes to the same name. The
+                    // unique index on username would abort the whole run
+                    // mid-import, so refuse the rename and keep going.
+                    collisions++;
+                    console.log(
+                        `  KOLLISJON: ${match.username} -> ${username} er opptatt av en annen konto, hopper over`,
+                    );
+                } else if (commit) {
+                    await db
+                        .update(schema.user)
+                        .set({
+                            username,
+                            displayUsername: username,
+                        })
+                        .where(eq(schema.user.id, match.id));
+                    renamed++;
+                } else {
+                    renamed++; // would rename
+                }
             }
             continue;
         }
@@ -219,6 +265,15 @@ const main = async () => {
         commit ? `opprettet: ${created}` : `ville opprettet: ${created}`,
     );
     console.log(`adoptert (fantes):  ${adopted}`);
+    if (renameAdopted) {
+        console.log(commit ? `omdøpt: ${renamed}` : `ville omdøpt: ${renamed}`);
+        if (collisions)
+            console.log(`omdøpinger droppet (navnet opptatt): ${collisions}`);
+    } else if (skippedRenames) {
+        console.log(
+            `brukernavn beholdt: ${skippedRenames} (--rename-adopted for å overskrive)`,
+        );
+    }
     if (failed) console.log(`FEILET:             ${failed}`);
 };
 
