@@ -5,13 +5,14 @@
             "name": "api",
             "runtimeExecutable": "bun",
             "runtimeArgs": ["run", "--filter", "@photon/api", "dev"],
-            "port": 4000
+            "port": 4100
         },
         {
             "name": "kvark",
             "runtimeExecutable": "bun",
             "runtimeArgs": ["run", "--filter", "kvark", "dev"],
-            "port": 3000
+            "port": 3000,
+            "autoPort": true
         }
     ]
 }

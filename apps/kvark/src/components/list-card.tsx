@@ -44,7 +44,7 @@ export function ListCard({
             children: (
                 <>
                     {/*
-                     * `self-start` keeps the media at its 16/7 ratio: as a
+                     * `self-start` keeps the media at its 21/9 ratio: as a
                      * flex child it would otherwise stretch to the row height,
                      * making covers taller on cards with more meta rows.
                      */}

@@ -34,14 +34,19 @@ export type ImagePresetDefinition = {
 export const IMAGE_PRESETS = {
     /**
      * Nyheter, arrangementer and jobbannonser. Used by NewsCard, ListCard and
-     * DetailHero — every one of them 16/7.
+     * DetailHero — every one of them 21/9.
+     *
+     * 21/9 is not an arbitrary pick: the old Kvark upload dialog hard-cropped
+     * every event, news and jobpost image to 21:9 before storing it, so the
+     * entire migrated back catalogue is physically 1000×429, 1500×642 and so
+     * on. Rendering those in any other frame throws away pixels for nothing.
      */
     "cover-wide": {
         label: "Bredt forsidebilde",
-        hint: "Vises i 16:7 på kort og øverst på siden. Alt utenfor rammen blir beskåret.",
-        aspectClassName: "aspect-[16/7]",
+        hint: "Vises i 21:9 på kort og øverst på siden. Alt utenfor rammen blir beskåret.",
+        aspectClassName: "aspect-[21/9]",
         fit: "cover",
-        recommended: { width: 1600, height: 700 },
+        recommended: { width: 1680, height: 720 },
     },
     /** Galleriforsider and bedriftstilbud — 16/9. */
     "cover-video": {
