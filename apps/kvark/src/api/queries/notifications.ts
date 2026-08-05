@@ -65,7 +65,12 @@ export const getNotificationsInfiniteQuery = (
                 },
             }),
         initialPageParam: 0,
-        getNextPageParam: (lastPage) => lastPage.nextPage,
+        // `nextPage` fra API-et peker på en side som ikke finnes når siste side
+        // er full-på-grensen (page er 0-basert, pages er et antall). En kort
+        // side betyr at vi er ferdige — ellers ville "Last inn mer" hentet
+        // en tom side.
+        getNextPageParam: (lastPage) =>
+            lastPage.items.length < pageSize ? null : lastPage.nextPage,
     });
 
 export const deleteNotificationMutation = mutationOptions({
