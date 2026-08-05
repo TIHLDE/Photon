@@ -43,6 +43,7 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import { Textarea } from "@tihlde/ui/ui/textarea";
+import { RichEditor } from "@tihlde/ui/complex/markdown";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
@@ -56,6 +57,7 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { richRegistry } from "#/components/markdown/directives/presets";
 import {
     useAnyScopePermission,
     useCanActOnResource,
@@ -649,16 +651,11 @@ function JobDialog({
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="job-body">
-                                Beskrivelse
-                            </FieldLabel>
-                            <Textarea
-                                id="job-body"
-                                rows={6}
+                            <FieldLabel>Beskrivelse</FieldLabel>
+                            <RichEditor
+                                registry={richRegistry}
                                 value={body}
-                                onChange={(event) =>
-                                    setBody(event.target.value)
-                                }
+                                onChange={setBody}
                             />
                         </Field>
                         <AdminImageField
