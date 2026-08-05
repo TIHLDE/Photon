@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
 
@@ -23,6 +24,9 @@ export function MarkdownView({
         () => ({
             remarkPlugins: [
                 remarkGfm,
+                // Samme regel som i editoren: ett linjeskift vises som ett
+                // linjeskift, slik forfatteren skrev det.
+                remarkBreaks,
                 remarkDirective,
                 buildRemarkDirectivePlugin(registry),
             ],

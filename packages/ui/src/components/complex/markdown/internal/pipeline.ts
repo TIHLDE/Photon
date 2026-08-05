@@ -3,13 +3,18 @@ import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import remarkGfm from "remark-gfm";
 import remarkDirective from "remark-directive";
+import remarkBreaks from "remark-breaks";
 import type { Root } from "mdast";
 
 /** A unified processor configured to parse markdown into a directive-aware mdast. */
 export function createParser(): Processor<Root, Root, Root, Root, string> {
+    // remarkBreaks: enkelt linjeskift blir et faktisk linjeskift, ikke et
+    // mellomrom. Eldre innhold ble skrevet i et vanlig tekstfelt, der
+    // markdown-regelen om at én enter er ingenting bare ser ut som en feil.
     return unified()
         .use(remarkParse)
         .use(remarkGfm)
+        .use(remarkBreaks)
         .use(remarkDirective) as unknown as Processor<
         Root,
         Root,
