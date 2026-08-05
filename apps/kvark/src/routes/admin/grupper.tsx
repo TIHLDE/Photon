@@ -434,24 +434,35 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
-                        <AdminImageField
-                            label="Logo (la stå tom for å beholde)"
-                            description="Vises som profilbilde i avatarer, kort og lister."
-                            preset="avatar"
-                            value={logo}
-                            onChange={setLogo}
-                            existingImageUrl={group.logoUrl}
-                            disabled={updateGroup.isPending || isUploading}
-                        />
-                        <AdminImageField
-                            label="Gruppebilde (la stå tom for å beholde)"
-                            description="Bilde av gruppa. Vises øverst på Om-fanen."
-                            preset="cover-video"
-                            value={image}
-                            onChange={setImage}
-                            existingImageUrl={group.imageUrl}
-                            disabled={updateGroup.isPending || isUploading}
-                        />
+                        {/* Logo takes a third of the row and the gruppebilde
+                            the rest, so the square and the 16:9 frame end up
+                            roughly the same height and sit side by side
+                            instead of stacking into two tall blocks. The
+                            subgrid keeps the two frames on the same line even
+                            when one column's label wraps and the other's
+                            does not. */}
+                        <div className="grid max-w-xl grid-cols-3 grid-rows-[auto_auto_auto] gap-x-4 gap-y-2">
+                            <AdminImageField
+                                className="col-span-1 row-span-3 grid grid-rows-subgrid gap-2"
+                                label="Logo (la stå tom for å beholde)"
+                                description="Vises som profilbilde i avatarer, kort og lister."
+                                preset="avatar"
+                                value={logo}
+                                onChange={setLogo}
+                                existingImageUrl={group.logoUrl}
+                                disabled={updateGroup.isPending || isUploading}
+                            />
+                            <AdminImageField
+                                className="col-span-2 row-span-3 grid grid-rows-subgrid gap-2"
+                                label="Gruppebilde (la stå tom for å beholde)"
+                                description="Bilde av gruppa. Vises øverst på Om-fanen."
+                                preset="cover-video"
+                                value={image}
+                                onChange={setImage}
+                                existingImageUrl={group.imageUrl}
+                                disabled={updateGroup.isPending || isUploading}
+                            />
+                        </div>
                     </FieldGroup>
                     {error && (
                         <p className="text-sm text-destructive" role="alert">
