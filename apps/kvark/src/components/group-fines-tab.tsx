@@ -281,7 +281,6 @@ function FineList({
                     <li key={fine.id}>
                         <GroupFineRow
                             fine={fine}
-                            index={index + 1}
                             onOpen={() => onOpen(index)}
                         />
                     </li>

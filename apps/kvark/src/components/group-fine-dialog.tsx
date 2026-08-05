@@ -128,23 +128,32 @@ export function GroupFineDialog({
                 {fine ? (
                     <>
                         <DialogHeader>
-                            {/* Uten paragraf er `title` den samme teksten som
-                                begrunnelsen lenger ned. Da brukes en generisk
-                                overskrift i stedet for å gjenta seg selv. */}
-                            <DialogTitle>
-                                {fine.hasLaw
-                                    ? `${fine.paragraph ? `${fine.paragraph} - ` : ""}${fine.title}`
-                                    : "Bot"}
-                            </DialogTitle>
+                            {/* Den bøtelagte er det du leter etter når du blar
+                                gjennom lista, så navnet står som tittel.
+                                Paragrafen står under — uten lovverk er `title`
+                                bare begrunnelsen om igjen, og utelates. */}
+                            <DialogTitle>{fine.user}</DialogTitle>
                             <DialogDescription>
-                                Til {fine.user}
-                                {fine.createdBy
-                                    ? ` · Fra ${fine.createdBy}`
-                                    : ""}
+                                {[
+                                    fine.hasLaw
+                                        ? `${fine.paragraph ? `${fine.paragraph} - ` : ""}${fine.title}`
+                                        : null,
+                                    fine.createdBy
+                                        ? `Fra ${fine.createdBy}`
+                                        : null,
+                                ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap gap-2">
+                                {/* Antallet er selve boten — det sto ingen
+                                    steder, verken i lista eller her. */}
+                                <Badge variant="secondary">
+                                    {fine.amount}{" "}
+                                    {fine.amount === 1 ? "bot" : "bøter"}
+                                </Badge>
                                 <Badge
                                     variant={
                                         fine.approved ? "default" : "outline"

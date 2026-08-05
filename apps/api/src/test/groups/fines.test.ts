@@ -65,6 +65,56 @@ describe("fines", () => {
         );
 
         integrationTest(
+            "accepts a fine with an amount of 0",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-zero-group",
+                    finesActivated: true,
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const targetUser = await ctx.auth.api.createUser({
+                    body: {
+                        email: "zero-target@test.com",
+                        name: "Zero Target",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: targetUser.user.id,
+                    groupSlug: group.slug,
+                });
+
+                // 0 bøter er en gyldig registrering — en advarsel som ikke
+                // teller i summene.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: targetUser.user.id,
+                        groupSlug: group.slug,
+                        reason: "Advarsel",
+                        amount: 0,
+                    },
+                });
+
+                expect(response.status).toBe(201);
+                const json = await response.json();
+                expect(json.amount).toBe(0);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "successfully creates a fine as a member with fines:create",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();

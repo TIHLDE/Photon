@@ -53,7 +53,10 @@ export function GroupGiveFineDialog({
 }: GroupGiveFineDialogProps) {
     const [recipients, setRecipients] = useState<ComboboxMember[]>([]);
     const [law, setLaw] = useState<Law | null>(null);
-    const [amount, setAmount] = useState<number>(1);
+    // Tekst, ikke tall: med `Number(e.target.value)` ble et tomt felt straks
+    // til 0 igjen, så du fikk aldri slettet det paragrafen fylte inn for å
+    // skrive et nytt antall.
+    const [amount, setAmount] = useState("1");
     const [reason, setReason] = useState("");
     const [image, setImage] = useState<File | null>(null);
 
@@ -63,15 +66,23 @@ export function GroupGiveFineDialog({
         if (open) return;
         setRecipients([]);
         setLaw(null);
-        setAmount(1);
+        setAmount("1");
         setReason("");
         setImage(null);
     }, [open]);
 
     function handleLawChange(next: Law | null) {
         setLaw(next);
-        if (next) setAmount(next.amount);
+        if (next) setAmount(String(next.amount));
     }
+
+    // 0 er en gyldig bot (en advarsel som ikke teller i summene), så feltet
+    // valideres på «er dette et helt tall ≥ 0», ikke på at det er positivt.
+    const parsedAmount = Number(amount);
+    const amountValid =
+        amount.trim().length > 0 &&
+        Number.isInteger(parsedAmount) &&
+        parsedAmount >= 0;
 
     // En gruppe uten lovverk skal fortsatt kunne gi bøter — da er det ingen
     // paragraf å velge, og feltet er ikke påkrevd.
@@ -79,7 +90,7 @@ export function GroupGiveFineDialog({
     const canSubmit =
         recipients.length > 0 &&
         reason.trim().length > 0 &&
-        amount > 0 &&
+        amountValid &&
         (!lawRequired || law !== null) &&
         !isSubmitting;
 
@@ -89,7 +100,7 @@ export function GroupGiveFineDialog({
         onSubmit({
             userIds: recipients.map((member) => member.id),
             lawId: law?.id ?? null,
-            amount,
+            amount: parsedAmount,
             reason: reason.trim(),
             image,
         });
@@ -161,12 +172,14 @@ export function GroupGiveFineDialog({
                             <Input
                                 id="fine-amount"
                                 type="number"
-                                min={1}
+                                min={0}
+                                step={1}
                                 value={amount}
-                                onChange={(e) =>
-                                    setAmount(Number(e.target.value))
-                                }
+                                onChange={(e) => setAmount(e.target.value)}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Sett 0 hvis boten skal registreres uten å telle.
+                            </p>
                         </Field>
 
                         <Field>
