@@ -27,6 +27,7 @@ import { Route as AuthKobleFeideRouteImport } from './routes/_auth/koble-feide'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
+import { Route as AuthVelgPassordRouteImport } from './routes/_auth/velg-passord'
 import { Route as DevFormTestRouteImport } from './routes/_dev/form-test'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSuperAdminRouteImport } from './routes/admin/_super-admin'
@@ -161,6 +162,11 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthVelgPassordRoute = AuthVelgPassordRouteImport.update({
+  id: '/velg-passord',
+  path: '/velg-passord',
   getParentRoute: () => AuthRoute,
 } as any)
 const DevFormTestRoute = DevFormTestRouteImport.update({
@@ -424,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
+  '/velg-passord': typeof AuthVelgPassordRoute
   '/form-test': typeof DevFormTestRoute
   '/admin/annonser': typeof AdminAnnonserRoute
   '/admin/bannere': typeof AdminBannereRoute
@@ -487,6 +494,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/reset-password': typeof AuthResetPasswordRoute
+  '/velg-passord': typeof AuthVelgPassordRoute
   '/form-test': typeof DevFormTestRoute
   '/admin': typeof AdminIndexRoute
   '/admin/annonser': typeof AdminAnnonserRoute
@@ -553,6 +561,7 @@ export interface FileRoutesById {
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/reset-password': typeof AuthResetPasswordRoute
+  '/_auth/velg-passord': typeof AuthVelgPassordRoute
   '/_dev/form-test': typeof DevFormTestRoute
   '/admin/_super-admin': typeof AdminSuperAdminRouteWithChildren
   '/admin/annonser': typeof AdminAnnonserRoute
@@ -621,6 +630,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/velg-passord'
     | '/form-test'
     | '/admin/annonser'
     | '/admin/bannere'
@@ -684,6 +694,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/reset-password'
+    | '/velg-passord'
     | '/form-test'
     | '/admin'
     | '/admin/annonser'
@@ -749,6 +760,7 @@ export interface FileRouteTypes {
     | '/_auth/login'
     | '/_auth/register'
     | '/_auth/reset-password'
+    | '/_auth/velg-passord'
     | '/_dev/form-test'
     | '/admin/_super-admin'
     | '/admin/annonser'
@@ -933,6 +945,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/velg-passord': {
+      id: '/_auth/velg-passord'
+      path: '/velg-passord'
+      fullPath: '/velg-passord'
+      preLoaderRoute: typeof AuthVelgPassordRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_dev/form-test': {
@@ -1366,6 +1385,7 @@ interface AuthRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthVelgPassordRoute: typeof AuthVelgPassordRoute
   AuthOauthConsentRoute: typeof AuthOauthConsentRoute
 }
 
@@ -1375,6 +1395,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthVelgPassordRoute: AuthVelgPassordRoute,
   AuthOauthConsentRoute: AuthOauthConsentRoute,
 }
 
