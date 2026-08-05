@@ -1,5 +1,5 @@
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { DirectiveRegistry } from "./directive";
 import { EditorToolbar } from "./editor-toolbar";
@@ -7,6 +7,8 @@ import { MarkdownContent } from "./markdown-content";
 import { mdastToTiptap } from "./internal/mdast-to-pm";
 import { parseMarkdown, stringifyMdast } from "./internal/pipeline";
 import { tiptapToMdast } from "./internal/pm-to-mdast";
+import { SpellSuggestions } from "./internal/spell-suggestions";
+import type { SpellcheckSelection } from "./internal/spellcheck-extension";
 import { buildTiptapExtensions } from "./internal/tiptap-extensions";
 
 export type RichEditorProps = {
@@ -33,14 +35,28 @@ export function RichEditor({
     spellCheck = true,
 }: RichEditorProps) {
     const lastEmitted = useRef(value);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [misspelling, setMisspelling] = useState<SpellcheckSelection | null>(
+        null,
+    );
+
+    // Stavekontrollen bygges én gang og kan ikke se React-state, så den melder
+    // fra gjennom en ref som alltid peker på gjeldende setter.
+    const selectRef = useRef(setMisspelling);
+    selectRef.current = setMisspelling;
+    const onSpellcheckSelect = useCallback(
+        (selection: SpellcheckSelection | null) => selectRef.current(selection),
+        [],
+    );
 
     const extensions = useMemo(
         () =>
             buildTiptapExtensions(registry, {
                 placeholder,
                 spellcheck: spellCheck,
+                onSpellcheckSelect,
             }),
-        [registry, placeholder, spellCheck],
+        [registry, placeholder, spellCheck, onSpellcheckSelect],
     );
 
     const initialContent = useMemo(
@@ -73,6 +89,9 @@ export function RichEditor({
             },
         },
         onUpdate: ({ editor: instance }) => {
+            // Posisjonene i boblen gjelder teksten slik den var, så den lukkes
+            // så snart noe skrives.
+            setMisspelling(null);
             const json = instance.getJSON();
             const mdast = tiptapToMdast(json, registry);
             const markdown = stringifyMdast(mdast);
@@ -89,13 +108,47 @@ export function RichEditor({
         lastEmitted.current = value;
     }, [editor, value, registry]);
 
+    const applySuggestion = useCallback(
+        (replacement: string) => {
+            if (!editor || !misspelling) return;
+            const { from, to } = misspelling;
+            setMisspelling(null);
+            editor
+                .chain()
+                .focus()
+                .command(({ tr }) => {
+                    // Ordet kan stå i en lenke eller i fet skrift, og de
+                    // markene skal følge med over på rettelsen.
+                    const marks = tr.doc.resolve(from + 1).marks();
+                    tr.replaceWith(
+                        from,
+                        to,
+                        editor.schema.text(replacement, marks),
+                    );
+                    return true;
+                })
+                .run();
+        },
+        [editor, misspelling],
+    );
+
+    const dismissSuggestions = useCallback(() => setMisspelling(null), []);
+
     return (
         <div className={className}>
-            <div className="rounded border">
+            <div ref={containerRef} className="relative rounded border">
                 <EditorToolbar editor={editor} registry={registry} />
                 <MarkdownContent className="border-t px-3 py-2">
                     <EditorContent editor={editor} />
                 </MarkdownContent>
+                {misspelling && (
+                    <SpellSuggestions
+                        selection={misspelling}
+                        container={containerRef.current}
+                        onApply={applySuggestion}
+                        onDismiss={dismissSuggestions}
+                    />
+                )}
             </div>
         </div>
     );
