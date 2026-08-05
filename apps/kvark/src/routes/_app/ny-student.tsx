@@ -73,7 +73,7 @@ function NewStudentPage() {
             <section className="relative flex min-h-[60vh] w-full items-center justify-center overflow-hidden">
                 <HeroSectionBackground />
                 <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center gap-4 px-4 py-24 text-center">
-                    <h1 className="text-4xl md:text-6xl">
+                    <h1 className="text-4xl font-bold md:text-6xl">
                         Velkommen til linjeforeningen TIHLDE!
                     </h1>
                     <p className="text-muted-foreground">
