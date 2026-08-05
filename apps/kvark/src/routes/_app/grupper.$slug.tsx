@@ -592,7 +592,9 @@ function GroupDetail() {
                             }
                         />
                     ) : null}
-                    {activeTab === "arrangementer" ? <GroupEventsTab /> : null}
+                    {activeTab === "arrangementer" ? (
+                        <GroupEventsTab slug={slug} />
+                    ) : null}
                     {activeTab === "boter" ? (
                         <GroupFinesTab
                             fines={fines}
