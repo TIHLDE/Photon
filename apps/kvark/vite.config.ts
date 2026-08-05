@@ -7,6 +7,8 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
+import { legacyRouteRules } from "./src/legacy-routes";
+
 const config = defineConfig({
     resolve: {
         tsconfigPaths: true,
@@ -22,7 +24,12 @@ const config = defineConfig({
         // On Vercel, Nitro externalizes React but its static tracer misses the
         // SSR runtime's raw `require("react")`, so React is absent from the
         // serverless bundle ("Cannot find module 'react'"). Force it to be traced.
-        nitro({ traceDeps: ["react", "react-dom"] }),
+        nitro({
+            traceDeps: ["react", "react-dom"],
+            // Serverside 301-er for de gamle tihlde.org-adressene, se
+            // src/legacy-routes.ts.
+            routeRules: legacyRouteRules,
+        }),
         tailwindcss(),
         tanstackStart(),
         viteReact(),

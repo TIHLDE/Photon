@@ -1,3 +1,19 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+
+# Sider bak innlogging eller med personopplysninger skal ikke indekseres.
+# Listen er arvet fra den gamle tihlde.org-frontenden.
+Disallow: /toddel
+Disallow: /profil/*
+Disallow: /grupper/*
+Disallow: /admin/*
+Disallow: /galleri/*
+Disallow: /kokebok/*
+Disallow: /qr-koder
+Disallow: /soknader
+Disallow: /kontrakt
+Disallow: /sporreskjema/*
+Disallow: /motetid/*
+
+# Gruppeoversikten er offentlig, den enkelte gruppesiden er det ikke.
+Allow: /grupper$

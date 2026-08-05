@@ -69,7 +69,7 @@ export async function createAppContext(): Promise<AppContext> {
         urls: {
             backend: env.ROOT_URL,
             frontend: env.WEBSITE_URL,
-            additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
+            additionalTrusted: [env.ROOT_URL, ...env.WEBSITE_ORIGINS],
             basePath: "/api/auth",
         },
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: false,
@@ -117,7 +117,7 @@ export async function createTestAppContext(options?: {
         urls: {
             backend: env.ROOT_URL,
             frontend: env.WEBSITE_URL,
-            additionalTrusted: [env.ROOT_URL, env.WEBSITE_URL],
+            additionalTrusted: [env.ROOT_URL, ...env.WEBSITE_ORIGINS],
             basePath: "/api/auth",
         },
         DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM: true,
