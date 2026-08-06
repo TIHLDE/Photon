@@ -170,7 +170,7 @@ function EventsPage() {
                 </p>
             </Reveal>
 
-            <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
+            <div className="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)]">
                 <aside>
                     <EventFilters
                         value={filters}

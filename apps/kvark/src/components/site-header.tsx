@@ -63,7 +63,7 @@ export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
                     <TihldeLogo variant="full" className="h-5 w-auto" />
                 </Link>
 
-                <NavigationMenu className="hidden md:flex">
+                <NavigationMenu className="hidden lg:flex">
                     <NavigationMenuList>
                         {navItems.map((item) =>
                             item.kind === "group" ? (

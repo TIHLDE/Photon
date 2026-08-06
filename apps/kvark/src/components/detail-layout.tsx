@@ -37,9 +37,11 @@ export function DetailHeader({
     actions,
 }: DetailHeaderProps) {
     return (
-        <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3 md:grid-cols-[auto_1fr_auto] md:items-stretch">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-4 gap-y-3 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-stretch">
             {avatar}
-            <div className="min-w-0">{title}</div>
+            {/* Lange, ubrytelige gruppenavn (Forvaltningsgruppen) må kunne
+                brytes, ellers presser de headeren ut av skjermen på mobil. */}
+            <div className="min-w-0 break-words">{title}</div>
             {subtitle ? (
                 <div className="col-span-2 min-w-0 md:col-span-1 md:col-start-2">
                     {subtitle}

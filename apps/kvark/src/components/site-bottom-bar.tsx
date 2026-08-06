@@ -32,7 +32,7 @@ export function SiteBottomBar({
     const closeMenu = () => setMenuOpen(false);
 
     return (
-        <BottomBar className="md:hidden">
+        <BottomBar className="lg:hidden">
             <div className="flex items-stretch justify-between gap-1 px-2 py-1">
                 <BottomBarItem
                     render={<Link to="/" activeOptions={{ exact: true }} />}
