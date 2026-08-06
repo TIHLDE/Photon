@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { GroupPosition, Role } from "@tihlde/sdk";
+import type { Group, GroupPosition, Role } from "@tihlde/sdk";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@tihlde/ui/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -41,7 +47,6 @@ import {
     assignPositionMutation,
     assignRoleMutation,
     createPositionMutation,
-    createRoleMutation,
     deletePositionMutation,
     deleteRoleMutation,
     getGroupPositionsQuery,
@@ -53,7 +58,6 @@ import {
     updateRoleMutation,
 } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
-import { AdminGroupPicker } from "#/components/admin-group-picker";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
     useIsGroupLeaderOf,
@@ -136,7 +140,7 @@ function RolesAdminPage() {
             {tab === "verv" || !canSeeRoles ? (
                 <PositionsSection />
             ) : (
-                <RolesSection />
+                <RolesSection onCreateInGroup={() => setTab("verv")} />
             )}
         </Stagger>
     );
@@ -228,64 +232,118 @@ function HolderChip({
 // Verv (group positions)
 // =============================================================================
 
+/** Groups whose membership is derived from Feide and never holds verv. */
+const DERIVED_GROUP_TYPES = new Set(["study", "studyyear"]);
+
+/**
+ * Every group as an accordion, with that group's verv inside — a verv only
+ * exists within a group, so the group is the unit you browse and create in.
+ * Positions load lazily: the list is long and each group is its own request.
+ */
 function PositionsSection() {
     const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
-    const [groupSlug, setGroupSlug] = useState<string | null>(
-        groups.find((g) => g.slug === "hs")?.slug ?? groups[0]?.slug ?? null,
-    );
-    const [createOpen, setCreateOpen] = useState(false);
+    const [open, setOpen] = useState<string[]>(["hs"]);
+    const [search, setSearch] = useState("");
+
+    const visibleGroups = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return groups
+            .filter(
+                (group) =>
+                    // study/studyyear are projections of Feide data — their
+                    // membership is rebuilt on every login, so they hold no verv.
+                    !DERIVED_GROUP_TYPES.has(group.type.toLowerCase()) &&
+                    group.name.toLowerCase().includes(q),
+            )
+            .sort((a, b) => a.name.localeCompare(b.name, "nb"));
+    }, [groups, search]);
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <Field className="sm:max-w-72">
-                    <FieldLabel>Gruppe</FieldLabel>
-                    <AdminGroupPicker
-                        groups={groups}
-                        value={groupSlug}
-                        onValueChange={setGroupSlug}
-                    />
-                </Field>
-                {groupSlug ? (
-                    <NewPositionButton
-                        groupSlug={groupSlug}
-                        onClick={() => setCreateOpen(true)}
-                    />
-                ) : null}
-            </div>
-
-            {groupSlug ? <PositionsTable groupSlug={groupSlug} /> : null}
-
-            {groupSlug && (
-                <PositionDialog
-                    groupSlug={groupSlug}
-                    open={createOpen}
-                    onOpenChange={setCreateOpen}
-                    position={null}
+            <Field className="sm:max-w-72">
+                <FieldLabel>Gruppe</FieldLabel>
+                <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Søk etter gruppe…"
                 />
+            </Field>
+
+            {visibleGroups.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={ShieldIcon}
+                            title="Ingen grupper"
+                            description="Ingen grupper passer søket."
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        <Accordion
+                            value={open}
+                            onValueChange={(next) => setOpen(next as string[])}
+                        >
+                            {visibleGroups.map((group) => (
+                                <GroupPositionsItem
+                                    key={group.slug}
+                                    group={group}
+                                    isOpen={open.includes(group.slug)}
+                                />
+                            ))}
+                        </Accordion>
+                    </CardContent>
+                </Card>
             )}
         </div>
     );
 }
 
-/**
- * Own component so the permission hook can depend on the selected group
- * without the section re-running hooks conditionally.
- */
-function NewPositionButton({
-    groupSlug,
-    onClick,
+/** One group in the accordion: header row plus the group's verv when open. */
+function GroupPositionsItem({
+    group,
+    isOpen,
 }: {
-    groupSlug: string;
-    onClick: () => void;
+    group: Group;
+    isOpen: boolean;
 }) {
-    const canManage = useCanManagePositions(groupSlug);
-    if (!canManage) return null;
+    const canManage = useCanManagePositions(group.slug);
+    const [createOpen, setCreateOpen] = useState(false);
+
     return (
-        <Button onClick={onClick}>
-            <PlusIcon className="size-4" />
-            Nytt verv
-        </Button>
+        <AccordionItem value={group.slug} className="px-4">
+            <div className="flex items-center gap-2">
+                {/* The trigger renders its own header wrapper, so the growth
+                    has to come from a div around it. */}
+                <div className="flex-1">
+                    <AccordionTrigger>{group.name}</AccordionTrigger>
+                </div>
+                {canManage ? (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCreateOpen(true)}
+                    >
+                        <PlusIcon className="size-4" />
+                        Nytt verv
+                    </Button>
+                ) : null}
+            </div>
+            <AccordionContent>
+                {isOpen ? <PositionsTable groupSlug={group.slug} /> : null}
+            </AccordionContent>
+
+            {createOpen && (
+                <PositionDialog
+                    groupSlug={group.slug}
+                    open={createOpen}
+                    onOpenChange={setCreateOpen}
+                    position={null}
+                />
+            )}
+        </AccordionItem>
     );
 }
 
@@ -314,6 +372,14 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
         [members],
     );
 
+    // The group's leader is a membership role, not a verv — shown as a pinned
+    // first row so the group's leadership reads together with its verv. It is
+    // changed from the group's member list, not here.
+    const leaders = useMemo(
+        () => (members ?? []).filter((member) => member.role === "leader"),
+        [members],
+    );
+
     const filteredOptions = useMemo(() => {
         const q = assignQuery.trim().toLowerCase();
         if (q.length < 1) return memberOptions.slice(0, 10);
@@ -324,27 +390,11 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
 
     if (isPending) {
         return (
-            <Card>
-                <CardContent className="flex flex-col gap-3">
-                    {Array.from({ length: 3 }).map((_, index) => (
-                        <Skeleton key={index} className="h-10 w-full" />
-                    ))}
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (!positions || positions.length === 0) {
-        return (
-            <Card>
-                <CardContent>
-                    <AdminEmptyState
-                        icon={ShieldIcon}
-                        title="Ingen verv"
-                        description="Denne gruppen har ingen verv ennå. Opprett det første med «Nytt verv»."
-                    />
-                </CardContent>
-            </Card>
+            <div className="flex flex-col gap-3 py-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-10 w-full" />
+                ))}
+            </div>
         );
     }
 
@@ -360,173 +410,190 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
 
     return (
         <>
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-56">Verv</TableHead>
-                                <TableHead>Bruker</TableHead>
-                                <TableHead className="w-72">
-                                    Tilganger
-                                </TableHead>
-                                <TableHead className="w-12" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {positions.map((position) => (
-                                <TableRow key={position.id}>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">
-                                                {position.name}
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-56">Verv</TableHead>
+                        <TableHead>Bruker</TableHead>
+                        <TableHead className="w-72">Tilganger</TableHead>
+                        <TableHead className="w-12" />
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableCell>
+                            <div className="flex flex-col">
+                                <span className="font-medium">Leder</span>
+                                <span className="text-xs text-muted-foreground">
+                                    Settes i gruppens medlemsliste
+                                </span>
+                            </div>
+                        </TableCell>
+                        <TableCell>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {leaders.length === 0 ? (
+                                    <span className="text-sm text-muted-foreground">
+                                        Ingen tildelt
+                                    </span>
+                                ) : (
+                                    leaders.map((leader) => (
+                                        <HolderChip
+                                            key={leader.userId}
+                                            name={
+                                                leader.user?.name ??
+                                                leader.userId
+                                            }
+                                            image={leader.user?.image ?? null}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                            Gruppens ledertilganger
+                        </TableCell>
+                        <TableCell />
+                    </TableRow>
+
+                    {positions?.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={4}>
+                                <span className="text-sm text-muted-foreground">
+                                    Ingen verv ennå. Opprett det første med
+                                    «Nytt verv».
+                                </span>
+                            </TableCell>
+                        </TableRow>
+                    ) : null}
+
+                    {(positions ?? []).map((position) => (
+                        <TableRow key={position.id}>
+                            <TableCell>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">
+                                        {position.name}
+                                    </span>
+                                    {position.linkedGroupSlug ? (
+                                        <span className="text-xs text-muted-foreground">
+                                            Følger lederen av «
+                                            {position.linkedGroupSlug}»
+                                        </span>
+                                    ) : position.scope === "global" ? (
+                                        <span className="text-xs text-muted-foreground">
+                                            Gjelder hele TIHLDE
+                                        </span>
+                                    ) : null}
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {position.linkedGroupSlug ? (
+                                        // Auto-managed: holder follows the
+                                        // linked group's leader — not
+                                        // assignable from here.
+                                        position.holder ? (
+                                            <HolderChip
+                                                key={position.holder.userId}
+                                                name={position.holder.name}
+                                                image={position.holder.image}
+                                            />
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground">
+                                                Settes av gruppens leder
                                             </span>
-                                            {position.linkedGroupSlug ? (
-                                                <span className="text-xs text-muted-foreground">
-                                                    Følger lederen av «
-                                                    {position.linkedGroupSlug}»
-                                                </span>
-                                            ) : position.scope === "global" ? (
-                                                <span className="text-xs text-muted-foreground">
-                                                    Gjelder hele TIHLDE
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {position.linkedGroupSlug ? (
-                                                // Auto-managed: holder follows the
-                                                // linked group's leader — not
-                                                // assignable from here.
-                                                position.holder ? (
-                                                    <HolderChip
-                                                        key={
-                                                            position.holder
-                                                                .userId
-                                                        }
-                                                        name={
-                                                            position.holder.name
-                                                        }
-                                                        image={
-                                                            position.holder
-                                                                .image
-                                                        }
-                                                    />
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">
-                                                        Settes av gruppens leder
-                                                    </span>
-                                                )
-                                            ) : position.holder ? (
-                                                <HolderChip
-                                                    key={position.holder.userId}
-                                                    name={position.holder.name}
-                                                    image={
-                                                        position.holder.image
-                                                    }
-                                                    onRemove={
-                                                        canManage
-                                                            ? () =>
-                                                                  unassign.mutate(
-                                                                      {
-                                                                          groupSlug,
-                                                                          positionId:
-                                                                              position.id,
-                                                                          userId: position
-                                                                              .holder!
-                                                                              .userId,
-                                                                      },
-                                                                  )
-                                                            : undefined
-                                                    }
-                                                />
-                                            ) : canManage ? (
-                                                <UserSearchCombobox
-                                                    holder={null}
-                                                    emptyLabel="Ingen tildelt"
-                                                    query={
-                                                        assignFor ===
-                                                        position.id
-                                                            ? assignQuery
-                                                            : ""
-                                                    }
-                                                    onQueryChange={
-                                                        setAssignQuery
-                                                    }
-                                                    onOpenChange={(open) => {
-                                                        setAssignFor(
-                                                            open
-                                                                ? position.id
-                                                                : null,
-                                                        );
-                                                        setAssignQuery("");
-                                                    }}
-                                                    results={
-                                                        assignFor ===
-                                                        position.id
-                                                            ? filteredOptions
-                                                            : []
-                                                    }
-                                                    onSelect={(user) =>
-                                                        assign.mutate({
-                                                            groupSlug,
-                                                            positionId:
-                                                                position.id,
-                                                            userId: user.id,
-                                                        })
-                                                    }
-                                                    placeholder="Søk blant gruppens medlemmer…"
-                                                />
-                                            ) : (
-                                                <span className="text-sm text-muted-foreground">
-                                                    Ingen tildelt
-                                                </span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {summarizePermissions(
-                                            position.permissions,
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {canManage ? (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger
-                                                    aria-label="Handlinger"
-                                                    className="cursor-pointer"
-                                                >
-                                                    <MoreHorizontalIcon className="size-4" />
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            setEditing(position)
-                                                        }
-                                                    >
-                                                        Rediger
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                position,
-                                                            )
-                                                        }
-                                                    >
-                                                        Slett
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        ) : null}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                        )
+                                    ) : position.holder ? (
+                                        <HolderChip
+                                            key={position.holder.userId}
+                                            name={position.holder.name}
+                                            image={position.holder.image}
+                                            onRemove={
+                                                canManage
+                                                    ? () =>
+                                                          unassign.mutate({
+                                                              groupSlug,
+                                                              positionId:
+                                                                  position.id,
+                                                              userId: position
+                                                                  .holder!
+                                                                  .userId,
+                                                          })
+                                                    : undefined
+                                            }
+                                        />
+                                    ) : canManage ? (
+                                        <UserSearchCombobox
+                                            holder={null}
+                                            emptyLabel="Ingen tildelt"
+                                            query={
+                                                assignFor === position.id
+                                                    ? assignQuery
+                                                    : ""
+                                            }
+                                            onQueryChange={setAssignQuery}
+                                            onOpenChange={(open) => {
+                                                setAssignFor(
+                                                    open ? position.id : null,
+                                                );
+                                                setAssignQuery("");
+                                            }}
+                                            results={
+                                                assignFor === position.id
+                                                    ? filteredOptions
+                                                    : []
+                                            }
+                                            onSelect={(user) =>
+                                                assign.mutate({
+                                                    groupSlug,
+                                                    positionId: position.id,
+                                                    userId: user.id,
+                                                })
+                                            }
+                                            placeholder="Søk blant gruppens medlemmer…"
+                                        />
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">
+                                            Ingen tildelt
+                                        </span>
+                                    )}
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                                {summarizePermissions(position.permissions)}
+                            </TableCell>
+                            <TableCell>
+                                {canManage ? (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger
+                                            aria-label="Handlinger"
+                                            className="cursor-pointer"
+                                        >
+                                            <MoreHorizontalIcon className="size-4" />
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() =>
+                                                    setEditing(position)
+                                                }
+                                            >
+                                                Rediger
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                variant="destructive"
+                                                onClick={() =>
+                                                    handleDelete(position)
+                                                }
+                                            >
+                                                Slett
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                ) : null}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
 
             {editing && (
                 <PositionDialog
@@ -661,9 +728,8 @@ function PositionDialog({
  */
 const HIDDEN_ROLE_NAMES = new Set(["member", "moderator"]);
 
-function RolesSection() {
+function RolesSection({ onCreateInGroup }: { onCreateInGroup: () => void }) {
     const { data: roles, isPending, error } = useQuery(getRolesQuery());
-    const [createOpen, setCreateOpen] = useState(false);
 
     const visibleRoles = (roles ?? []).filter(
         (role) => !HIDDEN_ROLE_NAMES.has(role.name),
@@ -697,10 +763,14 @@ function RolesSection() {
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex justify-end">
-                <Button onClick={() => setCreateOpen(true)}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                    Nye roller opprettes som verv i en gruppe. Rollene her er
+                    faste og gjelder hele TIHLDE.
+                </p>
+                <Button onClick={onCreateInGroup}>
                     <PlusIcon className="size-4" />
-                    Ny rolle
+                    Nytt verv i gruppe
                 </Button>
             </div>
 
@@ -725,12 +795,6 @@ function RolesSection() {
                     </Table>
                 </CardContent>
             </Card>
-
-            <RoleDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                role={null}
-            />
         </div>
     );
 }
@@ -844,7 +908,10 @@ function RoleRow({ role }: { role: Role }) {
     );
 }
 
-/** Create (role=null) or edit a role. */
+/**
+ * Edit an existing global role. New roles are not created here — they belong in
+ * a group as a verv, see `PositionDialog`.
+ */
 function RoleDialog({
     open,
     onOpenChange,
@@ -852,53 +919,35 @@ function RoleDialog({
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    role: Role | null;
+    role: Role;
 }) {
-    const create = useMutation(createRoleMutation);
     const update = useMutation(updateRoleMutation);
-    const [name, setName] = useState(role?.name ?? "");
-    const [description, setDescription] = useState(role?.description ?? "");
+    const [name, setName] = useState(role.name);
+    const [description, setDescription] = useState(role.description ?? "");
     const [permissions, setPermissions] = useState<string[]>(
-        role?.permissions ?? [],
+        role.permissions ?? [],
     );
-    const isPending = create.isPending || update.isPending;
+    const isPending = update.isPending;
 
     function handleSubmit() {
-        const onSuccess = () => {
-            if (!role) {
-                setName("");
-                setDescription("");
-                setPermissions([]);
-            }
-            onOpenChange(false);
-        };
-        if (role) {
-            update.mutate(
-                {
-                    roleId: role.id,
-                    data: {
-                        name,
-                        description: description || null,
-                        permissions,
-                    },
+        update.mutate(
+            {
+                roleId: role.id,
+                data: {
+                    name,
+                    description: description || null,
+                    permissions,
                 },
-                { onSuccess },
-            );
-        } else {
-            create.mutate(
-                { data: { name, description, permissions } },
-                { onSuccess },
-            );
-        }
+            },
+            { onSuccess: () => onOpenChange(false) },
+        );
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>
-                        {role ? `Rediger «${role.name}»` : "Ny rolle"}
-                    </DialogTitle>
+                    <DialogTitle>{`Rediger «${role.name}»`}</DialogTitle>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
@@ -935,7 +984,7 @@ function RoleDialog({
                         disabled={!name || isPending}
                         onClick={handleSubmit}
                     >
-                        {role ? "Lagre" : "Opprett"}
+                        Lagre
                     </Button>
                 </DialogFooter>
             </DialogContent>
