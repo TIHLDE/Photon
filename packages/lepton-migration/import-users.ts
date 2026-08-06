@@ -117,6 +117,29 @@ const main = async () => {
         existing.map((r) => [r.email.trim().toLowerCase(), r]),
     );
 
+    /**
+     * The second way to recognise someone we already have: an exact match on
+     * the Lepton user_id.
+     *
+     * E-mail alone stopped being enough once Fadderuka started creating Lepton
+     * accounts. A student makes their account on tihlde.org with
+     * `eriknli@stud.ntnu.no`, then signs up for fadderuka with a private
+     * address — same NTNU username, two different e-mails, and an
+     * e-mail-only import reads the second as a stranger and creates
+     * `eriknli.2`. Seven people in the 2026 intake are in exactly that state.
+     * A second account is worse than no import: it holds the private address,
+     * a username nobody uses, and none of their history.
+     *
+     * Safe because the id being matched is the raw Lepton one, not the
+     * sanitized fallback: `sunnhø` and `sunnho` stay two different keys, so the
+     * legacy-duplicate case `uniqueUsername` exists for is untouched.
+     */
+    const existingByUsername = new Map(
+        existing
+            .filter((r) => r.username)
+            .map((r) => [r.username?.toLowerCase() as string, r]),
+    );
+
     // Usernames must be unique. Seed with what the database already holds so a
     // sanitized legacy id cannot collide with a real one — Sunniva has both a
     // proper `sunnho` account and a legacy `sunnhø` duplicate, and the second
@@ -177,7 +200,9 @@ const main = async () => {
 
     for (const u of unique) {
         const email = u.email.trim().toLowerCase();
-        const match = existingByEmail.get(email);
+        const match =
+            existingByEmail.get(email) ??
+            existingByUsername.get((u.user_id || "").trim().toLowerCase());
         // An adopted account keeps its slot in the taken-set via the seed; a
         // new one must claim a free name.
         const username = match
