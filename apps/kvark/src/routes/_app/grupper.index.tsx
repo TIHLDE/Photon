@@ -17,6 +17,7 @@ import {
 } from "#/components/group-tree-node";
 import { useTheme } from "#/integrations/theme";
 import {
+    type Branch,
     buildGroupTree,
     type GroupTreeInput,
     type SimpleSection,
@@ -56,9 +57,19 @@ type ApiGroup = {
     name: string;
     slug: string;
     type: string;
+    subtype: string | null;
     contactEmail: string | null;
     logoUrl: string | null;
 };
+
+function itemsFrom(groups: ApiGroup[]) {
+    return groups.map((g) => ({
+        name: g.name,
+        slug: g.slug,
+        email: g.contactEmail ?? undefined,
+        logoUrl: g.logoUrl ?? undefined,
+    }));
+}
 
 function sectionFrom(
     id: string,
@@ -71,14 +82,59 @@ function sectionFrom(
         id,
         label,
         cols,
-        items: groups
-            .filter((g) => g.type === type)
-            .map((g) => ({
-                name: g.name,
-                slug: g.slug,
-                email: g.contactEmail ?? undefined,
-                logoUrl: g.logoUrl ?? undefined,
-            })),
+        items: itemsFrom(groups.filter((g) => g.type === type)),
+    };
+}
+
+/**
+ * Interest groups split into the two categories the organisation actually
+ * uses: ordinary groups and sports groups (distinct from IdKom's sports
+ * teams, which are their own type).
+ *
+ * A group whose subtype is missing still has to appear somewhere — dropping
+ * it would silently hide a real group from the chart — so it falls into
+ * "Grupper", the broader of the two. Sections with no members are omitted
+ * rather than rendered empty.
+ */
+function interestGroupBranch(groups: ApiGroup[]): Branch {
+    const interest = groups.filter((g) => g.type === "INTERESTGROUP");
+    const sports = interest.filter((g) => g.subtype === "IDRETTSGRUPPE");
+    const rest = interest.filter((g) => g.subtype !== "IDRETTSGRUPPE");
+
+    const children: SimpleSection[] = [];
+    if (rest.length > 0) {
+        children.push({
+            id: "interessegrupper-gruppe",
+            label: "Grupper",
+            cols: 2,
+            items: itemsFrom(rest),
+        });
+    }
+    if (sports.length > 0) {
+        children.push({
+            id: "interessegrupper-idrett",
+            label: "Idrettsgrupper",
+            cols: 2,
+            items: itemsFrom(sports),
+        });
+    }
+
+    // Before the subtype is backfilled every group lands in one bucket, and a
+    // grouped section with a single child is just a heading with a redundant
+    // subheading under it. Fall back to the flat section in that case.
+    if (children.length < 2) {
+        return {
+            id: "interessegrupper",
+            label: "Interessegrupper",
+            cols: 3,
+            items: itemsFrom(interest),
+        };
+    }
+
+    return {
+        id: "interessegrupper",
+        label: "Interessegrupper",
+        children,
     };
 }
 
@@ -102,13 +158,7 @@ function buildTreeInput(groups: ApiGroup[]): GroupTreeInput {
                 groups,
                 "SPORTSTEAM",
             ),
-            sectionFrom(
-                "interessegrupper",
-                "Interessegrupper",
-                3,
-                groups,
-                "INTERESTGROUP",
-            ),
+            interestGroupBranch(groups),
         ],
     };
 }

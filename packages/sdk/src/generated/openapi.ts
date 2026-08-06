@@ -4244,6 +4244,8 @@ export interface components {
             contactEmail: string | null;
             /** @description Group type */
             type: string;
+            /** @description Sub-category below type. GRUPPE or IDRETTSGRUPPE for interest groups, null otherwise. */
+            subtype: string | null;
             /** @description Group fines info */
             finesInfo: string;
             /** @description Group fines activated */
@@ -4275,6 +4277,8 @@ export interface components {
             contactEmail: string | null;
             /** @description Group type */
             type: string;
+            /** @description Sub-category below type. GRUPPE or IDRETTSGRUPPE for interest groups, null otherwise. */
+            subtype: string | null;
             /** @description Group fines info */
             finesInfo: string;
             /** @description Group fines activated */
@@ -4310,6 +4314,8 @@ export interface components {
             contactEmail: string | null;
             /** @description Group type */
             type: string;
+            /** @description Sub-category below type. GRUPPE or IDRETTSGRUPPE for interest groups, null otherwise. */
+            subtype: string | null;
             /** @description Group fines info */
             finesInfo: string;
             /** @description Group fines activated */
@@ -4347,6 +4353,8 @@ export interface components {
             contactEmail?: string;
             /** @description Group type (e.g., committee, study, interestgroup) */
             type: string;
+            /** @description Sub-category below type. Only used for interest groups today: GRUPPE or IDRETTSGRUPPE, which the org chart renders as separate sections. */
+            subtype?: string;
             /**
              * @description Information about group fines policy
              * @default
@@ -4382,6 +4390,8 @@ export interface components {
             contactEmail?: string | null;
             /** @description Group type */
             type?: string;
+            /** @description Sub-category below type (GRUPPE or IDRETTSGRUPPE for interest groups). Null clears it. */
+            subtype?: string | null;
             /** @description Information about group fines policy */
             finesInfo?: string;
             /** @description Whether fines are activated for this group */
