@@ -1,0 +1,1 @@
+ALTER TABLE "org_group" ADD COLUMN "subtype" varchar(50);
