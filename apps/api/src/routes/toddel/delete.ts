@@ -14,7 +14,7 @@ export const deleteRoute = route().delete(
         summary: "Remove a TÖDDEL issue",
         operationId: "deleteToddel",
         description:
-            "Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' permission.",
+            "Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' or 'toddel:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -26,7 +26,10 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Issue not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["toddel:delete", "toddel:manage"] }),
+    requireAccess({
+        permission: ["toddel:delete", "toddel:manage"],
+        anyGroupScope: true,
+    }),
     async (c) => {
         const { db } = c.get("ctx");
         const edition = Number(c.req.param("edition"));

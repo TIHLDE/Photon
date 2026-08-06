@@ -15,7 +15,7 @@ export const deleteRoute = route().delete(
         summary: "Delete job posting",
         operationId: "deleteJob",
         description:
-            "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.",
+            "Delete a job posting. Requires 'jobs:delete' or 'jobs:manage', held globally or for any single group, or being the creator.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -29,6 +29,7 @@ export const deleteRoute = route().delete(
     requireAccess({
         permission: ["jobs:delete", "jobs:manage"],
         scope: (c) => `job-${c.req.param("id")}`,
+        anyGroupScope: true,
         ownership: { param: "id", check: isJobCreator },
     }),
     async (c) => {

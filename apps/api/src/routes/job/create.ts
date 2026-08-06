@@ -14,7 +14,7 @@ export const createRoute = route().post(
         summary: "Create job posting",
         operationId: "createJob",
         description:
-            "Create a new job posting. Requires 'jobs:create' permission.",
+            "Create a new job posting. Requires 'jobs:create' or 'jobs:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -29,7 +29,7 @@ export const createRoute = route().post(
     // and that is exactly the arrangement this endpoint should honour.
     requireAccess({
         permission: ["jobs:create", "jobs:manage"],
-        anyScope: true,
+        anyGroupScope: true,
     }),
     validator("json", createJobSchema),
     async (c) => {

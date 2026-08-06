@@ -227,20 +227,20 @@ export async function hasPermission(
  * }
  */
 /**
- * Check if a user holds a permission in ANY scope — globally or for a single
- * group.
+ * Check if a user holds a permission globally or for ANY single group.
  *
- * For actions whose resource has no group of its own, so there is no scope to
- * check against: a job posting belongs to TIHLDE, not to NOK, yet "NOK may
- * publish job postings" is exactly what a group verv with `jobs:create` is
- * meant to say. Requiring the grant to be global there would make every
- * group-scoped verv on such a resource silently do nothing.
+ * For actions on resources that belong to no group, so there is no scope to
+ * check the grant against: a job posting belongs to TIHLDE, not to NOK, yet
+ * "NOK publishes the job postings" is exactly what a verv in NOK with
+ * `jobs:create` is meant to say. Requiring the grant to be global there would
+ * make every group verv on such a resource silently do nothing.
  *
- * Do NOT use this when the resource does have a scope (an event's organiser,
- * a group's fines) — {@link hasScopedPermission} is the check there, and this
- * one would let a grant for one group act on another's resources.
+ * Only `*` and `group:<slug>` grants count. A grant scoped to one specific
+ * resource (`news:update@news-<id>`, handed out to let someone edit that one
+ * article) stays limited to it — checking that is
+ * {@link hasScopedPermission}'s job, and this must not widen it.
  */
-export async function hasPermissionInAnyScope(
+export async function hasPermissionInAnyGroupScope(
     ctx: DbCtx,
     userId: string,
     permissionName: string | string[],
@@ -256,9 +256,14 @@ export async function hasPermissionInAnyScope(
     if (hasRoot(permissions)) return true;
 
     return permissionNames.some((requiredPerm) =>
-        permissions.some(
-            (granted) => parsePermission(granted).permission === requiredPerm,
-        ),
+        permissions.some((granted) => {
+            const parsed = parsePermission(granted);
+            return (
+                parsed.permission === requiredPerm &&
+                (parsed.scope === GLOBAL_SCOPE ||
+                    parsed.scope.startsWith("group:"))
+            );
+        }),
     );
 }
 

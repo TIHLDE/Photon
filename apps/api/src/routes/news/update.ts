@@ -17,7 +17,7 @@ export const updateRoute = route().patch(
         summary: "Update news article",
         operationId: "updateNews",
         description:
-            "Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.",
+            "Update a news article. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -31,6 +31,7 @@ export const updateRoute = route().patch(
     requireAccess({
         permission: ["news:update", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
+        anyGroupScope: true,
         ownership: { param: "id", check: isNewsCreator },
     }),
     validator("json", updateNewsSchema),

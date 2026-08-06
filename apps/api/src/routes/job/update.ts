@@ -17,7 +17,7 @@ export const updateRoute = route().patch(
         summary: "Update job posting",
         operationId: "updateJob",
         description:
-            "Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.",
+            "Update a job posting. Requires 'jobs:update' or 'jobs:manage', held globally or for any single group, or being the creator.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -31,6 +31,7 @@ export const updateRoute = route().patch(
     requireAccess({
         permission: ["jobs:update", "jobs:manage"],
         scope: (c) => `job-${c.req.param("id")}`,
+        anyGroupScope: true,
         ownership: { param: "id", check: isJobCreator },
     }),
     validator("json", updateJobSchema),

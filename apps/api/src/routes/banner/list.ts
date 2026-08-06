@@ -14,7 +14,7 @@ export const listRoute = route().get(
         summary: "List all banners",
         operationId: "listBanners",
         description:
-            "Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' permission. There are only ever a handful of banners, so the list is unpaginated.",
+            "Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' or 'banners:manage', held globally or for any single group. There are only ever a handful of banners, so the list is unpaginated.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -24,7 +24,10 @@ export const listRoute = route().get(
         .forbidden({ description: "Insufficient permissions" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["banners:view", "banners:manage"] }),
+    requireAccess({
+        permission: ["banners:view", "banners:manage"],
+        anyGroupScope: true,
+    }),
     async (c) => {
         const { db } = c.get("ctx");
 

@@ -31,7 +31,7 @@
 import type { AuthSession, AuthUser } from "@photon/auth";
 import {
     hasPermission,
-    hasPermissionInAnyScope,
+    hasPermissionInAnyGroupScope,
     hasScopedPermission,
 } from "@photon/auth/rbac";
 import type { Context } from "hono";
@@ -71,13 +71,15 @@ export type RequireAccessOptions = {
     scope?: (c: Context<{ Variables: Variables }>) => string;
 
     /**
-     * Accept the permission held in ANY scope — globally or for a single
-     * group. For resources that carry no group of their own, where a
-     * group-scoped verv is still the intended way to hand the job out
-     * (a job posting belongs to TIHLDE, but "NOK publishes job postings" is
-     * a real arrangement). Ignored when `scope` is set.
+     * Also accept the permission held for ANY single group, not just globally.
+     * For resources that carry no group of their own, where a verv in a group
+     * is still the intended way to hand the job out (a job posting belongs to
+     * TIHLDE, but "NOK publishes the job postings" is a real arrangement).
+     *
+     * Combines with `scope`: the resource's own scope is checked first, so a
+     * grant handed out for one specific resource still only opens that one.
      */
-    anyScope?: boolean;
+    anyGroupScope?: boolean;
 
     /**
      * Optional ownership check. If provided, owner bypasses permission check.
@@ -96,7 +98,8 @@ export type RequireAccessOptions = {
  * Logic flow:
  * 1. If ownership is configured and user is owner → Allow
  * 2. If scope is configured → Check global OR scoped permission
- * 3. Otherwise → Check global permission only
+ * 3. If anyGroupScope is set → also accept the permission held for any group
+ * 4. Otherwise → Check global permission only
  *
  * For multiple permissions, user needs ANY of them (not all).
  */
@@ -145,17 +148,19 @@ export const requireAccess = (options: RequireAccessOptions) =>
                 options.permission,
                 scope,
             );
-        } else if (options.anyScope) {
-            // The resource has no scope of its own — a grant for any single
-            // group counts.
-            hasAccess = await hasPermissionInAnyScope(
+        } else if (!options.anyGroupScope) {
+            // Global permission check only
+            hasAccess = await hasPermission(ctx, user.id, options.permission);
+        }
+
+        if (!hasAccess && options.anyGroupScope) {
+            // The resource belongs to no group, so a grant for any single
+            // group counts. Subsumes the global check.
+            hasAccess = await hasPermissionInAnyGroupScope(
                 ctx,
                 user.id,
                 options.permission,
             );
-        } else {
-            // Global permission check only
-            hasAccess = await hasPermission(ctx, user.id, options.permission);
         }
 
         if (!hasAccess) {
@@ -163,7 +168,7 @@ export const requireAccess = (options: RequireAccessOptions) =>
                 ? options.permission.join(" or ")
                 : options.permission;
             const scopeStr =
-                options.scope || options.anyScope
+                options.scope || options.anyGroupScope
                     ? " (globally or scoped)"
                     : "";
             throw new HTTPException(403, {

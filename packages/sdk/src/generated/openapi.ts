@@ -453,13 +453,13 @@ export interface paths {
         };
         /**
          * List all banners
-         * @description Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' permission. There are only ever a handful of banners, so the list is unpaginated.
+         * @description Every banner regardless of visibility window, for the admin panel. Requires 'banners:view' or 'banners:manage', held globally or for any single group. There are only ever a handful of banners, so the list is unpaginated.
          */
         get: operations["listBanners"];
         put?: never;
         /**
          * Create banner
-         * @description Create a new front-page banner. Requires 'banners:create' permission.
+         * @description Create a new front-page banner. Requires 'banners:create' or 'banners:manage', held globally or for any single group.
          */
         post: operations["createBanner"];
         delete?: never;
@@ -480,14 +480,14 @@ export interface paths {
         post?: never;
         /**
          * Delete banner
-         * @description Delete a banner. Requires 'banners:delete' or 'banners:manage' permission.
+         * @description Delete a banner. Requires 'banners:delete' or 'banners:manage', held globally or for any single group.
          */
         delete: operations["deleteBanner"];
         options?: never;
         head?: never;
         /**
          * Update banner
-         * @description Update a banner. Requires 'banners:update' or 'banners:manage' permission.
+         * @description Update a banner. Requires 'banners:update' or 'banners:manage', held globally or for any single group.
          */
         patch: operations["updateBanner"];
         trace?: never;
@@ -2019,7 +2019,7 @@ export interface paths {
         put?: never;
         /**
          * Create news article
-         * @description Create a new news article. Requires 'news:create' permission.
+         * @description Create a new news article. Requires 'news:create' or 'news:manage', held globally or for any single group.
          */
         post: operations["createNews"];
         delete?: never;
@@ -2044,14 +2044,14 @@ export interface paths {
         post?: never;
         /**
          * Delete news article
-         * @description Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.
+         * @description Delete a news article. Requires 'news:delete' or 'news:manage', held globally or for any single group, or being the creator.
          */
         delete: operations["deleteNews"];
         options?: never;
         head?: never;
         /**
          * Update news article
-         * @description Update a news article. Requires 'news:update' or 'news:manage' permission (global or scoped) or being the creator.
+         * @description Update a news article. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.
          */
         patch: operations["updateNews"];
         trace?: never;
@@ -2095,7 +2095,7 @@ export interface paths {
         put?: never;
         /**
          * Publish a TÖDDEL issue
-         * @description Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' permission.
+         * @description Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' or 'toddel:manage', held globally or for any single group.
          */
         post: operations["createToddel"];
         delete?: never;
@@ -2116,14 +2116,14 @@ export interface paths {
         post?: never;
         /**
          * Remove a TÖDDEL issue
-         * @description Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' permission.
+         * @description Take an issue out of the archive. The uploaded files are left in storage — a wrongly deleted issue can then be restored by re-creating it with the same keys. Requires 'toddel:delete' or 'toddel:manage', held globally or for any single group.
          */
         delete: operations["deleteToddel"];
         options?: never;
         head?: never;
         /**
          * Update a TÖDDEL issue
-         * @description Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' permission.
+         * @description Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' or 'toddel:manage', held globally or for any single group.
          */
         patch: operations["updateToddel"];
         trace?: never;
@@ -2275,7 +2275,7 @@ export interface paths {
         put?: never;
         /**
          * Create job posting
-         * @description Create a new job posting. Requires 'jobs:create' permission.
+         * @description Create a new job posting. Requires 'jobs:create' or 'jobs:manage', held globally or for any single group.
          */
         post: operations["createJob"];
         delete?: never;
@@ -2300,14 +2300,14 @@ export interface paths {
         post?: never;
         /**
          * Delete job posting
-         * @description Delete a job posting. Requires 'jobs:delete' or 'jobs:manage' permission (global or scoped) or being the creator.
+         * @description Delete a job posting. Requires 'jobs:delete' or 'jobs:manage', held globally or for any single group, or being the creator.
          */
         delete: operations["deleteJob"];
         options?: never;
         head?: never;
         /**
          * Update job posting
-         * @description Update a job posting. Requires 'jobs:update' or 'jobs:manage' permission (global or scoped) or being the creator.
+         * @description Update a job posting. Requires 'jobs:update' or 'jobs:manage', held globally or for any single group, or being the creator.
          */
         patch: operations["updateJob"];
         trace?: never;
