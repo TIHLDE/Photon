@@ -32,11 +32,11 @@ export function GroupListView({ tree }: { tree: GroupTreeInput }) {
             {sections.map((section) => (
                 <section key={section.id} className="flex flex-col gap-3">
                     <h2 className="text-lg font-semibold">{section.label}</h2>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         {section.items.map((item) => (
                             <Link
                                 key={item.slug}
-                                className="block cursor-pointer"
+                                className="block min-w-0 cursor-pointer"
                                 to="/grupper/$slug"
                                 params={{ slug: item.slug }}
                             >
