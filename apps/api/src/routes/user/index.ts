@@ -5,6 +5,7 @@ import { updateUserAllergiesRoute } from "./allergy/update-for-user";
 import { getUserRoute } from "./get";
 import { listUsersRoute } from "./list";
 import { meRoutes } from "./me";
+import { registerUserRoute } from "./register";
 import { searchUsersRoute } from "./search";
 import { updateUserStatusRoute } from "./status/update";
 import { updateStudyYearRoute } from "./study-year/update";
@@ -12,6 +13,7 @@ import { updateStudyYearRoute } from "./study-year/update";
 export const userRoutes = route()
     .route("/me", meRoutes)
     .route("/allergy", allergyRoutes)
+    .route("/", registerUserRoute)
     .route("/", searchUsersRoute)
     .route("/", listUsersRoute)
     .route("/", updateStudyYearRoute)

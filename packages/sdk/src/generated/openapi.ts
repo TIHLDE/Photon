@@ -2400,6 +2400,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a member from another TIHLDE service
+         * @description Creates an account the same way the website's sign-up does — @stud.ntnu.no only, username derived from the address, verification mail sent — and enrols the member in a study programme. Requires an API key with 'users:create'.
+         */
+        post: operations["registerUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/search": {
         parameters: {
             query?: never;
@@ -5600,6 +5620,31 @@ export interface components {
             description: string | null;
         };
         AllergyList: components["schemas"]["Allergy"][];
+        RegisterUser: {
+            /** @description The new user's id */
+            id: string;
+            /** @description Derived from the e-mail's local part */
+            username: string;
+            email: string;
+            /**
+             * @description Always true. A verification mail has been sent, and the account cannot sign in on tihlde.org until it is used.
+             * @constant
+             */
+            emailVerificationRequired: true;
+        };
+        RegisterUserInput: {
+            /** @description The member's full name */
+            name: string;
+            /**
+             * Format: email
+             * @description Must be a @stud.ntnu.no address; the username is derived from it, exactly as in the website's own sign-up
+             */
+            email: string;
+            /** @description The password the member chose */
+            password: string;
+            /** @description Slug of the STUDY group to enrol the member in, e.g. 'dataingenir' */
+            studyProgramSlug: string;
+        };
         UserSearchResult: {
             id: string;
             name: string | null;
@@ -12236,6 +12281,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AllergyList"];
                 };
+            };
+        };
+    };
+    registerUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterUserInput"];
+            };
+        };
+        responses: {
+            /** @description Member created; a verification mail has been sent */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterUser"];
+                };
+            };
+            /** @description Bad Request - Address is not @stud.ntnu.no, password too short, or the study programme does not exist */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires an API key with 'users:create' */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
