@@ -5,40 +5,41 @@ import React from "react";
 const lineCount = 32;
 const svgWidth = 1440;
 const svgHeight = 720;
-const svgCenterX = svgWidth / 2;
 const svgCenterY = svgHeight / 2;
 const waveLoopDistance = (svgWidth * 2) / 3;
 const waveDrawEnd = svgWidth + waveLoopDistance;
 const waveSegmentWidth = svgWidth / 12;
-const contentFadeXRadius = svgWidth * 0.42;
-const contentFadeYRadius = svgHeight * 0.42;
-const scrollDurationSeconds = 24;
 const formatCoordinate = (value: number) => value.toFixed(1);
 
-// Heartbeat pulse: a light-blue highlight sweeps across the waves in ~2s,
-// then rests until the next beat — an 8s cycle (2s / 8s = 0.25 keyTime).
+// The drawn strip is wider than the hero so it can loop: the scroll layer is
+// `waveDrawEnd` units wide and slides left by exactly `waveLoopDistance`, which
+// is one wavelength of the pattern, so the frame it lands on is identical to
+// the one it started from. Both are expressed as percentages because the
+// animation lives in CSS — see `hero-waves-drift` in @tihlde/ui's styles.css.
+const scrollLayerWidthPercent = (waveDrawEnd / svgWidth) * 100;
+const scrollLoopPercent = (waveLoopDistance / waveDrawEnd) * 100;
+
 // Electric blue: a saturated theme-primary (navy-500) halo around a bright,
 // near-white blue core line — reads as a neon/electric glow within the theme.
 const pulseGlowColor = "#1B61E4";
 const pulseCoreColor = "#9AC2FF";
-const pulseCycleSeconds = 14;
 const pulseBandWidth = 900;
-// Slow, smooth right-to-left glide (Stripe-like): one soft glow drifts across
-// over ~8s with gentle ease-in-out, then rests off-screen until the next pass.
-const pulseKeyTimes = "0;0.57;1";
-const pulseValues = [
-    `${svgWidth} 0`,
-    `-${pulseBandWidth} 0`,
-    `-${pulseBandWidth} 0`,
-].join(";");
-const pulseKeySplines = "0.42 0 0.58 1;0 0 1 1";
+const pulseBandWidthPercent = (pulseBandWidth / svgWidth) * 100;
+// The scroll layer nested inside the band, as a percentage of the *band* —
+// it still has to come out to `scrollLayerWidthPercent` of the hero itself.
+const bandScrollLayerWidthPercent =
+    (scrollLayerWidthPercent / pulseBandWidthPercent) * 100;
+
 // Smooth Gaussian falloff for the glow band. Many closely-spaced stops avoid
 // the visible slope-change "bands" (Mach banding) that a few stops produce.
-const pulseStops = Array.from({ length: 25 }, (_, i) => {
-    const offset = i / 24;
-    const opacity = Math.exp(-Math.pow((offset - 0.5) / 0.22, 2));
-    return { offset, opacity };
-});
+const pulseBandMask = `linear-gradient(90deg, ${Array.from(
+    { length: 25 },
+    (_, i) => {
+        const offset = i / 24;
+        const opacity = Math.exp(-Math.pow((offset - 0.5) / 0.22, 2));
+        return `rgb(0 0 0 / ${opacity.toFixed(3)}) ${(offset * 100).toFixed(1)}%`;
+    },
+).join(", ")})`;
 
 type WaveConfig = {
     yBase: number;
@@ -86,15 +87,58 @@ function buildWavePath(config: WaveConfig) {
     return path;
 }
 
-export function HeroSectionBackground({ className }: { className?: string }) {
-    const fadeId = React.useId().replace(/:/g, "");
-    const vignetteGradientId = `${fadeId}-vignette-gradient`;
-    const contentFadeGradientId = `${fadeId}-content-fade-gradient`;
-    const vignetteMaskId = `${fadeId}-vignette-mask`;
-    const pulseGradientId = `${fadeId}-pulse-gradient`;
-    const pulseMaskId = `${fadeId}-pulse-mask`;
-    const pulseGlowId = `${fadeId}-pulse-glow`;
+const wavePaths = Array.from({ length: lineCount }).map((_, i) => {
+    const yBase = (i / (lineCount - 1)) * svgHeight;
+    const depth = Math.abs(yBase - svgCenterY) / svgCenterY;
 
+    return buildWavePath({
+        yBase,
+        amp: 22 + (1 - depth) * 38,
+        phase: i * 0.22,
+        width: svgWidth,
+        startX: 0,
+        endX: waveDrawEnd,
+    });
+});
+
+/**
+ * One copy of the wave strip. `preserveAspectRatio="none"` stretches it to fill
+ * whatever box it is given, so every copy lines up pixel for pixel with the
+ * others regardless of the hero's aspect ratio.
+ */
+function WaveStrip({
+    stroke,
+    strokeWidth,
+    strokeOpacity,
+    keyPrefix,
+}: {
+    stroke: string;
+    strokeWidth: number;
+    strokeOpacity?: number;
+    keyPrefix: string;
+}) {
+    return (
+        <svg
+            viewBox={`0 0 ${waveDrawEnd} ${svgHeight}`}
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+            aria-hidden
+        >
+            {wavePaths.map((path, i) => (
+                <path
+                    key={`${keyPrefix}-${i}`}
+                    d={path}
+                    fill="none"
+                    stroke={stroke}
+                    strokeWidth={strokeWidth}
+                    strokeOpacity={strokeOpacity}
+                />
+            ))}
+        </svg>
+    );
+}
+
+export function HeroSectionBackground({ className }: { className?: string }) {
     // Ingen bevegelse for de som har bedt om det. Pulslaget droppes helt i
     // stedet for bare å stoppes: uten animasjonen ville glødebåndet blitt
     // stående som en statisk stripe midt i bildet.
@@ -102,199 +146,81 @@ export function HeroSectionBackground({ className }: { className?: string }) {
         "(prefers-reduced-motion: reduce)",
     );
 
-    const paths = React.useMemo(
-        () =>
-            Array.from({ length: lineCount }).map((_, i) => {
-                const yBase = (i / (lineCount - 1)) * svgHeight;
-                const depth = Math.abs(yBase - svgCenterY) / svgCenterY;
-                const amp = 22 + (1 - depth) * 38;
-
-                return buildWavePath({
-                    yBase,
-                    amp,
-                    phase: i * 0.22,
-                    width: svgWidth,
-                    startX: 0,
-                    endX: waveDrawEnd,
-                });
-            }),
-        [],
-    );
-
     return (
-        <svg
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="none"
+        <div
+            data-slot="hero-waves"
             className={cn(
-                "absolute inset-0 w-full h-[90vh] text-black",
+                "absolute inset-0 h-[90vh] w-full overflow-hidden text-black",
                 className,
             )}
+            style={
+                {
+                    "--hero-waves-loop": `${scrollLoopPercent}%`,
+                } as React.CSSProperties
+            }
+            aria-hidden
         >
-            <defs>
-                <radialGradient
-                    id={vignetteGradientId}
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform={`translate(${svgCenterX} ${svgCenterY}) scale(${svgWidth * 1.2} ${svgHeight * 0.5})`}
-                    gradientUnits="userSpaceOnUse"
+            <div className="absolute inset-0 opacity-40 dark:opacity-[0.28]">
+                <div
+                    data-slot="hero-waves-drift"
+                    className="absolute inset-y-0 left-0"
+                    style={{ width: `${scrollLayerWidthPercent}%` }}
                 >
-                    <stop offset="0%" stopColor="white" stopOpacity="1" />
-                    <stop offset="50%" stopColor="white" stopOpacity="1" />
-                    <stop offset="100%" stopColor="white" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient
-                    id={contentFadeGradientId}
-                    cx="0"
-                    cy="0"
-                    r="1"
-                    gradientTransform={`translate(${svgCenterX} ${svgCenterY}) scale(${contentFadeXRadius} ${contentFadeYRadius})`}
-                    gradientUnits="userSpaceOnUse"
-                >
-                    <stop offset="0%" stopColor="black" stopOpacity="0.92" />
-                    <stop offset="58%" stopColor="black" stopOpacity="0.92" />
-                    <stop offset="100%" stopColor="black" stopOpacity="0" />
-                </radialGradient>
-                <mask
-                    id={vignetteMaskId}
-                    maskUnits="userSpaceOnUse"
-                    x="0"
-                    y="0"
-                    width={svgWidth}
-                    height={svgHeight}
-                >
-                    <rect
-                        width={svgWidth}
-                        height={svgHeight}
-                        fill={`url(#${vignetteGradientId})`}
+                    <WaveStrip
+                        keyPrefix="line"
+                        stroke="currentColor"
+                        strokeWidth={0.8}
                     />
-                    <rect
-                        width={svgWidth}
-                        height={svgHeight}
-                        fill={`url(#${contentFadeGradientId})`}
-                    />
-                </mask>
-                <linearGradient
-                    id={pulseGradientId}
-                    gradientUnits="userSpaceOnUse"
-                    x1="0"
-                    y1="0"
-                    x2={pulseBandWidth}
-                    y2="0"
-                >
-                    {pulseStops.map((stop) => (
-                        <stop
-                            key={stop.offset}
-                            offset={stop.offset}
-                            stopColor="white"
-                            stopOpacity={stop.opacity}
-                        />
-                    ))}
-                    <animateTransform
-                        attributeName="gradientTransform"
-                        type="translate"
-                        dur={`${pulseCycleSeconds}s`}
-                        keyTimes={pulseKeyTimes}
-                        keySplines={pulseKeySplines}
-                        calcMode="spline"
-                        values={pulseValues}
-                        repeatCount="indefinite"
-                    />
-                </linearGradient>
-                <mask
-                    id={pulseMaskId}
-                    maskUnits="userSpaceOnUse"
-                    x="0"
-                    y="0"
-                    width={svgWidth}
-                    height={svgHeight}
-                >
-                    <rect
-                        width={svgWidth}
-                        height={svgHeight}
-                        fill={`url(#${pulseGradientId})`}
-                    />
-                </mask>
-                <filter
-                    id={pulseGlowId}
-                    x="-20%"
-                    y="-20%"
-                    width="140%"
-                    height="140%"
-                >
-                    <feGaussianBlur stdDeviation="3" />
-                </filter>
-            </defs>
-            <g
-                className="opacity-40 dark:opacity-[0.28]"
-                mask={`url(#${vignetteMaskId})`}
-            >
-                <g>
-                    {prefersReducedMotion ? null : (
-                        <animateTransform
-                            attributeName="transform"
-                            dur={`${scrollDurationSeconds}s`}
-                            from="0 0"
-                            repeatCount="indefinite"
-                            to={`-${waveLoopDistance} 0`}
-                            type="translate"
-                        />
-                    )}
-                    {paths.map((path, i) => (
-                        <path
-                            key={i}
-                            d={path}
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={0.8}
-                        />
-                    ))}
-                </g>
-            </g>
+                </div>
+            </div>
+
             {prefersReducedMotion ? null : (
-                <g mask={`url(#${pulseMaskId})`}>
-                    <g mask={`url(#${vignetteMaskId})`}>
-                        <g>
-                            <animateTransform
-                                attributeName="transform"
-                                dur={`${scrollDurationSeconds}s`}
-                                from="0 0"
-                                repeatCount="indefinite"
-                                to={`-${waveLoopDistance} 0`}
-                                type="translate"
-                            />
+                <div
+                    data-slot="hero-waves-sweep"
+                    className="absolute inset-y-0 left-0"
+                    style={{
+                        width: `${pulseBandWidthPercent}%`,
+                        maskImage: pulseBandMask,
+                    }}
+                >
+                    <div
+                        data-slot="hero-waves-sweep-counter"
+                        className="absolute inset-0"
+                    >
+                        <div
+                            data-slot="hero-waves-drift"
+                            className="absolute inset-y-0 left-0"
+                            style={{
+                                width: `${bandScrollLayerWidthPercent}%`,
+                            }}
+                        >
                             {/*
-                             * Filteret ligger på gruppen, ikke på hver path.
-                             * Per path ble det ett Gaussian-blur-pass per linje
-                             * per frame (32 stk) og forsiden falt til ~29 FPS på
-                             * mobil. Linjene overlapper knapt, så ett felles
-                             * pass ser tilnærmet likt ut.
+                             * Softness comes from a CSS blur on this wrapper,
+                             * not an SVG filter. A filter inside the SVG is
+                             * re-run every frame the SVG moves; this one is
+                             * baked into the layer's raster once and then just
+                             * translated with it.
                              */}
-                            <g filter={`url(#${pulseGlowId})`}>
-                                {paths.map((path, i) => (
-                                    <path
-                                        key={`glow-${i}`}
-                                        d={path}
-                                        fill="none"
-                                        stroke={pulseGlowColor}
-                                        strokeWidth={7}
-                                        strokeOpacity={0.7}
-                                    />
-                                ))}
-                            </g>
-                            {paths.map((path, i) => (
-                                <path
-                                    key={`beat-${i}`}
-                                    d={path}
-                                    fill="none"
-                                    stroke={pulseCoreColor}
-                                    strokeWidth={1.6}
+                            <div
+                                className="absolute inset-0"
+                                style={{ filter: "blur(2px)" }}
+                            >
+                                <WaveStrip
+                                    keyPrefix="glow"
+                                    stroke={pulseGlowColor}
+                                    strokeWidth={7}
+                                    strokeOpacity={0.7}
                                 />
-                            ))}
-                        </g>
-                    </g>
-                </g>
+                            </div>
+                            <WaveStrip
+                                keyPrefix="beat"
+                                stroke={pulseCoreColor}
+                                strokeWidth={1.6}
+                            />
+                        </div>
+                    </div>
+                </div>
             )}
-        </svg>
+        </div>
     );
 }
