@@ -623,6 +623,9 @@ function PositionDialog({
 }) {
     const create = useMutation(createPositionMutation);
     const update = useMutation(updatePositionMutation);
+    const assign = useMutation(assignPositionMutation);
+    const unassign = useMutation(unassignPositionMutation);
+    const { data: members } = useQuery(getGroupMembersQuery(groupSlug, 0));
     const [name, setName] = useState(position?.name ?? "");
     const [scope, setScope] = useState<"group" | "global">(
         position?.scope ?? "group",
@@ -630,30 +633,97 @@ function PositionDialog({
     const [permissions, setPermissions] = useState<string[]>(
         position?.permissions ?? [],
     );
-    const isPending = create.isPending || update.isPending;
+    const [holder, setHolder] = useState<UserSearchOption | null>(
+        position?.holder
+            ? {
+                  id: position.holder.userId,
+                  name: position.holder.name,
+                  image: position.holder.image,
+              }
+            : null,
+    );
+    const [holderQuery, setHolderQuery] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const isPending =
+        create.isPending ||
+        update.isPending ||
+        assign.isPending ||
+        unassign.isPending;
 
-    function handleSubmit() {
-        const onSuccess = () => {
+    // Holders must be members of the group, so the group's own member list is
+    // the candidate set — filtered client-side on name.
+    const memberOptions: UserSearchOption[] = useMemo(() => {
+        const q = holderQuery.trim().toLowerCase();
+        return (members ?? [])
+            .map((member) => ({
+                id: member.user?.id ?? member.userId,
+                name: member.user?.name ?? member.userId,
+                image: member.user?.image ?? null,
+            }))
+            .filter((option) =>
+                q.length === 0
+                    ? true
+                    : (option.name ?? "").toLowerCase().includes(q),
+            )
+            .slice(0, 10);
+    }, [members, holderQuery]);
+
+    // Linked leader-verv follow the linked group's leader and reject manual
+    // assignment server-side, so the field is not offered for them.
+    const canAssignHolder = !position?.linkedGroupSlug;
+
+    async function handleSubmit() {
+        setError(null);
+        try {
+            let positionId: string;
+            if (position) {
+                await update.mutateAsync({
+                    groupSlug,
+                    positionId: position.id,
+                    data: { name, permissions, scope },
+                });
+                positionId = position.id;
+            } else {
+                const created = await create.mutateAsync({
+                    groupSlug,
+                    data: { name, permissions, scope },
+                });
+                positionId = created.id;
+            }
+
+            if (canAssignHolder) {
+                const previousHolderId = position?.holder?.userId ?? null;
+                if (previousHolderId && previousHolderId !== holder?.id) {
+                    // A position has at most one holder; the old one has to go
+                    // before the new one can be assigned.
+                    await unassign.mutateAsync({
+                        groupSlug,
+                        positionId,
+                        userId: previousHolderId,
+                    });
+                }
+                if (holder && holder.id !== previousHolderId) {
+                    await assign.mutateAsync({
+                        groupSlug,
+                        positionId,
+                        userId: holder.id,
+                    });
+                }
+            }
+
             if (!position) {
                 setName("");
                 setScope("group");
                 setPermissions([]);
+                setHolder(null);
             }
+            setHolderQuery("");
             onOpenChange(false);
-        };
-        if (position) {
-            update.mutate(
-                {
-                    groupSlug,
-                    positionId: position.id,
-                    data: { name, permissions, scope },
-                },
-                { onSuccess },
-            );
-        } else {
-            create.mutate(
-                { groupSlug, data: { name, permissions, scope } },
-                { onSuccess },
+        } catch (submitError) {
+            setError(
+                submitError instanceof Error
+                    ? submitError.message
+                    : "Kunne ikke lagre vervet.",
             );
         }
     }
@@ -675,6 +745,33 @@ function PositionDialog({
                             placeholder="f.eks. Økonomiansvarlig"
                         />
                     </Field>
+                    {canAssignHolder ? (
+                        <Field>
+                            <FieldLabel>Bruker</FieldLabel>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {holder ? (
+                                    <HolderChip
+                                        name={holder.name}
+                                        image={holder.image}
+                                        onRemove={() => setHolder(null)}
+                                    />
+                                ) : (
+                                    <UserSearchCombobox
+                                        holder={null}
+                                        emptyLabel="Ingen tildelt"
+                                        query={holderQuery}
+                                        onQueryChange={setHolderQuery}
+                                        results={memberOptions}
+                                        onSelect={setHolder}
+                                        onOpenChange={(isOpen) => {
+                                            if (!isOpen) setHolderQuery("");
+                                        }}
+                                        placeholder="Søk blant gruppens medlemmer…"
+                                    />
+                                )}
+                            </div>
+                        </Field>
+                    ) : null}
                     <Field>
                         <FieldLabel>Tilganger</FieldLabel>
                         <PermissionDomainCheckboxes
@@ -696,6 +793,9 @@ function PositionDialog({
                             </span>
                         </label>
                     </Field>
+                    {error ? (
+                        <p className="text-sm text-destructive">{error}</p>
+                    ) : null}
                 </FieldGroup>
                 <DialogFooter>
                     <Button
@@ -706,7 +806,7 @@ function PositionDialog({
                     </Button>
                     <Button
                         disabled={!name || isPending}
-                        onClick={handleSubmit}
+                        onClick={() => void handleSubmit()}
                     >
                         {position ? "Lagre" : "Opprett"}
                     </Button>

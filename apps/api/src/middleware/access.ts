@@ -29,7 +29,11 @@
  */
 
 import type { AuthSession, AuthUser } from "@photon/auth";
-import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
+import {
+    hasPermission,
+    hasPermissionInAnyScope,
+    hasScopedPermission,
+} from "@photon/auth/rbac";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
@@ -65,6 +69,15 @@ export type RequireAccessOptions = {
      * If not provided, only checks global permissions.
      */
     scope?: (c: Context<{ Variables: Variables }>) => string;
+
+    /**
+     * Accept the permission held in ANY scope — globally or for a single
+     * group. For resources that carry no group of their own, where a
+     * group-scoped verv is still the intended way to hand the job out
+     * (a job posting belongs to TIHLDE, but "NOK publishes job postings" is
+     * a real arrangement). Ignored when `scope` is set.
+     */
+    anyScope?: boolean;
 
     /**
      * Optional ownership check. If provided, owner bypasses permission check.
@@ -132,6 +145,14 @@ export const requireAccess = (options: RequireAccessOptions) =>
                 options.permission,
                 scope,
             );
+        } else if (options.anyScope) {
+            // The resource has no scope of its own — a grant for any single
+            // group counts.
+            hasAccess = await hasPermissionInAnyScope(
+                ctx,
+                user.id,
+                options.permission,
+            );
         } else {
             // Global permission check only
             hasAccess = await hasPermission(ctx, user.id, options.permission);
@@ -141,7 +162,10 @@ export const requireAccess = (options: RequireAccessOptions) =>
             const permStr = Array.isArray(options.permission)
                 ? options.permission.join(" or ")
                 : options.permission;
-            const scopeStr = options.scope ? " (globally or scoped)" : "";
+            const scopeStr =
+                options.scope || options.anyScope
+                    ? " (globally or scoped)"
+                    : "";
             throw new HTTPException(403, {
                 message: `Forbidden - requires permission: ${permStr}${scopeStr}`,
             });

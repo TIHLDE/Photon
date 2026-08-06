@@ -27,6 +27,7 @@ export {
     getUserPermissions,
     getUserPermissionsWithScope,
     hasPermission,
+    hasPermissionInAnyScope,
     hasScopedPermission,
 } from "./checker";
 
