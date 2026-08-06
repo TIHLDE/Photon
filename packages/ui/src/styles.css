@@ -374,6 +374,117 @@
     --tw-prose-kbd: var(--foreground);
 }
 
+/* ── Hero waves ───────────────────────────────────────────────────────────
+   Backing animation for <HeroSectionBackground>. Every moving part here is a
+   `transform` on its own layer, and nothing that moves is ever re-painted:
+   the whole thing is handed to the compositor once and then only translated.
+
+   That constraint is the entire point. The first version drove this with SMIL
+   inside the SVG — an `animateTransform` on the line groups plus one on a
+   gradient that fed a `<mask>`, with an `feGaussianBlur` on top. None of those
+   can be composited: an animated mask has to be regenerated and re-applied
+   every frame, over a full-viewport element, on the main thread. On a phone
+   that is a continuous full-screen repaint behind a `backdrop-blur` header,
+   which is why the sweep stuttered and why opening the menu on the front page
+   felt stuck — the animation was starving everything else.
+
+   The sweep is the interesting bit. A highlight window has to travel while the
+   lines it lights up stay put, so the band carries a *static* mask and moves,
+   and its child moves back by exactly the same amount. Net motion of the lines
+   is zero, both transforms are compositor-only, and the mask never changes.
+   The two keyframes below are inverses of each other and share a duration —
+   they must be edited as a pair or the highlighted lines will drift out of
+   register with the ones underneath. */
+@keyframes hero-waves-drift {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        /* One full wavelength of the pattern, so the loop is seamless. The
+           distance is geometry, so it comes from the component that draws the
+           waves rather than being restated here. */
+        transform: translate3d(calc(-1 * var(--hero-waves-loop, 40%)), 0, 0);
+    }
+}
+
+@keyframes hero-waves-sweep {
+    0% {
+        transform: translate3d(160%, 0, 0);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+    }
+    /* Crosses in the first 57% of the cycle, then waits off-screen — the rest
+       is what makes it read as an occasional pass rather than a conveyor. */
+    57%,
+    100% {
+        transform: translate3d(-100%, 0, 0);
+    }
+}
+
+@keyframes hero-waves-sweep-counter {
+    0% {
+        transform: translate3d(-160%, 0, 0);
+        animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+    }
+    57%,
+    100% {
+        transform: translate3d(100%, 0, 0);
+    }
+}
+
+[data-slot="hero-waves-drift"] {
+    animation: hero-waves-drift var(--hero-waves-drift-duration, 18s) linear
+        infinite;
+    will-change: transform;
+}
+
+[data-slot="hero-waves-sweep"] {
+    animation: hero-waves-sweep var(--hero-waves-sweep-duration, 9s) infinite;
+    will-change: transform;
+}
+
+[data-slot="hero-waves-sweep-counter"] {
+    animation: hero-waves-sweep-counter var(--hero-waves-sweep-duration, 9s)
+        infinite;
+    will-change: transform;
+}
+
+/* Freeze the whole thing while the mobile menu is open. That drawer lays a
+   full-viewport `backdrop-filter` scrim over the page, and a backdrop filter
+   has to be re-sampled on every frame its backdrop moves — so the waves were
+   buying a full-screen blur recomputation per frame to animate something the
+   user cannot see through the blur anyway.
+
+   Keyed off the drawer's own `data-state` rather than <body>'s
+   `data-scroll-locked`: closing the menu by tapping a link navigates away
+   mid-close and vaul never removes that attribute, which would leave the hero
+   frozen for the rest of the session. This selector is correct on both close
+   paths, and if it ever stops matching the animation simply keeps running. */
+body:has([data-slot="drawer-content"][data-state="open"])
+    [data-slot^="hero-waves"] {
+    animation-play-state: paused;
+}
+
+/* Fades the lines out towards the edges and holds them well back behind the
+   hero copy. Painted once as a static mask; the layers underneath animate
+   inside it. `intersect` multiplies the two, so the centre keeps the 8% the
+   second gradient leaves and the outer falloff still applies on top. */
+[data-slot="hero-waves"] {
+    mask-image:
+        radial-gradient(
+            120% 50% at 50% 50%,
+            #000 0%,
+            #000 50%,
+            transparent 100%
+        ),
+        radial-gradient(
+            42% 42% at 50% 50%,
+            rgb(0 0 0 / 0.08) 0%,
+            rgb(0 0 0 / 0.08) 58%,
+            #000 100%
+        );
+    mask-composite: intersect;
+}
+
 /* Møtetid: subtle nudge on the primary action when the user tries to paint
    the grid before entering edit mode. */
 @keyframes motetid-primary-nudge {
