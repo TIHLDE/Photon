@@ -70,7 +70,9 @@ function AdmissionsPage() {
                     <p className="text-muted-foreground">
                         Bli med på å skape studentmiljøet
                     </p>
-                    <h1 className="text-4xl font-bold md:text-6xl">Søk verv!</h1>
+                    <h1 className="text-4xl font-bold md:text-6xl">
+                        Søk verv!
+                    </h1>
                     <p className="text-muted-foreground">
                         Her finner du en oversikt over alle vervene i TIHLDE.
                         Søk på vervene du er interessert i, og bli med på å
