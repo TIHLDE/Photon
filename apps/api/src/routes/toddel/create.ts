@@ -16,7 +16,7 @@ export const createRoute = route().post(
         summary: "Publish a TÖDDEL issue",
         operationId: "createToddel",
         description:
-            "Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' permission.",
+            "Add an issue to the archive. Upload the PDF (and the cover, if there is one) via POST /api/assets first, then pass the returned keys here. Requires 'toddel:create' or 'toddel:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -32,7 +32,10 @@ export const createRoute = route().post(
         })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["toddel:create", "toddel:manage"] }),
+    requireAccess({
+        permission: ["toddel:create", "toddel:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", createToddelSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -14,7 +14,7 @@ export const createRoute = route().post(
         summary: "Create banner",
         operationId: "createBanner",
         description:
-            "Create a new front-page banner. Requires 'banners:create' permission.",
+            "Create a new front-page banner. Requires 'banners:create' or 'banners:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -24,7 +24,10 @@ export const createRoute = route().post(
         .forbidden({ description: "Insufficient permissions" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["banners:create", "banners:manage"] }),
+    requireAccess({
+        permission: ["banners:create", "banners:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", createBannerSchema),
     async (c) => {
         const body = c.req.valid("json");

@@ -14,7 +14,7 @@ export const createRoute = route().post(
         summary: "Create job posting",
         operationId: "createJob",
         description:
-            "Create a new job posting. Requires 'jobs:create' permission.",
+            "Create a new job posting. Requires 'jobs:create' or 'jobs:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -24,7 +24,13 @@ export const createRoute = route().post(
         .badRequest({ description: "Invalid input" })
         .build(),
     requireAuth,
-    requireAccess({ permission: "jobs:create" }),
+    // A job posting has no group of its own, so there is no scope to check
+    // against — a verv like NOKs "Annonsør" grants `jobs:create@group:nok`,
+    // and that is exactly the arrangement this endpoint should honour.
+    requireAccess({
+        permission: ["jobs:create", "jobs:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", createJobSchema),
     async (c) => {
         const body = c.req.valid("json");

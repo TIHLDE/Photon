@@ -16,7 +16,7 @@ export const updateRoute = route().patch(
         summary: "Update a TÖDDEL issue",
         operationId: "updateToddel",
         description:
-            "Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' permission.",
+            "Change the title, date or files of a published issue. Pass a new asset key to replace a file; leaving it out keeps the current one. Requires 'toddel:update' or 'toddel:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -29,7 +29,10 @@ export const updateRoute = route().patch(
         .notFound({ description: "Issue not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["toddel:update", "toddel:manage"] }),
+    requireAccess({
+        permission: ["toddel:update", "toddel:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", updateToddelSchema),
     async (c) => {
         const body = c.req.valid("json");

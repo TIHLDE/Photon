@@ -226,6 +226,47 @@ export async function hasPermission(
  *     // Allow update or manage
  * }
  */
+/**
+ * Check if a user holds a permission globally or for ANY single group.
+ *
+ * For actions on resources that belong to no group, so there is no scope to
+ * check the grant against: a job posting belongs to TIHLDE, not to NOK, yet
+ * "NOK publishes the job postings" is exactly what a verv in NOK with
+ * `jobs:create` is meant to say. Requiring the grant to be global there would
+ * make every group verv on such a resource silently do nothing.
+ *
+ * Only `*` and `group:<slug>` grants count. A grant scoped to one specific
+ * resource (`news:update@news-<id>`, handed out to let someone edit that one
+ * article) stays limited to it — checking that is
+ * {@link hasScopedPermission}'s job, and this must not widen it.
+ */
+export async function hasPermissionInAnyGroupScope(
+    ctx: DbCtx,
+    userId: string,
+    permissionName: string | string[],
+): Promise<boolean> {
+    const permissionNames = Array.isArray(permissionName)
+        ? permissionName
+        : [permissionName];
+
+    if (permissionNames.length === 0) return false;
+
+    const permissions = await getUserPermissions(ctx, userId);
+
+    if (hasRoot(permissions)) return true;
+
+    return permissionNames.some((requiredPerm) =>
+        permissions.some((granted) => {
+            const parsed = parsePermission(granted);
+            return (
+                parsed.permission === requiredPerm &&
+                (parsed.scope === GLOBAL_SCOPE ||
+                    parsed.scope.startsWith("group:"))
+            );
+        }),
+    );
+}
+
 export async function hasScopedPermission(
     ctx: DbCtx,
     userId: string,
