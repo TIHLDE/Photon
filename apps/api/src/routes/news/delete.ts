@@ -15,7 +15,7 @@ export const deleteRoute = route().delete(
         summary: "Delete news article",
         operationId: "deleteNews",
         description:
-            "Delete a news article. Requires 'news:delete' or 'news:manage' permission (global or scoped) or being the creator.",
+            "Delete a news article. Requires 'news:delete' or 'news:manage', held globally or for any single group, or being the creator.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -29,6 +29,7 @@ export const deleteRoute = route().delete(
     requireAccess({
         permission: ["news:delete", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
+        anyGroupScope: true,
         ownership: { param: "id", check: isNewsCreator },
     }),
     async (c) => {

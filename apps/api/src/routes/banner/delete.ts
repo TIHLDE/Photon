@@ -14,7 +14,7 @@ export const deleteRoute = route().delete(
         summary: "Delete banner",
         operationId: "deleteBanner",
         description:
-            "Delete a banner. Requires 'banners:delete' or 'banners:manage' permission.",
+            "Delete a banner. Requires 'banners:delete' or 'banners:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -25,7 +25,10 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Banner not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["banners:delete", "banners:manage"] }),
+    requireAccess({
+        permission: ["banners:delete", "banners:manage"],
+        anyGroupScope: true,
+    }),
     async (c) => {
         const { db } = c.get("ctx");
         const { id } = c.req.param();

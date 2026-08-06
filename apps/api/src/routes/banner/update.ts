@@ -16,7 +16,7 @@ export const updateRoute = route().patch(
         summary: "Update banner",
         operationId: "updateBanner",
         description:
-            "Update a banner. Requires 'banners:update' or 'banners:manage' permission.",
+            "Update a banner. Requires 'banners:update' or 'banners:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -27,7 +27,10 @@ export const updateRoute = route().patch(
         .notFound({ description: "Banner not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["banners:update", "banners:manage"] }),
+    requireAccess({
+        permission: ["banners:update", "banners:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", updateBannerSchema),
     async (c) => {
         const body = c.req.valid("json");

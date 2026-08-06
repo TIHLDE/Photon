@@ -61,9 +61,20 @@ export async function createAppContext(): Promise<AppContext> {
             email,
         },
         oauth: {
+            /**
+             * Absolute, and pointing at the WEBSITE — both pages are Kvark
+             * routes, and Better Auth resolves a relative path against its own
+             * origin. `/login` therefore sent people to photon.tihlde.org/login,
+             * which is a 404: the API serves no pages. Invisible until the first
+             * OAuth client existed, because nothing had ever been redirected
+             * there.
+             *
+             * The consent path is `/oauth/consent`, which is where the route
+             * actually lives (`apps/kvark/src/routes/_auth/oauth/consent.tsx`).
+             */
             pages: {
-                consent: "/consent",
-                login: "/login",
+                consent: `${env.WEBSITE_URL}/oauth/consent`,
+                login: `${env.WEBSITE_URL}/login`,
             },
         },
         urls: {
@@ -109,9 +120,20 @@ export async function createTestAppContext(options?: {
             email,
         },
         oauth: {
+            /**
+             * Absolute, and pointing at the WEBSITE — both pages are Kvark
+             * routes, and Better Auth resolves a relative path against its own
+             * origin. `/login` therefore sent people to photon.tihlde.org/login,
+             * which is a 404: the API serves no pages. Invisible until the first
+             * OAuth client existed, because nothing had ever been redirected
+             * there.
+             *
+             * The consent path is `/oauth/consent`, which is where the route
+             * actually lives (`apps/kvark/src/routes/_auth/oauth/consent.tsx`).
+             */
             pages: {
-                consent: "/consent",
-                login: "/login",
+                consent: `${env.WEBSITE_URL}/oauth/consent`,
+                login: `${env.WEBSITE_URL}/login`,
             },
         },
         urls: {

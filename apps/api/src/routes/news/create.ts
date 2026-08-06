@@ -14,7 +14,7 @@ export const createRoute = route().post(
         summary: "Create news article",
         operationId: "createNews",
         description:
-            "Create a new news article. Requires 'news:create' permission.",
+            "Create a new news article. Requires 'news:create' or 'news:manage', held globally or for any single group.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -23,7 +23,10 @@ export const createRoute = route().post(
         })
         .build(),
     requireAuth,
-    requireAccess({ permission: "news:create" }),
+    requireAccess({
+        permission: ["news:create", "news:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", createNewsSchema),
     async (c) => {
         const body = c.req.valid("json");
