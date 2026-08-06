@@ -175,6 +175,41 @@ export const updateStudyYearResponseSchema = Schema(
     }),
 );
 
+export const registerUserInputSchema = Schema(
+    "RegisterUserInput",
+    z.object({
+        name: z.string().trim().min(1).max(120).meta({
+            description: "The member's full name",
+        }),
+        email: z.string().trim().toLowerCase().email().meta({
+            description:
+                "Must be a @stud.ntnu.no address; the username is derived from it, exactly as in the website's own sign-up",
+        }),
+        password: z.string().min(8).max(128).meta({
+            description: "The password the member chose",
+        }),
+        studyProgramSlug: z.string().trim().min(1).meta({
+            description:
+                "Slug of the STUDY group to enrol the member in, e.g. 'dataingenir'",
+        }),
+    }),
+);
+
+export const registerUserResponseSchema = Schema(
+    "RegisterUser",
+    z.object({
+        id: z.string().meta({ description: "The new user's id" }),
+        username: z.string().meta({
+            description: "Derived from the e-mail's local part",
+        }),
+        email: z.string(),
+        emailVerificationRequired: z.literal(true).meta({
+            description:
+                "Always true. A verification mail has been sent, and the account cannot sign in on tihlde.org until it is used.",
+        }),
+    }),
+);
+
 /** Sentinel for "no study programme" in the `study` filter. */
 export const NO_STUDY_FILTER = "none";
 
