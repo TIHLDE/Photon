@@ -52,7 +52,7 @@ export function GroupAdmissionCard({
     formId,
 }: GroupAdmissionCardProps) {
     return (
-        <Card size="sm" className="h-full">
+        <Card size="sm" className="h-full min-w-0">
             <Collapsible open={open} onOpenChange={onOpenChange}>
                 <CollapsibleTrigger
                     render={
@@ -173,7 +173,7 @@ function AdmissionAction({
 export function GroupAdmissionLinkCard({ group }: { group: AdmissionGroup }) {
     return (
         <Link
-            className="block cursor-pointer"
+            className="block min-w-0 cursor-pointer"
             to="/grupper/$slug"
             params={{ slug: group.slug }}
         >

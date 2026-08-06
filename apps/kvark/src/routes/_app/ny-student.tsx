@@ -253,7 +253,7 @@ function GroupSections() {
             {sections.map((section) => (
                 <div key={section.title} className="flex flex-col gap-3">
                     <h3 className="text-lg font-semibold">{section.title}</h3>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {section.groups.map((group) => (
                             <GroupAdmissionLinkCard
                                 key={group.slug}
