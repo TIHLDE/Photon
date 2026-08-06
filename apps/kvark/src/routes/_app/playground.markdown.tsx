@@ -77,8 +77,8 @@ function MarkdownPlaygroundPage() {
                 </p>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-                <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="flex min-w-0 flex-col gap-2">
                     <h2 className="text-lg">Editor — rich registry</h2>
                     <RichEditor
                         registry={richRegistry}
@@ -87,7 +87,7 @@ function MarkdownPlaygroundPage() {
                     />
                 </div>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex min-w-0 flex-col gap-2">
                     <h2 className="text-lg">Editor — callout-only registry</h2>
                     <RichEditor
                         registry={calloutOnlyRegistry}

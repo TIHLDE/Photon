@@ -245,7 +245,7 @@ function RouteComponent() {
                     }}
                 />
             ) : null}
-            <div className="grid gap-6 md:grid-cols-[16rem_1fr]">
+            <div className="grid gap-6 md:grid-cols-[16rem_minmax(0,1fr)]">
                 <ProfileNav
                     navGroups={navGroups}
                     onLogout={isOwnProfile ? handleLogout : undefined}

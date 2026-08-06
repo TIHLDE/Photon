@@ -821,7 +821,7 @@ function FormTestPage() {
                     </CardHeader>
                     <CardContent>
                         <FieldGroup>
-                            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                                 <form.AppField name="meetingDate">
                                     {(field) => (
                                         <field.Field required>
@@ -847,7 +847,7 @@ function FormTestPage() {
                                 </form.AppField>
                             </div>
 
-                            <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                                 <form.AppField name="birthMonth">
                                     {(field) => (
                                         <field.Field required>
@@ -935,7 +935,7 @@ function FormTestPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
+                        <div className="grid gap-4 md:grid-cols-[18rem_minmax(0,1fr)]">
                             <JobFiltersDemo />
                             <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-sm text-muted-foreground">
                                 Resultatområde (mock)

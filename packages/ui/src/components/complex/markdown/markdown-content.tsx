@@ -26,6 +26,10 @@ export function MarkdownContent({
             data-slot="markdown-content"
             className={cn(
                 "prose prose-sm max-w-none",
+                // Markdown kan inneholde innhold som er bredere enn skjermen
+                // (tabeller, kodeblokker, lange URL-er). Det skal skrolle i sin
+                // egen boks — ellers presser det hele sida ut på mobil.
+                "break-words [&_pre]:overflow-x-auto [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto",
                 "[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-32",
                 "[&_.ProseMirror>:first-child]:mt-0 [&_.ProseMirror>:last-child]:mb-0",
                 // Skrivefeil fra den norske stavekontrollen. Samme rød
