@@ -35,6 +35,10 @@ export const createGroupSchema = Schema(
         type: z.string().max(50).meta({
             description: "Group type (e.g., committee, study, interestgroup)",
         }),
+        subtype: z.string().max(50).optional().meta({
+            description:
+                "Sub-category below type. Only used for interest groups today: GRUPPE or IDRETTSGRUPPE, which the org chart renders as separate sections.",
+        }),
         finesInfo: z
             .string()
             .default("")
@@ -78,6 +82,10 @@ export const updateGroupSchema = Schema(
             .nullable()
             .meta({ description: "Group contact email" }),
         type: z.string().max(50).optional().meta({ description: "Group type" }),
+        subtype: z.string().max(50).optional().nullable().meta({
+            description:
+                "Sub-category below type (GRUPPE or IDRETTSGRUPPE for interest groups). Null clears it.",
+        }),
         finesInfo: z
             .string()
             .optional()
@@ -143,6 +151,10 @@ export const groupSchema = Schema(
             .nullable()
             .meta({ description: "Group contact email" }),
         type: z.string().meta({ description: "Group type" }),
+        subtype: z.string().nullable().meta({
+            description:
+                "Sub-category below type. GRUPPE or IDRETTSGRUPPE for interest groups, null otherwise.",
+        }),
         finesInfo: z.string().meta({ description: "Group fines info" }),
         finesActivated: z
             .boolean()

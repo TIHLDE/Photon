@@ -70,7 +70,9 @@ function AdmissionsPage() {
                     <p className="text-muted-foreground">
                         Bli med på å skape studentmiljøet
                     </p>
-                    <h1 className="text-4xl font-bold md:text-6xl">Søk verv!</h1>
+                    <h1 className="text-4xl font-bold md:text-6xl">
+                        Søk verv!
+                    </h1>
                     <p className="text-muted-foreground">
                         Her finner du en oversikt over alle vervene i TIHLDE.
                         Søk på vervene du er interessert i, og bli med på å
@@ -140,7 +142,7 @@ function AdmissionsPage() {
                             alle, og du kan være med i så mange du vil.
                         </p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {interestGroups.map((group) => (
                             <GroupAdmissionLinkCard
                                 key={group.slug}
@@ -168,7 +170,7 @@ function AdmissionSection({
     return (
         <div className="flex flex-col gap-3">
             <h3 className="text-lg font-semibold">{title}</h3>
-            <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {groups.map((group) => (
                     <AdmissionCardContainer
                         key={group.slug}

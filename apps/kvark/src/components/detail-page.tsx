@@ -20,7 +20,7 @@ export function DetailPage({
             {back}
             {hero}
             {sidebar ? (
-                <div className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:gap-8">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8">
                     <header className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
                         {header}
                     </header>

@@ -50,7 +50,7 @@ function JobsPage() {
                 </p>
             </Reveal>
 
-            <div className="grid gap-6 md:grid-cols-[20rem_1fr]">
+            <div className="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)]">
                 <aside>
                     <JobFilters
                         value={filters}

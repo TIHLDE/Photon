@@ -285,9 +285,11 @@ function SectionHeader({
 }) {
     return (
         <Reveal
-            render={<div className="flex items-center justify-between gap-4" />}
+            render={
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" />
+            }
         >
-            <h2 className="text-2xl">{title}</h2>
+            <h2 className="min-w-0 text-2xl">{title}</h2>
             {actionLabel && actionTo ? (
                 <Button
                     variant="ghost"

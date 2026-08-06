@@ -184,6 +184,17 @@ export const group = pgTable("group", {
     description: text("description"),
     contactEmail: varchar("contact_email", { length: 200 }),
     type: varchar("type", { length: 50 }).notNull(),
+    /**
+     * Second axis below `type`, and today only meaningful for interest groups:
+     * "GRUPPE" or "IDRETTSGRUPPE". The organisation chart renders the two as
+     * separate labelled sections, and nothing else distinguishes them —
+     * `type` is INTERESTGROUP for both.
+     *
+     * Carried over from Lepton, which had the same column. Null for every
+     * other group type, and null is also legitimate for an interest group
+     * that has not been categorised (Lepton left `trakk` that way).
+     */
+    subtype: varchar("subtype", { length: 50 }),
     finesInfo: text("fine_info").notNull(),
     finesActivated: boolean("fines_activated").notNull(),
     finesAdminId: text("fines_admin_id").references(() => user.id),

@@ -61,7 +61,7 @@ function MultiDay({
     end: DetailDatePoint;
 }) {
     return (
-        <div className="grid min-w-0 grid-cols-[auto_1fr] gap-x-3">
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-3">
             <Marker />
             <span className="self-center leading-6">{start.date}</span>
 

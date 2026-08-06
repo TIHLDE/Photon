@@ -32,8 +32,8 @@ function AppLayout() {
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,
-        // which only exists below md.
-        <div className="flex min-h-screen flex-col pb-16 md:pb-0">
+        // which only exists below lg.
+        <div className="flex min-h-screen flex-col pb-16 lg:pb-0">
             <SiteHeader
                 navItems={navItems}
                 user={currentUser}
