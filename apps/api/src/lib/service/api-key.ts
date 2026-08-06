@@ -15,7 +15,9 @@ import { ValidationError } from "../errors";
  */
 export const API_KEY_PERMISSION_REGISTRY = {
     // System permissions
-    users: ["view"],
+    // "create" lets a trusted service register members through
+    // `POST /user/register` — Fadderuka's own sign-up form.
+    users: ["view", "create"],
     // Email permissions
     email: ["send"],
 } as const;

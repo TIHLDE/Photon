@@ -148,6 +148,28 @@ export function withFrontendCallback(
     }
 }
 
+/**
+ * `preferred_username` for the id token and the userinfo endpoint.
+ *
+ * The TIHLDE username is what every other system keys members on — Fadderuka
+ * stores it as `tihldeUserId`, and the Lepton export used it as the join key —
+ * while `sub` is a Better Auth id nothing outside Photon has ever seen. A
+ * client that only gets `sub` cannot match a member to rows it already holds,
+ * so it would have to fall back to e-mail, which members change.
+ *
+ * A standard OIDC profile claim, hence no URI namespacing. Omitted rather than
+ * sent as null when the account has no username: absent means "not provided",
+ * whereas null invites a client to store it.
+ */
+function preferredUsernameClaim(
+    u: Record<string, unknown> | null | undefined,
+): Record<string, string> {
+    const username = u?.username;
+    return typeof username === "string" && username.length > 0
+        ? { preferred_username: username }
+        : {};
+}
+
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
@@ -363,8 +385,9 @@ export function createAuth(options: CreateAuthOptions) {
 
                     return {};
                 },
-                customIdTokenClaims: () => ({}),
-                customUserInfoClaims: () => ({}),
+                customIdTokenClaims: ({ user: u }) => preferredUsernameClaim(u),
+                customUserInfoClaims: ({ user: u }) =>
+                    preferredUsernameClaim(u),
 
                 prefix: {
                     clientSecret: "tihlde_cs_",
