@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@tihlde/ui/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import {
     Card,
     CardContent,
@@ -12,9 +13,11 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
+import { Input } from "@tihlde/ui/ui/input";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
 import {
+    AuthError,
     sanitizeRedirectTo,
     sendVerificationEmailMutationOptions,
     signInUsernameMutationOptions,
@@ -98,6 +101,9 @@ function LoginPage() {
     }
 
     const signInMutation = useMutation(signInUsernameMutationOptions);
+    const emailNotVerified =
+        signInMutation.error instanceof AuthError &&
+        signInMutation.error.code === "EMAIL_NOT_VERIFIED";
 
     const form = useAppForm({
         validators: {
@@ -235,6 +241,12 @@ function LoginPage() {
                             <form.FormErrors />
                         </form.AppForm>
 
+                        {signInMutation.isError && !emailNotVerified && (
+                            <p className="text-sm text-destructive">
+                                {signInMutation.error.message}
+                            </p>
+                        )}
+
                         <form.AppForm>
                             <form.SubmitButton
                                 className="w-full"
@@ -252,6 +264,23 @@ function LoginPage() {
                 </form>
             )}
 
+            {emailNotVerified && (
+                <EmailVerificationPrompt
+                    sent={verificationMutation.isSuccess}
+                    sending={verificationMutation.isPending}
+                    error={verificationMutation.isError}
+                    onSend={(email) =>
+                        verificationMutation.mutate({
+                            email,
+                            callbackURL: new URL(
+                                sanitizeRedirectTo(redirectTo),
+                                window.location.origin,
+                            ).toString(),
+                        })
+                    }
+                />
+            )}
+
             <CardFooter className="justify-center">
                 <p className="text-sm text-muted-foreground">
                     Har du ikke konto?{" "}
@@ -264,5 +293,66 @@ function LoginPage() {
                 </p>
             </CardFooter>
         </Card>
+    );
+}
+
+function EmailVerificationPrompt({
+    sent,
+    sending,
+    error,
+    onSend,
+}: {
+    sent: boolean;
+    sending: boolean;
+    error: boolean;
+    onSend: (email: string) => void;
+}) {
+    const [email, setEmail] = useState("");
+
+    return (
+        <div className="px-6">
+            <Alert>
+                <AlertTitle>E-posten din er ikke bekreftet</AlertTitle>
+                <AlertDescription>
+                    {sent
+                        ? "Sjekk innboksen din for en ny bekreftelseslenke."
+                        : "Skriv inn e-postadressen din for å få en ny bekreftelseslenke."}
+                </AlertDescription>
+                {!sent && (
+                    <form
+                        className="mt-3 flex flex-col gap-2"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            onSend(email.trim());
+                        }}
+                    >
+                        <Input
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            placeholder="din@epost.no"
+                            aria-label="E-postadresse"
+                            autoComplete="email"
+                            required
+                        />
+                        <Button type="submit" disabled={sending}>
+                            {sending ? (
+                                <>
+                                    <Spinner />
+                                    <span>Sender...</span>
+                                </>
+                            ) : (
+                                "Send ny bekreftelses-e-post"
+                            )}
+                        </Button>
+                        {error && (
+                            <p className="text-sm text-destructive">
+                                Fikk ikke sendt lenken. Prøv igjen.
+                            </p>
+                        )}
+                    </form>
+                )}
+            </Alert>
+        </div>
     );
 }
