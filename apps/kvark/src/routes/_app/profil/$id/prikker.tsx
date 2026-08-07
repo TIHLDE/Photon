@@ -1,6 +1,7 @@
 import { requireOwnProfile } from "#/api/auth";
 import { getStrikesQuery } from "#/api/queries/events";
-import { useQuery } from "@tanstack/react-query";
+import { getUserProfileQuery } from "#/api/queries/user";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
@@ -24,10 +25,11 @@ export const Route = createFileRoute("/_app/profil/$id/prikker")({
 
 function RouteComponent() {
     const { id } = Route.useParams();
+    const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     // Siden er låst til egen profil (`requireOwnProfile`), og API-et lar alle
     // hente sine egne prikker uten rettigheter. Listen inneholder kun aktive
     // prikker — utløpte filtreres bort av `getStrikeActiveCutoff` server-side.
-    const { data, isPending } = useQuery(getStrikesQuery(0, id));
+    const { data, isPending } = useQuery(getStrikesQuery(0, profile.id));
     const strikes = data?.strikes ?? [];
     const total = strikes.reduce((sum, strike) => sum + strike.count, 0);
 

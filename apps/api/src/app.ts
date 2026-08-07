@@ -36,7 +36,6 @@ import { rolesRoutes } from "./routes/roles";
 import { toddelRoutes } from "./routes/toddel";
 import { notificationRoutes } from "./routes/notification";
 import { userRoutes } from "./routes/user";
-import { mcpRoute } from "./test/mcp";
 
 /**
  * Hono context variables type definition.
@@ -97,8 +96,7 @@ export const createApp = async (variables?: Variables) => {
         .route("/qr-codes", qrCodeRoutes)
         .route("/roles", rolesRoutes)
         .route("/jobs", jobRoutes)
-        .route("/user", userRoutes)
-        .route("/", mcpRoute);
+        .route("/user", userRoutes);
 
     const app = new Hono<{ Variables: Variables }>()
         .use(pinoLoggerMiddleware)

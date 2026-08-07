@@ -31,7 +31,7 @@ function RouteComponent() {
     const { id } = Route.useParams();
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
-    const isOwnProfile = session?.user.id === id;
+    const isOwnProfile = session?.user.id === profile.id;
 
     // Varselmerket vises bare på egen profil, så andres profiler skal heller
     // ikke koste et kall til det innloggede-scopede endepunktet.

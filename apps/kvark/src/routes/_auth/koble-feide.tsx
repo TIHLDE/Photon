@@ -7,13 +7,19 @@ import {
     Card,
     CardContent,
     CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { authQueryOptions, linkFeideMutationOptions } from "#/api/auth";
+import {
+    authQueryOptions,
+    linkedAccountsQueryOptions,
+    linkFeideMutationOptions,
+    sanitizeRedirectTo,
+} from "#/api/auth";
 import { syncFeideAccountMutation } from "#/api/queries/account-link";
 
 /**
@@ -26,9 +32,15 @@ import { syncFeideAccountMutation } from "#/api/queries/account-link";
  */
 export const Route = createFileRoute("/_auth/koble-feide")({
     component: LinkFeidePage,
-    // Feide sends the member back here with ?linked, which is what tells this
-    // page to finish the job the callback could not.
-    validateSearch: z.object({ linked: z.coerce.boolean().optional() }),
+    validateSearch: z.object({
+        // Feide sends the member back here with ?linked, which is what tells
+        // this page to finish the job the callback could not.
+        linked: z.coerce.boolean().optional(),
+        // Where they were headed before login interrupted them. Carried
+        // through the Feide round trip so linking does not cost them the
+        // page they actually asked for.
+        next: z.string().optional(),
+    }),
 });
 
 function LinkFeidePage() {
@@ -95,12 +107,18 @@ function LinkFeideSkeleton() {
 
 function LinkFeideCard() {
     const { data: auth } = useSuspenseQuery(authQueryOptions);
-    const { linked } = Route.useSearch();
+    const { linked, next } = Route.useSearch();
     const navigate = useNavigate();
-    const linkMutation = useMutation(linkFeideMutationOptions);
+
+    // Hard navigation rather than the router: linking changed the session, and
+    // `next` is an arbitrary path the typed router cannot check anyway.
+    // Sanitized because it arrives from the URL.
+    const goToNext = () => {
+        window.location.href = sanitizeRedirectTo(next);
+    };
 
     if (linked && auth?.user) {
-        return <FinishLink onDone={() => navigate({ to: "/" })} />;
+        return <FinishLink onDone={goToNext} />;
     }
 
     if (!auth?.user) {
@@ -125,12 +143,71 @@ function LinkFeideCard() {
     }
 
     return (
+        <Suspense fallback={<LinkFeideSkeleton />}>
+            <LinkFeidePrompt
+                name={auth.user.name}
+                next={sanitizeRedirectTo(next)}
+                onSkip={goToNext}
+            />
+        </Suspense>
+    );
+}
+
+/**
+ * The prompt itself, behind its own boundary so the account lookup does not
+ * hold up the "your link expired" branch above — that one has no session, and
+ * listing accounts without one is a 401.
+ *
+ * A member who linked Feide long ago can land here too: any confirmation mail
+ * points at this page, including the ones sent for reasons that have nothing
+ * to do with linking. Asking them to link again is a dead end with no button
+ * out, so they are moved straight on instead.
+ */
+function LinkFeidePrompt({
+    name,
+    next,
+    onSkip,
+}: {
+    name: string;
+    next: string;
+    onSkip: () => void;
+}) {
+    const { data: accounts } = useSuspenseQuery(linkedAccountsQueryOptions);
+    const linkMutation = useMutation(linkFeideMutationOptions);
+
+    const alreadyLinked = accounts.some(
+        (account) => account.providerId === "feide",
+    );
+
+    const skipped = useRef(false);
+    useEffect(() => {
+        if (!alreadyLinked || skipped.current) return;
+        skipped.current = true;
+        onSkip();
+    }, [alreadyLinked, onSkip]);
+
+    if (alreadyLinked) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Feide er allerede koblet til</CardTitle>
+                    <CardDescription>Sender deg videre.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Spinner />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
         <Card>
             <CardHeader>
                 <CardTitle>Koble Feide til kontoen din</CardTitle>
                 <CardDescription>
-                    Du er logget inn som {auth.user.name}. Etter dette logger du
-                    inn med Feide.
+                    Du er logget inn som {name}. Kobler du til Feide, henter vi
+                    studieprogram og klasse automatisk, og du logger inn med
+                    Feide etterpå.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
@@ -139,10 +216,11 @@ function LinkFeideCard() {
                     disabled={linkMutation.isPending}
                     // Back here rather than to the front page: this is where
                     // the study data gets pulled, since the link itself
-                    // cannot. See FinishLink.
+                    // cannot. See FinishLink. `next` rides along so the round
+                    // trip still ends where the member was headed.
                     onClick={() =>
                         linkMutation.mutate({
-                            callbackURL: "/koble-feide?linked=1",
+                            callbackURL: `/koble-feide?linked=1&next=${encodeURIComponent(next)}`,
                         })
                     }
                 >
@@ -161,6 +239,16 @@ function LinkFeideCard() {
                     </p>
                 )}
             </CardContent>
+            {/*
+             * Not everyone can link: the members who reach this page without
+             * Feide are exactly the ones vervrebus verifies by hand. Leaving
+             * them no way past would trade one dead end for another.
+             */}
+            <CardFooter className="justify-center">
+                <Button variant="link" onClick={onSkip}>
+                    Hopp over — jeg bruker ikke Feide
+                </Button>
+            </CardFooter>
         </Card>
     );
 }

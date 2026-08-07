@@ -41,6 +41,48 @@ export const getAuthSession = createIsomorphicFn()
         return session.data;
     });
 
+/**
+ * Which providers are attached to whoever is signed in.
+ *
+ * `/koble-feide` needs this to tell a member who still has to link from one
+ * who linked long ago: the linking prompt is the point of that page for the
+ * first, and a dead end for the second.
+ */
+export const getLinkedAccounts = createIsomorphicFn()
+    .client(async () => {
+        const accounts = await clientAuthInstance.listAccounts();
+        if (accounts.error) {
+            throw new AuthError(
+                `Failed to list accounts: ${accounts.error.message}`,
+            );
+        }
+        return accounts.data ?? [];
+    })
+    .server(async () => {
+        const accounts = await clientAuthInstance.listAccounts({
+            fetchOptions: {
+                headers: getRequestHeaders(),
+            },
+        });
+
+        if (accounts.error) {
+            throw new AuthError(
+                `Failed to list accounts: ${accounts.error.message}`,
+            );
+        }
+        return accounts.data ?? [];
+    });
+
+/**
+ * Nested under `["auth"]` on purpose: linking a provider changes the session
+ * too, and every place that already invalidates auth then invalidates this
+ * without having to know it exists.
+ */
+export const linkedAccountsQueryOptions = queryOptions({
+    queryKey: ["auth", "accounts"],
+    queryFn: () => getLinkedAccounts(),
+});
+
 export const authQueryOptions = queryOptions({
     queryKey: ["auth"],
     staleTime: 1000 * 60 * 2, // 2 minutes we want to check this frequently
@@ -227,8 +269,8 @@ export async function authClientWithRedirect(url: string) {
 
 /**
  * Snarveien menyene bruker for «min profil», i stedet for å slå opp
- * bruker-ID-en på hvert kallsted. `/_app/profil/$id` bytter den ut med den
- * ekte ID-en før noe annet kjører.
+ * bruker-ID-en på hvert kallsted. `/_app/profil/$id` bytter den ut med
+ * brukernavnet når brukeren har et.
  */
 export const OWN_PROFILE_ALIAS = "me";
 
@@ -240,7 +282,10 @@ export const OWN_PROFILE_ALIAS = "me";
  */
 export async function requireOwnProfile(profileId: string, url: string) {
     const auth = await authClientWithRedirect(url);
-    if (profileId !== OWN_PROFILE_ALIAS && auth.user.id !== profileId) {
+    if (
+        profileId !== OWN_PROFILE_ALIAS &&
+        ![auth.user.id, auth.user.username].includes(profileId)
+    ) {
         throw redirect({ to: "/profil/$id", params: { id: profileId } });
     }
     return auth;
