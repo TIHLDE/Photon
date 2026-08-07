@@ -8,7 +8,7 @@ integrationTest(
     async ({ ctx }) => {
         const target = await ctx.utils.createTestUser();
         const client = await ctx.utils.clientForUser(target);
-        const username = target.email.split("@")[0];
+        const username = target.email.replace(/@.*/, "");
 
         await ctx.db
             .update(schema.user)
