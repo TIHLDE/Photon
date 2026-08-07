@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import {
     betterAuth,
     type BetterAuthOptions,
@@ -67,6 +68,44 @@ export function usernameFromStudentEmail(
 ): string | undefined {
     if (typeof email !== "string") return undefined;
     return STUD_NTNU_EMAIL_PATTERN.exec(email.trim().toLowerCase())?.[1];
+}
+
+/** Shape a caller-supplied username has to have: the same one Feide hands out. */
+const USERNAME_PATTERN = /^[a-z0-9]{1,15}$/;
+
+/**
+ * A username chosen by a trusted server-side caller, for the duration of one
+ * `signUpEmail` call.
+ *
+ * Fadderuka registers brand-new students during fadderuka, and many of them
+ * have not been given their @stud.ntnu.no address yet — so the address cannot
+ * be what the username is derived from. They type their Feide username instead,
+ * which is what makes a later Feide login land on the same account.
+ *
+ * Deliberately NOT read from the request body. `/sign-up/email` is a public
+ * HTTP endpoint, so a body-supplied username would let anyone claim a student's
+ * NTNU username before that student ever registers. Async-local storage cannot
+ * be reached over HTTP: only code inside `runTrustedSignUp` sees it, and the
+ * one caller is the API-key route that has already checked `users:create`.
+ */
+const trustedSignUpStore = new AsyncLocalStorage<{ username: string }>();
+
+/**
+ * Run `fn` with `username` marked as trusted, so the sign-up hook uses it
+ * instead of deriving one from the e-mail address.
+ */
+export function runTrustedSignUp<T>(
+    username: string,
+    fn: () => Promise<T>,
+): Promise<T> {
+    const normalised = username.trim().toLowerCase();
+    if (!USERNAME_PATTERN.test(normalised)) {
+        throw new APIError("BAD_REQUEST", {
+            message:
+                "Brukernavnet kan bare inneholde små bokstaver og tall, og maks 15 tegn.",
+        });
+    }
+    return trustedSignUpStore.run({ username: normalised }, fn);
 }
 
 /**
@@ -345,7 +384,14 @@ export function createAuth(options: CreateAuthOptions) {
                         ? rawEmail.trim().toLowerCase()
                         : "";
 
-                const derivedUsername = usernameFromStudentEmail(email);
+                /**
+                 * A trusted server-side caller may name the username outright;
+                 * everyone else still has to prove it with a stud address.
+                 * See `runTrustedSignUp` for why this cannot come from the body.
+                 */
+                const trusted = trustedSignUpStore.getStore();
+                const derivedUsername =
+                    trusted?.username ?? usernameFromStudentEmail(email);
                 if (!derivedUsername) {
                     throw new APIError("BAD_REQUEST", {
                         message:
@@ -380,8 +426,8 @@ export function createAuth(options: CreateAuthOptions) {
                     });
                 }
 
-                // Username is derived, never taken from the request: a caller
-                // must not be able to pick one that disagrees with their email.
+                // Never taken from the request body: it is either derived from
+                // the address, or named by a trusted server-side caller.
                 return {
                     context: {
                         body: { ...ctx.body, email, username: derivedUsername },

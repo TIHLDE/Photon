@@ -2411,7 +2411,7 @@ export interface paths {
         put?: never;
         /**
          * Register a member from another TIHLDE service
-         * @description Creates an account the same way the website's sign-up does — @stud.ntnu.no only, username derived from the address, verification mail sent — and enrols the member in a study programme. Requires an API key with 'users:create'.
+         * @description Creates an account the same way the website's sign-up does — verification mail sent — and enrols the member in a study programme. The username is derived from the @stud.ntnu.no address, unless the caller names one, which also lifts the requirement that the address be a stud one. Requires an API key with 'users:create'.
          */
         post: operations["registerUser"];
         delete?: never;
@@ -5637,13 +5637,15 @@ export interface components {
             name: string;
             /**
              * Format: email
-             * @description Must be a @stud.ntnu.no address; the username is derived from it, exactly as in the website's own sign-up
+             * @description The member's address. Must be @stud.ntnu.no unless 'username' is given, since the username is otherwise derived from it
              */
             email: string;
             /** @description The password the member chose */
             password: string;
             /** @description Slug of the STUDY group to enrol the member in, e.g. 'dataingenir' */
             studyProgramSlug: string;
+            /** @description The NTNU username to give the member, for callers registering students who have not been given their @stud.ntnu.no address yet. Should be the member's Feide username, so a later Feide login lands on this same account. Omit to derive it from the address. */
+            username?: string;
         };
         UserSearchResult: {
             id: string;
@@ -12306,7 +12308,7 @@ export interface operations {
                     "application/json": components["schemas"]["RegisterUser"];
                 };
             };
-            /** @description Bad Request - Address is not @stud.ntnu.no, password too short, or the study programme does not exist */
+            /** @description Bad Request - Address is not @stud.ntnu.no and no username was given, password too short, or the study programme does not exist */
             400: {
                 headers: {
                     [name: string]: unknown;

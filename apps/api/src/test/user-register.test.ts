@@ -167,20 +167,146 @@ describe("POST /api/user/register", () => {
         },
     );
 
-    integrationTest("refuses a non-NTNU address", async ({ ctx }) => {
-        const key = await apiKeyWith(ctx, ["users:create"]);
+    integrationTest(
+        "refuses a non-NTNU address when no username is given",
+        async ({ ctx }) => {
+            const key = await apiKeyWith(ctx, ["users:create"]);
 
-        const res = await ctx.app.request("/api/user/register", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${key}`,
-            },
-            body: JSON.stringify({ ...body, email: "ola@gmail.com" }),
-        });
+            const res = await ctx.app.request("/api/user/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify({ ...body, email: "ola@gmail.com" }),
+            });
 
-        expect(res.status).toBe(400);
-    });
+            expect(res.status).toBe(400);
+        },
+    );
+
+    /**
+     * The reason the rule is relaxed at all: students on stand during fadderuka
+     * often have not been given their @stud.ntnu.no address yet, and the
+     * sign-up form exists precisely for them.
+     */
+    integrationTest(
+        "accepts a private address when the caller names the username",
+        async ({ ctx }) => {
+            await ctx.utils.createTestGroup({
+                slug: "dataingenir",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            const key = await apiKeyWith(ctx, ["users:create"]);
+
+            const res = await ctx.app.request("/api/user/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify({
+                    ...body,
+                    email: "ola@gmail.com",
+                    username: "olanor",
+                }),
+            });
+
+            expect(res.status).toBe(201);
+            expect((await res.json()) as { username: string }).toMatchObject({
+                username: "olanor",
+            });
+
+            const [created] = await ctx.db
+                .select({
+                    username: schema.user.username,
+                    email: schema.user.email,
+                })
+                .from(schema.user)
+                .where(eq(schema.user.username, "olanor"));
+            expect(created).toMatchObject({
+                username: "olanor",
+                email: "ola@gmail.com",
+            });
+        },
+    );
+
+    integrationTest(
+        "refuses a named username that is already taken",
+        async ({ ctx }) => {
+            await ctx.utils.createTestGroup({
+                slug: "dataingenir",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            const key = await apiKeyWith(ctx, ["users:create"]);
+            // `createTestUser` takes only an address, so the username — which
+            // is what this test is about — is set directly.
+            const taken = await ctx.utils.createTestUser();
+            await ctx.db
+                .update(schema.user)
+                .set({ username: "olanor" })
+                .where(eq(schema.user.id, taken.id));
+
+            const res = await ctx.app.request("/api/user/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify({
+                    ...body,
+                    email: "ola@gmail.com",
+                    username: "olanor",
+                }),
+            });
+
+            expect(res.status).toBe(409);
+        },
+    );
+
+    /**
+     * The security property the whole design turns on.
+     *
+     * `/sign-up/email` is a public endpoint. If a username in the request body
+     * were honoured there, anyone could claim a student's NTNU username before
+     * that student ever registers — and every service keying members on the
+     * username, this one included, would hand the impostor their identity.
+     * A named username therefore travels out-of-band (`runTrustedSignUp`) and
+     * is reachable only from the API-key route.
+     */
+    integrationTest(
+        "ignores a username sent in the body of the public sign-up",
+        async ({ ctx }) => {
+            const res = await ctx.app.request("/api/auth/sign-up/email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: "Angriper",
+                    email: "angriper@stud.ntnu.no",
+                    password: "hemmeligpassord",
+                    username: "offeret",
+                }),
+            });
+
+            // Either the sign-up is refused outright, or it succeeds with the
+            // username derived from the address — never with the one asked for.
+            const [stolen] = await ctx.db
+                .select({ id: schema.user.id })
+                .from(schema.user)
+                .where(eq(schema.user.username, "offeret"));
+            expect(stolen).toBeUndefined();
+
+            if (res.status < 400) {
+                const [derived] = await ctx.db
+                    .select({ username: schema.user.username })
+                    .from(schema.user)
+                    .where(eq(schema.user.email, "angriper@stud.ntnu.no"));
+                expect(derived?.username).toBe("angriper");
+            }
+        },
+    );
 
     integrationTest(
         "refuses an API key without users:create",
