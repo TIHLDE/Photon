@@ -307,6 +307,22 @@ export function createAuth(options: CreateAuthOptions) {
                     url: withFrontendCallback(url, options.urls.frontend),
                 });
             },
+            /**
+             * A completed reset already proves the inbox: the token only
+             * exists in a mail sent to that address, and `/reset-password`
+             * refuses to run without it. Demanding a verification mail on top
+             * asks for the same proof twice — which is exactly what the 1685
+             * migrated members hit, since they arrive with `emailVerified`
+             * false and no password they know, so a reset is their only way
+             * in. Crediting the proof we already have is what turns that
+             * round trip from a dead end into a login.
+             */
+            async onPasswordReset({ user: u }) {
+                await options.services.db
+                    .update(user)
+                    .set({ emailVerified: true })
+                    .where(eq(user.id, u.id));
+            },
             ...(options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM && !isProd
                 ? {
                       password: {
