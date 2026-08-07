@@ -11,7 +11,10 @@ export const clientAuthInstance = createPhotonAuthClient({
 });
 
 export class AuthError extends Error {
-    constructor(message: string) {
+    constructor(
+        message: string,
+        readonly code?: string,
+    ) {
         super(message);
         this.name = "AuthError";
     }
@@ -400,7 +403,10 @@ export const signInUsernameMutationOptions = mutationOptions({
             password,
         });
         if (result.error) {
-            throw new Error(result.error.message ?? "Innlogging feilet");
+            throw new AuthError(
+                result.error.message ?? "Innlogging feilet",
+                result.error.code,
+            );
         }
         return result.data as SignInEmailResult;
     },
