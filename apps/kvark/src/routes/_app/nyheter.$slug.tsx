@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
@@ -14,8 +14,25 @@ import { ShareButton } from "#/components/share-button";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { formatNewsDate, wasNewsUpdated } from "#/lib/news";
 
+/**
+ * Photon nøkler nyheter på UUID. Alt annet i dette segmentet er en Lepton-lenke
+ * — den brukte løpenummer, og migreringen tok ikke vare på koblingen, så
+ * innholdet kan ikke slås opp.
+ *
+ * Tosegmentsvarianten `/nyheter/<id>/<tittel>` fanges av søskenruta; denne
+ * fanger `/nyheter/<id>` alene, som ellers gikk videre til API-et og endte i
+ * feilgrensa med en 404.
+ */
+const UUID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/_app/nyheter/$slug")({
     component: NewsDetailPage,
+    beforeLoad: ({ params }) => {
+        if (!UUID_PATTERN.test(params.slug)) {
+            throw redirect({ to: "/nyheter", replace: true, statusCode: 301 });
+        }
+    },
     loader: ({ context, params }) =>
         context.queryClient.ensureQueryData(getNewsByIdQuery(params.slug)),
 });
