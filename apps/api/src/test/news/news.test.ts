@@ -104,6 +104,20 @@ describe("News System", () => {
 
             expect(notFoundResponse.status).toBe(404);
 
+            /**
+             * 6b. A Lepton-era link is a dead link, not a server fault.
+             *
+             * `/nyheter/302` still circulates: Lepton numbered its articles and
+             * the migration kept no mapping to the UUIDs. Passed straight to
+             * Postgres this raised `22P02` and surfaced as a 500 — ~46 times
+             * over three days in production before it was caught.
+             */
+            const legacyIdResponse = await userClient.api.news[":id"].$get({
+                param: { id: "302" },
+            });
+
+            expect(legacyIdResponse.status).toBe(404);
+
             // === UPDATE NEWS ===
 
             // 7. Creator can update their own news

@@ -1,12 +1,13 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { deleteNewsResponseSchema } from "./schema";
+import { deleteNewsResponseSchema, newsIdParamSchema } from "./schema";
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -26,6 +27,9 @@ export const deleteRoute = route().delete(
         .notFound({ description: "News article not found" })
         .build(),
     requireAuth,
+    // Before `requireAccess`: its ownership check looks the article up by this
+    // id, so an unparseable one would reach the database there rather than here.
+    validator("param", newsIdParamSchema),
     requireAccess({
         permission: ["news:delete", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
@@ -34,7 +38,7 @@ export const deleteRoute = route().delete(
     }),
     async (c) => {
         const { db } = c.get("ctx");
-        const { id } = c.req.param();
+        const { id } = c.req.valid("param");
 
         // Fetch the news article to verify it exists
         const newsArticle = await db.query.news.findFirst({

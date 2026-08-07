@@ -1,10 +1,11 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
+import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { deleteReactionResponseSchema } from "../schema";
+import { deleteReactionResponseSchema, newsIdParamSchema } from "../schema";
 
 export const deleteReactionRoute = route().delete(
     "/:id/reactions",
@@ -22,10 +23,11 @@ export const deleteReactionRoute = route().delete(
         .notFound({ description: "News article or reaction not found" })
         .build(),
     requireAuth,
+    validator("param", newsIdParamSchema),
     async (c) => {
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
-        const { id: newsId } = c.req.param();
+        const { id: newsId } = c.req.valid("param");
 
         // Check if news exists
         const newsArticle = await db.query.news.findFirst({

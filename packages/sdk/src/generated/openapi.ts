@@ -11151,6 +11151,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description News article ID */
                 id: string;
             };
             cookie?: never;
@@ -11196,6 +11197,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description News article ID */
                 id: string;
             };
             cookie?: never;
@@ -11245,6 +11247,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description News article ID */
                 id: string;
             };
             cookie?: never;
@@ -11294,6 +11297,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description News article ID */
                 id: string;
             };
             cookie?: never;
