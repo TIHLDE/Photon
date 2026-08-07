@@ -109,6 +109,34 @@ export class HTTPAppException extends HTTPException {
 }
 
 /**
+ * PostgreSQL error code for a unique-constraint violation.
+ * https://www.postgresql.org/docs/current/errcodes-appendix.html
+ */
+const PG_UNIQUE_VIOLATION = "23505";
+
+/**
+ * True when `err` — or anything it wraps — is a PostgreSQL unique-constraint
+ * violation.
+ *
+ * Walks the cause chain because Drizzle wraps driver errors in a
+ * `DrizzleQueryError` that carries the `pg` error as `cause`, so the `code`
+ * is never on the error we are handed.
+ */
+function isUniqueViolation(err: unknown): boolean {
+    let current: unknown = err;
+    for (let depth = 0; current && depth < 5; depth++) {
+        if (
+            typeof current === "object" &&
+            (current as { code?: unknown }).code === PG_UNIQUE_VIOLATION
+        ) {
+            return true;
+        }
+        current = (current as { cause?: unknown }).cause;
+    }
+    return false;
+}
+
+/**
  * Global error handler for Hono apps.
  * Normalizes all errors to the standard response format.
  *
@@ -152,6 +180,26 @@ export function globalErrorHandler(err: Error, c: Context): Response {
             message: err.message || "An error occurred",
         };
         return c.json(response, err.status);
+    }
+
+    /**
+     * A unique index the code failed to check first is a conflict, not a
+     * server fault. Answering 500 here hands the caller "Internal server
+     * error" for something the user could act on — which is exactly how a
+     * student registering with an already-taken NTNU username ended up with an
+     * unreadable error instead of "log in instead" (issue #476).
+     *
+     * A safety net, not a substitute for checking: the message cannot say
+     * WHICH value collided without leaking column names, so routes should
+     * still look the conflict up and answer with something specific.
+     */
+    if (isUniqueViolation(err)) {
+        console.error("Unique constraint violation reached the handler:", err);
+        const response: HttpAppExceptionData = {
+            status: 409,
+            message: "Ressursen finnes allerede",
+        };
+        return c.json(response, 409);
     }
 
     // Unexpected errors - log and return generic message

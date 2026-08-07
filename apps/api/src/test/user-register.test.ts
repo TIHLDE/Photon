@@ -91,6 +91,82 @@ describe("POST /api/user/register", () => {
         },
     );
 
+    /**
+     * A Feide-made account: `username` is the NTNU username, `email` is
+     * whatever address Feide handed out — usually NOT
+     * `<username>@stud.ntnu.no`. This is the shape that used to crash the
+     * route, since nothing looked at the username and the address looked new.
+     */
+    async function existingFeideAccount(
+        ctx: IntegrationTestContext,
+        username: string,
+    ): Promise<void> {
+        const user = await ctx.utils.createTestUser(
+            `${username}@privat.example.com`,
+        );
+        await ctx.db
+            .update(schema.user)
+            .set({ username })
+            .where(eq(schema.user.id, user.id));
+    }
+
+    integrationTest(
+        "answers 409 when the NTNU username is taken by another address",
+        async ({ ctx }) => {
+            await ctx.utils.createTestGroup({
+                slug: "dataingenir",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            await existingFeideAccount(ctx, "olanor");
+            const key = await apiKeyWith(ctx, ["users:create"]);
+
+            const res = await ctx.app.request("/api/user/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify(body),
+            });
+
+            // Not a 500: the caller has to be able to tell the student that
+            // what they want is to log in, not to register.
+            expect(res.status).toBe(409);
+            const { message } = (await res.json()) as { message: string };
+            expect(message).toContain("olanor");
+
+            // And nothing was created for the address that was still free.
+            const rows = await ctx.db
+                .select()
+                .from(schema.user)
+                .where(eq(schema.user.email, "olanor@stud.ntnu.no"));
+            expect(rows).toHaveLength(0);
+        },
+    );
+
+    integrationTest(
+        "the sign-up hook itself rejects a taken username",
+        async ({ ctx }) => {
+            // The website's own sign-up never touches the route above, so the
+            // check has to hold in the hook too — the username plugin's own
+            // uniqueness check does not run for /sign-up/email.
+            await existingFeideAccount(ctx, "olanor");
+
+            const res = await ctx.app.request("/api/auth/sign-up/email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: body.name,
+                    email: body.email,
+                    password: body.password,
+                }),
+            });
+
+            expect(res.status).toBe(409);
+        },
+    );
+
     integrationTest("refuses a non-NTNU address", async ({ ctx }) => {
         const key = await apiKeyWith(ctx, ["users:create"]);
 
