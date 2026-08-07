@@ -4634,6 +4634,8 @@ export interface components {
                 id: string;
                 /** @description User display name */
                 name: string;
+                /** @description Username used in profile URLs */
+                username: string | null;
                 /** @description User profile image URL */
                 image: string | null;
             };
@@ -4656,6 +4658,8 @@ export interface components {
                 id: string;
                 /** @description User display name */
                 name: string;
+                /** @description Username used in profile URLs */
+                username: string | null;
                 /** @description User profile image URL */
                 image: string | null;
                 /** @description Name of the member's study programme, derived from their STUDY group membership. Null when the member has none (alumni, honorary members). */

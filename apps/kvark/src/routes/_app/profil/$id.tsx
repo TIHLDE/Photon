@@ -50,12 +50,11 @@ export const Route = createFileRoute("/_app/profil/$id")({
     beforeLoad: async ({ location, params }) => {
         const auth = await authClientWithRedirect(location.href);
         // Menyene lenker til /profil/me som en snarvei til «min profil».
-        // Alt nedenfor forventer en ekte bruker-ID, så aliaset byttes ut med
-        // den innloggede brukerens ID her.
+        // Bytt aliaset med den lesbare varianten når kontoen har en.
         if (params.id === OWN_PROFILE_ALIAS) {
             throw redirect({
                 to: "/profil/$id",
-                params: { id: auth.user.id },
+                params: { id: auth.user.username ?? auth.user.id },
                 replace: true,
             });
         }
@@ -98,7 +97,7 @@ function RouteComponent() {
     // viewer gets the edit affordances.
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
-    const isOwnProfile = session?.user.id === id;
+    const isOwnProfile = session?.user.id === profile.id;
     const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
     const [bioOpen, setBioOpen] = useState(false);

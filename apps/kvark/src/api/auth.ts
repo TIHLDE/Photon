@@ -269,8 +269,8 @@ export async function authClientWithRedirect(url: string) {
 
 /**
  * Snarveien menyene bruker for «min profil», i stedet for å slå opp
- * bruker-ID-en på hvert kallsted. `/_app/profil/$id` bytter den ut med den
- * ekte ID-en før noe annet kjører.
+ * bruker-ID-en på hvert kallsted. `/_app/profil/$id` bytter den ut med
+ * brukernavnet når brukeren har et.
  */
 export const OWN_PROFILE_ALIAS = "me";
 
@@ -282,7 +282,10 @@ export const OWN_PROFILE_ALIAS = "me";
  */
 export async function requireOwnProfile(profileId: string, url: string) {
     const auth = await authClientWithRedirect(url);
-    if (profileId !== OWN_PROFILE_ALIAS && auth.user.id !== profileId) {
+    if (
+        profileId !== OWN_PROFILE_ALIAS &&
+        ![auth.user.id, auth.user.username].includes(profileId)
+    ) {
         throw redirect({ to: "/profil/$id", params: { id: profileId } });
     }
     return auth;

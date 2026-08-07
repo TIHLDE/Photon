@@ -60,6 +60,7 @@ export const listMembersRoute = route().get(
                     columns: {
                         id: true,
                         name: true,
+                        username: true,
                         image: true,
                     },
                 },

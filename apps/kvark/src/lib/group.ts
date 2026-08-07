@@ -34,6 +34,7 @@ export type Group = {
 
 export type Member = {
     id: string;
+    username?: string;
     name: string;
     joined: string;
     until?: string;
@@ -191,6 +192,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
 export function mapMember(member: ApiGroupMember): Member {
     return {
         id: member.userId,
+        username: member.user?.username ?? undefined,
         name: member.user?.name ?? "Ukjent bruker",
         image: member.user?.image ?? undefined,
         role: member.role,
@@ -244,6 +246,7 @@ function formerMemberRoleLabel(role: string): string | undefined {
 export function mapFormerMember(member: ApiGroupFormerMember): Member {
     return {
         id: member.userId,
+        username: member.user?.username ?? undefined,
         name: member.user?.name ?? "Ukjent bruker",
         image: member.user?.image ?? undefined,
         role: formerMemberRoleLabel(member.role),
