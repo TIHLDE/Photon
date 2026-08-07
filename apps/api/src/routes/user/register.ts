@@ -1,4 +1,4 @@
-import { usernameFromStudentEmail } from "@photon/auth";
+import { runTrustedSignUp, usernameFromStudentEmail } from "@photon/auth";
 import {
     currentAcademicYear,
     syncBaselineRoles,
@@ -32,9 +32,17 @@ const ALLOWED_PERMISSIONS = ["users:create", "root"];
  * table with its own rules is how the two systems drifted apart in the first
  * place.
  *
- * The caller therefore does NOT choose the username. It is the e-mail's local
- * part, which is the student's NTNU username — the same value Lepton used as
- * `user_id`, so it stays the join key services already hold members by.
+ * The username is normally the e-mail's local part, which is the student's NTNU
+ * username — the same value Lepton used as `user_id`, so it stays the join key
+ * services already hold members by.
+ *
+ * A caller may name it instead, and that is the one rule this route relaxes.
+ * Fadderuka registers students on stand during fadderuka, and many have not
+ * been given their @stud.ntnu.no address yet; refusing them is refusing exactly
+ * the group the sign-up exists for. They are asked for their Feide username, so
+ * the account still carries the NTNU identity and a later Feide login lands on
+ * it rather than on a second account. The trust that the caller collected it
+ * honestly is the same trust the API key already carries.
  */
 export const registerUserRoute = route().post(
     "/register",
@@ -43,7 +51,7 @@ export const registerUserRoute = route().post(
         summary: "Register a member from another TIHLDE service",
         operationId: "registerUser",
         description:
-            "Creates an account the same way the website's sign-up does — @stud.ntnu.no only, username derived from the address, verification mail sent — and enrols the member in a study programme. Requires an API key with 'users:create'.",
+            "Creates an account the same way the website's sign-up does — verification mail sent — and enrols the member in a study programme. The username is derived from the @stud.ntnu.no address, unless the caller names one, which also lifts the requirement that the address be a stud one. Requires an API key with 'users:create'.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -52,7 +60,7 @@ export const registerUserRoute = route().post(
         })
         .badRequest({
             description:
-                "Address is not @stud.ntnu.no, password too short, or the study programme does not exist",
+                "Address is not @stud.ntnu.no and no username was given, password too short, or the study programme does not exist",
         })
         .unauthorized()
         .forbidden({ description: "Requires an API key with 'users:create'" })
@@ -86,7 +94,13 @@ export const registerUserRoute = route().post(
             });
         }
 
-        const { name, email, password, studyProgramSlug } = c.req.valid("json");
+        const {
+            name,
+            email,
+            password,
+            studyProgramSlug,
+            username: chosenUsername,
+        } = c.req.valid("json");
 
         /**
          * Checked before the account is created, not after. `signUpEmail`
@@ -117,7 +131,8 @@ export const registerUserRoute = route().post(
          * calling service can put in front of the student, rather than making
          * them read whatever Better Auth's error happens to say.
          */
-        const derivedUsername = usernameFromStudentEmail(email);
+        const derivedUsername =
+            chosenUsername ?? usernameFromStudentEmail(email);
         if (derivedUsername) {
             const existing = await db.query.user.findFirst({
                 where: eq(schema.user.username, derivedUsername),
@@ -132,9 +147,14 @@ export const registerUserRoute = route().post(
 
         let userId: string;
         try {
-            const result = await auth.api.signUpEmail({
-                body: { name, email, password },
-            });
+            const signUp = () =>
+                auth.api.signUpEmail({ body: { name, email, password } });
+            // A named username is passed out-of-band rather than in the body:
+            // `/sign-up/email` is public, so a body-supplied one would let
+            // anyone claim a student's NTNU username. See `runTrustedSignUp`.
+            const result = chosenUsername
+                ? await runTrustedSignUp(chosenUsername, signUp)
+                : await signUp();
             userId = result.user.id;
         } catch (err) {
             // Better Auth reports the @stud.ntnu.no rule, a weak password and

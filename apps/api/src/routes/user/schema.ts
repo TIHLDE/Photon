@@ -183,7 +183,7 @@ export const registerUserInputSchema = Schema(
         }),
         email: z.string().trim().toLowerCase().email().meta({
             description:
-                "Must be a @stud.ntnu.no address; the username is derived from it, exactly as in the website's own sign-up",
+                "The member's address. Must be @stud.ntnu.no unless 'username' is given, since the username is otherwise derived from it",
         }),
         password: z.string().min(8).max(128).meta({
             description: "The password the member chose",
@@ -192,6 +192,16 @@ export const registerUserInputSchema = Schema(
             description:
                 "Slug of the STUDY group to enrol the member in, e.g. 'dataingenir'",
         }),
+        username: z
+            .string()
+            .trim()
+            .toLowerCase()
+            .regex(/^[a-z0-9]{1,15}$/)
+            .optional()
+            .meta({
+                description:
+                    "The NTNU username to give the member, for callers registering students who have not been given their @stud.ntnu.no address yet. Should be the member's Feide username, so a later Feide login lands on this same account. Omit to derive it from the address.",
+            }),
     }),
 );
 
