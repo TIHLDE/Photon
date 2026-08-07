@@ -65,6 +65,20 @@ export const Route = createFileRoute("/_auth/login")({
     validateSearch: searchSchema,
 });
 
+/**
+ * Absolute URL for the link a confirmation mail carries.
+ *
+ * Absolute because Better Auth resolves a relative callback against the API
+ * host, which would land the member on a 404 from the router. It points at
+ * /koble-feide rather than the destination itself, and carries the
+ * destination as `next` so that page can move them on afterwards.
+ */
+function feideLinkCallbackUrl(redirectTo: unknown) {
+    const url = new URL("/koble-feide", window.location.origin);
+    url.searchParams.set("next", sanitizeRedirectTo(redirectTo));
+    return url.toString();
+}
+
 const loginSchema = z.object({
     username: z.string().min(1, { error: "Brukernavn kan ikke være tomt" }),
     password: z.string().min(1, { error: "Passord kan ikke være tom" }),
@@ -153,15 +167,9 @@ function LoginPage() {
                         onSendVerification={(email) =>
                             verificationMutation.mutate({
                                 email,
-                                // Absolute: Better Auth resolves a relative
-                                // callback against the API host, which would
-                                // land the member on a 404 from the router.
                                 // Confirming signs them in, so send them
                                 // straight to the step that needs a session.
-                                callbackURL: new URL(
-                                    "/koble-feide",
-                                    window.location.origin,
-                                ).toString(),
+                                callbackURL: feideLinkCallbackUrl(redirectTo),
                             })
                         }
                         verificationSending={verificationMutation.isPending}
@@ -272,10 +280,16 @@ function LoginPage() {
                     onSend={(email) =>
                         verificationMutation.mutate({
                             email,
-                            callbackURL: new URL(
-                                sanitizeRedirectTo(redirectTo),
-                                window.location.origin,
-                            ).toString(),
+                            // Via /koble-feide, not straight to redirectTo:
+                            // whoever hits this needs a password to sign in,
+                            // which is the population that never synced with
+                            // Feide. Confirming signs them in, so this is the
+                            // one moment we hold a session and can attach
+                            // Feide to *this* account. That page sends them on
+                            // to `next` either way — it detects an existing
+                            // link, and offers a way past for members who
+                            // cannot use Feide at all.
+                            callbackURL: feideLinkCallbackUrl(redirectTo),
                         })
                     }
                 />
