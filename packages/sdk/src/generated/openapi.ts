@@ -12329,6 +12329,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Conflict - a member already holds this NTNU username or address; they should log in rather than register */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     searchUsers: {
