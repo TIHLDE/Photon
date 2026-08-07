@@ -216,6 +216,9 @@ export const memberSchema = Schema(
             .object({
                 id: z.string().meta({ description: "User ID" }),
                 name: z.string().meta({ description: "User display name" }),
+                username: z.string().nullable().meta({
+                    description: "Username used in profile URLs",
+                }),
                 image: z
                     .string()
                     .nullable()
@@ -255,6 +258,9 @@ export const formerMemberSchema = Schema(
             .object({
                 id: z.string().meta({ description: "User ID" }),
                 name: z.string().meta({ description: "User display name" }),
+                username: z.string().nullable().meta({
+                    description: "Username used in profile URLs",
+                }),
                 image: z
                     .string()
                     .nullable()

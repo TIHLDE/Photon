@@ -32,10 +32,11 @@ export const getUserRoute = route().get(
     requireAuth,
     async (c) => {
         const { db } = c.get("ctx");
-        const id = c.req.param("id");
+        const identifier = c.req.param("id");
 
         const user = await db.query.user.findFirst({
-            where: (user, { eq }) => eq(user.id, id),
+            where: (user, { eq, or }) =>
+                or(eq(user.id, identifier), eq(user.username, identifier)),
             columns: {
                 id: true,
                 name: true,
@@ -47,13 +48,13 @@ export const getUserRoute = route().get(
 
         if (!user) {
             throw new HTTPException(404, {
-                message: `User with id "${id}" not found`,
+                message: `User "${identifier}" not found`,
             });
         }
 
         const [settings, memberships, history] = await Promise.all([
             db.query.userSettings.findFirst({
-                where: (s, { eq }) => eq(s.userId, id),
+                where: (s, { eq }) => eq(s.userId, user.id),
                 columns: {
                     imageUrl: true,
                     bioDescription: true,
@@ -62,11 +63,11 @@ export const getUserRoute = route().get(
                 },
             }),
             db.query.groupMembership.findMany({
-                where: (gm, { eq }) => eq(gm.userId, id),
+                where: (gm, { eq }) => eq(gm.userId, user.id),
                 with: { group: true },
             }),
             db.query.groupMembershipHistory.findMany({
-                where: (h, { eq }) => eq(h.userId, id),
+                where: (h, { eq }) => eq(h.userId, user.id),
                 orderBy: (h, { desc }) => [desc(h.endedAt)],
                 with: { group: true },
             }),

@@ -40,7 +40,7 @@ function RouteComponent() {
     const { id } = Route.useParams();
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
-    const isOwnProfile = session?.user.id === id;
+    const isOwnProfile = session?.user.id === profile.id;
 
     /**
      * Om den som ser på kan åpne gruppesiden. Speiler `assertGroupVisible` i

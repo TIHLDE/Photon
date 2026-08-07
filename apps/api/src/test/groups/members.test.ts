@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -453,6 +454,11 @@ describe("group members", () => {
                     },
                 });
 
+                await ctx.db
+                    .update(schema.user)
+                    .set({ username: "member1" })
+                    .where(eq(schema.user.id, member1.user.id));
+
                 await ctx.db.insert(schema.groupMembership).values([
                     {
                         userId: member1.user.id,
@@ -488,6 +494,7 @@ describe("group members", () => {
                 expect(m1?.user).toMatchObject({
                     id: member1.user.id,
                     name: "Member 1",
+                    username: "member1",
                 });
                 expect(m2?.user).toMatchObject({
                     id: member2.user.id,
@@ -816,6 +823,11 @@ describe("group members", () => {
                     },
                 });
 
+                await ctx.db
+                    .update(schema.user)
+                    .set({ username: "former" })
+                    .where(eq(schema.user.id, member.user.id));
+
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: member.user.id,
                     groupSlug: group.slug,
@@ -843,6 +855,7 @@ describe("group members", () => {
                 expect(json[0]?.userId).toBe(member.user.id);
                 expect(json[0]?.role).toBe("leader");
                 expect(json[0]?.user.name).toBe("Former Member");
+                expect(json[0]?.user.username).toBe("former");
                 // The stint starts when they joined, not when they left.
                 expect(
                     new Date(json[0]?.startedAt ?? 0).getTime(),
