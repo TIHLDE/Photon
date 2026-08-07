@@ -182,6 +182,28 @@ export const updateUserStatusMutation = mutationOptions({
 });
 
 /**
+ * Slett et medlem for godt.
+ *
+ * Motstykket til arkivering: kontoen forsvinner, og med den påmeldinger,
+ * betalinger, bøter, medlemskap og vervhistorikk. Bruk arkivering med mindre
+ * selve raden må bort — duplikatkontoer, testbrukere eller sletting etter GDPR.
+ */
+export const deleteUserMutation = mutationOptions({
+    mutationFn: ({ userId }: { userId: string }) =>
+        apiClient.delete("/api/user/{id}", { params: { id: userId } }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.profile],
+            exact: false,
+        });
+    },
+});
+
+/**
  * Rett kullet til et medlem for hånd.
  *
  * Feide gir ikke kull for alle studier, så nye medlemmer antas å være

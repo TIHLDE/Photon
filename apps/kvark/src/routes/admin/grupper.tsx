@@ -46,12 +46,20 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 import type {
+    GroupMember,
     GroupSignatureList,
     GroupSignatureMember,
     GroupWithMemberCount,
 } from "@tihlde/sdk";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { CheckCircle2, PlusIcon, UsersIcon, XCircle } from "lucide-react";
+import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import {
+    CheckCircle2,
+    PlusIcon,
+    Trash2,
+    UsersIcon,
+    XCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
@@ -59,7 +67,9 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createGroupMutation,
+    getGroupMembersQuery,
     getGroupsQuery,
+    removeGroupMemberMutation,
     updateGroupMutation,
 } from "#/api/queries/groups";
 import {
@@ -113,7 +123,7 @@ function GrupperAdminPage() {
         >
             <AdminPageHeader
                 title="Grupper"
-                description="Opprett grupper, administrer kontraktsignering og se signeringsstatus for medlemmer."
+                description="Opprett grupper, administrer medlemmer og kontraktsignering."
                 action={
                     canCreate ? (
                         <Button onClick={() => setCreateOpen(true)}>
@@ -353,6 +363,11 @@ function GroupCard({
         ["groups:update", "groups:manage"],
         `group:${group.slug}`,
     );
+    // Medlemslista speiler fjern-endepunktet: `groups:manage` for denne gruppa,
+    // eller å være lederen dens.
+    const isLeader = useIsGroupLeaderOf(group.slug);
+    const canManageMembers =
+        useScopedPermission("groups:manage", `group:${group.slug}`) || isLeader;
 
     async function handleSave() {
         setError(null);
@@ -476,6 +491,12 @@ function GroupCard({
                     >
                         {isUploading ? "Laster opp bilde …" : "Lagre"}
                     </Button>
+                    {canManageMembers && (
+                        <GroupMembersTable
+                            groupSlug={group.slug}
+                            enabled={expanded}
+                        />
+                    )}
                     {requiresSigning &&
                         (signaturesQuery.data ? (
                             <MemberSigningTable
@@ -488,6 +509,153 @@ function GroupCard({
                 </CardContent>
             </CollapsibleContent>
         </Card>
+    );
+}
+
+const ROLE_LABELS: Record<string, string> = {
+    leader: "Leder",
+    member: "Medlem",
+};
+
+/**
+ * Medlemslista til gruppa, med mulighet for å ta noen ut av den.
+ *
+ * Medlemskapet havner i «Tidligere medlemmer» når det avsluttes, så
+ * vervhistorikken består selv om personen ikke lenger står i gruppa. Rollen
+ * gruppa gir i rettighetssystemet trekkes tilbake samtidig.
+ */
+function GroupMembersTable({
+    groupSlug,
+    /** Lista hentes først når kortet er åpnet. */
+    enabled,
+}: {
+    groupSlug: string;
+    enabled: boolean;
+}) {
+    const { data: members, isPending } = useQuery({
+        ...getGroupMembersQuery(groupSlug, 0),
+        enabled,
+    });
+    const remove = useMutation(removeGroupMemberMutation);
+    const [confirming, setConfirming] = useState<GroupMember | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleRemove() {
+        if (!confirming) return;
+        setError(null);
+        try {
+            await remove.mutateAsync({
+                groupSlug,
+                userId: confirming.userId,
+            });
+            setConfirming(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+        }
+    }
+
+    if (isPending) {
+        return (
+            <div className="flex flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-9 w-full" />
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            <h4>Medlemmer</h4>
+            {!members || members.length === 0 ? (
+                <p>Ingen medlemmer i denne gruppen.</p>
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Navn</TableHead>
+                            <TableHead>Rolle</TableHead>
+                            <TableHead />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {members.map((member) => (
+                            <TableRow key={member.userId}>
+                                <TableCell>
+                                    <div className="flex flex-col gap-0.5">
+                                        <span>{member.user.name}</span>
+                                        {member.user.studyProgram && (
+                                            <span>
+                                                {member.user.studyProgram}
+                                            </span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    {ROLE_LABELS[member.role] ?? member.role}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex justify-end">
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            disabled={remove.isPending}
+                                            onClick={() => {
+                                                setError(null);
+                                                setConfirming(member);
+                                            }}
+                                        >
+                                            <Trash2 className="size-4" />
+                                            Fjern
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
+
+            <Dialog
+                open={confirming !== null}
+                onOpenChange={(open) => {
+                    if (!open) setConfirming(null);
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Fjern fra gruppen</DialogTitle>
+                    </DialogHeader>
+                    <p>
+                        {confirming?.user.name} mister plassen sin i gruppen og
+                        rettighetene som følger med den. Medlemskapet blir
+                        liggende under «Tidligere medlemmer».
+                    </p>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setConfirming(null)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={remove.isPending}
+                            onClick={handleRemove}
+                        >
+                            Fjern
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }
 
