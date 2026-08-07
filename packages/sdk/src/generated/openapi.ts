@@ -2538,7 +2538,11 @@ export interface paths {
         get: operations["getUserProfile"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a member permanently
+         * @description Irreversibly deletes the account along with its registrations, payments, fines, memberships and history. Prefer 'PATCH /user/{id}/status' to deactivate instead. Requires 'users:delete'.
+         */
+        delete: operations["deleteUser"];
         options?: never;
         head?: never;
         patch?: never;
@@ -12658,6 +12662,56 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - Cannot delete your own account */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Requires users:delete */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not Found - User not found */
             404: {

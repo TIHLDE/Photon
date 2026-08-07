@@ -56,6 +56,7 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { searchUsersQuery } from "#/api/queries/roles";
 import {
+    deleteUserMutation,
     getAllergiesQuery,
     getUserAllergiesQuery,
     getUsersInfiniteQuery,
@@ -234,14 +235,25 @@ function AllUsersTable({
         name: string;
         isActive: boolean;
     } | null>(null);
+    const [deleting, setDeleting] = useState<{
+        id: string;
+        name: string;
+        username: string | null;
+    } | null>(null);
 
     /**
      * Kullet er en avledet gruppe, så medlemslista nekter å redigere det (400).
      * `users:manage` er den eneste veien inn, og kravet er globalt — uten det
      * skjuler vi handlingen i stedet for å vise en knapp som svarer 403.
-     * Allergier og aktivering ligger bak samme rettighet.
+     * Allergier og arkivering ligger bak samme rettighet.
      */
     const canEditCohort = usePermission("users:manage");
+    /**
+     * Sletting ligger bak sin egen rettighet: den er permanent, og `users:manage`
+     * skal holde til arkivering uten å gi den muligheten på kjøpet.
+     */
+    const canDelete = usePermission("users:delete");
+    const hasActions = canEditCohort || canDelete;
 
     const debouncedSearch = useDebounced(search);
 
@@ -344,7 +356,7 @@ function AllUsersTable({
                                         <TableHead>Status</TableHead>
                                         <TableHead>Studie</TableHead>
                                         <TableHead>Kull</TableHead>
-                                        {canEditCohort && (
+                                        {hasActions && (
                                             <TableHead className="w-0" />
                                         )}
                                     </TableRow>
@@ -381,7 +393,7 @@ function AllUsersTable({
                                                     "Aktiv"
                                                 ) : (
                                                     <Badge variant="destructive">
-                                                        Deaktivert
+                                                        Arkivert
                                                     </Badge>
                                                 )}
                                             </TableCell>
@@ -394,55 +406,79 @@ function AllUsersTable({
                                             <TableCell>
                                                 {user.studyStartYear ?? "—"}
                                             </TableCell>
-                                            {canEditCohort && (
+                                            {hasActions && (
                                                 <TableCell>
                                                     <div className="flex justify-end gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                setEditing({
-                                                                    id: user.id,
-                                                                    name: user.name,
-                                                                    studyStartYear:
-                                                                        user.studyStartYear,
-                                                                })
-                                                            }
-                                                        >
-                                                            Rett kull
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                setEditingAllergies(
-                                                                    {
-                                                                        id: user.id,
-                                                                        name: user.name,
-                                                                    },
-                                                                )
-                                                            }
-                                                        >
-                                                            Allergier
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                setChangingStatus(
-                                                                    {
-                                                                        id: user.id,
-                                                                        name: user.name,
-                                                                        isActive:
-                                                                            user.isActive,
-                                                                    },
-                                                                )
-                                                            }
-                                                        >
-                                                            {user.isActive
-                                                                ? "Deaktiver"
-                                                                : "Aktiver"}
-                                                        </Button>
+                                                        {canEditCohort && (
+                                                            <>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setEditing(
+                                                                            {
+                                                                                id: user.id,
+                                                                                name: user.name,
+                                                                                studyStartYear:
+                                                                                    user.studyStartYear,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Rett kull
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setEditingAllergies(
+                                                                            {
+                                                                                id: user.id,
+                                                                                name: user.name,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Allergier
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setChangingStatus(
+                                                                            {
+                                                                                id: user.id,
+                                                                                name: user.name,
+                                                                                isActive:
+                                                                                    user.isActive,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {user.isActive
+                                                                        ? "Arkiver"
+                                                                        : "Gjenopprett"}
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        {canDelete && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setDeleting(
+                                                                        {
+                                                                            id: user.id,
+                                                                            name: user.name,
+                                                                            username:
+                                                                                user.username,
+                                                                        },
+                                                                    )
+                                                                }
+                                                            >
+                                                                Slett
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             )}
@@ -489,7 +525,118 @@ function AllUsersTable({
                     if (!open) setChangingStatus(null);
                 }}
             />
+
+            <DeleteUserDialog
+                user={deleting}
+                open={deleting !== null}
+                onOpenChange={(open) => {
+                    if (!open) setDeleting(null);
+                }}
+            />
         </div>
+    );
+}
+
+/**
+ * Slett et medlem for godt.
+ *
+ * Arkivering dekker nesten alle tilfeller, så denne er bevisst tung å bruke:
+ * navnet må skrives av for hånd. Alt som henger på kontoen — påmeldinger,
+ * betalinger, bøter, medlemskap og vervhistorikk — forsvinner med den.
+ */
+function DeleteUserDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; username: string | null } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [confirmation, setConfirmation] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const remove = useMutation(deleteUserMutation);
+
+    // Bekreftelsesfeltet følger medlemmet dialogen ble åpnet for, slik at et
+    // ferdig utfylt felt aldri blir stående igjen til neste rad.
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setConfirmation("");
+        setError(null);
+    }
+
+    // Brukernavnet er kortere og entydig; navnet brukes når det mangler.
+    const expected = user?.username ?? user?.name ?? "";
+    const confirmed =
+        confirmation.trim().toLowerCase() === expected.toLowerCase();
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user || !confirmed) return;
+
+        setError(null);
+        try {
+            await remove.mutateAsync({ userId: user.id });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>Slett konto</DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="delete-confirmation">
+                                Skriv «{expected}» for å bekrefte
+                            </FieldLabel>
+                            <Input
+                                id="delete-confirmation"
+                                value={confirmation}
+                                onChange={(event) =>
+                                    setConfirmation(event.target.value)
+                                }
+                                autoComplete="off"
+                            />
+                            <FieldDescription>
+                                Kontoen slettes for godt, sammen med
+                                påmeldinger, betalinger, bøter, medlemskap og
+                                vervhistorikk. Dette kan ikke angres — velg
+                                Arkiver i stedet hvis historikken skal beholdes.
+                            </FieldDescription>
+                        </Field>
+                    </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="destructive"
+                            disabled={!confirmed || remove.isPending}
+                        >
+                            Slett for godt
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -606,10 +753,11 @@ function EditAllergiesForm({
 }
 
 /**
- * Steng et medlem ute, eller slipp dem inn igjen.
+ * Arkiver et medlem, eller hent dem tilbake.
  *
  * Kontoen slettes ikke — påmeldinger, bøter og vervhistorikk peker på den —
- * men innlogging blokkeres og sesjonene avsluttes med en gang.
+ * men innlogging blokkeres og sesjonene avsluttes med en gang. Skal selve
+ * raden bort, er det `DeleteUserDialog` som gjelder.
  */
 function ChangeStatusDialog({
     user,
@@ -656,7 +804,9 @@ function ChangeStatusDialog({
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <DialogHeader>
                         <DialogTitle>
-                            {deactivating ? "Deaktiver konto" : "Aktiver konto"}
+                            {deactivating
+                                ? "Arkiver konto"
+                                : "Gjenopprett konto"}
                         </DialogTitle>
                         <DialogDescription>{user?.name}</DialogDescription>
                     </DialogHeader>
@@ -677,8 +827,8 @@ function ChangeStatusDialog({
                                 <FieldDescription>
                                     Medlemmet mister tilgangen med en gang og
                                     kan ikke logge inn igjen. Kontoen og all
-                                    historikk beholdes, og du kan aktivere den
-                                    igjen når som helst.
+                                    historikk beholdes, og du kan gjenopprette
+                                    den når som helst.
                                 </FieldDescription>
                             </Field>
                         </FieldGroup>
@@ -705,7 +855,7 @@ function ChangeStatusDialog({
                             variant={deactivating ? "destructive" : "default"}
                             disabled={update.isPending}
                         >
-                            {deactivating ? "Deaktiver" : "Aktiver"}
+                            {deactivating ? "Arkiver" : "Gjenopprett"}
                         </Button>
                     </DialogFooter>
                 </form>
