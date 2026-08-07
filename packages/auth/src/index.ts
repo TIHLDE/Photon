@@ -16,8 +16,10 @@ import {
     oauthProviderAuthServerMetadata,
     oauthProviderOpenIdConfigMetadata,
 } from "@better-auth/oauth-provider";
+import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
+import { user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
@@ -50,6 +52,22 @@ const isFeideConfigured = Boolean(
  */
 const STUD_NTNU_EMAIL_PATTERN =
     /^([a-z0-9]+(?:[._-][a-z0-9]+)*)@stud\.ntnu\.no$/;
+
+/**
+ * Username a self-registration would get from `email`, or undefined when the
+ * address is not one self-registration accepts.
+ *
+ * Exported so callers that create accounts through `signUpEmail` (the
+ * `users:create` route) can answer "is this student already here?" before
+ * handing the request to Better Auth, deriving the username exactly the way
+ * the sign-up hook below does rather than re-implementing the rule.
+ */
+export function usernameFromStudentEmail(
+    email: string | undefined,
+): string | undefined {
+    if (typeof email !== "string") return undefined;
+    return STUD_NTNU_EMAIL_PATTERN.exec(email.trim().toLowerCase())?.[1];
+}
 
 /**
  * Longest domain suffix shared by two URLs' hostnames, or undefined when the
@@ -327,11 +345,38 @@ export function createAuth(options: CreateAuthOptions) {
                         ? rawEmail.trim().toLowerCase()
                         : "";
 
-                const match = STUD_NTNU_EMAIL_PATTERN.exec(email);
-                if (!match) {
+                const derivedUsername = usernameFromStudentEmail(email);
+                if (!derivedUsername) {
                     throw new APIError("BAD_REQUEST", {
                         message:
                             "Registrering krever en @stud.ntnu.no-adresse.",
+                    });
+                }
+
+                /**
+                 * The username plugin's own uniqueness check never runs for
+                 * this request, so it is made here.
+                 *
+                 * `runBeforeHooks` collects what each hook returns into a
+                 * merged context but calls every hook with the ORIGINAL one, so
+                 * the plugin's `/sign-up/email` hook — which runs after this
+                 * one, plugin hooks being appended after the user hook — sees
+                 * `body.username === undefined` and skips its whole validation.
+                 * The plugin's database hook skips it too, since it treats
+                 * `/sign-up/email` as already validated over HTTP. Without this,
+                 * the only thing left is the unique index on `user.username`,
+                 * and a driver error reaching the error handler is a 500 —
+                 * which is what a student registering with an address that
+                 * differs from the one their Feide account carries used to get.
+                 */
+                const takenBy = await options.services.db.query.user.findFirst({
+                    where: eq(user.username, derivedUsername),
+                    columns: { id: true },
+                });
+                if (takenBy) {
+                    throw new APIError("CONFLICT", {
+                        message:
+                            "Det finnes allerede en bruker med dette NTNU-brukernavnet. Logg inn med Feide i stedet, eller bruk «glemt passord».",
                     });
                 }
 
@@ -339,7 +384,7 @@ export function createAuth(options: CreateAuthOptions) {
                 // must not be able to pick one that disagrees with their email.
                 return {
                     context: {
-                        body: { ...ctx.body, email, username: match[1] },
+                        body: { ...ctx.body, email, username: derivedUsername },
                     },
                 };
             }),

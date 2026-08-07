@@ -1,3 +1,4 @@
+import { usernameFromStudentEmail } from "@photon/auth";
 import {
     currentAcademicYear,
     syncBaselineRoles,
@@ -55,6 +56,11 @@ export const registerUserRoute = route().post(
         })
         .unauthorized()
         .forbidden({ description: "Requires an API key with 'users:create'" })
+        .response({
+            statusCode: 409,
+            description:
+                "Conflict - a member already holds this NTNU username or address; they should log in rather than register",
+        })
         .build(),
     requireAuthOrApiKey,
     validator("json", registerUserInputSchema),
@@ -96,6 +102,32 @@ export const registerUserRoute = route().post(
             throw new HTTPException(400, {
                 message: `No study programme with slug "${studyProgramSlug}"`,
             });
+        }
+
+        /**
+         * A member who already holds this NTNU username, told apart from the
+         * "address already in use" case Better Auth reports on its own.
+         *
+         * The two come apart constantly: an account made with Feide has
+         * `username` = NTNU username but `email` = whatever address Feide hands
+         * out, which is usually not `<username>@stud.ntnu.no`. So a student
+         * registering here with their stud address collides on the username
+         * while looking brand new by e-mail. The sign-up hook now catches this
+         * too; it is repeated here to answer with a 409 and a message the
+         * calling service can put in front of the student, rather than making
+         * them read whatever Better Auth's error happens to say.
+         */
+        const derivedUsername = usernameFromStudentEmail(email);
+        if (derivedUsername) {
+            const existing = await db.query.user.findFirst({
+                where: eq(schema.user.username, derivedUsername),
+                columns: { id: true },
+            });
+            if (existing) {
+                throw new HTTPException(409, {
+                    message: `Brukeren "${derivedUsername}" finnes allerede. Logg inn i stedet — med Feide, eller med «glemt passord» hvis passordet er borte.`,
+                });
+            }
         }
 
         let userId: string;
