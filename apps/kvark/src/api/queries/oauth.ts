@@ -1,4 +1,6 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { createIsomorphicFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { clientAuthInstance } from "#/api/auth";
 
 const OAuthQueryKeys = {
@@ -42,17 +44,44 @@ async function unwrap<T>(
     return result.data as T;
 }
 
+/**
+ * Henter klienten både på server og klient.
+ *
+ * `/oauth2/get-client` krever sesjon, og samtykkesiden laster den i en loader
+ * — som kjører server-side under SSR. Der følger ikke nettleserens
+ * sesjonscookie med av seg selv, så forespørselen kom fram uautentisert og
+ * Photon svarte 401. Samme mønster som `getAuthSession` i #/api/auth.
+ */
+const fetchOAuthClient = createIsomorphicFn()
+    .client(async (clientId: string) =>
+        clientAuthInstance.oauth2.getClient({
+            query: { client_id: clientId },
+        }),
+    )
+    .server(async (clientId: string) =>
+        clientAuthInstance.oauth2.getClient({
+            query: { client_id: clientId },
+            fetchOptions: { headers: getRequestHeaders() },
+        }),
+    );
+
 export const oauthClientQuery = (clientId: string) =>
     queryOptions({
         queryKey: [...OAuthQueryKeys.client, clientId],
         queryFn: async () =>
             unwrap<OAuthClientPublic>(
-                await clientAuthInstance.oauth2.getClient({
-                    query: { client_id: clientId },
-                }),
+                await fetchOAuthClient(clientId),
                 "Kunne ikke hente OAuth-klient",
             ),
     });
+
+const fetchOAuthClients = createIsomorphicFn()
+    .client(async () => clientAuthInstance.oauth2.getClients())
+    .server(async () =>
+        clientAuthInstance.oauth2.getClients({
+            fetchOptions: { headers: getRequestHeaders() },
+        }),
+    );
 
 export const oauthClientsQuery = queryOptions({
     queryKey: [...OAuthQueryKeys.clientList],
@@ -61,7 +90,7 @@ export const oauthClientsQuery = queryOptions({
     staleTime: 0,
     queryFn: async () =>
         unwrap<OAuthClientFull[]>(
-            await clientAuthInstance.oauth2.getClients(),
+            await fetchOAuthClients(),
             "Kunne ikke hente OAuth-klienter",
         ),
 });
