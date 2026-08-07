@@ -5,7 +5,11 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { createReactionSchema, newsReactionSchema } from "../schema";
+import {
+    createReactionSchema,
+    newsIdParamSchema,
+    newsReactionSchema,
+} from "../schema";
 
 export const createReactionRoute = route().post(
     "/:id/reactions",
@@ -27,12 +31,13 @@ export const createReactionRoute = route().post(
         .notFound({ description: "News article not found" })
         .build(),
     requireAuth,
+    validator("param", newsIdParamSchema),
     validator("json", createReactionSchema),
     async (c) => {
         const body = c.req.valid("json");
         const userId = c.get("user").id;
         const { db } = c.get("ctx");
-        const { id: newsId } = c.req.param();
+        const { id: newsId } = c.req.valid("param");
 
         // Check if news exists and reactions are allowed
         const newsArticle = await db.query.news.findFirst({

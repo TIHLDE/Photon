@@ -4,6 +4,19 @@ import { PagniationResponseSchema } from "~/middleware/pagination";
 
 // ===== INPUT SCHEMAS =====
 
+/**
+ * The `:id` segment, checked before it reaches the database.
+ *
+ * Lepton numbered its articles, Photon uses UUIDs, and the migration kept no
+ * mapping between the two — so every `/nyheter/302` still out there arrives
+ * here as a non-UUID. Postgres answers that with `22P02 invalid input syntax
+ * for type uuid`, which reaches the error handler as a 500: an ordinary dead
+ * link reported as a server fault, ~46 times over three days in production.
+ */
+export const newsIdParamSchema = z.object({
+    id: z.uuid().meta({ description: "News article ID" }),
+});
+
 export const createNewsSchema = Schema(
     "CreateNews",
     z.object({
