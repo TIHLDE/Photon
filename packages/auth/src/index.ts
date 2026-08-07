@@ -173,6 +173,19 @@ function preferredUsernameClaim(
 export function createAuth(options: CreateAuthOptions) {
     const isProd = options.isDevMode !== true;
 
+    /**
+     * The user's permission strings, deduplicated, for the OAuth token and
+     * userinfo claims. Same source as the session's `permissions`, so a client
+     * sees exactly what the website does.
+     */
+    const permissionClaims = async (userId: string) => {
+        const permissions = await getUserPermissions(
+            { db: options.services.db },
+            userId,
+        );
+        return { permissions: [...new Set(permissions)] };
+    };
+
     if (isProd && options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM === true) {
         throw new Error(
             `DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM was enabled in production environment`,
@@ -374,20 +387,29 @@ export function createAuth(options: CreateAuthOptions) {
 
                 // Q9 decision: roles + groups embedded in JWT access tokens.
                 // 15-minute staleness window is accepted; document it for admins.
-                customAccessTokenClaims: async ({ user: u }) => {
-                    if (!u) return {};
-
-                    // TODO: Enrich the access token claims with more information
-                    // const [roles, groups] = await Promise.all([
-                    //     loadRoles(u.id),
-                    //     loadGroups(u.id),
-                    // ]);
-
-                    return {};
-                },
+                //
+                // `get-session` is the only place that carries permissions, and
+                // it reads the session cookie — an OAuth client holding a bearer
+                // token has no way to reach it. The same strings therefore ride
+                // along here, so those clients (the mobile app first) know what
+                // the user may do without a second, cookie-bound call.
+                //
+                // Both hooks get them, because a client cannot count on either
+                // one alone: an access token is only a JWT when the request
+                // carries an audience, and is opaque otherwise. Userinfo works
+                // in both cases and is what a client should read; the token
+                // claims are for resource servers that already parse the JWT.
+                //
+                // Scoped permissions keep their scope suffix, so a client can
+                // tell "may edit events in group:sosialen" from "may edit any
+                // event" — same strings the API itself checks against.
+                customAccessTokenClaims: async ({ user: u }) =>
+                    u ? await permissionClaims(u.id) : {},
                 customIdTokenClaims: ({ user: u }) => preferredUsernameClaim(u),
-                customUserInfoClaims: ({ user: u }) =>
-                    preferredUsernameClaim(u),
+                customUserInfoClaims: async ({ user: u }) => ({
+                    ...preferredUsernameClaim(u),
+                    ...(u ? await permissionClaims(u.id) : {}),
+                }),
 
                 prefix: {
                     clientSecret: "tihlde_cs_",
