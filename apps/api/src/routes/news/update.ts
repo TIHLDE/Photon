@@ -8,7 +8,11 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
-import { newsArticleSchema, updateNewsSchema } from "./schema";
+import {
+    newsArticleSchema,
+    newsIdParamSchema,
+    updateNewsSchema,
+} from "./schema";
 
 export const updateRoute = route().patch(
     "/:id",
@@ -28,6 +32,9 @@ export const updateRoute = route().patch(
         .notFound({ description: "News article not found" })
         .build(),
     requireAuth,
+    // Before `requireAccess`: its ownership check looks the article up by this
+    // id, so an unparseable one would reach the database there rather than here.
+    validator("param", newsIdParamSchema),
     requireAccess({
         permission: ["news:update", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
@@ -38,7 +45,7 @@ export const updateRoute = route().patch(
     async (c) => {
         const body = c.req.valid("json");
         const { db, bucket } = c.get("ctx");
-        const { id } = c.req.param();
+        const { id } = c.req.valid("param");
 
         // Fetch the news article to verify it exists
         const newsArticle = await db.query.news.findFirst({
