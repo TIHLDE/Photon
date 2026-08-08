@@ -49,7 +49,7 @@
             "dependsOn": ["//#lint:fix"],
             "cache": false
         },
-        "test": { "cache": false },
+        "test": { "dependsOn": ["^build"], "cache": false },
         "db:push": {
             "dependsOn": ["@photon/docker#dev:up"],
             "cache": false,

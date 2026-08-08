@@ -56,10 +56,9 @@ jobs:
               uses: tihlde/tihlde-workflows/.github/setup-bun@v1
 
             - name: Run API test shard
-              working-directory: apps/api
               env:
                   MAX_TEST_WORKERS: 2
-              run: bun run test -- --shard=${{ matrix.shard }}
+              run: bun run test -- --filter=@photon/api -- --shard=${{ matrix.shard }}
 
     other-tests:
         name: Other Tests
