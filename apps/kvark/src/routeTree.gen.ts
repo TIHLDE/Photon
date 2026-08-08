@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppGalleriRouteImport } from './routes/_app/galleri'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
@@ -103,6 +104,11 @@ const AdminRoute = AdminRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGalleriRoute = AppGalleriRouteImport.update({
+  id: '/galleri',
+  path: '/galleri',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
@@ -280,14 +286,14 @@ const AppBedriftStudieneRoute = AppBedriftStudieneRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppGalleriIndexRoute = AppGalleriIndexRouteImport.update({
-  id: '/galleri/',
-  path: '/galleri/',
-  getParentRoute: () => AppRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppGalleriRoute,
 } as any)
 const AppGalleriSlugRoute = AppGalleriSlugRouteImport.update({
-  id: '/galleri/$slug',
-  path: '/galleri/$slug',
-  getParentRoute: () => AppRoute,
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => AppGalleriRoute,
 } as any)
 const AppGrupperIndexRoute = AppGrupperIndexRouteImport.update({
   id: '/grupper/',
@@ -454,6 +460,7 @@ const AppSporreskjemaIdSvarRoute = AppSporreskjemaIdSvarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/galleri': typeof AppGalleriRouteWithChildren
   '/kokebok': typeof AppKokebokRouteWithChildren
   '/kontrakt': typeof AppKontraktRoute
   '/ny-student': typeof AppNyStudentRoute
@@ -597,6 +604,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/_app/galleri': typeof AppGalleriRouteWithChildren
   '/_app/kokebok': typeof AppKokebokRouteWithChildren
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/ny-student': typeof AppNyStudentRoute
@@ -672,6 +680,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/galleri'
     | '/kokebok'
     | '/kontrakt'
     | '/ny-student'
@@ -814,6 +823,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_dev'
     | '/admin'
+    | '/_app/galleri'
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/ny-student'
@@ -927,6 +937,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/galleri': {
+      id: '/_app/galleri'
+      path: '/galleri'
+      fullPath: '/galleri'
+      preLoaderRoute: typeof AppGalleriRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kokebok': {
@@ -1176,17 +1193,17 @@ declare module '@tanstack/react-router' {
     }
     '/_app/galleri/': {
       id: '/_app/galleri/'
-      path: '/galleri'
+      path: '/'
       fullPath: '/galleri/'
       preLoaderRoute: typeof AppGalleriIndexRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppGalleriRoute
     }
     '/_app/galleri/$slug': {
       id: '/_app/galleri/$slug'
-      path: '/galleri/$slug'
+      path: '/$slug'
       fullPath: '/galleri/$slug'
       preLoaderRoute: typeof AppGalleriSlugRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppGalleriRoute
     }
     '/_app/grupper/': {
       id: '/_app/grupper/'
@@ -1408,6 +1425,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppGalleriSlugRouteChildren {
+  AppGalleriSlugTitleRoute: typeof AppGalleriSlugTitleRoute
+}
+
+const AppGalleriSlugRouteChildren: AppGalleriSlugRouteChildren = {
+  AppGalleriSlugTitleRoute: AppGalleriSlugTitleRoute,
+}
+
+const AppGalleriSlugRouteWithChildren = AppGalleriSlugRoute._addFileChildren(
+  AppGalleriSlugRouteChildren,
+)
+
+interface AppGalleriRouteChildren {
+  AppGalleriSlugRoute: typeof AppGalleriSlugRouteWithChildren
+  AppGalleriIndexRoute: typeof AppGalleriIndexRoute
+}
+
+const AppGalleriRouteChildren: AppGalleriRouteChildren = {
+  AppGalleriSlugRoute: AppGalleriSlugRouteWithChildren,
+  AppGalleriIndexRoute: AppGalleriIndexRoute,
+}
+
+const AppGalleriRouteWithChildren = AppGalleriRoute._addFileChildren(
+  AppGalleriRouteChildren,
+)
+
 interface AppKokebokStudyIdRouteChildren {
   AppKokebokStudyIdSplatRoute: typeof AppKokebokStudyIdSplatRoute
 }
@@ -1441,18 +1484,6 @@ const AppArrangementerSlugRouteChildren: AppArrangementerSlugRouteChildren = {
 
 const AppArrangementerSlugRouteWithChildren =
   AppArrangementerSlugRoute._addFileChildren(AppArrangementerSlugRouteChildren)
-
-interface AppGalleriSlugRouteChildren {
-  AppGalleriSlugTitleRoute: typeof AppGalleriSlugTitleRoute
-}
-
-const AppGalleriSlugRouteChildren: AppGalleriSlugRouteChildren = {
-  AppGalleriSlugTitleRoute: AppGalleriSlugTitleRoute,
-}
-
-const AppGalleriSlugRouteWithChildren = AppGalleriSlugRoute._addFileChildren(
-  AppGalleriSlugRouteChildren,
-)
 
 interface AppGrupperSlugRouteChildren {
   AppGrupperSlugSectionRoute: typeof AppGrupperSlugSectionRoute
@@ -1501,6 +1532,7 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppGalleriRoute: typeof AppGalleriRouteWithChildren
   AppKokebokRoute: typeof AppKokebokRouteWithChildren
   AppKontraktRoute: typeof AppKontraktRoute
   AppNyStudentRoute: typeof AppNyStudentRoute
@@ -1513,7 +1545,6 @@ interface AppRouteChildren {
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
   AppArrangementerSlugRoute: typeof AppArrangementerSlugRouteWithChildren
   AppBedriftStudieneRoute: typeof AppBedriftStudieneRoute
-  AppGalleriSlugRoute: typeof AppGalleriSlugRouteWithChildren
   AppGrupperSlugRoute: typeof AppGrupperSlugRouteWithChildren
   AppMotetidSlugRoute: typeof AppMotetidSlugRoute
   AppMotetidNyRoute: typeof AppMotetidNyRoute
@@ -1524,7 +1555,6 @@ interface AppRouteChildren {
   AppAnnonserIndexRoute: typeof AppAnnonserIndexRoute
   AppArrangementerIndexRoute: typeof AppArrangementerIndexRoute
   AppBedriftIndexRoute: typeof AppBedriftIndexRoute
-  AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
   AppMotetidIndexRoute: typeof AppMotetidIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
@@ -1532,6 +1562,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppGalleriRoute: AppGalleriRouteWithChildren,
   AppKokebokRoute: AppKokebokRouteWithChildren,
   AppKontraktRoute: AppKontraktRoute,
   AppNyStudentRoute: AppNyStudentRoute,
@@ -1544,7 +1575,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,
   AppArrangementerSlugRoute: AppArrangementerSlugRouteWithChildren,
   AppBedriftStudieneRoute: AppBedriftStudieneRoute,
-  AppGalleriSlugRoute: AppGalleriSlugRouteWithChildren,
   AppGrupperSlugRoute: AppGrupperSlugRouteWithChildren,
   AppMotetidSlugRoute: AppMotetidSlugRoute,
   AppMotetidNyRoute: AppMotetidNyRoute,
@@ -1555,7 +1585,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnnonserIndexRoute: AppAnnonserIndexRoute,
   AppArrangementerIndexRoute: AppArrangementerIndexRoute,
   AppBedriftIndexRoute: AppBedriftIndexRoute,
-  AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
   AppMotetidIndexRoute: AppMotetidIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,

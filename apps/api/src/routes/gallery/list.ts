@@ -5,6 +5,7 @@ import type z from "zod";
 import { serializeAlbum } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
     getPageOffset,
@@ -19,7 +20,7 @@ export const listRoute = route().get(
         summary: "List galleries",
         operationId: "listGalleries",
         description:
-            "Get a paginated list of photo albums, newest first. Public endpoint.",
+            "Get a paginated list of photo albums, newest first. Requires authentication.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -27,6 +28,7 @@ export const listRoute = route().get(
             description: "OK",
         })
         .build(),
+    requireAuth,
     validator("query", PaginationSchema.extend(galleryListQuerySchema.shape)),
     async (c) => {
         const { db } = c.get("ctx");

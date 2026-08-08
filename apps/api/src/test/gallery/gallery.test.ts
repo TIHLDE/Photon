@@ -6,6 +6,30 @@ const image = (name: string) =>
 
 describe("Gallery System", () => {
     integrationTest(
+        "requires authentication to read galleries",
+        async ({ ctx }) => {
+            const client = ctx.utils.client();
+
+            const responses = await Promise.all([
+                client.api.galleries.$get({
+                    query: { page: "0", pageSize: "25" },
+                }),
+                client.api.galleries[":slug"].$get({
+                    param: { slug: "album" },
+                }),
+                client.api.galleries[":slug"].pictures.$get({
+                    param: { slug: "album" },
+                    query: { page: "0", pageSize: "25" },
+                }),
+            ]);
+
+            expect(responses.map(({ status }) => status)).toEqual([
+                401, 401, 401,
+            ]);
+        },
+    );
+
+    integrationTest(
         "Complete gallery lifecycle: create, list, pictures, paginate, delete",
         async ({ ctx }) => {
             const admin = await ctx.utils.createTestUser();
@@ -162,7 +186,7 @@ describe("Gallery System", () => {
             });
             expect((await unlinkResponse.json()).event).toBeNull();
 
-            // === GET (public, by slug) ===
+            // === GET (authenticated, by slug) ===
 
             const getResponse = await userClient.api.galleries[":slug"].$get({
                 param: { slug: album.slug },
