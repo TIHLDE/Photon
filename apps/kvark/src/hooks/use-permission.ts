@@ -35,6 +35,30 @@ export function useScopedPermission(
 }
 
 /**
+ * Returns a predicate for "holds `required` for this group".
+ *
+ * For pickers over many groups — the organiser-group select on an event —
+ * where calling {@link useScopedPermission} once per group is not an option.
+ * A global grant satisfies every group, exactly as the API reads it.
+ */
+export function useCanActForGroup(
+    required: string | readonly string[],
+): (groupSlug: string) => boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    const permissions = session?.permissions;
+
+    return useCallback(
+        (groupSlug: string) =>
+            sessionHasScopedPermission(
+                permissions,
+                required,
+                `group:${groupSlug}`,
+            ),
+        [permissions, required],
+    );
+}
+
+/**
  * Whether the current session holds `required` in any scope at all.
  *
  * For entry points that lead to a mixed listing (the admin sections), where

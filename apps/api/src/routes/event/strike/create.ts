@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
+import { canActOnEvent } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -16,7 +17,7 @@ export const createStrikeRoute = route().post(
         summary: "Create strike",
         operationId: "createStrike",
         description:
-            "Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.",
+            "Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage', globally or for the group arranging the event.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -30,7 +31,12 @@ export const createStrikeRoute = route().post(
         .notFound({ description: "User or event not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["events:strikes:create", "events:manage"] }),
+    // Coarse gate: the event — and with it the scope — is named in the body,
+    // so the group-level check happens in the handler once it is resolved.
+    requireAccess({
+        permission: ["events:strikes:create", "events:manage"],
+        anyGroupScope: true,
+    }),
     validator("json", createStrikeSchema),
     async (c) => {
         const body = c.req.valid("json");
@@ -55,6 +61,20 @@ export const createStrikeRoute = route().post(
         if (!targetEvent) {
             throw new HTTPException(404, {
                 message: `Event with ID "${body.eventId}" not found`,
+            });
+        }
+
+        if (
+            !(await canActOnEvent(
+                c.get("ctx"),
+                c.get("user").id,
+                body.eventId,
+                ["events:strikes:create", "events:manage"],
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "Forbidden - requires events:strikes:create or events:manage for the group arranging this event",
             });
         }
 

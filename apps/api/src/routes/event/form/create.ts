@@ -1,8 +1,8 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { canActOnEvent } from "~/lib/event/access";
 import { createFieldsAndOptions } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -53,11 +53,17 @@ export const createEventFormRoute = route().post(
             });
         }
 
-        // Check permission - must have events:write or be organizer
-        const hasEventsWrite = await hasPermission(
+        // Must hold events:update/events:manage for this event — globally or
+        // for the arranging group — or be that group's leader.
+        //
+        // This used to ask for "events:write", which is not in the permission
+        // registry and therefore never matched anything: the organiser branch
+        // below was the only way through.
+        const hasEventsWrite = await canActOnEvent(
             { db, ...ctx },
             user.id,
-            "events:write",
+            eventId,
+            ["events:update", "events:manage"],
         );
 
         let isOrganizer = false;

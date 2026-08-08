@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addHours } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { XCircle } from "lucide-react";
@@ -17,7 +17,10 @@ import { AdminNoAccess } from "#/components/admin-no-access";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
-import { useAnyScopePermission } from "#/hooks/use-permission";
+import {
+    useAnyScopePermission,
+    useCanActForGroup,
+} from "#/hooks/use-permission";
 import { nextWholeHour } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 
@@ -31,6 +34,9 @@ export const Route = createFileRoute("/admin/arrangementer/ny")({
         return { breadcrumbs: "Nytt arrangement" };
     },
 });
+
+/** Module-level so the permission predicate keeps a stable identity. */
+const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
 
 /** Date -> ISO string, or null when unset */
 function toIso(value: Date | null): string | null {
@@ -73,7 +79,14 @@ const emptyValues: EventFormValues = {
 function NewEventPage() {
     const navigate = useNavigate();
     const canCreate = useAnyScopePermission(["events:create", "events:manage"]);
-    const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+    const canArrangeFor = useCanActForGroup(EVENT_CREATE_PERMISSIONS);
+    const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
+    // Only offer groups the caller may actually arrange for: a group-scoped
+    // grant covers one group, and the API rejects the rest anyway.
+    const groups = useMemo(
+        () => allGroups.filter((group) => canArrangeFor(group.slug)),
+        [allGroups, canArrangeFor],
+    );
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
 
     const [values, setValues] = useState<EventFormValues>(emptyValues);

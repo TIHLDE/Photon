@@ -2,10 +2,10 @@ import { schema } from "@photon/db";
 import { and, desc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import z from "zod";
+import { requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "~/lib/event/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -43,9 +43,9 @@ export const listEventPaymentsRoute = route().get(
     // `hasPermission` is an exact string match with no hierarchy, so
     // `events:manage` does NOT imply `events:payments:view`. Every permission
     // that should grant read access has to be listed explicitly.
-    requireAccess({
+    requireEventAccess({
         permission: ["events:payments:view", "events:manage", "events:update"],
-        ownership: { param: "eventId", check: isEventOwner },
+        ownership: isEventOwner,
     }),
     validator("query", querySchema),
     async (c) => {

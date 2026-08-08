@@ -215,6 +215,23 @@ export const group = pgTable("group", {
         onDelete: "set null",
     }),
     /**
+     * Permissions held by whoever is currently the group's leader, granted
+     * scoped to this group ("permission@group:<slug>").
+     *
+     * The leader is a membership role rather than a verv, so it had no
+     * editable permission set of its own: the only way to let a leader run
+     * their group's events was a global grant, which then let them run
+     * everyone's. This list is the group-scoped answer, edited from the same
+     * verv table as the group's positions.
+     *
+     * Read live at permission-check time from the current leadership (see
+     * getPermissionsFromLeadership), so it needs no sync when leadership
+     * changes — unlike {@link leaderRoleId}, which assigns a *global* RBAC
+     * role and stays for leader-bound powers that are genuinely org-wide
+     * (NOK's leader refunding payments).
+     */
+    leaderPermissions: text("leader_permissions").array().notNull().default([]),
+    /**
      * Permission mode for managing group resources (events, fines, etc.).
      * - leader_only: Only group leaders can manage (default, more restrictive)
      * - member: Any member with the base permission can manage (more permissive)

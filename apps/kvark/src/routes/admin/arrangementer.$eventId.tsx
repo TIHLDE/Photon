@@ -68,6 +68,7 @@ import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
 import {
     useAnyScopePermission,
+    useCanActForGroup,
     useCanActOnResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
@@ -84,6 +85,9 @@ type TabValue = (typeof TABS)[number];
 
 /** The API caps pageSize at 100; asking for more is a 400. */
 const MAX_PAGE_SIZE = 100;
+
+/** Module-level so the permission predicate keeps a stable identity. */
+const EVENT_UPDATE_PERMISSIONS = ["events:update", "events:manage"] as const;
 
 // Defaulted (not required) so plain links to the page need no search param,
 // while the tab stays deep-linkable and survives a bad value.
@@ -240,8 +244,22 @@ function valuesFromEvent(event: Event): EventFormValues {
 function DetailsTab({ eventId }: { eventId: string }) {
     const navigate = useNavigate();
     const { data: event } = useSuspenseQuery(getEventByIdQuery(eventId));
-    const { data: groups } = useSuspenseQuery(getGroupsQuery(0));
+    const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
+
+    // Moving the event to another group takes the permission over there too
+    // (the API says the same), so only offer the groups that qualify — plus
+    // the current one, which must stay selectable.
+    const canArrangeFor = useCanActForGroup(EVENT_UPDATE_PERMISSIONS);
+    const groups = useMemo(
+        () =>
+            allGroups.filter(
+                (group) =>
+                    group.slug === event.organizer?.slug ||
+                    canArrangeFor(group.slug),
+            ),
+        [allGroups, canArrangeFor, event.organizer?.slug],
+    );
 
     // Samme regel som API-et: rettigheten (også gruppescopet), eller å ha
     // opprettet arrangementet selv.

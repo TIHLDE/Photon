@@ -3,6 +3,7 @@ import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { canActOnEventsForGroup } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
@@ -16,17 +17,23 @@ export const createRoute = route().post(
         tags: ["events"],
         summary: "Create event",
         operationId: "createEvent",
-        description: "Create a new event. Requires 'events:create' permission.",
+        description:
+            "Create a new event. Requires 'events:create' either globally or for the group arranging it.",
     })
         .schemaResponse({
             statusCode: 201,
             schema: createEventResponseSchema,
             description: "Created",
         })
-        .forbidden({ description: "Missing events:create permission" })
+        .forbidden({
+            description:
+                "Missing events:create for the organizing group (or globally)",
+        })
         .build(),
     requireAuth,
-    requireAccess({ permission: "events:create" }),
+    // Coarse gate only: the scope lives in the body, which is not parsed yet,
+    // so the group-level check happens in the handler below.
+    requireAccess({ permission: "events:create", anyGroupScope: true }),
     validator("json", createEventSchema),
     async (c) => {
         const body = c.req.valid("json");
@@ -73,6 +80,24 @@ export const createRoute = route().post(
             if (group.length === 0) {
                 throw new HTTPException(400, {
                     message: `Group with slug "${body.organizerGroupSlug}" does not exist`,
+                });
+            }
+
+            // The real permission check: events:create for THIS group. Runs
+            // after the group lookup so an unknown slug still answers 400
+            // rather than a misleading 403.
+            if (
+                !(await canActOnEventsForGroup(
+                    // Must read through `tx`: the pool connection is held by
+                    // this transaction, so querying past it would deadlock.
+                    { ...c.get("ctx"), db: tx },
+                    userId,
+                    body.organizerGroupSlug,
+                    "events:create",
+                ))
+            ) {
+                throw new HTTPException(403, {
+                    message: `Forbidden - requires events:create for group "${body.organizerGroupSlug}"`,
                 });
             }
 

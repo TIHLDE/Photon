@@ -50,10 +50,12 @@ import {
     deletePositionMutation,
     deleteRoleMutation,
     getGroupPositionsQuery,
+    getLeaderPermissionsQuery,
     getRolesQuery,
     searchUsersQuery,
     unassignPositionMutation,
     unassignRoleMutation,
+    updateLeaderPermissionsMutation,
     updatePositionMutation,
     updateRoleMutation,
 } from "#/api/queries/roles";
@@ -420,40 +422,15 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow>
-                        <TableCell>
-                            <div className="flex flex-col">
-                                <span className="font-medium">Leder</span>
-                                <span className="text-xs text-muted-foreground">
-                                    Settes i gruppens medlemsliste
-                                </span>
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {leaders.length === 0 ? (
-                                    <span className="text-sm text-muted-foreground">
-                                        Ingen tildelt
-                                    </span>
-                                ) : (
-                                    leaders.map((leader) => (
-                                        <HolderChip
-                                            key={leader.userId}
-                                            name={
-                                                leader.user?.name ??
-                                                leader.userId
-                                            }
-                                            image={leader.user?.image ?? null}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                            Gruppens ledertilganger
-                        </TableCell>
-                        <TableCell />
-                    </TableRow>
+                    <LeaderRow
+                        groupSlug={groupSlug}
+                        canManage={canManage}
+                        leaders={leaders.map((leader) => ({
+                            userId: leader.userId,
+                            name: leader.user?.name ?? leader.userId,
+                            image: leader.user?.image ?? null,
+                        }))}
+                    />
 
                     {positions?.length === 0 ? (
                         <TableRow>
@@ -606,6 +583,162 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                 />
             )}
         </>
+    );
+}
+
+/**
+ * The group's leader, pinned as the first row of the verv table.
+ *
+ * Leadership is a membership role, not a verv — the holder is still set in the
+ * group's member list — but the permissions that come with it are edited here,
+ * like every other row. They apply only within this group.
+ */
+function LeaderRow({
+    groupSlug,
+    canManage,
+    leaders,
+}: {
+    groupSlug: string;
+    canManage: boolean;
+    leaders: { userId: string; name: string; image: string | null }[];
+}) {
+    const [editing, setEditing] = useState(false);
+    // Only managers may read this — asking as anyone else is a guaranteed 403.
+    const { data } = useQuery({
+        ...getLeaderPermissionsQuery(groupSlug),
+        enabled: canManage,
+    });
+    const permissions = data?.permissions ?? [];
+
+    return (
+        <TableRow>
+            <TableCell>
+                <div className="flex flex-col">
+                    <span className="font-medium">Leder</span>
+                    <span className="text-xs text-muted-foreground">
+                        Settes i gruppens medlemsliste
+                    </span>
+                </div>
+            </TableCell>
+            <TableCell>
+                <div className="flex flex-wrap items-center gap-2">
+                    {leaders.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                            Ingen tildelt
+                        </span>
+                    ) : (
+                        leaders.map((leader) => (
+                            <HolderChip
+                                key={leader.userId}
+                                name={leader.name}
+                                image={leader.image}
+                            />
+                        ))
+                    )}
+                </div>
+            </TableCell>
+            <TableCell className="text-sm text-muted-foreground">
+                {canManage
+                    ? summarizePermissions(permissions)
+                    : "Gruppens ledertilganger"}
+            </TableCell>
+            <TableCell>
+                {canManage ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            aria-label="Handlinger"
+                            className="cursor-pointer"
+                        >
+                            <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditing(true)}>
+                                Rediger
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : null}
+            </TableCell>
+
+            {editing && (
+                <LeaderPermissionsDialog
+                    groupSlug={groupSlug}
+                    open={editing}
+                    onOpenChange={setEditing}
+                    permissions={permissions}
+                />
+            )}
+        </TableRow>
+    );
+}
+
+function LeaderPermissionsDialog({
+    groupSlug,
+    open,
+    onOpenChange,
+    permissions: initial,
+}: {
+    groupSlug: string;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    permissions: string[];
+}) {
+    const update = useMutation(updateLeaderPermissionsMutation);
+    const [permissions, setPermissions] = useState<string[]>(initial);
+    const [error, setError] = useState<string | null>(null);
+
+    async function handleSubmit() {
+        setError(null);
+        try {
+            await update.mutateAsync({ groupSlug, permissions });
+            onOpenChange(false);
+        } catch (submitError) {
+            setError(
+                submitError instanceof Error
+                    ? submitError.message
+                    : "Kunne ikke lagre tilgangene.",
+            );
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>Rediger ledertilganger</DialogTitle>
+                </DialogHeader>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel>Tilganger</FieldLabel>
+                        <PermissionDomainCheckboxes
+                            value={permissions}
+                            onChange={setPermissions}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                            Gjelder bare i denne gruppen, og følger den som til
+                            enhver tid er leder.
+                        </p>
+                    </Field>
+                    {error ? (
+                        <p className="text-sm text-destructive">{error}</p>
+                    ) : null}
+                </FieldGroup>
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Avbryt
+                    </Button>
+                    <Button
+                        disabled={update.isPending}
+                        onClick={() => void handleSubmit()}
+                    >
+                        Lagre
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
