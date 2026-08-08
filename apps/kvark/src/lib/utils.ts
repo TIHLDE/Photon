@@ -110,6 +110,15 @@ export function formatStudyLabel(
 }
 
 /**
+ * Kort ned fritekst som skal inn i en etikett med fast høyde — typisk en
+ * filterpille bygget av et søk brukeren har skrevet. Pillen kan ikke brytes
+ * over flere linjer, så uten dette blir den bredere enn skjermen på mobil.
+ */
+export function truncateLabel(text: string, max = 24): string {
+    return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
+}
+
+/**
  * HTTP-statusen bak en feil fra API-klienten, om den finnes.
  *
  * Ligger her og ikke i rutefilene: rutene kodesplittes, og en hjelpefunksjon

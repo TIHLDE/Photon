@@ -30,7 +30,10 @@ function BottomBarItem({ className, render, ...props }: BottomBarItemProps) {
             className: cn(
                 // TanStack Router marks the matching link with data-status=active;
                 // anything else (the menu button) simply never gets the attribute.
-                "flex flex-1 cursor-pointer flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[0.6875rem] font-medium text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[status=active]:text-foreground [&_svg]:size-5 [&_svg]:shrink-0",
+                // `wrap-normal` overstyrer den globale `overflow-wrap: anywhere`:
+                // etikettene her er korte og faste, og skal aldri deles midt i
+                // et ord («Arrangement/er»). De får heller krympe teksten.
+                "flex flex-1 cursor-pointer flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-center text-[0.6875rem] font-medium wrap-normal text-muted-foreground outline-none transition-colors select-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[status=active]:text-foreground [&_svg]:size-5 [&_svg]:shrink-0",
                 className,
             ),
             ...props,

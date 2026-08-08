@@ -71,8 +71,10 @@ export function GroupMemberRow({
                     <AvatarFallback>{initials(member.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="flex items-center gap-2 truncate font-medium">
-                        {member.name}
+                    {/* `truncate` på selve navnet — på flex-raden klipper den
+                        «Leder»-badgen midt av i stedet for å forkorte navnet. */}
+                    <span className="flex items-center gap-2 font-medium">
+                        <span className="truncate">{member.name}</span>
                         {isLeader ? (
                             <Badge variant="secondary" className="gap-1">
                                 <Crown />

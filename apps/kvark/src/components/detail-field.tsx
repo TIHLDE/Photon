@@ -16,14 +16,20 @@ export function DetailField({
 }: DetailFieldProps) {
     if (label) {
         return (
-            <div className="flex items-center justify-between gap-3 text-sm">
+            // Verdien lå tidligere i en `shrink-0`-boks, så lange verdier
+            // (kontaktpersoner, «Studenter ved …») presset raden ut av
+            // skjermen på mobil. Begge sidene får krympe nå; bare ikonet og
+            // handlingen holdes i full bredde.
+            <div className="flex items-start justify-between gap-3 text-sm">
                 <div className="flex min-w-0 items-center gap-2.5 text-muted-foreground">
                     {Icon ? <Icon className="size-4 shrink-0" /> : null}
                     <span className="truncate">{label}</span>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-right break-words">{value}</span>
-                    {action}
+                <div className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 text-right wrap-anywhere">
+                        {value}
+                    </span>
+                    {action ? <div className="shrink-0">{action}</div> : null}
                 </div>
             </div>
         );
@@ -35,7 +41,7 @@ export function DetailField({
                 {Icon ? (
                     <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 ) : null}
-                <span className="break-words">{value}</span>
+                <span className="wrap-anywhere">{value}</span>
             </div>
             {action ? <div className="shrink-0">{action}</div> : null}
         </div>

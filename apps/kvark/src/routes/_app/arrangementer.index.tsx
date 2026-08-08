@@ -179,7 +179,7 @@ function EventsPage() {
                     />
                 </aside>
 
-                <section className="flex flex-col gap-3">
+                <section className="flex min-w-0 flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-3">
                         <Tabs
                             value={tab}

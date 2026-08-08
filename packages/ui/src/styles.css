@@ -340,6 +340,14 @@
         background-color: var(--background);
         color: var(--foreground);
         @apply bg-background text-foreground;
+        /* Brukerskrevet innhold inneholder ubrytelige ord: e-postadresser,
+         * URL-er, lange norske sammensetninger. Uten dette setter ett slikt
+         * ord min-content-bredden til en flex-boks, og hele sida blir
+         * bredere enn skjermen på mobil. `anywhere` (ikke `break-word`)
+         * fordi bare den påvirker intrinsic sizing — som er akkurat det
+         * flex- og grid-barn måles etter. Den slår først inn når ordet
+         * ellers ville flytt utenfor, så vanlig tekst er upåvirket. */
+        overflow-wrap: anywhere;
     }
     html {
         @apply font-sans;
@@ -347,6 +355,13 @@
          * don't shift horizontally when content height changes (e.g.
          * switching between short and tall tabs). */
         scrollbar-gutter: stable;
+        /* Siste skanse mot sidescroll på mobil. `clip`, ikke `hidden`:
+         * `hidden` gjør elementet til en scroll-container, og da bytter
+         * `position: sticky` scrollport — det ville brutt den klebrige
+         * headeren og sidebaren på detaljsidene. Dette skjuler ikke reelle
+         * feil for oss; overflow-sveipen måler geometrien direkte. */
+        overflow-x: clip;
+        overflow-y: visible;
     }
 }
 

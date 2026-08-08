@@ -60,7 +60,7 @@ function JobsPage() {
                     />
                 </aside>
 
-                <section className="flex flex-col gap-3">
+                <section className="flex min-w-0 flex-col gap-3">
                     <p className="text-sm text-muted-foreground">
                         {data.totalCount} stillinger funnet
                     </p>

@@ -319,11 +319,18 @@ function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
 
 function RegistrationTimeline({ points }: { points: TimelinePoint[] }) {
     return (
-        <div className="flex items-center gap-3 text-sm">
+        // Med tre punkter (Åpnet / Avmelding / Lukker) er det ikke plass på
+        // én linje på mobil. `flex-wrap` lar punktene stable seg i stedet for
+        // å presse kortet — og dermed hele sida — ut av skjermen. Streken
+        // gir bare mening når punktene faktisk står ved siden av hverandre,
+        // så den skjules på de smaleste skjermene.
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
             {points.map((point, i) => (
                 <Fragment key={point.label}>
-                    {i > 0 ? <div className="h-px flex-1 bg-border" /> : null}
-                    <div className="flex shrink-0 flex-col gap-0.5">
+                    {i > 0 ? (
+                        <div className="hidden h-px flex-1 bg-border sm:block" />
+                    ) : null}
+                    <div className="flex min-w-0 flex-col gap-0.5">
                         <span>{point.label}</span>
                         <span className="text-muted-foreground">
                             {point.day}

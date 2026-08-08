@@ -36,7 +36,7 @@ export function LawCombobox({ items, value, onValueChange }: LawComboboxProps) {
                         {(item: Law) => (
                             <ComboboxItem key={item.paragraph} value={item}>
                                 <span className="flex flex-1 items-baseline justify-between gap-3">
-                                    <span className="min-w-0 flex-1 break-words">
+                                    <span className="min-w-0 flex-1 wrap-anywhere">
                                         {item.paragraph} - {item.title}
                                     </span>
                                     {/* Se GroupLawItem: 0 bøter betyr
