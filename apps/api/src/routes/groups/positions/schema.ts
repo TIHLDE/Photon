@@ -50,6 +50,16 @@ export const updatePositionSchema = Schema(
     }),
 );
 
+export const updateLeaderPermissionsSchema = Schema(
+    "UpdateGroupLeaderPermissions",
+    z.object({
+        permissions: permissionListSchema.meta({
+            description:
+                "Permissions the group's leader holds, scoped to this group. Replaces the existing list.",
+        }),
+    }),
+);
+
 export const assignPositionSchema = Schema(
     "AssignGroupPosition",
     z.object({
@@ -98,6 +108,16 @@ export const positionSchema = Schema(
 export const positionListSchema = Schema(
     "GroupPositionList",
     z.array(positionSchema),
+);
+
+export const leaderPermissionsSchema = Schema(
+    "GroupLeaderPermissions",
+    z.object({
+        permissions: z.array(z.string()).meta({
+            description:
+                "Permissions held by the group's current leader, scoped to this group",
+        }),
+    }),
 );
 
 export const positionMessageSchema = Schema(

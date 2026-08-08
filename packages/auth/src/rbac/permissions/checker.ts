@@ -5,9 +5,11 @@
  * both globally and within specific scopes.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
+    group,
+    groupMembership,
     groupPosition,
     groupPositionHolder,
     role,
@@ -101,20 +103,57 @@ async function getPermissionsFromPositions(
 }
 
 /**
- * Get all permissions for a user (from roles + direct grants + positions).
+ * Get all permissions a user receives from LEADING a group.
+ *
+ * A group's `leaderPermissions` are held by whoever is its leader right now,
+ * scoped to that group ("permission@group:<slug>"). Reading the current
+ * leadership here rather than syncing a role on every leadership change means
+ * the grant cannot outlive the job — step down and it is gone on the next
+ * check.
+ */
+async function getPermissionsFromLeadership(
+    ctx: DbCtx,
+    userId: string,
+): Promise<string[]> {
+    const db = ctx.db;
+    const rows = await db
+        .select({
+            permissions: group.leaderPermissions,
+            groupSlug: group.slug,
+        })
+        .from(groupMembership)
+        .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.role, "leader"),
+            ),
+        );
+
+    return rows.flatMap((row) =>
+        (row.permissions ?? []).map((p) =>
+            formatPermission(p, `group:${row.groupSlug}`),
+        ),
+    );
+}
+
+/**
+ * Get all permissions for a user (roles + direct grants + verv + leadership).
  * Returns raw array with potential duplicates.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
-    const [rolePerms, directPerms, positionPerms] = await Promise.all([
-        getPermissionsFromRoles(ctx, userId),
-        getDirectPermissions(ctx, userId),
-        getPermissionsFromPositions(ctx, userId),
-    ]);
+    const [rolePerms, directPerms, positionPerms, leaderPerms] =
+        await Promise.all([
+            getPermissionsFromRoles(ctx, userId),
+            getDirectPermissions(ctx, userId),
+            getPermissionsFromPositions(ctx, userId),
+            getPermissionsFromLeadership(ctx, userId),
+        ]);
 
-    return [...rolePerms, ...directPerms, ...positionPerms];
+    return [...rolePerms, ...directPerms, ...positionPerms, ...leaderPerms];
 }
 
 /**

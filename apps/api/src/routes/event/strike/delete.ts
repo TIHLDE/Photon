@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { canActOnEvent } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -14,7 +15,7 @@ export const deleteStrikeRoute = route().delete(
         summary: "Delete strike",
         operationId: "deleteStrike",
         description:
-            "Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage' permission.",
+            "Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage', globally or for the group arranging the strike's event.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,7 +29,12 @@ export const deleteStrikeRoute = route().delete(
         .notFound({ description: "Strike not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["events:strikes:delete", "events:manage"] }),
+    // Coarse gate: the strike's event decides the scope, so the group-level
+    // check happens in the handler once the strike is loaded.
+    requireAccess({
+        permission: ["events:strikes:delete", "events:manage"],
+        anyGroupScope: true,
+    }),
     async (c) => {
         const { strikeId } = c.req.param();
         const { db } = c.get("ctx");
@@ -39,6 +45,20 @@ export const deleteStrikeRoute = route().delete(
 
         if (!strike) {
             throw new HTTPException(404, { message: "Strike not found" });
+        }
+
+        if (
+            !(await canActOnEvent(
+                c.get("ctx"),
+                c.get("user").id,
+                strike.eventId,
+                ["events:strikes:delete", "events:manage"],
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "Forbidden - requires events:strikes:delete or events:manage for the group arranging this event",
+            });
         }
 
         await db

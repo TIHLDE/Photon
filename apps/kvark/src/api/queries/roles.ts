@@ -10,6 +10,7 @@ import { apiClient } from "#/api/api-client";
 const RoleQueryKeys = {
     roles: ["roles"] as const,
     positions: ["groups", "positions"] as const,
+    leaderPermissions: ["groups", "leader-permissions"] as const,
     userSearch: ["users", "search"] as const,
 } as const;
 
@@ -148,6 +149,41 @@ export const deletePositionMutation = mutationOptions({
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...RoleQueryKeys.positions, vars.groupSlug],
+        });
+    },
+});
+
+// -- Leader permissions (the group's leader row in the verv table) --
+
+/**
+ * The permissions the group's leader holds, scoped to that group. Only
+ * readable by someone who may manage the group's verv, so this 403s for
+ * everyone else — hence the separate query rather than a field on the group.
+ */
+export const getLeaderPermissionsQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...RoleQueryKeys.leaderPermissions, groupSlug],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/leader-permissions", {
+                params: { groupSlug },
+            }),
+    });
+
+export const updateLeaderPermissionsMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        permissions,
+    }: {
+        groupSlug: string;
+        permissions: string[];
+    }) =>
+        apiClient.patch("/api/groups/{groupSlug}/leader-permissions", {
+            params: { groupSlug },
+            json: { permissions },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...RoleQueryKeys.leaderPermissions, vars.groupSlug],
         });
     },
 });

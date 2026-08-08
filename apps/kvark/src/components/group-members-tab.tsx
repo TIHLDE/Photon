@@ -6,6 +6,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
+import type { GroupAddMemberDialogProps } from "#/components/group-add-member-dialog";
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import { GroupMemberRow } from "#/components/group-member-row";
 import { GroupPageHeader } from "#/components/group-page-header";
@@ -21,6 +22,8 @@ type GroupMembersTabProps = {
     isAdmin: boolean;
     /** Kun groups:manage — å utnevne en ny leder er ikke lederens eget kall. */
     canPromote: boolean;
+    /** Søk og innsending for «Legg til medlem»; eies av ruten. */
+    memberSearch: GroupAddMemberDialogProps;
     onPromote: (member: Member) => void;
     onRemove: (member: Member) => void;
 };
@@ -31,6 +34,7 @@ export function GroupMembersTab({
     formerMembers,
     isAdmin,
     canPromote,
+    memberSearch,
     onPromote,
     onRemove,
 }: GroupMembersTabProps) {
@@ -40,7 +44,9 @@ export function GroupMembersTab({
         <div className="flex flex-col gap-6">
             <GroupPageHeader
                 title="Medlemmer"
-                action={isAdmin ? <GroupAddMemberDialog users={[]} /> : null}
+                action={
+                    isAdmin ? <GroupAddMemberDialog {...memberSearch} /> : null
+                }
             />
 
             {leader ? (

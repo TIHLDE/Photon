@@ -587,7 +587,7 @@ export interface paths {
         put?: never;
         /**
          * Create strike
-         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage' permission.
+         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage', globally or for the group arranging the event.
          */
         post: operations["createStrike"];
         delete?: never;
@@ -628,7 +628,7 @@ export interface paths {
         post?: never;
         /**
          * Delete strike
-         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage' permission.
+         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage', globally or for the group arranging the strike's event.
          */
         delete: operations["deleteStrike"];
         options?: never;
@@ -691,7 +691,7 @@ export interface paths {
         put?: never;
         /**
          * Create event
-         * @description Create a new event. Requires 'events:create' permission.
+         * @description Create a new event. Requires 'events:create' either globally or for the group arranging it.
          */
         post: operations["createEvent"];
         delete?: never;
@@ -710,7 +710,7 @@ export interface paths {
         get?: never;
         /**
          * Update event
-         * @description Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.
+         * @description Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' — globally or for the arranging group — can update the events they hold it for.
          */
         put: operations["updateEvent"];
         post?: never;
@@ -736,7 +736,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an event
-         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.
+         * @description Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback.
          */
         delete: operations["deleteEvent"];
         options?: never;
@@ -787,7 +787,7 @@ export interface paths {
         head?: never;
         /**
          * Set registration attendance
-         * @description Mark a registered user as attended (checked in) or revert them to registered. Used for event check-in; users left as 'registered' after the event may receive no-show strikes. Requires 'events:update' or 'events:manage' permission.
+         * @description Mark a registered user as attended (checked in) or revert them to registered. Used for event check-in; users left as 'registered' after the event may receive no-show strikes. Requires 'events:update' or 'events:manage', globally or for the arranging group.
          */
         patch: operations["setRegistrationAttendance"];
         trace?: never;
@@ -1638,6 +1638,30 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/leader-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the group leader's permissions
+         * @description The permissions held by whoever currently leads the group, scoped to that group. Requires the same rights as managing the group's verv.
+         */
+        get: operations["getGroupLeaderPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set the group leader's permissions
+         * @description Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
+         */
+        patch: operations["updateGroupLeaderPermissions"];
         trace?: never;
     };
     "/api/groups/{slug}/forms": {
@@ -4760,6 +4784,14 @@ export interface components {
             /** @description User to assign the position to */
             userId: string;
         };
+        GroupLeaderPermissions: {
+            /** @description Permissions held by the group's current leader, scoped to this group */
+            permissions: string[];
+        };
+        UpdateGroupLeaderPermissions: {
+            /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. */
+            permissions: string[];
+        };
         CreateGroupFormResponse: {
             /** Format: uuid */
             id?: string;
@@ -7235,7 +7267,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Missing events:create permission */
+            /** @description Forbidden - Missing events:create for the organizing group (or globally) */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10232,6 +10264,107 @@ export interface operations {
             };
             /** @description Position is managed automatically from group leadership */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGroupLeaderPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The leader's permissions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupLeaderPermissions"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized to manage this group */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGroupLeaderPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupLeaderPermissions"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupLeaderPermissions"];
+                };
+            };
+            /** @description Bad Request - Unknown permission */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Forbidden - Not authorized, or granting permissions you lack */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - Group not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

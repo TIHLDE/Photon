@@ -12,17 +12,51 @@ import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
-import { UserSingleCombobox } from "#/components/user-combobox";
+import type { UserSearchOption } from "#/components/user-search-combobox";
+import { UserSearchCombobox } from "#/components/user-search-combobox";
 
-type GroupAddMemberDialogProps = {
-    users: string[];
+export type GroupAddMemberDialogProps = {
+    /** Søketekst — eies av forelderen, som også henter treffene. */
+    query: string;
+    onQueryChange: (query: string) => void;
+    results: UserSearchOption[];
+    isSearching?: boolean;
+    isAdding?: boolean;
+    error?: string | null;
+    /**
+     * Legg til brukeren. Dialogen lukkes først når løftet innfris — feiler
+     * det, blir den stående med feilmeldingen i `error`.
+     */
+    onAdd: (userId: string) => Promise<void>;
 };
 
-export function GroupAddMemberDialog({ users }: GroupAddMemberDialogProps) {
-    const [user, setUser] = useState<string | null>(null);
+export function GroupAddMemberDialog({
+    query,
+    onQueryChange,
+    results,
+    isSearching,
+    isAdding,
+    error,
+    onAdd,
+}: GroupAddMemberDialogProps) {
+    const [open, setOpen] = useState(false);
+    const [selected, setSelected] = useState<UserSearchOption | null>(null);
+
+    function close() {
+        setOpen(false);
+        setSelected(null);
+        onQueryChange("");
+    }
 
     return (
-        <Dialog>
+        <Dialog
+            open={open}
+            onOpenChange={(next) => (next ? setOpen(true) : close())}
+            // Trefflisten portaleres ut av dialogen, så et klikk på et
+            // søketreff teller som «klikk utenfor» og lukket hele dialogen.
+            // Man lukker med Avbryt, X eller Escape i stedet.
+            disablePointerDismissal
+        >
             <DialogTrigger
                 render={
                     <Button size="sm">
@@ -39,21 +73,45 @@ export function GroupAddMemberDialog({ users }: GroupAddMemberDialogProps) {
                         i gruppen.
                     </DialogDescription>
                 </DialogHeader>
-                <form className="flex flex-col gap-4">
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel>Søk etter bruker</FieldLabel>
-                            <UserSingleCombobox
-                                items={users}
-                                value={user}
-                                onValueChange={setUser}
-                                placeholder="Søk etter bruker"
-                            />
-                        </Field>
-                    </FieldGroup>
-                </form>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel>Søk etter bruker</FieldLabel>
+                        {/*
+                          Samme velger som i rolleadmin. Den holder valget
+                          utenfor trefflisten — en combobox der verdien må
+                          finnes blant `items` mister valget i det man tar
+                          det, fordi valget selv endrer søket.
+                        */}
+                        <UserSearchCombobox
+                            holder={selected}
+                            emptyLabel="Velg bruker"
+                            query={query}
+                            onQueryChange={onQueryChange}
+                            results={results}
+                            isSearching={isSearching}
+                            onSelect={setSelected}
+                        />
+                    </Field>
+                    {error ? (
+                        <p className="text-sm text-destructive">{error}</p>
+                    ) : null}
+                </FieldGroup>
                 <DialogFooter>
-                    <Button>Legg til medlem</Button>
+                    <Button variant="outline" onClick={close}>
+                        Avbryt
+                    </Button>
+                    <Button
+                        disabled={!selected || isAdding}
+                        onClick={() => {
+                            if (!selected) return;
+                            void onAdd(selected.id).then(close, () => {
+                                // Feilen vises via `error`; dialogen blir
+                                // stående så man kan prøve igjen.
+                            });
+                        }}
+                    >
+                        {isAdding ? "Legger til …" : "Legg til medlem"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
