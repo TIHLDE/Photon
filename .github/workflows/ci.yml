@@ -40,5 +40,37 @@ jobs:
             - name: Check building
               run: bun run build
 
-            - name: Run tests
-              run: bun run test -- --log-order=stream
+    api-tests:
+        name: API Tests (${{ matrix.shard }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: ["1/2", "2/2"]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 1
+            - name: Setup Tools
+              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+
+            - name: Run API test shard
+              working-directory: apps/api
+              env:
+                  MAX_TEST_WORKERS: 2
+              run: bun run test -- --shard=${{ matrix.shard }}
+
+    other-tests:
+        name: Other Tests
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 1
+            - name: Setup Tools
+              uses: tihlde/tihlde-workflows/.github/setup-bun@v1
+
+            - name: Run non-API tests
+              run: bun run test -- --filter='!@photon/api' --log-order=stream
