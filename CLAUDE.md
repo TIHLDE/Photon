@@ -138,8 +138,18 @@ Key dependency chain in `turbo.json`:
 ## Git & GitHub Workflow
 
 - Use **GitHub CLI (`gh`)** for all GitHub operations
-- Do NOT push directly to main/master
+- Do NOT push directly to main
 - Create feature branches for all changes
+
+### Branching & Releases
+
+The repo has **one long-lived branch: `main`**. There is no `dev` branch.
+
+- All work: feature branch → PR → `main`. CI runs on the PR.
+- A release is a **tag**, not a merge: `<YYYY-MM-DD>.release-<n>` (e.g. `2026-08-08.release-1`).
+- Cut a release with `bun run cut-release` — never `git tag` by hand. The script verifies you're on an up-to-date `main`, that the tree is clean, and that CI is green on the commit being tagged.
+- The tag triggers `deploy.yml`: build → push to GHCR → notify Drift → publish a GitHub Release with a generated changelog. The release tag is also applied to the docker image so Drift can use it as a deploy marker.
+- `bun run release` is something else — changesets' npm publish of `@tihlde/sdk`. Don't confuse the two.
 
 ### Commit Message Convention
 
