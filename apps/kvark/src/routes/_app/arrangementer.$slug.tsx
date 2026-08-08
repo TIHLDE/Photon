@@ -1,6 +1,8 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Button } from "@tihlde/ui/ui/button";
+import { Separator } from "@tihlde/ui/ui/separator";
 import {
     ArrowLeft,
     CalendarDays,
@@ -36,6 +38,7 @@ import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
 import { MapLink } from "#/components/map-link";
+import { richRegistry } from "#/components/markdown/directives/presets";
 import { ShareButton } from "#/components/share-button";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useCanActOnResource } from "#/hooks/use-permission";
@@ -249,6 +252,17 @@ function EventDetailPage() {
                         <DetailField icon={MapPin} value={locationValue} />
                     </div>
                 </>
+            }
+            body={
+                event.description ? (
+                    <>
+                        <Separator />
+                        <MarkdownView
+                            registry={richRegistry}
+                            source={event.description}
+                        />
+                    </>
+                ) : null
             }
             sidebar={
                 <>
