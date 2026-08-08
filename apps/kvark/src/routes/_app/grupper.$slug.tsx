@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { authQueryOptions } from "#/api/auth";
+import { searchUsersQuery } from "#/api/queries/roles";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     getFormByIdQuery,
@@ -31,6 +32,7 @@ import {
     useScopedPermission,
 } from "#/hooks/use-permission";
 import {
+    addGroupMemberMutation,
     batchUpdateUserFinesMutation,
     createFineMutation,
     createGroupFormMutation,
@@ -89,6 +91,8 @@ import {
     mapMember,
     sortMembersByName,
 } from "#/lib/group";
+import { extractErrorMessage } from "#/lib/api-error";
+import { useDebounced } from "#/lib/use-debounced";
 import { errorStatus } from "#/lib/utils";
 
 const searchSchema = z.object({
@@ -182,6 +186,7 @@ function GroupDetail() {
 
     const updateMemberRole = useMutation(updateGroupMemberRoleMutation);
     const removeMember = useMutation(removeGroupMemberMutation);
+    const addMember = useMutation(addGroupMemberMutation);
     const updateGroup = useMutation(updateGroupMutation);
     const createFine = useMutation(createFineMutation);
     const { uploadImage, isUploading } = useImageUploader();
@@ -310,6 +315,28 @@ function GroupDetail() {
     const formerMembers = useMemo(
         () => (apiFormerMembers ?? []).map(mapFormerMember),
         [apiFormerMembers],
+    );
+
+    // Brukersøk for «Legg til medlem». Søket er billig nok til å ligge her,
+    // men vi venter til to tegn så vi ikke slår opp hele medlemsregisteret.
+    const [memberQuery, setMemberQuery] = useState("");
+    // API-ets egen melding er den nyttige ("Kan ikke legge til medlemmer i en
+    // avledet gruppe"), men den må hentes ut av responsen asynkront.
+    const [addMemberError, setAddMemberError] = useState<string | null>(null);
+    const debouncedMemberQuery = useDebounced(memberQuery);
+    const { data: memberSearchResults, isFetching: isSearchingMembers } =
+        useQuery({
+            ...searchUsersQuery(debouncedMemberQuery),
+            enabled: debouncedMemberQuery.length >= 2,
+        });
+    // Den som allerede er med skal ikke kunne legges til på nytt — API-et
+    // svarer 400, og det er en dårligere forklaring enn å utelate treffet.
+    const addableUsers = useMemo(
+        () =>
+            (memberSearchResults ?? []).filter(
+                (user) => !members.some((m) => m.id === user.id),
+            ),
+        [memberSearchResults, members],
     );
     const group = useMemo(
         () => mapGroup(apiGroup, leader?.name),
@@ -577,6 +604,28 @@ function GroupDetail() {
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
                             canPromote={hasGroupsManage}
+                            memberSearch={{
+                                query: memberQuery,
+                                onQueryChange: setMemberQuery,
+                                results: addableUsers,
+                                isSearching: isSearchingMembers,
+                                isAdding: addMember.isPending,
+                                error: addMemberError,
+                                onAdd: async (userId) => {
+                                    setAddMemberError(null);
+                                    try {
+                                        await addMember.mutateAsync({
+                                            groupSlug: slug,
+                                            data: { userId, role: "member" },
+                                        });
+                                    } catch (error) {
+                                        setAddMemberError(
+                                            await extractErrorMessage(error),
+                                        );
+                                        throw error;
+                                    }
+                                },
+                            }}
                             onPromote={(member) =>
                                 updateMemberRole.mutate({
                                     groupSlug: slug,
