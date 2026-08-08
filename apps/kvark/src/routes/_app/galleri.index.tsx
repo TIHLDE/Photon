@@ -3,12 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Empty, EmptyDescription, EmptyTitle } from "@tihlde/ui/ui/empty";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 
+import { authClientWithRedirect } from "#/api/auth";
 import { getGalleriesInfiniteQuery } from "#/api/queries/galleries";
 import { GalleryCard } from "#/components/gallery-card";
 import { LoadMoreButton } from "#/components/load-more-button";
 
 export const Route = createFileRoute("/_app/galleri/")({
     component: GalleriesPage,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: ({ context }) =>
         context.queryClient.ensureInfiniteQueryData(
             getGalleriesInfiniteQuery(),

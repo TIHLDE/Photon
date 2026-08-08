@@ -1,3 +1,5 @@
+import { schema } from "@photon/db";
+import { and, eq, inArray } from "drizzle-orm";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
@@ -77,6 +79,21 @@ export const getRoute = route().get(
         if (event.visibility === "members" && !user) {
             return c.json("The event was not found", 404);
         }
+
+        // How many are going is public; who they are is not. The roster
+        // endpoint is members-only, so the count lives here instead — it is
+        // the same set of statuses that endpoint counts by default.
+        const registeredCount = await db.$count(
+            schema.eventRegistration,
+            and(
+                eq(schema.eventRegistration.eventId, event.id),
+                inArray(schema.eventRegistration.status, [
+                    "registered",
+                    "attended",
+                    "no_show",
+                ]),
+            ),
+        );
 
         let registration: z.infer<typeof eventDetailSchema>["registration"] =
             null;
@@ -174,6 +191,7 @@ export const getRoute = route().get(
             allowWaitlist: event.allowWaitlist,
             capacity: event.capacity,
             canCauseStrikes: event.canCauseStrikes,
+            registeredCount,
             image: event.imageUrl,
             imageAlt: event.imageAlt,
             createdById: event.createdByUserId,

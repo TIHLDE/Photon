@@ -74,9 +74,12 @@ function EventDetailPage() {
         refetchIntervalInBackground: true,
     });
     const { data: session } = useQuery(authQueryOptions);
-    const { data: registrations } = useQuery(
-        getEventRegistrationsQuery(event.id, 0),
-    );
+    // Deltakerlisten er for medlemmer — utloggede får antallet fra
+    // arrangementet selv, og ville bare fått 401 her.
+    const { data: registrations } = useQuery({
+        ...getEventRegistrationsQuery(event.id, 0),
+        enabled: Boolean(session),
+    });
 
     const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);
@@ -119,7 +122,7 @@ function EventDetailPage() {
         : null;
 
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
-    const registeredCount = registrations?.totalCount ?? 0;
+    const registeredCount = event.registeredCount;
     const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
         id: u.id,
         name: u.name,

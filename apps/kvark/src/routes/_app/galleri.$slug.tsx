@@ -9,6 +9,7 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarIcon } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 
+import { authClientWithRedirect } from "#/api/auth";
 import {
     deleteGalleryPictureMutation,
     getGalleryPicturesInfiniteQuery,
@@ -25,6 +26,7 @@ import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/_app/galleri/$slug")({
     component: GalleryDetailPage,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: ({ context, params }) =>
         context.queryClient.ensureQueryData(getGalleryQuery(params.slug)),
 });
