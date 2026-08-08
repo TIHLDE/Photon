@@ -41,7 +41,7 @@ export function DetailHeader({
             {avatar}
             {/* Lange, ubrytelige gruppenavn (Forvaltningsgruppen) må kunne
                 brytes, ellers presser de headeren ut av skjermen på mobil. */}
-            <div className="min-w-0 break-words">{title}</div>
+            <div className="min-w-0 wrap-anywhere">{title}</div>
             {subtitle ? (
                 <div className="col-span-2 min-w-0 md:col-span-1 md:col-start-2">
                     {subtitle}

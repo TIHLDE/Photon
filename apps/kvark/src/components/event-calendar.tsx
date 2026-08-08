@@ -115,23 +115,31 @@ export function EventCalendar({ events }: EventCalendarProps) {
                             >
                                 {format(day, "d")}
                             </span>
-                            {dayEvents.map((event) => (
-                                <Badge
-                                    key={event.id}
-                                    className="w-full min-w-0 justify-start"
-                                    title={event.title}
-                                    render={
-                                        <Link
-                                            to="/arrangementer/$slug"
-                                            params={{ slug: event.slug }}
-                                        />
-                                    }
-                                >
-                                    <span className="truncate">
-                                        {event.title}
-                                    </span>
-                                </Badge>
-                            ))}
+                            {/* Sju kolonner gir ~45px per dag på mobil, og da
+                                er tittelen uleselig uansett. Under `sm` blir
+                                hvert arrangement en prikk som viser at dagen
+                                har noe; tittelen kommer tilbake når det er
+                                plass til den. */}
+                            <div className="flex flex-wrap gap-1 sm:flex-col sm:flex-nowrap">
+                                {dayEvents.map((event) => (
+                                    <Badge
+                                        key={event.id}
+                                        className="size-1.5 min-w-0 justify-start p-0 sm:h-5 sm:w-full sm:px-2"
+                                        title={event.title}
+                                        aria-label={event.title}
+                                        render={
+                                            <Link
+                                                to="/arrangementer/$slug"
+                                                params={{ slug: event.slug }}
+                                            />
+                                        }
+                                    >
+                                        <span className="hidden truncate sm:inline">
+                                            {event.title}
+                                        </span>
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
                     );
                 })}

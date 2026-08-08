@@ -33,8 +33,11 @@ export function GroupFineRow({ fine, onOpen }: GroupFineRowProps) {
                 {fine.amount} {fine.amount === 1 ? "bot" : "bøter"}
             </Badge>
             <div className="flex min-w-0 flex-1 flex-col">
-                <span className="flex items-center gap-1 truncate font-medium">
-                    {fine.user}
+                {/* `truncate` hører hjemme på navnet, ikke på flex-raden:
+                    text-overflow virker ikke på en flex-boks, så der ble
+                    badgene bak navnet bare klippet midt av uten ellipse. */}
+                <span className="flex items-center gap-1 font-medium">
+                    <span className="truncate">{fine.user}</span>
                     {fine.approved ? (
                         <Badge variant="outline">Godkjent</Badge>
                     ) : null}

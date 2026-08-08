@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import { FilterCheckboxOption } from "#/components/filter-checkbox-option";
 import { type FilterPill } from "#/components/filter-pill-row";
 import { FilterShell } from "#/components/filter-shell";
+import { truncateLabel } from "#/lib/utils";
 
 export type Category = { value: string; label: string };
 
@@ -45,7 +46,7 @@ export function EventFilters({
         if (value.query) {
             next.push({
                 key: "query",
-                label: `Søk: ${value.query}`,
+                label: `Søk: ${truncateLabel(value.query)}`,
                 clear: () => onChange({ ...value, query: "" }),
             });
         }

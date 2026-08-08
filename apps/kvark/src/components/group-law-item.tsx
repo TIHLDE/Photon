@@ -14,8 +14,8 @@ type GroupLawItemProps = {
 export function GroupLawItem({ law, onEdit }: GroupLawItemProps) {
     const content = (
         <>
-            <div className="flex items-baseline gap-3">
-                <h3 className="font-medium">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 className="min-w-0 font-medium">
                     {law.paragraph} - {law.title}
                 </h3>
                 {/* 0 bøter brukes for overskrifter og forklarende paragrafer.

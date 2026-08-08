@@ -78,9 +78,12 @@ export function ListCard({
                         </h3>
                         <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                             {meta.map((row, i) => (
+                                // `min-w-0`: uten den setter et langt stedsnavn
+                                // radens minstebredde, og `truncate` på
+                                // spennet under får aldri slå inn.
                                 <div
                                     key={i}
-                                    className="flex items-center gap-2"
+                                    className="flex min-w-0 items-center gap-2"
                                 >
                                     <row.icon className="size-4 shrink-0" />
                                     <span className="truncate">{row.text}</span>
