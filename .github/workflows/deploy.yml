@@ -1,14 +1,18 @@
 name: "build -> push -> deploy"
+
+# Deploy trigges av en release-tag, ikke av push til en branch.
+# Tag-format: <dato>.release-<n>, f.eks. 2026-08-08.release-1.
+# Bruk `bun run cut-release` (scripts/cut-release.sh) for å lage taggen.
+# (`bun run release` er changesets' npm-publisering av @tihlde/sdk — noe annet.)
 on:
     push:
-        branches: [main]
-        paths:
-            - "**"
+        tags:
+            - "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].release-*"
     workflow_dispatch:
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+    cancel-in-progress: false
 
 jobs:
     build:
@@ -19,12 +23,34 @@ jobs:
         with:
             context: .
             dockerfile: ./infra/docker/Dockerfile
+            # Tagger imaget med release-taggen, så Drift kan bruke den som
+            # deploy-markør på containeren i tillegg til latest + sha.
+            extra_tags: type=ref,event=tag
 
     deploy:
         needs: build
-        if: github.event_name != 'pull_request'
         uses: TIHLDE/tihlde-workflows/.github/workflows/_notify_deploy.yml@main
         with:
             deploy_url: "https://deploy-king.tihlde.org/deploy"
         secrets:
             DEPLOY_RECEIVER_TOKEN: ${{ secrets.DEPLOY_RECEIVER_TOKEN }}
+
+    release_notes:
+        needs: build
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Publiser GitHub Release med generert changelog
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release create "${GITHUB_REF_NAME}" \
+                      --title "${GITHUB_REF_NAME}" \
+                      --generate-notes \
+                      --verify-tag
