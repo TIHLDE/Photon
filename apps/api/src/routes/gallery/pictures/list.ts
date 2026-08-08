@@ -6,6 +6,7 @@ import type z from "zod";
 import { findAlbumBySlugOrId } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
     getPageOffset,
@@ -20,7 +21,7 @@ export const listPicturesRoute = route().get(
         summary: "List pictures in a gallery",
         operationId: "listGalleryPictures",
         description:
-            "Get a paginated list of the pictures in an album. This is what backs the 'Last inn mer' button. Public endpoint.",
+            "Get a paginated list of the pictures in an album. This is what backs the 'Last inn mer' button. Members only.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,7 +29,9 @@ export const listPicturesRoute = route().get(
             description: "OK",
         })
         .notFound({ description: "Gallery not found" })
+        .unauthorized({ description: "Authentication required" })
         .build(),
+    requireAuth,
     validator("query", PaginationSchema),
     async (c) => {
         const ctx = c.get("ctx");

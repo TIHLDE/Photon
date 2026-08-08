@@ -33,13 +33,41 @@ async function seedRegistrations(ctx: IntegrationTestContext) {
 
 describe("Event registration listing", () => {
     integrationTest(
-        // Regression guard: the public event page renders totalCount as the
-        // visible registration count.
-        "hides admin fields and non-registered statuses from anonymous callers",
+        // Regression guard: who attends must not be enumerable from the open
+        // internet. The count itself stays public, on the event.
+        "refuses anonymous callers, but the event still carries the count",
         async ({ ctx }) => {
             const { event } = await seedRegistrations(ctx);
 
             const client = ctx.utils.client();
+            const res = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+
+            expect(res.status).toBe(401);
+
+            const eventRes = await client.api.event[":eventId"].$get({
+                param: { eventId: event.id },
+            });
+            expect(eventRes.status).toBe(200);
+            // The 404 branch returns a bare string, so narrow before reading.
+            const body = await eventRes.json();
+            expect(typeof body).not.toBe("string");
+            expect(
+                typeof body === "string" ? undefined : body.registeredCount,
+            ).toBe(1);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "hides admin fields and non-registered statuses from ordinary members",
+        async ({ ctx }) => {
+            const { event } = await seedRegistrations(ctx);
+
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
             const res = await client.api.event[":eventId"].registration.$get({
                 param: { eventId: event.id },
                 query: {},
