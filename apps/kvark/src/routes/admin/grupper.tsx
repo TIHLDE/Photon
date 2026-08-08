@@ -81,7 +81,9 @@ import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
     useAnyScopePermission,
+    useCanActForGroup,
     useIsGroupLeaderOf,
+    useLedGroupSlugs,
     useScopedPermission,
 } from "#/hooks/use-permission";
 import { groupTypeLabel } from "#/lib/group";
@@ -106,6 +108,17 @@ const GROUP_TYPE_TABS = [
 
 type TabType = (typeof GROUP_TYPE_TABS)[number]["type"];
 
+/**
+ * Everything this page lets you do to a single group. Holding one of these for
+ * a group — or leading it — is what makes the group worth listing here at all.
+ */
+const GROUP_ADMIN_PERMISSIONS = [
+    "groups:update",
+    "groups:manage",
+    "contracts:view",
+    "contracts:manage",
+] as const;
+
 function GrupperAdminPage() {
     const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
     const [tab, setTab] = useState<TabType>("SUBGROUP");
@@ -113,7 +126,16 @@ function GrupperAdminPage() {
     const [createOpen, setCreateOpen] = useState(false);
     const canCreate = useAnyScopePermission(["groups:create", "groups:manage"]);
 
-    const groups = allGroups.filter((group) => group.type === tab);
+    // The listing endpoint is public, so the narrowing happens here: someone
+    // holding `groups:update@group:nok` administers NoK, not Index. A global
+    // grant satisfies every group, so admins still see all of them.
+    const canActForGroup = useCanActForGroup(GROUP_ADMIN_PERMISSIONS);
+    const ledSlugs = useLedGroupSlugs();
+    const groups = allGroups.filter(
+        (group) =>
+            group.type === tab &&
+            (canActForGroup(group.slug) || ledSlugs.has(group.slug)),
+    );
 
     return (
         <Stagger
@@ -151,7 +173,7 @@ function GrupperAdminPage() {
                 <AdminEmptyState
                     icon={UsersIcon}
                     title="Ingen grupper"
-                    description="Fant ingen grupper av denne typen."
+                    description="Du administrerer ingen grupper av denne typen."
                 />
             ) : (
                 <div className="flex flex-col gap-4">
@@ -357,15 +379,16 @@ function GroupCard({
 
     const updateGroup = useMutation(updateGroupMutation);
     const { uploadImage, isUploading } = useImageUploader();
-    // The scope is known here, so this is exactly the check the API runs:
-    // `groups:update` globally or granted for this very group.
-    const canEdit = useScopedPermission(
-        ["groups:update", "groups:manage"],
-        `group:${group.slug}`,
-    );
+    const isLeader = useIsGroupLeaderOf(group.slug);
+    // Speiler PATCH /groups/:slug nøyaktig: `groups:update` globalt eller for
+    // denne gruppa, eller å være lederen dens (`ownership: isGroupLeader`).
+    const canEdit =
+        useScopedPermission(
+            ["groups:update", "groups:manage"],
+            `group:${group.slug}`,
+        ) || isLeader;
     // Medlemslista speiler fjern-endepunktet: `groups:manage` for denne gruppa,
     // eller å være lederen dens.
-    const isLeader = useIsGroupLeaderOf(group.slug);
     const canManageMembers =
         useScopedPermission("groups:manage", `group:${group.slug}`) || isLeader;
 

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
     authQueryOptions,
@@ -123,6 +123,27 @@ export function useIsGroupLeaderOf(slug: string): boolean {
         session?.groups?.some(
             (group) => group.slug === slug && group.role === "leader",
         ),
+    );
+}
+
+/**
+ * The slugs of every group the current user leads.
+ *
+ * For listings that must be narrowed to what the viewer may act on. Leadership
+ * is membership, not a permission string, so it cannot be read out of
+ * `session.permissions` the way {@link useCanActForGroup} reads a grant.
+ */
+export function useLedGroupSlugs(): ReadonlySet<string> {
+    const { data: session } = useQuery(authQueryOptions);
+    const groups = session?.groups;
+    return useMemo(
+        () =>
+            new Set(
+                (groups ?? [])
+                    .filter((group) => group.role === "leader")
+                    .map((group) => group.slug),
+            ),
+        [groups],
     );
 }
 

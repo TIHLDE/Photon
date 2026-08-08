@@ -164,10 +164,15 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 permission: ADMIN_SECTION_PERMISSIONS.brukere,
             },
             {
+                // Lederen av en gruppe kommer hit uten noen global groups:*-
+                // rettighet — API-et lar lederen redigere sin egen gruppe
+                // (`ownership: isGroupLeader`). Sida viser bare gruppene
+                // vedkommende faktisk kan røre.
                 label: "Grupper",
                 icon: Users2Icon,
                 link: linkOptions({ to: "/admin/grupper" }),
                 permission: ADMIN_SECTION_PERMISSIONS.grupper,
+                allowGroupLeader: true,
             },
             {
                 label: "Prikker",
