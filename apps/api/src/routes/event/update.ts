@@ -4,7 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
-import { requireAccess } from "~/middleware/access";
+import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "../../lib/event/middleware";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
@@ -18,7 +18,7 @@ export const updateRoute = route().put(
         summary: "Update event",
         operationId: "updateEvent",
         description:
-            "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' permission can update any event.",
+            "Update an event by its ID. Event creators can update their own events. Users with 'events:update' or 'events:manage' — globally or for the arranging group — can update the events they hold it for.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -32,9 +32,10 @@ export const updateRoute = route().put(
         .notFound({ description: "Not found" })
         .build(),
     requireAuth,
-    requireAccess({
+    requireEventAccess({
         permission: ["events:update", "events:manage"],
-        ownership: { param: "id", check: isEventOwner },
+        param: "id",
+        ownership: isEventOwner,
     }),
     validator("json", updateEventSchema),
     async (c) => {
@@ -85,6 +86,26 @@ export const updateRoute = route().put(
                 if (group.length === 0) {
                     throw new HTTPException(400, {
                         message: `Group with slug "${body.organizerGroupSlug}" does not exist`,
+                    });
+                }
+
+                // Handing the event to another group is arranging an event
+                // for that group, so it takes the permission there too —
+                // otherwise a group-scoped grant could push events onto
+                // groups it has no say over.
+                if (
+                    !(await canActOnEventsForGroup(
+                        // Must read through `tx`: the pool connection is held
+                        // by this transaction, so querying past it would
+                        // deadlock.
+                        { ...c.get("ctx"), db: tx },
+                        userId,
+                        body.organizerGroupSlug,
+                        ["events:update", "events:manage"],
+                    ))
+                ) {
+                    throw new HTTPException(403, {
+                        message: `Forbidden - requires events:update or events:manage for group "${body.organizerGroupSlug}"`,
                     });
                 }
             }

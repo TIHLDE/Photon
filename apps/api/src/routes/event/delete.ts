@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describeRoute } from "~/lib/openapi";
-import { requireAccess } from "~/middleware/access";
+import { requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "../../lib/event/middleware";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
@@ -14,7 +14,7 @@ export const deleteRoute = route().delete(
         summary: "Delete an event",
         operationId: "deleteEvent",
         description:
-            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' permission can delete any event. This action is irreversible and will remove all associated data, including registrations and feedback.",
+            "Delete an event by its ID. Event creators can delete their own events. Users with 'events:delete' — globally or for the arranging group — can delete any event they hold it for. This action is irreversible and will remove all associated data, including registrations and feedback.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,9 +28,9 @@ export const deleteRoute = route().delete(
         .notFound({ description: "Event with the specified ID does not exist" })
         .build(),
     requireAuth,
-    requireAccess({
+    requireEventAccess({
         permission: "events:delete",
-        ownership: { param: "eventId", check: isEventOwner },
+        ownership: isEventOwner,
     }),
     async (c) => {
         const { eventId } = c.req.param();

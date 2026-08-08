@@ -1,0 +1,157 @@
+import { getUserPermissions } from "@photon/auth/rbac";
+import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
+import { describe, expect } from "vitest";
+import { updateGroupMemberRole } from "~/lib/group";
+import { integrationTest } from "~/test/config/integration";
+
+/**
+ * Tests for the group leader's own permission set: granted scoped to the
+ * group, following whoever leads it, and editable from the verv table.
+ *
+ * The reason this exists at all: before it, giving a committee leader the
+ * right to run their own arrangementer meant a *global* events grant, which
+ * opened every other group's events too.
+ */
+
+describe("group leader permissions", () => {
+    describe("granting", () => {
+        integrationTest(
+            "the leader holds them scoped to the group, and loses them on stepping down",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderPermissions: ["events:create"] })
+                    .where(eq(schema.group.slug, group.slug));
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const asLeader = await getUserPermissions(ctx, leader.id);
+                expect(asLeader).toContain(`events:create@group:${group.slug}`);
+                // Scoped, never global — the whole point.
+                expect(asLeader).not.toContain("events:create");
+
+                await updateGroupMemberRole(
+                    ctx,
+                    leader.id,
+                    group.slug,
+                    "member",
+                );
+
+                const asMember = await getUserPermissions(ctx, leader.id);
+                expect(asMember).not.toContain(
+                    `events:create@group:${group.slug}`,
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "an ordinary member of the group gets nothing from them",
+            async ({ ctx }) => {
+                const member = await ctx.utils.createTestUser();
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderPermissions: ["events:create"] })
+                    .where(eq(schema.group.slug, group.slug));
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+
+                const permissions = await getUserPermissions(ctx, member.id);
+                expect(permissions).not.toContain(
+                    `events:create@group:${group.slug}`,
+                );
+            },
+            500_000,
+        );
+    });
+
+    describe("editing", () => {
+        integrationTest(
+            "a leader can set permissions they hold for the group",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+
+                const response = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: ["fines:manage"] },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.permissions).toEqual(["fines:manage"]);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a leader cannot hand out permissions they do not hold",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const response = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: ["events:payments:refund"] },
+                });
+
+                expect(response.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "an outsider cannot read or write them",
+            async ({ ctx }) => {
+                const outsider = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(outsider);
+                const group = await ctx.utils.createTestGroup();
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: group.slug } });
+                expect(read.status).toBe(403);
+
+                const write = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: [] },
+                });
+                expect(write.status).toBe(403);
+            },
+            500_000,
+        );
+    });
+});

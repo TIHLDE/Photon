@@ -4,9 +4,9 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
 import zod from "zod";
+import { requireEventAccess } from "~/lib/event/access";
 import { Schema, describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
 const setAttendanceSchema = Schema(
@@ -36,7 +36,7 @@ export const setAttendanceRoute = route().patch(
         summary: "Set registration attendance",
         operationId: "setRegistrationAttendance",
         description:
-            "Mark a registered user as attended (checked in) or revert them to registered. Used for event check-in; users left as 'registered' after the event may receive no-show strikes. Requires 'events:update' or 'events:manage' permission.",
+            "Mark a registered user as attended (checked in) or revert them to registered. Used for event check-in; users left as 'registered' after the event may receive no-show strikes. Requires 'events:update' or 'events:manage', globally or for the arranging group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -49,7 +49,7 @@ export const setAttendanceRoute = route().patch(
         .notFound({ description: "Registration not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["events:update", "events:manage"] }),
+    requireEventAccess({ permission: ["events:update", "events:manage"] }),
     validator("json", setAttendanceSchema),
     async (c) => {
         const { db } = c.get("ctx");

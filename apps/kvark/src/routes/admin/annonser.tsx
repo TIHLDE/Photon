@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import z from "zod";
 import {
     BriefcaseBusinessIcon,
     PencilIcon,
@@ -93,8 +94,16 @@ const CLASS_LABELS: Record<UserClass, string> = {
     alumni: "Alumni",
 };
 
+// `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
+// annonse» på annonsesiden kan lenke rett til riktig annonse i stedet for å
+// slippe deg av på listen.
+const searchSchema = z.object({
+    rediger: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/admin/annonser")({
     component: JobsAdminPage,
+    validateSearch: searchSchema,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(
             getJobsQuery(0, { expired: true }),
@@ -105,12 +114,21 @@ export const Route = createFileRoute("/admin/annonser")({
 
 function JobsAdminPage() {
     const canCreate = useAnyScopePermission(["jobs:create", "jobs:manage"]);
+    const { rediger } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [search, setSearch] = useState("");
     const [jobType, setJobType] = useState<JobType | "all">("all");
     const [showExpired, setShowExpired] = useState(true);
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; job: JobListItem } | null
     >(null);
+
+    function closeDialog() {
+        setDialog(null);
+        // Ellers ville dialogen åpnet seg igjen med en gang, siden id-en
+        // fortsatt sto i URL-en.
+        if (rediger) navigate({ search: {}, replace: true });
+    }
 
     return (
         <Stagger
@@ -189,6 +207,7 @@ function JobsAdminPage() {
                     search={search}
                     jobType={jobType}
                     showExpired={showExpired}
+                    autoEditId={rediger}
                     onEdit={(job) => setDialog({ mode: "edit", job })}
                 />
             </Suspense>
@@ -198,7 +217,7 @@ function JobsAdminPage() {
                 open={dialog !== null}
                 job={dialog?.mode === "edit" ? dialog.job : null}
                 onOpenChange={(open) => {
-                    if (!open) setDialog(null);
+                    if (!open) closeDialog();
                 }}
             />
         </Stagger>
@@ -209,11 +228,13 @@ function JobsTable({
     search,
     jobType,
     showExpired,
+    autoEditId,
     onEdit,
 }: {
     search: string;
     jobType: JobType | "all";
     showExpired: boolean;
+    autoEditId?: string;
     onEdit: (job: JobListItem) => void;
 }) {
     const { data } = useSuspenseQuery(getJobsQuery(0, { expired: true }));
@@ -222,6 +243,16 @@ function JobsTable({
     // buttons follow the item, not just the global permission.
     const canEdit = useCanActOnResource(["jobs:update", "jobs:manage"]);
     const canDelete = useCanActOnResource(["jobs:delete", "jobs:manage"]);
+
+    // Listen ligger her, ikke i forelderen, så oppslaget av `?rediger=<id>`
+    // må også gjøres her. Kjører kun når id-en endrer seg, slik at dialogen
+    // ikke tvinges opp igjen etter at man har lukket den.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: onEdit er ny hver render
+    useEffect(() => {
+        if (!autoEditId) return;
+        const match = data.items.find((job) => job.id === autoEditId);
+        if (match && canEdit(match.createdById)) onEdit(match);
+    }, [autoEditId, canEdit, data.items]);
 
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();

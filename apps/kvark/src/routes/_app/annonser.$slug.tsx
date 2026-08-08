@@ -81,6 +81,12 @@ function JobDetailPage() {
                                 <IconActionButton
                                     icon={PencilLine}
                                     label="Rediger annonse"
+                                    render={
+                                        <Link
+                                            to="/admin/annonser"
+                                            search={{ rediger: job.id }}
+                                        />
+                                    }
                                 />
                             ) : null}
                         </div>

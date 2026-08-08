@@ -1,10 +1,10 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { registrationStatusVariants } from "@photon/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
+import { canActOnEvent } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
@@ -62,7 +62,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         // admin-facing: only include them for callers who can manage events.
         const user = c.get("user");
         const isEventAdmin = user
-            ? await hasPermission(ctx, user.id, [
+            ? await canActOnEvent(ctx, user.id, eventId, [
                   "events:update",
                   "events:manage",
                   "events:registrations:view",
