@@ -753,7 +753,7 @@ export interface paths {
         };
         /**
          * Get event registrations
-         * @description Retrieve a paginated list of users registered for a specific event. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.
+         * @description Retrieve a paginated list of users registered for a specific event. Members only — who attends is not something the open internet gets to enumerate; the event itself carries a public `registeredCount` for the visible number. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.
          */
         get: operations["listEventRegistrations"];
         put?: never;
@@ -1081,7 +1081,7 @@ export interface paths {
         };
         /**
          * List galleries
-         * @description Get a paginated list of photo albums, newest first. Public endpoint.
+         * @description Get a paginated list of photo albums, newest first. Members only.
          */
         get: operations["listGalleries"];
         put?: never;
@@ -1105,7 +1105,7 @@ export interface paths {
         };
         /**
          * List pictures in a gallery
-         * @description Get a paginated list of the pictures in an album. This is what backs the 'Last inn mer' button. Public endpoint.
+         * @description Get a paginated list of the pictures in an album. This is what backs the 'Last inn mer' button. Members only.
          */
         get: operations["listGalleryPictures"];
         put?: never;
@@ -1153,7 +1153,7 @@ export interface paths {
         };
         /**
          * Get gallery
-         * @description Get a single album by slug (or ID). Pictures are fetched separately via /api/galleries/{slug}/pictures. Public endpoint.
+         * @description Get a single album by slug (or ID). Pictures are fetched separately via /api/galleries/{slug}/pictures. Members only.
          */
         get: operations["getGallery"];
         put?: never;
@@ -3545,6 +3545,8 @@ export interface components {
             capacity: number | null;
             /** @description Can this event give strikes for late cancellation or no-show? */
             canCauseStrikes: boolean;
+            /** @description Number of people signed up (registered, attended or no-show). Public, unlike the roster itself, so the open event page can show how many are going without naming them. */
+            registeredCount: number;
             /** @description Event image URL (nullable) */
             image: string | null;
             /** @description Alt text for the event image (nullable) */
@@ -7426,6 +7428,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Forbidden - Filtering by status requires event admin permissions */
             403: {
                 headers: {
@@ -8416,6 +8427,15 @@ export interface operations {
                     "application/json": components["schemas"]["GalleryList"];
                 };
             };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createGallery: {
@@ -8481,6 +8501,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GalleryPictureList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
             /** @description Not Found - Gallery not found */
@@ -8655,6 +8684,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Gallery"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
             /** @description Not Found - Gallery not found */

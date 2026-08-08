@@ -557,6 +557,10 @@ export const eventDetailSchema = Schema(
             description:
                 "Can this event give strikes for late cancellation or no-show?",
         }),
+        registeredCount: z.number().int().meta({
+            description:
+                "Number of people signed up (registered, attended or no-show). Public, unlike the roster itself, so the open event page can show how many are going without naming them.",
+        }),
         image: z
             .url()
             .nullable()

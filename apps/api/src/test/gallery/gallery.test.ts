@@ -162,7 +162,7 @@ describe("Gallery System", () => {
             });
             expect((await unlinkResponse.json()).event).toBeNull();
 
-            // === GET (public, by slug) ===
+            // === GET (members only, by slug) ===
 
             const getResponse = await userClient.api.galleries[":slug"].$get({
                 param: { slug: album.slug },
@@ -204,6 +204,40 @@ describe("Gallery System", () => {
                 param: { slug: album.slug },
             });
             expect(goneResponse.status).toBe(404);
+        },
+    );
+
+    integrationTest(
+        "the archive is for members: anonymous callers get 401",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["galleries:manage"]);
+            const adminClient = await ctx.utils.clientForUser(admin);
+
+            const created = await adminClient.api.galleries.$post({
+                json: { title: "Internt galleri" },
+            });
+            const album = await created.json();
+
+            const anonymous = ctx.utils.client();
+
+            const listResponse = await anonymous.api.galleries.$get({
+                query: {},
+            });
+            expect(listResponse.status).toBe(401);
+
+            const getResponse = await anonymous.api.galleries[":slug"].$get({
+                param: { slug: album.slug },
+            });
+            expect(getResponse.status).toBe(401);
+
+            const picturesResponse = await anonymous.api.galleries[
+                ":slug"
+            ].pictures.$get({
+                param: { slug: album.slug },
+                query: {},
+            });
+            expect(picturesResponse.status).toBe(401);
         },
     );
 });

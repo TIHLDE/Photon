@@ -7,7 +7,7 @@ import z from "zod";
 import { canActOnEvent } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { captureAuth } from "~/middleware/auth";
+import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
     getPageOffset,
@@ -16,9 +16,9 @@ import {
 import { eventRegistrationListResponseSchema } from "../schema";
 
 /**
- * The statuses that count as "successfully registered". This is the public
- * default and must not change: the event page renders `totalCount` from this
- * endpoint as the visible registration count.
+ * The statuses that count as "successfully registered". This is the default
+ * and must not change: it is what `registeredCount` on the event itself counts,
+ * and the two numbers have to agree.
  */
 const DEFAULT_STATUSES = ["registered", "attended", "no_show"] as const;
 
@@ -38,7 +38,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         summary: "Get event registrations",
         operationId: "listEventRegistrations",
         description:
-            "Retrieve a paginated list of users registered for a specific event. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.",
+            "Retrieve a paginated list of users registered for a specific event. Members only — who attends is not something the open internet gets to enumerate; the event itself carries a public `registeredCount` for the visible number. Event admins additionally receive email, registration time, waitlist position and payment status, and may filter by registration status.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -46,11 +46,12 @@ export const getAllRegistrationsForEventsRoute = route().get(
             description: "OK",
         })
         .badRequest({ description: "Unknown registration status" })
+        .unauthorized({ description: "Authentication required" })
         .forbidden({
             description: "Filtering by status requires event admin permissions",
         })
         .build(),
-    captureAuth,
+    requireAuth,
     validator("query", querySchema),
     async (c) => {
         const ctx = c.get("ctx");
@@ -61,13 +62,11 @@ export const getAllRegistrationsForEventsRoute = route().get(
         // Email, payment status, waitlist position and photo consent are all
         // admin-facing: only include them for callers who can manage events.
         const user = c.get("user");
-        const isEventAdmin = user
-            ? await canActOnEvent(ctx, user.id, eventId, [
-                  "events:update",
-                  "events:manage",
-                  "events:registrations:view",
-              ])
-            : false;
+        const isEventAdmin = await canActOnEvent(ctx, user.id, eventId, [
+            "events:update",
+            "events:manage",
+            "events:registrations:view",
+        ]);
 
         let statuses: readonly string[] = DEFAULT_STATUSES;
         if (status) {

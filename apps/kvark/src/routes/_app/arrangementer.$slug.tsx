@@ -1,6 +1,8 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Button } from "@tihlde/ui/ui/button";
+import { Separator } from "@tihlde/ui/ui/separator";
 import {
     ArrowLeft,
     CalendarDays,
@@ -36,6 +38,7 @@ import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
 import { MapLink } from "#/components/map-link";
+import { richRegistry } from "#/components/markdown/directives/presets";
 import { ShareButton } from "#/components/share-button";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
 import { useCanActOnResource } from "#/hooks/use-permission";
@@ -74,9 +77,12 @@ function EventDetailPage() {
         refetchIntervalInBackground: true,
     });
     const { data: session } = useQuery(authQueryOptions);
-    const { data: registrations } = useQuery(
-        getEventRegistrationsQuery(event.id, 0),
-    );
+    // Deltakerlisten er for medlemmer — utloggede får antallet fra
+    // arrangementet selv, og ville bare fått 401 her.
+    const { data: registrations } = useQuery({
+        ...getEventRegistrationsQuery(event.id, 0),
+        enabled: Boolean(session),
+    });
 
     const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);
@@ -119,7 +125,7 @@ function EventDetailPage() {
         : null;
 
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
-    const registeredCount = registrations?.totalCount ?? 0;
+    const registeredCount = event.registeredCount;
     const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
         id: u.id,
         name: u.name,
@@ -246,6 +252,17 @@ function EventDetailPage() {
                         <DetailField icon={MapPin} value={locationValue} />
                     </div>
                 </>
+            }
+            body={
+                event.description ? (
+                    <>
+                        <Separator />
+                        <MarkdownView
+                            registry={richRegistry}
+                            source={event.description}
+                        />
+                    </>
+                ) : null
             }
             sidebar={
                 <>

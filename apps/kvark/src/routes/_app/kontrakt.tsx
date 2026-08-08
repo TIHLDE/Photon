@@ -15,7 +15,7 @@ import { SignatureInput } from "@tihlde/ui/ui/signature-input";
 import { Download } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { authQueryOptions } from "#/api/auth";
+import { authClientWithRedirect, authQueryOptions } from "#/api/auth";
 import {
     getActiveContractQuery,
     getMySignatureQuery,
@@ -32,6 +32,7 @@ const SIGNED_PDF_URL = new URL(
 
 export const Route = createFileRoute("/_app/kontrakt")({
     component: KontraktPage,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: ({ context }) =>
         context.queryClient.ensureQueryData(getActiveContractQuery()),
 });

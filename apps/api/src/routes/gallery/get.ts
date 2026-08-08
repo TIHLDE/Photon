@@ -8,6 +8,7 @@ import {
 } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { requireAuth } from "~/middleware/auth";
 import { gallerySchema } from "./schema";
 
 export const getRoute = route().get(
@@ -17,7 +18,7 @@ export const getRoute = route().get(
         summary: "Get gallery",
         operationId: "getGallery",
         description:
-            "Get a single album by slug (or ID). Pictures are fetched separately via /api/galleries/{slug}/pictures. Public endpoint.",
+            "Get a single album by slug (or ID). Pictures are fetched separately via /api/galleries/{slug}/pictures. Members only.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -25,7 +26,9 @@ export const getRoute = route().get(
             description: "Album details",
         })
         .notFound({ description: "Gallery not found" })
+        .unauthorized({ description: "Authentication required" })
         .build(),
+    requireAuth,
     async (c) => {
         const ctx = c.get("ctx");
         const { slug } = c.req.param();

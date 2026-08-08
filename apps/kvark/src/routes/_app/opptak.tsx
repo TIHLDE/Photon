@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
-import { authQueryOptions } from "#/api/auth";
+import { authClientWithRedirect, authQueryOptions } from "#/api/auth";
 import { getGroupFormsQuery, getGroupsQuery } from "#/api/queries/groups";
 import {
     type AdmissionGroup,
@@ -15,6 +15,7 @@ import { ADMISSION_INFOS } from "#/data/admissions";
 
 export const Route = createFileRoute("/_app/opptak")({
     component: AdmissionsPage,
+    beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: ({ context }) =>
         context.queryClient.ensureQueryData(getGroupsQuery(0)),
 });
