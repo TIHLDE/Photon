@@ -58,7 +58,7 @@ jobs:
             - name: Run API test shard
               env:
                   MAX_TEST_WORKERS: 2
-              run: bun run test -- --filter=@photon/api -- --shard=${{ matrix.shard }}
+              run: bun run test -- --filter=@photon/api --log-order=stream -- --shard=${{ matrix.shard }}
 
     other-tests:
         name: Other Tests
