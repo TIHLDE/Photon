@@ -1,8 +1,13 @@
-import { revokeUnprovenCredentials } from "@photon/auth/feide";
+import {
+    passwordSetupRedirect,
+    revokeUnprovenCredentials,
+} from "@photon/auth/feide";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
-import { describe, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { integrationTest } from "~/test/config/integration";
+
+const FRONTEND = "https://tihlde.org";
 
 const credentialsOf = (
     db: Parameters<typeof revokeUnprovenCredentials>[0],
@@ -111,4 +116,51 @@ describe("revokeUnprovenCredentials", () => {
             expect(revoked).toBe(false);
         },
     );
+});
+
+/**
+ * Losing a password silently is how someone finds out on the day Feide is down
+ * and the password form is the only way in. These cover where they get sent
+ * instead.
+ */
+describe("passwordSetupRedirect", () => {
+    it("carries the original destination along", () => {
+        expect(
+            passwordSetupRedirect("https://tihlde.org/arrangementer", FRONTEND),
+        ).toBe("https://tihlde.org/velg-passord?redirectTo=%2Farrangementer");
+    });
+
+    it("keeps the query string of where they were headed", () => {
+        expect(
+            passwordSetupRedirect(
+                "https://tihlde.org/arrangementer?side=2",
+                FRONTEND,
+            ),
+        ).toBe(
+            "https://tihlde.org/velg-passord?redirectTo=%2Farrangementer%3Fside%3D2",
+        );
+    });
+
+    it("refuses to carry a destination on another origin", () => {
+        // An off-site location is either an error URL or something we should
+        // not be bouncing a signed-in member through.
+        expect(
+            passwordSetupRedirect("https://example.com/whatever", FRONTEND),
+        ).toBe("https://tihlde.org/velg-passord?redirectTo=%2F");
+    });
+
+    it("leaves the redirect alone when it already points at the setup page", () => {
+        // A first-ever Feide login gets there on its own via
+        // `newUserCallbackURL`; rewriting would nest redirectTo into itself.
+        expect(
+            passwordSetupRedirect(
+                "https://tihlde.org/velg-passord?redirectTo=%2F",
+                FRONTEND,
+            ),
+        ).toBeNull();
+    });
+
+    it("gives up on a location it cannot parse", () => {
+        expect(passwordSetupRedirect("not-a-url", FRONTEND)).toBeNull();
+    });
 });

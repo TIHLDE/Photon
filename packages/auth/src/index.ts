@@ -24,7 +24,12 @@ import { user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
-import { feidePlugin, revokeUnprovenCredentials, syncFeideHook } from "./feide";
+import {
+    feidePlugin,
+    redirectToPasswordSetupAfterRevoke,
+    revokeUnprovenCredentials,
+    syncFeideHook,
+} from "./feide";
 
 /**
  * Feide is a genuine third-party identity provider: it only works once a Feide
@@ -502,6 +507,22 @@ export function createAuth(options: CreateAuthOptions) {
             }),
             after: createAuthMiddleware(async (ctx) => {
                 if (!isFeideConfigured) return;
+
+                // Sends a member whose password was just revoked on to set a
+                // new one. Runs before the sync so a failing sync cannot cost
+                // them the notice; own try for the same reason in reverse.
+                try {
+                    redirectToPasswordSetupAfterRevoke(
+                        ctx,
+                        options.urls.frontend,
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to redirect to password setup after credential revoke:",
+                        error,
+                    );
+                }
+
                 // Syncs the user's TIHLDE study-program memberships after a
                 // successful Feide callback; a no-op for every other request.
                 //

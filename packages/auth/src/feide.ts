@@ -1410,12 +1410,136 @@ export async function revokeUnprovenCredentials(
      */
     await db.delete(session).where(eq(session.userId, userId));
 
+    noteRevokedPassword(userId);
+
     console.warn(
         `Revoked ${revoked.length} unproven credential account(s) for user ${userId} on Feide link: the password predated any proof of the address.`,
     );
 
     return true;
 }
+
+/**
+ * Users whose password was just revoked, so the callback can send them on to
+ * set a new one.
+ *
+ * The revocation happens in a database hook, several layers below the response;
+ * the redirect can only be rewritten in the `after` hook. Nothing in the
+ * request context is shared between the two, hence this hand-off. Entries are
+ * read once and expire on their own, so a login that never reaches the after
+ * hook — a crash, a rewritten redirect — cannot strand a note that misdirects a
+ * later login by the same member.
+ */
+const revokedPasswords = new Map<string, number>();
+
+/** How long a hand-off stays valid. Generous; the two hooks are milliseconds apart. */
+const REVOKED_PASSWORD_TTL_MS = 60_000;
+
+function noteRevokedPassword(userId: string): void {
+    const now = Date.now();
+    for (const [id, at] of revokedPasswords) {
+        if (now - at > REVOKED_PASSWORD_TTL_MS) revokedPasswords.delete(id);
+    }
+    revokedPasswords.set(userId, now);
+}
+
+function consumeRevokedPassword(userId: string): boolean {
+    const at = revokedPasswords.get(userId);
+    if (at === undefined) return false;
+
+    revokedPasswords.delete(userId);
+    return Date.now() - at <= REVOKED_PASSWORD_TTL_MS;
+}
+
+/**
+ * Where to send a member whose password was taken away by the login they just
+ * completed, or null to leave the redirect alone.
+ *
+ * `redirectTo` carries the destination they were originally headed for, so
+ * setting a password — or skipping it — still lands them where they meant to
+ * go. Exported for testing.
+ */
+export function passwordSetupRedirect(
+    location: string,
+    frontendUrl: string,
+): string | null {
+    let current: URL;
+    let frontend: URL;
+    try {
+        current = new URL(location);
+        frontend = new URL(frontendUrl);
+    } catch {
+        return null;
+    }
+
+    // A first-ever Feide login already goes here via `newUserCallbackURL`.
+    if (current.pathname === "/velg-passord") {
+        return null;
+    }
+
+    const target = new URL("/velg-passord", frontend);
+
+    /**
+     * Only a destination on our own site is worth carrying over: anything else
+     * is either an error URL or something we should not be bouncing through.
+     */
+    target.searchParams.set(
+        "redirectTo",
+        current.origin === frontend.origin
+            ? `${current.pathname}${current.search}`
+            : "/",
+    );
+
+    return target.toString();
+}
+
+/**
+ * Rewrites the Feide callback's redirect for a member whose password was just
+ * revoked, so they are told rather than left to find out.
+ *
+ * Better Auth sends first-time Feide *sign-ups* to `newUserCallbackURL` and
+ * everyone else to the plain callback, with no signal in between for "linked,
+ * and the old password is gone". Without this they land on the website looking
+ * signed in, and discover the password is missing the day Feide is unreachable
+ * — which is exactly the day the password form is the only way in.
+ *
+ * Mutating `responseHeaders` is what actually moves them: `c.redirect()` puts
+ * `location` on the very Headers object the response is built from, so the
+ * rewrite lands even though the endpoint has already thrown.
+ */
+export const redirectToPasswordSetupAfterRevoke: (
+    middlewareCtx: MiddlewareContext<
+        MiddlewareOptions,
+        AuthContext & {
+            returned?: unknown;
+            responseHeaders?: Headers;
+        }
+    >,
+    frontendUrl: string,
+) => void = (middlewareContext, frontendUrl) => {
+    if (
+        !middlewareContext.path.startsWith("/oauth2/callback") ||
+        middlewareContext.params.providerId !== FEIDE_PROVIDER_ID
+    ) {
+        return;
+    }
+
+    const session = middlewareContext.context.newSession;
+    if (!session || !consumeRevokedPassword(session.user.id)) {
+        return;
+    }
+
+    const headers = middlewareContext.context.responseHeaders;
+    const location = headers?.get("location");
+    if (!headers || !location) {
+        return;
+    }
+
+    const next = passwordSetupRedirect(location, frontendUrl);
+    if (next) {
+        headers.set("location", next);
+    }
+};
 
 /**
  * Read the OpenID profile Dataporten holds for an access token.
