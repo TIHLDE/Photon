@@ -15,6 +15,7 @@ import {
     group,
     groupMembership,
     role,
+    session,
     studyProgram,
     studyProgramMembership,
     user,
@@ -33,6 +34,11 @@ export type AuthCreateContext = {
  * BetterAuth provider ID for Feide
  */
 const FEIDE_PROVIDER_ID = "feide";
+
+/**
+ * BetterAuth provider ID for the email/password login it manages itself.
+ */
+const CREDENTIAL_PROVIDER_ID = "credential";
 
 /**
  * Program codes from the Feide API that are part of TIHLDE
@@ -1334,6 +1340,81 @@ export async function resolveMigratedEmail(
         .limit(1);
 
     return feideLink ? null : match.email;
+}
+
+/**
+ * Drop every credential and session an account collected before anyone proved
+ * they control its address.
+ *
+ * Self-registration writes the `user` row before the verification mail is even
+ * sent, and the address is only ever *claimed* — never proven. So an
+ * `emailVerified: false` row carries no evidence that the password on it
+ * belongs to the student the address names. Anyone can register
+ * `<someone-elses-username>@stud.ntnu.no`, pick a password, and wait; NTNU
+ * usernames are derived from names and are trivially guessable.
+ *
+ * The plant is inert while it sits there. `requireEmailVerification` blocks
+ * password sign-in, and sign-up skips auto sign-in for the same reason, so the
+ * row holds no session either. What arms it is the *victim's own* Feide login:
+ * Better Auth links the provider, then flips `emailVerified` to true because
+ * the addresses match — and from that moment the planted password works.
+ *
+ * Feide proves who the human is. It proves nothing about who typed a password
+ * into that row last week, so the password does not survive the link. Better
+ * Auth applies the identical rule to its own email-primary proofs — see
+ * `revokeUnprovenAccountAccess`, used by magic link and email OTP. The OAuth
+ * path never got it, which is why `requireLocalEmailVerified` guards that path
+ * by refusing to link at all. Refusing is what stranded 15 new students in
+ * August 2026: the guard cannot tell "I registered myself and forgot" from
+ * "someone registered this for me", and the self-service way out mails a link
+ * to an NTNU inbox first-year students cannot open yet.
+ *
+ * A *verified* account keeps its password untouched. Proving the mailbox is
+ * exactly what makes that password theirs, and that proof already happened.
+ *
+ * Returns whether anything was revoked, so the caller can tell the member.
+ */
+export async function revokeUnprovenCredentials(
+    db: NodePgDatabase<DbSchema>,
+    userId: string,
+): Promise<boolean> {
+    const [owner] = await db
+        .select({ emailVerified: user.emailVerified })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+    if (!owner || owner.emailVerified) {
+        return false;
+    }
+
+    const revoked = await db
+        .delete(account)
+        .where(
+            and(
+                eq(account.userId, userId),
+                eq(account.providerId, CREDENTIAL_PROVIDER_ID),
+            ),
+        )
+        .returning({ id: account.id });
+
+    if (revoked.length === 0) {
+        return false;
+    }
+
+    /**
+     * Belt and braces: an unverified account cannot hold a session today,
+     * because sign-up skips auto sign-in whenever verification is required.
+     * That is one config flag away from changing, and a session left standing
+     * would outlive the password just deleted.
+     */
+    await db.delete(session).where(eq(session.userId, userId));
+
+    console.warn(
+        `Revoked ${revoked.length} unproven credential account(s) for user ${userId} on Feide link: the password predated any proof of the address.`,
+    );
+
+    return true;
 }
 
 /**

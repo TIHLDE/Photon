@@ -24,7 +24,7 @@ import { user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
-import { feidePlugin, syncFeideHook } from "./feide";
+import { feidePlugin, revokeUnprovenCredentials, syncFeideHook } from "./feide";
 
 /**
  * Feide is a genuine third-party identity provider: it only works once a Feide
@@ -363,10 +363,60 @@ export function createAuth(options: CreateAuthOptions) {
                  * Only relaxes the *explicit* link routes, where a session
                  * already proves the local account and the provider proves the
                  * Feide identity. The implicit linking done during sign-in
-                 * never consults this flag, so `requireLocalEmailVerified`
-                 * still guards that path untouched.
+                 * never consults this flag — that path is governed by
+                 * `requireLocalEmailVerified` below.
                  */
                 allowDifferentEmails: true,
+
+                /**
+                 * Let a Feide login attach itself to an account whose address
+                 * was never verified.
+                 *
+                 * Better Auth defaults this to true, and for good reason: an
+                 * unverified row may have been planted by someone else, and
+                 * linking would hand the victim an account carrying a stranger's
+                 * password. Refusing to link is the cheap defence.
+                 *
+                 * It is also the wrong trade here. Registration demands a
+                 * `@stud.ntnu.no` address, so a first-year student's only
+                 * address on file is the NTNU mailbox they cannot open yet in
+                 * August — which is where both the verification mail and the
+                 * password reset go. The guard therefore strands exactly the
+                 * people it cannot distinguish from an attacker, and every one
+                 * of them becomes a manual ticket. 15 sat stuck during fadderuka
+                 * 2026.
+                 *
+                 * The threat is answered instead by taking the password away
+                 * rather than refusing the link — see the `account.create`
+                 * database hook below and {@link revokeUnprovenCredentials}. A
+                 * planted password is deleted by the very login that used to arm
+                 * it, so the member gets in and the attacker gets nothing.
+                 */
+                requireLocalEmailVerified: false,
+            },
+        },
+
+        /**
+         * Runs on the row Better Auth is about to write for a Feide link.
+         *
+         * Deliberately `before` and not `after`: `create.after` hooks are queued
+         * until the transaction settles, by which point the linking code has
+         * already flipped `emailVerified` to true — and the revocation, which
+         * keys off exactly that flag, would find nothing to do and silently
+         * no-op. Running before the insert means the flag still reflects what
+         * was proven *prior* to this login, which is the question being asked.
+         */
+        databaseHooks: {
+            account: {
+                create: {
+                    before: async (data) => {
+                        if (data.providerId !== "feide") return;
+                        await revokeUnprovenCredentials(
+                            options.services.db,
+                            data.userId,
+                        );
+                    },
+                },
             },
         },
 
