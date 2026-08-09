@@ -1490,6 +1490,15 @@ export function passwordSetupRedirect(
             : "/",
     );
 
+    /**
+     * The page defaults to offering a password as a *bonus* — right for a
+     * Feide account that never had one, and misleading for someone whose
+     * password was just deleted. Telling it which it is, is the difference
+     * between "hopp over" being a free choice and it quietly closing their
+     * only non-Feide way in.
+     */
+    target.searchParams.set("passwordRevoked", "1");
+
     return target.toString();
 }
 

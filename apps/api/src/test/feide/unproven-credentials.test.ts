@@ -127,7 +127,9 @@ describe("passwordSetupRedirect", () => {
     it("carries the original destination along", () => {
         expect(
             passwordSetupRedirect("https://tihlde.org/arrangementer", FRONTEND),
-        ).toBe("https://tihlde.org/velg-passord?redirectTo=%2Farrangementer");
+        ).toBe(
+            "https://tihlde.org/velg-passord?redirectTo=%2Farrangementer&passwordRevoked=1",
+        );
     });
 
     it("keeps the query string of where they were headed", () => {
@@ -137,7 +139,7 @@ describe("passwordSetupRedirect", () => {
                 FRONTEND,
             ),
         ).toBe(
-            "https://tihlde.org/velg-passord?redirectTo=%2Farrangementer%3Fside%3D2",
+            "https://tihlde.org/velg-passord?redirectTo=%2Farrangementer%3Fside%3D2&passwordRevoked=1",
         );
     });
 
@@ -146,7 +148,9 @@ describe("passwordSetupRedirect", () => {
         // not be bouncing a signed-in member through.
         expect(
             passwordSetupRedirect("https://example.com/whatever", FRONTEND),
-        ).toBe("https://tihlde.org/velg-passord?redirectTo=%2F");
+        ).toBe(
+            "https://tihlde.org/velg-passord?redirectTo=%2F&passwordRevoked=1",
+        );
     });
 
     it("leaves the redirect alone when it already points at the setup page", () => {
@@ -154,7 +158,7 @@ describe("passwordSetupRedirect", () => {
         // `newUserCallbackURL`; rewriting would nest redirectTo into itself.
         expect(
             passwordSetupRedirect(
-                "https://tihlde.org/velg-passord?redirectTo=%2F",
+                "https://tihlde.org/velg-passord?redirectTo=%2F&passwordRevoked=1",
                 FRONTEND,
             ),
         ).toBeNull();

@@ -36,7 +36,15 @@ import { formHandlers, useAppForm } from "#/hooks/form";
  */
 export const Route = createFileRoute("/_auth/velg-passord")({
     component: ChoosePasswordPage,
-    validateSearch: z.object({ redirectTo: z.string().optional() }),
+    validateSearch: z.object({
+        redirectTo: z.string().optional(),
+        /**
+         * Set by the Feide callback when linking deleted an unproven password.
+         * Only decides which copy to show — nothing here grants anything, so a
+         * hand-typed value costs nothing.
+         */
+        passwordRevoked: z.coerce.boolean().optional(),
+    }),
 });
 
 const choosePasswordSchema = z
@@ -82,7 +90,7 @@ function ChoosePasswordSkeleton() {
 }
 
 function ChoosePasswordCard() {
-    const { redirectTo } = Route.useSearch();
+    const { redirectTo, passwordRevoked } = Route.useSearch();
     const { data: auth } = useSuspenseQuery(authQueryOptions);
     const mutation = useMutation(setPasswordMutation);
 
@@ -113,11 +121,22 @@ function ChoosePasswordCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Vil du også kunne logge inn med passord?</CardTitle>
+                {/* Two different situations land here. Offering a password as
+                    a bonus is right for an account that never had one, and
+                    wrong for someone whose password was just deleted — for
+                    them "hopp over" closes their only non-Feide way in, and
+                    they would not know that. */}
+                <CardTitle>
+                    {passwordRevoked
+                        ? "Velg et nytt passord"
+                        : "Vil du også kunne logge inn med passord?"}
+                </CardTitle>
                 <CardDescription>
-                    {username
-                        ? `Brukernavnet ditt er ${username}. Velg et passord, så kommer du inn selv om Feide er nede.`
-                        : "Velg et passord, så kommer du inn selv om Feide er nede."}
+                    {passwordRevoked
+                        ? `Det gamle passordet ble fjernet fordi e-posten på kontoen aldri ble bekreftet. Du er logget inn med Feide nå${username ? `, som ${username}` : ""} — velg et nytt passord, eller hopp over og bruk Feide.`
+                        : username
+                          ? `Brukernavnet ditt er ${username}. Velg et passord, så kommer du inn selv om Feide er nede.`
+                          : "Velg et passord, så kommer du inn selv om Feide er nede."}
                 </CardDescription>
             </CardHeader>
             <form {...formHandlers(form)} className="flex flex-col gap-4">
