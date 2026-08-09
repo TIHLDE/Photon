@@ -15,6 +15,7 @@ import {
     group,
     groupMembership,
     role,
+    session,
     studyProgram,
     studyProgramMembership,
     user,
@@ -33,6 +34,11 @@ export type AuthCreateContext = {
  * BetterAuth provider ID for Feide
  */
 const FEIDE_PROVIDER_ID = "feide";
+
+/**
+ * BetterAuth provider ID for the email/password login it manages itself.
+ */
+const CREDENTIAL_PROVIDER_ID = "credential";
 
 /**
  * Program codes from the Feide API that are part of TIHLDE
@@ -1335,6 +1341,214 @@ export async function resolveMigratedEmail(
 
     return feideLink ? null : match.email;
 }
+
+/**
+ * Drop every credential and session an account collected before anyone proved
+ * they control its address.
+ *
+ * Self-registration writes the `user` row before the verification mail is even
+ * sent, and the address is only ever *claimed* — never proven. So an
+ * `emailVerified: false` row carries no evidence that the password on it
+ * belongs to the student the address names. Anyone can register
+ * `<someone-elses-username>@stud.ntnu.no`, pick a password, and wait; NTNU
+ * usernames are derived from names and are trivially guessable.
+ *
+ * The plant is inert while it sits there. `requireEmailVerification` blocks
+ * password sign-in, and sign-up skips auto sign-in for the same reason, so the
+ * row holds no session either. What arms it is the *victim's own* Feide login:
+ * Better Auth links the provider, then flips `emailVerified` to true because
+ * the addresses match — and from that moment the planted password works.
+ *
+ * Feide proves who the human is. It proves nothing about who typed a password
+ * into that row last week, so the password does not survive the link. Better
+ * Auth applies the identical rule to its own email-primary proofs — see
+ * `revokeUnprovenAccountAccess`, used by magic link and email OTP. The OAuth
+ * path never got it, which is why `requireLocalEmailVerified` guards that path
+ * by refusing to link at all. Refusing is what stranded 15 new students in
+ * August 2026: the guard cannot tell "I registered myself and forgot" from
+ * "someone registered this for me", and the self-service way out mails a link
+ * to an NTNU inbox first-year students cannot open yet.
+ *
+ * A *verified* account keeps its password untouched. Proving the mailbox is
+ * exactly what makes that password theirs, and that proof already happened.
+ *
+ * Returns whether anything was revoked, so the caller can tell the member.
+ */
+export async function revokeUnprovenCredentials(
+    db: NodePgDatabase<DbSchema>,
+    userId: string,
+): Promise<boolean> {
+    const [owner] = await db
+        .select({ emailVerified: user.emailVerified })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+    if (!owner || owner.emailVerified) {
+        return false;
+    }
+
+    const revoked = await db
+        .delete(account)
+        .where(
+            and(
+                eq(account.userId, userId),
+                eq(account.providerId, CREDENTIAL_PROVIDER_ID),
+            ),
+        )
+        .returning({ id: account.id });
+
+    if (revoked.length === 0) {
+        return false;
+    }
+
+    /**
+     * Belt and braces: an unverified account cannot hold a session today,
+     * because sign-up skips auto sign-in whenever verification is required.
+     * That is one config flag away from changing, and a session left standing
+     * would outlive the password just deleted.
+     */
+    await db.delete(session).where(eq(session.userId, userId));
+
+    noteRevokedPassword(userId);
+
+    console.warn(
+        `Revoked ${revoked.length} unproven credential account(s) for user ${userId} on Feide link: the password predated any proof of the address.`,
+    );
+
+    return true;
+}
+
+/**
+ * Users whose password was just revoked, so the callback can send them on to
+ * set a new one.
+ *
+ * The revocation happens in a database hook, several layers below the response;
+ * the redirect can only be rewritten in the `after` hook. Nothing in the
+ * request context is shared between the two, hence this hand-off. Entries are
+ * read once and expire on their own, so a login that never reaches the after
+ * hook — a crash, a rewritten redirect — cannot strand a note that misdirects a
+ * later login by the same member.
+ */
+const revokedPasswords = new Map<string, number>();
+
+/** How long a hand-off stays valid. Generous; the two hooks are milliseconds apart. */
+const REVOKED_PASSWORD_TTL_MS = 60_000;
+
+function noteRevokedPassword(userId: string): void {
+    const now = Date.now();
+    for (const [id, at] of revokedPasswords) {
+        if (now - at > REVOKED_PASSWORD_TTL_MS) revokedPasswords.delete(id);
+    }
+    revokedPasswords.set(userId, now);
+}
+
+function consumeRevokedPassword(userId: string): boolean {
+    const at = revokedPasswords.get(userId);
+    if (at === undefined) return false;
+
+    revokedPasswords.delete(userId);
+    return Date.now() - at <= REVOKED_PASSWORD_TTL_MS;
+}
+
+/**
+ * Where to send a member whose password was taken away by the login they just
+ * completed, or null to leave the redirect alone.
+ *
+ * `redirectTo` carries the destination they were originally headed for, so
+ * setting a password — or skipping it — still lands them where they meant to
+ * go. Exported for testing.
+ */
+export function passwordSetupRedirect(
+    location: string,
+    frontendUrl: string,
+): string | null {
+    let current: URL;
+    let frontend: URL;
+    try {
+        current = new URL(location);
+        frontend = new URL(frontendUrl);
+    } catch {
+        return null;
+    }
+
+    // A first-ever Feide login already goes here via `newUserCallbackURL`.
+    if (current.pathname === "/velg-passord") {
+        return null;
+    }
+
+    const target = new URL("/velg-passord", frontend);
+
+    /**
+     * Only a destination on our own site is worth carrying over: anything else
+     * is either an error URL or something we should not be bouncing through.
+     */
+    target.searchParams.set(
+        "redirectTo",
+        current.origin === frontend.origin
+            ? `${current.pathname}${current.search}`
+            : "/",
+    );
+
+    /**
+     * The page defaults to offering a password as a *bonus* — right for a
+     * Feide account that never had one, and misleading for someone whose
+     * password was just deleted. Telling it which it is, is the difference
+     * between "hopp over" being a free choice and it quietly closing their
+     * only non-Feide way in.
+     */
+    target.searchParams.set("passwordRevoked", "1");
+
+    return target.toString();
+}
+
+/**
+ * Rewrites the Feide callback's redirect for a member whose password was just
+ * revoked, so they are told rather than left to find out.
+ *
+ * Better Auth sends first-time Feide *sign-ups* to `newUserCallbackURL` and
+ * everyone else to the plain callback, with no signal in between for "linked,
+ * and the old password is gone". Without this they land on the website looking
+ * signed in, and discover the password is missing the day Feide is unreachable
+ * — which is exactly the day the password form is the only way in.
+ *
+ * Mutating `responseHeaders` is what actually moves them: `c.redirect()` puts
+ * `location` on the very Headers object the response is built from, so the
+ * rewrite lands even though the endpoint has already thrown.
+ */
+export const redirectToPasswordSetupAfterRevoke: (
+    middlewareCtx: MiddlewareContext<
+        MiddlewareOptions,
+        AuthContext & {
+            returned?: unknown;
+            responseHeaders?: Headers;
+        }
+    >,
+    frontendUrl: string,
+) => void = (middlewareContext, frontendUrl) => {
+    if (
+        !middlewareContext.path.startsWith("/oauth2/callback") ||
+        middlewareContext.params.providerId !== FEIDE_PROVIDER_ID
+    ) {
+        return;
+    }
+
+    const session = middlewareContext.context.newSession;
+    if (!session || !consumeRevokedPassword(session.user.id)) {
+        return;
+    }
+
+    const headers = middlewareContext.context.responseHeaders;
+    const location = headers?.get("location");
+    if (!headers || !location) {
+        return;
+    }
+
+    const next = passwordSetupRedirect(location, frontendUrl);
+    if (next) {
+        headers.set("location", next);
+    }
+};
 
 /**
  * Read the OpenID profile Dataporten holds for an access token.
