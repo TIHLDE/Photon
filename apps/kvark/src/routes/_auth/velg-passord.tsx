@@ -133,7 +133,7 @@ function ChoosePasswordCard() {
                 </CardTitle>
                 <CardDescription>
                     {passwordRevoked
-                        ? `Det gamle passordet ble fjernet fordi e-posten på kontoen aldri ble bekreftet. Du er logget inn med Feide nå${username ? `, som ${username}` : ""} — velg et nytt passord, eller hopp over og bruk Feide.`
+                        ? `Det gamle passordet ble fjernet fordi e-posten på kontoen aldri ble bekreftet. Du er logget inn med Feide nå${username ? `, som ${username}` : ""}. Velg et nytt passord.`
                         : username
                           ? `Brukernavnet ditt er ${username}. Velg et passord, så kommer du inn selv om Feide er nede.`
                           : "Velg et passord, så kommer du inn selv om Feide er nede."}
@@ -186,11 +186,20 @@ function ChoosePasswordCard() {
                         </form.SubmitButton>
                     </form.AppForm>
                 </CardContent>
-                <CardFooter className="justify-center">
-                    <Button type="button" variant="link" onClick={leave}>
-                        Hopp over
-                    </Button>
-                </CardFooter>
+                {/* Skipping stays a first-class answer for an account that
+                    never had a password — Feide alone is a fine login. It is
+                    not one for an account whose password was just taken away:
+                    leaving without setting a new one is how someone ends up
+                    with Feide as their only way in, which is precisely what
+                    this page exists to prevent. The layout's nav bar is still
+                    there, so nobody is trapped. */}
+                {!passwordRevoked && (
+                    <CardFooter className="justify-center">
+                        <Button type="button" variant="link" onClick={leave}>
+                            Hopp over
+                        </Button>
+                    </CardFooter>
+                )}
             </form>
         </Card>
     );
