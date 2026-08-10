@@ -609,6 +609,9 @@ function LeaderRow({
         enabled: canManage,
     });
     const permissions = data?.permissions ?? [];
+    // Every leader arranges their own group's events; the stored set is only
+    // what comes on top. Summarize both, or the table would read "ingen".
+    const baseline = data?.baseline ?? [];
 
     return (
         <TableRow>
@@ -639,7 +642,7 @@ function LeaderRow({
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
                 {canManage
-                    ? summarizePermissions(permissions)
+                    ? summarizePermissions([...baseline, ...permissions])
                     : "Gruppens ledertilganger"}
             </TableCell>
             <TableCell>
@@ -716,7 +719,10 @@ function LeaderPermissionsDialog({
                         />
                         <p className="text-sm text-muted-foreground">
                             Gjelder bare i denne gruppen, og følger den som til
-                            enhver tid er leder.
+                            enhver tid er leder. Alle ledere kan uansett lage,
+                            endre og slette gruppens arrangementer og styre
+                            påmeldingene — det kommer i tillegg til det du
+                            velger her.
                         </p>
                     </Field>
                     {error ? (

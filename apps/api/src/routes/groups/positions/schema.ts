@@ -115,7 +115,11 @@ export const leaderPermissionsSchema = Schema(
     z.object({
         permissions: z.array(z.string()).meta({
             description:
-                "Permissions held by the group's current leader, scoped to this group",
+                "Extra permissions configured for this group's leader, on top of the baseline. Scoped to this group.",
+        }),
+        baseline: z.array(z.string()).meta({
+            description:
+                "Permissions every group leader holds for their own group, regardless of configuration. Read-only.",
         }),
     }),
 );

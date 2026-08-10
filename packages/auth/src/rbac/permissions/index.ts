@@ -24,6 +24,7 @@ export {
 
 // Permission checking
 export {
+    LEADER_BASELINE_PERMISSIONS,
     getUserPermissions,
     getUserPermissionsWithScope,
     hasPermission,
