@@ -1649,7 +1649,7 @@ export interface paths {
         };
         /**
          * Get the group leader's permissions
-         * @description The permissions held by whoever currently leads the group, scoped to that group. Requires the same rights as managing the group's verv.
+         * @description The permissions held by whoever currently leads the group, scoped to that group. `baseline` is what every leader holds regardless of configuration (arranging the group's events); `permissions` is the extra set configured for this group. Requires the same rights as managing the group's verv.
          */
         get: operations["getGroupLeaderPermissions"];
         put?: never;
@@ -1659,7 +1659,7 @@ export interface paths {
         head?: never;
         /**
          * Set the group leader's permissions
-         * @description Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
+         * @description Replace the EXTRA permissions held by the group's leader, on top of the baseline every leader holds. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
          */
         patch: operations["updateGroupLeaderPermissions"];
         trace?: never;
@@ -4787,8 +4787,10 @@ export interface components {
             userId: string;
         };
         GroupLeaderPermissions: {
-            /** @description Permissions held by the group's current leader, scoped to this group */
+            /** @description Extra permissions configured for this group's leader, on top of the baseline. Scoped to this group. */
             permissions: string[];
+            /** @description Permissions every group leader holds for their own group, regardless of configuration. Read-only. */
+            baseline: string[];
         };
         UpdateGroupLeaderPermissions: {
             /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. */
