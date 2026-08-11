@@ -109,9 +109,12 @@ function RouteComponent() {
     const studyLabel = formatStudyLabel(deriveStudy(profile.groups));
     const user: ProfileHeaderUser = {
         name: profile.name,
-        // E-post er ikke en del av den offentlige profilen — den vises bare for
-        // deg selv, der den uansett ligger i sesjonen.
-        email: isOwnProfile ? (session?.user.email ?? undefined) : undefined,
+        // E-post er ikke en del av den offentlige profilen. Din egen ligger i
+        // sesjonen; på en annens profil sender API-et den bare til en admin med
+        // `users:view`, og null til alle andre.
+        email: isOwnProfile
+            ? (session?.user.email ?? undefined)
+            : (profile.email ?? undefined),
         avatarUrl: profile.image ?? undefined,
         programme: studyLabel,
         links: buildProfileLinks(profile.githubUrl, profile.linkedinUrl),

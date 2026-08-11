@@ -153,15 +153,11 @@ export const listUsersRoute = route().get(
             totalCount,
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
-            items: rows.map(({ banned, email, ...row }) => ({
+            items: rows.map(({ banned, ...row }) => ({
                 ...row,
                 // `banned` is nullable in Better Auth's schema; only an
                 // explicit true means deactivated.
                 isActive: banned !== true,
-                // An admin deciding on a stranger has nothing else to go on —
-                // no study programme, no Feide, just the address they typed.
-                // Everyone else's address stays out of a list this broad.
-                email: row.approvalStatus === "pending" ? email : null,
                 createdAt: row.createdAt.toISOString(),
             })),
         } satisfies z.infer<typeof userListResponseSchema>);

@@ -297,7 +297,7 @@ export const userListItemSchema = Schema(
         }),
         email: z.string().nullable().meta({
             description:
-                "Only filled in for accounts awaiting approval, where it is the one thing an admin has to judge them on. Null otherwise.",
+                "The account's e-mail address. Shown to the admins who hold 'users:view', who need it both to judge a stranger waiting for approval and to get hold of an ordinary member.",
         }),
         createdAt: z
             .string()
@@ -321,9 +321,10 @@ export const userListResponseSchema = Schema(
 );
 
 /**
- * What one member may see about another. Deliberately excludes e-mail, gender,
+ * What one member may see about another. Deliberately excludes gender,
  * allergies and notification settings — those belong to the session, not to a
- * profile page someone else is looking at.
+ * profile page someone else is looking at. E-mail is the one exception, and
+ * only for an admin holding `users:view`, who sees it in the user list anyway.
  */
 export const userProfileSchema = Schema(
     "UserProfile",
@@ -331,6 +332,10 @@ export const userProfileSchema = Schema(
         id: z.string().meta({ description: "User ID" }),
         name: z.string().meta({ description: "User display name" }),
         username: z.string().nullable().meta({ description: "Username" }),
+        email: z.string().nullable().meta({
+            description:
+                "The user's e-mail address. Only filled in for viewers holding 'users:view', and for the user themselves. Null for everyone else — it is not part of the public profile.",
+        }),
         image: z.string().nullable().meta({
             description:
                 "Profile image URL — the uploaded avatar when there is one, otherwise the one from Feide",

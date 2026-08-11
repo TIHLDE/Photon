@@ -5754,7 +5754,7 @@ export interface components {
             isActive: boolean;
             /** @description 'pending' for a self-registered account still waiting for an admin, 'approved' once one said yes. Null for accounts that never needed approving — Feide logins and members migrated from Lepton. */
             approvalStatus: ("pending" | "approved") | null;
-            /** @description Only filled in for accounts awaiting approval, where it is the one thing an admin has to judge them on. Null otherwise. */
+            /** @description The account's e-mail address. Shown to the admins who hold 'users:view', who need it both to judge a stranger waiting for approval and to get hold of an ordinary member. */
             email: string | null;
             /** @description Account creation timestamp */
             createdAt: string;
@@ -5817,6 +5817,8 @@ export interface components {
             name: string;
             /** @description Username */
             username: string | null;
+            /** @description The user's e-mail address. Only filled in for viewers holding 'users:view', and for the user themselves. Null for everyone else — it is not part of the public profile. */
+            email: string | null;
             /** @description Profile image URL — the uploaded avatar when there is one, otherwise the one from Feide */
             image: string | null;
             /** @description Free-text bio */
