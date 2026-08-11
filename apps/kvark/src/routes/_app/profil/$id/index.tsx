@@ -34,10 +34,11 @@ function RouteComponent() {
     const isOwnProfile = session?.user.id === profile.id;
 
     // Varselmerket vises bare på egen profil, så andres profiler skal heller
-    // ikke koste et kall til det innloggede-scopede endepunktet.
+    // ikke koste et kall til det innloggede-scopede endepunktet. Den som venter
+    // på godkjenning får 403 på det kallet, så det hoppes over.
     const { data: unreadNotifications } = useQuery({
         ...getUnreadNotificationCountQuery(),
-        enabled: isOwnProfile,
+        enabled: isOwnProfile && session?.user?.isPendingApproval !== true,
     });
 
     const links: ProfileLink[] = [];
