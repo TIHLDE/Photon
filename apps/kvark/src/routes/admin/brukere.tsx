@@ -431,11 +431,13 @@ function AllUsersTable({
                                                         <span className="text-sm font-medium">
                                                             {user.name}
                                                         </span>
-                                                        {/* E-posten er det
-                                                        eneste en admin har å
-                                                        vurdere en ukjent på, og
-                                                        API-et sender den bare
-                                                        for de som venter. */}
+                                                        {/* E-posten er den
+                                                        eneste veien til et
+                                                        medlem utenfor
+                                                        nettsiden, og det eneste
+                                                        en admin har å vurdere
+                                                        en ukjent som venter
+                                                        på. */}
                                                         {user.email && (
                                                             <span className="text-sm text-muted-foreground">
                                                                 {user.email}

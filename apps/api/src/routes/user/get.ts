@@ -1,3 +1,4 @@
+import { hasPermission } from "@photon/auth/rbac";
 import { HTTPException } from "hono/http-exception";
 import { isMemberAudience } from "~/lib/auth";
 import { HTTPAppException } from "~/lib/errors";
@@ -11,9 +12,12 @@ import { userProfileSchema } from "./schema";
  * Another member's profile.
  *
  * Deliberately narrower than the session: bio, links, study and group
- * memberships are what a profile page shows, while e-mail, gender, allergies
- * and the notification settings stay private. Any signed-in member may look up
- * any other — the group member lists already link here.
+ * memberships are what a profile page shows, while gender, allergies and the
+ * notification settings stay private. Any signed-in member may look up any
+ * other — the group member lists already link here.
+ *
+ * E-posten er unntaket: den følger med for en admin med `users:view`, som er
+ * de samme som ser den i brukerlista. For alle andre er den null.
  *
  * En bruker som venter på godkjenning når bare sin egen profil. De trenger den
  * for å komme til innstillinger og til «Logg ut»; andres profiler er fortsatt
@@ -42,7 +46,8 @@ export const getUserRoute = route().get(
         .build(),
     requireAuthAllowPending,
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const identifier = c.req.param("id");
         const viewer = c.get("user");
 
@@ -53,6 +58,7 @@ export const getUserRoute = route().get(
                 id: true,
                 name: true,
                 username: true,
+                email: true,
                 image: true,
                 createdAt: true,
             },
@@ -72,6 +78,12 @@ export const getUserRoute = route().get(
                 "Kontoen din venter på godkjenning fra en administrator.",
             );
         }
+
+        // Adressen er den eneste veien til et medlem utenfor nettsiden, og en
+        // admin har den allerede i brukerlista. Du ser alltid din egen.
+        const canSeeEmail =
+            user.id === viewer.id ||
+            (await hasPermission(ctx, viewer.id, "users:view"));
 
         const [settings, memberships, history] = await Promise.all([
             db.query.userSettings.findFirst({
@@ -127,6 +139,7 @@ export const getUserRoute = route().get(
             id: user.id,
             name: user.name,
             username: user.username ?? null,
+            email: canSeeEmail ? user.email : null,
             // The uploaded avatar wins over the one Feide handed us, same as
             // the session's `settings.imageUrl ?? user.image`.
             image: settings?.imageUrl ?? user.image ?? null,

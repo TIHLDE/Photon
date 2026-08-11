@@ -50,6 +50,9 @@ describe("user list", () => {
             const listed = allBody.items.find((u) => u.id === studying.user.id);
             expect(listed?.studyProgram).toBe("Listeingeniør");
             expect(listed?.studyStartYear).toBe(2023);
+            // Adressen er med for alle, ikke bare de som venter på godkjenning
+            // — den er den eneste veien til et medlem utenfor nettsiden.
+            expect(listed?.email).toBe("listme@test.com");
             expect(allBody.totalCount).toBeGreaterThanOrEqual(2);
 
             // Search matches username as well as name.
