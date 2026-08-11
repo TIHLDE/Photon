@@ -2504,6 +2504,26 @@ export interface paths {
         patch: operations["updateUserStudyYear"];
         trace?: never;
     };
+    "/api/user/{id}/study": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Correct a member's study programme
+         * @description Move a member to another STUDY group, replacing the one they have. Null removes it. Requires 'users:manage'.
+         */
+        patch: operations["updateUserStudy"];
+        trace?: never;
+    };
     "/api/user/{id}/allergies": {
         parameters: {
             query?: never;
@@ -5756,6 +5776,17 @@ export interface components {
         UpdateStudyYearInput: {
             /** @description Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group. */
             startYear: number | null;
+        };
+        UpdateStudy: {
+            message: string;
+            /** @description Name of the programme now stored */
+            studyProgram: string | null;
+            /** @description Slug of the programme now stored */
+            studyProgramSlug: string | null;
+        };
+        UpdateStudyInput: {
+            /** @description Slug of the STUDY group the member should be on, e.g. 'dataingenir'. Replaces the one they have; null removes it. */
+            studyProgramSlug: string | null;
         };
         UserAllergies: {
             allergies: components["schemas"]["Allergy"][];
@@ -13311,6 +13342,64 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UpdateStudyYear"];
                 };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateUserStudy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateStudyInput"];
+            };
+        };
+        responses: {
+            /** @description Study programme updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStudy"];
+                };
+            };
+            /** @description Bad Request - No STUDY group with that slug */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Authentication required */
             401: {

@@ -230,6 +230,39 @@ export const deleteUserMutation = mutationOptions({
 });
 
 /**
+ * Rett studiet til et medlem for hånd.
+ *
+ * Studiegrupper er avledet fra Feide, så medlemslista nekter å redigere dem.
+ * De fleste medlemmene kom fra Lepton med studiet den gamle databasen hadde,
+ * og for dem er dette eneste veien inn. Medlemmet flyttes til den nye gruppa
+ * og ut av den gamle — ett studie av gangen.
+ */
+export const updateUserStudyMutation = mutationOptions({
+    mutationFn: ({
+        userId,
+        studyProgramSlug,
+    }: {
+        userId: string;
+        studyProgramSlug: string | null;
+    }) =>
+        apiClient.patch("/api/user/{id}/study", {
+            params: { id: userId },
+            json: { studyProgramSlug },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        // Studiet vises både i admin-lista og på profilen.
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.profile],
+            exact: false,
+        });
+    },
+});
+
+/**
  * Rett kullet til et medlem for hånd.
  *
  * Feide gir ikke kull for alle studier, så nye medlemmer antas å være
