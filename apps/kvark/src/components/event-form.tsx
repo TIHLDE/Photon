@@ -18,6 +18,7 @@ import {
     SelectValue,
 } from "@tihlde/ui/ui/select";
 import { nb } from "date-fns/locale";
+import { useRef } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import type { AddressSuggestion } from "#/api/queries/address";
@@ -96,18 +97,27 @@ export function EventForm({
     isSubmitting,
     children,
 }: EventFormProps) {
+    /** Sist valgte adresse, se `handleLocationChange`. */
+    const selectedAddressRef = useRef<EventFormValues["locationCoords"]>(null);
+
     /**
      * Koordinatene følger teksten: så snart brukeren redigerer et valgt
      * adresseforslag er de ikke lenger gyldige for stedet som står i feltet.
+     *
+     * Adressefeltet fyller seg selv med etiketten når et forslag velges, så
+     * dette kjører rett etter `handleSelectAddress` med samme tekst. `values`
+     * er da fortsatt forrige render, og koordinatene ville blitt kastet med én
+     * gang — derfor ligger det sist valgte forslaget i en ref også.
      */
     function handleLocationChange(next: string) {
-        onChange({
-            location: next,
-            locationCoords:
-                values.locationCoords && values.locationCoords.label === next
-                    ? values.locationCoords
-                    : null,
-        });
+        const selected =
+            values.locationCoords?.label === next
+                ? values.locationCoords
+                : selectedAddressRef.current?.label === next
+                  ? selectedAddressRef.current
+                  : null;
+
+        onChange({ location: next, locationCoords: selected });
     }
 
     /**
@@ -136,14 +146,13 @@ export function EventForm({
     ];
 
     function handleSelectAddress(suggestion: AddressSuggestion) {
-        onChange({
-            location: suggestion.label,
-            locationCoords: {
-                label: suggestion.label,
-                lat: suggestion.lat,
-                lng: suggestion.lng,
-            },
-        });
+        const coords = {
+            label: suggestion.label,
+            lat: suggestion.lat,
+            lng: suggestion.lng,
+        };
+        selectedAddressRef.current = coords;
+        onChange({ location: suggestion.label, locationCoords: coords });
     }
 
     return (
