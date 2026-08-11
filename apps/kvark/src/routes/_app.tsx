@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { authQueryOptions } from "#/api/auth";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { NotificationBell } from "#/components/notification-bell";
+import { PendingApprovalNotice } from "#/components/pending-approval-notice";
 import { SiteBottomBar } from "#/components/site-bottom-bar";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader } from "#/components/site-header";
@@ -28,7 +29,11 @@ function AppLayout() {
           }
         : null;
     const isAuthenticated = Boolean(currentUser);
-    const navItems = useSiteNavItems(isAuthenticated);
+    // En selvregistrert bruker kan logge inn med én gang, men er ikke medlem
+    // før noen har sagt ja. Det må stå et sted de faktisk ser det — og
+    // medlemsmenyen skjules, siden hver side der svarer 403 for dem.
+    const isPendingApproval = session?.user?.isPendingApproval === true;
+    const navItems = useSiteNavItems(isAuthenticated, !isPendingApproval);
 
     return (
         // The bottom padding keeps the footer clear of the fixed bottom bar,
@@ -41,6 +46,11 @@ function AppLayout() {
                 // innloggede — ellers ville hver besøkende få en 401.
                 actions={isAuthenticated ? <NotificationBell /> : null}
             />
+            {isPendingApproval ? (
+                <div className="container mx-auto px-4 pt-4">
+                    <PendingApprovalNotice />
+                </div>
+            ) : null}
             {eventRules.mustAccept ? (
                 <div className="container mx-auto px-4 pt-4">
                     <EventRulesConsent

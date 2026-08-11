@@ -24,6 +24,11 @@ export type UserListFilters = {
     study?: string;
     /** Cohort (STUDYYEAR group), e.g. 2023. */
     studyStartYear?: number;
+    /**
+     * "pending" er køen av selvregistrerte brukere som venter på at en
+     * administrator godkjenner dem.
+     */
+    approvalStatus?: "pending" | "approved";
 };
 
 /**
@@ -46,6 +51,9 @@ export const getUsersInfiniteQuery = (
                     ...(filters.studyStartYear === undefined
                         ? {}
                         : { studyStartYear: filters.studyStartYear }),
+                    ...(filters.approvalStatus
+                        ? { approvalStatus: filters.approvalStatus }
+                        : {}),
                 },
             }),
         initialPageParam: 0,
@@ -173,6 +181,24 @@ export const updateUserStatusMutation = mutationOptions({
             params: { id: userId },
             json: { isActive, ...(reason ? { reason } : {}) },
         }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+    },
+});
+
+/**
+ * Godkjenn en bruker som har registrert seg selv.
+ *
+ * Gir `member`-rollen — den samme en student får av Feide — og sender en
+ * e-post om at brukeren er klar til bruk. Uten dette står kontoen uten roller
+ * og kommer ingen vei.
+ */
+export const approveUserMutation = mutationOptions({
+    mutationFn: ({ userId }: { userId: string }) =>
+        apiClient.post("/api/user/{id}/approve", { params: { id: userId } }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...UserQueryKeys.listInfinite],

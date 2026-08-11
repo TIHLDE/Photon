@@ -1,3 +1,4 @@
+import AccountApprovedEmail from "./account-approved";
 import AccountLinkHelpEmail from "./account-link-help";
 import ApplicationDecidedEmail from "./application-decided";
 import ApplicationReceiptEmail from "./application-receipt";
@@ -21,6 +22,7 @@ import type { ComponentProps, ReactElement } from "react";
 type EmailTemplateComponent<TProps> = (props: TProps) => ReactElement;
 
 const EMAIL_TEMPLATES = {
+    AccountApprovedEmail,
     AccountLinkHelpEmail,
     ApplicationDecidedEmail,
     ApplicationReceiptEmail,
@@ -65,6 +67,7 @@ export async function renderEmailTemplate<TName extends EmailTemplateName>(
 }
 
 export {
+    AccountApprovedEmail,
     AccountLinkHelpEmail,
     ApplicationDecidedEmail,
     ApplicationReceiptEmail,

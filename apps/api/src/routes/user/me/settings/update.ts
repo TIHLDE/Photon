@@ -2,7 +2,7 @@ import { validator } from "hono-openapi";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { updateUserSettings } from "~/lib/user/settings";
-import { requireAuth } from "~/middleware/auth";
+import { requireAuthAllowPending } from "~/middleware/auth";
 import {
     updateUserSettingsInputSchema,
     updateUserSettingsResponseSchema,
@@ -24,7 +24,7 @@ export const updateSettingsRoute = route().patch(
         })
         .badRequest({ description: "Invalid input" })
         .build(),
-    requireAuth,
+    requireAuthAllowPending,
     validator("json", updateUserSettingsInputSchema),
     async (c) => {
         const userId = c.get("user").id;

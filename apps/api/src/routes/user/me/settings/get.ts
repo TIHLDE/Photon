@@ -2,7 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { getUserSettings } from "~/lib/user/settings";
-import { requireAuth } from "~/middleware/auth";
+import { requireAuthAllowPending } from "~/middleware/auth";
 import { userSettingsResponseSchema } from "../../schema";
 
 export const getSettingsRoute = route().get(
@@ -24,7 +24,7 @@ export const getSettingsRoute = route().get(
                 "User settings do not exist (user needs to complete onboarding)",
         })
         .build(),
-    requireAuth,
+    requireAuthAllowPending,
     async (c) => {
         const userId = c.get("user").id;
         const ctx = c.get("ctx");

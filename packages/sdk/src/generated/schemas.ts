@@ -21,6 +21,7 @@ export type ApplicationDetail = Schemas["ApplicationDetail"];
 export type ApplicationList = Schemas["ApplicationList"];
 export type ApplicationOptions = Schemas["ApplicationOptions"];
 export type ApplicationSummary = Schemas["ApplicationSummary"];
+export type ApproveUser = Schemas["ApproveUser"];
 export type AssetMetadata = Schemas["AssetMetadata"];
 export type AssignGroupPosition = Schemas["AssignGroupPosition"];
 export type AssignRole = Schemas["AssignRole"];

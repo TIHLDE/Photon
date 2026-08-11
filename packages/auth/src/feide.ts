@@ -650,6 +650,22 @@ export async function syncBaselineRoles(
     if (target === "member") {
         if (memberRole) await assign(memberRole.id);
         if (alumniRole) await remove(alumniRole.id);
+
+        /**
+         * Feide answers the question an admin would otherwise have to: this is
+         * an active student on a TIHLDE programme. Someone who signed up on the
+         * website and only later logged in with Feide should not be left
+         * sitting in the approval queue after that.
+         *
+         * Only ever moves pending -> approved, so an account that never needed
+         * approving keeps its null and stays out of the queue's history.
+         */
+        await tx
+            .update(user)
+            .set({ approvalStatus: "approved", approvedAt: new Date() })
+            .where(
+                and(eq(user.id, userId), eq(user.approvalStatus, "pending")),
+            );
     } else if (target === "alumni") {
         if (alumniRole) await assign(alumniRole.id);
         if (memberRole) await remove(memberRole.id);
@@ -1319,12 +1335,37 @@ export async function resolveMigratedEmail(
     }
 
     const [match] = await db
-        .select({ id: user.id, email: user.email })
+        .select({
+            id: user.id,
+            email: user.email,
+            approvalStatus: user.approvalStatus,
+        })
         .from(user)
         .where(eq(user.username, username))
         .limit(1);
 
     if (!match) {
+        return null;
+    }
+
+    /**
+     * An account someone made for themselves with a private address picked its
+     * own username, and nothing stops that pick from being a real student's
+     * NTNU username. Handing this login to it would not merely confuse the two
+     * — it would drop the student into a stranger's account, with the
+     * stranger's password still on it. Better Auth then falls back to matching
+     * on the address Feide gave us, which is the correct behaviour for someone
+     * who has never been here before.
+     *
+     * Migrated Lepton members carry no approval status, so this leaves the
+     * case the function exists for untouched. A self-registered *student* is
+     * matched as normal: the username came from their own stud address, so it
+     * is theirs by the same proof Feide is about to supply.
+     */
+    if (
+        match.approvalStatus !== null &&
+        !match.email.trim().toLowerCase().endsWith("@stud.ntnu.no")
+    ) {
         return null;
     }
 

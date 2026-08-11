@@ -10,23 +10,47 @@ import {
 
 const pgTable = pgTableCreator((name) => `auth_${name}`);
 
-export const user = pgTable("user", {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    email: text("email").notNull().unique(),
-    emailVerified: boolean("email_verified").default(false).notNull(),
-    image: text("image"),
-    createdAt: timestamp("created_at").notNull(),
-    updatedAt: timestamp("updated_at")
-        .$onUpdate(() => new Date())
-        .notNull(),
-    role: text("role"),
-    banned: boolean("banned").default(false),
-    banReason: text("ban_reason"),
-    banExpires: timestamp("ban_expires"),
-    username: text("username").unique(),
-    displayUsername: text("display_username"),
-});
+/**
+ * Where an account stands with a human approver.
+ *
+ * - `null`: nobody has to approve it. Feide logins, the Lepton migration, the
+ *   Fadderuka route and seeds all land here — the account's right to exist is
+ *   already established by the system that made it.
+ * - `pending`: someone signed themselves up on the website. They can log in and
+ *   see what any visitor sees, and nothing more, until an admin approves them.
+ * - `approved`: an admin (or a later Feide login) confirmed them, and the
+ *   `member` role was granted.
+ *
+ * Kept as a column rather than "has no roles yet", because roles come and go
+ * for other reasons and only this says *why* someone has none.
+ */
+export const APPROVAL_STATUSES = ["pending", "approved"] as const;
+export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
+
+export const user = pgTable(
+    "user",
+    {
+        id: text("id").primaryKey(),
+        name: text("name").notNull(),
+        email: text("email").notNull().unique(),
+        emailVerified: boolean("email_verified").default(false).notNull(),
+        image: text("image"),
+        createdAt: timestamp("created_at").notNull(),
+        updatedAt: timestamp("updated_at")
+            .$onUpdate(() => new Date())
+            .notNull(),
+        role: text("role"),
+        banned: boolean("banned").default(false),
+        banReason: text("ban_reason"),
+        banExpires: timestamp("ban_expires"),
+        username: text("username").unique(),
+        displayUsername: text("display_username"),
+        approvalStatus: text("approval_status").$type<ApprovalStatus>(),
+        approvedAt: timestamp("approved_at"),
+        approvedBy: text("approved_by"),
+    },
+    (table) => [index("user_approvalStatus_idx").on(table.approvalStatus)],
+);
 
 export const session = pgTable(
     "session",

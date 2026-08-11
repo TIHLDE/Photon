@@ -38,8 +38,14 @@ export const listUsersRoute = route().get(
     validator("query", PaginationSchema.extend(userListQuerySchema.shape)),
     async (c) => {
         const { db } = c.get("ctx");
-        const { page, pageSize, search, study, studyStartYear } =
-            c.req.valid("query");
+        const {
+            page,
+            pageSize,
+            search,
+            study,
+            studyStartYear,
+            approvalStatus,
+        } = c.req.valid("query");
 
         /**
          * Study programme and cohort mirror the group-member list: they are a
@@ -98,6 +104,9 @@ export const listUsersRoute = route().get(
             studyStartYear === undefined
                 ? undefined
                 : eq(cohort.startYear, studyStartYear),
+            approvalStatus
+                ? eq(schema.user.approvalStatus, approvalStatus)
+                : undefined,
         );
 
         const countRows = await db
@@ -120,11 +129,22 @@ export const listUsersRoute = route().get(
                 createdAt: schema.user.createdAt,
                 studyProgram: studyProgram.name,
                 studyStartYear: cohort.startYear,
+                approvalStatus: schema.user.approvalStatus,
+                email: schema.user.email,
             })
             .from(schema.user)
             .leftJoin(studyProgram, eq(studyProgram.userId, schema.user.id))
             .leftJoin(cohort, eq(cohort.userId, schema.user.id))
-            .orderBy(asc(schema.user.name), asc(schema.user.id))
+            /**
+             * The approval queue is a worklist, so it is ordered by how long
+             * someone has been kept waiting. Everything else is a directory,
+             * where alphabetical is what you want.
+             */
+            .orderBy(
+                ...(approvalStatus === "pending"
+                    ? [asc(schema.user.createdAt), asc(schema.user.id)]
+                    : [asc(schema.user.name), asc(schema.user.id)]),
+            )
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize))
             .where(where);
@@ -133,11 +153,15 @@ export const listUsersRoute = route().get(
             totalCount,
             pages: totalPages,
             nextPage: page + 1 >= totalPages ? null : page + 1,
-            items: rows.map(({ banned, ...row }) => ({
+            items: rows.map(({ banned, email, ...row }) => ({
                 ...row,
                 // `banned` is nullable in Better Auth's schema; only an
                 // explicit true means deactivated.
                 isActive: banned !== true,
+                // An admin deciding on a stranger has nothing else to go on —
+                // no study programme, no Feide, just the address they typed.
+                // Everyone else's address stays out of a list this broad.
+                email: row.approvalStatus === "pending" ? email : null,
                 createdAt: row.createdAt.toISOString(),
             })),
         } satisfies z.infer<typeof userListResponseSchema>);
