@@ -1,12 +1,12 @@
 import {
-    Combobox,
-    ComboboxCollection,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-} from "@tihlde/ui/ui/combobox";
+    Autocomplete,
+    AutocompleteCollection,
+    AutocompleteContent,
+    AutocompleteEmpty,
+    AutocompleteInput,
+    AutocompleteItem,
+    AutocompleteList,
+} from "@tihlde/ui/ui/autocomplete";
 
 import type { AddressSuggestion } from "#/api/queries/address";
 
@@ -29,6 +29,10 @@ type AddressComboboxProps = {
 /**
  * Stedsfelt med adressesøk. Dum komponent: forelderen eier både teksten og
  * henting av forslag.
+ *
+ * Bygget på `Autocomplete` og ikke `Combobox`, fordi feltet ikke har noen valgt
+ * verdi — teksten *er* verdien. En `Combobox` uten valgt verdi tømmer feltet
+ * når forslagslista lukkes, som gjorde det umulig å skrive inn et sted.
  */
 export function AddressCombobox({
     id,
@@ -41,34 +45,36 @@ export function AddressCombobox({
     required = false,
 }: AddressComboboxProps) {
     return (
-        <Combobox<AddressSuggestion>
+        <Autocomplete<AddressSuggestion>
             items={suggestions}
             // Treffene er allerede filtrert av Kartverket-søket.
             filter={null}
-            value={null}
-            inputValue={value}
-            onInputValueChange={onValueChange}
-            onValueChange={(next) => {
-                if (next) onSelectSuggestion(next);
-            }}
-            itemToStringLabel={(item) => item.label}
-            itemToStringValue={(item) => item.id}
+            value={value}
+            onValueChange={onValueChange}
+            itemToStringValue={(item) => item.label}
         >
-            <ComboboxInput
+            <AutocompleteInput
                 id={id}
                 required={required}
                 placeholder={placeholder}
                 showTrigger={false}
                 autoComplete="off"
             />
-            <ComboboxContent>
-                <ComboboxList>
-                    <ComboboxEmpty>
+            <AutocompleteContent>
+                <AutocompleteList>
+                    <AutocompleteEmpty>
                         {isSearching ? "Søker…" : "Ingen adresser matcher"}
-                    </ComboboxEmpty>
-                    <ComboboxCollection>
+                    </AutocompleteEmpty>
+                    <AutocompleteCollection>
                         {(item: AddressSuggestion) => (
-                            <ComboboxItem key={item.id} value={item}>
+                            <AutocompleteItem
+                                key={item.id}
+                                value={item}
+                                // Teksten fylles inn av Autocomplete selv;
+                                // dette er kun for å gi forelderen
+                                // koordinatene som hører til adressen.
+                                onClick={() => onSelectSuggestion(item)}
+                            >
                                 <span className="flex min-w-0 flex-col">
                                     <span className="truncate">
                                         {item.street}
@@ -79,11 +85,11 @@ export function AddressCombobox({
                                         </span>
                                     ) : null}
                                 </span>
-                            </ComboboxItem>
+                            </AutocompleteItem>
                         )}
-                    </ComboboxCollection>
-                </ComboboxList>
-            </ComboboxContent>
-        </Combobox>
+                    </AutocompleteCollection>
+                </AutocompleteList>
+            </AutocompleteContent>
+        </Autocomplete>
     );
 }
