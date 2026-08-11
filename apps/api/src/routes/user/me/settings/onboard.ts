@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { createUserSettings } from "~/lib/user/settings";
-import { requireAuth } from "~/middleware/auth";
+import { requireAuthAllowPending } from "~/middleware/auth";
 import { onboardUserInputSchema, userSettingsSchema } from "../../schema";
 
 export const onboardRoute = route().post(
@@ -22,7 +22,7 @@ export const onboardRoute = route().post(
         })
         .badRequest({ description: "User has already completed onboarding" })
         .build(),
-    requireAuth,
+    requireAuthAllowPending,
     validator("json", onboardUserInputSchema),
     async (c) => {
         const userId = c.get("user").id;

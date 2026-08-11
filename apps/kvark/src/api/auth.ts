@@ -466,15 +466,23 @@ export const signUpEmailMutationOptions = mutationOptions({
         name,
         email,
         password,
+        username,
     }: {
         name: string;
         email: string;
         password: string;
+        /**
+         * Only for sign-ups with a private address, and only when the one
+         * derived from the address is taken. A stud address always yields the
+         * NTNU username, and the server ignores anything sent alongside it.
+         */
+        username?: string;
     }) => {
         const result = await clientAuthInstance.signUp.email({
             name,
             email,
             password,
+            ...(username ? { username } : {}),
         });
         if (result.error) {
             throw new Error(result.error.message ?? "Registrering feilet");

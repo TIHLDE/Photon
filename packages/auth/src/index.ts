@@ -17,7 +17,7 @@ import {
     oauthProviderAuthServerMetadata,
     oauthProviderOpenIdConfigMetadata,
 } from "@better-auth/oauth-provider";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import { user } from "@photon/db/schema";
@@ -44,8 +44,13 @@ const isFeideConfigured = Boolean(
 );
 
 /**
- * Self-registration is restricted to NTNU student addresses, and the username
- * is the local part of that address (`olanor@stud.ntnu.no` -> `olanor`).
+ * A student address, whose local part is the NTNU username
+ * (`olanor@stud.ntnu.no` -> `olanor`).
+ *
+ * Self-registration is no longer restricted to these — anyone may sign up with
+ * a private address and wait for an admin to approve them — but a stud address
+ * still gets special treatment: the username is taken from it and nothing else,
+ * because that is the value a later Feide login matches the account on.
  *
  * Deliberately scoped to the public `/sign-up/email` endpoint rather than a
  * `databaseHooks.user.create` hook: every other creation path (dev seeding,
@@ -79,30 +84,75 @@ export function usernameFromStudentEmail(
 const USERNAME_PATTERN = /^[a-z0-9]{1,15}$/;
 
 /**
- * A username chosen by a trusted server-side caller, for the duration of one
- * `signUpEmail` call.
+ * Shape a username may have when the person picks it themselves, signing up
+ * with a private address.
+ *
+ * Wider than `USERNAME_PATTERN` on purpose. Private addresses routinely have
+ * local parts like `ola.nordmann`, and that is what the username is derived
+ * from — narrowing it by stripping the dot would turn `ola.nordmann` into
+ * `olanordmann`, which is exactly the shape NTNU hands out and therefore the
+ * shape most likely to collide with a real student's username later.
+ */
+const SELF_CHOSEN_USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
+
+/**
+ * Username a self-registration derives from the local part of `email`, or
+ * undefined when that local part is not a usable username.
+ *
+ * Only used for addresses that are not stud ones; a stud address goes through
+ * `usernameFromStudentEmail`, whose stricter rule is what a Feide login later
+ * matches on.
+ */
+export function usernameFromEmailLocalPart(
+    email: string | undefined,
+): string | undefined {
+    if (typeof email !== "string") return undefined;
+    const localPart = email.trim().toLowerCase().split("@")[0] ?? "";
+    return SELF_CHOSEN_USERNAME_PATTERN.test(localPart) ? localPart : undefined;
+}
+
+/** Normalised form of a username typed into the sign-up form. */
+function normaliseUsername(value: unknown): string | undefined {
+    if (typeof value !== "string") return undefined;
+    const trimmed = value.trim().toLowerCase();
+    return trimmed.length > 0 ? trimmed : undefined;
+}
+
+/**
+ * A sign-up performed by a trusted server-side caller, for the duration of one
+ * `signUpEmail` call. `username`, when present, is used as-is.
  *
  * Fadderuka registers brand-new students during fadderuka, and many of them
  * have not been given their @stud.ntnu.no address yet — so the address cannot
  * be what the username is derived from. They type their Feide username instead,
  * which is what makes a later Feide login land on the same account.
  *
- * Deliberately NOT read from the request body. `/sign-up/email` is a public
- * HTTP endpoint, so a body-supplied username would let anyone claim a student's
- * NTNU username before that student ever registers. Async-local storage cannot
+ * The store is also what tells the two kinds of sign-up apart afterwards: a
+ * trusted caller has already established the person's right to an account, so
+ * their account is not marked as awaiting approval, while a sign-up arriving
+ * over plain HTTP always is.
+ *
+ * A trusted username is deliberately NOT read from the request body. A
+ * body-supplied one would let anyone claim a student's NTNU username before
+ * that student ever registers — see the sign-up hook, which only honours a
+ * body username for addresses NTNU did not issue. Async-local storage cannot
  * be reached over HTTP: only code inside `runTrustedSignUp` sees it, and the
  * one caller is the API-key route that has already checked `users:create`.
  */
-const trustedSignUpStore = new AsyncLocalStorage<{ username: string }>();
+const trustedSignUpStore = new AsyncLocalStorage<{ username?: string }>();
 
 /**
- * Run `fn` with `username` marked as trusted, so the sign-up hook uses it
- * instead of deriving one from the e-mail address.
+ * Run `fn` as a trusted sign-up: the account skips admin approval, and
+ * `username` — when given — is used instead of deriving one from the address.
  */
 export function runTrustedSignUp<T>(
-    username: string,
+    username: string | undefined,
     fn: () => Promise<T>,
 ): Promise<T> {
+    if (username === undefined) {
+        return trustedSignUpStore.run({}, fn);
+    }
+
     const normalised = username.trim().toLowerCase();
     if (!USERNAME_PATTERN.test(normalised)) {
         throw new APIError("BAD_REQUEST", {
@@ -456,17 +506,52 @@ export function createAuth(options: CreateAuthOptions) {
                         : "";
 
                 /**
-                 * A trusted server-side caller may name the username outright;
-                 * everyone else still has to prove it with a stud address.
-                 * See `runTrustedSignUp` for why this cannot come from the body.
+                 * How the account gets its username:
+                 *
+                 * - Trusted caller naming one: used as-is. See
+                 *   `runTrustedSignUp` for why this cannot come from the body.
+                 * - Stud address: the local part, and only that. It is the
+                 *   student's NTNU username, and a later Feide login finds the
+                 *   account by it — so it is not the signer-upper's to choose.
+                 * - Anything else (a private address, someone who is not a
+                 *   student yet): the local part too, but they may name their
+                 *   own instead. Local parts are not unique across providers,
+                 *   so a collision has to have a way out, and the account has
+                 *   no NTNU identity to protect anyway.
                  */
                 const trusted = trustedSignUpStore.getStore();
+                const studUsername = usernameFromStudentEmail(email);
+                const chosenUsername = trusted
+                    ? undefined
+                    : normaliseUsername(ctx.body?.username);
+
+                if (chosenUsername && !studUsername) {
+                    if (
+                        !SELF_CHOSEN_USERNAME_PATTERN.test(chosenUsername) ||
+                        chosenUsername.length > 30
+                    ) {
+                        throw new APIError("BAD_REQUEST", {
+                            message:
+                                "Brukernavnet må være 3–30 tegn og kan bare inneholde små bokstaver, tall, punktum, bindestrek og understrek.",
+                        });
+                    }
+                }
+
                 const derivedUsername =
-                    trusted?.username ?? usernameFromStudentEmail(email);
+                    trusted?.username ??
+                    studUsername ??
+                    (chosenUsername || usernameFromEmailLocalPart(email));
+
                 if (!derivedUsername) {
+                    // Reachable two ways: a trusted caller passing a
+                    // non-stud address with no username, and a private address
+                    // whose local part is not a usable username (`a@b.no`,
+                    // `ola+tihlde@…`). Only the second can happen over HTTP,
+                    // and the answer to it is to name a username.
                     throw new APIError("BAD_REQUEST", {
-                        message:
-                            "Registrering krever en @stud.ntnu.no-adresse.",
+                        message: trusted
+                            ? "Registrering krever en @stud.ntnu.no-adresse."
+                            : "Vi klarte ikke å lage et brukernavn fra e-postadressen din. Velg et selv.",
                     });
                 }
 
@@ -493,12 +578,15 @@ export function createAuth(options: CreateAuthOptions) {
                 if (takenBy) {
                     throw new APIError("CONFLICT", {
                         message:
-                            "Det finnes allerede en bruker med dette NTNU-brukernavnet. Logg inn med Feide i stedet, eller bruk «glemt passord».",
+                            trusted || studUsername
+                                ? "Det finnes allerede en bruker med dette NTNU-brukernavnet. Logg inn med Feide i stedet, eller bruk «glemt passord»."
+                                : `Brukernavnet «${derivedUsername}» er opptatt. Velg et annet.`,
                     });
                 }
 
-                // Never taken from the request body: it is either derived from
-                // the address, or named by a trusted server-side caller.
+                // For a stud address and for a trusted caller this is never the
+                // body's to decide; for a private address the body is exactly
+                // where a chosen username is allowed to come from.
                 return {
                     context: {
                         body: { ...ctx.body, email, username: derivedUsername },
@@ -506,6 +594,48 @@ export function createAuth(options: CreateAuthOptions) {
                 };
             }),
             after: createAuthMiddleware(async (ctx) => {
+                /**
+                 * An account someone made for themselves on the website waits
+                 * for an admin before it counts as a member.
+                 *
+                 * Written here rather than at creation time because the value
+                 * depends on *how* the endpoint was called, and the sign-up
+                 * body has no room for something the caller must not control.
+                 * The row is found by e-mail: it is unique, the before-hook has
+                 * already normalised it, and the account was created moments
+                 * ago by this very request.
+                 *
+                 * Only ever fills in a status that is missing, so re-running it
+                 * can never demote an approved member back to pending.
+                 */
+                if (
+                    ctx.path === "/sign-up/email" &&
+                    !trustedSignUpStore.getStore()
+                ) {
+                    const email = ctx.body?.email;
+                    if (typeof email === "string" && email.length > 0) {
+                        try {
+                            await options.services.db
+                                .update(user)
+                                .set({ approvalStatus: "pending" })
+                                .where(
+                                    and(
+                                        eq(
+                                            user.email,
+                                            email.trim().toLowerCase(),
+                                        ),
+                                        isNull(user.approvalStatus),
+                                    ),
+                                );
+                        } catch (error) {
+                            console.error(
+                                "Failed to mark a self-registered account as awaiting approval:",
+                                error,
+                            );
+                        }
+                    }
+                }
+
                 if (!isFeideConfigured) return;
 
                 // Sends a member whose password was just revoked on to set a
@@ -603,7 +733,7 @@ export function createAuth(options: CreateAuthOptions) {
             customSession(async ({ user, session }) => {
                 const db = options.services.db;
 
-                const [settings, permissions, groups] = await Promise.all([
+                const [settings, permissions, groups, row] = await Promise.all([
                     db.query.userSettings.findFirst({
                         where: (s, { eq }) => eq(s.userId, user.id),
                         with: { allergies: { columns: { allergySlug: true } } },
@@ -613,11 +743,26 @@ export function createAuth(options: CreateAuthOptions) {
                         where: (gm, { eq }) => eq(gm.userId, user.id),
                         with: { group: true },
                     }),
+                    /**
+                     * Read separately because `approvalStatus` is ours, not
+                     * part of Better Auth's user model — the session `user` it
+                     * hands this callback carries only the columns it knows.
+                     * The frontend needs it to tell a member from someone still
+                     * waiting for an admin, and every request already has the
+                     * session in hand, so this is the cheapest place to answer
+                     * it once.
+                     */
+                    db.query.user.findFirst({
+                        where: (u, { eq }) => eq(u.id, user.id),
+                        columns: { approvalStatus: true },
+                    }),
                 ]);
 
                 return {
                     user: {
                         ...user,
+                        approvalStatus: row?.approvalStatus ?? null,
+                        isPendingApproval: row?.approvalStatus === "pending",
                         settings: settings
                             ? {
                                   ...settings,

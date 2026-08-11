@@ -4,6 +4,8 @@
 
 export type ExtendedSession = {
     user: {
+        approvalStatus: "pending" | "approved" | null;
+        isPendingApproval: boolean;
         settings: {
             allergies: string[];
             createdAt: Date;

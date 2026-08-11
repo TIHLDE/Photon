@@ -2,7 +2,7 @@ import { NoFeideAccountError, syncFeideForUser } from "@photon/auth/feide";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAuth } from "~/middleware/auth";
+import { requireAuthAllowPending } from "~/middleware/auth";
 import { accountLinkSyncResponseSchema } from "./schema";
 
 /**
@@ -50,7 +50,7 @@ export const accountLinkSyncRoute = route().post(
             description: "Feide could not be reached",
         })
         .build(),
-    requireAuth,
+    requireAuthAllowPending,
     async (c) => {
         const user = c.get("user");
         const { db } = c.get("ctx");

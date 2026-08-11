@@ -36,7 +36,29 @@ export function userFromClaims(sub: string, payload: Record<string, unknown>) {
         banReason: null,
         banExpires: null,
         settings: null,
+        approvalStatus: null,
+        isPendingApproval: false,
         createdAt: now,
         updatedAt: now,
     } as unknown as AuthUser;
+}
+
+/**
+ * Whether a signed-in user counts as one of us for the purposes of seeing
+ * member-only content.
+ *
+ * "Logged in" stopped meaning "member" the day anyone could sign themselves up
+ * with a private address. Someone still waiting for an admin sees what a
+ * visitor sees; everyone else — Feide logins, migrated members, approved
+ * sign-ups — is unchanged.
+ *
+ * Note this is about *visibility*, not about what a user may do: the ability to
+ * register for an event, propose a fine and so on hangs off permissions, and a
+ * pending account simply holds no role that grants them.
+ */
+export function isMemberAudience(
+    user: { approvalStatus?: string | null } | null | undefined,
+): boolean {
+    if (!user) return false;
+    return user.approvalStatus !== "pending";
 }

@@ -147,14 +147,16 @@ export const registerUserRoute = route().post(
 
         let userId: string;
         try {
-            const signUp = () =>
-                auth.api.signUpEmail({ body: { name, email, password } });
+            // Always wrapped, whether or not a username was named: the wrapper
+            // is also what marks the sign-up as trusted, and a trusted sign-up
+            // skips the admin approval a website sign-up waits for. The caller
+            // has already been vouched for by an API key with 'users:create'.
             // A named username is passed out-of-band rather than in the body:
             // `/sign-up/email` is public, so a body-supplied one would let
             // anyone claim a student's NTNU username. See `runTrustedSignUp`.
-            const result = chosenUsername
-                ? await runTrustedSignUp(chosenUsername, signUp)
-                : await signUp();
+            const result = await runTrustedSignUp(chosenUsername, () =>
+                auth.api.signUpEmail({ body: { name, email, password } }),
+            );
             userId = result.user.id;
         } catch (err) {
             // Better Auth reports the @stud.ntnu.no rule, a weak password and

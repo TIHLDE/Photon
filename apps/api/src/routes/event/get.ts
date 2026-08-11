@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq, inArray } from "drizzle-orm";
 import type z from "zod";
+import { isMemberAudience } from "~/lib/auth";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
@@ -73,10 +74,11 @@ export const getRoute = route().get(
 
         const user = c.get("user");
 
-        // Members-only events are hidden from unauthenticated (non-member)
-        // callers. Any authenticated user counts as a member. Respond 404
-        // rather than 403 so the event's existence isn't leaked.
-        if (event.visibility === "members" && !user) {
+        // Members-only events are hidden from callers who are not members —
+        // which includes a signed-in account still waiting for an admin to
+        // approve it. Respond 404 rather than 403 so the event's existence
+        // isn't leaked.
+        if (event.visibility === "members" && !isMemberAudience(user)) {
             return c.json("The event was not found", 404);
         }
 

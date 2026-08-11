@@ -316,6 +316,13 @@
       "when": 1786133632759,
       "tag": "0044_quick_gressill",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1786438246608,
+      "tag": "0045_white_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

@@ -241,6 +241,10 @@ export const userListQuerySchema = z.object({
     studyStartYear: z.coerce.number().int().optional().meta({
         description: "Filter by cohort (STUDYYEAR group), e.g. 2023",
     }),
+    approvalStatus: z.enum(["pending", "approved"]).optional().meta({
+        description:
+            "Show only accounts with this approval status. 'pending' is the queue of self-registered accounts waiting for an admin.",
+    }),
 });
 
 export const userListItemSchema = Schema(
@@ -262,9 +266,25 @@ export const userListItemSchema = Schema(
             description:
                 "False when the account is deactivated — the member cannot sign in.",
         }),
+        approvalStatus: z.enum(["pending", "approved"]).nullable().meta({
+            description:
+                "'pending' for a self-registered account still waiting for an admin, 'approved' once one said yes. Null for accounts that never needed approving — Feide logins and members migrated from Lepton.",
+        }),
+        email: z.string().nullable().meta({
+            description:
+                "Only filled in for accounts awaiting approval, where it is the one thing an admin has to judge them on. Null otherwise.",
+        }),
         createdAt: z
             .string()
             .meta({ description: "Account creation timestamp" }),
+    }),
+);
+
+export const approveUserResponseSchema = Schema(
+    "ApproveUser",
+    z.object({
+        message: z.string(),
+        approvalStatus: z.literal("approved"),
     }),
 );
 

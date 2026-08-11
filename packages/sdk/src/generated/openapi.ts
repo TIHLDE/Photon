@@ -2548,6 +2548,26 @@ export interface paths {
         patch: operations["updateUserStatus"];
         trace?: never;
     };
+    "/api/user/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a self-registered account
+         * @description Grants the 'member' role to an account that signed itself up on the website and is waiting for approval, and tells the person by e-mail. Requires 'users:manage'.
+         */
+        post: operations["approveUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/{id}": {
         parameters: {
             query?: never;
@@ -5712,6 +5732,10 @@ export interface components {
             studyStartYear: number | null;
             /** @description False when the account is deactivated — the member cannot sign in. */
             isActive: boolean;
+            /** @description 'pending' for a self-registered account still waiting for an admin, 'approved' once one said yes. Null for accounts that never needed approving — Feide logins and members migrated from Lepton. */
+            approvalStatus: ("pending" | "approved") | null;
+            /** @description Only filled in for accounts awaiting approval, where it is the one thing an admin has to judge them on. Null otherwise. */
+            email: string | null;
             /** @description Account creation timestamp */
             createdAt: string;
         };
@@ -5749,6 +5773,11 @@ export interface components {
             isActive: boolean;
             /** @description Why the account was deactivated. Ignored when activating. */
             reason?: string;
+        };
+        ApproveUser: {
+            message: string;
+            /** @constant */
+            approvalStatus: "approved";
         };
         UserProfile: {
             /** @description User ID */
@@ -5828,6 +5857,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createApiKey: {
@@ -5854,6 +5892,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5893,6 +5940,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - API key not found */
             404: {
                 headers: {
@@ -5925,6 +5981,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5975,6 +6040,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - API key not found */
             404: {
                 headers: {
@@ -6007,6 +6081,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6074,6 +6157,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     listMyApplications: {
@@ -6098,6 +6190,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6145,6 +6246,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createSupportApplication: {
@@ -6178,6 +6288,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6225,6 +6344,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createHsCaseApplication: {
@@ -6265,6 +6393,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     listApplications: {
@@ -6296,12 +6433,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -6325,6 +6464,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6362,6 +6510,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6407,12 +6564,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -6456,12 +6615,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -6494,6 +6655,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6656,12 +6826,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -6696,12 +6868,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -6734,12 +6908,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Banner not found */
             404: {
@@ -6783,12 +6959,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Banner not found */
             404: {
@@ -6997,12 +7175,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:strikes:view or events:manage permission, unless reading your own strikes */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -7037,12 +7217,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:strikes:create or events:manage permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User or event not found */
             404: {
@@ -7085,6 +7267,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     deleteStrike: {
@@ -7116,12 +7307,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:strikes:delete or events:manage permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Strike not found */
             404: {
@@ -7165,6 +7358,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Event not found */
             404: {
                 headers: {
@@ -7194,6 +7396,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7271,12 +7482,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Missing events:create for the organizing group (or globally) */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -7313,12 +7526,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - You must be the event creator or have events:update/events:manage permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Not found */
             404: {
@@ -7380,12 +7595,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - You must be the event creator or have events:delete permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Event with the specified ID does not exist */
             404: {
@@ -7439,12 +7656,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Filtering by status requires event admin permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -7481,12 +7700,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - User has not accepted the event rules, owes an answer to an evaluation, or the event only allows members covered by a priority pool or members of a specific institute to register */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Event not found */
             404: {
@@ -7531,6 +7752,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     setRegistrationAttendance: {
@@ -7567,12 +7797,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:update or events:manage permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Registration not found */
             404: {
@@ -7616,6 +7848,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7675,12 +7916,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires permission to view the event's payments */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -7721,12 +7964,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires events:payments:refund */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Payment not found on this event */
             404: {
@@ -7819,6 +8064,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Event not found */
             404: {
                 headers: {
@@ -7868,12 +8122,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Cant create form for specified event */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Event not found */
             404: {
@@ -7914,12 +8170,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Evaluation forms require attendance */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Form not found */
             404: {
@@ -7950,6 +8208,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -7990,6 +8257,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     getForm: {
@@ -8014,6 +8290,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8059,12 +8344,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Form not found */
             404: {
@@ -8108,12 +8395,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Form not found */
             404: {
@@ -8153,12 +8442,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -8198,12 +8489,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Form not found */
             404: {
@@ -8247,12 +8540,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Cannot submit to this form */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Form not found */
             404: {
@@ -8299,12 +8594,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Form not found */
             404: {
@@ -8345,12 +8642,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Submission not found */
             404: {
@@ -8388,6 +8687,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8438,6 +8746,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createGallery: {
@@ -8471,12 +8788,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -8507,6 +8826,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8556,12 +8884,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Gallery not found */
             404: {
@@ -8602,12 +8932,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Gallery or picture not found */
             404: {
@@ -8652,12 +8984,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Gallery or picture not found */
             404: {
@@ -8690,6 +9024,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8735,12 +9078,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Gallery not found */
             404: {
@@ -8784,12 +9129,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Gallery not found */
             404: {
@@ -8834,6 +9181,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     deleteNotification: {
@@ -8858,6 +9214,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8900,6 +9265,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8974,6 +9348,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     listMyGroups: {
@@ -8996,6 +9379,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9068,12 +9460,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not a group leader or missing groups:delete permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group with the specified slug does not exist */
             404: {
@@ -9124,12 +9518,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not a group leader or missing groups:update permission */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group with the specified slug does not exist */
             404: {
@@ -9178,12 +9574,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to view fines for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
             404: {
@@ -9234,12 +9632,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to create fines for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group or user not found */
             404: {
@@ -9279,12 +9679,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to view fines for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
             404: {
@@ -9331,12 +9733,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to view fines for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
             404: {
@@ -9387,12 +9791,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to settle this group's fines */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
             404: {
@@ -9437,12 +9843,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to settle this group's fines */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
             404: {
@@ -9483,12 +9891,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to view this fine */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Fine or group not found */
             404: {
@@ -9527,12 +9937,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to delete this fine */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Fine or group not found */
             404: {
@@ -9584,12 +9996,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to update this fine */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Fine or group not found */
             404: {
@@ -9629,12 +10043,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to view laws for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -9678,12 +10094,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to manage laws for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -9722,12 +10140,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to manage laws for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Law or group not found */
             404: {
@@ -9772,12 +10192,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to manage laws for this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Law or group not found */
             404: {
@@ -9900,6 +10322,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Group not found */
             404: {
                 headers: {
@@ -9930,6 +10361,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -9980,6 +10420,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Group, user, or membership not found */
             404: {
                 headers: {
@@ -10018,12 +10467,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - The group is private and you are not a member */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10074,12 +10525,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to create positions, or tried to grant permissions the creator does not hold */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10120,12 +10573,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to delete this position */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Position not found */
             404: {
@@ -10177,12 +10632,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to update this position */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Position not found */
             404: {
@@ -10234,12 +10691,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to assign this position */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Position not found */
             404: {
@@ -10288,12 +10747,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to manage this position */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Position not found */
             404: {
@@ -10340,12 +10801,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized to manage this group */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10396,12 +10859,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Not authorized, or granting permissions you lack */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10441,12 +10906,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - The group is private and you are not a member */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10490,12 +10957,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10553,6 +11022,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - No active contract */
             404: {
                 headers: {
@@ -10582,6 +11060,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10622,6 +11109,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10677,6 +11173,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - No active contract, or not signed yet */
             404: {
                 headers: {
@@ -10713,12 +11218,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - No active contract, or not signed yet */
             404: {
@@ -10756,12 +11263,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -10803,12 +11312,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -10841,12 +11352,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Contract not found */
             404: {
@@ -10886,12 +11399,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Group not found */
             404: {
@@ -10932,12 +11447,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Signature not found */
             404: {
@@ -10975,6 +11492,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     createMotetidEvent: {
@@ -11001,6 +11527,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11070,6 +11605,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Event not found */
             404: {
                 headers: {
@@ -11120,6 +11664,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
             /** @description Not Found - Event not found */
             404: {
                 headers: {
@@ -11159,6 +11712,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     motetidGoogleCallback: {
@@ -11179,6 +11741,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11220,6 +11791,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11292,6 +11872,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     getNews: {
@@ -11353,12 +11942,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - News article not found */
             404: {
@@ -11403,12 +11994,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - News article not found */
             404: {
@@ -11453,12 +12046,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Reactions not allowed on this news article */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - News article not found */
             404: {
@@ -11492,6 +12087,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11566,12 +12170,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Conflict - that edition already exists */
             409: {
@@ -11611,12 +12217,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Issue not found */
             404: {
@@ -11667,12 +12275,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Issue not found */
             404: {
@@ -11703,6 +12313,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11743,6 +12362,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     deleteQRCode: {
@@ -11768,6 +12396,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11811,12 +12448,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires roles:view */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -11858,12 +12497,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires roles:create, or tried to grant unheld permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -11896,12 +12537,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient hierarchy */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Role not found */
             404: {
@@ -11952,12 +12595,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient hierarchy or unheld permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Role not found */
             404: {
@@ -12001,12 +12646,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient hierarchy */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Role or user not found */
             404: {
@@ -12047,12 +12694,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient hierarchy */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Role not found */
             404: {
@@ -12134,6 +12783,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     getJob: {
@@ -12194,12 +12852,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Job posting not found */
             404: {
@@ -12243,12 +12903,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Insufficient permissions */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - Job posting not found */
             404: {
@@ -12449,6 +13111,15 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
         };
     };
     listAllergies: {
@@ -12555,12 +13226,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:view or roles:assign */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -12577,6 +13250,8 @@ export interface operations {
                 study?: string;
                 /** @description Filter by cohort (STUDYYEAR group), e.g. 2023 */
                 studyStartYear?: number;
+                /** @description Show only accounts with this approval status. 'pending' is the queue of self-registered accounts waiting for an admin. */
+                approvalStatus?: "pending" | "approved";
             };
             header?: never;
             path?: never;
@@ -12602,12 +13277,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:view */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -12644,12 +13321,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:manage */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User not found */
             404: {
@@ -12689,12 +13368,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:manage */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User not found */
             404: {
@@ -12745,12 +13426,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:manage */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User not found */
             404: {
@@ -12801,12 +13484,68 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:manage */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
+            };
+        };
+    };
+    approveUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account approved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveUser"];
+                };
+            };
+            /** @description Bad Request - The account is not waiting for approval */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User not found */
             404: {
@@ -12839,6 +13578,15 @@ export interface operations {
             };
             /** @description Authentication required */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12889,12 +13637,14 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
-            /** @description Forbidden - Requires users:delete */
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
             /** @description Not Found - User not found */
             404: {

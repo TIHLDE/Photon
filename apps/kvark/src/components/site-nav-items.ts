@@ -8,7 +8,18 @@ import type { NavItem } from "#/components/site-header";
  * auth pages. Lives outside the layouts so every shell that shows navigation
  * shows the same navigation.
  */
-export function useSiteNavItems(isAuthenticated: boolean): NavItem[] {
+/**
+ * @param isAuthenticated Om noen er logget inn i det hele tatt.
+ * @param isMember Om den innloggede faktisk er medlem. En selvregistrert bruker
+ *   som venter på godkjenning er logget inn, men hver side under «For
+ *   Medlemmer» svarer 403 for dem — så menyen skjules i stedet for å tilby
+ *   lenker som bare fører til en feilmelding. Standard `true` holder kallere
+ *   som ikke bryr seg om skillet uendret.
+ */
+export function useSiteNavItems(
+    isAuthenticated: boolean,
+    isMember: boolean = true,
+): NavItem[] {
     // Vis "Ny student" i navmenyen fra og med juni til og med august
     const month = new Date().getMonth();
     const isNewStudentTime = month >= 5 && month <= 7;
@@ -83,7 +94,7 @@ export function useSiteNavItems(isAuthenticated: boolean): NavItem[] {
                           },
                       ]
                     : []),
-                ...(isAuthenticated
+                ...(isAuthenticated && isMember
                     ? [
                           {
                               kind: "group",
@@ -140,7 +151,7 @@ export function useSiteNavItems(isAuthenticated: boolean): NavItem[] {
                       ]
                     : []),
             ] as NavItem[],
-        [isAuthenticated, isNewStudentTime],
+        [isAuthenticated, isMember, isNewStudentTime],
     );
 
     return navItems;

@@ -56,6 +56,7 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { searchUsersQuery } from "#/api/queries/roles";
 import {
+    approveUserMutation,
     deleteUserMutation,
     getAllergiesQuery,
     getUserAllergiesQuery,
@@ -221,6 +222,12 @@ function AllUsersTable({
     const [search, setSearch] = useState("");
     const [study, setStudy] = useState<string>(ALL);
     const [year, setYear] = useState<string>(ALL);
+    /**
+     * Køen av selvregistrerte som venter på godkjenning. Uten et eget filter
+     * ville de forsvunnet blant to tusen andre — de har verken studie eller
+     * kull å søke dem opp med.
+     */
+    const [approval, setApproval] = useState<string>(ALL);
     const [editing, setEditing] = useState<{
         id: string;
         name: string;
@@ -239,6 +246,13 @@ function AllUsersTable({
         id: string;
         name: string;
         username: string | null;
+        /** Avvisning av en søknad, ikke sletting av et medlem. */
+        isPending: boolean;
+    } | null>(null);
+    const [approving, setApproving] = useState<{
+        id: string;
+        name: string;
+        email: string | null;
     } | null>(null);
 
     /**
@@ -271,8 +285,14 @@ function AllUsersTable({
             study:
                 study === ALL ? undefined : study === NO_STUDY ? "none" : study,
             studyStartYear: year === ALL ? undefined : Number(year),
+            approvalStatus:
+                approval === ALL
+                    ? undefined
+                    : (approval as "pending" | "approved"),
         }),
     );
+
+    const showingPendingQueue = approval === "pending";
 
     const users = useMemo(
         () => (data?.pages ?? []).flatMap((page) => page.items),
@@ -321,6 +341,24 @@ function AllUsersTable({
                         }))}
                     />
                 </Field>
+                <Field>
+                    <FieldLabel htmlFor="user-filter-approval">
+                        Godkjenning
+                    </FieldLabel>
+                    <FilterSelect
+                        id="user-filter-approval"
+                        value={approval}
+                        onValueChange={setApproval}
+                        allLabel="Alle brukere"
+                        options={[
+                            {
+                                value: "pending",
+                                label: "Venter på godkjenning",
+                            },
+                            { value: "approved", label: "Godkjent" },
+                        ]}
+                    />
+                </Field>
             </div>
 
             {isPending ? (
@@ -344,7 +382,9 @@ function AllUsersTable({
             ) : (
                 <>
                     <p className="text-sm">
-                        Viser {users.length} av {totalCount} brukere
+                        {showingPendingQueue
+                            ? `${totalCount} venter på godkjenning`
+                            : `Viser ${users.length} av ${totalCount} brukere`}
                     </p>
                     <Card>
                         <CardContent className="p-0">
@@ -380,21 +420,38 @@ function AllUsersTable({
                                                             )}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-sm font-medium">
-                                                        {user.name}
-                                                    </span>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-medium">
+                                                            {user.name}
+                                                        </span>
+                                                        {/* E-posten er det
+                                                        eneste en admin har å
+                                                        vurdere en ukjent på, og
+                                                        API-et sender den bare
+                                                        for de som venter. */}
+                                                        {user.email && (
+                                                            <span className="text-sm text-muted-foreground">
+                                                                {user.email}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
                                                 {user.username ?? "—"}
                                             </TableCell>
                                             <TableCell>
-                                                {user.isActive ? (
-                                                    "Aktiv"
-                                                ) : (
+                                                {!user.isActive ? (
                                                     <Badge variant="destructive">
                                                         Arkivert
                                                     </Badge>
+                                                ) : user.approvalStatus ===
+                                                  "pending" ? (
+                                                    <Badge variant="secondary">
+                                                        Venter
+                                                    </Badge>
+                                                ) : (
+                                                    "Aktiv"
                                                 )}
                                             </TableCell>
                                             <TableCell>
@@ -409,6 +466,29 @@ function AllUsersTable({
                                             {hasActions && (
                                                 <TableCell>
                                                     <div className="flex justify-end gap-1">
+                                                        {/* Godkjenning står
+                                                        først: for en som
+                                                        venter, er det den
+                                                        eneste handlingen som
+                                                        betyr noe. */}
+                                                        {canEditCohort &&
+                                                            user.approvalStatus ===
+                                                                "pending" && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        setApproving(
+                                                                            {
+                                                                                id: user.id,
+                                                                                name: user.name,
+                                                                                email: user.email,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Godkjenn
+                                                                </Button>
+                                                            )}
                                                         {canEditCohort && (
                                                             <>
                                                                 <Button
@@ -472,11 +552,17 @@ function AllUsersTable({
                                                                             name: user.name,
                                                                             username:
                                                                                 user.username,
+                                                                            isPending:
+                                                                                user.approvalStatus ===
+                                                                                "pending",
                                                                         },
                                                                     )
                                                                 }
                                                             >
-                                                                Slett
+                                                                {user.approvalStatus ===
+                                                                "pending"
+                                                                    ? "Avvis"
+                                                                    : "Slett"}
                                                             </Button>
                                                         )}
                                                     </div>
@@ -526,6 +612,14 @@ function AllUsersTable({
                 }}
             />
 
+            <ApproveUserDialog
+                user={approving}
+                open={approving !== null}
+                onOpenChange={(open) => {
+                    if (!open) setApproving(null);
+                }}
+            />
+
             <DeleteUserDialog
                 user={deleting}
                 open={deleting !== null}
@@ -534,6 +628,76 @@ function AllUsersTable({
                 }}
             />
         </div>
+    );
+}
+
+/**
+ * Godkjenn en bruker som har registrert seg selv på nettsiden.
+ *
+ * Handlingen er liten å utføre og lett å angre — rollen kan fjernes igjen i
+ * /admin/roller — så dialogen spør bare én gang, og sier hva godkjenningen
+ * faktisk gir.
+ */
+function ApproveUserDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; email: string | null } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [error, setError] = useState<string | null>(null);
+    const approve = useMutation(approveUserMutation);
+
+    async function handleApprove() {
+        if (!user) return;
+        setError(null);
+        try {
+            await approve.mutateAsync({ userId: user.id });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Godkjenn bruker</DialogTitle>
+                    <DialogDescription>
+                        {user?.name}
+                        {user?.email ? ` · ${user.email}` : ""}
+                    </DialogDescription>
+                </DialogHeader>
+                <FieldDescription>
+                    Brukeren blir medlem: kan melde seg på arrangementer og se
+                    medlemssidene. De får en e-post om at kontoen er godkjent.
+                </FieldDescription>
+                {error && (
+                    <p className="text-sm text-destructive" role="alert">
+                        {error}
+                    </p>
+                )}
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Avbryt
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={handleApprove}
+                        disabled={approve.isPending}
+                    >
+                        Godkjenn
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
@@ -549,10 +713,22 @@ function DeleteUserDialog({
     open,
     onOpenChange,
 }: {
-    user: { id: string; name: string; username: string | null } | null;
+    user: {
+        id: string;
+        name: string;
+        username: string | null;
+        isPending: boolean;
+    } | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    /**
+     * Å avvise en som venter er ikke det samme som å slette et medlem: kontoen
+     * har ingen påmeldinger, bøter eller vervhistorikk å miste, bare en
+     * e-postadresse noen tastet inn. Da er avskrivingen av navnet ren
+     * friksjon.
+     */
+    const isRejection = user?.isPending === true;
     const [confirmation, setConfirmation] = useState("");
     const [error, setError] = useState<string | null>(null);
     const remove = useMutation(deleteUserMutation);
@@ -569,6 +745,7 @@ function DeleteUserDialog({
     // Brukernavnet er kortere og entydig; navnet brukes når det mangler.
     const expected = user?.username ?? user?.name ?? "";
     const confirmed =
+        isRejection ||
         confirmation.trim().toLowerCase() === expected.toLowerCase();
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -589,30 +766,40 @@ function DeleteUserDialog({
             <DialogContent>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <DialogHeader>
-                        <DialogTitle>Slett konto</DialogTitle>
+                        <DialogTitle>
+                            {isRejection ? "Avvis bruker" : "Slett konto"}
+                        </DialogTitle>
                         <DialogDescription>{user?.name}</DialogDescription>
                     </DialogHeader>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="delete-confirmation">
-                                Skriv «{expected}» for å bekrefte
-                            </FieldLabel>
-                            <Input
-                                id="delete-confirmation"
-                                value={confirmation}
-                                onChange={(event) =>
-                                    setConfirmation(event.target.value)
-                                }
-                                autoComplete="off"
-                            />
-                            <FieldDescription>
-                                Kontoen slettes for godt, sammen med
-                                påmeldinger, betalinger, bøter, medlemskap og
-                                vervhistorikk. Dette kan ikke angres — velg
-                                Arkiver i stedet hvis historikken skal beholdes.
-                            </FieldDescription>
-                        </Field>
-                    </FieldGroup>
+                    {isRejection ? (
+                        <FieldDescription>
+                            Kontoen slettes, og personen får ingen beskjed. De
+                            kan registrere seg på nytt med samme e-postadresse.
+                        </FieldDescription>
+                    ) : (
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="delete-confirmation">
+                                    Skriv «{expected}» for å bekrefte
+                                </FieldLabel>
+                                <Input
+                                    id="delete-confirmation"
+                                    value={confirmation}
+                                    onChange={(event) =>
+                                        setConfirmation(event.target.value)
+                                    }
+                                    autoComplete="off"
+                                />
+                                <FieldDescription>
+                                    Kontoen slettes for godt, sammen med
+                                    påmeldinger, betalinger, bøter, medlemskap
+                                    og vervhistorikk. Dette kan ikke angres —
+                                    velg Arkiver i stedet hvis historikken skal
+                                    beholdes.
+                                </FieldDescription>
+                            </Field>
+                        </FieldGroup>
+                    )}
                     {error && (
                         <p className="text-sm text-destructive" role="alert">
                             {error}
@@ -631,7 +818,7 @@ function DeleteUserDialog({
                             variant="destructive"
                             disabled={!confirmed || remove.isPending}
                         >
-                            Slett for godt
+                            {isRejection ? "Avvis" : "Slett for godt"}
                         </Button>
                     </DialogFooter>
                 </form>

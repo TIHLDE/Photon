@@ -28,20 +28,26 @@ export const Route = createFileRoute("/_auth/register")({
     component: RegisterPage,
 });
 
-// Kept identical to STUD_NTNU_EMAIL_PATTERN in @photon/auth, which is the
-// actual enforcement point — this only moves the error next to the field.
-const STUD_NTNU_EMAIL_PATTERN =
-    /^([a-z0-9]+(?:[._-][a-z0-9]+)*)@stud\.ntnu\.no$/;
+// Mirrors SELF_CHOSEN_USERNAME_PATTERN in @photon/auth, which is the actual
+// enforcement point — this only moves the error next to the field.
+const SELF_CHOSEN_USERNAME_PATTERN = /^[a-z0-9][a-z0-9._-]{1,28}[a-z0-9]$/;
 
 const registerSchema = z
     .object({
         name: z.string().min(1, { error: "Navn kan ikke være tom" }),
-        email: z
-            .email({ error: "Ugyldig e-post" })
+        email: z.email({ error: "Ugyldig e-post" }),
+        // Only shown once the server says the derived one is taken, so an
+        // empty value is normal and means "use the one from the address".
+        username: z
+            .string()
+            .trim()
             .refine(
-                (email) =>
-                    STUD_NTNU_EMAIL_PATTERN.test(email.trim().toLowerCase()),
-                { error: "Du må bruke din @stud.ntnu.no-adresse" },
+                (value) =>
+                    value.length === 0 ||
+                    SELF_CHOSEN_USERNAME_PATTERN.test(value.toLowerCase()),
+                {
+                    error: "3–30 tegn: små bokstaver, tall, punktum, bindestrek eller understrek",
+                },
             ),
         password: z
             .string()
@@ -78,6 +84,14 @@ function RegisterPage() {
 
     const signUpMutation = useMutation(signUpEmailMutationOptions);
 
+    /**
+     * The username field appears only after the server has rejected the one it
+     * derived from the address. Asking everyone up front for something we can
+     * work out ourselves is a field most people would have to think about for
+     * no reason.
+     */
+    const [needsUsername, setNeedsUsername] = useState(false);
+
     const form = useAppForm({
         validators: {
             onChange: registerSchema,
@@ -86,15 +100,31 @@ function RegisterPage() {
         defaultValues: {
             name: "",
             email: "",
+            username: "",
             password: "",
             confirmPassword: "",
         },
         async onSubmit({ value }) {
-            const data = await signUpMutation.mutateAsync({
-                name: value.name,
-                email: value.email,
-                password: value.password,
-            });
+            let data: Awaited<ReturnType<typeof signUpMutation.mutateAsync>>;
+            try {
+                data = await signUpMutation.mutateAsync({
+                    name: value.name,
+                    email: value.email,
+                    password: value.password,
+                    username: value.username.trim() || undefined,
+                });
+            } catch (error) {
+                // The server answers a taken username with a message naming it;
+                // that is the cue to ask for one instead of only showing the
+                // error and leaving no way to act on it.
+                if (
+                    error instanceof Error &&
+                    error.message.includes("opptatt")
+                ) {
+                    setNeedsUsername(true);
+                }
+                throw error;
+            }
 
             if ("url" in data && data.url) {
                 window.location.href = data.url;
@@ -123,7 +153,9 @@ function RegisterPage() {
                         <CardDescription>
                             Vi har sendt en bekreftelseslenke til{" "}
                             {form.state.values.email}. Følg lenken for å
-                            fullføre registreringen.
+                            fullføre registreringen. Deretter godkjenner en
+                            administrator brukeren din — du får en e-post når
+                            det er gjort.
                         </CardDescription>
                     </CardHeader>
                     <CardFooter>
@@ -144,7 +176,9 @@ function RegisterPage() {
             <CardHeader>
                 <CardTitle>Opprett bruker</CardTitle>
                 <CardDescription>
-                    Registrer deg med Feide for å delta på arrangementer.
+                    Er du student, registrer deg med Feide — da er du medlem med
+                    én gang. Andre kan lage bruker med e-post, og en
+                    administrator godkjenner den.
                 </CardDescription>
             </CardHeader>
 
@@ -162,7 +196,7 @@ function RegisterPage() {
                         className="mx-auto"
                         onClick={() => setShowEmailForm(true)}
                     >
-                        Kan du ikke bruke Feide?
+                        Har du ikke Feide?
                     </Button>
                 )}
             </CardContent>
@@ -189,11 +223,23 @@ function RegisterPage() {
                                         label="E-post"
                                         type="email"
                                         autoComplete="email"
-                                        description="Bruk din @stud.ntnu.no-adresse. Brukernavnet ditt blir det som står før @."
+                                        description="Studenter bruker @stud.ntnu.no. Andre kan bruke privat e-post. Brukernavnet ditt blir det som står før @."
                                         required
                                     />
                                 )}
                             </form.AppField>
+                            {needsUsername && (
+                                <form.AppField name="username">
+                                    {(field) => (
+                                        <field.InputField
+                                            label="Brukernavn"
+                                            autoComplete="username"
+                                            description="Brukernavnet fra e-postadressen din er opptatt. Velg et annet."
+                                            required
+                                        />
+                                    )}
+                                </form.AppField>
+                            )}
                             <form.AppField name="password">
                                 {(field) => (
                                     <field.PasswordField

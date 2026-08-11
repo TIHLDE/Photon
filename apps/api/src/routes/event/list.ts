@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
+import { isMemberAudience } from "~/lib/auth";
 import { describeRoute } from "~/lib/openapi";
 import { captureAuth } from "../../middleware/auth";
 import { route } from "../../lib/route";
@@ -86,9 +87,11 @@ export const listRoute = route().get(
             ordering,
         } = c.req.valid("query");
 
-        // Members-only events are hidden from unauthenticated (non-member)
-        // callers. Any authenticated user counts as a member.
-        const isMember = !!c.get("user");
+        // Members-only events are hidden from callers who are not members.
+        // Being signed in is not enough on its own: anyone may sign themselves
+        // up on the website, and until an admin approves them they see exactly
+        // what a visitor sees.
+        const isMember = isMemberAudience(c.get("user"));
 
         const filters = and(
             ...[
