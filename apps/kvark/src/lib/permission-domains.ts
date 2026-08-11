@@ -4,33 +4,56 @@ import { PERMISSIONS } from "@photon/auth/rbac/registry";
  * Domain-level view of the permission registry, for admin UIs.
  *
  * Instead of exposing all ~70 individual permissions as checkboxes, the UI
- * shows one checkbox per domain ("Arrangementer", "Bøter", …). Toggling a
- * domain grants/removes every permission registered under it — mirroring how
- * aarhonen's role admin works.
+ * shows one checkbox per domain ("Arrangementer", "Nyheter", …). Toggling a
+ * domain grants/removes every permission registered under it.
+ *
+ * There is deliberately no "Bøter" domain: giving and reading bøter follows
+ * group membership rather than a permission, so there is nothing to tick.
  */
 
 export type PermissionDomain = {
     slug: string;
     label: string;
+    /**
+     * Whether granting this domain scoped to a single group means anything.
+     *
+     * True only where the underlying rows carry an owning group AND the API
+     * narrows against it. `events` has `organizerGroupSlug`, `forms` has
+     * `formGroupForm.groupSlug`, `applications` has one per søknadstype, and
+     * `roles` scopes to administering that group's own verv.
+     *
+     * For everything else there is nothing to narrow against — a `news` row
+     * belongs to TIHLDE, not to Sosialen — so a group-scoped grant would pass
+     * the coarse gate and then behave exactly like a global one. Rather than
+     * offer a checkbox that quietly lies, those domains are only offered in
+     * the "hele TIHLDE" section.
+     */
+    groupScopable: boolean;
 };
 
 /** Norwegian labels for the permission domains, in display order. */
 export const PERMISSION_DOMAINS: PermissionDomain[] = [
-    { slug: "events", label: "Arrangementer" },
-    { slug: "groups", label: "Grupper" },
-    { slug: "fines", label: "Bøter" },
-    { slug: "news", label: "Nyheter" },
-    { slug: "jobs", label: "Annonser" },
-    { slug: "forms", label: "Spørreskjema" },
-    { slug: "contracts", label: "Kontrakter" },
-    { slug: "banners", label: "Bannere" },
-    { slug: "applications", label: "Søknader" },
-    { slug: "company-contact", label: "Kontaktskjema" },
-    { slug: "users", label: "Brukere" },
-    { slug: "roles", label: "Roller" },
-    { slug: "api-keys", label: "API-nøkler" },
-    { slug: "oauth-clients", label: "OAuth-klienter" },
+    { slug: "events", label: "Arrangementer", groupScopable: true },
+    { slug: "roles", label: "Roller", groupScopable: true },
+    { slug: "forms", label: "Spørreskjema", groupScopable: true },
+    { slug: "applications", label: "Søknader", groupScopable: true },
+    { slug: "groups", label: "Grupper", groupScopable: false },
+    { slug: "news", label: "Nyheter", groupScopable: false },
+    { slug: "jobs", label: "Annonser", groupScopable: false },
+    { slug: "contracts", label: "Kontrakter", groupScopable: false },
+    { slug: "banners", label: "Bannere", groupScopable: false },
+    { slug: "toddel", label: "Töddel", groupScopable: false },
+    { slug: "galleries", label: "Galleri", groupScopable: false },
+    { slug: "company-contact", label: "Kontaktskjema", groupScopable: false },
+    { slug: "users", label: "Brukere", groupScopable: false },
+    { slug: "api-keys", label: "API-nøkler", groupScopable: false },
+    { slug: "oauth-clients", label: "OAuth-klienter", groupScopable: false },
 ];
+
+/** The domains a group can hand to its members scoped to itself. */
+export const GROUP_SCOPABLE_DOMAINS = PERMISSION_DOMAINS.filter(
+    (d) => d.groupScopable,
+);
 
 const DOMAIN_LABELS = new Map(PERMISSION_DOMAINS.map((d) => [d.slug, d.label]));
 

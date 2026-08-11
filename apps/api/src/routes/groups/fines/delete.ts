@@ -1,5 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
-import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -7,7 +5,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
-import { requireFinesGroup } from "./permissions";
+import { canUpdateFines, requireFinesGroup } from "./permissions";
 
 export const deleteFineRoute = route().delete(
     "/:groupSlug/fines/:fineId",
@@ -16,7 +14,7 @@ export const deleteFineRoute = route().delete(
         summary: "Delete a fine",
         operationId: "deleteFine",
         description:
-            "Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.",
+            "Delete a fine by its ID. Requires being the fines admin (botsjef) or the group's leader. This action is irreversible.",
     })
         .response({ statusCode: 204, description: "Fine successfully deleted" })
         .forbidden({ description: "Not authorized to delete this fine" })
@@ -56,22 +54,10 @@ export const deleteFineRoute = route().delete(
             });
         }
 
-        // Check authorization: must be fines admin OR have fines:delete permission
+        // Deleting is settling: the botsjef, the group's leader, or root.
         const group = await requireFinesGroup(ctx, groupSlug);
 
-        const isFinesAdmin = group.finesAdminId === user.id;
-
-        // Check for global or scoped fines:delete permission
-        const hasGlobalPerm = await hasPermission(ctx, user.id, "fines:delete");
-        const hasScopedPerm = await hasScopedPermission(
-            ctx,
-            user.id,
-            "fines:delete",
-            `group:${groupSlug}`,
-        );
-        const hasDeletePermission = hasGlobalPerm || hasScopedPerm;
-
-        if (!isFinesAdmin && !hasDeletePermission) {
+        if (!(await canUpdateFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message: "Not authorized to delete this fine",
             });

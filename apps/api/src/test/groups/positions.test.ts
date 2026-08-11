@@ -30,7 +30,7 @@ describe("group positions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const response = await client.api.groups[
                     ":groupSlug"
@@ -38,7 +38,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Økonomiansvarlig",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -92,7 +92,7 @@ describe("group positions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const response = await client.api.groups[
                     ":groupSlug"
@@ -100,7 +100,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Global Sneaky",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "global",
                     },
                 });
@@ -162,7 +162,7 @@ describe("group positions", () => {
                         role: "member",
                     },
                 ]);
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const createResponse = await client.api.groups[
                     ":groupSlug"
@@ -170,7 +170,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Bøtesjef",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -187,7 +187,7 @@ describe("group positions", () => {
 
                 const permissions = await getUserPermissions(ctx, member.id);
                 expect(permissions).toContain(
-                    `fines:manage@group:${group.slug}`,
+                    `news:manage@group:${group.slug}`,
                 );
 
                 // Unassign removes the permission again
@@ -202,7 +202,7 @@ describe("group positions", () => {
                 });
                 expect(unassignResponse.status).toBe(200);
                 const after = await getUserPermissions(ctx, member.id);
-                expect(after).not.toContain(`fines:manage@group:${group.slug}`);
+                expect(after).not.toContain(`news:manage@group:${group.slug}`);
             },
             500_000,
         );
@@ -229,7 +229,7 @@ describe("group positions", () => {
                         role: "member",
                     },
                 ]);
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const createResponse = await client.api.groups[
                     ":groupSlug"
@@ -237,7 +237,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Økonomiansvarlig",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -277,7 +277,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Økonomiansvarlig",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -311,7 +311,7 @@ describe("group positions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const createResponse = await client.api.groups[
                     ":groupSlug"
@@ -319,7 +319,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Bøtesjef",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -417,7 +417,7 @@ describe("group positions", () => {
                         role: "member",
                     },
                 ]);
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const createResponse = await client.api.groups[
                     ":groupSlug"
@@ -425,7 +425,7 @@ describe("group positions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         name: "Bøtesjef",
-                        permissions: ["fines:manage"],
+                        permissions: ["news:manage"],
                         scope: "group",
                     },
                 });
@@ -740,22 +740,16 @@ describe("group positions", () => {
         );
     });
 
-    describe("leader role auto-assignment", () => {
+    describe("leader permissions follow leadership", () => {
         integrationTest(
-            "leaderRoleId follows leadership changes",
+            "promoting and demoting moves the group's leaderPermissions",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const group = await ctx.utils.createTestGroup();
 
-                const leaderRole = await createTestingRole(ctx, {
-                    name: `leader-role-${crypto.randomUUID()}`,
-                    permissions: ["events:payments:refund"],
-                    description: "NOK leader role",
-                    position: 1,
-                });
                 await ctx.db
                     .update(schema.group)
-                    .set({ leaderRoleId: leaderRole.id })
+                    .set({ leaderPermissions: ["events:payments:refund"] })
                     .where(eq(schema.group.slug, group.slug));
 
                 await ctx.db.insert(schema.groupMembership).values({
@@ -764,17 +758,64 @@ describe("group positions", () => {
                     role: "member",
                 });
 
-                // Promote to leader → role assigned
-                await updateGroupMemberRole(ctx, user.id, group.slug, "leader");
-                expect(await getUserRoles(ctx, user.id)).toContain(
-                    leaderRole.name,
+                const scoped = `events:payments:refund@group:${group.slug}`;
+
+                // A plain member does not hold the leader's set
+                expect(await getUserPermissions(ctx, user.id)).not.toContain(
+                    scoped,
                 );
 
-                // Demote → role removed
-                await updateGroupMemberRole(ctx, user.id, group.slug, "member");
-                expect(await getUserRoles(ctx, user.id)).not.toContain(
-                    leaderRole.name,
+                // Promote to leader → granted, with nothing written to sync
+                await updateGroupMemberRole(ctx, user.id, group.slug, "leader");
+                expect(await getUserPermissions(ctx, user.id)).toContain(
+                    scoped,
                 );
+
+                // Demote → gone again on the next check
+                await updateGroupMemberRole(ctx, user.id, group.slug, "member");
+                expect(await getUserPermissions(ctx, user.id)).not.toContain(
+                    scoped,
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "memberPermissions reach every member, scoped to the group",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const group = await ctx.utils.createTestGroup();
+                // Explicit slug: createTestGroup derives one from Date.now(),
+                // so two in the same millisecond collide on the primary key.
+                const other = await ctx.utils.createTestGroup({
+                    slug: `member-perms-other-${crypto.randomUUID()}`,
+                });
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({
+                        memberPermissions: ["events:create"],
+                        memberGlobalPermissions: ["news:view"],
+                    })
+                    .where(eq(schema.group.slug, group.slug));
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                });
+
+                const permissions = await getUserPermissions(ctx, user.id);
+                expect(permissions).toContain(
+                    `events:create@group:${group.slug}`,
+                );
+                // Scoped, so it never reaches another group's events
+                expect(permissions).not.toContain(
+                    `events:create@group:${other.slug}`,
+                );
+                expect(permissions).not.toContain("events:create");
+                // The global list is unscoped on purpose
+                expect(permissions).toContain("news:view");
             },
             500_000,
         );

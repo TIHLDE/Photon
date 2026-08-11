@@ -22,7 +22,7 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Filter with 'status' and 'userId'.",
+            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.",
     })
         .schemaResponse({
             statusCode: 200,

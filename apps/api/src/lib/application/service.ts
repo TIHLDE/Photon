@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
 import type { ApplicationType } from "@photon/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { getUserStudy } from "~/lib/user/study";
 import { renderApplicationPdf } from "./pdf";
@@ -34,6 +34,13 @@ export async function listApplications(
     ctx: AppContext,
     options: {
         types: ApplicationType[];
+        /**
+         * Per-type group restriction from a group-scoped grant. A type absent
+         * here (or mapped to null) is unrestricted; a list narrows the results
+         * to søknader belonging to those groups, so NoK's inbox holds NoK's
+         * utlegg and nothing else.
+         */
+        groupSlugsByType?: Partial<Record<ApplicationType, string[] | null>>;
         status?: schema.ApplicationStatus;
         submittedById?: string;
         limit: number;
@@ -42,7 +49,54 @@ export async function listApplications(
 ): Promise<ApplicationWithDetails[]> {
     if (options.types.length === 0) return [];
 
-    const filters = [inArray(schema.application.type, options.types)];
+    // Restricted types are matched by "type AND belongs to one of my groups";
+    // unrestricted ones by type alone. Anything else would either leak another
+    // group's utlegg or hide a Finansminister's whole inbox.
+    const restricted = options.types.filter(
+        (type) => (options.groupSlugsByType?.[type] ?? null) !== null,
+    );
+    const unrestricted = options.types.filter(
+        (type) => !restricted.includes(type),
+    );
+
+    const typeMatchers = [
+        ...(unrestricted.length > 0
+            ? [inArray(schema.application.type, unrestricted)]
+            : []),
+        ...restricted.map((type) =>
+            and(
+                eq(schema.application.type, type),
+                inArray(
+                    schema.application.id,
+                    type === "expense"
+                        ? ctx.db
+                              .select({
+                                  id: schema.applicationExpense.applicationId,
+                              })
+                              .from(schema.applicationExpense)
+                              .where(
+                                  inArray(
+                                      schema.applicationExpense.groupSlug,
+                                      options.groupSlugsByType?.[type] ?? [],
+                                  ),
+                              )
+                        : ctx.db
+                              .select({
+                                  id: schema.applicationSupport.applicationId,
+                              })
+                              .from(schema.applicationSupport)
+                              .where(
+                                  inArray(
+                                      schema.applicationSupport.groupSlug,
+                                      options.groupSlugsByType?.[type] ?? [],
+                                  ),
+                              ),
+                ),
+            ),
+        ),
+    ];
+
+    const filters = [or(...typeMatchers)];
     if (options.status) {
         filters.push(eq(schema.application.status, options.status));
     }

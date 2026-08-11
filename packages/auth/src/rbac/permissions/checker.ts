@@ -5,7 +5,7 @@
  * both globally and within specific scopes.
  */
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
     group,
@@ -23,9 +23,6 @@ import {
     matchesPermission,
     parsePermission,
 } from "../permission-parser";
-import { LEADER_BASELINE_PERMISSIONS } from "../leader-baseline";
-
-export { LEADER_BASELINE_PERMISSIONS };
 
 type DbCtx = { db: NodePgDatabase<DbSchema> };
 
@@ -106,58 +103,66 @@ async function getPermissionsFromPositions(
 }
 
 /**
- * Get all permissions a user receives from LEADING a group.
+ * Get all permissions a user receives from BELONGING to a group.
  *
- * Every leader gets {@link LEADER_BASELINE_PERMISSIONS} for their group, plus
- * whatever extra sits in the group's `leaderPermissions`. Both are scoped to
- * that group ("permission@group:<slug>"), so nothing reaches another group's
- * resources. Reading the current leadership here rather than syncing a role
- * on every leadership change means the grant cannot outlive the job — step
- * down and it is gone on the next check.
+ * Three lists come off the group row, all read live from the membership so a
+ * grant cannot outlive the job — leave the group, or step down as leader, and
+ * it is gone on the next check:
+ *
+ * - `memberPermissions` — held by every member, scoped to the group
+ *   ("permission@group:<slug>"), so nothing reaches another group's resources.
+ * - `memberGlobalPermissions` — held by every member, org-wide. This is what
+ *   lets all of Index administer TIHLDE; it replaced the auto-assigned `admin`
+ *   and `hs` RBAC roles, which did the same thing invisibly.
+ * - `leaderPermissions` — held by the leader only, scoped to the group. The
+ *   leader is a member too, so these stack on top of the member lists.
  */
-async function getPermissionsFromLeadership(
+async function getPermissionsFromGroups(
     ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
     const db = ctx.db;
     const rows = await db
         .select({
-            permissions: group.leaderPermissions,
+            memberPermissions: group.memberPermissions,
+            memberGlobalPermissions: group.memberGlobalPermissions,
+            leaderPermissions: group.leaderPermissions,
+            membershipRole: groupMembership.role,
             groupSlug: group.slug,
         })
         .from(groupMembership)
         .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
-        .where(
-            and(
-                eq(groupMembership.userId, userId),
-                eq(groupMembership.role, "leader"),
-            ),
-        );
+        .where(eq(groupMembership.userId, userId));
 
-    return rows.flatMap((row) =>
-        [...LEADER_BASELINE_PERMISSIONS, ...(row.permissions ?? [])].map((p) =>
-            formatPermission(p, `group:${row.groupSlug}`),
-        ),
-    );
+    return rows.flatMap((row) => {
+        const scoped = [
+            ...(row.memberPermissions ?? []),
+            ...(row.membershipRole === "leader"
+                ? (row.leaderPermissions ?? [])
+                : []),
+        ].map((p) => formatPermission(p, `group:${row.groupSlug}`));
+
+        return [...scoped, ...(row.memberGlobalPermissions ?? [])];
+    });
 }
 
 /**
- * Get all permissions for a user (roles + direct grants + verv + leadership).
+ * Get all permissions for a user (roles + direct grants + verv + groups).
  * Returns raw array with potential duplicates.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
-    const [rolePerms, directPerms, positionPerms, leaderPerms] =
+    const [rolePerms, directPerms, positionPerms, groupPerms] =
         await Promise.all([
             getPermissionsFromRoles(ctx, userId),
             getDirectPermissions(ctx, userId),
             getPermissionsFromPositions(ctx, userId),
-            getPermissionsFromLeadership(ctx, userId),
+            getPermissionsFromGroups(ctx, userId),
         ]);
 
-    return [...rolePerms, ...directPerms, ...positionPerms, ...leaderPerms];
+    return [...rolePerms, ...directPerms, ...positionPerms, ...groupPerms];
 }
 
 /**

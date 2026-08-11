@@ -1,5 +1,8 @@
-import { hasPermission } from "@photon/auth/rbac";
-import { viewPermissionsFor } from "~/lib/application/access";
+import {
+    accessCovers,
+    applicationGroupSlug,
+    visibleApplicationAccess,
+} from "~/lib/application/access";
 import { findApplicationById } from "~/lib/application/service";
 import type { ApplicationWithDetails } from "~/lib/application/types";
 import type { AppContext } from "~/lib/ctx";
@@ -25,10 +28,14 @@ export async function authorizeApplicationRead(
     application: ApplicationWithDetails,
     userId: string,
 ): Promise<{ isHandler: boolean }> {
-    const isHandler = await hasPermission(
-        ctx,
-        userId,
-        viewPermissionsFor(application.type),
+    // A group-scoped grant only reaches that group's søknader, so the check
+    // has to know which group this one belongs to — a NoK member handling
+    // NoKs utlegg must not open Sosialens.
+    const access = await visibleApplicationAccess(ctx, userId);
+    const isHandler = accessCovers(
+        access,
+        application.type,
+        applicationGroupSlug(application),
     );
     if (isHandler) return { isHandler: true };
 

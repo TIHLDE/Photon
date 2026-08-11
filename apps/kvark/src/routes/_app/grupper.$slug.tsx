@@ -222,25 +222,20 @@ function GroupDetail() {
     const hasFormsPermission = usePermission(["forms:create", "forms:manage"]);
     const canManageForms = hasFormsPermission || isLeader;
     const isMember = useIsGroupMemberOf(slug);
-    const hasFinesView = useScopedPermission("fines:view", `group:${slug}`);
-    const hasFinesManage = useScopedPermission("fines:manage", `group:${slug}`);
-    const hasFinesEdit = useScopedPermission(
-        ["fines:update", "fines:delete", "fines:manage"],
-        `group:${slug}`,
-    );
+    const isRoot = usePermission("root");
 
     const isFinesAdmin = Boolean(
         session && apiGroup.finesAdminId === session.user?.id,
     );
-    // Bøter og lovverk er lesbart for gruppens medlemmer, botsjefen og
-    // fines:view for denne gruppen — samme regel som GET-endepunktene. Uten
-    // dette sto fanene der for alle og spørringene svarte alltid 403.
+    // Bøter følger medlemskap, ikke tilganger: er du med i gruppen ser du alt
+    // gruppen har gitt hverandre. Botsjefen og root ser det også — samme regel
+    // som GET-endepunktene.
     //
     // `finesActivated` avgjør først: en gruppe som ikke bruker botsystemet har
     // verken lovverk eller bøter å vise, og fanene sto likevel der for alle
     // medlemmene.
     const canViewFines =
-        apiGroup.finesActivated && (isMember || isFinesAdmin || hasFinesView);
+        apiGroup.finesActivated && (isMember || isFinesAdmin || isRoot);
 
     // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
     // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
@@ -376,24 +371,14 @@ function GroupDetail() {
     );
     const laws = useMemo(() => (apiLaws ?? []).map(mapLaw), [apiLaws]);
 
-    // Lovverk: the fines admin (botsjef), the leader, or fines:manage for
-    // this group — same as `canManageLaws` server-side.
-    const canManageLaws = isLeader || isFinesAdmin || hasFinesManage;
-    // Approving, editing and deleting fines: the fines admin, or the
-    // matching fines:* permission for this group.
-    const canManageFines = isFinesAdmin || hasFinesEdit;
-    // Å gi bot: `member`-rollen har `fines:create`, og API-et lar dessuten
-    // gruppelederen gjøre det uten grant. Samme regel som POST-endepunktet.
-    const hasFinesCreate = useScopedPermission(
-        ["fines:create", "fines:manage"],
-        `group:${slug}`,
-    );
+    // Lovverk: the fines admin (botsjef) or the leader — same as
+    // `canManageLaws` server-side.
+    const canManageLaws = isLeader || isFinesAdmin || isRoot;
+    // Å avgjøre en bot — godkjenne, avvise, slette — er botsjefens og lederens
+    // jobb. Å gi en er noe alle i gruppen kan.
+    const canManageFines = isFinesAdmin || isLeader || isRoot;
     const canGiveFine = Boolean(
-        apiGroup.finesActivated &&
-        (isLeader ||
-            isFinesAdmin ||
-            hasFinesManage ||
-            (isMember && hasFinesCreate)),
+        apiGroup.finesActivated && (isMember || isFinesAdmin || isRoot),
     );
 
     const navItems = useMemo(

@@ -133,7 +133,7 @@ describe("group-scoped event access", () => {
      * `leaderPermissions` configured, no verv, no role beyond the default.
      */
     integrationTest(
-        "leadership alone lets a leader create, update and delete their group's events",
+        "the group's leaderPermissions let its leader create, update and delete its events",
         async ({ ctx }) => {
             const leader = await ctx.utils.createTestUser();
             const client = await ctx.utils.clientForUser(leader);
@@ -141,10 +141,22 @@ describe("group-scoped event access", () => {
             await ctx.utils.setupGroups();
             await ctx.utils.setupEventCategories();
 
-            // Deliberately left with the empty default leaderPermissions.
             const group = await ctx.utils.createTestGroup({
                 slug: "plask-test",
             });
+            await ctx.db
+                .update(schema.group)
+                .set({
+                    leaderPermissions: [
+                        "events:create",
+                        "events:update",
+                        "events:delete",
+                        "events:registrations:manage",
+                        "events:registrations:checkin",
+                        "events:payments:view",
+                    ],
+                })
+                .where(eq(schema.group.slug, group.slug));
             await ctx.db.insert(schema.groupMembership).values({
                 userId: leader.id,
                 groupSlug: group.slug,
@@ -182,12 +194,13 @@ describe("group-scoped event access", () => {
     );
 
     /**
-     * The baseline stops short of money and prikker: a leader sees who has
-     * paid for their own arrangement, but refunds and manual strikes are
-     * someone else's call.
+     * The set the migration gave every group stops short of money and prikker:
+     * a leader sees who has paid for their own arrangement, but refunds and
+     * manual strikes are someone else's call — and being leader does not
+     * quietly add them back.
      */
     integrationTest(
-        "the leader baseline covers payments:view and check-in, but not refunds or strikes",
+        "a leader set with payments:view and check-in still cannot refund or strike",
         async ({ ctx }) => {
             const leader = await ctx.utils.createTestUser();
             const client = await ctx.utils.clientForUser(leader);
@@ -199,6 +212,19 @@ describe("group-scoped event access", () => {
             const group = await ctx.utils.createTestGroup({
                 slug: "plask-payments-test",
             });
+            await ctx.db
+                .update(schema.group)
+                .set({
+                    leaderPermissions: [
+                        "events:create",
+                        "events:update",
+                        "events:delete",
+                        "events:registrations:manage",
+                        "events:registrations:checkin",
+                        "events:payments:view",
+                    ],
+                })
+                .where(eq(schema.group.slug, group.slug));
             await ctx.db.insert(schema.groupMembership).values({
                 userId: leader.id,
                 groupSlug: group.slug,

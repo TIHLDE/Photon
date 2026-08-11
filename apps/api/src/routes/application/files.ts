@@ -1,7 +1,8 @@
-import { hasPermission } from "@photon/auth/rbac";
 import {
     ALL_MANAGE_PERMISSIONS,
-    managePermissionsFor,
+    accessCovers,
+    applicationGroupSlug,
+    manageableApplicationAccess,
 } from "~/lib/application/access";
 import {
     findApplicationById,
@@ -145,10 +146,10 @@ export const regeneratePdfRoute = route().post(
         const application = await findApplicationById(ctx, c.req.param("id"));
         if (!application) throw HTTPAppException.NotFound("Søknad");
 
-        const canManage = await hasPermission(
-            ctx,
-            user.id,
-            managePermissionsFor(application.type),
+        const canManage = accessCovers(
+            await manageableApplicationAccess(ctx, user.id),
+            application.type,
+            applicationGroupSlug(application),
         );
         if (!canManage) {
             throw HTTPAppException.Forbidden(

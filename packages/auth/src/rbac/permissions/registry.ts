@@ -56,9 +56,15 @@ export const PERMISSION_REGISTRY = {
     groups: {
         actions: ["view", "create", "update", "delete", "manage"],
     },
-    fines: {
-        actions: ["view", "create", "update", "delete", "manage"],
-    },
+    /**
+     * No `fines` domain, deliberately. Giving and reading bøter is what being
+     * in a group IS, so it follows membership instead: any member sees every
+     * fine in their group and may hand one out, the botsjef and the leader
+     * settle them, and root is the only cross-group access. A checkbox here
+     * would have meant configuring 60 groups to get their baseline behaviour,
+     * and the permission was global anyway — so a group-scoped grant was
+     * silently rejected while a global one opened every group's bøter at once.
+     */
     contracts: {
         actions: ["view", "create", "update", "delete", "manage"],
     },

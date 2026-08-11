@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
+import { getUserPermissions } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
@@ -299,28 +300,25 @@ describe("contracts", () => {
         );
     });
 
-    describe("group role grants contract access", () => {
+    describe("group permissions grant contract access", () => {
         integrationTest(
-            "joining a group with an RBAC role grants and revokes it",
+            "joining a group with member permissions grants and revokes them",
             async ({ ctx }) => {
-                // Mirrors how Hovedstyret gets contract rights: the group carries
-                // an RBAC role, and membership is what confers it.
-                const [role] = await ctx.db
-                    .insert(schema.role)
-                    .values({
-                        name: "hs-test",
-                        description: "Test board role",
-                        position: 3,
-                        permissions: ["contracts:view", "contracts:create"],
-                    })
-                    .returning();
-
+                // Mirrors how Hovedstyret gets contract rights: the group
+                // carries the permissions, and membership is what confers
+                // them. Nothing is written to the user — the grant is read
+                // live off the membership, so leaving takes it away.
                 const group = await ctx.utils.createTestGroup({
                     slug: "hs-test-group",
                 });
                 await ctx.db
                     .update(schema.group)
-                    .set({ roleId: role!.id })
+                    .set({
+                        memberGlobalPermissions: [
+                            "contracts:view",
+                            "contracts:create",
+                        ],
+                    })
                     .where(eq(schema.group.slug, group.slug));
 
                 const admin = await ctx.utils.createTestUser();
@@ -344,13 +342,9 @@ describe("contracts", () => {
                 });
                 expect(added.status).toBe(201);
 
-                const granted = await ctx.db.query.userRole.findFirst({
-                    where: and(
-                        eq(schema.userRole.userId, member.id),
-                        eq(schema.userRole.roleId, role!.id),
-                    ),
-                });
-                expect(granted).toBeTruthy();
+                expect(await getUserPermissions(ctx, member.id)).toContain(
+                    "contracts:create",
+                );
 
                 const removed = await adminClient.api.groups[
                     ":groupSlug"
@@ -359,13 +353,9 @@ describe("contracts", () => {
                 });
                 expect(removed.status).toBe(204);
 
-                const revoked = await ctx.db.query.userRole.findFirst({
-                    where: and(
-                        eq(schema.userRole.userId, member.id),
-                        eq(schema.userRole.roleId, role!.id),
-                    ),
-                });
-                expect(revoked).toBeFalsy();
+                expect(await getUserPermissions(ctx, member.id)).not.toContain(
+                    "contracts:create",
+                );
             },
             500_000,
         );

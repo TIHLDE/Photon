@@ -1,16 +1,11 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
-import type {
-    CreateGroupPosition,
-    CreateRole,
-    UpdateGroupPosition,
-    UpdateRole,
-} from "@tihlde/sdk";
+import type { CreateGroupPosition, UpdateGroupPosition } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
 
 const RoleQueryKeys = {
-    roles: ["roles"] as const,
     positions: ["groups", "positions"] as const,
     leaderPermissions: ["groups", "leader-permissions"] as const,
+    memberPermissions: ["groups", "member-permissions"] as const,
     userSearch: ["users", "search"] as const,
 } as const;
 
@@ -25,64 +20,6 @@ export const searchUsersQuery = (q: string) =>
             }),
         staleTime: 30_000,
     });
-
-// -- Roles --
-
-export const getRolesQuery = () =>
-    queryOptions({
-        queryKey: [...RoleQueryKeys.roles],
-        queryFn: () => apiClient.get("/api/roles"),
-    });
-
-export const createRoleMutation = mutationOptions({
-    mutationFn: ({ data }: { data: CreateRole }) =>
-        apiClient.post("/api/roles", { json: data }),
-    onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({ queryKey: RoleQueryKeys.roles });
-    },
-});
-
-export const updateRoleMutation = mutationOptions({
-    mutationFn: ({ roleId, data }: { roleId: number; data: UpdateRole }) =>
-        apiClient.patch("/api/roles/{roleId}", {
-            params: { roleId: String(roleId) },
-            json: data,
-        }),
-    onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({ queryKey: RoleQueryKeys.roles });
-    },
-});
-
-export const deleteRoleMutation = mutationOptions({
-    mutationFn: ({ roleId }: { roleId: number }) =>
-        apiClient.delete("/api/roles/{roleId}", {
-            params: { roleId: String(roleId) },
-        }),
-    onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({ queryKey: RoleQueryKeys.roles });
-    },
-});
-
-export const assignRoleMutation = mutationOptions({
-    mutationFn: ({ roleId, userId }: { roleId: number; userId: string }) =>
-        apiClient.post("/api/roles/{roleId}/users", {
-            params: { roleId: String(roleId) },
-            json: { userId },
-        }),
-    onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({ queryKey: RoleQueryKeys.roles });
-    },
-});
-
-export const unassignRoleMutation = mutationOptions({
-    mutationFn: ({ roleId, userId }: { roleId: number; userId: string }) =>
-        apiClient.delete("/api/roles/{roleId}/users/{userId}", {
-            params: { roleId: String(roleId), userId },
-        }),
-    onSuccess(_, __, ___, ctx) {
-        ctx.client.invalidateQueries({ queryKey: RoleQueryKeys.roles });
-    },
-});
 
 // -- Group positions (verv/titler) --
 
@@ -231,6 +168,44 @@ export const unassignPositionMutation = mutationOptions({
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...RoleQueryKeys.positions, vars.groupSlug],
+        });
+    },
+});
+
+// -- Member permissions (the group's "Alle medlemmer" row) --
+
+/**
+ * What every member of the group holds — `permissions` scoped to the group,
+ * `globalPermissions` across all of TIHLDE. Gated behind the same right as
+ * managing the group's verv, so this 403s for everyone else; hence a separate
+ * query rather than a field on the group.
+ */
+export const getMemberPermissionsQuery = (groupSlug: string) =>
+    queryOptions({
+        queryKey: [...RoleQueryKeys.memberPermissions, groupSlug],
+        queryFn: () =>
+            apiClient.get("/api/groups/{groupSlug}/member-permissions", {
+                params: { groupSlug },
+            }),
+    });
+
+export const updateMemberPermissionsMutation = mutationOptions({
+    mutationFn: ({
+        groupSlug,
+        permissions,
+        globalPermissions,
+    }: {
+        groupSlug: string;
+        permissions: string[];
+        globalPermissions: string[];
+    }) =>
+        apiClient.patch("/api/groups/{groupSlug}/member-permissions", {
+            params: { groupSlug },
+            json: { permissions, globalPermissions },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...RoleQueryKeys.memberPermissions, vars.groupSlug],
         });
     },
 });

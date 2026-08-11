@@ -1,4 +1,4 @@
-import { hasScopedPermission } from "@photon/auth/rbac";
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { asc, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -15,7 +15,7 @@ export const listLawsRoute = route().get(
         summary: "List a group's laws (lovverk)",
         operationId: "listLaws",
         description:
-            "Retrieve the fine laws for a group, ordered by paragraph. Group members can view their own group's laws (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped).",
+            "Retrieve the fine laws for a group, ordered by paragraph. Group members can view their own group's laws (Lepton parity), as can the fines admin and root.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -53,12 +53,7 @@ export const listLawsRoute = route().get(
         const hasViewPermission =
             isMember ||
             isFinesAdmin ||
-            (await hasScopedPermission(
-                ctx,
-                user.id,
-                "fines:view",
-                `group:${groupSlug}`,
-            ));
+            (await hasPermission(ctx, user.id, "root"));
 
         if (!hasViewPermission) {
             throw new HTTPException(403, {

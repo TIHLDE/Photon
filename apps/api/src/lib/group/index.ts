@@ -4,16 +4,10 @@
  * This module provides functions for:
  * - Checking group membership and leadership
  * - Managing group-scoped permissions
- * - Auto-assigning roles when users join/leave groups
- * - Checking if users can manage group resources
+ * - Keeping HS in sync with subgroup leadership
  */
 
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
-import {
-    assignUserRole,
-    getRoleById,
-    removeUserRole,
-} from "@photon/auth/roles";
 import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
@@ -205,21 +199,10 @@ export async function addUserToGroup(
         throw new Error(`Failed to add user ${userId} to group ${groupSlug}`);
     }
 
-    // If group has an associated role, auto-assign it
-    if (group.roleId) {
-        const rbacRole = await getRoleById(ctx, group.roleId);
-        if (rbacRole) {
-            await assignUserRole(ctx, userId, rbacRole.name);
-        }
-    }
-
-    // If group has a leader role and the user joins as leader, assign it
-    if (role === "leader" && group.leaderRoleId) {
-        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
-        if (leaderRole) {
-            await assignUserRole(ctx, userId, leaderRole.name);
-        }
-    }
+    // No role juggling here any more: what members of this group may do lives
+    // in group.memberPermissions / memberGlobalPermissions and is read live
+    // from the membership itself (getPermissionsFromMembership), so joining
+    // grants it and leaving revokes it with nothing to sync.
 
     // Subgroup leaders sit in HS
     if (role === "leader") {
@@ -283,21 +266,9 @@ export async function removeUserFromGroup(
             .onConflictDoNothing();
     }
 
-    // If group has an associated role, auto-remove it
-    if (group.roleId) {
-        const rbacRole = await getRoleById(ctx, group.roleId);
-        if (rbacRole) {
-            await removeUserRole(ctx, userId, rbacRole.name);
-        }
-    }
-
-    // Leaving the group also forfeits the leader role and any positions held
-    if (group.leaderRoleId) {
-        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
-        if (leaderRole) {
-            await removeUserRole(ctx, userId, leaderRole.name);
-        }
-    }
+    // Leaving the group forfeits any positions held in it. The group's own
+    // permissions need no cleanup — they hang off the membership row that was
+    // just deleted.
     await removeUserPositionsInGroup(ctx, userId, groupSlug);
 
     // A departing subgroup leader forfeits the HS seat too (unless something
@@ -358,18 +329,7 @@ export async function updateGroupMemberRole(
             ),
         );
 
-    // Keep the group's leader role in sync with the membership role
     const group = await getGroup(ctx, groupSlug);
-    if (group?.leaderRoleId) {
-        const leaderRole = await getRoleById(ctx, group.leaderRoleId);
-        if (leaderRole) {
-            if (newRole === "leader") {
-                await assignUserRole(ctx, userId, leaderRole.name);
-            } else {
-                await removeUserRole(ctx, userId, leaderRole.name);
-            }
-        }
-    }
 
     // Keep HS in sync with subgroup leadership
     if (group && isSubgroupType(group.type)) {
@@ -526,73 +486,6 @@ export async function pruneHsMembershipIfUnwarranted(
     if (heldHsPosition) return;
 
     await removeUserFromGroup(ctx, userId, HS_GROUP_SLUG);
-}
-
-/**
- * Check if a user can manage resources for a group.
- * This is the core scoping function that respects the group's permissionMode.
- *
- * Permission modes:
- * - leader_only: Only group leaders can manage (default, more restrictive)
- * - member: Any member with the base permission can manage (more permissive)
- * - custom: Future - per-resource configuration
- *
- * @param userId - User to check
- * @param groupSlug - Group that owns the resource
- * @param permission - Required permission (e.g., "events:update")
- * @returns true if user can manage resources for this group
- *
- * @example
- * // Check if user can create events for football group
- * if (await canManageGroupResource(ctx, userId, "fotball", "events:create")) {
- *     // Allow event creation
- * }
- */
-export async function canManageGroupResource(
-    ctx: AppContext,
-    userId: string,
-    groupSlug: string,
-    permission: string,
-): Promise<boolean> {
-    // 1. Check if user has root or management bypass permissions
-    if (await hasPermission(ctx, userId, ["root", "groups:manage"])) {
-        return true;
-    }
-
-    // 2. Get the group to check permission mode
-    const group = await getGroup(ctx, groupSlug);
-    if (!group) {
-        return false; // Group doesn't exist
-    }
-
-    // 3. Check base permission first
-    if (!(await hasPermission(ctx, userId, permission))) {
-        return false; // User doesn't have the required permission
-    }
-
-    // 4. Apply scoping based on group's permission mode
-    switch (group.permissionMode) {
-        case "leader_only": {
-            // Only leaders can manage
-            return await isGroupLeader(ctx, userId, groupSlug);
-        }
-
-        case "member": {
-            // Any member with the permission can manage
-            return await isGroupMember(ctx, userId, groupSlug);
-        }
-
-        case "custom": {
-            // Future: Per-resource custom configuration
-            // For now, default to leader_only
-            return await isGroupLeader(ctx, userId, groupSlug);
-        }
-
-        default: {
-            // Unknown mode, default to restrictive (leader_only)
-            return await isGroupLeader(ctx, userId, groupSlug);
-        }
-    }
 }
 
 /**

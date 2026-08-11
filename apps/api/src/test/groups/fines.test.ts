@@ -115,12 +115,10 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "successfully creates a fine as a member with fines:create",
+            "successfully creates a fine as a plain member of the group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
 
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
@@ -165,8 +163,6 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: false, // Fines not activated
                 });
@@ -197,7 +193,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to create fine without permission and not being group leader",
+            "fails to create fine when the caller is not in the group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -237,8 +233,6 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
-
                 const targetUser = await ctx.auth.api.createUser({
                     body: {
                         email: "target5@test.com",
@@ -270,10 +264,12 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
 
                 const response = await client.api.groups[
@@ -298,8 +294,6 @@ describe("fines", () => {
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
 
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
@@ -344,13 +338,10 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "refuses an outsider who only holds the member role's fines:create",
+            "refuses an outsider who is not a member of the group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-                // Samme grant som `member`-rollen deler ut til alle: uten
-                // scope treffer den enhver gruppe.
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "outsider-cannot-fine",
@@ -390,11 +381,14 @@ describe("fines", () => {
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "members-only-fines",
                     finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
 
                 const outsider = await ctx.auth.api.createUser({
@@ -427,7 +421,6 @@ describe("fines", () => {
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-                await ctx.utils.giveUserPermissions(user, ["fines:create"]);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "slug-in-url",
@@ -469,15 +462,19 @@ describe("fines", () => {
 
     describe("delete fine", () => {
         integrationTest(
-            "successfully deletes a fine with fines:delete permission",
+            "successfully deletes a fine as the group's leader",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:delete"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
 
                 const targetUser = await ctx.auth.api.createUser({
@@ -526,7 +523,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to delete fine without fines:delete permission",
+            "fails to delete fine as a plain member",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -579,10 +576,14 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:delete"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
 
                 const response = await client.api.groups[":groupSlug"].fines[
@@ -604,10 +605,13 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Bøter følger medlemskap: leseren må være med i gruppen.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
 
                 const targetUser = await ctx.auth.api.createUser({
@@ -654,7 +658,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to get fine without fines:view permission",
+            "fails to get fine as a non-member",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -707,8 +711,6 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
                 });
@@ -732,11 +734,14 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const group = await ctx.utils.createTestGroup({
                     slug: "fines-list-group",
                     finesActivated: true,
+                });
+                // Bøter følger medlemskap: leseren må være med i gruppen.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
 
                 const targetUser1 = await ctx.auth.api.createUser({
@@ -842,10 +847,13 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Bøter følger medlemskap: leseren må være med i gruppen.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
 
                 const response = await client.api.groups[
@@ -871,8 +879,6 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const group = await ctx.utils.createTestGroup({
                     slug: "fines-off",
                     finesActivated: false,
@@ -891,7 +897,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to list fines without fines:view permission",
+            "fails to list fines as a non-member",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -918,8 +924,6 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
-
                 const response = await client.api.groups[
                     ":groupSlug"
                 ].fines.$get({
@@ -940,10 +944,14 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:update"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
 
                 const targetUser = await ctx.auth.api.createUser({
@@ -996,10 +1004,14 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:update"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
 
                 const targetUser = await ctx.auth.api.createUser({
@@ -1047,7 +1059,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to update fine without fines:update permission",
+            "fails to update fine as a plain member",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -1103,10 +1115,14 @@ describe("fines", () => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
-                await ctx.utils.giveUserPermissions(user, ["fines:update"]);
-
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
 
                 const response = await client.api.groups[":groupSlug"].fines[
@@ -1402,11 +1418,15 @@ describe("fines", () => {
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
-                await ctx.utils.giveUserPermissions(user, ["fines:view"]);
 
                 const group = await ctx.utils.createTestGroup({
                     slug: "fine-stats",
                     finesActivated: true,
+                });
+                // Bøter følger medlemskap: leseren må være med i gruppen.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
                 });
                 const target = await ctx.auth.api.createUser({
                     body: {
@@ -1557,15 +1577,19 @@ describe("fines", () => {
 
     describe("batch update", () => {
         integrationTest(
-            "settles every fine a member has, and refuses callers without fines:update",
+            "settles every fine a member has, and refuses callers who do not lead the group",
             async ({ ctx }) => {
                 const admin = await ctx.utils.createTestUser();
                 const adminClient = await ctx.utils.clientForUser(admin);
-                await ctx.utils.giveUserPermissions(admin, ["fines:update"]);
-
                 const group = await ctx.utils.createTestGroup({
                     slug: "fines-batch",
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: admin.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
                 const target = await ctx.auth.api.createUser({
                     body: {
@@ -1631,11 +1655,15 @@ describe("fines", () => {
             async ({ ctx }) => {
                 const admin = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(admin);
-                await ctx.utils.giveUserPermissions(admin, ["fines:update"]);
-
                 const group = await ctx.utils.createTestGroup({
                     slug: "fines-batch-own",
                     finesActivated: true,
+                });
+                // Settling fines is the botsjef's and the leader's job
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: admin.id,
+                    groupSlug: group.slug,
+                    role: "leader",
                 });
                 const otherGroup = await ctx.utils.createTestGroup({
                     slug: "fines-batch-other",

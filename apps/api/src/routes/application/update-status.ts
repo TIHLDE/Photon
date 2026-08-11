@@ -1,10 +1,11 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import {
     ALL_MANAGE_PERMISSIONS,
-    managePermissionsFor,
+    accessCovers,
+    applicationGroupSlug,
+    manageableApplicationAccess,
 } from "~/lib/application/access";
 import { applicationStatusLabels } from "~/lib/application/labels";
 import { findApplicationById } from "~/lib/application/service";
@@ -52,10 +53,10 @@ export const updateStatusRoute = route().patch(
         const existing = await findApplicationById(ctx, c.req.param("id"));
         if (!existing) throw HTTPAppException.NotFound("Søknad");
 
-        const canManage = await hasPermission(
-            ctx,
-            user.id,
-            managePermissionsFor(existing.type),
+        const canManage = accessCovers(
+            await manageableApplicationAccess(ctx, user.id),
+            existing.type,
+            applicationGroupSlug(existing),
         );
         if (!canManage) {
             throw HTTPAppException.Forbidden(

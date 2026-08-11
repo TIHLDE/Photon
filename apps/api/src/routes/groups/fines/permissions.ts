@@ -1,9 +1,9 @@
-import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
-import { isGroupMember } from "~/lib/group";
+import { isGroupLeader, isGroupMember } from "~/lib/group";
 
 type GroupRow = {
     slug: string;
@@ -49,8 +49,9 @@ export async function requireFinesGroup(ctx: AppContext, groupSlug: string) {
 /**
  * Whether a user may read a group's fines.
  *
- * Lepton parity: membership itself is the access — any member sees every fine
- * in their own group. The botsjef and `fines:view` holders see them too.
+ * Membership itself is the access — any member sees every fine in their own
+ * group. There is no `fines:view` permission to hold: bøter are not part of
+ * the permission system, and root is the only way across group lines.
  */
 export async function canViewFines(
     ctx: AppContext,
@@ -65,19 +66,15 @@ export async function canViewFines(
         return true;
     }
 
-    return await hasScopedPermission(
-        ctx,
-        userId,
-        "fines:view",
-        `group:${group.slug}`,
-    );
+    return await hasPermission(ctx, userId, "root");
 }
 
 /**
  * Whether a user may settle fines — approve, mark paid, reject.
  *
- * Same rule the single-fine PATCH applies, so batch updates cannot be used to
- * sidestep it.
+ * Handing one out is something any member does; ruling on it stays with the
+ * botsjef and the group's leader. Same rule the single-fine PATCH applies, so
+ * batch updates cannot be used to sidestep it.
  */
 export async function canUpdateFines(
     ctx: AppContext,
@@ -88,14 +85,9 @@ export async function canUpdateFines(
         return true;
     }
 
-    if (await hasPermission(ctx, userId, "fines:update")) {
+    if (await isGroupLeader(ctx, userId, group.slug)) {
         return true;
     }
 
-    return await hasScopedPermission(
-        ctx,
-        userId,
-        "fines:update",
-        `group:${group.slug}`,
-    );
+    return await hasPermission(ctx, userId, "root");
 }

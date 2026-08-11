@@ -1,4 +1,4 @@
-import { hasPermission } from "@photon/auth/rbac";
+import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -52,11 +52,15 @@ export const createGroupFormRoute = route().post(
             });
         }
 
-        // Check permission - must have forms:create or be group leader
-        const hasFormsCreate = await hasPermission(
+        // The form belongs to THIS group, so a grant scoped to it is enough —
+        // that is what "Spørreskjema" ticked on a group's member permissions
+        // hands out, and it must not reach any other group's forms. A global
+        // grant still satisfies the scoped check.
+        const hasFormsCreate = await hasScopedPermission(
             { db, ...ctx },
             user.id,
-            "forms:create",
+            ["forms:create", "forms:manage"],
+            `group:${groupSlug}`,
         );
         const isGroupLeader = await db.query.groupMembership.findFirst({
             where: (membership, { and, eq }) =>

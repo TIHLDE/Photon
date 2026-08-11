@@ -60,6 +60,20 @@ export const updateLeaderPermissionsSchema = Schema(
     }),
 );
 
+export const updateMemberPermissionsSchema = Schema(
+    "UpdateGroupMemberPermissions",
+    z.object({
+        permissions: permissionListSchema.meta({
+            description:
+                "Permissions every member of this group holds, scoped to this group. Replaces the existing list.",
+        }),
+        globalPermissions: permissionListSchema.meta({
+            description:
+                "Permissions every member of this group holds across all of TIHLDE. Replaces the existing list. Requires holding each permission globally yourself.",
+        }),
+    }),
+);
+
 export const assignPositionSchema = Schema(
     "AssignGroupPosition",
     z.object({
@@ -115,11 +129,21 @@ export const leaderPermissionsSchema = Schema(
     z.object({
         permissions: z.array(z.string()).meta({
             description:
-                "Extra permissions configured for this group's leader, on top of the baseline. Scoped to this group.",
+                "Permissions held by whoever currently leads this group, scoped to this group.",
         }),
-        baseline: z.array(z.string()).meta({
+    }),
+);
+
+export const memberPermissionsSchema = Schema(
+    "GroupMemberPermissions",
+    z.object({
+        permissions: z.array(z.string()).meta({
             description:
-                "Permissions every group leader holds for their own group, regardless of configuration. Read-only.",
+                "Permissions held by every member of this group, scoped to this group.",
+        }),
+        globalPermissions: z.array(z.string()).meta({
+            description:
+                "Permissions held by every member of this group across all of TIHLDE, unscoped.",
         }),
     }),
 );

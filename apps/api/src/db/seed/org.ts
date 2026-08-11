@@ -3,36 +3,79 @@ import type { InferInsertModel } from "drizzle-orm";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
-/** Groups that auto-assign an RBAC role to their members (see group.roleId). */
-const GROUP_ROLES: Record<string, string> = {
-    hs: "hs",
-    index: "admin",
-    idkom: "idkom",
-};
+/**
+ * Permission domains Hovedstyret does NOT get — governed by titles instead.
+ *
+ * NOTE: HS's set is built by SUBTRACTION from the full permission list, so
+ * every permission added to the registry lands on HS by default. Any new
+ * domain that should be narrower than "all of Hovedstyret" has to be excluded
+ * here explicitly.
+ */
+const HS_EXCLUDED_PREFIXES = [
+    "roles:",
+    "api-keys:",
+    "oauth-clients:",
+    // Utlegg are the Finansminister's; idrettslagsstøtte is IdKom's.
+    "applications:expense:",
+    "applications:sports-support:",
+] as const;
+
+const HS_EXCLUDED = new Set([
+    "root",
+    "events:payments:refund",
+    // The all-types application grants would hand back what the two
+    // prefixes above just excluded.
+    "applications:view",
+    "applications:manage",
+]);
+
+/**
+ * What every member of these groups holds across all of TIHLDE.
+ *
+ * This is the replacement for the old `group.roleId` links, which quietly
+ * assigned the `admin`, `hs` and `idkom` roles on join. Same effect, except it
+ * now sits in a column the admin UI renders and can edit.
+ */
+async function groupMemberGlobalPermissions(): Promise<
+    Record<string, string[]>
+> {
+    const { PERMISSIONS } = await import("@photon/auth/rbac");
+
+    return {
+        index: Array.from(PERMISSIONS).filter((p) => p !== "root"),
+        hs: Array.from(PERMISSIONS).filter(
+            (p) =>
+                !HS_EXCLUDED.has(p) &&
+                !HS_EXCLUDED_PREFIXES.some((prefix) => p.startsWith(prefix)),
+        ),
+        idkom: [
+            "applications:sports-support:view",
+            "applications:sports-support:manage",
+        ],
+    };
+}
 
 /**
  * Idempotent org backfills, run on EVERY boot rather than only the first.
  *
  * The group insert in the seed below is skipped for groups that already exist,
- * so an environment seeded before a group↔role link was introduced would
- * otherwise never pick it up. Only fills in NULLs, so a role picked by hand in
- * /admin is never clobbered.
+ * so an environment seeded before these permissions existed would otherwise
+ * never pick them up. Only fills an EMPTY list, so a set edited by hand in
+ * /admin/roller is never clobbered — including one deliberately emptied.
  */
 export async function backfillGroupData({ db }: AppContext) {
-    for (const [groupSlug, roleName] of Object.entries(GROUP_ROLES)) {
+    for (const [groupSlug, permissions] of Object.entries(
+        await groupMemberGlobalPermissions(),
+    )) {
         const existingGroup = await db.query.group.findFirst({
             where: eq(schema.group.slug, groupSlug),
         });
-        if (!existingGroup || existingGroup.roleId !== null) continue;
-
-        const linkedRole = await db.query.role.findFirst({
-            where: eq(schema.role.name, roleName),
-        });
-        if (!linkedRole) continue;
+        if (!existingGroup) continue;
+        if ((existingGroup.memberGlobalPermissions ?? []).length > 0) continue;
 
         await db
             .update(schema.group)
-            .set({ roleId: linkedRole.id })
+            .set({ memberGlobalPermissions: permissions })
             .where(eq(schema.group.slug, groupSlug));
     }
 }
@@ -341,8 +384,6 @@ export default async ({ db }: AppContext) => {
         },
     ] as const;
 
-    const groupRoles = GROUP_ROLES;
-
     for (const group of groups) {
         const exists = await db
             .select()
@@ -350,16 +391,9 @@ export default async ({ db }: AppContext) => {
             .where(eq(schema.group.slug, group.slug))
             .limit(1);
         if (!exists.length) {
-            const roleName = groupRoles[group.slug];
-            const linkedRole = roleName
-                ? await db
-                      .select({ id: schema.role.id })
-                      .from(schema.role)
-                      .where(eq(schema.role.name, roleName))
-                      .limit(1)
-                      .then((rows) => rows[0])
-                : undefined;
-
+            // Group-wide permissions are not set here: backfillGroupData runs
+            // on every boot and fills them in, so a group created now and one
+            // created three seeds ago end up in the same state.
             const newGroup: InferInsertModel<DbSchema["group"]> = {
                 name: group.name,
                 slug: group.slug,
@@ -372,7 +406,6 @@ export default async ({ db }: AppContext) => {
                 updatedAt: new Date(group.updated_at),
                 logoUrl: group.image,
                 finesAdminId: null,
-                roleId: linkedRole?.id ?? null,
             };
 
             await db.insert(schema.group).values(newGroup);

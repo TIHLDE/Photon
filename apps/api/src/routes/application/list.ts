@@ -2,7 +2,7 @@ import { applicationTypeVariants } from "@photon/db/schema";
 import { validator } from "hono-openapi";
 import {
     ALL_VIEW_PERMISSIONS,
-    visibleApplicationTypes,
+    visibleApplicationAccess,
 } from "~/lib/application/access";
 import { listApplications } from "~/lib/application/service";
 import { HTTPAppException } from "~/lib/errors";
@@ -46,13 +46,19 @@ export const listRoute = route().get(
         const user = c.get("user");
         if (!user) throw HTTPAppException.Unauthorized();
 
-        const allowed = await visibleApplicationTypes(ctx, user.id);
-        const types = query.type
-            ? allowed.filter((type) => type === query.type)
-            : allowed;
+        const access = await visibleApplicationAccess(ctx, user.id);
+        const allowed = query.type
+            ? access.filter((entry) => entry.type === query.type)
+            : access;
+        const types = allowed.map((entry) => entry.type);
+        // A group-scoped grant narrows the rows, not just the type tabs.
+        const groupSlugsByType = Object.fromEntries(
+            allowed.map((entry) => [entry.type, entry.groupSlugs]),
+        );
 
         const applications = await listApplications(ctx, {
             types,
+            groupSlugsByType,
             status: query.status,
             limit: query.limit,
             offset: query.offset,

@@ -7,11 +7,32 @@
  * scope. This prevents privilege escalation via self-defined titles.
  */
 
-import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
+import {
+    PERMISSIONS_SET,
+    hasPermission,
+    hasScopedPermission,
+} from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { isGroupLeader } from "./index";
+
+/**
+ * Drop permission strings the registry no longer knows about.
+ *
+ * Stored lists outlive the registry: a permission that was renamed or removed
+ * stays in whatever column or role array happened to hold it, and the ones
+ * migrated off the old `hs` role carry a few such strings. They grant nothing
+ * — no route asks for them — but echoing them back to the admin UI means the
+ * next save is rejected wholesale as "Unknown permission", leaving the group
+ * uneditable. Filtering on read drops them on the next save instead, while the
+ * write schema still refuses anything unknown the client makes up.
+ */
+export function knownPermissions(permissions: string[] | null): string[] {
+    return (permissions ?? []).filter((p) =>
+        (PERMISSIONS_SET as ReadonlySet<string>).has(p),
+    );
+}
 
 /**
  * Get a position by id, or null.

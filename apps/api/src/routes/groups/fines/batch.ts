@@ -36,7 +36,7 @@ export const batchUpdateFinesRoute = route().patch(
         summary: "Update several fines at once",
         operationId: "batchUpdateFines",
         description:
-            "Set the same status on a list of fines. Every fine must belong to the group in the path. Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.",
+            "Set the same status on a list of fines. Every fine must belong to the group in the path. Requires being the fines admin (botsjef) or the group's leader.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -65,7 +65,7 @@ export const batchUpdateFinesRoute = route().patch(
         if (!(await canUpdateFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message:
-                    "Only fines admin or users with fines:update permission can change fine status",
+                    "Only the fines admin or the group's leader can change fine status",
             });
         }
 
@@ -102,7 +102,7 @@ export const batchUpdateUserFinesRoute = route().patch(
         summary: "Update all of one member's fines",
         operationId: "batchUpdateUserFines",
         description:
-            "Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.",
+            "Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or the group's leader.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -131,7 +131,7 @@ export const batchUpdateUserFinesRoute = route().patch(
         if (!(await canUpdateFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message:
-                    "Only fines admin or users with fines:update permission can change fine status",
+                    "Only the fines admin or the group's leader can change fine status",
             });
         }
 
