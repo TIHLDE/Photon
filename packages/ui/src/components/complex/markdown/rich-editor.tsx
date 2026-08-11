@@ -22,6 +22,12 @@ export type RichEditorProps = {
     lang?: string;
     /** Rød strek under skrivefeil. På som standard. */
     spellCheck?: boolean;
+    /**
+     * Id-en til en <label> utenfor editoren. Skrivefeltet er en
+     * contenteditable, ikke en <textarea>, så `htmlFor` binder ikke — navnet
+     * må kobles på med aria.
+     */
+    ariaLabelledBy?: string;
 };
 
 export function RichEditor({
@@ -33,6 +39,7 @@ export function RichEditor({
     className,
     lang = "nb",
     spellCheck = true,
+    ariaLabelledBy,
 }: RichEditorProps) {
     const lastEmitted = useRef(value);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +93,9 @@ export function RichEditor({
                 "data-gramm": "false",
                 "data-gramm_editor": "false",
                 "data-enable-grammarly": "false",
+                ...(ariaLabelledBy
+                    ? { "aria-labelledby": ariaLabelledBy }
+                    : {}),
             },
         },
         onUpdate: ({ editor: instance }) => {

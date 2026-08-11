@@ -170,10 +170,7 @@ export function NewFormDialog({
                             {(field) => (
                                 <field.Field>
                                     <field.Label>Beskrivelse</field.Label>
-                                    <field.Textarea
-                                        rows={3}
-                                        placeholder="Hva handler skjemaet om?"
-                                    />
+                                    <field.Markdown placeholder="Hva handler skjemaet om?" />
                                     <field.Error />
                                 </field.Field>
                             )}
