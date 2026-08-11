@@ -1313,13 +1313,13 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped). Filter with 'status' and 'userId'.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.
          */
         get: operations["listFines"];
         put?: never;
         /**
          * Create fine
-         * @description Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).
+         * @description Create a new fine for a group member. Requires being a member of the group (bøter follow membership, not permissions). Root may fine across groups.
          */
         post: operations["createFine"];
         delete?: never;
@@ -1383,7 +1383,7 @@ export interface paths {
         head?: never;
         /**
          * Update several fines at once
-         * @description Set the same status on a list of fines. Every fine must belong to the group in the path. Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.
+         * @description Set the same status on a list of fines. Every fine must belong to the group in the path. Requires being the fines admin (botsjef) or the group's leader.
          */
         patch: operations["batchUpdateFines"];
         trace?: never;
@@ -1403,7 +1403,7 @@ export interface paths {
         head?: never;
         /**
          * Update all of one member's fines
-         * @description Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or holding 'fines:update' globally or scoped to the group.
+         * @description Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or the group's leader.
          */
         patch: operations["batchUpdateUserFines"];
         trace?: never;
@@ -1417,14 +1417,14 @@ export interface paths {
         };
         /**
          * Get fine by ID
-         * @description Retrieve detailed information about a specific fine. Group members can view fines in their own group, users can always view their own fines, and fines admins / 'fines:view' holders can view all fines for the group.
+         * @description Retrieve detailed information about a specific fine. Group members can view every fine in their own group, users can always view their own, and the fines admin and root can view any.
          */
         get: operations["getFine"];
         put?: never;
         post?: never;
         /**
          * Delete a fine
-         * @description Delete a fine by its ID. Requires being the fines admin OR having 'fines:delete' permission (globally or scoped to this group). This action is irreversible.
+         * @description Delete a fine by its ID. Requires being the fines admin (botsjef) or the group's leader. This action is irreversible.
          */
         delete: operations["deleteFine"];
         options?: never;
@@ -1445,13 +1445,13 @@ export interface paths {
         };
         /**
          * List a group's laws (lovverk)
-         * @description Retrieve the fine laws for a group, ordered by paragraph. Group members can view their own group's laws (Lepton parity), as can the fines admin and anyone with 'fines:view' (globally or scoped).
+         * @description Retrieve the fine laws for a group, ordered by paragraph. Group members can view their own group's laws (Lepton parity), as can the fines admin and root.
          */
         get: operations["listLaws"];
         put?: never;
         /**
          * Create a law
-         * @description Add a paragraph to a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         * @description Add a paragraph to a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.
          */
         post: operations["createLaw"];
         delete?: never;
@@ -1472,14 +1472,14 @@ export interface paths {
         post?: never;
         /**
          * Delete a law
-         * @description Delete a paragraph from a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         * @description Delete a paragraph from a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.
          */
         delete: operations["deleteLaw"];
         options?: never;
         head?: never;
         /**
          * Update a law
-         * @description Update a paragraph in a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).
+         * @description Update a paragraph in a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.
          */
         patch: operations["updateLaw"];
         trace?: never;
@@ -1649,7 +1649,7 @@ export interface paths {
         };
         /**
          * Get the group leader's permissions
-         * @description The permissions held by whoever currently leads the group, scoped to that group. `baseline` is what every leader holds regardless of configuration (arranging the group's events); `permissions` is the extra set configured for this group. Requires the same rights as managing the group's verv.
+         * @description The permissions held by whoever currently leads the group, scoped to that group. Requires the same rights as managing the group's verv.
          */
         get: operations["getGroupLeaderPermissions"];
         put?: never;
@@ -1659,9 +1659,33 @@ export interface paths {
         head?: never;
         /**
          * Set the group leader's permissions
-         * @description Replace the EXTRA permissions held by the group's leader, on top of the baseline every leader holds. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
+         * @description Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
          */
         patch: operations["updateGroupLeaderPermissions"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/member-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the permissions held by every member of the group
+         * @description `permissions` is held by every member scoped to this group; `globalPermissions` is held by every member across all of TIHLDE. Requires the same rights as managing the group's verv.
+         */
+        get: operations["getGroupMemberPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set the permissions held by every member of the group
+         * @description Replace both lists. `permissions` is granted scoped to this group; `globalPermissions` is granted across all of TIHLDE and therefore requires holding each of them globally yourself.
+         */
+        patch: operations["updateGroupMemberPermissions"];
         trace?: never;
     };
     "/api/groups/{slug}/forms": {
@@ -4827,14 +4851,24 @@ export interface components {
             userId: string;
         };
         GroupLeaderPermissions: {
-            /** @description Extra permissions configured for this group's leader, on top of the baseline. Scoped to this group. */
+            /** @description Permissions held by whoever currently leads this group, scoped to this group. */
             permissions: string[];
-            /** @description Permissions every group leader holds for their own group, regardless of configuration. Read-only. */
-            baseline: string[];
         };
         UpdateGroupLeaderPermissions: {
             /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. */
             permissions: string[];
+        };
+        GroupMemberPermissions: {
+            /** @description Permissions held by every member of this group, scoped to this group. */
+            permissions: string[];
+            /** @description Permissions held by every member of this group across all of TIHLDE, unscoped. */
+            globalPermissions: string[];
+        };
+        UpdateGroupMemberPermissions: {
+            /** @description Permissions every member of this group holds, scoped to this group. Replaces the existing list. */
+            permissions: string[];
+            /** @description Permissions every member of this group holds across all of TIHLDE. Replaces the existing list. Requires holding each permission globally yourself. */
+            globalPermissions: string[];
         };
         CreateGroupFormResponse: {
             /** Format: uuid */
@@ -10874,6 +10908,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GroupLeaderPermissions"];
+                };
+            };
+            /** @description Bad Request - Unknown permission */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGroupMemberPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group's member permissions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMemberPermissions"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Group not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateGroupMemberPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupMemberPermissions"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMemberPermissions"];
                 };
             };
             /** @description Bad Request - Unknown permission */

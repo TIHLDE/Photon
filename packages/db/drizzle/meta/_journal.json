@@ -323,6 +323,20 @@
       "when": 1786438246608,
       "tag": "0045_white_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1786477569694,
+      "tag": "0046_adorable_virginia_dare",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1786477631094,
+      "tag": "0047_faithful_guardsmen",
+      "breakpoints": true
     }
   ]
 }

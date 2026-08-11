@@ -19,8 +19,7 @@ type GroupDetailHeaderProps = {
     isAdmin: boolean;
     /**
      * Om den innloggede kan gi bot. Lepton lot ethvert gruppemedlem bøtelegge
-     * et annet, og `member`-rollen har fortsatt `fines:create` — knappen sto
-     * likevel bare for ledere.
+     * et annet, og det er regelen igjen: medlemskap er tilgangen.
      */
     canGiveFine: boolean;
     onGiveFine: () => void;

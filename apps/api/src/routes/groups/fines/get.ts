@@ -16,7 +16,7 @@ export const getFineRoute = route().get(
         summary: "Get fine by ID",
         operationId: "getFine",
         description:
-            "Retrieve detailed information about a specific fine. Group members can view fines in their own group, users can always view their own fines, and fines admins / 'fines:view' holders can view all fines for the group.",
+            "Retrieve detailed information about a specific fine. Group members can view every fine in their own group, users can always view their own, and the fines admin and root can view any.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -84,7 +84,7 @@ export const getFineRoute = route().get(
         }
 
         // Check authorization: own fine, membership in the group (Lepton
-        // parity), fines admin, or fines:view (globally or scoped).
+        // parity), the fines admin, or root.
         const isOwner = fine.userId === user.id;
 
         if (!isOwner && !(await canViewFines(ctx, user.id, group))) {

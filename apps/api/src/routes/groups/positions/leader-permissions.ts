@@ -7,16 +7,15 @@
  * held by whoever leads the group right now, scoped to that group, and are
  * edited from the same verv table as the group's positions.
  *
- * What is edited here is the EXTRA set. Arranging the group's own events is
- * baseline for every leader (LEADER_BASELINE_PERMISSIONS) and is not stored
- * per group, so it cannot be switched off here — it is returned as `baseline`
- * so the admin UI can show it rather than claim the leader has nothing.
+ * The whole set is stored per group and editable. There used to be a hardcoded
+ * baseline every leader held regardless of configuration; it was migrated into
+ * each group's `leaderPermissions` and removed, so what the admin UI shows is
+ * now the whole truth.
  *
  * Guardrails are the position ones, deliberately: managing this is managing a
  * group-scoped verv, and you still cannot hand out what you do not hold.
  */
 
-import { LEADER_BASELINE_PERMISSIONS } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -24,6 +23,7 @@ import { HTTPException } from "hono/http-exception";
 import {
     canGrantPositionPermissions,
     canManagePositions,
+    knownPermissions,
 } from "~/lib/group/positions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -40,7 +40,7 @@ export const getLeaderPermissionsRoute = route().get(
         summary: "Get the group leader's permissions",
         operationId: "getGroupLeaderPermissions",
         description:
-            "The permissions held by whoever currently leads the group, scoped to that group. `baseline` is what every leader holds regardless of configuration (arranging the group's events); `permissions` is the extra set configured for this group. Requires the same rights as managing the group's verv.",
+            "The permissions held by whoever currently leads the group, scoped to that group. Requires the same rights as managing the group's verv.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -74,10 +74,7 @@ export const getLeaderPermissionsRoute = route().get(
             });
         }
 
-        return c.json({
-            permissions: group.permissions ?? [],
-            baseline: [...LEADER_BASELINE_PERMISSIONS],
-        });
+        return c.json({ permissions: knownPermissions(group.permissions) });
     },
 );
 
@@ -88,7 +85,7 @@ export const updateLeaderPermissionsRoute = route().patch(
         summary: "Set the group leader's permissions",
         operationId: "updateGroupLeaderPermissions",
         description:
-            "Replace the EXTRA permissions held by the group's leader, on top of the baseline every leader holds. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.",
+            "Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -150,9 +147,6 @@ export const updateLeaderPermissionsRoute = route().patch(
             .where(eq(schema.group.slug, groupSlug))
             .returning({ permissions: schema.group.leaderPermissions });
 
-        return c.json({
-            permissions: updated?.permissions ?? [],
-            baseline: [...LEADER_BASELINE_PERMISSIONS],
-        });
+        return c.json({ permissions: updated?.permissions ?? [] });
     },
 );

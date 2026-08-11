@@ -16,7 +16,7 @@ export const updateLawRoute = route().patch(
         summary: "Update a law",
         operationId: "updateLaw",
         description:
-            "Update a paragraph in a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).",
+            "Update a paragraph in a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.",
     })
         .schemaResponse({
             statusCode: 200,

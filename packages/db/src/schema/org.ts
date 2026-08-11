@@ -18,7 +18,6 @@ import { pgEnum } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
-import { role } from "./rbac";
 
 const pgTable = pgTableCreator((name) => `org_${name}`);
 
@@ -151,22 +150,6 @@ export const groupType = pgEnum("org_group_type", [
 
 export type GroupType = (typeof groupType)["enumValues"][number];
 
-/**
- * Permission mode for group resource management.
- *
- * - leader_only: Only users with 'leader' role in groupMembership can manage resources
- * - member: Any group member with the base permission can manage resources
- * - custom: Custom per-resource configuration (future enhancement)
- */
-export const groupPermissionMode = pgEnum("org_group_permission_mode", [
-    "leader_only",
-    "member",
-    "custom",
-]);
-
-export type GroupPermissionMode =
-    (typeof groupPermissionMode)["enumValues"][number];
-
 export const group = pgTable("group", {
     /**
      * Gruppebilde: the wide photo shown on the group's «Om»-page. A picture of
@@ -199,22 +182,6 @@ export const group = pgTable("group", {
     finesActivated: boolean("fines_activated").notNull(),
     finesAdminId: text("fines_admin_id").references(() => user.id),
     /**
-     * Optional RBAC role that gets auto-assigned to group members.
-     * When a user joins this group, they automatically receive this role.
-     * When they leave, the role is removed.
-     */
-    roleId: integer("role_id").references(() => role.id, {
-        onDelete: "set null",
-    }),
-    /**
-     * Optional RBAC role that gets auto-assigned to the group's LEADER only.
-     * Assigned when a member becomes leader, revoked when they step down or
-     * leave. Used for leader-bound powers (e.g. NOK leader → payments:refund).
-     */
-    leaderRoleId: integer("leader_role_id").references(() => role.id, {
-        onDelete: "set null",
-    }),
-    /**
      * Permissions held by whoever is currently the group's leader, granted
      * scoped to this group ("permission@group:<slug>").
      *
@@ -226,20 +193,41 @@ export const group = pgTable("group", {
      *
      * Read live at permission-check time from the current leadership (see
      * getPermissionsFromLeadership), so it needs no sync when leadership
-     * changes — unlike {@link leaderRoleId}, which assigns a *global* RBAC
-     * role and stays for leader-bound powers that are genuinely org-wide
-     * (NOK's leader refunding payments).
+     * changes.
      */
     leaderPermissions: text("leader_permissions").array().notNull().default([]),
     /**
-     * Permission mode for managing group resources (events, fines, etc.).
-     * - leader_only: Only group leaders can manage (default, more restrictive)
-     * - member: Any member with the base permission can manage (more permissive)
-     * - custom: Future - per-resource configuration
+     * Permissions every member of this group holds, granted scoped to the
+     * group ("permission@group:<slug>"). The leader is a member too, so these
+     * stack on top of {@link leaderPermissions}.
+     *
+     * Only the domains that own a group column mean anything here — events,
+     * roles (verv administration), forms and applications. Anything else has
+     * no group to narrow against and belongs in
+     * {@link memberGlobalPermissions} instead.
+     *
+     * Stores bare permission names; the "@group:<slug>" suffix is applied at
+     * read time by getPermissionsFromMembership. Deliberately NOT stored
+     * pre-scoped: a slug rename cascades across the foreign keys but would
+     * never reach a slug buried inside a text[] element, which would silently
+     * void every grant.
      */
-    permissionMode: groupPermissionMode("permission_mode")
+    memberPermissions: text("member_permissions").array().notNull().default([]),
+    /**
+     * Permissions every member of this group holds org-wide, unscoped.
+     *
+     * This is the big hammer — Index members administering all of TIHLDE, HS
+     * running org-wide content. It replaces the old auto-assigned `admin`/`hs`
+     * RBAC roles, which did exactly this but invisibly, via {@link roleId}.
+     *
+     * Handing these out is bounded by the same rule as verv: you may only
+     * grant permissions you hold yourself, at the scope you grant them at. A
+     * group leader holds nothing globally and therefore cannot write here.
+     */
+    memberGlobalPermissions: text("member_global_permissions")
+        .array()
         .notNull()
-        .default("leader_only"),
+        .default([]),
     contractSigningRequired: boolean("contract_signing_required")
         .notNull()
         .default(false),

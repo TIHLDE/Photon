@@ -14,7 +14,7 @@ export const deleteLawRoute = route().delete(
         summary: "Delete a law",
         operationId: "deleteLaw",
         description:
-            "Delete a paragraph from a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).",
+            "Delete a paragraph from a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.",
     })
         .response({ statusCode: 204, description: "Law successfully deleted" })
         .forbidden({

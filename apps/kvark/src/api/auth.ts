@@ -5,7 +5,6 @@ import { getQueryClient } from "#/integrations/tanstack-query";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createPhotonAuthClient } from "@photon/auth/client";
-import { LEADER_BASELINE_PERMISSIONS } from "@photon/auth/rbac/leader-baseline";
 
 export const clientAuthInstance = createPhotonAuthClient({
     baseUrl: import.meta.env.VITE_AUTH_BASE_URL ?? "https://photon.tihlde.org",
@@ -21,57 +20,13 @@ export class AuthError extends Error {
     }
 }
 
-type SessionWithPermissions = {
-    permissions?: string[] | null;
-    groups?: { slug: string; role: string }[] | null;
-};
-
-/**
- * Add the permissions that come with leading a group.
- *
- * Server-side, `LEADER_BASELINE_PERMISSIONS` is granted to every leader for
- * their own group, scoped to it — arranging is the job, not something someone
- * has to be granted per group. The session already carries the resulting
- * strings, but only as of the API that computed them: a member promoted to
- * leader, or an API that has not caught up, would leave the admin panel
- * hiding work the leader is allowed to do.
- *
- * Deriving them again from `session.groups` keeps the UI in step with the
- * server rule instead of with one particular deploy of it. It can only ever
- * show a leader their own group's arrangementer — the API is still what
- * decides, and it applies the very same list.
- */
-export function withLeaderPermissions<
-    T extends SessionWithPermissions | null | undefined,
->(session: T): T {
-    if (!session) return session;
-
-    const ledGroups = (session.groups ?? []).filter(
-        (group) => group.role === "leader",
-    );
-    if (ledGroups.length === 0) return session;
-
-    const leaderGrants = ledGroups.flatMap((group) =>
-        LEADER_BASELINE_PERMISSIONS.map(
-            (permission) => `${permission}@group:${group.slug}`,
-        ),
-    );
-
-    return {
-        ...session,
-        permissions: [
-            ...new Set([...(session.permissions ?? []), ...leaderGrants]),
-        ],
-    };
-}
-
 export const getAuthSession = createIsomorphicFn()
     .client(async () => {
         const session = await clientAuthInstance.getSession();
         if (session.error) {
             throw new AuthError(`Failed to get session: ${session.error}`);
         }
-        return withLeaderPermissions(session.data);
+        return session.data;
     })
     .server(async () => {
         const session = await clientAuthInstance.getSession({
@@ -83,7 +38,7 @@ export const getAuthSession = createIsomorphicFn()
         if (session.error) {
             throw new AuthError(`Failed to get session: ${session.error}`);
         }
-        return withLeaderPermissions(session.data);
+        return session.data;
     });
 
 /**

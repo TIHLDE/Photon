@@ -1,17 +1,28 @@
 /**
- * Fines management utilities and permission checks.
+ * Fines management utilities and access checks.
  *
- * This module provides functions for:
- * - Checking fine permissions (who can create, approve, delete fines)
- * - Fine status transitions
- * - Fine validation
+ * Bøter are deliberately NOT part of the permission system. Giving and reading
+ * bøter is what being in a group is: you see what the group has handed out to
+ * each other, and you can hand one out yourself. Expressing that as a
+ * `fines:*` checkbox per group meant every group had to be configured to get
+ * its own baseline behaviour, and the permission was global anyway — so a
+ * group-scoped grant was silently rejected while a global one opened every
+ * group's bøter at once.
+ *
+ * So the rules are membership, not permissions:
+ * - Member of the group    → view every fine in it, and create fines in it
+ * - Fines admin, or leader → approve, reject, mark paid, delete
+ * - root                   → everything, across all groups
+ *
+ * The recipient of a fine always sees it and may defend it, member or not
+ * (memberships end; the fine outlives them).
  */
 
 import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
-import { canManageGroupResource, getGroup, isGroupLeader } from "./index";
+import { getGroup, isGroupLeader, isGroupMember } from "./index";
 
 /**
  * Get a fine by its ID.
@@ -28,55 +39,47 @@ export async function getFine(ctx: AppContext, fineId: string) {
 }
 
 /**
- * Check if a user can create fines for a group.
- * Respects the group's permission mode.
+ * Root sees and edits every fine in every group. This is the only cross-group
+ * access there is — held by the Teknologiminister title.
+ */
+async function isFinesRoot(ctx: AppContext, userId: string): Promise<boolean> {
+    return await hasPermission(ctx, userId, "root");
+}
+
+/**
+ * Can the user create fines for a group?
  *
- * Rules:
- * - Root or fines:manage bypasses all checks
- * - User must have fines:create permission
- * - Scope check: Must be member/leader based on group's permissionMode
- *
- * @param userId - User trying to create the fine
- * @param groupSlug - Group the fine belongs to
+ * Any member of the group can, provided the group has bøter switched on.
  */
 export async function canCreateFine(
     ctx: AppContext,
     userId: string,
     groupSlug: string,
 ): Promise<boolean> {
-    // Root or fines:manage bypass
-    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await isFinesRoot(ctx, userId)) {
         return true;
     }
 
-    // Check group's fines are activated
     const group = await getGroup(ctx, groupSlug);
     if (!group?.finesActivated) {
         return false; // Fines not enabled for this group
     }
 
-    // Use the group resource scoping function
-    return await canManageGroupResource(ctx, userId, groupSlug, "fines:create");
+    return await isGroupMember(ctx, userId, groupSlug);
 }
 
 /**
- * Check if a user can approve/reject a fine.
+ * Can the user approve/reject a fine?
  *
- * Rules:
- * - Root or fines:manage bypasses all checks
- * - User must be the fines admin for the group, OR
- * - User must be a group leader with fines:update permission
- *
- * @param userId - User trying to approve/reject
- * @param fineId - Fine ID
+ * Handing out a fine is something any member does; ruling on it is not. That
+ * stays with the group's fines admin and its leader.
  */
 export async function canApproveFine(
     ctx: AppContext,
     userId: string,
     fineId: string,
 ): Promise<boolean> {
-    // Root or fines:manage bypass
-    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await isFinesRoot(ctx, userId)) {
         return true;
     }
 
@@ -90,39 +93,25 @@ export async function canApproveFine(
         return false; // Group doesn't exist
     }
 
-    // Check if user is the fines admin
     if (group.finesAdminId === userId) {
         return true;
     }
 
-    // Check if user is a group leader with fines:update permission
-    const [isLeader, hasUpdatePerm] = await Promise.all([
-        isGroupLeader(ctx, userId, fine.groupSlug),
-        hasPermission(ctx, userId, "fines:update"),
-    ]);
-
-    return isLeader && hasUpdatePerm;
+    return await isGroupLeader(ctx, userId, fine.groupSlug);
 }
 
 /**
- * Check if a user can delete a fine.
+ * Can the user delete a fine?
  *
- * Rules:
- * - Root or fines:manage bypasses all checks
- * - User must be the fine creator (if fine is still pending), OR
- * - User must be the fines admin, OR
- * - User must be a group leader with fines:delete permission
- *
- * @param userId - User trying to delete
- * @param fineId - Fine ID
+ * The author may withdraw their own fine while it is still pending; otherwise
+ * it takes the fines admin or the leader.
  */
 export async function canDeleteFine(
     ctx: AppContext,
     userId: string,
     fineId: string,
 ): Promise<boolean> {
-    // Root or fines:manage bypass
-    if (await hasPermission(ctx, userId, ["root", "fines:manage"])) {
+    if (await isFinesRoot(ctx, userId)) {
         return true;
     }
 
@@ -141,39 +130,26 @@ export async function canDeleteFine(
         return false; // Group doesn't exist
     }
 
-    // Fines admin can delete any fine
     if (group.finesAdminId === userId) {
         return true;
     }
 
-    // Group leaders with fines:delete permission can delete
-    const [isLeader, hasDeletePerm] = await Promise.all([
-        isGroupLeader(ctx, userId, fine.groupSlug),
-        hasPermission(ctx, userId, "fines:delete"),
-    ]);
-
-    return isLeader && hasDeletePerm;
+    return await isGroupLeader(ctx, userId, fine.groupSlug);
 }
 
 /**
- * Check if a user can view a fine.
+ * Can the user view a fine?
  *
- * Rules:
- * - Root or fines:view bypasses all checks
- * - User must be a member of the group the fine belongs to, OR
- * - User must be the fine recipient, OR
- * - User must be the fine creator
- *
- * @param userId - User trying to view
- * @param fineId - Fine ID
+ * Everyone in the group sees everything the group has handed out. The
+ * recipient and the author see it regardless — a fine outlives the membership
+ * that produced it.
  */
 export async function canViewFine(
     ctx: AppContext,
     userId: string,
     fineId: string,
 ): Promise<boolean> {
-    // Root or fines:view bypass
-    if (await hasPermission(ctx, userId, ["root", "fines:view"])) {
+    if (await isFinesRoot(ctx, userId)) {
         return true;
     }
 
@@ -182,26 +158,11 @@ export async function canViewFine(
         return false; // Fine doesn't exist
     }
 
-    // Fine recipient can view their own fine
-    if (fine.userId === userId) {
+    if (fine.userId === userId || fine.createdByUserId === userId) {
         return true;
     }
 
-    // Fine creator can view the fine they created
-    if (fine.createdByUserId === userId) {
-        return true;
-    }
-
-    // Group members with fines:view permission can view
-    const [membership, hasViewPerm] = await Promise.all([
-        ctx.db.query.groupMembership.findFirst({
-            where: (gm, { and, eq }) =>
-                and(eq(gm.userId, userId), eq(gm.groupSlug, fine.groupSlug)),
-        }),
-        hasPermission(ctx, userId, "fines:view"),
-    ]);
-
-    return !!membership && hasViewPerm;
+    return await isGroupMember(ctx, userId, fine.groupSlug);
 }
 
 /**
@@ -236,20 +197,13 @@ export async function canAddFineDefense(
 /**
  * Check if a user can mark a fine as paid.
  *
- * Rules:
- * - Root or fines:manage bypasses all checks
- * - User must be the fines admin for the group, OR
- * - User must be a group leader with fines:update permission
- *
- * @param userId - User trying to mark as paid
- * @param fineId - Fine ID
+ * Same rules as approving — the fines admin or the group's leader.
  */
 export async function canMarkFinePaid(
     ctx: AppContext,
     userId: string,
     fineId: string,
 ): Promise<boolean> {
-    // Same permissions as approving a fine
     return await canApproveFine(ctx, userId, fineId);
 }
 
@@ -265,29 +219,20 @@ export async function getUserFines(ctx: AppContext, userId: string) {
 }
 
 /**
- * Get all fines for a group.
- * Requires fines:view permission and group membership.
+ * Get all fines for a group. Requires membership, or root.
  */
 export async function getGroupFines(
     ctx: AppContext,
     userId: string,
     groupSlug: string,
 ) {
-    // Check if user can view fines for this group
-    const [membership, hasViewPerm] = await Promise.all([
-        ctx.db.query.groupMembership.findFirst({
-            where: (gm, { and, eq }) =>
-                and(eq(gm.userId, userId), eq(gm.groupSlug, groupSlug)),
-        }),
-        hasPermission(ctx, userId, "fines:view"),
+    const [isMember, isRoot] = await Promise.all([
+        isGroupMember(ctx, userId, groupSlug),
+        isFinesRoot(ctx, userId),
     ]);
 
-    if (!membership && !(await hasPermission(ctx, userId, ["root"]))) {
+    if (!isMember && !isRoot) {
         throw new Error("Not a member of this group");
-    }
-
-    if (!hasViewPerm && !(await hasPermission(ctx, userId, ["root"]))) {
-        throw new Error("Missing permission: fines:view");
     }
 
     const db = ctx.db;

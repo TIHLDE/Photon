@@ -7,6 +7,10 @@ import {
     updateLeaderPermissionsRoute,
 } from "./leader-permissions";
 import { listPositionsRoute } from "./list";
+import {
+    getMemberPermissionsRoute,
+    updateMemberPermissionsRoute,
+} from "./member-permissions";
 import { unassignPositionRoute } from "./unassign";
 import { updatePositionRoute } from "./update";
 
@@ -18,4 +22,6 @@ export const positionsRoutes = route()
     .route("/", assignPositionRoute)
     .route("/", unassignPositionRoute)
     .route("/", getLeaderPermissionsRoute)
-    .route("/", updateLeaderPermissionsRoute);
+    .route("/", updateLeaderPermissionsRoute)
+    .route("/", getMemberPermissionsRoute)
+    .route("/", updateMemberPermissionsRoute);

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { Group, GroupPosition, Role } from "@tihlde/sdk";
+import type { Group, GroupPosition } from "@tihlde/sdk";
 import {
     Accordion,
     AccordionContent,
@@ -36,7 +36,6 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { MoreHorizontalIcon, PlusIcon, ShieldIcon, XIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -45,19 +44,15 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import {
     assignPositionMutation,
-    assignRoleMutation,
     createPositionMutation,
     deletePositionMutation,
-    deleteRoleMutation,
     getGroupPositionsQuery,
     getLeaderPermissionsQuery,
-    getRolesQuery,
-    searchUsersQuery,
+    getMemberPermissionsQuery,
     unassignPositionMutation,
-    unassignRoleMutation,
     updateLeaderPermissionsMutation,
+    updateMemberPermissionsMutation,
     updatePositionMutation,
-    updateRoleMutation,
 } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -71,12 +66,12 @@ import {
     type UserSearchOption,
 } from "#/components/user-search-combobox";
 import {
+    GROUP_SCOPABLE_DOMAINS,
     PERMISSION_DOMAINS,
     domainsOf,
     summarizePermissions,
     toggleDomain,
 } from "#/lib/permission-domains";
-import { useDebounced } from "#/lib/use-debounced";
 import { initials } from "#/lib/utils";
 
 import { avatarImageUrl } from "#/lib/assets";
@@ -85,11 +80,9 @@ export const Route = createFileRoute("/admin/roller")({
     component: RolesAdminPage,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
-        return { breadcrumbs: "Roller og verv" };
+        return { breadcrumbs: "Verv og tilganger" };
     },
 });
-
-type TabValue = "verv" | "roller";
 
 /**
  * Whether the viewer may manage the verv of `groupSlug`.
@@ -107,18 +100,19 @@ function useCanManagePositions(groupSlug: string): boolean {
     return hasScoped || isLeader;
 }
 
-function RolesAdminPage() {
-    const [tab, setTab] = useState<TabValue>("verv");
-    // Global roles are listed and edited with global roles:* permissions —
-    // a group leader has no business in that tab, so it is not shown.
-    const canSeeRoles = usePermission([
-        "roles:view",
-        "roles:create",
-        "roles:update",
-        "roles:delete",
-        "roles:assign",
-    ]);
+/**
+ * Whether the viewer may hand out permissions that reach all of TIHLDE.
+ *
+ * The server rule is "you may only grant what you hold yourself, at the scope
+ * you grant it at", so a group leader — who holds nothing globally — can never
+ * write the global list. Rather than show them a section every checkbox in
+ * which would 403, it is hidden unless they hold something org-wide.
+ */
+function useCanGrantGlobally(): boolean {
+    return usePermission(["root", "roles:create"]);
+}
 
+function RolesAdminPage() {
     return (
         <Stagger
             render={
@@ -126,24 +120,11 @@ function RolesAdminPage() {
             }
         >
             <AdminPageHeader
-                title="Roller og verv"
-                description="Administrer verv i grupper og globale roller."
+                title="Verv og tilganger"
+                description="Administrer verv og tilganger for hver gruppe."
             />
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-                <TabsList>
-                    <TabsTrigger value="verv">Verv</TabsTrigger>
-                    {canSeeRoles ? (
-                        <TabsTrigger value="roller">Roller</TabsTrigger>
-                    ) : null}
-                </TabsList>
-            </Tabs>
-
-            {tab === "verv" || !canSeeRoles ? (
-                <PositionsSection />
-            ) : (
-                <RolesSection onCreateInGroup={() => setTab("verv")} />
-            )}
+            <PositionsSection />
         </Stagger>
     );
 }
@@ -155,12 +136,25 @@ function RolesAdminPage() {
 function PermissionDomainCheckboxes({
     value,
     onChange,
+    domains = PERMISSION_DOMAINS,
+    lockedDomains,
+    lockedHint,
 }: {
     value: string[];
     onChange: (next: string[]) => void;
+    /** Which domains to offer. Defaults to all of them. */
+    domains?: typeof PERMISSION_DOMAINS;
+    /**
+     * Domains the group already grants every member at this scope. They render
+     * ticked and disabled: the access is real, but it is edited one level up,
+     * and offering a second switch for it would only let the two disagree.
+     */
+    lockedDomains?: Set<string>;
+    lockedHint?: string;
 }) {
     const present = domainsOf(value);
     const hasRoot = value.includes("root");
+    const anyLocked = domains.some((d) => lockedDomains?.has(d.slug));
 
     return (
         <div className="flex flex-col gap-2">
@@ -170,8 +164,10 @@ function PermissionDomainCheckboxes({
                 </p>
             ) : null}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
-                {PERMISSION_DOMAINS.map((domain) => {
-                    const checked = hasRoot || present.has(domain.slug);
+                {domains.map((domain) => {
+                    const locked = lockedDomains?.has(domain.slug) ?? false;
+                    const checked =
+                        hasRoot || locked || present.has(domain.slug);
                     return (
                         <label
                             key={domain.slug}
@@ -179,7 +175,7 @@ function PermissionDomainCheckboxes({
                         >
                             <Checkbox
                                 checked={checked}
-                                disabled={hasRoot}
+                                disabled={hasRoot || locked}
                                 onCheckedChange={(next) =>
                                     onChange(
                                         toggleDomain(
@@ -195,6 +191,9 @@ function PermissionDomainCheckboxes({
                     );
                 })}
             </div>
+            {anyLocked && lockedHint ? (
+                <p className="text-sm text-muted-foreground">{lockedHint}</p>
+            ) : null}
         </div>
     );
 }
@@ -422,6 +421,12 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <MemberPermissionsRow
+                        groupSlug={groupSlug}
+                        canManage={canManage}
+                        memberCount={members?.length ?? 0}
+                    />
+
                     <LeaderRow
                         groupSlug={groupSlug}
                         canManage={canManage}
@@ -535,7 +540,7 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                     )}
                                 </div>
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                                 {summarizePermissions(position.permissions)}
                             </TableCell>
                             <TableCell>
@@ -587,6 +592,227 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
 }
 
 /**
+ * What every member of the group holds, pinned as the first row of the table.
+ *
+ * This is the row that replaced the invisible `group.roleId` link: "everyone
+ * in Index administers TIHLDE" used to be a fact you could only find in the
+ * database, and is now a set of checkboxes above the group's verv.
+ */
+function MemberPermissionsRow({
+    groupSlug,
+    canManage,
+    memberCount,
+}: {
+    groupSlug: string;
+    canManage: boolean;
+    memberCount: number;
+}) {
+    const [editing, setEditing] = useState(false);
+    // Only managers may read this — asking as anyone else is a guaranteed 403.
+    const { data } = useQuery({
+        ...getMemberPermissionsQuery(groupSlug),
+        enabled: canManage,
+    });
+    const permissions = data?.permissions ?? [];
+    const globalPermissions = data?.globalPermissions ?? [];
+
+    return (
+        <TableRow>
+            <TableCell>
+                <div className="flex flex-col">
+                    <span className="font-medium">Alle medlemmer</span>
+                    <span className="text-xs text-muted-foreground">
+                        Gjelder alle som er med i gruppen
+                    </span>
+                </div>
+            </TableCell>
+            <TableCell>
+                <span className="text-sm text-muted-foreground">
+                    {memberCount === 1
+                        ? "1 medlem"
+                        : `${memberCount} medlemmer`}
+                </span>
+            </TableCell>
+            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+                {canManage
+                    ? summarizePermissions([
+                          ...permissions,
+                          ...globalPermissions,
+                      ])
+                    : "Gruppens medlemstilganger"}
+            </TableCell>
+            <TableCell>
+                {canManage ? (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            aria-label="Handlinger"
+                            className="cursor-pointer"
+                        >
+                            <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditing(true)}>
+                                Rediger
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                ) : null}
+            </TableCell>
+
+            {editing && (
+                <MemberPermissionsDialog
+                    groupSlug={groupSlug}
+                    open={editing}
+                    onOpenChange={setEditing}
+                    permissions={permissions}
+                    globalPermissions={globalPermissions}
+                />
+            )}
+        </TableRow>
+    );
+}
+
+/**
+ * Two sections rather than a three-way control per domain.
+ *
+ * Almost every group only ever wants the first one, and giving "hele TIHLDE"
+ * equal visual weight invites clicking it. The second section is also hidden
+ * outright for anyone who could not save it anyway, so a group leader's
+ * dialog is just the four checkboxes that mean something for their group.
+ */
+function MemberPermissionsDialog({
+    groupSlug,
+    open,
+    onOpenChange,
+    permissions: initialScoped,
+    globalPermissions: initialGlobal,
+}: {
+    groupSlug: string;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    permissions: string[];
+    globalPermissions: string[];
+}) {
+    const update = useMutation(updateMemberPermissionsMutation);
+    const canGrantGlobally = useCanGrantGlobally();
+    const [scoped, setScoped] = useState<string[]>(initialScoped);
+    const [global, setGlobal] = useState<string[]>(initialGlobal);
+    const [error, setError] = useState<string | null>(null);
+
+    // A global grant matches any scope, so ticking a domain here already
+    // covers the group. Locking the local box says so instead of leaving two
+    // switches that can disagree about the same access.
+    const globalDomains = domainsOf(global);
+
+    async function handleSubmit() {
+        setError(null);
+        try {
+            await update.mutateAsync({
+                groupSlug,
+                permissions: scoped,
+                globalPermissions: global,
+            });
+            onOpenChange(false);
+        } catch (submitError) {
+            setError(
+                submitError instanceof Error
+                    ? submitError.message
+                    : "Kunne ikke lagre tilgangene.",
+            );
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>Tilganger for alle medlemmer</DialogTitle>
+                </DialogHeader>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel>Gjelder denne gruppen</FieldLabel>
+                        <PermissionDomainCheckboxes
+                            value={scoped}
+                            onChange={setScoped}
+                            domains={GROUP_SCOPABLE_DOMAINS}
+                            lockedDomains={globalDomains}
+                            lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
+                        />
+                        <p className="text-sm text-muted-foreground">
+                            Alle i gruppen får dette, men bare for gruppens eget
+                            innhold. Andre områder kan ikke begrenses til én
+                            gruppe, og ligger derfor bare nedenfor.
+                        </p>
+                    </Field>
+
+                    {canGrantGlobally ? (
+                        <Field>
+                            <FieldLabel>Gjelder hele TIHLDE</FieldLabel>
+                            <PermissionDomainCheckboxes
+                                value={global}
+                                onChange={setGlobal}
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Alle i gruppen får dette på tvers av alle
+                                grupper. Du kan bare gi bort tilganger du selv
+                                har.
+                            </p>
+                        </Field>
+                    ) : null}
+
+                    {error ? (
+                        <p className="text-sm text-destructive">{error}</p>
+                    ) : null}
+                </FieldGroup>
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Avbryt
+                    </Button>
+                    <Button
+                        disabled={update.isPending}
+                        onClick={() => void handleSubmit()}
+                    >
+                        Lagre
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
+ * Domains the group already grants every member, and which a verv or the
+ * leader therefore should not offer a second switch for.
+ *
+ * A global grant matches any scope, so it locks the domain at both scopes; a
+ * group-scoped one only locks group-scoped verv. Without that split, a group
+ * that lets its members arrange its own events could never hand anyone a verv
+ * arranging events for all of TIHLDE.
+ */
+function useGroupCoveredDomains(
+    groupSlug: string,
+    enabled: boolean,
+    scope: "group" | "global",
+): Set<string> {
+    const { data } = useQuery({
+        ...getMemberPermissionsQuery(groupSlug),
+        enabled,
+    });
+    return useMemo(() => {
+        const covered = domainsOf(data?.globalPermissions ?? []);
+        if (scope === "group") {
+            for (const domain of domainsOf(data?.permissions ?? [])) {
+                covered.add(domain);
+            }
+        }
+        return covered;
+    }, [data, scope]);
+}
+
+/**
  * The group's leader, pinned as the first row of the verv table.
  *
  * Leadership is a membership role, not a verv — the holder is still set in the
@@ -609,9 +835,6 @@ function LeaderRow({
         enabled: canManage,
     });
     const permissions = data?.permissions ?? [];
-    // Every leader arranges their own group's events; the stored set is only
-    // what comes on top. Summarize both, or the table would read "ingen".
-    const baseline = data?.baseline ?? [];
 
     return (
         <TableRow>
@@ -640,9 +863,9 @@ function LeaderRow({
                     )}
                 </div>
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
+            <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
-                    ? summarizePermissions([...baseline, ...permissions])
+                    ? summarizePermissions(permissions)
                     : "Gruppens ledertilganger"}
             </TableCell>
             <TableCell>
@@ -689,6 +912,9 @@ function LeaderPermissionsDialog({
     const update = useMutation(updateLeaderPermissionsMutation);
     const [permissions, setPermissions] = useState<string[]>(initial);
     const [error, setError] = useState<string | null>(null);
+    // Leader permissions are always scoped to the group, so anything the
+    // group already gives every member covers the leader too.
+    const covered = useGroupCoveredDomains(groupSlug, true, "group");
 
     async function handleSubmit() {
         setError(null);
@@ -716,13 +942,12 @@ function LeaderPermissionsDialog({
                         <PermissionDomainCheckboxes
                             value={permissions}
                             onChange={setPermissions}
+                            lockedDomains={covered}
+                            lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
                         />
                         <p className="text-sm text-muted-foreground">
                             Gjelder bare i denne gruppen, og følger den som til
-                            enhver tid er leder. Alle ledere kan uansett lage,
-                            endre og slette gruppens arrangementer og styre
-                            påmeldingene — det kommer i tillegg til det du
-                            velger her.
+                            enhver tid er leder.
                         </p>
                     </Field>
                     {error ? (
@@ -783,6 +1008,9 @@ function PositionDialog({
     );
     const [holderQuery, setHolderQuery] = useState("");
     const [error, setError] = useState<string | null>(null);
+    // Follows the verv's own scope: a group-scoped verv is covered by both of
+    // the group's lists, a global one only by the global list.
+    const covered = useGroupCoveredDomains(groupSlug, true, scope);
     const isPending =
         create.isPending ||
         update.isPending ||
@@ -916,6 +1144,8 @@ function PositionDialog({
                         <PermissionDomainCheckboxes
                             value={permissions}
                             onChange={setPermissions}
+                            lockedDomains={covered}
+                            lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
                         />
                     </Field>
                     <Field>
@@ -948,282 +1178,6 @@ function PositionDialog({
                         onClick={() => void handleSubmit()}
                     >
                         {position ? "Lagre" : "Opprett"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-// =============================================================================
-// Roller (global RBAC roles)
-// =============================================================================
-
-/**
- * Roles that are managed automatically and must not be assigned by hand here:
- * - `member` is the Feide baseline synced to every active student, so it would
- *   list every user and isn't something you hand out from this page.
- * - `moderator` is retired — nobody should hold it.
- */
-const HIDDEN_ROLE_NAMES = new Set(["member", "moderator"]);
-
-function RolesSection({ onCreateInGroup }: { onCreateInGroup: () => void }) {
-    const { data: roles, isPending, error } = useQuery(getRolesQuery());
-
-    const visibleRoles = (roles ?? []).filter(
-        (role) => !HIDDEN_ROLE_NAMES.has(role.name),
-    );
-
-    if (isPending) {
-        return (
-            <Card>
-                <CardContent className="flex flex-col gap-3">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                        <Skeleton key={index} className="h-10 w-full" />
-                    ))}
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (error) {
-        return (
-            <Card>
-                <CardContent>
-                    <AdminEmptyState
-                        icon={ShieldIcon}
-                        title="Ingen tilgang"
-                        description="Du mangler tilgangen som kreves for å se roller."
-                    />
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
-                    Nye roller opprettes som verv i en gruppe. Rollene her er
-                    faste og gjelder hele TIHLDE.
-                </p>
-                <Button onClick={onCreateInGroup}>
-                    <PlusIcon className="size-4" />
-                    Nytt verv i gruppe
-                </Button>
-            </div>
-
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-56">Rolle</TableHead>
-                                <TableHead>Brukere</TableHead>
-                                <TableHead className="w-72">
-                                    Tilganger
-                                </TableHead>
-                                <TableHead className="w-12" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {visibleRoles.map((role) => (
-                                <RoleRow key={role.id} role={role} />
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
-    );
-}
-
-function RoleRow({ role }: { role: Role }) {
-    const remove = useMutation(deleteRoleMutation);
-    const unassign = useMutation(unassignRoleMutation);
-    const assign = useMutation(assignRoleMutation);
-    const [editing, setEditing] = useState(false);
-    const [query, setQuery] = useState("");
-    const debouncedQuery = useDebounced(query);
-    const { data: searchResults, isFetching } = useQuery({
-        ...searchUsersQuery(debouncedQuery),
-        enabled: debouncedQuery.length >= 2,
-    });
-
-    function handleDelete() {
-        if (
-            window.confirm(
-                `Slette rollen «${role.name}»? Alle tildelinger fjernes.`,
-            )
-        ) {
-            remove.mutate({ roleId: role.id });
-        }
-    }
-
-    const assignable = (searchResults ?? []).filter(
-        (user) => !role.users.some((u) => u.userId === user.id),
-    );
-
-    return (
-        <TableRow>
-            <TableCell>
-                <div className="flex flex-col">
-                    <span className="font-medium">{role.name}</span>
-                    {role.description ? (
-                        <span className="text-xs text-muted-foreground">
-                            {role.description}
-                        </span>
-                    ) : null}
-                </div>
-            </TableCell>
-            <TableCell>
-                <div className="flex flex-wrap items-center gap-2">
-                    {role.users.map((user) => (
-                        <HolderChip
-                            key={user.userId}
-                            name={user.name}
-                            image={user.image}
-                            onRemove={() =>
-                                unassign.mutate({
-                                    roleId: role.id,
-                                    userId: user.userId,
-                                })
-                            }
-                        />
-                    ))}
-                    <UserSearchCombobox
-                        holder={null}
-                        emptyLabel={
-                            role.users.length === 0
-                                ? "Ingen tildelt"
-                                : "Legg til"
-                        }
-                        query={query}
-                        onQueryChange={setQuery}
-                        results={assignable}
-                        isSearching={isFetching}
-                        onSelect={(user) =>
-                            assign.mutate({ roleId: role.id, userId: user.id })
-                        }
-                        onOpenChange={(open) => {
-                            if (!open) setQuery("");
-                        }}
-                    />
-                </div>
-            </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
-                {summarizePermissions(role.permissions)}
-            </TableCell>
-            <TableCell>
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        aria-label="Handlinger"
-                        className="cursor-pointer"
-                    >
-                        <MoreHorizontalIcon className="size-4" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditing(true)}>
-                            Rediger
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            variant="destructive"
-                            onClick={handleDelete}
-                        >
-                            Slett
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </TableCell>
-
-            {editing && (
-                <RoleDialog
-                    open={editing}
-                    onOpenChange={setEditing}
-                    role={role}
-                />
-            )}
-        </TableRow>
-    );
-}
-
-/**
- * Edit an existing global role. New roles are not created here — they belong in
- * a group as a verv, see `PositionDialog`.
- */
-function RoleDialog({
-    open,
-    onOpenChange,
-    role,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    role: Role;
-}) {
-    const update = useMutation(updateRoleMutation);
-    const [name, setName] = useState(role.name);
-    const [description, setDescription] = useState(role.description ?? "");
-    const [permissions, setPermissions] = useState<string[]>(
-        role.permissions ?? [],
-    );
-    const isPending = update.isPending;
-
-    function handleSubmit() {
-        update.mutate(
-            {
-                roleId: role.id,
-                data: {
-                    name,
-                    description: description || null,
-                    permissions,
-                },
-            },
-            { onSuccess: () => onOpenChange(false) },
-        );
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>{`Rediger «${role.name}»`}</DialogTitle>
-                </DialogHeader>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel>Navn</FieldLabel>
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="f.eks. arrangementansvarlig"
-                        />
-                    </Field>
-                    <Field>
-                        <FieldLabel>Beskrivelse</FieldLabel>
-                        <Input
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                        />
-                    </Field>
-                    <Field>
-                        <FieldLabel>Tilganger</FieldLabel>
-                        <PermissionDomainCheckboxes
-                            value={permissions}
-                            onChange={setPermissions}
-                        />
-                    </Field>
-                </FieldGroup>
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Avbryt
-                    </Button>
-                    <Button
-                        disabled={!name || isPending}
-                        onClick={handleSubmit}
-                    >
-                        Lagre
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -4,12 +4,10 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isGroupMember } from "~/lib/group";
-import { isGroupLeader } from "~/lib/group/middleware";
 import { promoteAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { createFineSchema, fineSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
@@ -21,7 +19,7 @@ export const createFineRoute = route().post(
         summary: "Create fine",
         operationId: "createFine",
         description:
-            "Create a new fine for a group member. Requires being a group leader OR having 'fines:create' permission (globally or scoped to this group).",
+            "Create a new fine for a group member. Requires being a member of the group (bøter follow membership, not permissions). Root may fine across groups.",
     })
         .schemaResponse({
             statusCode: 201,
@@ -37,11 +35,6 @@ export const createFineRoute = route().post(
         .notFound({ description: "Group or user not found" })
         .build(),
     requireAuth,
-    requireAccess({
-        permission: "fines:create",
-        scope: (c) => `group:${c.req.param("groupSlug")}`,
-        ownership: { param: "groupSlug", check: isGroupLeader },
-    }),
     validator("json", createFineSchema),
     async (c) => {
         const body = c.req.valid("json");
@@ -81,6 +74,26 @@ export const createFineRoute = route().post(
             });
         }
 
+        /**
+         * Lepton's create rule was "admin, or a member of this group", and
+         * that is now the whole rule: bøter are membership, not a permission.
+         * The botsjef counts even if their membership lapsed, and root reaches
+         * across groups.
+         *
+         * Checked before the body is validated: someone with no business in
+         * this group must not learn from the error whether a given user exists
+         * or is a member of it.
+         */
+        const isPrivileged =
+            group.finesAdminId === user.id ||
+            (await hasPermission(ctx, user.id, "root"));
+
+        if (!isPrivileged && !(await isGroupMember(ctx, user.id, groupSlug))) {
+            throw new HTTPException(403, {
+                message: `Only members of group "${groupSlug}" can give fines in it`,
+            });
+        }
+
         // Validate user exists
         const targetUser = await db
             .select()
@@ -103,25 +116,6 @@ export const createFineRoute = route().post(
         if (!(await isGroupMember(ctx, body.userId, groupSlug))) {
             throw new HTTPException(400, {
                 message: `User "${body.userId}" is not a member of group "${groupSlug}"`,
-            });
-        }
-
-        /**
-         * …and the same the other way round. Lepton's create rule was "admin,
-         * or a member of this group". The `member` role holds `fines:create`
-         * with no scope, so the permission check above passes for every logged
-         * in member of TIHLDE — including people with no connection to this
-         * group at all. Membership (or leading it, running its bøter, or a
-         * `fines:manage` grant) is what actually earns the right.
-         */
-        const isPrivileged =
-            group.finesAdminId === user.id ||
-            (await isGroupLeader(ctx, groupSlug, user.id)) ||
-            (await hasPermission(ctx, user.id, ["root", "fines:manage"]));
-
-        if (!isPrivileged && !(await isGroupMember(ctx, user.id, groupSlug))) {
-            throw new HTTPException(403, {
-                message: `Only members of group "${groupSlug}" can give fines in it`,
             });
         }
 

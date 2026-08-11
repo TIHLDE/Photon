@@ -90,18 +90,18 @@ describe("group leader permissions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["fines:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
 
                 const response = await client.api.groups[":groupSlug"][
                     "leader-permissions"
                 ].$patch({
                     param: { groupSlug: group.slug },
-                    json: { permissions: ["fines:manage"] },
+                    json: { permissions: ["news:manage"] },
                 });
 
                 expect(response.status).toBe(200);
                 const json = await response.json();
-                expect(json.permissions).toEqual(["fines:manage"]);
+                expect(json.permissions).toEqual(["news:manage"]);
             },
             500_000,
         );

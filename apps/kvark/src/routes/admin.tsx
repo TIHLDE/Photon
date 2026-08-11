@@ -183,8 +183,9 @@ const sidebarMenuGroups: SidebarGroup[] = [
             {
                 // Group leaders reach this one without any global roles:*
                 // permission — they may create and assign verv inside their
-                // own group. The page hides the "Roller"-tab from them.
-                label: "Roller og verv",
+                // own group, and set what its members hold there. The page
+                // hides the TIHLDE-wide section from them.
+                label: "Verv og tilganger",
                 icon: CrownIcon,
                 link: linkOptions({ to: "/admin/roller" }),
                 permission: ADMIN_SECTION_PERMISSIONS.roller,

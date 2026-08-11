@@ -32,9 +32,9 @@ type GroupFineDialogProps = {
     openIndex: number | null;
     onOpenChange: (i: number | null) => void;
     /**
-     * Whether the viewer may act on the fine. Members can see the group's
-     * fines but only the botsjef and fines:* holders may settle them, so the
-     * action row is hidden rather than shown and rejected.
+     * Whether the viewer may act on the fine. Members can see and give the
+     * group's fines, but only the botsjef and the leader may settle them, so
+     * the action row is hidden rather than shown and rejected.
      */
     canManage: boolean;
     /**

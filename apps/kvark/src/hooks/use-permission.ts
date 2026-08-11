@@ -107,8 +107,8 @@ export function useCanActOnResource(
  *
  * Derived from {@link ADMIN_SECTION_PERMISSIONS} so the entry points can never
  * drift from what the sidebar actually shows. Deliberately does NOT include
- * `fines:create` and the other permissions in the baseline `member` role —
- * every student holds those, and they open no admin section.
+ * the permissions in the baseline `member` role — every student holds those,
+ * and they open no admin section.
  */
 export const ADMIN_DASHBOARD_PERMISSIONS = ALL_ADMIN_SECTION_PERMISSIONS;
 

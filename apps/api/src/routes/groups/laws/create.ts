@@ -15,7 +15,7 @@ export const createLawRoute = route().post(
         summary: "Create a law",
         operationId: "createLaw",
         description:
-            "Add a paragraph to a group's lovverk. Requires being the group's fines admin, a group leader, or having 'fines:manage' (globally or scoped to this group).",
+            "Add a paragraph to a group's lovverk. Requires being the group's fines admin (botsjef) or a group leader.",
     })
         .schemaResponse({
             statusCode: 201,

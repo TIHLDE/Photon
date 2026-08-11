@@ -7,7 +7,6 @@
         ".": "./src/index.ts",
         "./rbac": "./src/rbac/permissions/index.ts",
         "./rbac/registry": "./src/rbac/permissions/registry.ts",
-        "./rbac/leader-baseline": "./src/rbac/leader-baseline.ts",
         "./roles": "./src/rbac/roles/index.ts",
         "./oauth-verify": "./src/oauth-verify.ts",
         "./feide": "./src/feide.ts",

@@ -1,5 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
-import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -8,7 +6,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
-import { requireFinesGroup } from "./permissions";
+import { canUpdateFines, requireFinesGroup } from "./permissions";
 import { updateFineResponseSchema, updateFineSchema } from "./schema";
 
 export const updateFineRoute = route().patch(
@@ -68,25 +66,15 @@ export const updateFineRoute = route().patch(
         const group = await requireFinesGroup(ctx, groupSlug);
 
         const isOwner = fine.userId === user.id;
-        const isFinesAdmin = group.finesAdminId === user.id;
-
-        // Check for global or scoped fines:update permission
-        const hasGlobalPerm = await hasPermission(ctx, user.id, "fines:update");
-        const hasScopedPerm = await hasScopedPermission(
-            ctx,
-            user.id,
-            "fines:update",
-            `group:${groupSlug}`,
-        );
-        const hasUpdatePermission = hasGlobalPerm || hasScopedPerm;
 
         // Authorization checks
         if (body.status) {
-            // Only fines admin or users with fines:update permission can change status
-            if (!isFinesAdmin && !hasUpdatePermission) {
+            // Handing out a fine is any member's business; settling it is the
+            // botsjef's and the leader's.
+            if (!(await canUpdateFines(ctx, user.id, group))) {
                 throw new HTTPException(403, {
                     message:
-                        "Only fines admin or users with fines:update permission can change fine status",
+                        "Only the fines admin or the group's leader can change fine status",
                 });
             }
         }
@@ -102,7 +90,7 @@ export const updateFineRoute = route().patch(
             }
         }
 
-        if (!isOwner && !isFinesAdmin && !hasUpdatePermission) {
+        if (!isOwner && !(await canUpdateFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message: "Not authorized to update this fine",
             });
