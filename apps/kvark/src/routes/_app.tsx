@@ -43,8 +43,14 @@ function AppLayout() {
                 navItems={navItems}
                 user={currentUser}
                 // Bjella spør etter uleste varsler, så den vises bare for
-                // innloggede — ellers ville hver besøkende få en 401.
-                actions={isAuthenticated ? <NotificationBell /> : null}
+                // innloggede — ellers ville hver besøkende få en 401. Den som
+                // venter på godkjenning får 403 på samme kall, og har uansett
+                // ingen varsler ennå.
+                actions={
+                    isAuthenticated && !isPendingApproval ? (
+                        <NotificationBell />
+                    ) : null
+                }
             />
             {isPendingApproval ? (
                 <div className="container mx-auto px-4 pt-4">

@@ -98,6 +98,9 @@ function RouteComponent() {
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
     const isOwnProfile = session?.user.id === profile.id;
+    // Fanene under henter medlemsdata og svarer 403 for en bruker som venter
+    // på godkjenning. De skjules, slik at profilsiden — og «Logg ut» — funker.
+    const isPendingApproval = session?.user?.isPendingApproval === true;
     const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
     const [bioOpen, setBioOpen] = useState(false);
@@ -131,7 +134,7 @@ function RouteComponent() {
                     link: linkOptions({ to: "/profil/$id", params: { id } }),
                     exact: true,
                 },
-                ...(isOwnProfile
+                ...(isOwnProfile && !isPendingApproval
                     ? [
                           {
                               label: "Arrangementer",
@@ -151,7 +154,7 @@ function RouteComponent() {
                         params: { id },
                     }),
                 },
-                ...(isOwnProfile
+                ...(isOwnProfile && !isPendingApproval
                     ? [
                           {
                               label: "Prikker",
@@ -169,6 +172,10 @@ function RouteComponent() {
                                   params: { id },
                               }),
                           },
+                      ]
+                    : []),
+                ...(isOwnProfile
+                    ? [
                           {
                               label: "Innstillinger",
                               icon: Settings,
@@ -308,6 +315,20 @@ function ProfileNav({
                             <NavButton item={item} size="sm" />
                         </li>
                     ))}
+                    {/* Også på mobil — ellers finnes det ingen vei ut av
+                        kontoen på en telefon. */}
+                    {onLogout ? (
+                        <li className="shrink-0">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onLogout}
+                            >
+                                <LogOut />
+                                Logg ut
+                            </Button>
+                        </li>
+                    ) : null}
                 </ul>
             </nav>
 

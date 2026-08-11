@@ -1,8 +1,10 @@
 import { HTTPException } from "hono/http-exception";
+import { isMemberAudience } from "~/lib/auth";
+import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { deriveStudyFromGroups } from "~/lib/user/study";
-import { requireAuth } from "~/middleware/auth";
+import { requireAuthAllowPending } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
 /**
@@ -12,6 +14,10 @@ import { userProfileSchema } from "./schema";
  * memberships are what a profile page shows, while e-mail, gender, allergies
  * and the notification settings stay private. Any signed-in member may look up
  * any other — the group member lists already link here.
+ *
+ * En bruker som venter på godkjenning når bare sin egen profil. De trenger den
+ * for å komme til innstillinger og til «Logg ut»; andres profiler er fortsatt
+ * medlemsinnhold.
  */
 export const getUserRoute = route().get(
     "/:id",
@@ -28,11 +34,17 @@ export const getUserRoute = route().get(
             description: "User profile",
         })
         .notFound({ description: "User not found" })
+        .errorResponses([
+            HTTPAppException.Forbidden(
+                "Kontoen din venter på godkjenning fra en administrator.",
+            ),
+        ])
         .build(),
-    requireAuth,
+    requireAuthAllowPending,
     async (c) => {
         const { db } = c.get("ctx");
         const identifier = c.req.param("id");
+        const viewer = c.get("user");
 
         const user = await db.query.user.findFirst({
             where: (user, { eq, or }) =>
@@ -50,6 +62,15 @@ export const getUserRoute = route().get(
             throw new HTTPException(404, {
                 message: `User "${identifier}" not found`,
             });
+        }
+
+        // En bruker som venter på godkjenning slipper inn på sin egen profil,
+        // og bare den. Uten dette har de ingen vei til profilsiden — som er
+        // det eneste stedet man kan logge ut.
+        if (!isMemberAudience(viewer) && user.id !== viewer.id) {
+            throw HTTPAppException.Forbidden(
+                "Kontoen din venter på godkjenning fra en administrator.",
+            );
         }
 
         const [settings, memberships, history] = await Promise.all([

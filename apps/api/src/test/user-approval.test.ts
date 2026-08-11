@@ -127,6 +127,13 @@ describe("self-registration and approval", () => {
             const res = await client.api.user.me.settings.$get();
             expect(res.status).not.toBe(403);
 
+            // Their own profile too: det er den eneste siden i Kvark der man
+            // finner «Logg ut», så en 403 der låser dem inne i kontoen.
+            const own = await client.api.user[":id"].$get({
+                param: { id: pending.id },
+            });
+            expect(own.status).toBe(200);
+
             const other = await ctx.utils.createTestUser();
             const denied = await client.api.user[":id"].$get({
                 param: { id: other.id },
