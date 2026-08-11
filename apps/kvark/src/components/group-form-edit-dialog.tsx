@@ -230,10 +230,7 @@ function EditForm({
                     {(field) => (
                         <field.Field>
                             <field.Label>Beskrivelse</field.Label>
-                            <field.Textarea
-                                rows={3}
-                                placeholder="Skriv her..."
-                            />
+                            <field.Markdown placeholder="Skriv her..." />
                             <field.Description>
                                 Vises over spørsmålene
                             </field.Description>

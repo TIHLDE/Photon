@@ -8,14 +8,20 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@tihlde/ui/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Switch } from "@tihlde/ui/ui/switch";
-import { Textarea } from "@tihlde/ui/ui/textarea";
+import { RichEditor } from "@tihlde/ui/complex/markdown";
 import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { richRegistry } from "#/components/markdown/directives/presets";
 import {
     MemberSingleCombobox,
     type ComboboxMember,
@@ -93,7 +99,7 @@ export function GroupEditDialog({
                     </Button>
                 }
             />
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Rediger gruppen</DialogTitle>
                     <DialogDescription>
@@ -118,15 +124,18 @@ export function GroupEditDialog({
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="group-description">
+                            <FieldLabel id="group-description-label">
                                 Gruppebeskrivelse
                             </FieldLabel>
-                            <Textarea
-                                id="group-description"
-                                rows={4}
+                            <RichEditor
+                                registry={richRegistry}
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={setDescription}
+                                ariaLabelledBy="group-description-label"
                             />
+                            <FieldDescription>
+                                Vises på «Om»-fanen til gruppen.
+                            </FieldDescription>
                         </Field>
                         <Field>
                             <FieldLabel htmlFor="group-email">
@@ -165,18 +174,18 @@ export function GroupEditDialog({
                             />
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="fines-info">
+                            <FieldLabel id="fines-info-label">
                                 Botsystem: praktiske detaljer
                             </FieldLabel>
-                            <Textarea
-                                id="fines-info"
-                                rows={3}
+                            <RichEditor
+                                registry={richRegistry}
                                 value={finesInfo}
-                                onChange={(e) => setFinesInfo(e.target.value)}
+                                onChange={setFinesInfo}
+                                ariaLabelledBy="fines-info-label"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Vises øverst på bøter-fanen. Markdown støttes.
-                            </p>
+                            <FieldDescription>
+                                Vises øverst på bøter-fanen.
+                            </FieldDescription>
                         </Field>
                     </FieldGroup>
                     {error ? (

@@ -36,7 +36,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@tihlde/ui/ui/select";
-import { Textarea } from "@tihlde/ui/ui/textarea";
+import { RichEditor } from "@tihlde/ui/complex/markdown";
 import {
     Table,
     TableBody,
@@ -78,6 +78,7 @@ import {
 } from "#/api/queries/contracts";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
+import { richRegistry } from "#/components/markdown/directives/presets";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
     useAnyScopePermission,
@@ -326,15 +327,18 @@ function CreateGroupDialog({
                             </Select>
                         </Field>
                         <Field>
-                            <FieldLabel htmlFor="group-description">
+                            <FieldLabel id="group-description-label">
                                 Beskrivelse
                             </FieldLabel>
-                            <Textarea
-                                id="group-description"
-                                rows={3}
+                            <RichEditor
+                                registry={richRegistry}
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                onChange={setDescription}
+                                ariaLabelledBy="group-description-label"
                             />
+                            <FieldDescription>
+                                Vises på «Om»-fanen til gruppen.
+                            </FieldDescription>
                         </Field>
                     </FieldGroup>
 

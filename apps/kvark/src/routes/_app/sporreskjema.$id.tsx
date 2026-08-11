@@ -10,6 +10,7 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
+import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { ArrowLeft, CheckCircle2, TriangleAlert } from "lucide-react";
@@ -21,6 +22,7 @@ import {
     createSubmissionMutation,
     getFormByIdQuery,
 } from "#/api/queries/forms";
+import { richRegistry } from "#/components/markdown/directives/presets";
 import { formHandlers, useAppForm } from "#/hooks/form";
 import { useGoBack } from "#/hooks/use-go-back";
 import { formatEventDate } from "#/lib/event";
@@ -68,7 +70,12 @@ function FormPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                    {form.description ? <p>{form.description}</p> : null}
+                    {form.description ? (
+                        <MarkdownView
+                            registry={richRegistry}
+                            source={form.description}
+                        />
+                    ) : null}
                     <Separator />
                     <FormBody form={form} />
                 </CardContent>
