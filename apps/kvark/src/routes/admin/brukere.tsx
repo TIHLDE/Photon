@@ -63,6 +63,7 @@ import {
     getUsersInfiniteQuery,
     updateUserAllergiesMutation,
     updateUserStatusMutation,
+    updateUserStudyMutation,
     updateUserStudyYearMutation,
 } from "#/api/queries/user";
 import { AdminAllergyPicker } from "#/components/admin-allergy-picker";
@@ -232,6 +233,12 @@ function AllUsersTable({
         id: string;
         name: string;
         studyStartYear: number | null;
+    } | null>(null);
+    const [editingStudy, setEditingStudy] = useState<{
+        id: string;
+        name: string;
+        /** Navnet på studiegruppa, som er alt lista kjenner til. */
+        studyProgram: string | null;
     } | null>(null);
     const [editingAllergies, setEditingAllergies] = useState<{
         id: string;
@@ -511,6 +518,22 @@ function AllUsersTable({
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     onClick={() =>
+                                                                        setEditingStudy(
+                                                                            {
+                                                                                id: user.id,
+                                                                                name: user.name,
+                                                                                studyProgram:
+                                                                                    user.studyProgram,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Rett studie
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() =>
                                                                         setEditingAllergies(
                                                                             {
                                                                                 id: user.id,
@@ -593,6 +616,15 @@ function AllUsersTable({
                 open={editing !== null}
                 onOpenChange={(open) => {
                     if (!open) setEditing(null);
+                }}
+            />
+
+            <EditStudyDialog
+                user={editingStudy}
+                studyGroups={studyGroups}
+                open={editingStudy !== null}
+                onOpenChange={(open) => {
+                    if (!open) setEditingStudy(null);
                 }}
             />
 
@@ -1491,6 +1523,132 @@ function EditCohortDialog({
                                 til kullgruppa med en gang, og senere
                                 innlogginger endrer den ikke tilbake. Tomt felt
                                 fjerner kullet.
+                            </FieldDescription>
+                        </Field>
+                    </FieldGroup>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button type="submit" disabled={update.isPending}>
+                            Lagre
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
+ * Rett studiet til ett medlem.
+ *
+ * Studiegruppene bygges fra Feide, så de kan ikke redigeres fra medlemslista.
+ * De aller fleste medlemmene kom fra Lepton med studiet den gamle databasen
+ * hadde, og en som er registrert for hånd i fadderuka kan ha fått feil studie
+ * — begge deler avgjør hvilke arrangementer de har prioritet på.
+ */
+function EditStudyDialog({
+    user,
+    studyGroups,
+    open,
+    onOpenChange,
+}: {
+    user: { id: string; name: string; studyProgram: string | null } | null;
+    studyGroups: Group[];
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [value, setValue] = useState<string>(NO_STUDY);
+    const [error, setError] = useState<string | null>(null);
+
+    const update = useMutation(updateUserStudyMutation);
+
+    // Samme grunn som i EditCohortDialog: feltet må følge medlemmet dialogen
+    // ble åpnet for. Lista kjenner bare navnet på studiet, ikke slugen, så
+    // gruppa slås opp på navn — de er unike blant studiegruppene.
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        const current = studyGroups.find(
+            (group) => group.name === user.studyProgram,
+        );
+        setValue(current?.slug ?? NO_STUDY);
+        setError(null);
+    }
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user) return;
+
+        setError(null);
+        try {
+            await update.mutateAsync({
+                userId: user.id,
+                studyProgramSlug: value === NO_STUDY ? null : value,
+            });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    const options = [
+        { value: NO_STUDY, label: "Uten studie" },
+        ...studyGroups.map((group) => ({
+            value: group.slug,
+            label: group.name,
+        })),
+    ];
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>Rett studie</DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel htmlFor="study-programme">
+                                Studie
+                            </FieldLabel>
+                            <Select
+                                items={options}
+                                value={value}
+                                onValueChange={(next) =>
+                                    setValue(next ?? NO_STUDY)
+                                }
+                            >
+                                <SelectTrigger id="study-programme">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {options.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FieldDescription>
+                                Medlemmet flyttes til den nye studiegruppa og ut
+                                av den gamle. Kullet endres ikke. Logger
+                                medlemmet inn med Feide igjen, legger NTNU
+                                tilbake studiet de er registrert på der.
                             </FieldDescription>
                         </Field>
                     </FieldGroup>

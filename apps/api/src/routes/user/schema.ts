@@ -175,6 +175,31 @@ export const updateStudyYearResponseSchema = Schema(
     }),
 );
 
+export const updateStudyInputSchema = Schema(
+    "UpdateStudyInput",
+    z.object({
+        studyProgramSlug: z.string().trim().min(1).max(64).nullable().meta({
+            description:
+                "Slug of the STUDY group the member should be on, e.g. 'dataingenir'. Replaces the one they have; null removes it.",
+        }),
+    }),
+);
+
+export const updateStudyResponseSchema = Schema(
+    "UpdateStudy",
+    z.object({
+        message: z.string(),
+        studyProgram: z
+            .string()
+            .nullable()
+            .meta({ description: "Name of the programme now stored" }),
+        studyProgramSlug: z
+            .string()
+            .nullable()
+            .meta({ description: "Slug of the programme now stored" }),
+    }),
+);
+
 export const registerUserInputSchema = Schema(
     "RegisterUserInput",
     z.object({
