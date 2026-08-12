@@ -235,9 +235,7 @@ function EventsPage() {
                         />
                     ) : (
                         <Stagger
-                            render={
-                                <ul className="flex flex-col gap-4 sm:gap-1" />
-                            }
+                            render={<ul className="flex flex-col gap-3" />}
                         >
                             {events.map((event) => (
                                 <li key={event.id}>
