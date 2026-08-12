@@ -916,6 +916,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List feedback
+         * @description Paginated list of ideas and bug reports, newest first. Requires authentication.
+         */
+        get: operations["listFeedback"];
+        put?: never;
+        /**
+         * Create feedback
+         * @description File an idea or a bug report. Any logged-in member may do this — no permission needed.
+         */
+        post: operations["createFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feedback/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete feedback
+         * @description Delete a piece of feedback. Requires 'feedback:delete' or 'feedback:manage', or being the author.
+         */
+        delete: operations["deleteFeedback"];
+        options?: never;
+        head?: never;
+        /**
+         * Update feedback
+         * @description Edit a piece of feedback, or move it along its status. Requires 'feedback:update' or 'feedback:manage', or being the author. Only the permission may change the status.
+         */
+        patch: operations["updateFeedback"];
+        trace?: never;
+    };
+    "/api/feedback/{id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Vote on feedback
+         * @description Cast or change your vote on a piece of feedback. One vote per user — voting again replaces the previous one.
+         */
+        put: operations["voteFeedback"];
+        post?: never;
+        /**
+         * Remove your vote
+         * @description Take back your vote on a piece of feedback.
+         */
+        delete: operations["deleteFeedbackVote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forms": {
         parameters: {
             query?: never;
@@ -3956,6 +4028,75 @@ export interface components {
                     order: number;
                 }[];
             }[];
+        };
+        FeedbackItem: {
+            /**
+             * Format: uuid
+             * @description Feedback ID
+             */
+            id: string;
+            /** @enum {string} */
+            type: "idea" | "bug";
+            /** @enum {string} */
+            status: "open" | "in_progress" | "closed" | "rejected";
+            title: string;
+            description: string;
+            /** @description Author, null if the user has been deleted */
+            author: {
+                id: string;
+                name: string;
+                image: string | null;
+            } | null;
+            upvotes: number;
+            downvotes: number;
+            /** @description The requesting user's own vote, if any */
+            myVote: ("up" | "down") | null;
+            /** @description Creation time (ISO 8601) */
+            createdAt: string;
+            /** @description Last update time (ISO 8601) */
+            updatedAt: string;
+        };
+        FeedbackList: {
+            /** @description Total number of items available */
+            totalCount: number;
+            /** @description Total number of pages available */
+            pages: number;
+            /** @description The next page number that can be fetched */
+            nextPage: number | null;
+            /** @description List of feedback */
+            items: components["schemas"]["FeedbackItem"][];
+        };
+        CreateFeedback: {
+            /**
+             * @description Idea or bug report
+             * @enum {string}
+             */
+            type: "idea" | "bug";
+            /** @description Short title */
+            title: string;
+            /** @description What the idea or the bug is */
+            description: string;
+        };
+        UpdateFeedback: {
+            title?: string;
+            description?: string;
+            /** @enum {string} */
+            status?: "open" | "in_progress" | "closed" | "rejected";
+        };
+        FeedbackMessageResponse: {
+            message: string;
+        };
+        FeedbackVoteCounts: {
+            upvotes: number;
+            downvotes: number;
+            myVote: ("up" | "down") | null;
+        };
+        VoteFeedback: {
+            /**
+             * @description Thumbs up or thumbs down
+             * @enum {string}
+             */
+            value: "up" | "down";
         };
         FormResponse: {
             /** Format: uuid */
@@ -8288,6 +8429,295 @@ export interface operations {
                 };
             };
             /** @description Not Found - Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listFeedback: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+                type?: "idea" | "bug";
+                status?: "open" | "in_progress" | "closed" | "rejected";
+                /** @description Free-text search in title and description */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    createFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFeedback"];
+            };
+        };
+        responses: {
+            /** @description Feedback created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackItem"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    deleteFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feedback deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackMessageResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFeedback"];
+            };
+        };
+        responses: {
+            /** @description Feedback updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackItem"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    voteFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoteFeedback"];
+            };
+        };
+        responses: {
+            /** @description Vote registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackVoteCounts"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteFeedbackVote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Feedback ID */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vote removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedbackVoteCounts"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Feedback not found */
             404: {
                 headers: {
                     [name: string]: unknown;

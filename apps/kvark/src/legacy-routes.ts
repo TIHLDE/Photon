@@ -9,7 +9,7 @@
  *
  * 1. Ruter som bare har byttet navn (`/logg-inn` → `/login`). Her lander
  *    brukeren nøyaktig der hen skulle.
- * 2. Funksjoner som ikke er portet (badges, korte lenker, tilbakemelding).
+ * 2. Funksjoner som ikke er portet (badges, korte lenker, endringslogg).
  *    De går til forsiden.
  *
  * Innholdslenker med gammel Lepton-ID (`/arrangementer/1234/julebord`) hører
@@ -48,7 +48,6 @@ export const legacyRouteRules: Record<string, RedirectRule> = {
     // --- Funksjoner som ikke er portet ------------------------------------
     "/badges": to("/"),
     "/badges/**": to("/"),
-    "/tilbakemelding": to("/"),
     "/linker": to("/"),
     "/endringslogg": to("/"),
 };
