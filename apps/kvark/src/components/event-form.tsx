@@ -288,9 +288,7 @@ export function EventForm({
                                     </SelectContent>
                                 </Select>
                                 <FieldDescription>
-                                    Vises på arrangementssiden, med e-post for
-                                    innloggede medlemmer. Velg blant medlemmene
-                                    i arrangørgruppen.
+                                    Velg blant medlemmene i arrangørgruppen.
                                 </FieldDescription>
                             </Field>
                         </div>
