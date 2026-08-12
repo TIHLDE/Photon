@@ -405,6 +405,8 @@ function GroupDetail() {
                     name: values.name,
                     description: values.description,
                     contactEmail: values.contactEmail,
+                    ...(values.type ? { type: values.type } : {}),
+                    ...(values.type ? { subtype: values.subtype } : {}),
                     finesActivated: values.finesActivated,
                     finesAdminId: values.finesAdminId,
                     finesInfo: values.finesInfo,

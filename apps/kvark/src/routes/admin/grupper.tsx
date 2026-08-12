@@ -87,7 +87,14 @@ import {
     useLedGroupSlugs,
     useScopedPermission,
 } from "#/hooks/use-permission";
-import { groupTypeLabel } from "#/lib/group";
+import {
+    canEditGroupType,
+    GROUP_SUBTYPE_OPTIONS,
+    GROUP_TYPE_OPTIONS,
+    groupSubtypeValue,
+    groupTypeLabel,
+    supportsGroupSubtype,
+} from "#/lib/group";
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
@@ -98,13 +105,18 @@ export const Route = createFileRoute("/admin/grupper")({
 });
 
 // Kontraktsignering gjelder kun verv (undergrupper, komiteer, styrer,
-// interessegrupper). Automatisk genererte grupper (klassetrinn, studier,
-// TIHLDE) og private bøtelag skal ikke administreres her.
+// interessegrupper, idrettslag). Automatisk genererte grupper (klassetrinn,
+// studier, TIHLDE) og private bøtelag skal ikke administreres her.
+//
+// Fanene dekker de samme typene som kan velges i redigeringen
+// (EDITABLE_GROUP_TYPES), slik at en gruppe som bytter type fortsatt står i
+// en fane etterpå.
 const GROUP_TYPE_TABS = [
     { type: "SUBGROUP", label: "Undergrupper" },
     { type: "COMMITTEE", label: "Komiteer" },
     { type: "BOARD", label: "Styrer" },
     { type: "INTERESTGROUP", label: "Interessegrupper" },
+    { type: "SPORTSTEAM", label: "Idrettslag" },
 ] as const;
 
 type TabType = (typeof GROUP_TYPE_TABS)[number]["type"];
@@ -227,6 +239,7 @@ function CreateGroupDialog({
     const [slugTouched, setSlugTouched] = useState(false);
     const [description, setDescription] = useState("");
     const [type, setType] = useState<TabType>(defaultType);
+    const [subtype, setSubtype] = useState<string>("GRUPPE");
     const [error, setError] = useState<string | null>(null);
 
     const createGroup = useMutation(createGroupMutation);
@@ -245,6 +258,7 @@ function CreateGroupDialog({
                     name,
                     slug,
                     type,
+                    ...(supportsGroupSubtype(type) ? { subtype } : {}),
                     description: description || undefined,
                     finesInfo: "",
                     finesActivated: false,
@@ -326,6 +340,38 @@ function CreateGroupDialog({
                                 </SelectContent>
                             </Select>
                         </Field>
+                        {supportsGroupSubtype(type) ? (
+                            <Field>
+                                <FieldLabel htmlFor="group-subtype">
+                                    Underkategori
+                                </FieldLabel>
+                                <Select
+                                    items={[...GROUP_SUBTYPE_OPTIONS]}
+                                    value={subtype}
+                                    onValueChange={(value) =>
+                                        setSubtype(value ?? subtype)
+                                    }
+                                >
+                                    <SelectTrigger id="group-subtype">
+                                        <SelectValue placeholder="Velg underkategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_SUBTYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Idrettsgrupper får sin egen seksjon i
+                                    organisasjonskartet.
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
                         <Field>
                             <FieldLabel id="group-description-label">
                                 Beskrivelse
@@ -377,6 +423,8 @@ function GroupCard({
     const [requiresSigning, setRequiresSigning] = useState(
         group.contractSigningRequired,
     );
+    const [type, setType] = useState(group.type);
+    const [subtype, setSubtype] = useState(groupSubtypeValue(group.subtype));
     const [logo, setLogo] = useState<File | null>(null);
     const [image, setImage] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -407,6 +455,16 @@ function GroupCard({
                 slug: group.slug,
                 data: {
                     contractSigningRequired: requiresSigning,
+                    ...(canEditGroupType(group.type)
+                        ? {
+                              type,
+                              // Underkategorien gjelder bare interessegrupper;
+                              // blir gruppa noe annet, må den ryddes bort.
+                              subtype: supportsGroupSubtype(type)
+                                  ? subtype
+                                  : null,
+                          }
+                        : {}),
                     // Omitted when unchanged, so saving the checkbox never
                     // clears the group's existing logo or gruppebilde.
                     ...(logoUrl ? { logoUrl } : {}),
@@ -476,6 +534,75 @@ function GroupCard({
                                 Krev kontraktsignering for denne gruppen
                             </FieldLabel>
                         </Field>
+                        {canEditGroupType(group.type) ? (
+                            <Field>
+                                <FieldLabel htmlFor={`type-${group.slug}`}>
+                                    Gruppetype
+                                </FieldLabel>
+                                <Select
+                                    items={[...GROUP_TYPE_OPTIONS]}
+                                    value={type}
+                                    onValueChange={(value) =>
+                                        setType(value ?? type)
+                                    }
+                                >
+                                    <SelectTrigger id={`type-${group.slug}`}>
+                                        <SelectValue placeholder="Velg type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_TYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Bestemmer hvor gruppen står i
+                                    organisasjonskartet. Gruppen flytter seg til
+                                    fanen for den nye typen.
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
+                        {canEditGroupType(group.type) &&
+                        supportsGroupSubtype(type) ? (
+                            <Field>
+                                <FieldLabel htmlFor={`subtype-${group.slug}`}>
+                                    Underkategori
+                                </FieldLabel>
+                                <Select
+                                    items={[...GROUP_SUBTYPE_OPTIONS]}
+                                    value={subtype}
+                                    onValueChange={(value) =>
+                                        setSubtype(
+                                            (value as typeof subtype) ??
+                                                subtype,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id={`subtype-${group.slug}`}>
+                                        <SelectValue placeholder="Velg underkategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_SUBTYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Idrettsgrupper får sin egen seksjon i
+                                    organisasjonskartet.
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
                         {/* Logo takes a third of the row and the gruppebilde
                             the rest, so the square and the 16:9 frame end up
                             roughly the same height and sit side by side

@@ -25,6 +25,8 @@ export type Group = {
     /** Logo: kvadratisk merke, vises i avatarer og kort. */
     logoUrl?: string;
     type?: string;
+    /** Underkategori under `type`. I dag bare for interessegrupper. */
+    subtype?: string | null;
     leader?: string;
     finesInfo?: string;
     finesActivated?: boolean;
@@ -142,6 +144,67 @@ export function groupTypeLabel(type: string): string {
 }
 
 /**
+ * Gruppetypene som kan settes fra grensesnittet, i den rekkefølgen de vises.
+ *
+ * Klassetrinn, studier, TIHLDE og private bøtelag står ikke her: de lages
+ * automatisk, og å endre typen deres ville koblet gruppa fra logikken som
+ * vedlikeholder den. {@link canEditGroupType} avgjør hvem som får velge.
+ */
+export const EDITABLE_GROUP_TYPES = [
+    "SUBGROUP",
+    "COMMITTEE",
+    "BOARD",
+    "INTERESTGROUP",
+    "SPORTSTEAM",
+] as const;
+
+export type EditableGroupType = (typeof EDITABLE_GROUP_TYPES)[number];
+
+/** Valgene til en gruppetype-nedtrekksliste, med norske navn. */
+export const GROUP_TYPE_OPTIONS = EDITABLE_GROUP_TYPES.map((value) => ({
+    value,
+    label: groupTypeLabel(value),
+}));
+
+/**
+ * Om typen til gruppa kan endres. Automatisk genererte grupper står fast —
+ * se {@link EDITABLE_GROUP_TYPES}.
+ */
+export function canEditGroupType(type: string): boolean {
+    return (EDITABLE_GROUP_TYPES as readonly string[]).includes(
+        type.toUpperCase(),
+    );
+}
+
+/**
+ * Interessegruppenes andre akse: en vanlig gruppe eller en idrettsgruppe.
+ * Organisasjonskartet viser de to som hver sin seksjon, og ingenting annet
+ * skiller dem — typen er INTERESTGROUP for begge.
+ */
+export const GROUP_SUBTYPE_OPTIONS = [
+    { value: "GRUPPE", label: "Gruppe" },
+    { value: "IDRETTSGRUPPE", label: "Idrettsgruppe" },
+] as const;
+
+export type GroupSubtype = (typeof GROUP_SUBTYPE_OPTIONS)[number]["value"];
+
+/** Om underkategorien er meningsfull for denne typen. Bare interessegrupper. */
+export function supportsGroupSubtype(type: string): boolean {
+    return type.toUpperCase() === "INTERESTGROUP";
+}
+
+/**
+ * Underkategorien slik nedtrekkslista skal vise den. Gruppene Lepton aldri
+ * kategoriserte har null, og de leses som «Gruppe» — det er også slik
+ * organisasjonskartet plasserer dem.
+ */
+export function groupSubtypeValue(subtype: string | null | undefined) {
+    return subtype?.toUpperCase() === "IDRETTSGRUPPE"
+        ? "IDRETTSGRUPPE"
+        : "GRUPPE";
+}
+
+/**
  * Om gruppa bare er for medlemmene sine.
  *
  * En PRIVAT gruppe (digital transformasjon-faddergruppa er eksempelet) står
@@ -177,6 +240,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         imageUrl: group.imageUrl ?? undefined,
         logoUrl: group.logoUrl ?? undefined,
         type: group.type,
+        subtype: group.subtype ?? null,
         leader,
         finesInfo: group.finesInfo,
         finesActivated: group.finesActivated,
