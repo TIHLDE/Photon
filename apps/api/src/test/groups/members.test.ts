@@ -694,6 +694,126 @@ describe("group members", () => {
         );
 
         integrationTest(
+            "promoting a new leader sets the sitting one down",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                await ctx.utils.giveUserPermissions(user, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup();
+
+                const oldLeader = await ctx.auth.api.createUser({
+                    body: {
+                        email: "old-leader@test.com",
+                        name: "Old Leader",
+                        password: "test123!",
+                    },
+                });
+                const newLeader = await ctx.auth.api.createUser({
+                    body: {
+                        email: "new-leader@test.com",
+                        name: "New Leader",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: oldLeader.user.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    },
+                    {
+                        userId: newLeader.user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: {
+                        groupSlug: group.slug,
+                        userId: newLeader.user.id,
+                    },
+                    json: { role: "leader" },
+                });
+
+                expect(response.status).toBe(200);
+
+                // En gruppe har en leder: den forrige er na vanlig medlem, og
+                // ikke en usynlig ekstra leder som gruppesiden hopper over.
+                const memberships = await ctx.db.query.groupMembership.findMany(
+                    {
+                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                    },
+                );
+                const roleByUser = new Map(
+                    memberships.map((m) => [m.userId, m.role]),
+                );
+                expect(roleByUser.get(newLeader.user.id)).toBe("leader");
+                expect(roleByUser.get(oldLeader.user.id)).toBe("member");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "adding a member as leader sets the sitting one down",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                await ctx.utils.giveUserPermissions(user, ["groups:manage"]);
+
+                const group = await ctx.utils.createTestGroup();
+
+                const oldLeader = await ctx.auth.api.createUser({
+                    body: {
+                        email: "sitting-leader@test.com",
+                        name: "Sitting Leader",
+                        password: "test123!",
+                    },
+                });
+                const newLeader = await ctx.auth.api.createUser({
+                    body: {
+                        email: "incoming-leader@test.com",
+                        name: "Incoming Leader",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: oldLeader.user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].members.$post({
+                    param: { groupSlug: group.slug },
+                    json: { userId: newLeader.user.id, role: "leader" },
+                });
+
+                expect(response.status).toBe(201);
+
+                const memberships = await ctx.db.query.groupMembership.findMany(
+                    {
+                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                    },
+                );
+                const roleByUser = new Map(
+                    memberships.map((m) => [m.userId, m.role]),
+                );
+                expect(roleByUser.get(newLeader.user.id)).toBe("leader");
+                expect(roleByUser.get(oldLeader.user.id)).toBe("member");
+            },
+            500_000,
+        );
+
+        integrationTest(
             "successfully updates member role from leader to member",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
