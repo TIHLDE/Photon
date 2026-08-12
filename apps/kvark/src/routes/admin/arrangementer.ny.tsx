@@ -2,6 +2,7 @@ import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addHours } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import z from "zod";
 
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { XCircle } from "lucide-react";
@@ -24,8 +25,16 @@ import {
 import { nextWholeHour } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 
+// `?gruppe=<slug>` lar «Nytt arrangement» på en gruppeside sende deg hit med
+// gruppa allerede valgt som arrangør, i stedet for å be deg velge den om
+// igjen. Slug-er vi ikke får arrangere for hoppes stille over — se under.
+const searchSchema = z.object({
+    gruppe: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/admin/arrangementer/ny")({
     component: NewEventPage,
+    validateSearch: searchSchema,
     loader: async ({ context }) => {
         await Promise.all([
             context.queryClient.ensureQueryData(getGroupsQuery(0)),
@@ -90,7 +99,17 @@ function NewEventPage() {
     );
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
 
-    const [values, setValues] = useState<EventFormValues>(emptyValues);
+    // Forhåndsvalget fra `?gruppe` godtas bare hvis gruppa faktisk står i
+    // lista over. En gammel bokmerket lenke, eller en rettighet som er
+    // trukket tilbake, gir ellers et arrangørfelt med en verdi som ikke
+    // finnes blant valgene. Da starter vi heller tomt, som vanlig.
+    const { gruppe } = Route.useSearch();
+    const [values, setValues] = useState<EventFormValues>(() => ({
+        ...emptyValues,
+        organizerGroupSlug: groups.some((group) => group.slug === gruppe)
+            ? (gruppe ?? "")
+            : "",
+    }));
     const [uploadError, setUploadError] = useState<string | null>(null);
 
     const debouncedLocation = useDebounced(values.location, 250);

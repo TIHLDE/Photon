@@ -82,6 +82,7 @@ function Home() {
                     title="Nyheter"
                     actionLabel={canCreateNews ? "Ny nyhet" : undefined}
                     actionTo="/admin/nyheter"
+                    actionSearch={{ ny: true }}
                 />
                 <Suspense fallback={<NewsSkeleton />}>
                     <NewsSection />
@@ -277,11 +278,14 @@ function SectionHeader({
     title,
     actionLabel,
     actionTo,
+    actionSearch,
 }: {
     title: string;
     actionLabel?: string;
     /** Målruta for handlingsknappen. Uten den rendres ingen knapp. */
     actionTo?: LinkProps["to"];
+    /** Søkeparametre til målruta, f.eks. `{ ny: true }` for en dialog. */
+    actionSearch?: LinkProps["search"];
 }) {
     return (
         <Reveal
@@ -294,7 +298,7 @@ function SectionHeader({
                 <Button
                     variant="ghost"
                     size="sm"
-                    render={<Link to={actionTo} />}
+                    render={<Link to={actionTo} search={actionSearch} />}
                 >
                     <Plus />
                     {actionLabel}

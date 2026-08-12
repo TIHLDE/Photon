@@ -96,9 +96,11 @@ const CLASS_LABELS: Record<UserClass, string> = {
 
 // `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
 // annonse» på annonsesiden kan lenke rett til riktig annonse i stedet for å
-// slippe deg av på listen.
+// slippe deg av på listen. `?ny` gjør det samme for opprettelsesdialogen,
+// slik at «Ny annonse» andre steder i appen lander rett i skjemaet.
 const searchSchema = z.object({
     rediger: z.string().optional().catch(undefined),
+    ny: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/admin/annonser")({
@@ -114,7 +116,7 @@ export const Route = createFileRoute("/admin/annonser")({
 
 function JobsAdminPage() {
     const canCreate = useAnyScopePermission(["jobs:create", "jobs:manage"]);
-    const { rediger } = Route.useSearch();
+    const { rediger, ny } = Route.useSearch();
     const navigate = Route.useNavigate();
     const [search, setSearch] = useState("");
     const [jobType, setJobType] = useState<JobType | "all">("all");
@@ -123,11 +125,20 @@ function JobsAdminPage() {
         { mode: "create" } | { mode: "edit"; job: JobListItem } | null
     >(null);
 
+    // `canCreate` er false ved første render på en kald sidelast, siden
+    // sesjonen ikke er hentet enda. Derfor en effekt og ikke en lazy
+    // initialisering. Lukking fjerner `ny` fra URL-en, så dialogen tvinges
+    // ikke opp igjen etterpå.
+    useEffect(() => {
+        if (!ny || !canCreate) return;
+        setDialog({ mode: "create" });
+    }, [ny, canCreate]);
+
     function closeDialog() {
         setDialog(null);
         // Ellers ville dialogen åpnet seg igjen med en gang, siden id-en
         // fortsatt sto i URL-en.
-        if (rediger) navigate({ search: {}, replace: true });
+        if (rediger || ny) navigate({ search: {}, replace: true });
     }
 
     return (

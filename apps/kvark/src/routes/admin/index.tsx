@@ -70,7 +70,7 @@ function DashboardPage() {
                 description="Oversikt over innhold og administrasjon i Kvark."
                 action={
                     canCreateEvents ? (
-                        <Button render={<Link to="/admin/arrangementer" />}>
+                        <Button render={<Link to="/admin/arrangementer/ny" />}>
                             <PlusIcon className="size-4" />
                             Nytt arrangement
                         </Button>
@@ -204,7 +204,9 @@ function QuickActions() {
                 {canCreateNews ? (
                     <Button
                         variant="outline"
-                        render={<Link to="/admin/nyheter" />}
+                        render={
+                            <Link to="/admin/nyheter" search={{ ny: true }} />
+                        }
                     >
                         <NewspaperIcon className="size-4" />
                         Ny nyhet
@@ -213,7 +215,9 @@ function QuickActions() {
                 {canCreateJobs ? (
                     <Button
                         variant="outline"
-                        render={<Link to="/admin/annonser" />}
+                        render={
+                            <Link to="/admin/annonser" search={{ ny: true }} />
+                        }
                     >
                         <BriefcaseBusinessIcon className="size-4" />
                         Ny annonse

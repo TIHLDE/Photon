@@ -48,7 +48,7 @@ import {
     Trash2Icon,
     XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
@@ -63,6 +63,8 @@ import {
 } from "#/api/queries/galleries";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import z from "zod";
+
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { assetPublicUrl } from "#/lib/assets";
 import { imageDropzoneLabels } from "#/lib/image";
@@ -73,8 +75,15 @@ const dropzoneLabels = {
     defaultPlaceholder: "Klikk eller dra bilder hit for å laste opp",
 };
 
+// `?ny` gjør opprettelsesdialogen adresserbar, slik at «Nytt galleri» andre
+// steder i appen lander rett i skjemaet i stedet for på listen.
+const searchSchema = z.object({
+    ny: z.boolean().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/admin/galleri")({
     component: GalleryAdminPage,
+    validateSearch: searchSchema,
     loader: async ({ context }) => {
         await Promise.all([
             context.queryClient.ensureQueryData(getGalleriesQuery(0)),
@@ -93,9 +102,27 @@ function GalleryAdminPage() {
         "galleries:pictures:create",
         "galleries:manage",
     ]);
+    const { ny } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; gallery: Gallery } | null
     >(null);
+
+    // `canCreateGallery` er false ved første render på en kald sidelast,
+    // siden sesjonen ikke er hentet enda. Derfor en effekt og ikke en lazy
+    // initialisering. Lukking fjerner `ny` fra URL-en, så dialogen tvinges
+    // ikke opp igjen etterpå.
+    useEffect(() => {
+        if (!ny || !canCreateGallery) return;
+        setDialog({ mode: "create" });
+    }, [ny, canCreateGallery]);
+
+    function closeDialog() {
+        setDialog(null);
+        // Ellers ville dialogen åpnet seg igjen med en gang, siden `ny`
+        // fortsatt sto i URL-en.
+        if (ny) navigate({ search: {}, replace: true });
+    }
 
     return (
         <Stagger
@@ -125,7 +152,7 @@ function GalleryAdminPage() {
                 open={dialog !== null}
                 gallery={dialog?.mode === "edit" ? dialog.gallery : null}
                 onOpenChange={(open) => {
-                    if (!open) setDialog(null);
+                    if (!open) closeDialog();
                 }}
             />
         </Stagger>
