@@ -68,7 +68,7 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     },
     {
         slug: "events-refund",
-        label: "Refusjon av betalinger",
+        label: "Refundering",
         // The refund route accepts a global grant only, so offering this per
         // group would be a checkbox that saves and then does nothing.
         groupScopable: false,
@@ -76,7 +76,7 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     },
     {
         slug: "roles",
-        label: "Verv og tilganger",
+        label: "Tilganger",
         groupScopable: true,
         permissions: under("roles"),
     },
@@ -88,13 +88,13 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     },
     {
         slug: "applications-expense",
-        label: "Søknader – utlegg",
+        label: "Utlegg",
         groupScopable: true,
         permissions: under("applications:expense"),
     },
     {
         slug: "applications-support",
-        label: "Søknader – støtte",
+        label: "Støtte til HS",
         groupScopable: true,
         permissions: under("applications:support"),
     },
@@ -106,7 +106,7 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     },
     {
         slug: "applications-hs-case",
-        label: "Søknader – saker til HS",
+        label: "Saker til HS",
         groupScopable: false,
         permissions: under("applications:hs-case"),
     },
@@ -237,4 +237,27 @@ export function summarizePermissions(permissions: string[]): string {
         .map((slug) => DOMAIN_LABELS.get(slug) ?? slug)
         .sort((a, b) => a.localeCompare(b, "nb"));
     return labels.length === 0 ? "Ingen tilganger" : labels.join(", ");
+}
+
+/**
+ * What a holder gets *on top of* what the group already gives every member,
+ * e.g. "+ Arrangementer, Utlegg".
+ *
+ * A verv that repeats an access the whole group has adds nothing, and listing
+ * it on the holder's row reads as if it were personal — usually a leftover
+ * from before the group got the access. Only the difference is shown, and the
+ * plus sign says it is a difference and not the whole picture.
+ */
+export function summarizeExtraPermissions(
+    permissions: string[],
+    covered: Set<string>,
+): string {
+    if (permissions.includes("root")) return "Full tilgang (root)";
+    const labels = [...domainsOf(permissions)]
+        .filter((slug) => !covered.has(slug))
+        .map((slug) => DOMAIN_LABELS.get(slug) ?? slug)
+        .sort((a, b) => a.localeCompare(b, "nb"));
+    return labels.length === 0
+        ? "Ingen egne tilganger"
+        : `+ ${labels.join(", ")}`;
 }
