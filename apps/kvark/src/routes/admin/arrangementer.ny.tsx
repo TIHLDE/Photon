@@ -65,6 +65,7 @@ const emptyValues: EventFormValues = {
     start: null,
     end: null,
     requiresSigningUp: true,
+    registrationStart: null,
     registrationEnd: null,
     capacity: "",
     visibility: "public",
@@ -134,11 +135,20 @@ function NewEventPage() {
         const startIso = toIso(values.start);
         const endIso = toIso(values.end);
         // Uten påmelding avviser API-et både frist og kapasitet, så de utelates.
+        const registrationStartIso = values.requiresSigningUp
+            ? toIso(values.registrationStart)
+            : null;
         const registrationEndIso = values.requiresSigningUp
             ? toIso(values.registrationEnd)
             : null;
         if (!startIso || !endIso) return;
-        if (values.requiresSigningUp && !registrationEndIso) return;
+        if (!values.categorySlug) return;
+        if (
+            values.requiresSigningUp &&
+            (!registrationStartIso || !registrationEndIso)
+        ) {
+            return;
+        }
 
         // Uploaded first: a failed upload must not leave an event behind that
         // silently lost its cover.
@@ -168,7 +178,7 @@ function NewEventPage() {
                     imageAlt: imageUrl ? values.imageAlt || null : null,
                     start: startIso,
                     end: endIso,
-                    registrationStart: null,
+                    registrationStart: registrationStartIso,
                     registrationEnd: registrationEndIso,
                     cancellationDeadline: null,
                     capacity:
