@@ -715,4 +715,114 @@ describe("Asset Upload/Download System", () => {
         },
         60_000,
     );
+
+    integrationTest(
+        "Promote endpoint claims the uploader's own asset only",
+        async ({ ctx }) => {
+            const { app, bucket } = ctx;
+
+            const { createApiKeyService } =
+                await import("~/lib/service/api-key");
+            const apiKeyService = createApiKeyService(ctx);
+
+            const owner = await ctx.utils.createTestUser();
+            const stranger = await ctx.utils.createTestUser();
+
+            const ownerKey = await apiKeyService.create({
+                name: "Owner key",
+                description: "Promote-test",
+                permissions: ["root"],
+                createdById: owner.id,
+            });
+            const strangerKey = await apiKeyService.create({
+                name: "Stranger key",
+                description: "Promote-test",
+                permissions: ["root"],
+                createdById: stranger.id,
+            });
+
+            const formData = new FormData();
+            formData.append(
+                "file",
+                new Blob([Buffer.from("promote me")], { type: "image/gif" }),
+                "promote.gif",
+            );
+
+            const upload = await app.request("/api/assets", {
+                method: "POST",
+                body: formData,
+                headers: { Authorization: `Bearer ${ownerKey.key}` },
+            });
+            expect(upload.status).toBe(201);
+            const uploaded = (await upload.json()) as { key: string };
+            expect((await bucket.getAsset(uploaded.key))?.status).toBe(
+                "staged",
+            );
+
+            // ===== Someone else may not claim it =====
+            const forbidden = await app.request(
+                `/api/assets/promote/${uploaded.key}`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${strangerKey.key}` },
+                },
+            );
+            expect(forbidden.status).toBe(403);
+            expect((await bucket.getAsset(uploaded.key))?.status).toBe(
+                "staged",
+            );
+
+            // ===== Anonymous callers get nothing =====
+            const anonymous = await app.request(
+                `/api/assets/promote/${uploaded.key}`,
+                { method: "POST" },
+            );
+            expect(anonymous.status).toBe(401);
+
+            // ===== The uploader claims it =====
+            const promoted = await app.request(
+                `/api/assets/promote/${uploaded.key}`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${ownerKey.key}` },
+                },
+            );
+            expect(promoted.status).toBe(200);
+            const body = (await promoted.json()) as {
+                status: string;
+                promotedAt: string | null;
+            };
+            expect(body.status).toBe("ready");
+            expect(body.promotedAt).not.toBeNull();
+
+            const stored = await bucket.getAsset(uploaded.key);
+            expect(stored?.status).toBe("ready");
+            expect(stored?.promotedAt).not.toBeNull();
+
+            // A retry is a no-op, not an error — clients retry on flaky
+            // networks and must not be told the upload is now invalid.
+            const again = await app.request(
+                `/api/assets/promote/${uploaded.key}`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${ownerKey.key}` },
+                },
+            );
+            expect(again.status).toBe(200);
+            expect(
+                (await bucket.getAsset(uploaded.key))?.promotedAt?.getTime(),
+            ).toBe(stored?.promotedAt?.getTime());
+
+            // ===== Unknown key =====
+            const missing = await app.request(
+                "/api/assets/promote/uploads/2026/01/nope.png",
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${ownerKey.key}` },
+                },
+            );
+            expect(missing.status).toBe(404);
+        },
+        600_000,
+    );
 });

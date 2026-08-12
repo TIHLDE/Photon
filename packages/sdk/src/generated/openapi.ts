@@ -392,6 +392,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assets/promote/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Promote an uploaded asset
+         * @description Mark an uploaded asset as claimed so it survives the staging cleanup that deletes unclaimed uploads after 2 days.
+         *
+         *     The key is the full path returned when uploading, e.g. `uploads/2026/08/uuid_filename.webp`.
+         *
+         *     Call this once the URL has been stored somewhere permanent. Routes within Photon do it for you; external clients that keep the URL in their own database must call it themselves.
+         *
+         *     Only the account that uploaded the asset may promote it. Promoting an already-promoted asset is a no-op and still answers 200.
+         */
+        post: operations["promoteAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assets/{key}": {
         parameters: {
             query?: never;
@@ -6983,6 +7009,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AssetMetadata"];
+                };
+            };
+            /** @description Not Found - Asset not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    promoteAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset promoted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetMetadata"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Du kan bare promotere filer du selv har lastet opp. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
             /** @description Not Found - Asset not found */
