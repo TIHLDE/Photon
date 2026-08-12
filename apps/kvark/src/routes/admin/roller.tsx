@@ -724,7 +724,7 @@ function MemberPermissionsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Tilganger for alle medlemmer</DialogTitle>
                 </DialogHeader>
@@ -932,7 +932,7 @@ function LeaderPermissionsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Rediger ledertilganger</DialogTitle>
                 </DialogHeader>
@@ -1097,7 +1097,7 @@ function PositionDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>
                         {position ? `Rediger «${position.name}»` : "Nytt verv"}
