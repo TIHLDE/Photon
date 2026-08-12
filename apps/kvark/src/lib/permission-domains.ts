@@ -1,113 +1,240 @@
 import { PERMISSIONS } from "@photon/auth/rbac/registry";
 
 /**
- * Domain-level view of the permission registry, for admin UIs.
+ * The permission checkboxes shown in the admin UI.
  *
- * Instead of exposing all ~70 individual permissions as checkboxes, the UI
- * shows one checkbox per domain ("Arrangementer", "Nyheter", …). Toggling a
- * domain grants/removes every permission registered under it.
+ * One box per *job*, not per namespace. That distinction matters: the registry
+ * groups by resource, but the people who do these jobs are not the same people.
+ * Refunding a payment is not part of arranging an event, and IdKom handling
+ * idrettsstøtte has no business in the Finansminister's utlegg — so those get
+ * boxes of their own rather than riding along with a namespace they happen to
+ * be nested under.
  *
- * There is deliberately no "Bøter" domain: giving and reading bøter follows
- * group membership rather than a permission, so there is nothing to tick.
+ * Each box therefore carries an explicit permission list instead of a prefix.
+ * A prefix would silently swallow every permission added under it later, which
+ * is exactly how `events:payments:refund` ended up inside "Arrangementer".
+ *
+ * There is deliberately no "Bøter" box: giving and reading bøter follows group
+ * membership rather than a permission, so there is nothing to tick.
  */
 
 export type PermissionDomain = {
+    /** Stable key. Not a registry prefix — see the note above. */
     slug: string;
     label: string;
     /**
-     * Whether granting this domain scoped to a single group means anything.
+     * Whether granting this scoped to a single group means anything.
      *
-     * True only where the underlying rows carry an owning group AND the API
-     * narrows against it. `events` has `organizerGroupSlug`, `forms` has
-     * `formGroupForm.groupSlug`, `applications` has one per søknadstype, and
-     * `roles` scopes to administering that group's own verv.
-     *
-     * For everything else there is nothing to narrow against — a `news` row
-     * belongs to TIHLDE, not to Sosialen — so a group-scoped grant would pass
-     * the coarse gate and then behave exactly like a global one. Rather than
-     * offer a checkbox that quietly lies, those domains are only offered in
-     * the "hele TIHLDE" section.
+     * True only where the rows carry an owning group AND the API narrows
+     * against it. Everything else would pass the coarse gate and then behave
+     * exactly like a global grant, so it is offered only under "hele TIHLDE"
+     * rather than as a checkbox that quietly lies.
      */
     groupScopable: boolean;
+    /** Exactly the permissions this box grants. */
+    permissions: readonly string[];
 };
 
-/** Norwegian labels for the permission domains, in display order. */
+/** Every registered permission starting with `prefix:`. */
+function under(prefix: string): string[] {
+    return PERMISSIONS.filter((p) => p.startsWith(`${prefix}:`));
+}
+
+/**
+ * Arranging an event is one job, so registrations, feedback, payments and
+ * prikker ride with it — whoever put the arrangement up handles who shows up,
+ * who paid and who never turned up. Every one of those endpoints narrows to
+ * the event's organiser group, so a group-scoped grant reaches that group's
+ * own arrangementer and nobody else's.
+ *
+ * Refunds are the exception, and the only one: moving money back out is a
+ * separate decision that stays with whoever holds it explicitly.
+ */
+const EVENT_REFUND = "events:payments:refund";
+const EVENT_PERMISSIONS = under("events").filter((p) => p !== EVENT_REFUND);
+
+/**
+ * Søknader land on four different desks — utlegg with the Finansminister,
+ * idrettsstøtte with IdKom, saker til HS with Hovedstyret — so each type is
+ * its own box. Only utlegg and støtte carry a group the API narrows against;
+ * the rest are org-wide by nature.
+ */
 export const PERMISSION_DOMAINS: PermissionDomain[] = [
-    { slug: "events", label: "Arrangementer", groupScopable: true },
-    { slug: "roles", label: "Roller", groupScopable: true },
-    { slug: "forms", label: "Spørreskjema", groupScopable: true },
-    { slug: "applications", label: "Søknader", groupScopable: true },
-    { slug: "groups", label: "Grupper", groupScopable: false },
-    { slug: "news", label: "Nyheter", groupScopable: false },
-    { slug: "jobs", label: "Annonser", groupScopable: false },
-    { slug: "contracts", label: "Kontrakter", groupScopable: false },
-    { slug: "banners", label: "Bannere", groupScopable: false },
-    { slug: "toddel", label: "Töddel", groupScopable: false },
-    { slug: "galleries", label: "Galleri", groupScopable: false },
-    { slug: "company-contact", label: "Kontaktskjema", groupScopable: false },
-    { slug: "users", label: "Brukere", groupScopable: false },
-    { slug: "api-keys", label: "API-nøkler", groupScopable: false },
-    { slug: "oauth-clients", label: "OAuth-klienter", groupScopable: false },
+    {
+        slug: "events",
+        label: "Arrangementer",
+        groupScopable: true,
+        permissions: EVENT_PERMISSIONS,
+    },
+    {
+        slug: "events-refund",
+        label: "Refusjon av betalinger",
+        // The refund route accepts a global grant only, so offering this per
+        // group would be a checkbox that saves and then does nothing.
+        groupScopable: false,
+        permissions: [EVENT_REFUND],
+    },
+    {
+        slug: "roles",
+        label: "Verv og tilganger",
+        groupScopable: true,
+        permissions: under("roles"),
+    },
+    {
+        slug: "forms",
+        label: "Spørreskjema",
+        groupScopable: true,
+        permissions: under("forms"),
+    },
+    {
+        slug: "applications-expense",
+        label: "Søknader – utlegg",
+        groupScopable: true,
+        permissions: under("applications:expense"),
+    },
+    {
+        slug: "applications-support",
+        label: "Søknader – støtte",
+        groupScopable: true,
+        permissions: under("applications:support"),
+    },
+    {
+        slug: "applications-sports-support",
+        label: "Søknader – idrettsstøtte",
+        groupScopable: false,
+        permissions: under("applications:sports-support"),
+    },
+    {
+        slug: "applications-hs-case",
+        label: "Søknader – saker til HS",
+        groupScopable: false,
+        permissions: under("applications:hs-case"),
+    },
+    {
+        slug: "applications-all",
+        label: "Søknader – alle typer",
+        groupScopable: false,
+        permissions: ["applications:view", "applications:manage"],
+    },
+    {
+        slug: "groups",
+        label: "Grupper",
+        groupScopable: false,
+        permissions: under("groups"),
+    },
+    {
+        slug: "news",
+        label: "Nyheter",
+        groupScopable: false,
+        permissions: under("news"),
+    },
+    {
+        slug: "jobs",
+        label: "Annonser",
+        groupScopable: false,
+        permissions: under("jobs"),
+    },
+    {
+        slug: "contracts",
+        label: "Kontrakter",
+        groupScopable: false,
+        permissions: under("contracts"),
+    },
+    {
+        slug: "banners",
+        label: "Bannere",
+        groupScopable: false,
+        permissions: under("banners"),
+    },
+    {
+        slug: "toddel",
+        label: "Töddel",
+        groupScopable: false,
+        permissions: under("toddel"),
+    },
+    {
+        slug: "galleries",
+        label: "Galleri",
+        groupScopable: false,
+        permissions: under("galleries"),
+    },
+    {
+        slug: "company-contact",
+        label: "Kontaktskjema",
+        groupScopable: false,
+        permissions: under("company-contact"),
+    },
+    {
+        slug: "users",
+        label: "Brukere",
+        groupScopable: false,
+        permissions: under("users"),
+    },
+    {
+        slug: "api-keys",
+        label: "API-nøkler",
+        groupScopable: false,
+        permissions: under("api-keys"),
+    },
+    {
+        slug: "oauth-clients",
+        label: "OAuth-klienter",
+        groupScopable: false,
+        permissions: under("oauth-clients"),
+    },
 ];
 
-/** The domains a group can hand to its members scoped to itself. */
+/** The boxes a group can hand to its members scoped to itself. */
 export const GROUP_SCOPABLE_DOMAINS = PERMISSION_DOMAINS.filter(
     (d) => d.groupScopable,
 );
 
+const DOMAIN_BY_SLUG = new Map(PERMISSION_DOMAINS.map((d) => [d.slug, d]));
 const DOMAIN_LABELS = new Map(PERMISSION_DOMAINS.map((d) => [d.slug, d.label]));
 
-/** Domain part of a permission, e.g. "events:registrations:view" → "events". */
-export function domainOf(permission: string): string {
-    const i = permission.indexOf(":");
-    return i === -1 ? permission : permission.slice(0, i);
-}
-
-/** Domain slugs covered by a permission list. */
-export function domainsOf(permissions: string[]): Set<string> {
-    return new Set(permissions.map(domainOf));
-}
-
 /**
- * Every permission registered under a top-level domain, including nested ones
- * (e.g. "events" → events:view, …, events:registrations:view, …). Derived
- * from the auth registry so it stays in sync as permissions are added.
+ * Which boxes a permission list touches.
+ *
+ * A box counts as present as soon as ANY of its permissions is held — a
+ * partial set (say, only `events:view`) still means "this group does something
+ * with arrangementer", and the alternative would be to render it unticked and
+ * then silently drop the rest on the next save.
  */
-export const PERMISSIONS_BY_DOMAIN: Record<string, readonly string[]> = (() => {
-    const map: Record<string, string[]> = {};
-    for (const perm of PERMISSIONS) {
-        const dom = domainOf(perm);
-        if (dom === perm) continue; // "root" has no domain
-        const bucket = map[dom] ?? [];
-        bucket.push(perm);
-        map[dom] = bucket;
+export function domainsOf(permissions: string[]): Set<string> {
+    const held = new Set(permissions);
+    const slugs = new Set<string>();
+    for (const domain of PERMISSION_DOMAINS) {
+        if (domain.permissions.some((p) => held.has(p))) slugs.add(domain.slug);
     }
-    return map;
-})();
+    return slugs;
+}
 
-/** Toggle a whole domain on/off in a permission list. */
+/** Toggle a whole box on/off in a permission list. */
 export function toggleDomain(
     current: string[],
     domainSlug: string,
     checked: boolean,
 ): string[] {
-    const perms = PERMISSIONS_BY_DOMAIN[domainSlug] ?? [];
+    const domain = DOMAIN_BY_SLUG.get(domainSlug);
+    if (!domain) return current;
+
     if (checked) {
-        const next = new Set(current);
-        for (const perm of perms) next.add(perm);
-        return [...next];
+        return [...new Set([...current, ...domain.permissions])];
     }
-    return current.filter((p) => domainOf(p) !== domainSlug);
+    // Removes exactly this box's permissions, so unticking "Arrangementer"
+    // cannot take "Refusjon" with it just because they share a prefix.
+    const removed = new Set(domain.permissions);
+    return current.filter((p) => !removed.has(p));
 }
 
 /**
  * Short human-readable summary of a permission list, e.g.
- * "Arrangementer, Bøter" or "Full tilgang (root)".
+ * "Arrangementer, Nyheter" or "Full tilgang (root)".
  */
 export function summarizePermissions(permissions: string[]): string {
     if (permissions.includes("root")) return "Full tilgang (root)";
-    const domains = [...domainsOf(permissions)]
-        .map((d) => DOMAIN_LABELS.get(d) ?? d)
+    const labels = [...domainsOf(permissions)]
+        .map((slug) => DOMAIN_LABELS.get(slug) ?? slug)
         .sort((a, b) => a.localeCompare(b, "nb"));
-    return domains.length === 0 ? "Ingen tilganger" : domains.join(", ");
+    return labels.length === 0 ? "Ingen tilganger" : labels.join(", ");
 }
