@@ -23,6 +23,7 @@ const tags = [
     "contracts",
     "emails",
     "events",
+    "feedback",
     "forms",
     "groups",
     "fines",

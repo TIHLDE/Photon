@@ -137,6 +137,20 @@ export const PERMISSION_REGISTRY = {
     },
 
     /**
+     * Tilbakemeldinger — idéer og feilmeldinger fra medlemmer.
+     *
+     * There is deliberately no "view" or "create" action: reading the list and
+     * filing an idea is what the page is for, so those routes only require
+     * being logged in. Authors may edit and delete their own entry without any
+     * grant. What is left to hand out is moderating everyone else's — setting
+     * status as the reports are worked through, removing spam — which is
+     * Index's job.
+     */
+    feedback: {
+        actions: ["update", "delete", "manage"],
+    },
+
+    /**
      * Kontaktskjema — henvendelser bedrifter sender inn via bedriftssiden.
      *
      * Its own top-level domain rather than a søknad sub-domain: the

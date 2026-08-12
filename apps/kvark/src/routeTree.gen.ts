@@ -21,6 +21,7 @@ import { Route as AppOpptakRouteImport } from './routes/_app/opptak'
 import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
 import { Route as AppQrKoderRouteImport } from './routes/_app/qr-koder'
 import { Route as AppSoknaderRouteImport } from './routes/_app/soknader'
+import { Route as AppTilbakemeldingRouteImport } from './routes/_app/tilbakemelding'
 import { Route as AppToddelRouteImport } from './routes/_app/toddel'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthKobleFeideRouteImport } from './routes/_auth/koble-feide'
@@ -138,6 +139,11 @@ const AppQrKoderRoute = AppQrKoderRouteImport.update({
 const AppSoknaderRoute = AppSoknaderRouteImport.update({
   id: '/soknader',
   path: '/soknader',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTilbakemeldingRoute = AppTilbakemeldingRouteImport.update({
+  id: '/tilbakemelding',
+  path: '/tilbakemelding',
   getParentRoute: () => AppRoute,
 } as any)
 const AppToddelRoute = AppToddelRouteImport.update({
@@ -461,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/personvern': typeof AppPersonvernRoute
   '/qr-koder': typeof AppQrKoderRoute
   '/soknader': typeof AppSoknaderRoute
+  '/tilbakemelding': typeof AppTilbakemeldingRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/koble-feide': typeof AuthKobleFeideRoute
@@ -531,6 +538,7 @@ export interface FileRoutesByTo {
   '/personvern': typeof AppPersonvernRoute
   '/qr-koder': typeof AppQrKoderRoute
   '/soknader': typeof AppSoknaderRoute
+  '/tilbakemelding': typeof AppTilbakemeldingRoute
   '/toddel': typeof AppToddelRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/koble-feide': typeof AuthKobleFeideRoute
@@ -604,6 +612,7 @@ export interface FileRoutesById {
   '/_app/personvern': typeof AppPersonvernRoute
   '/_app/qr-koder': typeof AppQrKoderRoute
   '/_app/soknader': typeof AppSoknaderRoute
+  '/_app/tilbakemelding': typeof AppTilbakemeldingRoute
   '/_app/toddel': typeof AppToddelRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/koble-feide': typeof AuthKobleFeideRoute
@@ -679,6 +688,7 @@ export interface FileRouteTypes {
     | '/personvern'
     | '/qr-koder'
     | '/soknader'
+    | '/tilbakemelding'
     | '/toddel'
     | '/forgot-password'
     | '/koble-feide'
@@ -749,6 +759,7 @@ export interface FileRouteTypes {
     | '/personvern'
     | '/qr-koder'
     | '/soknader'
+    | '/tilbakemelding'
     | '/toddel'
     | '/forgot-password'
     | '/koble-feide'
@@ -821,6 +832,7 @@ export interface FileRouteTypes {
     | '/_app/personvern'
     | '/_app/qr-koder'
     | '/_app/soknader'
+    | '/_app/tilbakemelding'
     | '/_app/toddel'
     | '/_auth/forgot-password'
     | '/_auth/koble-feide'
@@ -976,6 +988,13 @@ declare module '@tanstack/react-router' {
       path: '/soknader'
       fullPath: '/soknader'
       preLoaderRoute: typeof AppSoknaderRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tilbakemelding': {
+      id: '/_app/tilbakemelding'
+      path: '/tilbakemelding'
+      fullPath: '/tilbakemelding'
+      preLoaderRoute: typeof AppTilbakemeldingRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/toddel': {
@@ -1508,6 +1527,7 @@ interface AppRouteChildren {
   AppPersonvernRoute: typeof AppPersonvernRoute
   AppQrKoderRoute: typeof AppQrKoderRoute
   AppSoknaderRoute: typeof AppSoknaderRoute
+  AppTilbakemeldingRoute: typeof AppTilbakemeldingRoute
   AppToddelRoute: typeof AppToddelRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAnnonserSlugRoute: typeof AppAnnonserSlugRoute
@@ -1539,6 +1559,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPersonvernRoute: AppPersonvernRoute,
   AppQrKoderRoute: AppQrKoderRoute,
   AppSoknaderRoute: AppSoknaderRoute,
+  AppTilbakemeldingRoute: AppTilbakemeldingRoute,
   AppToddelRoute: AppToddelRoute,
   AppIndexRoute: AppIndexRoute,
   AppAnnonserSlugRoute: AppAnnonserSlugRoute,

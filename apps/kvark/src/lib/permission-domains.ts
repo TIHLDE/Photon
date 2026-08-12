@@ -159,6 +159,12 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
         permissions: under("galleries"),
     },
     {
+        slug: "feedback",
+        label: "Tilbakemeldinger",
+        groupScopable: false,
+        permissions: under("feedback"),
+    },
+    {
         slug: "company-contact",
         label: "Kontaktskjema",
         groupScopable: false,
