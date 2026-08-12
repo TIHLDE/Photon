@@ -95,6 +95,9 @@ import { extractErrorMessage } from "#/lib/api-error";
 import { useDebounced } from "#/lib/use-debounced";
 import { errorStatus } from "#/lib/utils";
 
+/** Module-level so the permission lookup keeps a stable identity. */
+const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
+
 const searchSchema = z.object({
     tab: z
         .enum([
@@ -221,6 +224,13 @@ function GroupDetail() {
     // group manage forms on every other group's page.
     const hasFormsPermission = usePermission(["forms:create", "forms:manage"]);
     const canManageForms = hasFormsPermission || isLeader;
+    // Arrangementer er scopet på samme måte: lederskap alene gir ikke
+    // events:create — det avhenger av gruppens leaderPermissions — så vi
+    // spør om selve tilgangen for nettopp denne gruppen.
+    const canCreateEvent = useScopedPermission(
+        EVENT_CREATE_PERMISSIONS,
+        `group:${slug}`,
+    );
     const isMember = useIsGroupMemberOf(slug);
     const isRoot = usePermission("root");
 
@@ -629,7 +639,10 @@ function GroupDetail() {
                         />
                     ) : null}
                     {activeTab === "arrangementer" ? (
-                        <GroupEventsTab slug={slug} />
+                        <GroupEventsTab
+                            slug={slug}
+                            canCreateEvent={canCreateEvent}
+                        />
                     ) : null}
                     {activeTab === "boter" ? (
                         <GroupFinesTab

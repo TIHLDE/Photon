@@ -47,9 +47,11 @@ import { useAnyScopePermission } from "#/hooks/use-permission";
 
 // `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
 // nyhet» på nyhetssiden kan lenke rett til riktig artikkel i stedet for å
-// slippe deg av på listen.
+// slippe deg av på listen. `?ny` gjør det samme for opprettelsesdialogen,
+// slik at «Ny nyhet» andre steder i appen lander rett i skjemaet.
 const searchSchema = z.object({
     rediger: z.string().optional().catch(undefined),
+    ny: z.boolean().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/admin/nyheter")({
@@ -63,17 +65,26 @@ export const Route = createFileRoute("/admin/nyheter")({
 
 function NewsAdminPage() {
     const canCreate = useAnyScopePermission(["news:create", "news:manage"]);
-    const { rediger } = Route.useSearch();
+    const { rediger, ny } = Route.useSearch();
     const navigate = Route.useNavigate();
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; news: NewsListItem } | null
     >(null);
 
+    // `canCreate` er false ved første render på en kald sidelast, siden
+    // sesjonen ikke er hentet enda. Derfor en effekt og ikke en lazy
+    // initialisering. Lukking fjerner `ny` fra URL-en, så dialogen tvinges
+    // ikke opp igjen etterpå.
+    useEffect(() => {
+        if (!ny || !canCreate) return;
+        setDialog({ mode: "create" });
+    }, [ny, canCreate]);
+
     function closeDialog() {
         setDialog(null);
         // Ellers ville dialogen åpnet seg igjen med en gang, siden id-en
         // fortsatt sto i URL-en.
-        if (rediger) navigate({ search: {}, replace: true });
+        if (rediger || ny) navigate({ search: {}, replace: true });
     }
 
     return (

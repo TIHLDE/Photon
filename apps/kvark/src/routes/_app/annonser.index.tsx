@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
+import { Button } from "@tihlde/ui/ui/button";
+import { Stagger } from "@tihlde/ui/ui/motion";
+import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 
 import { getJobsQuery } from "#/api/queries/jobs";
@@ -11,7 +13,12 @@ import {
     type JobFiltersValue,
     type JobType,
 } from "#/components/job-filters";
+import { PageHeader } from "#/components/page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
+
+/** Module-level so the permission lookup keeps a stable identity. */
+const JOB_CREATE_PERMISSIONS = ["jobs:create", "jobs:manage"] as const;
 
 export const Route = createFileRoute("/_app/annonser/")({
     component: JobsPage,
@@ -40,15 +47,31 @@ function JobsPage() {
 
     const { data } = useSuspenseQuery(getJobsQuery(0));
     const jobs = data.items;
+    // Any-scope: scopet er ukjent på en offentlig liste, og API-et avviser
+    // uansett den enkelte forespørselen som ikke treffer.
+    const canCreateJob = useAnyScopePermission(JOB_CREATE_PERMISSIONS);
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <Reveal render={<div className="flex flex-col gap-1" />}>
-                <h1 className="text-3xl">Stillingsannonser</h1>
-                <p className="text-muted-foreground">
-                    Finn relevante jobber for studenter
-                </p>
-            </Reveal>
+            <PageHeader
+                title="Stillingsannonser"
+                description="Finn relevante jobber for studenter"
+                action={
+                    canCreateJob ? (
+                        <Button
+                            render={
+                                <Link
+                                    to="/admin/annonser"
+                                    search={{ ny: true }}
+                                />
+                            }
+                        >
+                            <PlusIcon className="size-4" />
+                            Ny annonse
+                        </Button>
+                    ) : null
+                }
+            />
 
             <div className="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)]">
                 <aside>

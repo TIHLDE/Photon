@@ -1,7 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
-import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
+import { Button } from "@tihlde/ui/ui/button";
+import { Stagger } from "@tihlde/ui/ui/motion";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { PlusIcon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import z from "zod";
 
@@ -15,11 +17,16 @@ import {
     type EventFiltersValue,
 } from "#/components/event-filters";
 import { LoadMoreButton } from "#/components/load-more-button";
+import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
 import { ACTIVITY_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+/** Module-level so the permission lookup keeps a stable identity. */
+const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
 
 const ALL_CATEGORIES = { value: "all", label: "Alle kategorier" };
 
@@ -141,6 +148,10 @@ function EventsPage() {
         );
     const events = data.pages.flatMap((page) => page.items);
     const totalCount = data.pages[0]?.totalCount ?? 0;
+    // Any-scope: scopet er ukjent på en offentlig liste, og et gruppe-scopet
+    // events:create er en ekte tilgang. API-et avviser uansett den enkelte
+    // forespørselen som ikke treffer.
+    const canCreateEvent = useAnyScopePermission(EVENT_CREATE_PERMISSIONS);
 
     const changeView = (next: EventView) => {
         navigate({
@@ -152,12 +163,18 @@ function EventsPage() {
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <Reveal render={<div className="flex flex-col gap-1" />}>
-                <h1 className="text-3xl">Arrangementer</h1>
-                <p className="text-muted-foreground">
-                    Finn arrangementer for våren 2026
-                </p>
-            </Reveal>
+            <PageHeader
+                title="Arrangementer"
+                description="Finn arrangementer for våren 2026"
+                action={
+                    canCreateEvent ? (
+                        <Button render={<Link to="/admin/arrangementer/ny" />}>
+                            <PlusIcon className="size-4" />
+                            Nytt arrangement
+                        </Button>
+                    ) : null
+                }
+            />
 
             <div className="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)]">
                 <aside>

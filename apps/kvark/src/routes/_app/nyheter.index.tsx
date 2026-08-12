@@ -1,11 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Button } from "@tihlde/ui/ui/button";
+import { PlusIcon } from "lucide-react";
 
-import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
+import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { getNewsQuery } from "#/api/queries/news";
 import { NewsCard } from "#/components/news-card";
+import { PageHeader } from "#/components/page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatNewsDateRelative } from "#/lib/news";
+
+/** Module-level so the permission lookup keeps a stable identity. */
+const NEWS_CREATE_PERMISSIONS = ["news:create", "news:manage"] as const;
 
 export const Route = createFileRoute("/_app/nyheter/")({
     component: NewsPage,
@@ -16,15 +23,32 @@ export const Route = createFileRoute("/_app/nyheter/")({
 function NewsPage() {
     const { data } = useSuspenseQuery(getNewsQuery(0));
     const news = data.items;
+    // Scopet er ukjent på en offentlig liste, så any-scope er riktig her:
+    // et gruppe-scopet news:create er en ekte tilgang, og API-et avviser
+    // uansett den enkelte forespørselen som ikke treffer.
+    const canCreateNews = useAnyScopePermission(NEWS_CREATE_PERMISSIONS);
 
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <Reveal render={<div className="flex flex-col gap-1" />}>
-                <h1 className="text-3xl">Nyheter</h1>
-                <p className="text-muted-foreground">
-                    Siste nytt fra TIHLDE og undergruppene
-                </p>
-            </Reveal>
+            <PageHeader
+                title="Nyheter"
+                description="Siste nytt fra TIHLDE og undergruppene"
+                action={
+                    canCreateNews ? (
+                        <Button
+                            render={
+                                <Link
+                                    to="/admin/nyheter"
+                                    search={{ ny: true }}
+                                />
+                            }
+                        >
+                            <PlusIcon className="size-4" />
+                            Ny nyhet
+                        </Button>
+                    ) : null
+                }
+            />
 
             <Stagger
                 render={
