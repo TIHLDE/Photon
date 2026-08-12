@@ -17,6 +17,28 @@ export const notificationListQuerySchema = PaginationSchema.extend({
     }),
 });
 
+export const registerDeviceSchema = Schema(
+    "RegisterNotificationDevice",
+    z.object({
+        token: z.string().min(1).meta({
+            description:
+                'Expo push token for the device, e.g. "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]"',
+        }),
+        platform: z.enum(["ios", "android"]).meta({
+            description: "Platform the device runs",
+        }),
+    }),
+);
+
+export const unregisterDeviceSchema = Schema(
+    "UnregisterNotificationDevice",
+    z.object({
+        token: z.string().min(1).meta({
+            description: "Expo push token to stop sending to",
+        }),
+    }),
+);
+
 export const markReadSchema = Schema(
     "MarkNotificationRead",
     z.object({
@@ -68,6 +90,15 @@ export const markReadResponseSchema = Schema(
         updatedAt: z.iso
             .datetime()
             .meta({ description: "Notification update time (ISO 8601)" }),
+    }),
+);
+
+export const deviceResponseSchema = Schema(
+    "NotificationDeviceResponse",
+    z.object({
+        success: z
+            .boolean()
+            .meta({ description: "Whether the device registry was updated" }),
     }),
 );
 

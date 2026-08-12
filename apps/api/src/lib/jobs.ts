@@ -5,6 +5,7 @@ import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { startPaymentTimerWorker } from "./event/payment";
 import { resolveRegistrationsForEvent } from "./event/resolve-registration";
+import { startPushNotificationWorker } from "./notification/push";
 
 /**
  * Start cron job to resolve pending event registrations
@@ -72,6 +73,9 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start payment-deadline countdown worker
     startPaymentTimerWorker(ctx);
+
+    // Start push notification worker
+    startPushNotificationWorker(ctx);
 
     // Start registration resolver cron
     startRegistrationResolverCron(ctx);

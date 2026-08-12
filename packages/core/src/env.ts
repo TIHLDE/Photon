@@ -150,6 +150,14 @@ const envSchema = z
         EMAIL_PROXY_URL: z.string().optional(),
         EMAIL_PROXY_KEY: z.string().optional(),
 
+        // PUSH (Expo push notifications for the mobile app)
+        /**
+         * Optional Expo access token. Expo accepts unauthenticated push
+         * requests, but with "enhanced security" enabled on the Expo project
+         * they are rejected without this token.
+         */
+        EXPO_ACCESS_TOKEN: z.string().optional(),
+
         // GOOGLE (møtetid calendar sync)
         GOOGLE_CLIENT_ID: z.string().optional(),
         GOOGLE_CLIENT_SECRET: z.string().optional(),

@@ -1172,6 +1172,30 @@ export interface paths {
         patch: operations["updateGallery"];
         trace?: never;
     };
+    "/api/notification/device": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a device for push notifications
+         * @description Stores the Expo push token of the calling user's device. Registering a token that already exists moves it to the authenticated user, so a shared phone never keeps notifying its previous owner.
+         */
+        post: operations["registerNotificationDevice"];
+        /**
+         * Unregister a device from push notifications
+         * @description Removes the Expo push token, typically on logout. Deleting a token that is not registered is a no-op.
+         */
+        delete: operations["unregisterNotificationDevice"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notification": {
         parameters: {
             query?: never;
@@ -4289,6 +4313,23 @@ export interface components {
         };
         DeleteGalleryResponse: {
             message: string;
+        };
+        NotificationDeviceResponse: {
+            /** @description Whether the device registry was updated */
+            success: boolean;
+        };
+        RegisterNotificationDevice: {
+            /** @description Expo push token for the device, e.g. "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" */
+            token: string;
+            /**
+             * @description Platform the device runs
+             * @enum {string}
+             */
+            platform: "ios" | "android";
+        };
+        UnregisterNotificationDevice: {
+            /** @description Expo push token to stop sending to */
+            token: string;
         };
         Notification: {
             /** @description Notification ID */
@@ -9211,6 +9252,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    registerNotificationDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterNotificationDevice"];
+            };
+        };
+        responses: {
+            /** @description Device registered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationDeviceResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    unregisterNotificationDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnregisterNotificationDevice"];
+            };
+        };
+        responses: {
+            /** @description Device unregistered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationDeviceResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
