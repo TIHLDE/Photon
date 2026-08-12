@@ -32,7 +32,6 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        nativeButton={false}
                         render={
                             <Link
                                 to="/sporreskjema/$id"
@@ -55,7 +54,6 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                nativeButton={false}
                                 render={
                                     <Link
                                         to="/sporreskjema/$id/svar"

@@ -167,7 +167,6 @@ function AlreadyAnswered() {
                 <Button
                     variant="outline"
                     className="w-full"
-                    nativeButton={false}
                     render={<Link to="/" />}
                 >
                     Gå til forsiden
@@ -175,7 +174,6 @@ function AlreadyAnswered() {
                 <Button
                     variant="outline"
                     className="w-full"
-                    nativeButton={false}
                     render={<Link to="/profil/$id" params={{ id: "me" }} />}
                 >
                     Gå til profilen din

@@ -174,7 +174,6 @@ function EventDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        nativeButton={false}
                         render={<Link to="/arrangementer" />}
                     >
                         <ArrowLeft />

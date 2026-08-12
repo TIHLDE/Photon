@@ -62,7 +62,6 @@ function CompanyLandingPage() {
                     <Button
                         size="lg"
                         className="mt-4"
-                        nativeButton={false}
                         render={<Link to="/bedrift" hash="kontakt" />}
                     >
                         Meld interesse
@@ -108,7 +107,6 @@ function CompanyLandingPage() {
                             action={
                                 <Button
                                     variant="link"
-                                    nativeButton={false}
                                     render={<Link to="/bedrift/studiene" />}
                                 >
                                     Les mer
@@ -235,7 +233,6 @@ function JobPreview() {
             <Button
                 variant="link"
                 className="self-end"
-                nativeButton={false}
                 render={<Link to="/annonser" />}
             >
                 Se alle stillinger

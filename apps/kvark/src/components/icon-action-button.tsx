@@ -24,9 +24,6 @@ export function IconActionButton({
                         variant="ghost"
                         size="icon"
                         aria-label={label}
-                        // `render` bytter ut knappen med en lenke, og da må
-                        // Base UI vite at elementet ikke er en <button>.
-                        nativeButton={!render}
                         onClick={onClick}
                         render={render}
                     >

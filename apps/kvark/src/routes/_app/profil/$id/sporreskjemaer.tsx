@@ -84,7 +84,6 @@ function Evaluations() {
                             </CardHeader>
                             <CardContent>
                                 <Button
-                                    nativeButton={false}
                                     render={
                                         <Link
                                             to="/sporreskjema/$id"
