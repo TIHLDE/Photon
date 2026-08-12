@@ -62,6 +62,7 @@ import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
 import type { NewFormValues } from "#/components/new-form-dialog";
@@ -275,6 +276,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
         valuesFromEvent(event),
     );
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const debouncedLocation = useDebounced(values.location, 250);
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
@@ -378,13 +380,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
     }
 
     function handleDelete() {
-        if (
-            !window.confirm(
-                `Slette «${event.title}»? Dette kan ikke angres, og alle påmeldinger forsvinner.`,
-            )
-        ) {
-            return;
-        }
+        setConfirmDelete(false);
         removeEvent.mutate(
             { eventId },
             { onSuccess: () => navigate({ to: "/admin/arrangementer" }) },
@@ -421,6 +417,18 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     isUploading ? "Laster opp bilde …" : "Lagre endringer"
                 }
                 isSubmitting={updateEvent.isPending || isUploading}
+                secondaryAction={
+                    canDelete ? (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => setConfirmDelete(true)}
+                            disabled={removeEvent.isPending}
+                        >
+                            Slett arrangement
+                        </Button>
+                    ) : undefined
+                }
             >
                 {uploadError && (
                     <Alert variant="destructive">
@@ -449,18 +457,15 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 )}
             </EventForm>
 
-            {canDelete && (
-                <div className="flex justify-end">
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleDelete}
-                        disabled={removeEvent.isPending}
-                    >
-                        Slett arrangement
-                    </Button>
-                </div>
-            )}
+            <ConfirmDeleteDialog
+                open={confirmDelete}
+                onOpenChange={setConfirmDelete}
+                title={`Slette «${event.title}»?`}
+                description="Arrangementet og alle påmeldinger slettes for godt. Dette kan ikke angres."
+                confirmLabel="Slett arrangement"
+                isPending={removeEvent.isPending}
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

@@ -77,6 +77,8 @@ type EventFormProps = {
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
     submitLabel: string;
     isSubmitting: boolean;
+    /** Knapp som legger seg til venstre for lagreknappen, f.eks. slett. */
+    secondaryAction?: ReactNode;
     /** Statusmeldinger som vises rett over knappen. */
     children?: ReactNode;
 };
@@ -98,6 +100,7 @@ export function EventForm({
     onSubmit,
     submitLabel,
     isSubmitting,
+    secondaryAction,
     children,
 }: EventFormProps) {
     /** Sist valgte adresse, se `handleLocationChange`. */
@@ -588,7 +591,8 @@ export function EventForm({
 
             {children}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                {secondaryAction}
                 <Button
                     type="submit"
                     disabled={isSubmitting || !values.organizerGroupSlug}

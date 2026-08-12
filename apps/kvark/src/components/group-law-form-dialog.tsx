@@ -14,6 +14,8 @@ import { useEffect, useState } from "react";
 
 import type { Law } from "#/lib/group";
 
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
+
 export type LawFormValues = {
     paragraph: number;
     title: string;
@@ -40,6 +42,7 @@ export function GroupLawFormDialog({
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("1");
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     // Re-seed the fields whenever the dialog opens for a (different) law.
     useEffect(() => {
@@ -163,7 +166,7 @@ export function GroupLawFormDialog({
                         <Button
                             variant="destructive"
                             className="mr-auto"
-                            onClick={onDelete}
+                            onClick={() => setConfirmDelete(true)}
                         >
                             Slett
                         </Button>
@@ -175,6 +178,18 @@ export function GroupLawFormDialog({
                         {law ? "Oppdater" : "Opprett"}
                     </Button>
                 </DialogFooter>
+
+                <ConfirmDeleteDialog
+                    open={confirmDelete}
+                    onOpenChange={setConfirmDelete}
+                    title={`Slette §${law?.paragraph} ${law?.title}?`}
+                    description="Paragrafen fjernes fra gruppens lovverk for godt. Bøter som allerede er gitt blir stående."
+                    confirmLabel="Slett paragraf"
+                    onConfirm={() => {
+                        setConfirmDelete(false);
+                        onDelete?.();
+                    }}
+                />
             </DialogContent>
         </Dialog>
     );
