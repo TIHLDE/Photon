@@ -299,8 +299,8 @@ function GroupDetail() {
         () => sortMembersByName((apiMembers ?? []).map(mapMember)),
         [apiMembers],
     );
-    const leader = useMemo(
-        () => members.find((m) => m.role === "leader") ?? null,
+    const leaders = useMemo(
+        () => members.filter((m) => m.role === "leader"),
         [members],
     );
     const regularMembers = useMemo(
@@ -334,8 +334,8 @@ function GroupDetail() {
         [memberSearchResults, members],
     );
     const group = useMemo(
-        () => mapGroup(apiGroup, leader?.name),
-        [apiGroup, leader],
+        () => mapGroup(apiGroup, leaders[0]?.name),
+        [apiGroup, leaders],
     );
     const fines = useMemo(
         () =>
@@ -584,7 +584,7 @@ function GroupDetail() {
                     {activeTab === "om" ? <GroupOmTab group={group} /> : null}
                     {activeTab === "medlemmer" ? (
                         <GroupMembersTab
-                            leader={leader}
+                            leaders={leaders}
                             members={regularMembers}
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}

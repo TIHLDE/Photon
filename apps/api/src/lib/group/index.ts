@@ -9,7 +9,7 @@
 
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { type DbSchema, schema } from "@photon/db";
-import { type InferSelectModel, and, eq, inArray } from "drizzle-orm";
+import { type InferSelectModel, and, eq, inArray, ne } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
 
@@ -205,11 +205,49 @@ export async function addUserToGroup(
     // grants it and leaving revokes it with nothing to sync.
 
     // Subgroup leaders sit in HS
-    if (role === "leader") {
+    if (membership.role === "leader") {
+        await demoteOtherLeaders(ctx, groupSlug, userId);
         await syncSubgroupLeaderIntoHs(ctx, userId, group);
     }
 
     return membership;
+}
+
+/**
+ * En gruppe har én leder. Sett alle andre ledere ned til vanlig medlem når
+ * `newLeaderId` tar over.
+ *
+ * Uten dette blir den forrige lederen liggende igjen med `role = "leader"`, og
+ * gruppesiden viser bare den første av dem: den andre forsvinner fra både
+ * medlemslista og «tidligere medlemmer», mens profilen hans fortsatt sier
+ * «Leder». Da finnes det heller ingen knapp igjen for å fjerne ham.
+ */
+export async function demoteOtherLeaders(
+    ctx: AppContext,
+    groupSlug: string,
+    newLeaderId: string,
+): Promise<void> {
+    const outgoing = await ctx.db
+        .update(schema.groupMembership)
+        .set({ role: "member", updatedAt: new Date() })
+        .where(
+            and(
+                eq(schema.groupMembership.groupSlug, groupSlug),
+                eq(schema.groupMembership.role, "leader"),
+                ne(schema.groupMembership.userId, newLeaderId),
+            ),
+        )
+        .returning({ userId: schema.groupMembership.userId });
+
+    if (outgoing.length === 0) return;
+
+    // Avgåtte undergruppeledere mister HS-plassen på samme måte som når de
+    // settes ned manuelt eller meldes ut.
+    const group = await getGroup(ctx, groupSlug);
+    if (!group || !isSubgroupType(group.type)) return;
+    for (const { userId } of outgoing) {
+        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+    }
 }
 
 /**
@@ -321,13 +359,18 @@ export async function updateGroupMemberRole(
 
     await db
         .update(schema.groupMembership)
-        .set({ role: newRole })
+        .set({ role: newRole, updatedAt: new Date() })
         .where(
             and(
                 eq(schema.groupMembership.userId, userId),
                 eq(schema.groupMembership.groupSlug, groupSlug),
             ),
         );
+
+    // Lederbyttet setter den forrige lederen ned — gruppa har én leder.
+    if (newRole === "leader") {
+        await demoteOtherLeaders(ctx, groupSlug, userId);
+    }
 
     const group = await getGroup(ctx, groupSlug);
 

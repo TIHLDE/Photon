@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { isDerivedGroupType } from "~/lib/group";
+import { isDerivedGroupType, updateGroupMemberRole } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -42,7 +42,8 @@ export const updateMemberRoleRoute = route().patch(
         const body = c.req.valid("json");
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         // Validate group exists
         const group = await db
@@ -83,19 +84,10 @@ export const updateMemberRoleRoute = route().patch(
             });
         }
 
-        // Update role
-        await db
-            .update(schema.groupMembership)
-            .set({
-                role: body.role,
-                updatedAt: new Date(),
-            })
-            .where(
-                and(
-                    eq(schema.groupMembership.userId, userId),
-                    eq(schema.groupMembership.groupSlug, groupSlug),
-                ),
-            );
+        // Goes through the helper rather than a bare UPDATE: it sets the
+        // sitting leader down (a group has one leader) and keeps the HS seat
+        // for subgroup leaders in sync.
+        await updateGroupMemberRole(ctx, userId, groupSlug, body.role);
 
         return c.json(
             {

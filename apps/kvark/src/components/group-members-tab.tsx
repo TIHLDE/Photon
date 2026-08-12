@@ -14,7 +14,11 @@ import type { Member } from "#/lib/group";
 import { cn } from "#/lib/utils";
 
 type GroupMembersTabProps = {
-    leader: Member | null;
+    /**
+     * Normalt én. Skulle det ligge igjen flere ledere i databasen, vises alle
+     * — ellers forsvinner de ekstra fra siden og kan ikke fjernes derfra.
+     */
+    leaders: Member[];
     members: Member[];
     /** Avsluttede medlemskap. Tom liste skjuler seksjonen helt. */
     formerMembers: Member[];
@@ -29,7 +33,7 @@ type GroupMembersTabProps = {
 };
 
 export function GroupMembersTab({
-    leader,
+    leaders,
     members,
     formerMembers,
     isAdmin,
@@ -49,14 +53,20 @@ export function GroupMembersTab({
                 }
             />
 
-            {leader ? (
+            {leaders.length > 0 ? (
                 <div className="flex flex-col gap-2">
                     <h3 className="text-lg">Leder</h3>
-                    <GroupMemberRow
-                        member={leader}
-                        isLeader
-                        onRemove={isAdmin ? onRemove : undefined}
-                    />
+                    <ul className="flex flex-col gap-2">
+                        {leaders.map((m) => (
+                            <li key={m.id}>
+                                <GroupMemberRow
+                                    member={m}
+                                    isLeader
+                                    onRemove={isAdmin ? onRemove : undefined}
+                                />
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             ) : null}
 
