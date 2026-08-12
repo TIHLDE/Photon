@@ -226,6 +226,7 @@ function valuesFromEvent(event: Event): EventFormValues {
         start: toDate(event.startTime),
         end: toDate(event.endTime),
         requiresSigningUp: event.requiresSigningUp,
+        registrationStart: toDate(event.registrationStart),
         registrationEnd: toDate(event.registrationEnd),
         capacity: event.capacity === null ? "" : String(event.capacity),
         visibility: event.visibility === "members" ? "members" : "public",
@@ -302,7 +303,13 @@ function DetailsTab({ eventId }: { eventId: string }) {
         setUploadError(null);
 
         if (!values.start || !values.end) return;
-        if (values.requiresSigningUp && !values.registrationEnd) return;
+        if (!values.categorySlug) return;
+        if (
+            values.requiresSigningUp &&
+            (!values.registrationStart || !values.registrationEnd)
+        ) {
+            return;
+        }
 
         // Lastes opp først: en feilet opplasting skal ikke lagre resten av
         // endringene med et bilde som mangler.
@@ -332,8 +339,10 @@ function DetailsTab({ eventId }: { eventId: string }) {
             imageAlt: values.imageAlt || null,
             start: values.start.toISOString(),
             end: values.end.toISOString(),
-            registrationStart: null,
             // Uten påmelding avviser API-et både frist og kapasitet.
+            registrationStart: values.requiresSigningUp
+                ? (values.registrationStart?.toISOString() ?? null)
+                : null,
             registrationEnd: values.requiresSigningUp
                 ? (values.registrationEnd?.toISOString() ?? null)
                 : null,

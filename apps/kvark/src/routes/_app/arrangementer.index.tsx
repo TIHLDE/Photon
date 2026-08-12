@@ -17,22 +17,11 @@ import {
 import { LoadMoreButton } from "#/components/load-more-button";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { formatEventDateTime } from "#/lib/event";
+import { ACTIVITY_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
 const ALL_CATEGORIES = { value: "all", label: "Alle kategorier" };
-
-const EVENT_CATEGORIES: Category[] = [
-    { value: "bedpres", label: "Bedpres" },
-    { value: "sosialt", label: "Sosialt" },
-    { value: "kurs", label: "Kurs" },
-    { value: "fadderuka", label: "Fadderuka" },
-    { value: "annet", label: "Annet" },
-];
-
-const ACTIVITY_CATEGORIES: Category[] = [
-    { value: "aktivitet", label: "Aktivitet" },
-];
 
 type EventTab = "arrangementer" | "aktiviteter";
 

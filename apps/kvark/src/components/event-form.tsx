@@ -25,6 +25,7 @@ import type { AddressSuggestion } from "#/api/queries/address";
 import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { ALL_EVENT_CATEGORIES } from "#/lib/event-categories";
 
 /** Sentinel for "no institute restriction" — Select has no empty value. */
 export const ALL_INSTITUTES = "all";
@@ -49,6 +50,8 @@ export type EventFormValues = {
     end: Date | null;
     /** Om arrangementet har påmelding i det hele tatt. */
     requiresSigningUp: boolean;
+    /** Når påmeldingen åpner. */
+    registrationStart: Date | null;
     registrationEnd: Date | null;
     capacity: string;
     visibility: "public" | "members";
@@ -145,6 +148,16 @@ export function EventForm({
             : []),
     ];
 
+    /**
+     * Kapasitet, synlighet og institutt deler én rad på fire kolonner, der
+     * kapasitet er like bred som en tidsvelger over. Uten påmelding faller
+     * kapasitet bort, og de to andre fyller raden i stedet for å la halve
+     * bredden stå tom.
+     */
+    const wideWhenNoCapacity = values.requiresSigningUp
+        ? undefined
+        : "lg:col-span-2";
+
     function handleSelectAddress(suggestion: AddressSuggestion) {
         const coords = {
             label: suggestion.label,
@@ -163,104 +176,121 @@ export function EventForm({
                 </CardHeader>
                 <CardContent>
                     <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="event-title">
-                                Tittel
-                            </FieldLabel>
-                            <Input
-                                id="event-title"
-                                type="text"
-                                required
-                                value={values.title}
-                                onChange={(event) =>
-                                    onChange({ title: event.target.value })
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-category">
-                                Kategori (slug)
-                            </FieldLabel>
-                            <Input
-                                id="event-category"
-                                type="text"
-                                required
-                                value={values.categorySlug}
-                                onChange={(event) =>
-                                    onChange({
-                                        categorySlug: event.target.value,
-                                    })
-                                }
-                                placeholder="sosialt"
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-organizer">
-                                Arrangørgruppe
-                            </FieldLabel>
-                            <Select
-                                items={groups.map((group) => ({
-                                    value: group.slug,
-                                    label: group.name,
-                                }))}
-                                value={values.organizerGroupSlug}
-                                onValueChange={(value) =>
-                                    onChange({
-                                        organizerGroupSlug: value ?? "",
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="event-organizer">
-                                    <SelectValue placeholder="Velg gruppe" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {groups.map((group) => (
-                                        <SelectItem
-                                            key={group.slug}
-                                            value={group.slug}
-                                        >
-                                            {group.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-contact">
-                                Kontaktperson (valgfritt)
-                            </FieldLabel>
-                            <Select
-                                items={contactPersonOptions}
-                                value={values.contactPersonUserId || NO_CONTACT}
-                                onValueChange={(value) =>
-                                    onChange({
-                                        contactPersonUserId:
-                                            !value || value === NO_CONTACT
-                                                ? ""
-                                                : value,
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="event-contact">
-                                    <SelectValue placeholder="Ingen kontaktperson" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {contactPersonOptions.map((option) => (
-                                        <SelectItem
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {option.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FieldDescription>
-                                Vises på arrangementssiden, med e-post for
-                                innloggede medlemmer. Velg blant medlemmene i
-                                arrangørgruppen.
-                            </FieldDescription>
-                        </Field>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <Field>
+                                <FieldLabel htmlFor="event-title">
+                                    Tittel
+                                </FieldLabel>
+                                <Input
+                                    id="event-title"
+                                    type="text"
+                                    required
+                                    value={values.title}
+                                    onChange={(event) =>
+                                        onChange({ title: event.target.value })
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="event-category">
+                                    Kategori
+                                </FieldLabel>
+                                <Select
+                                    items={ALL_EVENT_CATEGORIES}
+                                    value={values.categorySlug}
+                                    onValueChange={(value) =>
+                                        onChange({ categorySlug: value ?? "" })
+                                    }
+                                >
+                                    <SelectTrigger id="event-category">
+                                        <SelectValue placeholder="Velg kategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ALL_EVENT_CATEGORIES.map(
+                                            (category) => (
+                                                <SelectItem
+                                                    key={category.value}
+                                                    value={category.value}
+                                                >
+                                                    {category.label}
+                                                </SelectItem>
+                                            ),
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </div>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <Field>
+                                <FieldLabel htmlFor="event-organizer">
+                                    Arrangørgruppe
+                                </FieldLabel>
+                                <Select
+                                    items={groups.map((group) => ({
+                                        value: group.slug,
+                                        label: group.name,
+                                    }))}
+                                    value={values.organizerGroupSlug}
+                                    onValueChange={(value) =>
+                                        onChange({
+                                            organizerGroupSlug: value ?? "",
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="event-organizer">
+                                        <SelectValue placeholder="Velg gruppe" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {groups.map((group) => (
+                                            <SelectItem
+                                                key={group.slug}
+                                                value={group.slug}
+                                            >
+                                                {group.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="event-contact">
+                                    Kontaktperson (valgfritt)
+                                </FieldLabel>
+                                <Select
+                                    items={contactPersonOptions}
+                                    value={
+                                        values.contactPersonUserId || NO_CONTACT
+                                    }
+                                    onValueChange={(value) =>
+                                        onChange({
+                                            contactPersonUserId:
+                                                !value || value === NO_CONTACT
+                                                    ? ""
+                                                    : value,
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="event-contact">
+                                        <SelectValue placeholder="Ingen kontaktperson" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {contactPersonOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Vises på arrangementssiden, med e-post for
+                                    innloggede medlemmer. Velg blant medlemmene
+                                    i arrangørgruppen.
+                                </FieldDescription>
+                            </Field>
+                        </div>
                         <Field>
                             <FieldLabel htmlFor="event-location">
                                 Sted
@@ -324,7 +354,26 @@ export function EventForm({
                             </FieldLabel>
                         </Field>
                         {values.requiresSigningUp ? (
-                            <>
+                            <div className="grid gap-4 lg:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="event-reg-start">
+                                        Påmelding åpner
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="event-reg-start"
+                                        locale={nb}
+                                        placeholder="Velg dato"
+                                        maxDate={
+                                            values.registrationEnd ??
+                                            values.start ??
+                                            undefined
+                                        }
+                                        value={values.registrationStart}
+                                        onValueChange={(registrationStart) =>
+                                            onChange({ registrationStart })
+                                        }
+                                    />
+                                </Field>
                                 <Field>
                                     <FieldLabel htmlFor="event-reg-end">
                                         Påmeldingsfrist
@@ -333,6 +382,10 @@ export function EventForm({
                                         id="event-reg-end"
                                         locale={nb}
                                         placeholder="Velg dato"
+                                        minDate={
+                                            values.registrationStart ??
+                                            undefined
+                                        }
                                         maxDate={values.start ?? undefined}
                                         value={values.registrationEnd}
                                         onValueChange={(registrationEnd) =>
@@ -340,7 +393,11 @@ export function EventForm({
                                         }
                                     />
                                 </Field>
-                                <Field>
+                            </div>
+                        ) : null}
+                        <div className="grid gap-4 lg:grid-cols-4">
+                            {values.requiresSigningUp ? (
+                                <Field className="lg:col-span-2">
                                     <FieldLabel htmlFor="event-capacity">
                                         Kapasitet (valgfritt)
                                     </FieldLabel>
@@ -356,88 +413,89 @@ export function EventForm({
                                         }
                                     />
                                 </Field>
-                            </>
-                        ) : null}
-                        <Field>
-                            <FieldLabel htmlFor="event-visibility">
-                                Synlighet
-                            </FieldLabel>
-                            <Select
-                                items={[
-                                    { value: "public", label: "Offentlig" },
-                                    {
-                                        value: "members",
-                                        label: "Kun for medlemmer",
-                                    },
-                                ]}
-                                value={values.visibility}
-                                onValueChange={(value) =>
-                                    onChange({
-                                        visibility:
-                                            value === "members"
-                                                ? "members"
-                                                : "public",
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="event-visibility">
-                                    <SelectValue placeholder="Velg synlighet" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="public">
-                                        Offentlig
-                                    </SelectItem>
-                                    <SelectItem value="members">
-                                        Kun for medlemmer
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="event-institute">
-                                Institutt
-                            </FieldLabel>
-                            <Select
-                                items={[
-                                    {
-                                        value: ALL_INSTITUTES,
-                                        label: "Alle institutt",
-                                    },
-                                    ...institutes.map((institute) => ({
-                                        value: institute.slug,
-                                        label: institute.shortName,
-                                    })),
-                                ]}
-                                value={values.instituteSlug}
-                                onValueChange={(value) =>
-                                    onChange({
-                                        instituteSlug: value ?? ALL_INSTITUTES,
-                                    })
-                                }
-                            >
-                                <SelectTrigger id="event-institute">
-                                    <SelectValue placeholder="Velg institutt" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={ALL_INSTITUTES}>
-                                        Alle institutt
-                                    </SelectItem>
-                                    {institutes.map((institute) => (
-                                        <SelectItem
-                                            key={institute.slug}
-                                            value={institute.slug}
-                                        >
-                                            {institute.shortName} –{" "}
-                                            {institute.name}
+                            ) : null}
+                            <Field className={wideWhenNoCapacity}>
+                                <FieldLabel htmlFor="event-visibility">
+                                    Synlighet
+                                </FieldLabel>
+                                <Select
+                                    items={[
+                                        { value: "public", label: "Offentlig" },
+                                        {
+                                            value: "members",
+                                            label: "Kun for medlemmer",
+                                        },
+                                    ]}
+                                    value={values.visibility}
+                                    onValueChange={(value) =>
+                                        onChange({
+                                            visibility:
+                                                value === "members"
+                                                    ? "members"
+                                                    : "public",
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="event-visibility">
+                                        <SelectValue placeholder="Velg synlighet" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="public">
+                                            Offentlig
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FieldDescription>
-                                Begrenser påmelding til studenter ved dette
-                                instituttet.
-                            </FieldDescription>
-                        </Field>
+                                        <SelectItem value="members">
+                                            Kun for medlemmer
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field className={wideWhenNoCapacity}>
+                                <FieldLabel htmlFor="event-institute">
+                                    Institutt
+                                </FieldLabel>
+                                <Select
+                                    items={[
+                                        {
+                                            value: ALL_INSTITUTES,
+                                            label: "Alle institutt",
+                                        },
+                                        ...institutes.map((institute) => ({
+                                            value: institute.slug,
+                                            label: institute.shortName,
+                                        })),
+                                    ]}
+                                    value={values.instituteSlug}
+                                    onValueChange={(value) =>
+                                        onChange({
+                                            instituteSlug:
+                                                value ?? ALL_INSTITUTES,
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger id="event-institute">
+                                        <SelectValue placeholder="Velg institutt" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={ALL_INSTITUTES}>
+                                            Alle institutt
+                                        </SelectItem>
+                                        {institutes.map((institute) => (
+                                            <SelectItem
+                                                key={institute.slug}
+                                                value={institute.slug}
+                                            >
+                                                {institute.shortName} –{" "}
+                                                {institute.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Begrenser påmelding til studenter ved dette
+                                    instituttet.
+                                </FieldDescription>
+                            </Field>
+                        </div>
                         <Field orientation="horizontal" className="gap-3">
                             <Checkbox
                                 id="event-paid"
