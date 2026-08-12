@@ -15,6 +15,13 @@ import {
     FieldLabel,
 } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
@@ -26,12 +33,23 @@ import {
     MemberSingleCombobox,
     type ComboboxMember,
 } from "#/components/user-combobox";
-import type { Group } from "#/lib/group";
+import {
+    canEditGroupType,
+    GROUP_SUBTYPE_OPTIONS,
+    GROUP_TYPE_OPTIONS,
+    groupSubtypeValue,
+    supportsGroupSubtype,
+    type Group,
+} from "#/lib/group";
 
 export type GroupEditValues = {
     name: string;
     description: string;
     contactEmail: string;
+    /** Utelatt for automatisk genererte grupper, som ikke kan bytte type. */
+    type?: string;
+    /** Bare satt når typen har en underkategori (interessegrupper). */
+    subtype?: string | null;
     finesActivated: boolean;
     finesAdminId: string | null;
     finesInfo: string;
@@ -57,6 +75,8 @@ export function GroupEditDialog({
     const [name, setName] = useState(group.name);
     const [description, setDescription] = useState(group.description);
     const [contactEmail, setContactEmail] = useState(group.contactEmail);
+    const [type, setType] = useState(group.type ?? "");
+    const [subtype, setSubtype] = useState(groupSubtypeValue(group.subtype));
     const [finesActivated, setFinesActivated] = useState(
         group.finesActivated ?? false,
     );
@@ -70,6 +90,8 @@ export function GroupEditDialog({
         setName(group.name);
         setDescription(group.description);
         setContactEmail(group.contactEmail);
+        setType(group.type ?? "");
+        setSubtype(groupSubtypeValue(group.subtype));
         setFinesActivated(group.finesActivated ?? false);
         setFinesInfo(group.finesInfo ?? "");
         setFinesAdmin(
@@ -77,12 +99,24 @@ export function GroupEditDialog({
         );
     }, [open, group, members]);
 
+    const typeEditable = canEditGroupType(group.type ?? "");
+    const hasSubtype = supportsGroupSubtype(type);
+
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         onSubmit({
             name: name.trim(),
             description,
             contactEmail: contactEmail.trim(),
+            ...(typeEditable
+                ? {
+                      type,
+                      // Underkategorien hører til interessegrupper. Blir gruppa
+                      // noe annet, tømmes den — ellers ville en gammel
+                      // «IDRETTSGRUPPE» blitt liggende igjen usynlig.
+                      subtype: hasSubtype ? subtype : null,
+                  }
+                : {}),
             finesActivated,
             finesAdminId: finesAdmin?.id ?? null,
             finesInfo,
@@ -150,6 +184,73 @@ export function GroupEditDialog({
                                 }
                             />
                         </Field>
+                        {typeEditable ? (
+                            <Field>
+                                <FieldLabel htmlFor="group-type">
+                                    Gruppetype
+                                </FieldLabel>
+                                <Select
+                                    items={[...GROUP_TYPE_OPTIONS]}
+                                    value={type}
+                                    onValueChange={(value) =>
+                                        setType(value ?? type)
+                                    }
+                                >
+                                    <SelectTrigger id="group-type">
+                                        <SelectValue placeholder="Velg type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_TYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Bestemmer hvor gruppen står i
+                                    organisasjonskartet.
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
+                        {typeEditable && hasSubtype ? (
+                            <Field>
+                                <FieldLabel htmlFor="group-subtype">
+                                    Underkategori
+                                </FieldLabel>
+                                <Select
+                                    items={[...GROUP_SUBTYPE_OPTIONS]}
+                                    value={subtype}
+                                    onValueChange={(value) =>
+                                        setSubtype(
+                                            (value as typeof subtype) ??
+                                                subtype,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="group-subtype">
+                                        <SelectValue placeholder="Velg underkategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_SUBTYPE_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Idrettsgrupper får sin egen seksjon i
+                                    organisasjonskartet.
+                                </FieldDescription>
+                            </Field>
+                        ) : null}
 
                         <Separator />
 
