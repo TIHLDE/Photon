@@ -84,7 +84,6 @@ function NewStudentPage() {
                     </p>
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
-                            nativeButton={false}
                             render={
                                 <a
                                     href={FADDERUKA_URL}
@@ -98,7 +97,6 @@ function NewStudentPage() {
                         </Button>
                         <Button
                             variant="outline"
-                            nativeButton={false}
                             render={
                                 isAuthenticated ? (
                                     <Link to="/opptak" />
@@ -127,7 +125,6 @@ function NewStudentPage() {
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
-                        nativeButton={false}
                         render={
                             <a
                                 href={FADDERUKA_URL}
@@ -140,14 +137,12 @@ function NewStudentPage() {
                     </Button>
                     <Button
                         variant="outline"
-                        nativeButton={false}
                         render={<Link to="/arrangementer" />}
                     >
                         Hva skjer i fadderuka?
                     </Button>
                     <Button
                         variant="ghost"
-                        nativeButton={false}
                         render={
                             <a
                                 href={NEW_STUDENT_WIKI_URL}

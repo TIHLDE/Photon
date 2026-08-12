@@ -89,7 +89,6 @@ function RulesLink() {
         <Button
             size="sm"
             variant="outline"
-            nativeButton={false}
             render={
                 <a
                     href={EVENT_RULES_URL}

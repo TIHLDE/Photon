@@ -80,7 +80,6 @@ export function GroupAdmissionCard({
                         <Button
                             variant="ghost"
                             className="w-full"
-                            nativeButton={false}
                             render={
                                 <Link
                                     to="/grupper/$slug"
@@ -144,7 +143,6 @@ function AdmissionAction({
             return (
                 <Button
                     className="w-full"
-                    nativeButton={false}
                     render={
                         formId ? (
                             <Link

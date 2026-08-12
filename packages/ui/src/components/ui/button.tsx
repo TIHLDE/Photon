@@ -1,5 +1,8 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
+import { isValidElement } from "react";
 
 import { cn } from "#/lib/utils";
 
@@ -46,19 +49,80 @@ const buttonVariants = cva(
     },
 );
 
+type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants>;
+
 function Button({
     className,
     variant = "default",
     size = "default",
+    nativeButton,
+    render,
     ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
+    const classNames = cn(buttonVariants({ variant, size, className }));
+
+    // Base UI is explicit that links "have their own semantics and should not
+    // be rendered as buttons through the `render` prop": routed through
+    // ButtonPrimitive they either warn (`nativeButton` defaults to true, and
+    // the element turns out not to be a `<button>`) or get `role="button"`
+    // slapped on, which hides the link from screen readers. So a link only
+    // borrows the styling — the anchor keeps its own semantics.
+    if (isLinkRender(render)) {
+        return <ButtonLink {...props} className={classNames} render={render} />;
+    }
+
     return (
         <ButtonPrimitive
             data-slot="button"
-            className={cn(buttonVariants({ variant, size, className }))}
+            className={classNames}
+            render={render}
+            // Any other non-`<button>` render element (a `<div>`, a `<span>`)
+            // does want Base UI's button semantics — it just has to say so, or
+            // Base UI warns. Infer it instead of asking every call site; an
+            // explicit prop still wins, and a render *function* is opaque here
+            // so it keeps the native default.
+            nativeButton={nativeButton ?? isNativeButtonRender(render)}
             {...props}
         />
     );
+}
+
+function ButtonLink({
+    className,
+    render,
+    ...props
+}: Omit<ButtonProps, "nativeButton" | "variant" | "size" | "className"> & {
+    className?: string;
+}) {
+    return useRender({
+        defaultTagName: "a",
+        render: render as useRender.ComponentProps<"a">["render"],
+        props: mergeProps<"a">(
+            { className },
+            props as useRender.ComponentProps<"a">,
+        ),
+        state: { slot: "button" },
+    });
+}
+
+function isLinkRender(render: ButtonProps["render"]) {
+    if (!isValidElement<{ href?: unknown; to?: unknown }>(render)) {
+        return false;
+    }
+
+    // `<a href>` and TanStack Router's `<Link to>` — the two ways this codebase
+    // renders a button that navigates. A destination is what makes it a link:
+    // an `<a>` without one is just a clickable element, and does want Base UI's
+    // button semantics (`role="button"`, keyboard activation).
+    return render.props.href !== undefined || render.props.to !== undefined;
+}
+
+function isNativeButtonRender(render: ButtonProps["render"]) {
+    if (isValidElement(render)) {
+        return render.type === "button";
+    }
+
+    return true;
 }
 
 export { Button, buttonVariants };

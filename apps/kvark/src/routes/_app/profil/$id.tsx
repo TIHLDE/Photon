@@ -288,7 +288,6 @@ function NavButton({
             variant={isActive ? "default" : "ghost"}
             size={size}
             className={className}
-            nativeButton={false}
             render={<Link {...item.link} />}
         >
             <item.icon />

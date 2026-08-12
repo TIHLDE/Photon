@@ -55,7 +55,6 @@ function NewsDetailPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        nativeButton={false}
                         render={<Link to="/nyheter" />}
                     >
                         <ArrowLeft />
@@ -82,7 +81,6 @@ function NewsDetailPage() {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    nativeButton={false}
                                     render={
                                         <Link
                                             to="/admin/nyheter"

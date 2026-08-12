@@ -171,7 +171,6 @@ function ContractBanner({ signature }: { signature: SignatureStatus | null }) {
                 <Button
                     size="sm"
                     variant="outline"
-                    nativeButton={false}
                     render={<Link to="/kontrakt" />}
                 >
                     Gå til kontrakt

@@ -849,7 +849,6 @@ function FormsTab({ eventId }: { eventId: string }) {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            nativeButton={false}
                                             render={
                                                 <Link
                                                     to="/sporreskjema/$id"
