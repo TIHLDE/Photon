@@ -5,6 +5,7 @@ import type {
 } from "@photon/email/templates";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
+import { enqueuePushNotification } from "./push";
 
 /**
  * Notification links are stored relative so the website can route internally,
@@ -33,6 +34,7 @@ export type SendNotificationOptions = {
     sendTo?: {
         website?: boolean;
         email?: boolean;
+        push?: boolean;
     };
     emailTemplate?: EmailTemplateOverride;
 };
@@ -43,13 +45,14 @@ export type SendNotificationOptions = {
  * This function can:
  * 1. Create a notification record in the database (if sendTo.website is true)
  * 2. Send an email notification (if sendTo.email is true)
+ * 3. Push to the user's mobile devices (if sendTo.push is true)
  *
  * @param options Notification options
  * @param options.userId User ID to send notification to
  * @param options.title Notification title
  * @param options.description Notification description
  * @param options.link Optional link URL
- * @param options.sendTo Where to send the notification (default: {website: true, email: true})
+ * @param options.sendTo Where to send the notification (default: all channels)
  * @param options.emailTemplate Optional custom email template (if not provided, uses NotificationMail)
  * @param ctx Application context
  * @returns The created notification record (if website notification was created), or null
@@ -63,13 +66,14 @@ export async function sendNotification(
         title,
         description,
         link,
-        sendTo = { website: true, email: true },
+        sendTo = { website: true, email: true, push: true },
         emailTemplate,
     } = options;
 
-    // Default both to true if not specified
+    // Default all channels to true if not specified
     const shouldSendToWebsite = sendTo.website ?? true;
     const shouldSendToEmail = sendTo.email ?? true;
+    const shouldSendToPush = sendTo.push ?? true;
 
     // Validate: if email is true, we need either a custom template or valid notification data
     if (shouldSendToEmail && !emailTemplate && (!title || !description)) {
@@ -135,6 +139,16 @@ export async function sendNotification(
             },
             template.name,
             template.props,
+        );
+    }
+
+    // Push to the user's mobile devices if enabled. The link stays relative:
+    // the app maps it to its own routes, and an absolute website URL would
+    // send the tap to the browser instead.
+    if (shouldSendToPush) {
+        await enqueuePushNotification(
+            { userId, title, body: description, link },
+            ctx,
         );
     }
 
