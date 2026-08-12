@@ -69,6 +69,7 @@ import {
     GROUP_SCOPABLE_DOMAINS,
     PERMISSION_DOMAINS,
     domainsOf,
+    summarizeExtraPermissions,
     summarizePermissions,
     toggleDomain,
 } from "#/lib/permission-domains";
@@ -310,40 +311,12 @@ function GroupPositionsItem({
     group: Group;
     isOpen: boolean;
 }) {
-    const canManage = useCanManagePositions(group.slug);
-    const [createOpen, setCreateOpen] = useState(false);
-
     return (
         <AccordionItem value={group.slug} className="px-4">
-            <div className="flex items-center gap-2">
-                {/* The trigger renders its own header wrapper, so the growth
-                    has to come from a div around it. */}
-                <div className="flex-1">
-                    <AccordionTrigger>{group.name}</AccordionTrigger>
-                </div>
-                {canManage ? (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setCreateOpen(true)}
-                    >
-                        <PlusIcon className="size-4" />
-                        Nytt verv
-                    </Button>
-                ) : null}
-            </div>
+            <AccordionTrigger>{group.name}</AccordionTrigger>
             <AccordionContent>
                 {isOpen ? <PositionsTable groupSlug={group.slug} /> : null}
             </AccordionContent>
-
-            {createOpen && (
-                <PositionDialog
-                    groupSlug={group.slug}
-                    open={createOpen}
-                    onOpenChange={setCreateOpen}
-                    position={null}
-                />
-            )}
         </AccordionItem>
     );
 }
@@ -358,8 +331,22 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
     const unassign = useMutation(unassignPositionMutation);
     const assign = useMutation(assignPositionMutation);
     const [editing, setEditing] = useState<GroupPosition | null>(null);
+    const [createOpen, setCreateOpen] = useState(false);
     const [assignQuery, setAssignQuery] = useState("");
     const [assignFor, setAssignFor] = useState<string | null>(null);
+    // The rows below list only what a holder has beyond the group, so they
+    // need the group's own two lists. Reading them requires managing the
+    // group; without them the column falls back to the full list.
+    const coveredForGroupScope = useGroupCoveredDomains(
+        groupSlug,
+        canManage,
+        "group",
+    );
+    const coveredForGlobalScope = useGroupCoveredDomains(
+        groupSlug,
+        canManage,
+        "global",
+    );
 
     // Holder candidates come from the group's member list (positions require
     // membership) — filtered client-side on name.
@@ -430,23 +417,13 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                     <LeaderRow
                         groupSlug={groupSlug}
                         canManage={canManage}
+                        covered={coveredForGroupScope}
                         leaders={leaders.map((leader) => ({
                             userId: leader.userId,
                             name: leader.user?.name ?? leader.userId,
                             image: leader.user?.image ?? null,
                         }))}
                     />
-
-                    {positions?.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={4}>
-                                <span className="text-sm text-muted-foreground">
-                                    Ingen verv ennå. Opprett det første med
-                                    «Nytt verv».
-                                </span>
-                            </TableCell>
-                        </TableRow>
-                    ) : null}
 
                     {(positions ?? []).map((position) => (
                         <TableRow key={position.id}>
@@ -541,7 +518,16 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 </div>
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
-                                {summarizePermissions(position.permissions)}
+                                {canManage
+                                    ? summarizeExtraPermissions(
+                                          position.permissions,
+                                          position.scope === "global"
+                                              ? coveredForGlobalScope
+                                              : coveredForGroupScope,
+                                      )
+                                    : summarizePermissions(
+                                          position.permissions,
+                                      )}
                             </TableCell>
                             <TableCell>
                                 {canManage ? (
@@ -574,8 +560,46 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                             </TableCell>
                         </TableRow>
                     ))}
+
+                    {/* Closing row: the empty state and the create button sit
+                        together, so an empty table says what is missing and
+                        offers the fix in the same line. */}
+                    {canManage || positions?.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={4}>
+                                <div className="flex items-center justify-between gap-2">
+                                    {positions?.length === 0 ? (
+                                        <span className="text-sm text-muted-foreground">
+                                            Ingen verv ennå.
+                                        </span>
+                                    ) : (
+                                        <span />
+                                    )}
+                                    {canManage ? (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => setCreateOpen(true)}
+                                        >
+                                            <PlusIcon className="size-4" />
+                                            Ny rolle
+                                        </Button>
+                                    ) : null}
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    ) : null}
                 </TableBody>
             </Table>
+
+            {createOpen && (
+                <PositionDialog
+                    groupSlug={groupSlug}
+                    open={createOpen}
+                    onOpenChange={setCreateOpen}
+                    position={null}
+                />
+            )}
 
             {editing && (
                 <PositionDialog
@@ -822,10 +846,14 @@ function useGroupCoveredDomains(
 function LeaderRow({
     groupSlug,
     canManage,
+    covered,
     leaders,
 }: {
     groupSlug: string;
     canManage: boolean;
+    /** Domains the group already gives every member, and which the leader
+     *  therefore does not get listed for a second time. */
+    covered: Set<string>;
     leaders: { userId: string; name: string; image: string | null }[];
 }) {
     const [editing, setEditing] = useState(false);
@@ -865,7 +893,7 @@ function LeaderRow({
             </TableCell>
             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
-                    ? summarizePermissions(permissions)
+                    ? summarizeExtraPermissions(permissions, covered)
                     : "Gruppens ledertilganger"}
             </TableCell>
             <TableCell>
