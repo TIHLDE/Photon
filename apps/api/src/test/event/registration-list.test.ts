@@ -218,4 +218,46 @@ describe("Event registration listing", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        // Regression guard: pages are 0-based, so the last page must report
+        // no next page. It used to point at one page past the end, and the
+        // client had to fetch an empty list to discover it was done.
+        "reports no next page on the last page",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const event = await ctx.utils.createTestEvent();
+
+            // 3 registrations over pages of 2: pages 0 and 1, nothing after.
+            for (let i = 0; i < 3; i++) {
+                const user = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.eventRegistration).values({
+                    eventId: event.id,
+                    userId: user.id,
+                    status: "registered",
+                });
+            }
+
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+
+            const first = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: { page: "0", pageSize: "2" },
+            });
+            const firstBody = await first.json();
+            expect(firstBody.totalCount).toBe(3);
+            expect(firstBody.registeredUsers).toHaveLength(2);
+            expect(firstBody.nextPage).toBe(1);
+
+            const last = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: { page: "1", pageSize: "2" },
+            });
+            const lastBody = await last.json();
+            expect(lastBody.registeredUsers).toHaveLength(1);
+            expect(lastBody.nextPage).toBeNull();
+        },
+        500_000,
+    );
 });

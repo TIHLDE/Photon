@@ -6,6 +6,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
     PaginationSchema,
+    getNextPage,
     getPageOffset,
     getTotalPages,
 } from "../../middleware/pagination";
@@ -57,7 +58,7 @@ export const listRoute = route().get(
         return c.json({
             totalCount: newsCount,
             pages: totalPages,
-            nextPage: page + 1 >= totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             items,
         } satisfies z.infer<typeof newsListResponseSchema>);
     },

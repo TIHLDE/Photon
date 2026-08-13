@@ -9,6 +9,7 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
+    getNextPage,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
@@ -107,7 +108,7 @@ export const listEventPaymentsRoute = route().get(
         return c.json({
             totalCount,
             pages: totalPages,
-            nextPage: page + 1 > totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             payments: payments.map((p) => ({
                 id: p.id,
                 userId: p.userId,

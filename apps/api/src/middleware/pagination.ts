@@ -76,3 +76,17 @@ export const getPageOffset = (page: number, pageSize: number) =>
  */
 export const getTotalPages = (totalCount: number, pageSize: number) =>
     pageSize > 0 ? Math.ceil(totalCount / pageSize) : 0;
+
+/**
+ * The next page number, or null when `page` is the last one.
+ *
+ * Page numbers are 0-based, so the last page is `totalPages - 1`. Written out
+ * by hand this was repeatedly `page + 1 > totalPages`, which is the 1-based
+ * bound: it handed out one page past the end, and clients had to fetch an
+ * empty list to discover they were done.
+ *
+ * @param page the 0-based page that was just returned
+ * @param totalPages the total number of pages, from {@link getTotalPages}
+ */
+export const getNextPage = (page: number, totalPages: number) =>
+    page + 1 >= totalPages ? null : page + 1;
