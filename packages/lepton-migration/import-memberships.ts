@@ -22,7 +22,7 @@
  *
  * Usage: DATABASE_URL=... bun import-memberships.ts [--commit]
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { resolveGroupSlug } from "./src/mappings";
 
@@ -60,7 +60,10 @@ const main = async () => {
         users.map((u) => [u.user_id, u.email.trim().toLowerCase()]),
     );
 
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const photonUsers = await db
         .select({ id: schema.user.id, email: schema.user.email })

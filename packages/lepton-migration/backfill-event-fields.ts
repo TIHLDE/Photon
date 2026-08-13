@@ -14,7 +14,7 @@
  *
  *   DATABASE_URL=... bun backfill-event-fields.ts [--commit]
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
@@ -37,7 +37,10 @@ type LeptonUser = { user_id: string; email: string };
 const asUtc = (value: string): Date =>
     new Date(/Z|[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`);
 
-const db = createDb({ connectionString: process.env.DATABASE_URL! });
+const db = createDb({
+    connectionString: process.env.DATABASE_URL!,
+    timeouts: DISABLED_TIMEOUTS,
+});
 
 const leptonEvents = (await Bun.file(
     `${tablesDir}/content_event.json`,

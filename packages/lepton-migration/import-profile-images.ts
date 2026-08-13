@@ -20,7 +20,7 @@
  *   bun import-profile-images.ts [--commit]
  */
 import { S3ObjectStorageService } from "@photon/core/services/storage";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
@@ -62,7 +62,10 @@ const main = async () => {
     const withImage = users.filter((u) => (u.image ?? "").trim());
     console.log(`${withImage.length} brukere med profilbilde i eksporten\n`);
 
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const photonUsers = await db
         .select({

@@ -17,7 +17,7 @@
  *   bun import-content-images.ts [--commit]
  */
 import { S3ObjectStorageService } from "@photon/core/services/storage";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
@@ -56,7 +56,10 @@ type Job = {
 };
 
 const main = async () => {
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const events = await db
         .select({

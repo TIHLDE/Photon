@@ -1,7 +1,159 @@
 import { type NodePgDatabase, drizzle } from "drizzle-orm/node-postgres";
-import type { Pool } from "pg";
+import { Pool } from "pg";
 
 import * as schema from "./schema";
+
+/**
+ * Per-connection timeouts, in milliseconds. `0` disables a timeout, which is
+ * also Postgres' own default — and the reason tihlde.org was down for an hour
+ * on 2026-08-13: a Feide callback sat waiting on a row lock in `auth_account`
+ * for 50 minutes, holding one of the pool's connections the whole time. Two
+ * more requests queued behind it, and once all connections were held by
+ * requests waiting on something that never came, every database-backed route
+ * hung. Without a timeout there is nothing that ever breaks such a deadlock.
+ *
+ * These are deliberately shorter than Bun's 10s `idleTimeout`: a request that
+ * blocks this long has already lost its client, so the only thing left to do
+ * is give the connection back to the pool.
+ */
+export type DbTimeouts = {
+    /** Max wait for a row/table lock before giving up. */
+    lockTimeoutMs?: number;
+    /** Max runtime for a single statement. */
+    statementTimeoutMs?: number;
+    /** Max time a transaction may sit idle before Postgres kills it. */
+    idleInTransactionTimeoutMs?: number;
+    /**
+     * Max wait for a free connection from the pool. The per-connection
+     * timeouts above bound what one query may do; this bounds the queue that
+     * forms in front of them. Without it a saturated pool makes every new
+     * request wait indefinitely — which is what turned three stuck requests
+     * into a site-wide outage.
+     */
+    connectionTimeoutMs?: number;
+};
+
+/**
+ * Defaults for a connection that serves HTTP requests. Long-running work
+ * (migrations, bulk imports) must opt out — see `DISABLED_TIMEOUTS`.
+ */
+export const REQUEST_TIMEOUTS = {
+    lockTimeoutMs: 5_000,
+    statementTimeoutMs: 15_000,
+    idleInTransactionTimeoutMs: 30_000,
+    connectionTimeoutMs: 5_000,
+} as const satisfies DbTimeouts;
+
+/**
+ * No timeouts, for migrations and one-off scripts: an `ALTER TABLE` or a bulk
+ * import legitimately runs for minutes, and killing it halfway is worse than
+ * letting it finish. A script that starves its own pool should wait rather
+ * than fail, so the connection wait is unbounded here too.
+ */
+export const DISABLED_TIMEOUTS = {
+    lockTimeoutMs: 0,
+    statementTimeoutMs: 0,
+    idleInTransactionTimeoutMs: 0,
+    connectionTimeoutMs: 0,
+} as const satisfies DbTimeouts;
+
+function buildOptions(timeouts: DbTimeouts): string {
+    const {
+        lockTimeoutMs = REQUEST_TIMEOUTS.lockTimeoutMs,
+        statementTimeoutMs = REQUEST_TIMEOUTS.statementTimeoutMs,
+        idleInTransactionTimeoutMs = REQUEST_TIMEOUTS.idleInTransactionTimeoutMs,
+    } = timeouts;
+
+    // Passed as libpq start-up options so they apply to every connection the
+    // pool opens, including ones created long after startup.
+    return [
+        `-c lock_timeout=${lockTimeoutMs}`,
+        `-c statement_timeout=${statementTimeoutMs}`,
+        `-c idle_in_transaction_session_timeout=${idleInTransactionTimeoutMs}`,
+    ].join(" ");
+}
+
+/**
+ * Idle clients in the pool emit `error` when the connection dies under them —
+ * a Postgres restart, a network blip, or an admin running
+ * `pg_terminate_backend`. Node treats an unhandled `error` event as fatal, so
+ * without this listener a single dead connection takes down the whole server.
+ * That is exactly what happened during the 2026-08-13 incident: terminating
+ * the stuck backends killed the API process and turned a partial outage into a
+ * total one.
+ *
+ * The pool discards the broken client and opens a new one on the next query,
+ * so logging is the correct response.
+ */
+function attachErrorHandler(pool: Pool): Pool {
+    pool.on("error", (error) => {
+        console.error("Postgres pool error on an idle client:", error);
+    });
+    return pool;
+}
+
+/** How often the pool is sampled for saturation. */
+const SATURATION_SAMPLE_MS = 2_000;
+
+/** How often an ongoing saturation is repeated in the log. */
+const SATURATION_REPEAT_MS = 30_000;
+
+/**
+ * Warn while every connection is checked out and requests are queueing.
+ *
+ * The 2026-08-13 outage was a saturated pool, and nothing said so. The logs
+ * showed healthy traffic, then silence — because a request that never
+ * finishes never logs. From the outside it looked like a dead server, and it
+ * cost an hour to work out that ten connections were held by requests waiting
+ * on a lock. One line saying "all 10 connections busy, 14 requests waiting"
+ * would have pointed straight at it.
+ *
+ * Only fires when the pool is *both* full and has requests queueing: a fully
+ * used pool with nobody waiting is a busy server working as intended.
+ *
+ * The interval is unref'd so it can never hold the process open, and the
+ * sampling is deliberately cheap — the counters are plain numbers on the pool.
+ */
+function watchSaturation(pool: Pool): Pool {
+    const max = pool.options.max ?? 10;
+    let saturatedSince: number | null = null;
+    let lastWarnedAt = 0;
+    let peakWaiting = 0;
+
+    const timer = setInterval(() => {
+        const waiting = pool.waitingCount;
+        const saturated = waiting > 0 && pool.totalCount >= max;
+        const now = Date.now();
+
+        if (saturated) {
+            saturatedSince ??= now;
+            peakWaiting = Math.max(peakWaiting, waiting);
+
+            if (now - lastWarnedAt >= SATURATION_REPEAT_MS) {
+                lastWarnedAt = now;
+                console.warn(
+                    `Postgres pool saturated: all ${max} connections busy, ${waiting} request(s) queueing, ` +
+                        `${Math.round((now - saturatedSince) / 1000)}s so far. ` +
+                        "Something is holding connections open — look for long-running queries and lock waits.",
+                );
+            }
+            return;
+        }
+
+        if (saturatedSince !== null) {
+            console.warn(
+                `Postgres pool recovered after ${Math.round((now - saturatedSince) / 1000)}s, ` +
+                    `peak queue ${peakWaiting} request(s).`,
+            );
+            saturatedSince = null;
+            lastWarnedAt = 0;
+            peakWaiting = 0;
+        }
+    }, SATURATION_SAMPLE_MS);
+
+    timer.unref?.();
+    return pool;
+}
 
 /**
  * Factory function to create a database client.
@@ -10,26 +162,41 @@ import * as schema from "./schema";
 export function createDb(config: {
     connectionString?: string;
     pool?: Pool;
+    /**
+     * Per-connection timeouts. Defaults to {@link REQUEST_TIMEOUTS}; pass
+     * {@link DISABLED_TIMEOUTS} for migrations and bulk scripts. Ignored when
+     * `pool` is supplied — configure that pool yourself.
+     */
+    timeouts?: DbTimeouts;
 }): NodePgDatabase<typeof schema> {
     const defaultConfig = {
         casing: "snake_case",
         schema,
     } as const;
 
-    const { connectionString, pool } = config;
+    const { connectionString, pool, timeouts = {} } = config;
 
     if (pool) {
         return drizzle({
-            client: pool,
+            client: watchSaturation(attachErrorHandler(pool)),
             ...defaultConfig,
         });
     }
 
     if (connectionString) {
+        const { connectionTimeoutMs = REQUEST_TIMEOUTS.connectionTimeoutMs } =
+            timeouts;
+
         return drizzle({
-            connection: {
-                connectionString: connectionString,
-            },
+            client: watchSaturation(
+                attachErrorHandler(
+                    new Pool({
+                        connectionString,
+                        options: buildOptions(timeouts),
+                        connectionTimeoutMillis: connectionTimeoutMs,
+                    }),
+                ),
+            ),
             ...defaultConfig,
         });
     }

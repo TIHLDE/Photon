@@ -22,7 +22,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { S3ObjectStorageService } from "@photon/core/services/storage";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq, inArray } from "drizzle-orm";
 import { char32ToUuid } from "./src/mappings";
 
@@ -58,7 +58,10 @@ const filenameOf = (url: string): string => {
 type LeptonFineRow = { id: string; image: string | null };
 
 const main = async () => {
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const raw = readFileSync(join(TABLES_DIR, "group_fine.json"), "utf8");
     const leptonFines = JSON.parse(raw) as LeptonFineRow[];

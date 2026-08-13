@@ -17,7 +17,7 @@
  *   --force       Truncate target tables before inserting
  *   --verify-only Run only verification (no migration)
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { createAuth, drizzleAdapter } from "@photon/auth";
 import { env } from "@photon/core/env";
 import { InMemoryCache } from "@photon/core/services/cache";
@@ -111,7 +111,10 @@ async function main() {
     console.log();
 
     // Connect to databases
-    const db = createDb({ connectionString: env.DATABASE_URL });
+    const db = createDb({
+        connectionString: env.DATABASE_URL,
+        timeouts: DISABLED_TIMEOUTS,
+    });
     await connectMySQL(mysqlUrl);
 
     if (verifyOnly) {

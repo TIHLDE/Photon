@@ -9,7 +9,7 @@
  * Run with:
  *   cd apps/api && bun run src/db/import-group-logos.ts
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq, isNotNull } from "drizzle-orm";
 import { env } from "~/lib/env";
 import { createStorageClient } from "~/lib/storage";
@@ -33,7 +33,10 @@ function extensionFor(contentType: string | null, url: string): string {
 }
 
 async function main() {
-    const db = createDb({ connectionString: env.DATABASE_URL });
+    const db = createDb({
+        connectionString: env.DATABASE_URL,
+        timeouts: DISABLED_TIMEOUTS,
+    });
     const bucket = await createStorageClient({ db });
 
     const groups = await db.query.group.findMany({

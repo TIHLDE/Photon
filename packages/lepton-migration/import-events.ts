@@ -17,7 +17,7 @@
  * Without --commit it rolls back and only reports what it would have written.
  */
 import { buildEventSlugBase, slugifyText } from "@photon/core/slug";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 
 const CACHE = `${import.meta.dir}/../../../import/cache`;
 const commit = process.argv.includes("--commit");
@@ -67,7 +67,10 @@ const asNumber = (value: unknown): number | null => {
 };
 
 const main = async () => {
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const categories = await read<LeptonCategory[]>("categories");
     const groups = await read<LeptonGroup[]>("groups");
