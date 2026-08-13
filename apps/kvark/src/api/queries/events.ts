@@ -29,6 +29,8 @@ const EventQueryKeys = {
 } as const;
 
 const DEFAULT_PAGE_SIZE = 25;
+/** Det største `pageSize` API-et godtar (`PaginationSchema`). */
+const MAX_PAGE_SIZE = 100;
 
 type EventListFilters = Omit<
     QueryParamsHelper<"get", "/api/event">,
@@ -249,6 +251,33 @@ export const getEventRegistrationsQuery = (
                     ...filters,
                 },
             }),
+    });
+
+/**
+ * Deltakerlisten side for side. Arrangementssiden viser den til alle medlemmer
+ * som selv kan melde seg på, og de største arrangementene har flere påmeldte
+ * enn én side rommer — uten dette så en fadderuke ut som om den hadde 100.
+ */
+export const getEventRegistrationsInfiniteQuery = (
+    eventId: string,
+    pageSize: number = MAX_PAGE_SIZE,
+) =>
+    infiniteQueryOptions({
+        // eventId står før «infinite» slik at på-/avmelding, som invaliderer
+        // `[...registrations, eventId]`, også treffer denne.
+        queryKey: [
+            ...EventQueryKeys.registrations,
+            eventId,
+            "infinite",
+            pageSize,
+        ] as const,
+        queryFn: ({ pageParam }) =>
+            apiClient.get("/api/event/{eventId}/registration", {
+                params: { eventId },
+                searchParams: { page: pageParam, pageSize },
+            }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPage,
     });
 
 export const registerForEventMutation = mutationOptions({

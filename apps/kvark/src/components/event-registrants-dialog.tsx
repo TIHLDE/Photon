@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
+import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -17,15 +18,26 @@ type EventRegistrantsDialogProps = {
     trigger: ReactElement;
     title: string;
     registrants: EventRegistrant[];
+    /** Antall påmeldte totalt, når lista er lastet side for side. */
+    totalCount?: number;
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
+    onLoadMore?: () => void;
 };
 
 export function EventRegistrantsDialog({
     trigger,
     title,
     registrants,
+    totalCount,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
 }: EventRegistrantsDialogProps) {
     const registered = registrants.filter((r) => !r.onWaitlist);
     const waitlist = registrants.filter((r) => r.onWaitlist);
+    // Med paginering er `registered.length` bare det som er lastet så langt.
+    const registeredCount = totalCount ?? registered.length;
 
     return (
         <Dialog>
@@ -34,8 +46,9 @@ export function EventRegistrantsDialog({
                 <DialogHeader>
                     <DialogTitle>Påmeldte til {title}</DialogTitle>
                     <DialogDescription>
-                        {registered.length} påmeldte · {waitlist.length} på
-                        venteliste
+                        {waitlist.length > 0
+                            ? `${registeredCount} påmeldte · ${waitlist.length} på venteliste`
+                            : `${registeredCount} påmeldte`}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -58,6 +71,24 @@ export function EventRegistrantsDialog({
                                     />
                                 ))}
                             </>
+                        ) : null}
+
+                        {registrants.length === 0 ? (
+                            <p className="p-2 text-sm text-muted-foreground">
+                                Ingen er påmeldt ennå.
+                            </p>
+                        ) : null}
+
+                        {hasMore ? (
+                            <Button
+                                variant="ghost"
+                                onClick={onLoadMore}
+                                disabled={isLoadingMore}
+                            >
+                                {isLoadingMore
+                                    ? "Laster …"
+                                    : "Vis flere påmeldte"}
+                            </Button>
                         ) : null}
                     </div>
                 </ScrollArea>
