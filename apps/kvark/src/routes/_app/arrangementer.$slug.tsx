@@ -1,5 +1,10 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
@@ -20,7 +25,7 @@ import {
 import { authQueryOptions } from "#/api/auth";
 import {
     getEventByIdQuery,
-    getEventRegistrationsQuery,
+    getEventRegistrationsInfiniteQuery,
     getFavoriteEventsQuery,
     registerForEventMutation,
     unregisterFromEventMutation,
@@ -41,7 +46,7 @@ import { MapLink } from "#/components/map-link";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { ShareButton } from "#/components/share-button";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
-import { useCanActOnResource } from "#/hooks/use-permission";
+import { useCanActOnResource, usePermission } from "#/hooks/use-permission";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
 import {
@@ -77,11 +82,32 @@ function EventDetailPage() {
         refetchIntervalInBackground: true,
     });
     const { data: session } = useQuery(authQueryOptions);
-    // Deltakerlisten er for medlemmer — utloggede får antallet fra
-    // arrangementet selv, og ville bare fått 401 her.
-    const { data: registrations } = useQuery({
-        ...getEventRegistrationsQuery(event.id, 0),
-        enabled: Boolean(session),
+
+    // Same rule as the API: the permission (a group-scoped one counts), or
+    // having created the event.
+    const isAdmin = useCanActOnResource([
+        "events:update",
+        "events:manage",
+        "events:delete",
+    ])(event.createdById);
+
+    // Deltakerlisten er for medlemmer som selv kan melde seg på: den som kan
+    // stille i rommet får se hvem andre som kommer. Utloggede og alumner får
+    // antallet fra arrangementet selv, og ville bare fått 401/tomt her.
+    const canRegisterSelf = usePermission("events:registrations:create");
+    const canSeeRegistrants =
+        Boolean(session) &&
+        event.requiresSigningUp &&
+        (canRegisterSelf || isAdmin);
+
+    const {
+        data: registrationPages,
+        hasNextPage,
+        isFetchingNextPage,
+        fetchNextPage,
+    } = useInfiniteQuery({
+        ...getEventRegistrationsInfiniteQuery(event.id),
+        enabled: canSeeRegistrants,
     });
 
     const eventRules = useEventRulesConsent();
@@ -99,14 +125,6 @@ function EventDetailPage() {
         favorites?.some((favorite) => favorite.eventId === event.id),
     );
     const organizerSlug = event.organizer?.slug;
-
-    // Same rule as the API: the permission (a group-scoped one counts), or
-    // having created the event.
-    const isAdmin = useCanActOnResource([
-        "events:update",
-        "events:manage",
-        "events:delete",
-    ])(event.createdById);
 
     const registrationState = deriveRegistrationState({
         registration: event.registration,
@@ -126,11 +144,18 @@ function EventDetailPage() {
 
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
     const registeredCount = event.registeredCount;
-    const registrants = (registrations?.registeredUsers ?? []).map((u) => ({
-        id: u.id,
-        name: u.name,
-        allowPhoto: u.allowPhoto,
-    }));
+    const registrants = (registrationPages?.pages ?? []).flatMap((page) =>
+        page.registeredUsers.map((u) => ({
+            id: u.id,
+            name: u.name,
+            allowPhoto: u.allowPhoto,
+        })),
+    );
+    const registrantsTotalCount = registrationPages?.pages[0]?.totalCount;
+    // API-et gir `nextPage` også for siden etter den siste (sidetallene er
+    // nullbaserte, grensen er ikke), så antallet avgjør når vi er ferdige.
+    const hasMoreRegistrants =
+        hasNextPage && registrants.length < (registrantsTotalCount ?? 0);
 
     // Kun steder som er valgt fra adressesøket har koordinater, og bare de
     // blir en kartlenke.
@@ -374,10 +399,16 @@ function EventDetailPage() {
                             event.registration?.waitlistPosition ?? undefined
                         }
                         headerSlot={
-                            isAdmin ? (
+                            canSeeRegistrants ? (
                                 <EventRegistrantsDialog
                                     title={event.title}
                                     registrants={registrants}
+                                    totalCount={registrantsTotalCount}
+                                    hasMore={hasMoreRegistrants}
+                                    isLoadingMore={isFetchingNextPage}
+                                    onLoadMore={() => {
+                                        void fetchNextPage();
+                                    }}
                                     trigger={
                                         <Button
                                             variant="ghost"
