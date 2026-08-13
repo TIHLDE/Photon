@@ -18,13 +18,19 @@ export type PushJobData = {
     body: string;
     /** Website-relative link, forwarded to the app so a tap can deep-link. */
     link?: string | null;
+    /**
+     * The stored notification this push belongs to, so a tap in the app can
+     * mark exactly that one as read. Null when the caller skipped the website
+     * channel and no row was written.
+     */
+    notificationId?: string | null;
 };
 
 type ExpoPushMessage = {
     to: string;
     title: string;
     body: string;
-    data: { link?: string | null };
+    data: { link?: string | null; notificationId?: string | null };
     sound: "default";
     channelId: "default";
 };
@@ -74,7 +80,10 @@ export async function deliverPushNotification(
         to: device.token,
         title: data.title,
         body: data.body,
-        data: { link: data.link ?? null },
+        data: {
+            link: data.link ?? null,
+            notificationId: data.notificationId ?? null,
+        },
         sound: "default",
         // Android ignores sound unless the message names a channel; the app
         // creates "default" on startup.

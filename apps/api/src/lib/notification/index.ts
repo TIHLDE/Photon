@@ -145,9 +145,19 @@ export async function sendNotification(
     // Push to the user's mobile devices if enabled. The link stays relative:
     // the app maps it to its own routes, and an absolute website URL would
     // send the tap to the browser instead.
+    //
+    // The notification id rides along so a tap in the app marks that exact
+    // row as read. It is absent when the website channel was skipped — then
+    // there is no row to mark, and the push is the whole notification.
     if (shouldSendToPush) {
         await enqueuePushNotification(
-            { userId, title, body: description, link },
+            {
+                userId,
+                title,
+                body: description,
+                link,
+                notificationId: notificationRecord?.id ?? null,
+            },
             ctx,
         );
     }
