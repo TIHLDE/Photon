@@ -3,7 +3,11 @@ import { and, desc, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type { z } from "zod";
 import { describeRoute } from "~/lib/openapi";
-import { getPageOffset, getTotalPages } from "~/middleware/pagination";
+import {
+    getNextPage,
+    getPageOffset,
+    getTotalPages,
+} from "~/middleware/pagination";
 import { route } from "../../lib/route";
 import { requireAuth } from "../../middleware/auth";
 import {
@@ -69,7 +73,7 @@ export const listNotificationsRoute = route().get(
         return c.json({
             totalCount: notificationCount,
             pages: totalPages,
-            nextPage: page + 1 > totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             items: returnNotifications,
         } satisfies z.infer<typeof notificationListResponseSchema>);
     },

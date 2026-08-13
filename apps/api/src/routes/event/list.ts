@@ -17,7 +17,11 @@ import { isMemberAudience } from "~/lib/auth";
 import { describeRoute } from "~/lib/openapi";
 import { captureAuth } from "../../middleware/auth";
 import { route } from "../../lib/route";
-import { getPageOffset, getTotalPages } from "../../middleware/pagination";
+import {
+    getNextPage,
+    getPageOffset,
+    getTotalPages,
+} from "../../middleware/pagination";
 import {
     eventListFilterSchema,
     type eventListItemSchema,
@@ -174,7 +178,7 @@ export const listRoute = route().get(
         return c.json({
             totalCount: eventCount,
             pages: totalPages,
-            nextPage: page + 1 >= totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             items: returnEvents,
         } satisfies z.infer<typeof eventListResponseSchema>);
     },

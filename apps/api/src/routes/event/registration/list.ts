@@ -10,6 +10,7 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
+    getNextPage,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
@@ -196,7 +197,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
         return c.json({
             totalCount: registrationCount,
             pages: totalPages,
-            nextPage: page + 1 > totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             registeredUsers: returnRegistrations,
         } satisfies z.infer<typeof eventRegistrationListResponseSchema>);
     },

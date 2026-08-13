@@ -4,7 +4,11 @@ import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { getPageOffset, getTotalPages } from "../../middleware/pagination";
+import {
+    getNextPage,
+    getPageOffset,
+    getTotalPages,
+} from "../../middleware/pagination";
 import {
     jobListFilterSchema,
     type jobListItemSchema,
@@ -112,7 +116,7 @@ export const listRoute = route().get(
         return c.json({
             totalCount: jobCount,
             pages: totalPages,
-            nextPage: page + 1 >= totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             items,
         } satisfies z.infer<typeof jobListResponseSchema>);
     },

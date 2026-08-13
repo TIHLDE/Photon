@@ -8,6 +8,7 @@ import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
+    getNextPage,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
@@ -152,7 +153,7 @@ export const listUsersRoute = route().get(
         return c.json({
             totalCount,
             pages: totalPages,
-            nextPage: page + 1 >= totalPages ? null : page + 1,
+            nextPage: getNextPage(page, totalPages),
             items: rows.map(({ banned, ...row }) => ({
                 ...row,
                 // `banned` is nullable in Better Auth's schema; only an

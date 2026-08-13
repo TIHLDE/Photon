@@ -7,6 +7,7 @@ import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
+    getNextPage,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
@@ -83,7 +84,7 @@ export const getMyEventHistoryRoute = route().get(
         const response: z.infer<typeof myEventHistorySchema> = {
             totalCount,
             pages,
-            nextPage: page + 1 < pages ? page + 1 : null,
+            nextPage: getNextPage(page, pages),
             events: rows.map((row) => ({
                 eventId: row.eventId,
                 title: row.title,
