@@ -18,7 +18,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq, inArray, isNotNull } from "drizzle-orm";
 import { resolveGroupSlug } from "./src/mappings";
 
@@ -40,7 +40,10 @@ const connectionString = need("DATABASE_URL");
 type LeptonGroupRow = { slug: string; fines_admin_id: string | null };
 
 const main = async () => {
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const raw = readFileSync(join(TABLES_DIR, "group_group.json"), "utf8");
     const leptonGroups = JSON.parse(raw) as LeptonGroupRow[];

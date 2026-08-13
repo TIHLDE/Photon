@@ -18,7 +18,7 @@
  *
  * Usage: DATABASE_URL=... bun backfill-group-subtypes.ts [--commit]
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { and, eq, isNull } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
@@ -56,7 +56,10 @@ const main = async () => {
         `${groups.length} grupper i Lepton, ${withSubtype.length} med subtype\n`,
     );
 
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     let updated = 0;
     let alreadySet = 0;

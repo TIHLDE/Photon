@@ -14,7 +14,7 @@
  *   LEPTON_TOKEN=$(cat .lepton-token) DATABASE_URL=... \
  *   bun import-group-laws.ts [--commit]
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { char32ToUuid } from "./src/mappings";
 
 const commit = process.argv.includes("--commit");
@@ -84,7 +84,10 @@ const normalizeId = (id: string): string =>
     id.includes("-") ? id : char32ToUuid(id);
 
 const main = async () => {
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     const groups = await db
         .select({ slug: schema.group.slug })

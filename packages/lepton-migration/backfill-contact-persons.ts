@@ -17,7 +17,7 @@
  * Usage: DATABASE_URL=... bun backfill-contact-persons.ts [--commit]
  * Without --commit it reports what it would change and rolls back.
  */
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { and, eq, isNull } from "drizzle-orm";
 
 const commit = process.argv.includes("--commit");
@@ -41,7 +41,10 @@ const main = async () => {
     const entries = Object.entries(manifest.contactPersons);
     console.log(`${entries.length} kontaktpersoner å koble\n`);
 
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     let matched = 0;
     const missingUser: string[] = [];

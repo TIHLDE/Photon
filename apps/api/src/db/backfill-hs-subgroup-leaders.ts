@@ -27,7 +27,7 @@
  * Run against the target database (uses env.DATABASE_URL):
  *   cd apps/api && bun run src/db/backfill-hs-subgroup-leaders.ts
  */
-import { createDb, type DbSchema, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, type DbSchema, schema } from "@photon/db";
 import { and, eq, type InferSelectModel } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { env } from "~/lib/env";
@@ -113,7 +113,10 @@ async function main() {
     // Backfill only touches the DB; a minimal db-only context avoids the
     // auth/redis/bucket wiring that createAppContext refuses to build in
     // production. Only `db` is read by the code paths below.
-    const db = createDb({ connectionString: env.DATABASE_URL });
+    const db = createDb({
+        connectionString: env.DATABASE_URL,
+        timeouts: DISABLED_TIMEOUTS,
+    });
     const ctx = { db } as unknown as AppContext;
 
     const groups = await ctx.db.select().from(schema.group);

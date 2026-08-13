@@ -1,5 +1,5 @@
 import { env } from "@photon/core/env";
-import { createDb } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb } from "@photon/db";
 import {
     findSkippedMigrations,
     readMigrationJournal,
@@ -68,7 +68,11 @@ async function assertNoMigrationsSkipped(
 console.log(`Applying database migrations from ${MIGRATIONS_FOLDER}`);
 
 try {
-    const db = createDb({ connectionString: env.DATABASE_URL });
+    const db = createDb({
+        connectionString: env.DATABASE_URL,
+        // An ALTER TABLE may legitimately run for minutes.
+        timeouts: DISABLED_TIMEOUTS,
+    });
     await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
     await assertNoMigrationsSkipped(db);
     console.log("Database migrations applied");

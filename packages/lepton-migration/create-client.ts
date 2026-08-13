@@ -3,14 +3,17 @@
  * Kjøres én gang: DATABASE_URL=... AUTH_SECRET=... bun create-client.ts
  */
 import { createAuth, drizzleAdapter } from "@photon/auth";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { ConsoleEmailService } from "@photon/core/services/email";
 import { InMemoryCache } from "@photon/core/services/cache";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL mangler");
 
-const db = createDb({ connectionString });
+const db = createDb({
+    connectionString,
+    timeouts: DISABLED_TIMEOUTS,
+});
 const auth = createAuth({
     isDevMode: false,
     secret: process.env.AUTH_SECRET || crypto.randomUUID(),

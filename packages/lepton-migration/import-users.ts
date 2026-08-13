@@ -20,7 +20,7 @@
  */
 import { createAuth, drizzleAdapter } from "@photon/auth";
 import { slugifyText } from "@photon/core/slug";
-import { createDb, schema } from "@photon/db";
+import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { ConsoleEmailService } from "@photon/core/services/email";
 import { InMemoryCache } from "@photon/core/services/cache";
 import { eq } from "drizzle-orm";
@@ -60,7 +60,10 @@ const main = async () => {
 
     console.log(`${users.length} brukere i eksporten\n`);
 
-    const db = createDb({ connectionString });
+    const db = createDb({
+        connectionString,
+        timeouts: DISABLED_TIMEOUTS,
+    });
 
     // Only the commit path needs an auth instance: a dry run is read-only.
     // No redis, no queue, no outbound mail — an in-memory cache and a console
