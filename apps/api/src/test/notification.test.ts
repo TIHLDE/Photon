@@ -169,7 +169,37 @@ describe("push notification devices", () => {
             body: "Du er flyttet opp fra ventelisten",
             link: "/arrangementer/123",
         });
+
+        // The push points at the row it was created from, so a tap in the app
+        // can mark that one as read without guessing from the title.
+        const [stored] = await ctx.db.query.notification.findMany();
+        expect(stored).toBeDefined();
+        expect(jobs[0]?.data.notificationId).toBe(stored?.id);
     });
+
+    integrationTest(
+        "queues a push without a notification id when nothing is stored",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+
+            await sendNotification(
+                {
+                    userId: user.id,
+                    title: "Kun push",
+                    description: "Ingen rad å markere som lest",
+                    sendTo: { website: false, email: false },
+                },
+                ctx,
+            );
+
+            const jobs = await ctx.queue
+                .getQueue<PushJobData>(PUSH_QUEUE_NAME)
+                .getJobs();
+            expect(jobs).toHaveLength(1);
+            expect(jobs[0]?.data.notificationId).toBeNull();
+            expect(await ctx.db.query.notification.findMany()).toHaveLength(0);
+        },
+    );
 
     integrationTest(
         "sends to every device and drops tokens Expo has retired",
@@ -219,6 +249,7 @@ describe("push notification devices", () => {
                         title: "Ny bot",
                         body: "Du har fått en bot",
                         link: "/grupper/drift/boter",
+                        notificationId: "varsel-123",
                     },
                     ctx,
                 );
@@ -227,6 +258,14 @@ describe("push notification devices", () => {
             }
 
             expect(requests).toHaveLength(1);
+
+            // Both the link and the id have to survive into the Expo payload —
+            // they are all the app gets to act on when the push is tapped.
+            const sent = requests[0] as { data: unknown }[];
+            expect(sent[0]?.data).toEqual({
+                link: "/grupper/drift/boter",
+                notificationId: "varsel-123",
+            });
 
             // The dead token is deleted rather than retried: Expo rejects it
             // forever once the app is gone from the device.
