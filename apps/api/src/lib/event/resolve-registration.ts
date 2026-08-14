@@ -4,7 +4,12 @@ import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
-import { createPaymentObligation, refundPaidRegistration } from "./payment";
+import {
+    createPaymentObligation,
+    findOwedRefund,
+    type OwedRefund,
+    refundOwed,
+} from "./payment";
 import {
     calculateWaitlistPosition,
     findSwapTarget,
@@ -26,6 +31,13 @@ export async function resolveRegistrationsForEvent(
     eventId: string,
     ctx: AppContext,
 ): Promise<void> {
+    /**
+     * Refunds decided inside the transaction and carried out after it commits.
+     * Talking to Vipps while holding the `FOR UPDATE` locks below would park
+     * those locks for as long as Vipps takes to answer — see {@link refundOwed}.
+     */
+    const owedRefunds: OwedRefund[] = [];
+
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
         const txCtx = { ...ctx, db: tx };
@@ -195,12 +207,17 @@ export async function resolveRegistrationsForEvent(
                     swappedUserId = swapTarget.userId;
                     finalStatus = "registered";
 
-                    // If the swapped-out user had already paid, refund them.
-                    await refundPaidRegistration(
+                    // If the swapped-out user had already paid, they are owed a
+                    // refund. Only the lookup happens here; the Vipps call
+                    // waits until the transaction has let go of its locks.
+                    const owed = await findOwedRefund(
                         txCtx,
                         event,
                         swapTarget.userId,
                     );
+                    if (owed) {
+                        owedRefunds.push(owed);
+                    }
 
                     // Send notification to swapped user (will calculate position later)
                     console.log(
@@ -397,4 +414,7 @@ export async function resolveRegistrationsForEvent(
             }
         }
     });
+
+    // Locks are released; now it is safe to spend time on the network.
+    await refundOwed(ctx, owedRefunds);
 }

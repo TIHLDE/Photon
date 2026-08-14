@@ -358,6 +358,13 @@
       "when": 1786718443393,
       "tag": "0050_stormy_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1786734317750,
+      "tag": "0051_heavy_jackpot",
+      "breakpoints": true
     }
   ]
 }
