@@ -241,12 +241,26 @@ export async function demoteOtherLeaders(
 
     if (outgoing.length === 0) return;
 
+    const group = await getGroup(ctx, groupSlug);
+    if (!group) return;
+
     // Avgåtte undergruppeledere mister HS-plassen på samme måte som når de
     // settes ned manuelt eller meldes ut.
-    const group = await getGroup(ctx, groupSlug);
-    if (!group || !isSubgroupType(group.type)) return;
-    for (const { userId } of outgoing) {
-        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+    if (isSubgroupType(group.type)) {
+        for (const { userId } of outgoing) {
+            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+        }
+        return;
+    }
+
+    // HS er AU + undergruppelederne, ikke et sted man blir sittende: en
+    // avgått president har ingenting der å gjøre med mindre noe annet gir
+    // plassen (et AU-verv eller lederskapet i en undergruppe), akkurat som
+    // for undergruppelederne over.
+    if (group.slug === HS_GROUP_SLUG) {
+        for (const { userId } of outgoing) {
+            await pruneHsMembershipIfUnwarranted(ctx, userId);
+        }
     }
 }
 
@@ -403,6 +417,18 @@ export const HS_GROUP_SLUG = "hs";
  *  (Lepton rows are upper case), so compare case-insensitively. */
 export function isSubgroupType(type: string): boolean {
     return type.toLowerCase() === "subgroup";
+}
+
+/**
+ * True for groups whose next leader may be someone who is not a member yet.
+ *
+ * HS is the exception: presidenten velges på generalforsamlingen og sitter
+ * ikke i Hovedstyret før hun tar over, så lederen kan ikke plukkes blant HS
+ * sine egne medlemmer. Alle andre grupper velger lederen sin innenfra, og der
+ * er «ikke medlem» en feil verdt å stoppe på.
+ */
+export function allowsNonMemberLeader(group: { slug: string }): boolean {
+    return group.slug === HS_GROUP_SLUG;
 }
 
 /**

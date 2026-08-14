@@ -1669,7 +1669,7 @@ export interface paths {
         head?: never;
         /**
          * Update member role
-         * @description Update a member's role in a group. Requires 'groups:manage' permission.
+         * @description Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else.
          */
         patch: operations["updateGroupMemberRole"];
         trace?: never;
