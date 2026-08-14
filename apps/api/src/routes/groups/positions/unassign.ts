@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { HS_GROUP_SLUG, pruneHsMembershipIfUnwarranted } from "~/lib/group";
 import { canAssignPosition, getPosition } from "~/lib/group/positions";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -66,6 +67,13 @@ export const unassignPositionRoute = route().delete(
                     eq(schema.groupPositionHolder.userId, targetUserId),
                 ),
             );
+
+        // HS er AU + undergruppelederne. Mister du AU-vervet ditt, mister du
+        // plassen med det — med mindre noe annet gir den (lederskapet i HS
+        // eller i en undergruppe, eller et annet HS-verv).
+        if (position.groupSlug === HS_GROUP_SLUG) {
+            await pruneHsMembershipIfUnwarranted(ctx, targetUserId);
+        }
 
         return c.json({ message: "Position removed from user" });
     },

@@ -512,9 +512,9 @@ async function syncSubgroupLeaderOutOfHs(
 }
 
 /**
- * Remove `userId` from hs unless they still belong there: they lead another
- * subgroup, or they hold some hs verv (e.g. an AU title). Safe to call for
- * users who are not hs members at all.
+ * Remove `userId` from hs unless they still belong there: they lead hs
+ * itself, they lead another subgroup, or they hold some hs verv (e.g. an AU
+ * title). Safe to call for users who are not hs members at all.
  */
 export async function pruneHsMembershipIfUnwarranted(
     ctx: AppContext,
@@ -522,9 +522,10 @@ export async function pruneHsMembershipIfUnwarranted(
 ): Promise<void> {
     if (!(await isGroupMember(ctx, userId, HS_GROUP_SLUG))) return;
 
-    // Still leader of some subgroup?
+    // Still leader of hs itself, or of some subgroup?
     const memberships = await ctx.db
         .select({
+            slug: schema.groupMembership.groupSlug,
             role: schema.groupMembership.role,
             type: schema.group.type,
         })
@@ -534,7 +535,13 @@ export async function pruneHsMembershipIfUnwarranted(
             eq(schema.groupMembership.groupSlug, schema.group.slug),
         )
         .where(eq(schema.groupMembership.userId, userId));
-    if (memberships.some((m) => m.role === "leader" && isSubgroupType(m.type)))
+    if (
+        memberships.some(
+            (m) =>
+                m.role === "leader" &&
+                (m.slug === HS_GROUP_SLUG || isSubgroupType(m.type)),
+        )
+    )
         return;
 
     // Still holds an hs verv (e.g. AU title)?
