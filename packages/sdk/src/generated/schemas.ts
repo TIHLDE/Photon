@@ -117,6 +117,7 @@ export type GalleryList = Schemas["GalleryList"];
 export type GalleryPicture = Schemas["GalleryPicture"];
 export type GalleryPictureList = Schemas["GalleryPictureList"];
 export type Group = Schemas["Group"];
+export type GroupDetail = Schemas["GroupDetail"];
 export type GroupFormerMember = Schemas["GroupFormerMember"];
 export type GroupFormerMemberList = Schemas["GroupFormerMemberList"];
 export type GroupFormList = Schemas["GroupFormList"];

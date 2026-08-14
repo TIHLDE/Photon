@@ -93,3 +93,53 @@ export async function getUserStudy(
 
     return deriveStudyFromGroups(rows);
 }
+
+/**
+ * Whether Feide currently reports the member as an enrolled student.
+ *
+ * The study *groups* cannot answer this. They are additive on purpose — "én
+ * gang TIHLDE-medlem, alltid TIHLDE-medlem" — so `digital-samhandling` holds
+ * everyone who ever took the programme, alumni included, and its cohort years
+ * are no help either: for most members the cohort group carries the year they
+ * started their *bachelor*, not the master. The only field that says "enrolled
+ * now" is `studyProgramMembership.feideActive`, written from
+ * `membership.active` on every Feide login.
+ *
+ * @param programSlug Programme to ask about, by slug — study programmes and
+ *   their groups share one, a convention the seed establishes. Pass `null` to
+ *   ask the weaker question "is this person still a student at all", which is
+ *   the most a cohort group can meaningfully be gated on.
+ *
+ * Returns false when we have never had an answer. A NULL `feideActive` means
+ * the member has not logged in with Feide since the Lepton migration, so we
+ * have no evidence either way — and a caller that reaches for this function
+ * wants positive proof of enrolment, not the benefit of the doubt.
+ */
+export async function hasActiveStudyProgram(
+    ctx: AppContext,
+    userId: string,
+    programSlug: string | null,
+): Promise<boolean> {
+    const rows = await ctx.db
+        .select({ userId: schema.studyProgramMembership.userId })
+        .from(schema.studyProgramMembership)
+        .innerJoin(
+            schema.studyProgram,
+            eq(
+                schema.studyProgram.id,
+                schema.studyProgramMembership.studyProgramId,
+            ),
+        )
+        .where(
+            and(
+                eq(schema.studyProgramMembership.userId, userId),
+                eq(schema.studyProgramMembership.feideActive, true),
+                programSlug === null
+                    ? undefined
+                    : eq(schema.studyProgram.slug, programSlug),
+            ),
+        )
+        .limit(1);
+
+    return rows.length > 0;
+}

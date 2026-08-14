@@ -3,13 +3,53 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
-import { isGroupLeader, isGroupMember } from "~/lib/group";
+import { isDerivedGroupType, isGroupLeader, isGroupMember } from "~/lib/group";
+import { hasActiveStudyProgram } from "~/lib/user/study";
 
 type GroupRow = {
     slug: string;
+    type: string;
     finesAdminId: string | null;
     finesActivated: boolean;
 };
+
+/**
+ * Whether a user counts as "in the group" for the purpose of bøter.
+ *
+ * For every ordinary group this is plain membership — bøter are what being in
+ * a group is, and the roster is the roster.
+ *
+ * Study and cohort groups are the exception, because their rosters are not
+ * rosters. They are projections of Feide that only ever grow: leaving a
+ * programme never removes the group, so `digital-samhandling` holds 128 people
+ * of whom some finished in 2021. Handing all of them the right to give and
+ * read bøter among this year's students is not what membership of a study
+ * group means. So for those groups membership is necessary but not
+ * sufficient — Feide has to still report the person as enrolled.
+ *
+ * A `study` group is checked against its own programme; the two share a slug.
+ * A `studyyear` group has no programme to check against — a cohort spans all
+ * of them — so it asks the weaker question, "still a student anywhere", which
+ * is the most that group can honestly be gated on.
+ */
+export async function isFinesEligibleMember(
+    ctx: AppContext,
+    userId: string,
+    group: Pick<GroupRow, "slug" | "type">,
+): Promise<boolean> {
+    if (!(await isGroupMember(ctx, userId, group.slug))) {
+        return false;
+    }
+
+    if (!isDerivedGroupType(group.type)) {
+        return true;
+    }
+
+    const programSlug =
+        group.type.toLowerCase() === "study" ? group.slug : null;
+
+    return await hasActiveStudyProgram(ctx, userId, programSlug);
+}
 
 /**
  * Load the group a fines endpoint addresses, refusing groups that do not run
@@ -52,6 +92,11 @@ export async function requireFinesGroup(ctx: AppContext, groupSlug: string) {
  * Membership itself is the access — any member sees every fine in their own
  * group. There is no `fines:view` permission to hold: bøter are not part of
  * the permission system, and root is the only way across group lines.
+ *
+ * "Member" here means {@link isFinesEligibleMember}, so a study group's bøter
+ * stay among the students actually enrolled rather than every alumnus the
+ * projection ever collected. The botsjef is exempt: they are an appointment,
+ * not a projection, and someone has to be able to settle the bøter.
  */
 export async function canViewFines(
     ctx: AppContext,
@@ -62,7 +107,7 @@ export async function canViewFines(
         return true;
     }
 
-    if (await isGroupMember(ctx, userId, group.slug)) {
+    if (await isFinesEligibleMember(ctx, userId, group)) {
         return true;
     }
 

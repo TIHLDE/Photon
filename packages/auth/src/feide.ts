@@ -554,6 +554,34 @@ export async function applyFeideStudyPrograms(
                 await removeCohortMembership(tx, userId, before.startYear);
             }
 
+            /**
+             * Record what Feide just said about enrolment, unconditionally
+             * and in its own statement.
+             *
+             * It cannot ride along on the upsert above: that one is guarded by
+             * `setWhere` so a stored year is never overwritten, and an active
+             * flag that only updated when the year happened to be upgradeable
+             * would freeze on the day someone's cohort was settled. This is
+             * the opposite kind of value — always the latest reading wins,
+             * both ways round, so graduating clears it as readily as
+             * re-enrolling sets it.
+             */
+            await tx
+                .update(studyProgramMembership)
+                .set({
+                    feideActive: feideGroup.active,
+                    feideCheckedAt: now,
+                })
+                .where(
+                    and(
+                        eq(studyProgramMembership.userId, userId),
+                        eq(
+                            studyProgramMembership.studyProgramId,
+                            studyProgramId,
+                        ),
+                    ),
+                );
+
             await confirmCampus(tx, userId, studyProgramId, campus);
 
             await syncDerivedStudyGroups(

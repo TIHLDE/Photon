@@ -171,6 +171,26 @@ export const groupSchema = Schema(
     }),
 );
 
+/**
+ * A single group, plus what the caller may do with its bøter.
+ *
+ * `finesActivated` alone is not enough for the client to decide whether to
+ * render the bot- and lovverk-tabs: in a study group membership no longer
+ * implies access, since the roster keeps every alumnus the Feide projection
+ * ever collected. Rather than teach the frontend that rule — and have the two
+ * copies drift — the server answers for the caller it is already
+ * authenticating.
+ */
+export const groupDetailSchema = Schema(
+    "GroupDetail",
+    groupSchema.extend({
+        viewerCanUseFines: z.boolean().meta({
+            description:
+                "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
+        }),
+    }),
+);
+
 export const groupWithMemberCountSchema = Schema(
     "GroupWithMemberCount",
     groupSchema.extend({
