@@ -263,29 +263,40 @@ export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
     }),
 }));
 
-export const eventPayment = pgTable("payment", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    amountMinor: integer("amount_minor").notNull(), // cents/øre
-    currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
-    provider: varchar("provider", { length: 64 }),
-    providerPaymentId: text("provider_payment_id"),
-    status: paymentStatus("status").notNull().default("pending"),
-    receivedPaymentAt: timestamp("received_payment_at"),
-    /**
-     * Deadline for when this payment obligation must be fulfilled. Set when a
-     * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
-     * A countdown job cancels the registration if payment is not completed by
-     * this time.
-     */
-    expiresAt: timestamp("expires_at"),
-    ...timestamps,
-});
+export const eventPayment = pgTable(
+    "payment",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        amountMinor: integer("amount_minor").notNull(), // cents/øre
+        currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
+        provider: varchar("provider", { length: 64 }),
+        providerPaymentId: text("provider_payment_id"),
+        status: paymentStatus("status").notNull().default("pending"),
+        receivedPaymentAt: timestamp("received_payment_at"),
+        /**
+         * Deadline for when this payment obligation must be fulfilled. Set when a
+         * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
+         * A countdown job cancels the registration if payment is not completed by
+         * this time.
+         */
+        expiresAt: timestamp("expires_at"),
+        ...timestamps,
+    },
+    (t) => [
+        /**
+         * Every payment lookup starts from the event — "has this member
+         * paid", "who still owes" — and the table only had its uuid
+         * primary key to offer, so each one scanned all of it.
+         */
+        index("payment_event_id_user_id_idx").on(t.eventId, t.userId),
+    ],
+);
 
 export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
     event: one(event, {
@@ -341,7 +352,15 @@ export const eventReaction = pgTable(
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({ columns: [t.userId, t.eventId] }),
+        /**
+         * The primary key leads on `user_id`, so "every reaction on this
+         * event" — which is what the event page asks for — could not use it
+         * and scanned the table instead.
+         */
+        index("reaction_event_id_idx").on(t.eventId),
+    ],
 );
 
 export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
