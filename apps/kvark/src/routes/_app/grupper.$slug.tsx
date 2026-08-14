@@ -82,6 +82,7 @@ import { GroupOmTab } from "#/components/group-om-tab";
 import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import {
     type Form,
+    allowsNonMemberLeader,
     mapFine,
     mapFineUser,
     mapForm,
@@ -211,8 +212,8 @@ function GroupDetail() {
     const isLeader = useIsGroupLeaderOf(slug);
     const canManage = canEditGroup || isLeader;
     // Roster changes: `groups:manage` for this group, or being its leader.
-    // Adding someone AS leader still needs `groups:manage` — the dialog only
-    // adds plain members, and the API refuses the rest.
+    // Det samme gjelder å gi ledervervet videre — men «Legg til medlem»-veien
+    // legger fortsatt bare til vanlige medlemmer, slik API-et krever.
     const hasGroupsManage = useScopedPermission(
         "groups:manage",
         `group:${slug}`,
@@ -343,6 +344,26 @@ function GroupDetail() {
             ),
         [memberSearchResults, members],
     );
+    // Eget søk for lederoverføring i HS: presidenten er ikke medlem ennå, så
+    // her filtreres ingen bort — bare den som allerede er leder.
+    const canPickLeaderOutsideGroup = allowsNonMemberLeader(slug);
+    const [leaderQuery, setLeaderQuery] = useState("");
+    const [leaderError, setLeaderError] = useState<string | null>(null);
+    const debouncedLeaderQuery = useDebounced(leaderQuery);
+    const { data: leaderSearchResults, isFetching: isSearchingLeader } =
+        useQuery({
+            ...searchUsersQuery(debouncedLeaderQuery),
+            enabled:
+                canPickLeaderOutsideGroup && debouncedLeaderQuery.length >= 2,
+        });
+    const leaderCandidates = useMemo(
+        () =>
+            (leaderSearchResults ?? []).filter(
+                (user) => !leaders.some((m) => m.id === user.id),
+            ),
+        [leaderSearchResults, leaders],
+    );
+
     const group = useMemo(
         () => mapGroup(apiGroup, leaders[0]?.name),
         [apiGroup, leaders],
@@ -600,7 +621,48 @@ function GroupDetail() {
                             members={regularMembers}
                             formerMembers={formerMembers}
                             isAdmin={canManageMembers}
-                            canPromote={hasGroupsManage}
+                            canPromote={canManageMembers}
+                            leaderTransfer={
+                                canManageMembers && canPickLeaderOutsideGroup
+                                    ? {
+                                          copy: {
+                                              trigger: "Overfør",
+                                              title: "Overfør lederverv",
+                                              description:
+                                                  "Den nye lederen legges til i gruppen om hen ikke er medlem. Avtroppende leder mister plassen med mindre et verv gir den.",
+                                              submit: "Overfør lederverv",
+                                              submitting: "Overfører …",
+                                          },
+                                          query: leaderQuery,
+                                          onQueryChange: setLeaderQuery,
+                                          results: leaderCandidates,
+                                          isSearching: isSearchingLeader,
+                                          isAdding: updateMemberRole.isPending,
+                                          error: leaderError,
+                                          onAdd: async (userId) => {
+                                              setLeaderError(null);
+                                              try {
+                                                  await updateMemberRole.mutateAsync(
+                                                      {
+                                                          groupSlug: slug,
+                                                          userId,
+                                                          data: {
+                                                              role: "leader",
+                                                          },
+                                                      },
+                                                  );
+                                              } catch (error) {
+                                                  setLeaderError(
+                                                      await extractErrorMessage(
+                                                          error,
+                                                      ),
+                                                  );
+                                                  throw error;
+                                              }
+                                          },
+                                      }
+                                    : undefined
+                            }
                             memberSearch={{
                                 query: memberQuery,
                                 onQueryChange: setMemberQuery,

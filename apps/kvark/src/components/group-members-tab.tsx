@@ -24,10 +24,16 @@ type GroupMembersTabProps = {
     formerMembers: Member[];
     /** Leder eller groups:manage for gruppen — kan legge til og fjerne medlemmer. */
     isAdmin: boolean;
-    /** Kun groups:manage — å utnevne en ny leder er ikke lederens eget kall. */
+    /** Leder eller groups:manage — lederen kan gi vervet videre selv. */
     canPromote: boolean;
     /** Søk og innsending for «Legg til medlem»; eies av ruten. */
     memberSearch: GroupAddMemberDialogProps;
+    /**
+     * Søk og innsending for «Overfør lederverv». Settes bare for grupper som
+     * kan hente lederen utenfra (HS) — ellers går overføringen gjennom
+     * medlemslista, og en egen søkedialog ville bare vært en omvei.
+     */
+    leaderTransfer?: GroupAddMemberDialogProps;
     onPromote: (member: Member) => void;
     onRemove: (member: Member) => void;
 };
@@ -39,6 +45,7 @@ export function GroupMembersTab({
     isAdmin,
     canPromote,
     memberSearch,
+    leaderTransfer,
     onPromote,
     onRemove,
 }: GroupMembersTabProps) {
@@ -53,9 +60,14 @@ export function GroupMembersTab({
                 }
             />
 
-            {leaders.length > 0 ? (
+            {leaders.length > 0 || leaderTransfer ? (
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-lg">Leder</h3>
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-lg">Leder</h3>
+                        {leaderTransfer ? (
+                            <GroupAddMemberDialog {...leaderTransfer} />
+                        ) : null}
+                    </div>
                     <ul className="flex flex-col gap-2">
                         {leaders.map((m) => (
                             <li key={m.id}>

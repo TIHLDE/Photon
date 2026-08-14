@@ -16,6 +16,17 @@ import type { UserSearchOption } from "#/components/user-search-combobox";
 import { UserSearchCombobox } from "#/components/user-search-combobox";
 
 export type GroupAddMemberDialogProps = {
+    /**
+     * Teksten i dialogen. Standard er «legg til medlem»; lederoverføringen i
+     * HS bruker samme søk og velger, men er en annen handling.
+     */
+    copy?: {
+        trigger: string;
+        title: string;
+        description: string;
+        submit: string;
+        submitting: string;
+    };
     /** Søketekst — eies av forelderen, som også henter treffene. */
     query: string;
     onQueryChange: (query: string) => void;
@@ -30,7 +41,17 @@ export type GroupAddMemberDialogProps = {
     onAdd: (userId: string) => Promise<void>;
 };
 
+const DEFAULT_COPY = {
+    trigger: "Legg til",
+    title: "Legg til medlem",
+    description:
+        "Brukeren vil motta en epost/varsel om at de er lagt til i gruppen.",
+    submit: "Legg til medlem",
+    submitting: "Legger til …",
+} as const;
+
 export function GroupAddMemberDialog({
+    copy = DEFAULT_COPY,
     query,
     onQueryChange,
     results,
@@ -61,17 +82,14 @@ export function GroupAddMemberDialog({
                 render={
                     <Button size="sm">
                         <Plus />
-                        Legg til
+                        {copy.trigger}
                     </Button>
                 }
             />
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Legg til medlem</DialogTitle>
-                    <DialogDescription>
-                        Brukeren vil motta en epost/varsel om at de er lagt til
-                        i gruppen.
-                    </DialogDescription>
+                    <DialogTitle>{copy.title}</DialogTitle>
+                    <DialogDescription>{copy.description}</DialogDescription>
                 </DialogHeader>
                 <FieldGroup>
                     <Field>
@@ -110,7 +128,7 @@ export function GroupAddMemberDialog({
                             });
                         }}
                     >
-                        {isAdding ? "Legger til …" : "Legg til medlem"}
+                        {isAdding ? copy.submitting : copy.submit}
                     </Button>
                 </DialogFooter>
             </DialogContent>
