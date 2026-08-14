@@ -192,7 +192,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 allowGroupLeader: true,
             },
             {
-                label: "Opptak",
+                label: "Kontrakt",
                 icon: FileUserIcon,
                 link: linkOptions({ to: "/admin/opptak" }),
                 permission: ADMIN_SECTION_PERMISSIONS.opptak,
