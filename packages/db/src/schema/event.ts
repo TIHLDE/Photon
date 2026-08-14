@@ -1,7 +1,8 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
     boolean,
     doublePrecision,
+    index,
     integer,
     pgEnum,
     pgTableCreator,
@@ -195,7 +196,33 @@ export const eventRegistration = pgTable(
         allowPhoto: boolean("allow_photo").default(true).notNull(),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({ columns: [t.userId, t.eventId] }),
+        /**
+         * The primary key leads on `user_id`, so it cannot serve a lookup by
+         * event — and looking up by event is what this table mostly does:
+         * capacity counts, attendee lists, the resolver's per-event pass.
+         * Every one of those was a full scan of the whole table, which is why
+         * `event_registration` had read 10.7 billion rows across 3.1 million
+         * sequential scans by August 2026 — more than the rest of the database
+         * put together.
+         *
+         * `status` rides along because the hot queries filter on it too
+         * ("how many are `registered` for this event"), so the index can
+         * answer them without touching the heap.
+         */
+        index("registration_event_id_status_idx").on(t.eventId, t.status),
+        /**
+         * The registration resolver runs every 5 seconds and asks for every
+         * `pending` row in the table. Normally there are none, so a partial
+         * index stays a few kilobytes and turns that scan into an empty
+         * lookup. A plain index on `status` would instead be full-size, and
+         * ~99% of it rows the cron never wants.
+         */
+        index("registration_pending_idx")
+            .on(t.eventId)
+            .where(sql`${t.status} = 'pending'`),
+    ],
 );
 
 export const eventRegistrationRelations = relations(

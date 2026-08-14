@@ -45,6 +45,20 @@ export const REQUEST_TIMEOUTS = {
 } as const satisfies DbTimeouts;
 
 /**
+ * Connections the API pool may open. `pg` defaults to 10, which is thin for
+ * what this API actually gets asked to do: when registration opens for a
+ * popular event, 200–300 members hit it at once — the record is 29 sign-ups
+ * inside a single second, 156 inside a minute — and each sign-up makes up to
+ * nine round-trips before it is done.
+ *
+ * Room to grow into, not a number to max out: Postgres allows 100 connections
+ * in total and that budget is shared with every other service on the host
+ * (Grafana included, which is why a wedged database takes the dashboards down
+ * with it). Twenty-five leaves plenty for the neighbours.
+ */
+const POOL_MAX = 25;
+
+/**
  * No timeouts, for migrations and one-off scripts: an `ALTER TABLE` or a bulk
  * import legitimately runs for minutes, and killing it halfway is worse than
  * letting it finish. A script that starves its own pool should wait rather
@@ -224,6 +238,7 @@ export function createDb(config: {
                         connectionString,
                         options: buildOptions(timeouts),
                         connectionTimeoutMillis: connectionTimeoutMs,
+                        max: POOL_MAX,
                     }),
                 ),
             ),
