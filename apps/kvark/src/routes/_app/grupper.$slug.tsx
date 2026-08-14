@@ -27,7 +27,6 @@ import {
 } from "#/api/queries/forms";
 import {
     useIsGroupLeaderOf,
-    useIsGroupMemberOf,
     usePermission,
     useScopedPermission,
 } from "#/hooks/use-permission";
@@ -232,21 +231,21 @@ function GroupDetail() {
         EVENT_CREATE_PERMISSIONS,
         `group:${slug}`,
     );
-    const isMember = useIsGroupMemberOf(slug);
     const isRoot = usePermission("root");
 
     const isFinesAdmin = Boolean(
         session && apiGroup.finesAdminId === session.user?.id,
     );
     // Bøter følger medlemskap, ikke tilganger: er du med i gruppen ser du alt
-    // gruppen har gitt hverandre. Botsjefen og root ser det også — samme regel
-    // som GET-endepunktene.
+    // gruppen har gitt hverandre.
     //
-    // `finesActivated` avgjør først: en gruppe som ikke bruker botsystemet har
-    // verken lovverk eller bøter å vise, og fanene sto likevel der for alle
-    // medlemmene.
-    const canViewFines =
-        apiGroup.finesActivated && (isMember || isFinesAdmin || isRoot);
+    // Selve avgjørelsen tas på serveren og kommer som `viewerCanUseFines`. Den
+    // dekker både at gruppen faktisk bruker botsystemet og at et medlemskap i
+    // en studiegruppe ikke er nok i seg selv — der er medlemslista en
+    // Feide-projeksjon som aldri krymper, så alumni står oppført sammen med
+    // dagens studenter. Root er ikke med i serverens svar (den gjelder én
+    // gruppe, ikke tilgang på tvers), så den legges på her.
+    const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
 
     // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
     // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
@@ -408,9 +407,9 @@ function GroupDetail() {
     // Å avgjøre en bot — godkjenne, avvise, slette — er botsjefens og lederens
     // jobb. Å gi en er noe alle i gruppen kan.
     const canManageFines = isFinesAdmin || isLeader || isRoot;
-    const canGiveFine = Boolean(
-        apiGroup.finesActivated && (isMember || isFinesAdmin || isRoot),
-    );
+    // Å gi en bot krever nøyaktig det samme som å lese dem — serveren avviser
+    // ellers POST-en med 403 etter at skjemaet er fylt ut.
+    const canGiveFine = canViewFines;
 
     const navItems = useMemo(
         () =>

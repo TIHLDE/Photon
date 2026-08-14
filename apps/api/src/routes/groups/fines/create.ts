@@ -3,12 +3,12 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { isGroupMember } from "~/lib/group";
 import { promoteAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
+import { isFinesEligibleMember } from "./permissions";
 import { createFineSchema, fineSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
 
@@ -88,7 +88,10 @@ export const createFineRoute = route().post(
             group.finesAdminId === user.id ||
             (await hasPermission(ctx, user.id, "root"));
 
-        if (!isPrivileged && !(await isGroupMember(ctx, user.id, groupSlug))) {
+        if (
+            !isPrivileged &&
+            !(await isFinesEligibleMember(ctx, user.id, group))
+        ) {
             throw new HTTPException(403, {
                 message: `Only members of group "${groupSlug}" can give fines in it`,
             });
@@ -112,8 +115,13 @@ export const createFineRoute = route().post(
          * Lepton refused this in `Fine.clean()` with UserIsNotInGroup. Without
          * it a group can fine anyone on the site, and the fined person cannot
          * even open the page the fine lives on.
+         *
+         * Same eligibility rule as the giver, and for the same reason: in a
+         * study group the roster still lists everyone who ever took the
+         * programme, and an alumnus who cannot read the group's bøter must not
+         * be handed one either.
          */
-        if (!(await isGroupMember(ctx, body.userId, groupSlug))) {
+        if (!(await isFinesEligibleMember(ctx, body.userId, group))) {
             throw new HTTPException(400, {
                 message: `User "${body.userId}" is not a member of group "${groupSlug}"`,
             });

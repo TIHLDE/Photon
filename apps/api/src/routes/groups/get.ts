@@ -3,7 +3,8 @@ import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
-import { groupSchema } from "./schema";
+import { isFinesEligibleMember } from "./fines/permissions";
+import { groupDetailSchema } from "./schema";
 
 export const getRoute = route().get(
     "/:slug",
@@ -16,7 +17,7 @@ export const getRoute = route().get(
     })
         .schemaResponse({
             statusCode: 200,
-            schema: groupSchema,
+            schema: groupDetailSchema,
             description: "Group details retrieved successfully",
         })
         .notFound({
@@ -42,8 +43,22 @@ export const getRoute = route().get(
             });
         }
 
-        await assertGroupVisible(ctx, group, c.get("user")?.id);
+        const userId = c.get("user")?.id;
+        await assertGroupVisible(ctx, group, userId);
 
-        return c.json(group);
+        /**
+         * Answered here rather than left to the client: the botsjef keeps
+         * access whatever the roster says, and in a study group an ordinary
+         * member only counts while Feide still reports them enrolled. Neither
+         * rule is derivable from the fields above.
+         */
+        const viewerCanUseFines = Boolean(
+            group.finesActivated &&
+            userId &&
+            (group.finesAdminId === userId ||
+                (await isFinesEligibleMember(ctx, userId, group))),
+        );
+
+        return c.json({ ...group, viewerCanUseFines });
     },
 );

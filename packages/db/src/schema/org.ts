@@ -126,6 +126,33 @@ export const studyProgramMembership = pgTable(
          * fills in on their next login with campus-marked courses.
          */
         confirmedCampus: campus("confirmed_campus"),
+        /**
+         * Whether Feide still reported this programme as active at the
+         * member's last login — `membership.active` on the Dataporten group,
+         * not the mere presence of it. The group list is fetched with
+         * `showAll=true`, so a programme someone finished years ago still
+         * comes back; this flag is what separates the two.
+         *
+         * Deliberately separate from the study groups, which are additive on
+         * purpose ("én gang TIHLDE-medlem, alltid TIHLDE-medlem") and so say
+         * nothing about who is enrolled *now*. Anything that has to tell a
+         * current student from an alumnus reads this instead — today that is
+         * bøter in a study group, see `isFinesEligibleMember`.
+         *
+         * NULL means we have never had an answer: every row migrated from
+         * Lepton starts out that way, and fills in on the member's next Feide
+         * login. NULL is not "inactive" — it is "unknown" — but a caller that
+         * needs positive proof of enrolment must treat it as a no, because
+         * that is exactly what it is: the absence of proof.
+         */
+        feideActive: boolean("feide_active"),
+        /**
+         * When {@link feideActive} was last written, i.e. the last Feide login
+         * that mentioned this programme at all. Lets a reader tell a fresh
+         * "inactive" from one recorded three years ago, and is the only way to
+         * see how stale the flag is — it only ever updates on login.
+         */
+        feideCheckedAt: timestamp("feide_checked_at"),
         ...timestamps,
     },
     (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],

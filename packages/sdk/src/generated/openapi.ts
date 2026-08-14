@@ -4723,6 +4723,38 @@ export interface components {
             /** @description Whether contract signing is required for group members */
             contractSigningRequired?: boolean;
         };
+        GroupDetail: {
+            /** @description Group slug */
+            slug: string;
+            /** @description Gruppebilde URL, shown on the group's about page */
+            imageUrl: string | null;
+            /** @description Group logo URL, shown in avatars and cards */
+            logoUrl: string | null;
+            /** @description Group name */
+            name: string;
+            /** @description Group description */
+            description: string | null;
+            /** @description Group contact email */
+            contactEmail: string | null;
+            /** @description Group type */
+            type: string;
+            /** @description Sub-category below type. GRUPPE or IDRETTSGRUPPE for interest groups, null otherwise. */
+            subtype: string | null;
+            /** @description Group fines info */
+            finesInfo: string;
+            /** @description Group fines activated */
+            finesActivated: boolean;
+            /** @description Group fines admin ID */
+            finesAdminId: string | null;
+            /** @description Whether contract signing is required */
+            contractSigningRequired: boolean;
+            /** @description Creation timestamp */
+            createdAt: string;
+            /** @description Last update timestamp */
+            updatedAt: string;
+            /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
+            viewerCanUseFines: boolean;
+        };
         Fine: {
             /** @description Fine ID */
             id: string;
@@ -10109,7 +10141,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Group"];
+                    "application/json": components["schemas"]["GroupDetail"];
                 };
             };
             /** @description Forbidden - The group is private and you are not a member */
