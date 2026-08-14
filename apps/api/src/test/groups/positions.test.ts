@@ -740,6 +740,192 @@ describe("group positions", () => {
         );
     });
 
+    describe("AU verv follow the seat in HS", () => {
+        const HS = { slug: "hs", name: "Hovedstyret", type: "board" };
+
+        integrationTest(
+            "losing an AU verv takes the HS seat with it",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                await ctx.utils.createTestGroup(HS);
+                const client = await ctx.utils.clientForUser(admin);
+                const finansminister = await ctx.utils.createTestUser();
+
+                await addUserToGroup(ctx, finansminister.id, "hs", "member");
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: "hs", name: "Finansminister" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: finansminister.id,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].holders[":userId"].$delete({
+                    param: {
+                        groupSlug: "hs",
+                        positionId: position!.id,
+                        userId: finansminister.id,
+                    },
+                });
+
+                expect(response.status).toBe(200);
+
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: and(
+                            eq(
+                                schema.groupMembership.userId,
+                                finansminister.id,
+                            ),
+                            eq(schema.groupMembership.groupSlug, "hs"),
+                        ),
+                    },
+                );
+                expect(membership).toBeUndefined();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a subgroup leader keeps the HS seat when an AU verv is taken away",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                await ctx.utils.createTestGroup(HS);
+                const client = await ctx.utils.clientForUser(admin);
+                const minister = await ctx.utils.createTestUser();
+                const subgroup = await ctx.utils.createTestGroup({
+                    type: "subgroup",
+                    name: "Undergruppen",
+                });
+
+                // Lederskapet i undergruppen tar hen inn i HS uansett.
+                await addUserToGroup(ctx, minister.id, subgroup.slug, "leader");
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: "hs", name: "Visepresident" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: minister.id,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].holders[":userId"].$delete({
+                    param: {
+                        groupSlug: "hs",
+                        positionId: position!.id,
+                        userId: minister.id,
+                    },
+                });
+
+                expect(response.status).toBe(200);
+
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: and(
+                            eq(schema.groupMembership.userId, minister.id),
+                            eq(schema.groupMembership.groupSlug, "hs"),
+                        ),
+                    },
+                );
+                expect(membership).toBeDefined();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "deleting an HS verv takes its holder's seat with it",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                await ctx.utils.createTestGroup(HS);
+                const client = await ctx.utils.clientForUser(admin);
+                const visepresident = await ctx.utils.createTestUser();
+
+                await addUserToGroup(ctx, visepresident.id, "hs", "member");
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: "hs", name: "Visepresident" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: visepresident.id,
+                });
+
+                // Vervet legges ned, ikke bare fratas.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].$delete({
+                    param: { groupSlug: "hs", positionId: position!.id },
+                });
+
+                expect(response.status).toBe(200);
+
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: and(
+                            eq(schema.groupMembership.userId, visepresident.id),
+                            eq(schema.groupMembership.groupSlug, "hs"),
+                        ),
+                    },
+                );
+                expect(membership).toBeUndefined();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "the sitting HS leader keeps the seat when a verv is taken away",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                await ctx.utils.createTestGroup(HS);
+                const client = await ctx.utils.clientForUser(admin);
+                const president = await ctx.utils.createTestUser();
+
+                await addUserToGroup(ctx, president.id, "hs", "leader");
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: "hs", name: "President" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: president.id,
+                });
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].holders[":userId"].$delete({
+                    param: {
+                        groupSlug: "hs",
+                        positionId: position!.id,
+                        userId: president.id,
+                    },
+                });
+
+                expect(response.status).toBe(200);
+
+                // Ledervervet i HS er sin egen grunn til a sitte der.
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: and(
+                            eq(schema.groupMembership.userId, president.id),
+                            eq(schema.groupMembership.groupSlug, "hs"),
+                        ),
+                    },
+                );
+                expect(membership?.role).toBe("leader");
+            },
+            500_000,
+        );
+    });
+
     describe("leader permissions follow leadership", () => {
         integrationTest(
             "promoting and demoting moves the group's leaderPermissions",

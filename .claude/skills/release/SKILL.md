@@ -50,6 +50,23 @@ git tag --list '*.release-*' --sort=-creatordate | head -5
 
 Finn taggen som var grønn, og be Drift deploye `ghcr.io/tihlde/photon:<tag>`. Er problemet i koden, fiks det på `main` som vanlig via PR og slipp en ny release oppå.
 
+### Rollback uten Drift-tilgang
+
+Å be Drift om et bestemt image krever `DEPLOY_RECEIVER_TOKEN`, som ligger som GitHub-secret. Har du bare `gh`, gjør dette samme jobben — `deploy.yml` har `workflow_dispatch`, og bygget følger ref-en du oppgir:
+
+```bash
+gh workflow run deploy.yml --ref <forrige-grønne-tag>
+```
+
+Det bygger den gamle commiten på nytt, gjør `latest` til den koden, og notify-steget får verten til å hente den. Bygget tar typisk under et minutt siden lagene allerede ligger i cache fra da taggen ble sluppet.
+
+To ting å vite:
+
+- **`latest` peker nå på den gamle releasen.** Neste `cut-release` overskriver det som normalt, men deployer noen «latest» i mellomtiden, får de den gamle koden.
+- **Migrasjoner rulles ikke tilbake.** Basen blir stående på den nye releasens skjema mens koden er den gamle. Additive endringer (nye indekser, nye nullbare kolonner) er trygge — den gamle koden bryr seg ikke om at de finnes. En migrasjon som fjerner eller endrer noe den gamle koden leser, er det ikke: da må du fram, ikke tilbake.
+
+**Restart før rollback, for å skille de to feilene.** Kjør `gh run rerun --job <deploy-job-id>` på den siste deploy-kjøringen først — det sender samme image ut på nytt. Kommer den opp, var det en hengende container; er den nede fortsatt et par minutter etter, ligger feilen i koden og rollback er riktig medisin. Jobb-ID-en finner du med `gh run view <run-id> --json jobs -q '.jobs[] | "\(.databaseId) \(.name)"'`.
+
 ## Hvis noe skurrer
 
 - **Taggen ble pushet, men ingen deploy startet.** Sjekk at taggen matcher glob-en i [deploy.yml](.github/workflows/deploy.yml) (`[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].release-*`). En tag som `v1.2.3` trigger ingenting.

@@ -1,6 +1,6 @@
 {
-  "id": "372df415-edae-4bb1-b275-90678a722823",
-  "prevId": "f4ea1a0f-3cc9-4147-89c6-9e1ee0ebe231",
+  "id": "becde9a8-7d88-4d44-b32c-5e5228e0fd39",
+  "prevId": "372df415-edae-4bb1-b275-90678a722823",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5670,7 +5670,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "notification_user_id_created_at_idx": {
+          "name": "notification_user_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "notification_notification_user_id_auth_user_id_fk": {
           "name": "notification_notification_user_id_auth_user_id_fk",

@@ -1669,7 +1669,7 @@ export interface paths {
         head?: never;
         /**
          * Update member role
-         * @description Update a member's role in a group. Requires 'groups:manage' permission.
+         * @description Update a member's role in a group. Requires 'groups:manage' (globally or scoped to the group), or being the group's leader — a sitting leader may only hand the leadership over to someone else.
          */
         patch: operations["updateGroupMemberRole"];
         trace?: never;
@@ -1710,7 +1710,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a position
-         * @description Delete a position (verv). Holders lose the position's permissions. Deleting a global position requires 'roles:create'.
+         * @description Delete a position (verv). Holders lose the position's permissions. Deleting an HS position also takes the holder's seat in HS unless something else warrants it. Deleting a global position requires 'roles:create'.
          */
         delete: operations["deleteGroupPosition"];
         options?: never;

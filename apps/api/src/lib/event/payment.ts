@@ -102,7 +102,7 @@ export async function createPaymentObligation(
 /**
  * Minimal shape of a payment row that can be reversed.
  */
-type ReversiblePayment = {
+export type ReversiblePayment = {
     id: string;
     userId: string;
     amountMinor: number;
@@ -170,20 +170,31 @@ export async function reverseEventPayment(
     return refundable;
 }
 
+/** A refund that has been decided on but not yet carried out with Vipps. */
+export type OwedRefund = {
+    payment: ReversiblePayment;
+    notification: { title: string; description: string; link: string };
+};
+
 /**
- * If a user who is being pushed off a registered spot has already paid, refund
- * them via the payment processor and mark the payment as refunded.
+ * Find the payment owed back to a user who is losing a registered spot, without
+ * contacting Vipps.
  *
- * No-op unless the event is a paid event and a completed ("paid") payment with
- * a provider reference exists for the user.
+ * Split from the refund itself so a caller inside a transaction can decide
+ * *that* a refund is due — a cheap indexed read — and carry it out only once
+ * the transaction has committed. See {@link refundOwed} for why that split
+ * matters.
+ *
+ * Returns null unless the event is a paid event and a completed ("paid")
+ * payment with a provider reference exists for the user.
  */
-export async function refundPaidRegistration(
+export async function findOwedRefund(
     ctx: AppContext,
     event: Pick<PaidEventLike, "id" | "title" | "slug" | "isPaidEvent">,
     userId: string,
-): Promise<void> {
+): Promise<OwedRefund | null> {
     if (!event.isPaidEvent) {
-        return;
+        return null;
     }
 
     const paid = await ctx.db.query.eventPayment.findFirst({
@@ -196,17 +207,52 @@ export async function refundPaidRegistration(
     });
 
     if (!paid || !paid.providerPaymentId) {
-        return;
+        return null;
     }
 
-    await reverseEventPayment(ctx, {
+    return {
         payment: paid,
         notification: {
             title: `Betaling refundert for ${event.title}`,
             description: `Du mistet plassen din på ${event.title} og betalingen din har blitt refundert.`,
             link: eventUrl(event.slug),
         },
-    });
+    };
+}
+
+/**
+ * Carry out refunds decided earlier, one Vipps round-trip at a time.
+ *
+ * **Must be called after the surrounding transaction has committed.** Refunding
+ * means up to three calls out to Vipps (token, payment details, refund), and
+ * doing that inside a transaction holds every row lock it took for as long as
+ * Vipps takes to answer. The registration resolver runs every 5 seconds and
+ * locks registration rows `FOR UPDATE`, so a slow Vipps would have parked those
+ * locks — the same shape as the outage on 2026-08-13, where one request waiting
+ * on a lock it could not get took the whole site down.
+ *
+ * A refund that fails is logged and the rest still run. That is a deliberate
+ * trade: before this split, a Vipps error rolled the registration changes back,
+ * which is safer for consistency but pays for it by holding locks across the
+ * network. A member whose refund failed keeps their (correct) waitlist status
+ * and needs the refund issued by hand — which the log line is there to make
+ * possible.
+ */
+export async function refundOwed(
+    ctx: AppContext,
+    owed: OwedRefund[],
+): Promise<void> {
+    for (const { payment, notification } of owed) {
+        try {
+            await reverseEventPayment(ctx, { payment, notification });
+        } catch (error) {
+            console.error(
+                `Refund failed for user ${payment.userId} on payment ${payment.id} — ` +
+                    "the registration change stands, so this must be refunded manually:",
+                error,
+            );
+        }
+    }
 }
 
 /**

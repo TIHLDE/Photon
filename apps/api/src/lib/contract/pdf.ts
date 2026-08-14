@@ -13,7 +13,6 @@
 
 import type { SignaturePlacement } from "@photon/db/schema";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import sharp from "sharp";
 
 export type StampContractInput = {
     /** The original, unsigned contract PDF. */
@@ -58,9 +57,19 @@ function formatDateTime(date: Date): string {
  *
  * Falls back to the original bytes if the image cannot be trimmed — a
  * misaligned signature beats a failed signing.
+ *
+ * `sharp` is imported here rather than at the top of the file on purpose. It
+ * loads a native binary, and a top-level import makes that load part of booting
+ * the API: this module hangs off the contract routes, so a `sharp` that cannot
+ * load takes down every endpoint, not just signing. That is exactly what
+ * happened on 14 August 2026 — the whole API crash-looped on boot for 18
+ * minutes because the release image could not resolve sharp's platform package.
+ * Imported here, the same failure lands in the catch below and costs us a
+ * slightly misaligned signature.
  */
 async function trimSignature(png: Uint8Array): Promise<Uint8Array> {
     try {
+        const { default: sharp } = await import("sharp");
         const trimmed = await sharp(Buffer.from(png))
             .trim({
                 background: { r: 0, g: 0, b: 0, alpha: 0 },

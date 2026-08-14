@@ -38,7 +38,10 @@ type GroupMemberRowProps = {
     member: Member;
     historic?: boolean;
     isLeader?: boolean;
-    /** Promoting to leader requires `groups:manage` — leadership alone is not enough. */
+    /**
+     * Gjør medlemmet til leder. Krever `groups:manage` for gruppen, eller at
+     * du er lederen som gir vervet fra deg.
+     */
     onPromote?: (member: Member) => void;
     onRemove?: (member: Member) => void;
 };
@@ -112,6 +115,9 @@ function MemberRowMenu({
     onRemove?: (member: Member) => void;
 }) {
     const [confirmRemove, setConfirmRemove] = useState(false);
+    // Overføringen setter den sittende lederen ned, og gjør du det på deg
+    // selv får du den ikke tilbake. Verdt et bekreftelsessteg.
+    const [confirmPromote, setConfirmPromote] = useState(false);
 
     return (
         <>
@@ -141,9 +147,11 @@ function MemberRowMenu({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     {onPromote && !isLeader ? (
-                        <DropdownMenuItem onClick={() => onPromote(member)}>
+                        <DropdownMenuItem
+                            onClick={() => setConfirmPromote(true)}
+                        >
                             <ArrowUpCircle />
-                            Promoter til leder
+                            Gjør til leder
                         </DropdownMenuItem>
                     ) : null}
                     {onRemove ? (
@@ -157,6 +165,28 @@ function MemberRowMenu({
                     ) : null}
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            <AlertDialog open={confirmPromote} onOpenChange={setConfirmPromote}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Gjør {member.name} til leder?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Gruppen har én leder, så den sittende lederen trer
+                            av.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel variant="outline" size="default">
+                            Avbryt
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onPromote?.(member)}>
+                            Gjør til leder
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <AlertDialog open={confirmRemove} onOpenChange={setConfirmRemove}>
                 <AlertDialogContent>

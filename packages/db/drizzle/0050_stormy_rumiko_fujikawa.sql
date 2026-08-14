@@ -1,0 +1,2 @@
+CREATE INDEX "registration_event_id_status_idx" ON "event_registration" USING btree ("event_id","status");--> statement-breakpoint
+CREATE INDEX "registration_pending_idx" ON "event_registration" USING btree ("event_id") WHERE "event_registration"."status" = 'pending';

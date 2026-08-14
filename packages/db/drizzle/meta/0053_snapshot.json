@@ -1,6 +1,6 @@
 {
-  "id": "372df415-edae-4bb1-b275-90678a722823",
-  "prevId": "f4ea1a0f-3cc9-4147-89c6-9e1ee0ebe231",
+  "id": "2aec9eea-1639-4695-98a7-4de416e24f59",
+  "prevId": "802b6866-70af-4ac4-bf1d-5f4a16454364",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2638,7 +2638,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "payment_event_id_user_id_idx": {
+          "name": "payment_event_id_user_id_idx",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "event_payment_event_id_event_event_id_fk": {
           "name": "event_payment_event_id_event_event_id_fk",
@@ -2837,7 +2859,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "reaction_event_id_idx": {
+          "name": "reaction_event_id_idx",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "event_reaction_user_id_auth_user_id_fk": {
           "name": "event_reaction_user_id_auth_user_id_fk",
@@ -3439,7 +3477,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "answer_option_answer_id_idx": {
+          "name": "answer_option_answer_id_idx",
+          "columns": [
+            {
+              "expression": "answer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "form_answer_option_answer_id_form_answer_id_fk": {
           "name": "form_answer_option_answer_id_form_answer_id_fk",
@@ -4433,7 +4487,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "fine_group_slug_user_id_idx": {
+          "name": "fine_group_slug_user_id_idx",
+          "columns": [
+            {
+              "expression": "group_slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "org_fine_user_id_auth_user_id_fk": {
           "name": "org_fine_user_id_auth_user_id_fk",
@@ -4780,7 +4856,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "group_membership_group_slug_idx": {
+          "name": "group_membership_group_slug_idx",
+          "columns": [
+            {
+              "expression": "group_slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "org_group_membership_user_id_auth_user_id_fk": {
           "name": "org_group_membership_user_id_auth_user_id_fk",
@@ -5327,6 +5419,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "feide_active": {
+          "name": "feide_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "feide_checked_at": {
+          "name": "feide_checked_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -5670,7 +5774,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "notification_user_id_created_at_idx": {
+          "name": "notification_user_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "first"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "notification_notification_user_id_auth_user_id_fk": {
           "name": "notification_notification_user_id_auth_user_id_fk",

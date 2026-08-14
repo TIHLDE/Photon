@@ -34,6 +34,18 @@ export type Group = {
     finesAdminId?: string | null;
 };
 
+export const HS_GROUP_SLUG = "hs";
+
+/**
+ * Hvorvidt gruppa kan hente lederen sin utenfra. Presidenten sitter ikke i
+ * Hovedstyret før hun blir valgt, så der søker man blant alle brukere; andre
+ * grupper velger lederen blant sine egne medlemmer. Speiler
+ * `allowsNonMemberLeader` i API-et.
+ */
+export function allowsNonMemberLeader(slug: string): boolean {
+    return slug === HS_GROUP_SLUG;
+}
+
 export type Member = {
     id: string;
     username?: string;

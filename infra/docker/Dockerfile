@@ -32,15 +32,28 @@ RUN bun run build --filter=@photon/api
 # Final image
 FROM oven/bun:1-slim AS release
 WORKDIR /usr/src/app
-COPY --from=build /usr/src/app/apps/api/dist ./dist
-# Migration SQL, applied by dist/migrate.js on boot — the deploy pipeline only
-# ships a new image and never migrates, so the app has to do it itself.
+# The bundle keeps its build-time path (apps/api/dist), so a package it has to
+# resolve at runtime is found the same way it was during the build. `bun build`
+# inlines JavaScript dependencies, but a package with a native binary — sharp —
+# still requires its platform package (`@img/sharp-linux-x64`) at runtime, and
+# that require resolves from the bundle's own directory upwards. Copied to
+# /usr/src/app/dist it would only ever reach the root node_modules, which holds
+# the repo's dev tooling and none of the API's dependencies. That is what took
+# the API down on 14 August 2026.
+COPY --from=build /usr/src/app/apps/api/dist ./apps/api/dist
+# Migration SQL, applied by migrate.js on boot — the deploy pipeline only ships
+# a new image and never migrates, so the app has to do it itself. Stays at the
+# working directory because migrate.js looks for "./drizzle" relative to cwd.
 COPY --from=build /usr/src/app/packages/db/drizzle ./drizzle
+# Both halves of the install are needed, at their original paths: the API's own
+# dependencies live in apps/api/node_modules as symlinks into the .bun store at
+# the root, so copying either one alone leaves dangling links.
 COPY --from=install /usr/src/app/node_modules ./node_modules
+COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 
 USER bun
 EXPOSE 4000/tcp
 # Migrate before serving. `&&` aborts the boot when a migration fails instead of
 # starting the API against a schema it no longer matches.
-ENTRYPOINT ["sh", "-c", "bun run ./dist/migrate.js && bun run ./dist/index.js"]
+ENTRYPOINT ["sh", "-c", "bun run ./apps/api/dist/migrate.js && bun run ./apps/api/dist/index.js"]
 

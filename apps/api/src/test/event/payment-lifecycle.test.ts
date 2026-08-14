@@ -369,5 +369,135 @@ describe("Paid event payment lifecycle", () => {
             },
             500_000,
         );
+
+        integrationTest(
+            "keeps the swap when Vipps fails, because the refund runs after the transaction",
+            async ({ ctx }) => {
+                /**
+                 * The refund used to run *inside* the resolver's transaction,
+                 * which meant a Vipps call — three round-trips over the public
+                 * internet — happened while `FOR UPDATE` locks were held on the
+                 * registration rows. A slow Vipps parked those locks, and the
+                 * resolver runs every 5 seconds.
+                 *
+                 * Moving the call after the commit has a visible consequence,
+                 * and this test pins it down: a failing refund no longer undoes
+                 * the swap. That is the trade — locks are released promptly,
+                 * and a refund that fails is logged for manual handling instead
+                 * of rolling back a registration decision that was correct.
+                 */
+                const refundMock = vi.mocked(vipps.refundPayment);
+                refundMock.mockClear();
+                refundMock.mockRejectedValueOnce(new Error("Vipps er nede"));
+
+                vi.mocked(vipps.getPaymentDetails).mockResolvedValue({
+                    aggregate: {
+                        authorizedAmount: { currency: "NOK", value: 7500 },
+                        capturedAmount: { currency: "NOK", value: 7500 },
+                        refundedAmount: { currency: "NOK", value: 0 },
+                        cancelledAmount: { currency: "NOK", value: 0 },
+                    },
+                } as Awaited<ReturnType<typeof vipps.getPaymentDetails>>);
+
+                await ctx.utils.setupEventCategories();
+                await ctx.utils.setupGroups();
+
+                const event = await ctx.utils.createTestEvent({
+                    capacity: 1,
+                    isPaidEvent: true,
+                    priceMinor: 7500,
+                    paymentGracePeriodMinutes: GRACE_MINUTES,
+                });
+
+                const [pool] = await ctx.db
+                    .insert(schema.eventPriorityPool)
+                    .values({ eventId: event.id, priorityScore: 1 })
+                    .returning();
+                if (!pool) {
+                    throw new Error("Failed to create priority pool");
+                }
+                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
+                    priorityPoolId: pool.id,
+                    groupSlug: "index",
+                });
+
+                const nonPrioritized = await ctx.utils.createTestUser();
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    nonPrioritized.id,
+                );
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                const paidPayment = await ctx.db.query.eventPayment.findFirst({
+                    where: (p, { and, eq }) =>
+                        and(
+                            eq(p.eventId, event.id),
+                            eq(p.userId, nonPrioritized.id),
+                        ),
+                });
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({
+                        status: "paid",
+                        provider: "vipps",
+                        providerPaymentId: "vipps-ref-fail",
+                        receivedPaymentAt: new Date(),
+                    })
+                    .where(eq(schema.eventPayment.id, paidPayment?.id ?? ""));
+
+                await new Promise((resolve) => setTimeout(resolve, 10));
+
+                const prioritizedData = await ctx.auth.api.createUser({
+                    body: {
+                        email: "prioritized-fail@test.com",
+                        name: "Prioritized User",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: prioritizedData.user.id,
+                    groupSlug: "index",
+                    role: "member",
+                });
+                await ctx.utils.createPendingRegistration(
+                    event.id,
+                    prioritizedData.user.id,
+                );
+
+                // Must not throw: the refund failure is contained.
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                expect(refundMock).toHaveBeenCalledTimes(1);
+
+                // The registration decision stands.
+                const priorityReg =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (r, { and, eq }) =>
+                            and(
+                                eq(r.eventId, event.id),
+                                eq(r.userId, prioritizedData.user.id),
+                            ),
+                    });
+                expect(priorityReg?.status).toBe("registered");
+
+                const swappedReg =
+                    await ctx.db.query.eventRegistration.findFirst({
+                        where: (r, { and, eq }) =>
+                            and(
+                                eq(r.eventId, event.id),
+                                eq(r.userId, nonPrioritized.id),
+                            ),
+                    });
+                expect(swappedReg?.status).toBe("waitlisted");
+
+                // And the payment is still marked paid, so the manual refund
+                // has something to act on.
+                const untouched = await ctx.db.query.eventPayment.findFirst({
+                    where: (p, { eq }) => eq(p.id, paidPayment?.id ?? ""),
+                });
+                expect(untouched?.status).toBe("paid");
+            },
+            500_000,
+        );
     });
 });

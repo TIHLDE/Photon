@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
     boolean,
+    index,
     integer,
     pgEnum,
     pgTableCreator,
@@ -229,15 +230,26 @@ export const formAnswerRelations = relations(formAnswer, ({ one, many }) => ({
 
 // ===== ANSWER-OPTION (Many-to-Many) =====
 
-export const formAnswerOption = pgTable("answer_option", {
-    answerId: uuid("answer_id")
-        .references(() => formAnswer.id, { onDelete: "cascade" })
-        .notNull(),
-    optionId: uuid("option_id")
-        .references(() => formOption.id, { onDelete: "cascade" })
-        .notNull(),
-    ...timestamps,
-});
+export const formAnswerOption = pgTable(
+    "answer_option",
+    {
+        answerId: uuid("answer_id")
+            .references(() => formAnswer.id, { onDelete: "cascade" })
+            .notNull(),
+        optionId: uuid("option_id")
+            .references(() => formOption.id, { onDelete: "cascade" })
+            .notNull(),
+        ...timestamps,
+    },
+    (t) => [
+        /**
+         * The largest table in the database with no index at all: 110 265
+         * rows, read in full every time a submission needed the options
+         * picked for one of its answers.
+         */
+        index("answer_option_answer_id_idx").on(t.answerId),
+    ],
+);
 
 export const formAnswerOptionRelations = relations(
     formAnswerOption,

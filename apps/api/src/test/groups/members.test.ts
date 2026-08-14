@@ -926,6 +926,247 @@ describe("group members", () => {
         );
     });
 
+    describe("leader hands the verv over", () => {
+        integrationTest(
+            "sitting leader can promote a member without groups:manage",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup();
+                const successor = await ctx.auth.api.createUser({
+                    body: {
+                        email: "successor@test.com",
+                        name: "Successor",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    },
+                    {
+                        userId: successor.user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: {
+                        groupSlug: group.slug,
+                        userId: successor.user.id,
+                    },
+                    json: { role: "leader" },
+                });
+
+                expect(response.status).toBe(200);
+
+                const memberships = await ctx.db.query.groupMembership.findMany(
+                    {
+                        where: eq(schema.groupMembership.groupSlug, group.slug),
+                    },
+                );
+                const roleByUser = new Map(
+                    memberships.map((m) => [m.userId, m.role]),
+                );
+                expect(roleByUser.get(successor.user.id)).toBe("leader");
+                expect(roleByUser.get(leader.id)).toBe("member");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "sitting leader cannot set a member down",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup();
+                const member = await ctx.auth.api.createUser({
+                    body: {
+                        email: "plain-member@test.com",
+                        name: "Plain Member",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    },
+                    {
+                        userId: member.user.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: { groupSlug: group.slug, userId: member.user.id },
+                    json: { role: "member" },
+                });
+
+                expect(response.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a normal group's leader must be picked among its members",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+
+                const group = await ctx.utils.createTestGroup();
+                const outsider = await ctx.auth.api.createUser({
+                    body: {
+                        email: "outsider@test.com",
+                        name: "Outsider",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: { groupSlug: group.slug, userId: outsider.user.id },
+                    json: { role: "leader" },
+                });
+
+                expect(response.status).toBe(404);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "HS leadership can go to someone who is not a member yet",
+            async ({ ctx }) => {
+                const president = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(president);
+
+                // Presidenten velges pa generalforsamlingen og sitter ikke i
+                // HS for hun tar over, sa medlemskapet opprettes underveis.
+                const hs = await ctx.utils.createTestGroup({
+                    slug: "hs",
+                    name: "Hovedstyret",
+                    type: "board",
+                });
+                const successor = await ctx.auth.api.createUser({
+                    body: {
+                        email: "next-president@test.com",
+                        name: "Next President",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: president.id,
+                    groupSlug: hs.slug,
+                    role: "leader",
+                });
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: { groupSlug: hs.slug, userId: successor.user.id },
+                    json: { role: "leader" },
+                });
+
+                expect(response.status).toBe(200);
+
+                const memberships = await ctx.db.query.groupMembership.findMany(
+                    {
+                        where: eq(schema.groupMembership.groupSlug, hs.slug),
+                    },
+                );
+                const roleByUser = new Map(
+                    memberships.map((m) => [m.userId, m.role]),
+                );
+                expect(roleByUser.get(successor.user.id)).toBe("leader");
+                // Den avgatte presidenten blir ikke staende igjen i HS: uten
+                // AU-verv eller undergruppelederskap er plassen ikke lenger
+                // hennes.
+                expect(roleByUser.has(president.id)).toBe(false);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "outgoing president keeps the HS seat when an AU verv warrants it",
+            async ({ ctx }) => {
+                const president = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(president);
+
+                const hs = await ctx.utils.createTestGroup({
+                    slug: "hs",
+                    name: "Hovedstyret",
+                    type: "board",
+                });
+                const successor = await ctx.auth.api.createUser({
+                    body: {
+                        email: "incoming-president@test.com",
+                        name: "Incoming President",
+                        password: "test123!",
+                    },
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: president.id,
+                    groupSlug: hs.slug,
+                    role: "leader",
+                });
+
+                // Finansministeren sitter i AU og blir vaerende i HS selv om
+                // hun gir fra seg ledervervet.
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: hs.slug, name: "Finansminister" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: president.id,
+                });
+
+                const response = await client.api.groups[":groupSlug"].members[
+                    ":userId"
+                ].$patch({
+                    param: { groupSlug: hs.slug, userId: successor.user.id },
+                    json: { role: "leader" },
+                });
+
+                expect(response.status).toBe(200);
+
+                const memberships = await ctx.db.query.groupMembership.findMany(
+                    {
+                        where: eq(schema.groupMembership.groupSlug, hs.slug),
+                    },
+                );
+                const roleByUser = new Map(
+                    memberships.map((m) => [m.userId, m.role]),
+                );
+                expect(roleByUser.get(successor.user.id)).toBe("leader");
+                expect(roleByUser.get(president.id)).toBe("member");
+            },
+            500_000,
+        );
+    });
+
     describe("former members (membership history)", () => {
         integrationTest(
             "records the stint when a member is removed",

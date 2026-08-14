@@ -95,9 +95,11 @@ export const addMemberRoute = route().post(
             });
         }
 
-        // Handing out leadership is an escalation — a subgroup leader also
-        // gets the leader role and a seat in HS — so it stays with
-        // "groups:manage". A group's own leader may add plain members only.
+        // "Legg til medlem" legger til medlemmer. En leder som vil gi fra seg
+        // vervet gjør det gjennom PATCH members/:userId, som er stedet
+        // reglene for overføring bor (bare til andre, og bare utenfor egen
+        // medlemsliste i HS). Å dele ut lederrollen herfra krever fortsatt
+        // "groups:manage".
         if (body.role === "leader" && c.get("isResourceOwner")) {
             throw new HTTPException(403, {
                 message:

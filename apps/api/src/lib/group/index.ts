@@ -241,12 +241,26 @@ export async function demoteOtherLeaders(
 
     if (outgoing.length === 0) return;
 
+    const group = await getGroup(ctx, groupSlug);
+    if (!group) return;
+
     // Avgåtte undergruppeledere mister HS-plassen på samme måte som når de
     // settes ned manuelt eller meldes ut.
-    const group = await getGroup(ctx, groupSlug);
-    if (!group || !isSubgroupType(group.type)) return;
-    for (const { userId } of outgoing) {
-        await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+    if (isSubgroupType(group.type)) {
+        for (const { userId } of outgoing) {
+            await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
+        }
+        return;
+    }
+
+    // HS er AU + undergruppelederne, ikke et sted man blir sittende: en
+    // avgått president har ingenting der å gjøre med mindre noe annet gir
+    // plassen (et AU-verv eller lederskapet i en undergruppe), akkurat som
+    // for undergruppelederne over.
+    if (group.slug === HS_GROUP_SLUG) {
+        for (const { userId } of outgoing) {
+            await pruneHsMembershipIfUnwarranted(ctx, userId);
+        }
     }
 }
 
@@ -406,6 +420,18 @@ export function isSubgroupType(type: string): boolean {
 }
 
 /**
+ * True for groups whose next leader may be someone who is not a member yet.
+ *
+ * HS is the exception: presidenten velges på generalforsamlingen og sitter
+ * ikke i Hovedstyret før hun tar over, så lederen kan ikke plukkes blant HS
+ * sine egne medlemmer. Alle andre grupper velger lederen sin innenfra, og der
+ * er «ikke medlem» en feil verdt å stoppe på.
+ */
+export function allowsNonMemberLeader(group: { slug: string }): boolean {
+    return group.slug === HS_GROUP_SLUG;
+}
+
+/**
  * Get the leader-verv linked to a subgroup (in any group, normally hs).
  */
 async function getLinkedLeaderPosition(ctx: AppContext, groupSlug: string) {
@@ -486,9 +512,9 @@ async function syncSubgroupLeaderOutOfHs(
 }
 
 /**
- * Remove `userId` from hs unless they still belong there: they lead another
- * subgroup, or they hold some hs verv (e.g. an AU title). Safe to call for
- * users who are not hs members at all.
+ * Remove `userId` from hs unless they still belong there: they lead hs
+ * itself, they lead another subgroup, or they hold some hs verv (e.g. an AU
+ * title). Safe to call for users who are not hs members at all.
  */
 export async function pruneHsMembershipIfUnwarranted(
     ctx: AppContext,
@@ -496,9 +522,10 @@ export async function pruneHsMembershipIfUnwarranted(
 ): Promise<void> {
     if (!(await isGroupMember(ctx, userId, HS_GROUP_SLUG))) return;
 
-    // Still leader of some subgroup?
+    // Still leader of hs itself, or of some subgroup?
     const memberships = await ctx.db
         .select({
+            slug: schema.groupMembership.groupSlug,
             role: schema.groupMembership.role,
             type: schema.group.type,
         })
@@ -508,7 +535,13 @@ export async function pruneHsMembershipIfUnwarranted(
             eq(schema.groupMembership.groupSlug, schema.group.slug),
         )
         .where(eq(schema.groupMembership.userId, userId));
-    if (memberships.some((m) => m.role === "leader" && isSubgroupType(m.type)))
+    if (
+        memberships.some(
+            (m) =>
+                m.role === "leader" &&
+                (m.slug === HS_GROUP_SLUG || isSubgroupType(m.type)),
+        )
+    )
         return;
 
     // Still holds an hs verv (e.g. AU title)?

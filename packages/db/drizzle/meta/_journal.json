@@ -355,8 +355,29 @@
     {
       "idx": 50,
       "version": "7",
-      "when": 1786737178885,
-      "tag": "0050_gifted_wallflower",
+      "when": 1786718443393,
+      "tag": "0050_stormy_rumiko_fujikawa",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1786734317750,
+      "tag": "0051_heavy_jackpot",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1786739033126,
+      "tag": "0052_nappy_human_fly",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1786743342793,
+      "tag": "0053_old_boom_boom",
       "breakpoints": true
     }
   ]

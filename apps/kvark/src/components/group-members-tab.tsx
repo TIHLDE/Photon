@@ -24,10 +24,16 @@ type GroupMembersTabProps = {
     formerMembers: Member[];
     /** Leder eller groups:manage for gruppen — kan legge til og fjerne medlemmer. */
     isAdmin: boolean;
-    /** Kun groups:manage — å utnevne en ny leder er ikke lederens eget kall. */
+    /** Leder eller groups:manage — lederen kan gi vervet videre selv. */
     canPromote: boolean;
     /** Søk og innsending for «Legg til medlem»; eies av ruten. */
     memberSearch: GroupAddMemberDialogProps;
+    /**
+     * Søk og innsending for «Overfør lederverv». Settes bare for grupper som
+     * kan hente lederen utenfra (HS) — ellers går overføringen gjennom
+     * medlemslista, og en egen søkedialog ville bare vært en omvei.
+     */
+    leaderTransfer?: GroupAddMemberDialogProps;
     onPromote: (member: Member) => void;
     onRemove: (member: Member) => void;
 };
@@ -39,6 +45,7 @@ export function GroupMembersTab({
     isAdmin,
     canPromote,
     memberSearch,
+    leaderTransfer,
     onPromote,
     onRemove,
 }: GroupMembersTabProps) {
@@ -47,43 +54,40 @@ export function GroupMembersTab({
     return (
         <div className="flex flex-col gap-6">
             <GroupPageHeader
-                title="Medlemmer"
+                title={`Medlemmer (${leaders.length + members.length})`}
                 action={
-                    isAdmin ? <GroupAddMemberDialog {...memberSearch} /> : null
+                    <div className="flex flex-wrap items-center gap-2">
+                        {leaderTransfer ? (
+                            <GroupAddMemberDialog {...leaderTransfer} />
+                        ) : null}
+                        {isAdmin ? (
+                            <GroupAddMemberDialog {...memberSearch} />
+                        ) : null}
+                    </div>
                 }
             />
 
-            {leaders.length > 0 ? (
-                <div className="flex flex-col gap-2">
-                    <h3 className="text-lg">Leder</h3>
-                    <ul className="flex flex-col gap-2">
-                        {leaders.map((m) => (
-                            <li key={m.id}>
-                                <GroupMemberRow
-                                    member={m}
-                                    isLeader
-                                    onRemove={isAdmin ? onRemove : undefined}
-                                />
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            ) : null}
-
-            <div className="flex flex-col gap-2">
-                <h3 className="text-lg">Medlemmer ({members.length})</h3>
-                <ul className="flex flex-col gap-2">
-                    {members.map((m) => (
-                        <li key={m.id}>
-                            <GroupMemberRow
-                                member={m}
-                                onPromote={canPromote ? onPromote : undefined}
-                                onRemove={isAdmin ? onRemove : undefined}
-                            />
-                        </li>
-                    ))}
-                </ul>
-            </div>
+            {/* Lederen ligger øverst i samme liste som resten — badgen skiller den ut. */}
+            <ul className="flex flex-col gap-2">
+                {leaders.map((m) => (
+                    <li key={m.id}>
+                        <GroupMemberRow
+                            member={m}
+                            isLeader
+                            onRemove={isAdmin ? onRemove : undefined}
+                        />
+                    </li>
+                ))}
+                {members.map((m) => (
+                    <li key={m.id}>
+                        <GroupMemberRow
+                            member={m}
+                            onPromote={canPromote ? onPromote : undefined}
+                            onRemove={isAdmin ? onRemove : undefined}
+                        />
+                    </li>
+                ))}
+            </ul>
 
             {formerMembers.length > 0 ? (
                 <Collapsible open={showFormer} onOpenChange={setShowFormer}>

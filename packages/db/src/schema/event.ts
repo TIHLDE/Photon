@@ -1,7 +1,8 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
     boolean,
     doublePrecision,
+    index,
     integer,
     pgEnum,
     pgTableCreator,
@@ -195,7 +196,33 @@ export const eventRegistration = pgTable(
         allowPhoto: boolean("allow_photo").default(true).notNull(),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({ columns: [t.userId, t.eventId] }),
+        /**
+         * The primary key leads on `user_id`, so it cannot serve a lookup by
+         * event — and looking up by event is what this table mostly does:
+         * capacity counts, attendee lists, the resolver's per-event pass.
+         * Every one of those was a full scan of the whole table, which is why
+         * `event_registration` had read 10.7 billion rows across 3.1 million
+         * sequential scans by August 2026 — more than the rest of the database
+         * put together.
+         *
+         * `status` rides along because the hot queries filter on it too
+         * ("how many are `registered` for this event"), so the index can
+         * answer them without touching the heap.
+         */
+        index("registration_event_id_status_idx").on(t.eventId, t.status),
+        /**
+         * The registration resolver runs every 5 seconds and asks for every
+         * `pending` row in the table. Normally there are none, so a partial
+         * index stays a few kilobytes and turns that scan into an empty
+         * lookup. A plain index on `status` would instead be full-size, and
+         * ~99% of it rows the cron never wants.
+         */
+        index("registration_pending_idx")
+            .on(t.eventId)
+            .where(sql`${t.status} = 'pending'`),
+    ],
 );
 
 export const eventRegistrationRelations = relations(
@@ -236,29 +263,40 @@ export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
     }),
 }));
 
-export const eventPayment = pgTable("payment", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    amountMinor: integer("amount_minor").notNull(), // cents/øre
-    currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
-    provider: varchar("provider", { length: 64 }),
-    providerPaymentId: text("provider_payment_id"),
-    status: paymentStatus("status").notNull().default("pending"),
-    receivedPaymentAt: timestamp("received_payment_at"),
-    /**
-     * Deadline for when this payment obligation must be fulfilled. Set when a
-     * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
-     * A countdown job cancels the registration if payment is not completed by
-     * this time.
-     */
-    expiresAt: timestamp("expires_at"),
-    ...timestamps,
-});
+export const eventPayment = pgTable(
+    "payment",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        amountMinor: integer("amount_minor").notNull(), // cents/øre
+        currency: varchar("currency", { length: 3 }).default("NOK").notNull(),
+        provider: varchar("provider", { length: 64 }),
+        providerPaymentId: text("provider_payment_id"),
+        status: paymentStatus("status").notNull().default("pending"),
+        receivedPaymentAt: timestamp("received_payment_at"),
+        /**
+         * Deadline for when this payment obligation must be fulfilled. Set when a
+         * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
+         * A countdown job cancels the registration if payment is not completed by
+         * this time.
+         */
+        expiresAt: timestamp("expires_at"),
+        ...timestamps,
+    },
+    (t) => [
+        /**
+         * Every payment lookup starts from the event — "has this member
+         * paid", "who still owes" — and the table only had its uuid
+         * primary key to offer, so each one scanned all of it.
+         */
+        index("payment_event_id_user_id_idx").on(t.eventId, t.userId),
+    ],
+);
 
 export const eventPaymentRelations = relations(eventPayment, ({ one }) => ({
     event: one(event, {
@@ -314,7 +352,15 @@ export const eventReaction = pgTable(
         emoji: varchar("emoji", { length: 32 }).notNull(),
         createdAt: timestamp("created_at").defaultNow().notNull(),
     },
-    (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
+    (t) => [
+        primaryKey({ columns: [t.userId, t.eventId] }),
+        /**
+         * The primary key leads on `user_id`, so "every reaction on this
+         * event" — which is what the event page asks for — could not use it
+         * and scanned the table instead.
+         */
+        index("reaction_event_id_idx").on(t.eventId),
+    ],
 );
 
 export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
