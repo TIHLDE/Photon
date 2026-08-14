@@ -99,6 +99,21 @@ const SATURATION_SAMPLE_MS = 2_000;
 const SATURATION_REPEAT_MS = 30_000;
 
 /**
+ * How long the pool must stay saturated before it is worth a word.
+ *
+ * The first version of this warned on the very first saturated sample, and
+ * production answered within a day: 15 episodes in 26 hours, every one of them
+ * "recovered after 2s". That is a busy moment, not an incident — requests
+ * queueing briefly is exactly what a pool is for, and the queue drained faster
+ * than anyone could notice. It cost 26 alert e-mails and taught us nothing.
+ *
+ * The outage this watchdog exists for lasted 40 minutes. Ten seconds is far
+ * below anything a user would sit through, and far above normal burst
+ * behaviour.
+ */
+const SATURATION_MIN_MS = 10_000;
+
+/**
  * Warn while every connection is checked out and requests are queueing.
  *
  * The 2026-08-13 outage was a saturated pool, and nothing said so. The logs
@@ -108,8 +123,13 @@ const SATURATION_REPEAT_MS = 30_000;
  * on a lock. One line saying "all 10 connections busy, 14 requests waiting"
  * would have pointed straight at it.
  *
- * Only fires when the pool is *both* full and has requests queueing: a fully
- * used pool with nobody waiting is a busy server working as intended.
+ * Only fires when the pool is *both* full and has requests queueing, and only
+ * once that has held for {@link SATURATION_MIN_MS}: a fully used pool with
+ * nobody waiting is a busy server working as intended, and a queue that drains
+ * within seconds is the pool doing its job.
+ *
+ * Recovery is only logged when a warning was actually issued, so the log tells
+ * a whole story or stays silent — never just the ending.
  *
  * The interval is unref'd so it can never hold the process open, and the
  * sampling is deliberately cheap — the counters are plain numbers on the pool.
@@ -118,6 +138,7 @@ function watchSaturation(pool: Pool): Pool {
     const max = pool.options.max ?? 10;
     let saturatedSince: number | null = null;
     let lastWarnedAt = 0;
+    let warned = false;
     let peakWaiting = 0;
 
     const timer = setInterval(() => {
@@ -129,11 +150,17 @@ function watchSaturation(pool: Pool): Pool {
             saturatedSince ??= now;
             peakWaiting = Math.max(peakWaiting, waiting);
 
-            if (now - lastWarnedAt >= SATURATION_REPEAT_MS) {
+            const heldFor = now - saturatedSince;
+            const due = warned
+                ? now - lastWarnedAt >= SATURATION_REPEAT_MS
+                : heldFor >= SATURATION_MIN_MS;
+
+            if (due) {
                 lastWarnedAt = now;
+                warned = true;
                 console.warn(
                     `Postgres pool saturated: all ${max} connections busy, ${waiting} request(s) queueing, ` +
-                        `${Math.round((now - saturatedSince) / 1000)}s so far. ` +
+                        `${Math.round(heldFor / 1000)}s so far. ` +
                         "Something is holding connections open — look for long-running queries and lock waits.",
                 );
             }
@@ -141,12 +168,15 @@ function watchSaturation(pool: Pool): Pool {
         }
 
         if (saturatedSince !== null) {
-            console.warn(
-                `Postgres pool recovered after ${Math.round((now - saturatedSince) / 1000)}s, ` +
-                    `peak queue ${peakWaiting} request(s).`,
-            );
+            if (warned) {
+                console.warn(
+                    `Postgres pool recovered after ${Math.round((now - saturatedSince) / 1000)}s, ` +
+                        `peak queue ${peakWaiting} request(s).`,
+                );
+            }
             saturatedSince = null;
             lastWarnedAt = 0;
+            warned = false;
             peakWaiting = 0;
         }
     }, SATURATION_SAMPLE_MS);
