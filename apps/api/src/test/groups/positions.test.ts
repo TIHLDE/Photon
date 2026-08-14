@@ -840,6 +840,47 @@ describe("group positions", () => {
         );
 
         integrationTest(
+            "deleting an HS verv takes its holder's seat with it",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                await ctx.utils.createTestGroup(HS);
+                const client = await ctx.utils.clientForUser(admin);
+                const visepresident = await ctx.utils.createTestUser();
+
+                await addUserToGroup(ctx, visepresident.id, "hs", "member");
+                const [position] = await ctx.db
+                    .insert(schema.groupPosition)
+                    .values({ groupSlug: "hs", name: "Visepresident" })
+                    .returning();
+                await ctx.db.insert(schema.groupPositionHolder).values({
+                    positionId: position!.id,
+                    userId: visepresident.id,
+                });
+
+                // Vervet legges ned, ikke bare fratas.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].positions[":positionId"].$delete({
+                    param: { groupSlug: "hs", positionId: position!.id },
+                });
+
+                expect(response.status).toBe(200);
+
+                const membership = await ctx.db.query.groupMembership.findFirst(
+                    {
+                        where: and(
+                            eq(schema.groupMembership.userId, visepresident.id),
+                            eq(schema.groupMembership.groupSlug, "hs"),
+                        ),
+                    },
+                );
+                expect(membership).toBeUndefined();
+            },
+            500_000,
+        );
+
+        integrationTest(
             "the sitting HS leader keeps the seat when a verv is taken away",
             async ({ ctx }) => {
                 const admin = await ctx.utils.createTestUser();
