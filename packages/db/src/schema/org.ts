@@ -275,7 +275,16 @@ export const groupMembership = pgTable(
         role: groupMembershipRole("role").notNull().default("member"),
         ...timestamps,
     },
-    (t) => [primaryKey({ columns: [t.userId, t.groupSlug] })],
+    (t) => [
+        primaryKey({ columns: [t.userId, t.groupSlug] }),
+        /**
+         * The primary key answers "which groups is this user in"; this index
+         * answers the other half, "who is in this group" — member lists,
+         * permission checks and priority pools all ask it, and all of them
+         * scanned the table to find out.
+         */
+        index("group_membership_group_slug_idx").on(t.groupSlug),
+    ],
 );
 
 export const groupMembershipRelations = relations(
@@ -465,42 +474,52 @@ export const fineStatus = pgEnum("org_fine_status", [
 
 export type FineStatus = (typeof fineStatus)["enumValues"][number];
 
-export const fine = pgTable("fine", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: varchar("user_id", { length: 255 })
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    groupSlug: varchar("group_slug", { length: 128 })
-        .notNull()
-        .references(() => group.slug, { onDelete: "cascade" }),
-    reason: text("reason").notNull(),
-    amount: integer("amount").notNull(), // Amount in NOK (or minor units)
-    /**
-     * The paragraph in the group's lovverk the fine was given under.
-     *
-     * Nullable, and deliberately so in both directions: the fines migrated
-     * from Lepton carry no paragraph, and a lovverk may be rewritten long
-     * after a fine was handed out — deleting the paragraph clears the link
-     * rather than the fine.
-     */
-    lawId: uuid("law_id").references((): AnyPgColumn => groupLaw.id, {
-        onDelete: "set null",
-    }),
-    defense: text("defense"),
-    /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
-    image: varchar("image", { length: 600 }),
-    status: fineStatus("status").notNull().default("pending"),
-    createdByUserId: varchar("created_by_user_id", { length: 255 }).references(
-        () => user.id,
-        { onDelete: "set null" },
-    ),
-    approvedByUserId: varchar("approved_by_user_id", {
-        length: 255,
-    }).references(() => user.id, { onDelete: "set null" }),
-    approvedAt: timestamp("approved_at"),
-    paidAt: timestamp("paid_at"),
-    ...timestamps,
-});
+export const fine = pgTable(
+    "fine",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        groupSlug: varchar("group_slug", { length: 128 })
+            .notNull()
+            .references(() => group.slug, { onDelete: "cascade" }),
+        reason: text("reason").notNull(),
+        amount: integer("amount").notNull(), // Amount in NOK (or minor units)
+        /**
+         * The paragraph in the group's lovverk the fine was given under.
+         *
+         * Nullable, and deliberately so in both directions: the fines migrated
+         * from Lepton carry no paragraph, and a lovverk may be rewritten long
+         * after a fine was handed out — deleting the paragraph clears the link
+         * rather than the fine.
+         */
+        lawId: uuid("law_id").references((): AnyPgColumn => groupLaw.id, {
+            onDelete: "set null",
+        }),
+        defense: text("defense"),
+        /** Optional evidence image URL (migrated from Lepton's OptionalImage). */
+        image: varchar("image", { length: 600 }),
+        status: fineStatus("status").notNull().default("pending"),
+        createdByUserId: varchar("created_by_user_id", {
+            length: 255,
+        }).references(() => user.id, { onDelete: "set null" }),
+        approvedByUserId: varchar("approved_by_user_id", {
+            length: 255,
+        }).references(() => user.id, { onDelete: "set null" }),
+        approvedAt: timestamp("approved_at"),
+        paidAt: timestamp("paid_at"),
+        ...timestamps,
+    },
+    (t) => [
+        /**
+         * Fines are read per group first ("botlista for Index") and per
+         * member second, so the group leads. The uuid primary key served
+         * neither, and every listing scanned the table.
+         */
+        index("fine_group_slug_user_id_idx").on(t.groupSlug, t.userId),
+    ],
+);
 
 export const fineRelations = relations(fine, ({ one }) => ({
     user: one(user, {

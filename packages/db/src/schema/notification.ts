@@ -38,10 +38,20 @@ export const notification = pgTable(
          *
          * `created_at` descending is part of the index so the ordering comes
          * for free too, and the read never has to sort.
+         *
+         * `nullsFirst` is not decoration. `ORDER BY created_at DESC` means
+         * `NULLS FIRST` in Postgres, and an index built `DESC NULLS LAST` sorts
+         * in a different order than the query asks for — so the planner cannot
+         * use it to satisfy the ordering and falls back to reading every row
+         * for the user and sorting them. Measured on production, that mismatch
+         * cost 34x: 5,5 ms reading 908 rows, against 0,16 ms reading the 25
+         * that were actually wanted. The column is `NOT NULL`, so the two
+         * orderings can never differ in practice — it is pure bookkeeping that
+         * has to line up anyway.
          */
         index("notification_user_id_created_at_idx").on(
             t.userId,
-            t.createdAt.desc(),
+            t.createdAt.desc().nullsFirst(),
         ),
     ],
 );
