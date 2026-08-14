@@ -31,6 +31,25 @@ export type DbTimeouts = {
      * into a site-wide outage.
      */
     connectionTimeoutMs?: number;
+    /**
+     * How long an unused connection is kept before the pool closes it, and how
+     * many are kept regardless.
+     *
+     * `pg` closes idle connections after 10 seconds and keeps none, which on a
+     * site with our traffic means the pool is empty most of the time and a
+     * request that arrives after a quiet moment has to open its connections
+     * from scratch. That is not free: every one costs a TCP handshake, a
+     * backend process, and a SCRAM authentication whose whole purpose is to be
+     * slow to compute.
+     *
+     * It shows in the logs. `get-session` fires eight queries at once, and its
+     * server-side time runs 6 ms at best against a p50 of 43 ms — and it is
+     * *faster* while images are streaming, because the traffic keeps
+     * connections alive. Cheap queries, expensive connections.
+     */
+    idleTimeoutMs?: number;
+    /** Connections kept open even when idle. */
+    minConnections?: number;
 };
 
 /**
@@ -42,6 +61,8 @@ export const REQUEST_TIMEOUTS = {
     statementTimeoutMs: 15_000,
     idleInTransactionTimeoutMs: 30_000,
     connectionTimeoutMs: 5_000,
+    idleTimeoutMs: 60_000,
+    minConnections: 4,
 } as const satisfies DbTimeouts;
 
 /**
@@ -69,6 +90,10 @@ export const DISABLED_TIMEOUTS = {
     statementTimeoutMs: 0,
     idleInTransactionTimeoutMs: 0,
     connectionTimeoutMs: 0,
+    // A one-off script runs its queries and leaves. Holding connections open
+    // for it would only delay the exit.
+    idleTimeoutMs: 10_000,
+    minConnections: 0,
 } as const satisfies DbTimeouts;
 
 function buildOptions(timeouts: DbTimeouts): string {
@@ -228,8 +253,11 @@ export function createDb(config: {
     }
 
     if (connectionString) {
-        const { connectionTimeoutMs = REQUEST_TIMEOUTS.connectionTimeoutMs } =
-            timeouts;
+        const {
+            connectionTimeoutMs = REQUEST_TIMEOUTS.connectionTimeoutMs,
+            idleTimeoutMs = REQUEST_TIMEOUTS.idleTimeoutMs,
+            minConnections = REQUEST_TIMEOUTS.minConnections,
+        } = timeouts;
 
         return drizzle({
             client: watchSaturation(
@@ -238,6 +266,8 @@ export function createDb(config: {
                         connectionString,
                         options: buildOptions(timeouts),
                         connectionTimeoutMillis: connectionTimeoutMs,
+                        idleTimeoutMillis: idleTimeoutMs,
+                        min: minConnections,
                         max: POOL_MAX,
                     }),
                 ),
