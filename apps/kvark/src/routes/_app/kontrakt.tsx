@@ -9,11 +9,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@tihlde/ui/ui/card";
+import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Field, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
+import { Label } from "@tihlde/ui/ui/label";
 import { SignatureInput } from "@tihlde/ui/ui/signature-input";
 import { Download } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { authClientWithRedirect, authQueryOptions } from "#/api/auth";
 import {
@@ -41,7 +43,9 @@ function KontraktPage() {
     const { data: contract } = useSuspenseQuery(getActiveContractQuery());
 
     return (
-        <div className="container mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8">
+        /* Bredere enn resten av appen på store skjermer: en A4-side i en
+           3xl-spalte blir for liten til å leses uten å zoome. */
+        <div className="container mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 lg:max-w-5xl">
             <div className="flex flex-col gap-1">
                 <h1>Frivillighetskontrakt</h1>
                 <p>
@@ -67,9 +71,11 @@ function KontraktPage() {
 }
 
 function KontraktViewer({ contract }: { contract: ActiveContract }) {
-    const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const sentinelRef = useRef<HTMLDivElement>(null);
+    // Bekreftelse framfor en scrollesperre: kontrakten vises i en iframe, så vi
+    // ser ikke at noen scroller inne i den. Sperren målte i praksis bare noen
+    // få piksler i den ytre boksen, og løste seg selv eller aldri avhengig av
+    // nettleserens avrunding.
+    const [hasRead, setHasRead] = useState(false);
 
     const { data: session } = useQuery(authQueryOptions);
     const { data: signature } = useQuery(getMySignatureQuery());
@@ -85,22 +91,6 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
     useEffect(() => {
         if (session?.user?.name) setSignedName(session.user.name);
     }, [session?.user?.name]);
-
-    useEffect(() => {
-        const container = containerRef.current;
-        const sentinel = sentinelRef.current;
-        if (!container || !sentinel) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry?.isIntersecting) setHasScrolledToEnd(true);
-            },
-            { root: container, threshold: 0.1 },
-        );
-
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, []);
 
     if (signature?.hasSigned) {
         const signedAt = signature.signedAt
@@ -137,6 +127,16 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
 
     const isLoggedIn = Boolean(session);
 
+    const blockedReason = !signedName.trim()
+        ? "Fyll inn fullt navn."
+        : !signatureDataUrl
+          ? "Skriv eller tegn signaturen din."
+          : !hasRead
+            ? "Huk av for at du har lest kontrakten."
+            : signContract.isPending
+              ? "Signerer …"
+              : null;
+
     return (
         <Card>
             <CardHeader>
@@ -150,31 +150,22 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                 </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-                <div
-                    ref={containerRef}
-                    className="w-full overflow-y-auto"
-                    style={{ height: "65vh" }}
-                >
+                {/* Høy nok til at en A4-side er lesbar uten å zoome. Lavere på
+                    små skjermer, så signeringsfeltene ikke havner utenfor. */}
+                <div className="h-[70vh] w-full lg:h-[85vh]">
                     {contract.downloadUrl ? (
                         <iframe
                             src={contract.downloadUrl}
                             title={contract.title}
                             className="h-full w-full"
                         />
-                    ) : (
-                        <div style={{ height: "200vh" }} />
-                    )}
-                    <div ref={sentinelRef} style={{ height: "4px" }} />
+                    ) : null}
                 </div>
-                {!hasScrolledToEnd && (
-                    <p>
-                        Scroll til bunnen av kontrakten for å aktivere
-                        signeringsknappen.
-                    </p>
-                )}
                 {signContract.isError && <p>{signContract.error.message}</p>}
                 {isLoggedIn ? (
-                    <>
+                    // Skjemaet følger ikke den brede spalten — inndatafelt på
+                    // over 1000 px er verre å bruke, ikke bedre.
+                    <div className="flex w-full max-w-2xl flex-col gap-4">
                         <Field>
                             <FieldLabel htmlFor="signed-name">
                                 Fullt navn
@@ -190,13 +181,21 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                             name={signedName}
                             onChange={setSignatureDataUrl}
                         />
+                        <Label className="flex items-start gap-3">
+                            <Checkbox
+                                className="shrink-0"
+                                checked={hasRead}
+                                disabled={signContract.isPending}
+                                onCheckedChange={(checked) =>
+                                    setHasRead(checked === true)
+                                }
+                            />
+                            <span>
+                                Jeg har lest og godtar frivillighetskontrakten
+                            </span>
+                        </Label>
                         <Button
-                            disabled={
-                                !hasScrolledToEnd ||
-                                !signedName.trim() ||
-                                !signatureDataUrl ||
-                                signContract.isPending
-                            }
+                            disabled={Boolean(blockedReason)}
                             onClick={() =>
                                 signatureDataUrl &&
                                 signContract.mutate({
@@ -208,7 +207,12 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                         >
                             Signer kontrakt
                         </Button>
-                    </>
+                        {/* Uten dette var en deaktivert knapp det eneste
+                            signalet, og testerne gjettet på hvorfor. */}
+                        {blockedReason && !signContract.isPending && (
+                            <p>{blockedReason}</p>
+                        )}
+                    </div>
                 ) : (
                     <Button
                         render={

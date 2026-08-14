@@ -1,4 +1,8 @@
 import { authQueryOptions, sessionHasScopedPermission } from "#/api/auth";
+import {
+    getActiveContractQuery,
+    getMySignatureQuery,
+} from "#/api/queries/contracts";
 import { getUnreadNotificationCountQuery } from "#/api/queries/notifications";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
@@ -39,6 +43,18 @@ function RouteComponent() {
     const { data: unreadNotifications } = useQuery({
         ...getUnreadNotificationCountQuery(),
         enabled: isOwnProfile && session?.user?.isPendingApproval !== true,
+    });
+
+    // Kontraktbanneret gjelder bare egen profil, så begge kallene hoppes over
+    // på andres. Begge nøklene deles med /kontrakt, så signeringen der
+    // invaliderer banneret her uten et ekstra kall.
+    const { data: activeContract } = useQuery({
+        ...getActiveContractQuery(),
+        enabled: isOwnProfile,
+    });
+    const { data: mySignature } = useQuery({
+        ...getMySignatureQuery(),
+        enabled: isOwnProfile,
     });
 
     const links: ProfileLink[] = [];
@@ -91,7 +107,12 @@ function RouteComponent() {
                 </div>
             ) : null}
             <ProfileLinksSection links={links} />
-            {isOwnProfile ? <ContractBanner signature={null} /> : null}
+            {isOwnProfile ? (
+                <ContractBanner
+                    hasActiveContract={Boolean(activeContract)}
+                    signature={mySignature}
+                />
+            ) : null}
 
             {/* Gruppene vises direkte i stedet for et telle-kort. Kortet så
                 klikkbart ut uten å være det, og på andres profil var det alt
@@ -156,8 +177,20 @@ function RouteComponent() {
     );
 }
 
-function ContractBanner({ signature }: { signature: SignatureStatus | null }) {
-    if (signature?.hasSigned) return null;
+/**
+ * Vises bare når det finnes en aktiv kontrakt som ikke er signert. Uten
+ * `signature` er statusen fortsatt ukjent — da sier vi ingenting, framfor å
+ * påstå at den ikke er signert.
+ */
+function ContractBanner({
+    hasActiveContract,
+    signature,
+}: {
+    hasActiveContract: boolean;
+    signature: SignatureStatus | undefined;
+}) {
+    if (!hasActiveContract) return null;
+    if (!signature || signature.hasSigned) return null;
 
     return (
         <Alert>
