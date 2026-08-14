@@ -20,6 +20,13 @@ let sharpModule: typeof Sharp | null | undefined;
  * Optimization is a nice-to-have; serving the site is not. Resolving it lazily
  * confines the blast radius to uploads, which already fall back to storing the
  * original whenever re-encoding fails.
+ *
+ * Lazy is not enough on its own: `bun build` inlines this import unless sharp is
+ * marked external, and inlined sharp resolves its own platform package
+ * (`@img/sharp-*`) from the bundle's directory, where it does not exist. That is
+ * why the API's build script passes `--external sharp` — without it this catch
+ * fires on every upload and images are stored unoptimized, silently. It did
+ * exactly that in production from late July until 2026-08-14.
  */
 async function loadSharp(logger?: LoggerType): Promise<typeof Sharp | null> {
     if (sharpModule !== undefined) {
