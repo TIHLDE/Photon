@@ -351,6 +351,13 @@
       "when": 1786545058472,
       "tag": "0049_medical_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1786718443393,
+      "tag": "0050_stormy_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }
