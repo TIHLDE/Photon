@@ -21,7 +21,11 @@ import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
-import { ACTIVITY_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
+import {
+    ACTIVITY_CATEGORIES,
+    BEDPRES_CATEGORIES,
+    EVENT_CATEGORIES,
+} from "#/lib/event-categories";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -30,7 +34,7 @@ const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
 
 const ALL_CATEGORIES = { value: "all", label: "Alle kategorier" };
 
-type EventTab = "arrangementer" | "aktiviteter";
+type EventTab = "arrangementer" | "aktiviteter" | "bedpres";
 
 const TABS: { value: EventTab; label: string; categories: Category[] }[] = [
     {
@@ -43,6 +47,11 @@ const TABS: { value: EventTab; label: string; categories: Category[] }[] = [
         label: "Aktiviteter",
         categories: ACTIVITY_CATEGORIES,
     },
+    {
+        value: "bedpres",
+        label: "Bedpres",
+        categories: BEDPRES_CATEGORIES,
+    },
 ];
 
 // Slugs a tab covers when no single category is picked. The events tab also
@@ -54,6 +63,7 @@ const TAB_SLUGS: Record<EventTab, string[]> = {
         "uncategorized",
     ],
     aktiviteter: ACTIVITY_CATEGORIES.map((category) => category.value),
+    bedpres: BEDPRES_CATEGORIES.map((category) => category.value),
 };
 
 const toEventListFilters = (
