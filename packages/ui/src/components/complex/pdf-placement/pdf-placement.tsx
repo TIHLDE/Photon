@@ -149,7 +149,7 @@ export function PdfPlacement({
                 <span className="text-muted-foreground text-xs">
                     {placing
                         ? `Klikk i dokumentet for å plassere «${SLOT_BY_KEY[placing].label}»`
-                        : "Plasser feltene på dokumentet (navn og dato er valgfritt):"}
+                        : "Plasser feltene på dokumentet. Signaturen står på nederste kant av boksen — legg den på signaturlinja. Navn og dato er valgfritt."}
                 </span>
                 {SLOTS.map((slot) => (
                     <Button

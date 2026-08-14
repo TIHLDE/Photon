@@ -13,6 +13,7 @@
 
 import type { SignaturePlacement } from "@photon/db/schema";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import sharp from "sharp";
 
 export type StampContractInput = {
     /** The original, unsigned contract PDF. */
@@ -45,6 +46,34 @@ function formatDateTime(date: Date): string {
     });
 }
 
+/**
+ * Crop the transparent margin off a signature PNG.
+ *
+ * Both signature inputs hand us a fixed-size canvas with the strokes somewhere
+ * in the middle, so most of the image is empty. Stamped as-is the ink lands in
+ * the middle of the placement box and reads as floating above the line the
+ * admin aimed at, no matter how precisely the box was placed. Trimming makes
+ * the PNG's edges the ink's edges, so the placement box means what it looks
+ * like it means.
+ *
+ * Falls back to the original bytes if the image cannot be trimmed — a
+ * misaligned signature beats a failed signing.
+ */
+async function trimSignature(png: Uint8Array): Promise<Uint8Array> {
+    try {
+        const trimmed = await sharp(Buffer.from(png))
+            .trim({
+                background: { r: 0, g: 0, b: 0, alpha: 0 },
+                threshold: 10,
+            })
+            .png()
+            .toBuffer();
+        return new Uint8Array(trimmed);
+    } catch {
+        return png;
+    }
+}
+
 export async function stampContractPdf(
     input: StampContractInput,
 ): Promise<Buffer> {
@@ -58,14 +87,25 @@ export async function stampContractPdf(
         const placement = input.signaturePlacement;
         const page = pages[placement.page];
         if (page) {
-            const image = await pdf.embedPng(input.signaturePng);
+            const image = await pdf.embedPng(
+                await trimSignature(input.signaturePng),
+            );
             const { width: W, height: H } = page.getSize();
-            const w = placement.wPct * W;
-            const h = placement.hPct * H;
+            const boxW = placement.wPct * W;
+            const boxH = placement.hPct * H;
+            // top-left origin (browser) → bottom-left origin (pdf-lib)
+            const boxBottom = H - placement.yPct * H - boxH;
+
+            // Fit inside the box without distorting the handwriting, then rest
+            // the ink on the box's bottom edge and centre it horizontally —
+            // that edge is the signature line, the way a pen would sit on it.
+            const scale = Math.min(boxW / image.width, boxH / image.height);
+            const w = image.width * scale;
+            const h = image.height * scale;
+
             page.drawImage(image, {
-                x: placement.xPct * W,
-                // top-left origin (browser) → bottom-left origin (pdf-lib)
-                y: H - placement.yPct * H - h,
+                x: placement.xPct * W + (boxW - w) / 2,
+                y: boxBottom,
                 width: w,
                 height: h,
             });
