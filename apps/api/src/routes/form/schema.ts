@@ -60,12 +60,11 @@ const groupFormSettings = {
     can_submit_multiple: z.boolean().optional(),
     is_open_for_submissions: z.boolean().optional(),
     only_for_group_members: z.boolean().optional(),
-    // Tidspunktet skjemaet åpner seg selv, og som overstyrer bryteren så lenge
-    // det er satt. `null` fjerner planleggingen, slik at «åpent for svar»
-    // gjelder igjen.
+    // Tidspunktet skjemaet åpner seg selv. Å sette det slår på
+    // «åpent for svar»; å slå av «åpent for svar» fjerner det.
     opens_at: z.iso.datetime().nullable().optional().meta({
         description:
-            "When the form opens for submissions. While set, it overrides is_open_for_submissions; null hands control back to that switch.",
+            "When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this.",
     }),
 };
 
@@ -107,7 +106,7 @@ export const createGroupFormSchema = Schema(
         only_for_group_members: z.boolean().default(false),
         opens_at: z.iso.datetime().nullable().optional().meta({
             description:
-                "When the form opens for submissions. While set, it overrides is_open_for_submissions; null hands control back to that switch.",
+                "When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this.",
         }),
     }),
 );

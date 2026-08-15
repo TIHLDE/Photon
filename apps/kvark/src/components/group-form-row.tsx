@@ -21,7 +21,7 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                 <CardTitle>{form.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {form.isOpenNow ? null : form.opensAt ? (
+                {form.isOpenNow ? null : form.isOpen && form.opensAt ? (
                     <p className="text-sm text-muted-foreground">
                         Spørreskjemaet åpner {formatFormOpensAt(form.opensAt)}.
                     </p>

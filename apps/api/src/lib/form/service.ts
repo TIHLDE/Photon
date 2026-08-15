@@ -23,11 +23,12 @@ type Database = NodePgDatabase<DbSchema>;
 /**
  * Om et gruppeskjema faktisk tar imot svar akkurat nå.
  *
- * Et planlagt tidspunkt bestemmer alene: skjemaet er stengt fram til da og
- * åpent etterpå, uansett hva bryteren «åpent for svar» sto på da datoen ble
- * satt. Det er hele poenget med å planlegge — man skal slippe å huske å åpne
- * skjemaet den dagen. Vil man stenge et skjema som har åpnet seg selv, fjerner
- * man tidspunktet; da er det bryteren som gjelder igjen.
+ * Bryteren «åpent for svar» er hovedbryteren, og `opensAt` utsetter den bare:
+ * et skjema som er planlagt fram i tid er stengt til tidspunktet har passert.
+ * At det å planlegge en dato likevel åpner skjemaet den dagen — uansett hva
+ * bryteren sto på fra før — er avgjort når raden skrives, se
+ * `resolveScheduledOpenState`. Da kan bryteren av alltid bety stengt, og en
+ * dato kan ikke bli liggende igjen og åpne skjemaet på nytt senere.
  */
 export function isGroupFormOpen(
     groupForm: Pick<
@@ -36,10 +37,41 @@ export function isGroupFormOpen(
     >,
     now: Date = new Date(),
 ): boolean {
-    if (groupForm.opensAt) {
-        return groupForm.opensAt.getTime() <= now.getTime();
+    if (!groupForm.isOpenForSubmissions) return false;
+    return !groupForm.opensAt || groupForm.opensAt.getTime() <= now.getTime();
+}
+
+/**
+ * De to feltene som styrer åpningen, slik de skal lagres.
+ *
+ * De henger sammen, så de må avgjøres i lag — ellers kan man lagre
+ * kombinasjoner som ikke betyr noe:
+ *
+ * - Et tidspunkt betyr «skjemaet skal åpne da», så bryteren slås på. Det er
+ *   det som gjør at et stengt skjema kan planlegges uten å åpnes med en gang,
+ *   og derfor vinner tidspunktet også over en bryter som er sendt av i samme
+ *   forespørsel — det er den mest presise beskjeden av de to.
+ * - Bryteren av, uten et tidspunkt ved siden av, betyr «ikke ta imot svar», så
+ *   planleggingen fjernes. Uten det ville et skjema man nettopp stengte åpnet
+ *   seg selv igjen.
+ *
+ * `undefined` inn betyr «ikke rørt av denne forespørselen»; ut betyr «ikke
+ * skriv dette feltet».
+ */
+export function resolveScheduledOpenState(input: {
+    isOpenForSubmissions: boolean | undefined;
+    opensAt: Date | null | undefined;
+}): {
+    isOpenForSubmissions: boolean | undefined;
+    opensAt: Date | null | undefined;
+} {
+    if (input.opensAt) {
+        return { isOpenForSubmissions: true, opensAt: input.opensAt };
     }
-    return groupForm.isOpenForSubmissions;
+    if (input.isOpenForSubmissions === false) {
+        return { isOpenForSubmissions: false, opensAt: null };
+    }
+    return input;
 }
 
 /**

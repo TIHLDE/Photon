@@ -3,7 +3,10 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { createFieldsAndOptions } from "~/lib/form/service";
+import {
+    createFieldsAndOptions,
+    resolveScheduledOpenState,
+} from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -95,13 +98,18 @@ export const createGroupFormRoute = route().post(
         }
 
         // Create group form link
+        const openState = resolveScheduledOpenState({
+            isOpenForSubmissions: body.is_open_for_submissions,
+            opensAt: body.opens_at ? new Date(body.opens_at) : null,
+        });
+
         await db.insert(schema.formGroupForm).values({
             formId: form.id,
             groupSlug,
             emailReceiverOnSubmit: body.email_receiver_on_submit,
             canSubmitMultiple: body.can_submit_multiple,
-            isOpenForSubmissions: body.is_open_for_submissions,
-            opensAt: body.opens_at ? new Date(body.opens_at) : null,
+            isOpenForSubmissions: openState.isOpenForSubmissions,
+            opensAt: openState.opensAt,
             onlyForGroupMembers: body.only_for_group_members,
         });
 

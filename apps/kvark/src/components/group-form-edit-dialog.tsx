@@ -243,30 +243,39 @@ function EditForm({
                         </field.Field>
                     )}
                 </editForm.AppField>
-                {/* Bryteren gjelder bare når det ikke står et åpningstidspunkt
-                    under — da er det datoen som avgjør. */}
-                <editForm.AppField name="isOpen">
+                {/* Stenger man skjemaet, følger åpningstidspunktet med: ellers
+                    ville skjemaet man nettopp stengte åpnet seg selv igjen. */}
+                <editForm.AppField
+                    name="isOpen"
+                    listeners={{
+                        onChange: ({ value }) => {
+                            if (!value) editForm.setFieldValue("opensAt", null);
+                        },
+                    }}
+                >
                     {(field) => (
                         <field.Field orientation="horizontal">
                             <FieldContent>
                                 <field.Label>Åpent for svar</field.Label>
-                                <editForm.Subscribe
-                                    selector={(state) => state.values.opensAt}
-                                >
-                                    {(opensAt) => (
-                                        <field.Description>
-                                            {opensAt
-                                                ? "Styres av åpningstidspunktet under"
-                                                : "Skjemaet kan bare svares på og deles når det er åpent"}
-                                        </field.Description>
-                                    )}
-                                </editForm.Subscribe>
+                                <field.Description>
+                                    Skjemaet kan bare svares på og deles når det
+                                    er åpent
+                                </field.Description>
                             </FieldContent>
                             <field.Switch />
                         </field.Field>
                     )}
                 </editForm.AppField>
-                <editForm.AppField name="opensAt">
+                {/* Og setter man et tidspunkt, er det fordi skjemaet skal åpne
+                    da — bryteren følger etter. */}
+                <editForm.AppField
+                    name="opensAt"
+                    listeners={{
+                        onChange: ({ value }) => {
+                            if (value) editForm.setFieldValue("isOpen", true);
+                        },
+                    }}
+                >
                     {(field) => (
                         <field.Field>
                             <field.Label>Åpner</field.Label>
@@ -274,7 +283,6 @@ function EditForm({
                             <field.Description>
                                 Valgfritt. Med et tidspunkt er skjemaet stengt
                                 til da, og åpner seg selv når tiden kommer.
-                                Fjern tidspunktet for å styre med bryteren over.
                             </field.Description>
                             <field.Error />
                         </field.Field>

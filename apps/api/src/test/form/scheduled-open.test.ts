@@ -143,9 +143,8 @@ describe("Scheduled group forms", () => {
             const leaderClient = await ctx.utils.clientForUser(leader);
             const memberClient = await ctx.utils.clientForUser(member);
 
-            // Bryteren står av, men tidspunktet har passert — da er skjemaet
-            // åpent. Å planlegge er hele beskjeden; man skal ikke måtte huske
-            // å slå på bryteren den dagen.
+            // Bryteren står av, men det settes et tidspunkt som har passert.
+            // Å planlegge er hele beskjeden, så skjemaet lagres som åpent.
             const passed = new Date(Date.now() - HOUR);
             const createResponse = await leaderClient.api.groups[
                 ":slug"
@@ -191,26 +190,86 @@ describe("Scheduled group forms", () => {
             });
             expect(submitResponse.status).toBe(201);
 
+            // Tidspunktet slo på bryteren, så den lagrede tilstanden henger
+            // sammen med det skjemaet faktisk gjør.
             const listResponse = await memberClient.api.groups[
                 ":slug"
             ].forms.$get({ param: { slug: "index" } });
             const list = await listResponse.json();
-            expect(list[0]?.is_open_for_submissions).toBe(false);
+            expect(list[0]?.is_open_for_submissions).toBe(true);
             expect(list[0]?.is_open_now).toBe(true);
+        },
+    );
 
-            // Å fjerne tidspunktet gir bryteren styringen tilbake, og den står
-            // fortsatt av — skjemaet stenger.
-            await leaderClient.api.forms[":id"].$patch({
-                param: { id: form.id! },
-                json: { opens_at: null },
-            });
+    integrationTest(
+        "Closing a form clears its opening date, so it stays closed",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const member = await ctx.utils.createTestUser();
 
-            const closedDetail = await memberClient.api.forms[":id"].$get({
+            await ctx.utils.setupGroups();
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: leader.id, groupSlug: "index", role: "leader" },
+                { userId: member.id, groupSlug: "index", role: "member" },
+            ]);
+
+            const leaderClient = await ctx.utils.clientForUser(leader);
+            const memberClient = await ctx.utils.clientForUser(member);
+
+            const createResponse = await leaderClient.api.groups[
+                ":slug"
+            ].forms.$post({
+                param: { slug: "index" },
+                json: {
+                    title: "Åpnet av seg selv",
+                    template: false,
+                    group: "index",
+                    can_submit_multiple: true,
+                    is_open_for_submissions: true,
+                    only_for_group_members: false,
+                    opens_at: new Date(Date.now() - HOUR).toISOString(),
+                    fields: [
+                        {
+                            title: "Hva synes du?",
+                            type: "text_answer",
+                            required: true,
+                            order: 0,
+                        },
+                    ],
+                },
+            });
+            const form = await createResponse.json();
+
+            // Å stenge skjemaet skal holde det stengt: står tidspunktet igjen,
+            // ville skjemaet vært åpent i samme øyeblikk det ble stengt.
+            const patchResponse = await leaderClient.api.forms[":id"].$patch({
+                param: { id: form.id! },
+                json: { is_open_for_submissions: false },
+            });
+            expect(patchResponse.status).toBe(200);
+            expect((await patchResponse.json()).opens_at).toBeNull();
+
+            const detail = await memberClient.api.forms[":id"].$get({
                 param: { id: form.id! },
             });
-            expect((await closedDetail.json()).is_open_for_submissions).toBe(
-                false,
-            );
+            const body = await detail.json();
+            expect(body.is_open_for_submissions).toBe(false);
+            expect(body.opens_at).toBeNull();
+
+            const submitResponse = await memberClient.api.forms[
+                ":formId"
+            ].submissions.$post({
+                param: { formId: form.id! },
+                json: {
+                    answers: [
+                        {
+                            field: { id: form.fields?.[0]?.id! },
+                            answer_text: "Skal ikke gå",
+                        },
+                    ],
+                },
+            });
+            expect(submitResponse.status).toBe(403);
         },
     );
 

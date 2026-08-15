@@ -336,9 +336,9 @@ export const groupFormListSchema = Schema(
             group: z.string(),
             email_receiver_on_submit: z.string().nullable(),
             can_submit_multiple: z.boolean(),
-            // Bryteren slik den er lagret. Den gjelder bare når `opens_at` er
-            // tom — et planlagt skjema styres av datoen. Bruk `is_open_now`
-            // for hva som faktisk gjelder.
+            // Bryteren slik den er lagret. Et skjema som er planlagt fram i
+            // tid står som åpent her, men tar ikke imot svar før `opens_at`
+            // har passert — se `is_open_now`.
             is_open_for_submissions: z.boolean(),
             opens_at: z.iso.datetime().nullable(),
             is_open_now: z.boolean(),

@@ -383,38 +383,46 @@ export function NewFormDialog({
                             <>
                                 <FieldSeparator />
 
-                                {/* Et åpningstidspunkt overstyrer bryteren, så
-                                    den sier fra når den ikke er den som
-                                    bestemmer. */}
-                                <form.AppField name="isOpenForSubmissions">
+                                {/* De to feltene holder hverandre i ørene:
+                                    stenger man skjemaet, forsvinner
+                                    åpningstidspunktet, og setter man et
+                                    tidspunkt, åpnes skjemaet for den datoen. */}
+                                <form.AppField
+                                    name="isOpenForSubmissions"
+                                    listeners={{
+                                        onChange: ({ value }) => {
+                                            if (!value)
+                                                form.setFieldValue(
+                                                    "opensAt",
+                                                    null,
+                                                );
+                                        },
+                                    }}
+                                >
                                     {(field) => (
                                         <field.Field orientation="horizontal">
                                             <FieldContent>
                                                 <field.Label>
                                                     Åpent for svar
                                                 </field.Label>
-                                                <form.Subscribe
-                                                    selector={(state) =>
-                                                        state.values.opensAt
-                                                    }
-                                                >
-                                                    {(opensAt) =>
-                                                        opensAt ? (
-                                                            <field.Description>
-                                                                Styres av
-                                                                åpningstidspunktet
-                                                                under
-                                                            </field.Description>
-                                                        ) : null
-                                                    }
-                                                </form.Subscribe>
                                             </FieldContent>
                                             <field.Switch />
                                         </field.Field>
                                     )}
                                 </form.AppField>
 
-                                <form.AppField name="opensAt">
+                                <form.AppField
+                                    name="opensAt"
+                                    listeners={{
+                                        onChange: ({ value }) => {
+                                            if (value)
+                                                form.setFieldValue(
+                                                    "isOpenForSubmissions",
+                                                    true,
+                                                );
+                                        },
+                                    }}
+                                >
                                     {(field) => (
                                         <field.Field>
                                             <field.Label>Åpner</field.Label>

@@ -4,7 +4,11 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { FormHasSubmissionsException } from "~/lib/form/exceptions";
-import { canManageForm, updateFieldsAndOptions } from "~/lib/form/service";
+import {
+    canManageForm,
+    resolveScheduledOpenState,
+    updateFieldsAndOptions,
+} from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -104,17 +108,22 @@ export const updateRoute = route().patch(
                 .where(eq(schema.form.id, formId));
         }
 
-        const groupFormValues = {
-            emailReceiverOnSubmit: body.email_receiver_on_submit,
-            canSubmitMultiple: body.can_submit_multiple,
+        // `null` fjerner planleggingen; utelatt lar den stå.
+        const openState = resolveScheduledOpenState({
             isOpenForSubmissions: body.is_open_for_submissions,
-            // `null` fjerner planleggingen; utelatt lar den stå.
             opensAt:
                 body.opens_at === undefined
                     ? undefined
                     : body.opens_at === null
                       ? null
                       : new Date(body.opens_at),
+        });
+
+        const groupFormValues = {
+            emailReceiverOnSubmit: body.email_receiver_on_submit,
+            canSubmitMultiple: body.can_submit_multiple,
+            isOpenForSubmissions: openState.isOpenForSubmissions,
+            opensAt: openState.opensAt,
             onlyForGroupMembers: body.only_for_group_members,
         };
 
