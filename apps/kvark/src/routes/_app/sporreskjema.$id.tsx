@@ -26,6 +26,7 @@ import { richRegistry } from "#/components/markdown/directives/presets";
 import { formHandlers, useAppForm } from "#/hooks/form";
 import { useGoBack } from "#/hooks/use-go-back";
 import { formatEventDate } from "#/lib/event";
+import { formatFormOpensAt } from "#/lib/form";
 
 export const Route = createFileRoute("/_app/sporreskjema/$id")({
     component: FormPage,
@@ -133,13 +134,21 @@ function FormBody({ form }: { form: FormDetail }) {
     }
 
     if (form.resource_type === "GroupForm" && !form.is_open_for_submissions) {
+        // Et skjema som er planlagt fram i tid er stengt akkurat nå, men vi vet
+        // når det åpner — da er det den beskjeden som er nyttig.
+        const opensAt = form.opens_at;
         return (
             <Alert>
                 <TriangleAlert />
-                <AlertTitle>Skjemaet er stengt</AlertTitle>
+                <AlertTitle>
+                    {opensAt
+                        ? "Skjemaet er ikke åpnet ennå"
+                        : "Skjemaet er stengt"}
+                </AlertTitle>
                 <AlertDescription>
-                    Spørreskjemaet er ikke åpent for innsending av svar akkurat
-                    nå.
+                    {opensAt
+                        ? `Spørreskjemaet åpner ${formatFormOpensAt(opensAt)}.`
+                        : "Spørreskjemaet er ikke åpent for innsending av svar akkurat nå."}
                 </AlertDescription>
             </Alert>
         );

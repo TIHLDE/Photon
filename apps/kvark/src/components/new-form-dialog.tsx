@@ -7,7 +7,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { FieldError, FieldGroup, FieldSeparator } from "@tihlde/ui/ui/field";
+import {
+    FieldContent,
+    FieldError,
+    FieldGroup,
+    FieldSeparator,
+} from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
@@ -58,6 +63,8 @@ const newFormSchema = z.object({
     ]),
     canSubmitMultiple: z.boolean(),
     isOpenForSubmissions: z.boolean(),
+    /** Tomt betyr «åpner med en gang». */
+    opensAt: z.date().nullable(),
     onlyForGroupMembers: z.boolean(),
     questions: z.array(questionSchema),
 });
@@ -74,6 +81,7 @@ const EMPTY_VALUES: NewFormValues = {
     // lager et skjema fordi man vil ha svar nå. Det kan stenges igjen under
     // «Rediger».
     isOpenForSubmissions: true,
+    opensAt: null,
     onlyForGroupMembers: false,
     questions: [],
 };
@@ -375,13 +383,56 @@ export function NewFormDialog({
                             <>
                                 <FieldSeparator />
 
-                                <form.AppField name="isOpenForSubmissions">
+                                {/* De to feltene holder hverandre i ørene:
+                                    stenger man skjemaet, forsvinner
+                                    åpningstidspunktet, og setter man et
+                                    tidspunkt, åpnes skjemaet for den datoen. */}
+                                <form.AppField
+                                    name="isOpenForSubmissions"
+                                    listeners={{
+                                        onChange: ({ value }) => {
+                                            if (!value)
+                                                form.setFieldValue(
+                                                    "opensAt",
+                                                    null,
+                                                );
+                                        },
+                                    }}
+                                >
                                     {(field) => (
                                         <field.Field orientation="horizontal">
-                                            <field.Label>
-                                                Åpent for svar
-                                            </field.Label>
+                                            <FieldContent>
+                                                <field.Label>
+                                                    Åpent for svar
+                                                </field.Label>
+                                            </FieldContent>
                                             <field.Switch />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+
+                                <form.AppField
+                                    name="opensAt"
+                                    listeners={{
+                                        onChange: ({ value }) => {
+                                            if (value)
+                                                form.setFieldValue(
+                                                    "isOpenForSubmissions",
+                                                    true,
+                                                );
+                                        },
+                                    }}
+                                >
+                                    {(field) => (
+                                        <field.Field>
+                                            <field.Label>Åpner</field.Label>
+                                            <field.DateTimePicker />
+                                            <field.Description>
+                                                Valgfritt. Med et tidspunkt er
+                                                skjemaet stengt til da, og åpner
+                                                seg selv når tiden kommer.
+                                            </field.Description>
+                                            <field.Error />
                                         </field.Field>
                                     )}
                                 </form.AppField>

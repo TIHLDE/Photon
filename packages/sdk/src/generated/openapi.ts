@@ -4324,6 +4324,7 @@ export interface components {
             } | null;
             can_submit_multiple: boolean | null;
             is_open_for_submissions: boolean | null;
+            opens_at: string | null;
             only_for_group_members: boolean | null;
         };
         UpdateFormResponse: {
@@ -4352,6 +4353,7 @@ export interface components {
             email_receiver_on_submit?: string | null;
             can_submit_multiple?: boolean | null;
             is_open_for_submissions?: boolean | null;
+            opens_at?: string | null;
             only_for_group_members?: boolean | null;
         };
         UpdateForm: {
@@ -4380,6 +4382,8 @@ export interface components {
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
             only_for_group_members?: boolean;
+            /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            opens_at?: string | null;
         };
         DeleteFormResponse: {
             detail: string;
@@ -5236,6 +5240,7 @@ export interface components {
             email_receiver_on_submit?: string | null;
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
+            opens_at?: string | null;
             only_for_group_members?: boolean;
             resource_type: string;
             created_at?: string;
@@ -5285,6 +5290,8 @@ export interface components {
             is_open_for_submissions: boolean;
             /** @default false */
             only_for_group_members: boolean;
+            /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            opens_at?: string | null;
         };
         GroupFormList: {
             /** Format: uuid */
@@ -5295,6 +5302,8 @@ export interface components {
             email_receiver_on_submit: string | null;
             can_submit_multiple: boolean;
             is_open_for_submissions: boolean;
+            opens_at: string | null;
+            is_open_now: boolean;
             only_for_group_members: boolean;
             resource_type: string;
             viewer_has_answered: boolean;

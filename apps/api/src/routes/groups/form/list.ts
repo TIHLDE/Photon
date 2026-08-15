@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { userHasSubmitted } from "~/lib/form/service";
+import { isGroupFormOpen, userHasSubmitted } from "~/lib/form/service";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -69,16 +69,20 @@ export const listGroupFormsRoute = route().get(
             },
         });
 
-        // Filter forms based on permissions
+        // Filter forms based on permissions. Et skjema som er planlagt fram i
+        // tid teller som stengt her, så det dukker ikke opp for andre enn
+        // lederne før det faktisk har åpnet.
         const visibleForms = groupForms.filter((gf) => {
             // Leaders see all forms
             if (isLeader) return true;
 
+            const isOpenNow = isGroupFormOpen(gf);
+
             // Members see open forms
-            if (isMember && gf.isOpenForSubmissions) return true;
+            if (isMember && isOpenNow) return true;
 
             // Public users only see open, non-member-only forms
-            return gf.isOpenForSubmissions && !gf.onlyForGroupMembers;
+            return isOpenNow && !gf.onlyForGroupMembers;
         });
 
         // Check if user has answered each form
@@ -98,6 +102,8 @@ export const listGroupFormsRoute = route().get(
                     email_receiver_on_submit: groupForm.emailReceiverOnSubmit,
                     can_submit_multiple: groupForm.canSubmitMultiple,
                     is_open_for_submissions: groupForm.isOpenForSubmissions,
+                    opens_at: groupForm.opensAt?.toISOString() ?? null,
+                    is_open_now: isGroupFormOpen(groupForm),
                     only_for_group_members: groupForm.onlyForGroupMembers,
                     resource_type: "GroupForm",
                     viewer_has_answered: hasAnswered,
