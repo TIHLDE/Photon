@@ -2,6 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -108,95 +109,102 @@ export function EditBioDialog({
                         e.stopPropagation();
                         form.handleSubmit();
                     }}
-                    className="flex flex-col gap-4"
+                    className="flex min-h-0 flex-auto flex-col gap-4"
                 >
-                    <FieldGroup>
-                        <form.Field name="bio">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Beskrivelse
-                                    </FieldLabel>
-                                    <Textarea
-                                        id={field.name}
-                                        name={field.name}
-                                        rows={4}
-                                        placeholder="Skriv her..."
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) =>
-                                            field.handleChange(e.target.value)
-                                        }
-                                    />
-                                    <FieldDescription>
-                                        Tegn igjen:{" "}
-                                        {Math.max(
-                                            0,
-                                            BIO_MAX -
-                                                (field.state.value?.length ??
-                                                    0),
-                                        )}
-                                    </FieldDescription>
-                                    <FieldError
-                                        errors={field.state.meta.errors}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
+                    <DialogBody>
+                        <FieldGroup>
+                            <form.Field name="bio">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel htmlFor={field.name}>
+                                            Beskrivelse
+                                        </FieldLabel>
+                                        <Textarea
+                                            id={field.name}
+                                            name={field.name}
+                                            rows={4}
+                                            placeholder="Skriv her..."
+                                            value={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) =>
+                                                field.handleChange(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <FieldDescription>
+                                            Tegn igjen:{" "}
+                                            {Math.max(
+                                                0,
+                                                BIO_MAX -
+                                                    (field.state.value
+                                                        ?.length ?? 0),
+                                            )}
+                                        </FieldDescription>
+                                        <FieldError
+                                            errors={field.state.meta.errors}
+                                        />
+                                    </Field>
+                                )}
+                            </form.Field>
 
-                        <form.Field name="github">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel htmlFor={field.name}>
-                                        GitHub
-                                    </FieldLabel>
-                                    <Input
-                                        id={field.name}
-                                        name={field.name}
-                                        placeholder="Skriv her..."
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) =>
-                                            field.handleChange(e.target.value)
-                                        }
-                                    />
-                                    <FieldDescription>
-                                        Din GitHub profil.
-                                    </FieldDescription>
-                                    <FieldError
-                                        errors={field.state.meta.errors}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
+                            <form.Field name="github">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel htmlFor={field.name}>
+                                            GitHub
+                                        </FieldLabel>
+                                        <Input
+                                            id={field.name}
+                                            name={field.name}
+                                            placeholder="Skriv her..."
+                                            value={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) =>
+                                                field.handleChange(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <FieldDescription>
+                                            Din GitHub profil.
+                                        </FieldDescription>
+                                        <FieldError
+                                            errors={field.state.meta.errors}
+                                        />
+                                    </Field>
+                                )}
+                            </form.Field>
 
-                        <form.Field name="linkedin">
-                            {(field) => (
-                                <Field>
-                                    <FieldLabel htmlFor={field.name}>
-                                        LinkedIn
-                                    </FieldLabel>
-                                    <Input
-                                        id={field.name}
-                                        name={field.name}
-                                        placeholder="Skriv her..."
-                                        value={field.state.value}
-                                        onBlur={field.handleBlur}
-                                        onChange={(e) =>
-                                            field.handleChange(e.target.value)
-                                        }
-                                    />
-                                    <FieldDescription>
-                                        Din LinkedIn profil.
-                                    </FieldDescription>
-                                    <FieldError
-                                        errors={field.state.meta.errors}
-                                    />
-                                </Field>
-                            )}
-                        </form.Field>
-                    </FieldGroup>
-
+                            <form.Field name="linkedin">
+                                {(field) => (
+                                    <Field>
+                                        <FieldLabel htmlFor={field.name}>
+                                            LinkedIn
+                                        </FieldLabel>
+                                        <Input
+                                            id={field.name}
+                                            name={field.name}
+                                            placeholder="Skriv her..."
+                                            value={field.state.value}
+                                            onBlur={field.handleBlur}
+                                            onChange={(e) =>
+                                                field.handleChange(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                        <FieldDescription>
+                                            Din LinkedIn profil.
+                                        </FieldDescription>
+                                        <FieldError
+                                            errors={field.state.meta.errors}
+                                        />
+                                    </Field>
+                                )}
+                            </form.Field>
+                        </FieldGroup>
+                    </DialogBody>
                     <DialogFooter>
                         <form.Subscribe
                             selector={(state) => ({

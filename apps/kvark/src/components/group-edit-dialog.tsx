@@ -1,6 +1,7 @@
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -133,167 +134,176 @@ export function GroupEditDialog({
                     </Button>
                 }
             />
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Rediger gruppen</DialogTitle>
                     <DialogDescription>
                         Endringene lagres når du trykker «Oppdater».
                     </DialogDescription>
                 </DialogHeader>
-                <form
-                    id="group-edit-form"
-                    className="flex flex-col gap-4"
-                    onSubmit={handleSubmit}
-                >
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="group-name">
-                                Gruppenavn *
-                            </FieldLabel>
-                            <Input
-                                id="group-name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel id="group-description-label">
-                                Gruppebeskrivelse
-                            </FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={description}
-                                onChange={setDescription}
-                                ariaLabelledBy="group-description-label"
-                            />
-                            <FieldDescription>
-                                Vises på «Om»-fanen til gruppen.
-                            </FieldDescription>
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="group-email">
-                                Kontakt e-post
-                            </FieldLabel>
-                            <Input
-                                id="group-email"
-                                type="email"
-                                value={contactEmail}
-                                onChange={(e) =>
-                                    setContactEmail(e.target.value)
-                                }
-                            />
-                        </Field>
-                        {typeEditable ? (
+                <DialogBody>
+                    <form
+                        id="group-edit-form"
+                        className="flex flex-col gap-4"
+                        onSubmit={handleSubmit}
+                    >
+                        <FieldGroup>
                             <Field>
-                                <FieldLabel htmlFor="group-type">
-                                    Gruppetype
+                                <FieldLabel htmlFor="group-name">
+                                    Gruppenavn *
                                 </FieldLabel>
-                                <Select
-                                    items={[...GROUP_TYPE_OPTIONS]}
-                                    value={type}
-                                    onValueChange={(value) =>
-                                        setType(value ?? type)
-                                    }
-                                >
-                                    <SelectTrigger id="group-type">
-                                        <SelectValue placeholder="Velg type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {GROUP_TYPE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Input
+                                    id="group-name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel id="group-description-label">
+                                    Gruppebeskrivelse
+                                </FieldLabel>
+                                <RichEditor
+                                    registry={richRegistry}
+                                    value={description}
+                                    onChange={setDescription}
+                                    ariaLabelledBy="group-description-label"
+                                />
                                 <FieldDescription>
-                                    Bestemmer hvor gruppen står i
-                                    organisasjonskartet.
+                                    Vises på «Om»-fanen til gruppen.
                                 </FieldDescription>
                             </Field>
-                        ) : null}
-                        {typeEditable && hasSubtype ? (
                             <Field>
-                                <FieldLabel htmlFor="group-subtype">
-                                    Underkategori
+                                <FieldLabel htmlFor="group-email">
+                                    Kontakt e-post
                                 </FieldLabel>
-                                <Select
-                                    items={[...GROUP_SUBTYPE_OPTIONS]}
-                                    value={subtype}
-                                    onValueChange={(value) =>
-                                        setSubtype(
-                                            (value as typeof subtype) ??
-                                                subtype,
-                                        )
+                                <Input
+                                    id="group-email"
+                                    type="email"
+                                    value={contactEmail}
+                                    onChange={(e) =>
+                                        setContactEmail(e.target.value)
                                     }
-                                >
-                                    <SelectTrigger id="group-subtype">
-                                        <SelectValue placeholder="Velg underkategori" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {GROUP_SUBTYPE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
+                            </Field>
+                            {typeEditable ? (
+                                <Field>
+                                    <FieldLabel htmlFor="group-type">
+                                        Gruppetype
+                                    </FieldLabel>
+                                    <Select
+                                        items={[...GROUP_TYPE_OPTIONS]}
+                                        value={type}
+                                        onValueChange={(value) =>
+                                            setType(value ?? type)
+                                        }
+                                    >
+                                        <SelectTrigger id="group-type">
+                                            <SelectValue placeholder="Velg type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GROUP_TYPE_OPTIONS.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FieldDescription>
+                                        Bestemmer hvor gruppen står i
+                                        organisasjonskartet.
+                                    </FieldDescription>
+                                </Field>
+                            ) : null}
+                            {typeEditable && hasSubtype ? (
+                                <Field>
+                                    <FieldLabel htmlFor="group-subtype">
+                                        Underkategori
+                                    </FieldLabel>
+                                    <Select
+                                        items={[...GROUP_SUBTYPE_OPTIONS]}
+                                        value={subtype}
+                                        onValueChange={(value) =>
+                                            setSubtype(
+                                                (value as typeof subtype) ??
+                                                    subtype,
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="group-subtype">
+                                            <SelectValue placeholder="Velg underkategori" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GROUP_SUBTYPE_OPTIONS.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FieldDescription>
+                                        Idrettsgrupper får sin egen seksjon i
+                                        organisasjonskartet.
+                                    </FieldDescription>
+                                </Field>
+                            ) : null}
+
+                            <Separator />
+
+                            <Field orientation="horizontal">
+                                <FieldLabel htmlFor="fines-activated">
+                                    Botsystem på
+                                </FieldLabel>
+                                <Switch
+                                    id="fines-activated"
+                                    checked={finesActivated}
+                                    onCheckedChange={setFinesActivated}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel>Botsjef</FieldLabel>
+                                <MemberSingleCombobox
+                                    items={members}
+                                    value={finesAdmin}
+                                    onValueChange={setFinesAdmin}
+                                    placeholder="Søk blant medlemmene"
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel id="fines-info-label">
+                                    Botsystem: praktiske detaljer
+                                </FieldLabel>
+                                <RichEditor
+                                    registry={richRegistry}
+                                    value={finesInfo}
+                                    onChange={setFinesInfo}
+                                    ariaLabelledBy="fines-info-label"
+                                />
                                 <FieldDescription>
-                                    Idrettsgrupper får sin egen seksjon i
-                                    organisasjonskartet.
+                                    Vises øverst på bøter-fanen.
                                 </FieldDescription>
                             </Field>
+                        </FieldGroup>
+                        {error ? (
+                            <p
+                                role="alert"
+                                className="text-sm text-destructive"
+                            >
+                                {error}
+                            </p>
                         ) : null}
-
-                        <Separator />
-
-                        <Field orientation="horizontal">
-                            <FieldLabel htmlFor="fines-activated">
-                                Botsystem på
-                            </FieldLabel>
-                            <Switch
-                                id="fines-activated"
-                                checked={finesActivated}
-                                onCheckedChange={setFinesActivated}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel>Botsjef</FieldLabel>
-                            <MemberSingleCombobox
-                                items={members}
-                                value={finesAdmin}
-                                onValueChange={setFinesAdmin}
-                                placeholder="Søk blant medlemmene"
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel id="fines-info-label">
-                                Botsystem: praktiske detaljer
-                            </FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={finesInfo}
-                                onChange={setFinesInfo}
-                                ariaLabelledBy="fines-info-label"
-                            />
-                            <FieldDescription>
-                                Vises øverst på bøter-fanen.
-                            </FieldDescription>
-                        </Field>
-                    </FieldGroup>
-                    {error ? (
-                        <p role="alert" className="text-sm text-destructive">
-                            {error}
-                        </p>
-                    ) : null}
-                </form>
+                    </form>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         type="button"

@@ -127,6 +127,13 @@ export const event = pgTable("event", {
      * Used as an idempotency marker so no-show strikes are issued only once.
      */
     noShowProcessedAt: timestamp("no_show_processed_at"),
+    /**
+     * Set once the "påmeldingen åpner snart" reminder has been sent to everyone
+     * who favourited the event. Idempotency marker so the reminder goes out at
+     * most once per registration opening — cleared again if `registrationStart`
+     * is moved, so a rescheduled opening gets its own reminder.
+     */
+    registrationReminderSentAt: timestamp("registration_reminder_sent_at"),
     /** Only members covered by a priority pool may register. */
     onlyAllowPrioritized: boolean("only_allow_prioritized")
         .default(false)

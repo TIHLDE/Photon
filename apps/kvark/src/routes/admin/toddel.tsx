@@ -8,6 +8,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -311,8 +312,11 @@ function IssueDialog({
 
     return (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {isEdit
@@ -320,79 +324,83 @@ function IssueDialog({
                                 : "Ny utgave"}
                         </DialogTitle>
                     </DialogHeader>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="toddel-edition">
-                                Utgavenummer
-                            </FieldLabel>
-                            <Input
-                                id="toddel-edition"
-                                type="number"
-                                min={1}
-                                required
-                                disabled={isEdit}
-                                value={edition}
-                                onChange={(event) =>
-                                    setEdition(event.target.value)
-                                }
+                    <DialogBody>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="toddel-edition">
+                                    Utgavenummer
+                                </FieldLabel>
+                                <Input
+                                    id="toddel-edition"
+                                    type="number"
+                                    min={1}
+                                    required
+                                    disabled={isEdit}
+                                    value={edition}
+                                    onChange={(event) =>
+                                        setEdition(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="toddel-title">
+                                    Tittel
+                                </FieldLabel>
+                                <Input
+                                    id="toddel-title"
+                                    required
+                                    maxLength={200}
+                                    value={title}
+                                    onChange={(event) =>
+                                        setTitle(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="toddel-published">
+                                    Publiseringsdato
+                                </FieldLabel>
+                                <Input
+                                    id="toddel-published"
+                                    type="date"
+                                    required
+                                    value={publishedAt}
+                                    onChange={(event) =>
+                                        setPublishedAt(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="toddel-pdf">
+                                    PDF
+                                    {isEdit
+                                        ? " (la stå tom for å beholde)"
+                                        : ""}
+                                </FieldLabel>
+                                <Input
+                                    id="toddel-pdf"
+                                    type="file"
+                                    accept="application/pdf"
+                                    required={!isEdit}
+                                    onChange={(event) =>
+                                        setPdf(event.target.files?.[0] ?? null)
+                                    }
+                                />
+                            </Field>
+                            <AdminImageField
+                                label="Forsidebilde (valgfritt)"
+                                preset="cover-portrait"
+                                value={cover}
+                                onChange={setCover}
+                                existingImageUrl={issue?.imageUrl}
+                                disabled={isPending}
                             />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="toddel-title">
-                                Tittel
-                            </FieldLabel>
-                            <Input
-                                id="toddel-title"
-                                required
-                                maxLength={200}
-                                value={title}
-                                onChange={(event) =>
-                                    setTitle(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="toddel-published">
-                                Publiseringsdato
-                            </FieldLabel>
-                            <Input
-                                id="toddel-published"
-                                type="date"
-                                required
-                                value={publishedAt}
-                                onChange={(event) =>
-                                    setPublishedAt(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="toddel-pdf">
-                                PDF{isEdit ? " (la stå tom for å beholde)" : ""}
-                            </FieldLabel>
-                            <Input
-                                id="toddel-pdf"
-                                type="file"
-                                accept="application/pdf"
-                                required={!isEdit}
-                                onChange={(event) =>
-                                    setPdf(event.target.files?.[0] ?? null)
-                                }
-                            />
-                        </Field>
-                        <AdminImageField
-                            label="Forsidebilde (valgfritt)"
-                            preset="cover-portrait"
-                            value={cover}
-                            onChange={setCover}
-                            existingImageUrl={issue?.imageUrl}
-                            disabled={isPending}
-                        />
-                    </FieldGroup>
+                        </FieldGroup>
 
-                    {error && (
-                        <p className="text-destructive text-sm">{error}</p>
-                    )}
-
+                        {error && (
+                            <p className="text-destructive text-sm">{error}</p>
+                        )}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

@@ -2,6 +2,7 @@ import { formHandlers, useAppForm } from "#/hooks/form";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -108,115 +109,122 @@ export function EditProfileDialog({
                         Endringer lagres på din TIHLDE-profil.
                     </DialogDescription>
                 </DialogHeader>
-                <form {...formHandlers(form)} className="flex flex-col gap-4">
-                    <FieldGroup>
-                        <form.AppField name="avatar">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Profilbilde</field.Label>
-                                    <field.ImageDropzone
-                                        maxSize={2 * 1024 * 1024}
-                                    />
-                                    <field.Description>
-                                        Bilde, maks 2 MB
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <div className="grid grid-cols-2 gap-3">
-                            <form.AppField name="firstName">
+                <form
+                    {...formHandlers(form)}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
+                    <DialogBody>
+                        <FieldGroup>
+                            <form.AppField name="avatar">
                                 {(field) => (
-                                    <field.Field required>
-                                        <field.Label>Fornavn</field.Label>
-                                        <field.Input autoComplete="given-name" />
-                                        <field.Error />
-                                    </field.Field>
-                                )}
-                            </form.AppField>
-                            <form.AppField name="lastName">
-                                {(field) => (
-                                    <field.Field required>
-                                        <field.Label>Etternavn</field.Label>
-                                        <field.Input autoComplete="family-name" />
-                                        <field.Error />
-                                    </field.Field>
-                                )}
-                            </form.AppField>
-                        </div>
-                        <form.AppField name="studyProgram">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Studieprogram</field.Label>
-                                    <field.Combobox
-                                        items={STUDY_PROGRAMS}
-                                        placeholder="Søk etter program..."
-                                        getLabel={(id) =>
-                                            STUDY_PROGRAM_LABELS[id]
-                                        }
-                                    />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="studyYear">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Klassetrinn</field.Label>
-                                    <field.Select
-                                        options={STUDY_YEARS}
-                                        placeholder="Velg klassetrinn"
-                                    />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="bio">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Om meg</field.Label>
-                                    <field.Textarea
-                                        rows={3}
-                                        placeholder="Fortell litt om deg selv..."
-                                    />
-                                    <field.Description>
-                                        Vises på din offentlige profil
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="allergies">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Allergier</field.Label>
-                                    <field.Combobox
-                                        items={ALLERGY_OPTIONS}
-                                        multiple
-                                        placeholder="Legg til allergi..."
-                                    />
-                                    <field.Description>
-                                        Brukes ved arrangementspåmelding
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="emailNotifications">
-                            {(field) => (
-                                <field.Field orientation="horizontal">
-                                    <FieldContent>
-                                        <field.Label>E-postvarsler</field.Label>
+                                    <field.Field>
+                                        <field.Label>Profilbilde</field.Label>
+                                        <field.ImageDropzone
+                                            maxSize={2 * 1024 * 1024}
+                                        />
                                         <field.Description>
-                                            Få e-post om nye arrangementer og
-                                            annonser
+                                            Bilde, maks 2 MB
                                         </field.Description>
-                                    </FieldContent>
-                                    <field.Switch />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                    </FieldGroup>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <div className="grid grid-cols-2 gap-3">
+                                <form.AppField name="firstName">
+                                    {(field) => (
+                                        <field.Field required>
+                                            <field.Label>Fornavn</field.Label>
+                                            <field.Input autoComplete="given-name" />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                                <form.AppField name="lastName">
+                                    {(field) => (
+                                        <field.Field required>
+                                            <field.Label>Etternavn</field.Label>
+                                            <field.Input autoComplete="family-name" />
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
+                            </div>
+                            <form.AppField name="studyProgram">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Studieprogram</field.Label>
+                                        <field.Combobox
+                                            items={STUDY_PROGRAMS}
+                                            placeholder="Søk etter program..."
+                                            getLabel={(id) =>
+                                                STUDY_PROGRAM_LABELS[id]
+                                            }
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="studyYear">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Klassetrinn</field.Label>
+                                        <field.Select
+                                            options={STUDY_YEARS}
+                                            placeholder="Velg klassetrinn"
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="bio">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>Om meg</field.Label>
+                                        <field.Textarea
+                                            rows={3}
+                                            placeholder="Fortell litt om deg selv..."
+                                        />
+                                        <field.Description>
+                                            Vises på din offentlige profil
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="allergies">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>Allergier</field.Label>
+                                        <field.Combobox
+                                            items={ALLERGY_OPTIONS}
+                                            multiple
+                                            placeholder="Legg til allergi..."
+                                        />
+                                        <field.Description>
+                                            Brukes ved arrangementspåmelding
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="emailNotifications">
+                                {(field) => (
+                                    <field.Field orientation="horizontal">
+                                        <FieldContent>
+                                            <field.Label>
+                                                E-postvarsler
+                                            </field.Label>
+                                            <field.Description>
+                                                Få e-post om nye arrangementer
+                                                og annonser
+                                            </field.Description>
+                                        </FieldContent>
+                                        <field.Switch />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                        </FieldGroup>
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

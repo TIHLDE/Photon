@@ -12,6 +12,7 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -146,132 +147,145 @@ export function GroupFineDialog({
                                     .join(" · ")}
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="flex flex-col gap-3">
-                            <div className="flex flex-wrap gap-2">
-                                {/* Antallet er selve boten — det sto ingen
+                        <DialogBody>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex flex-wrap gap-2">
+                                    {/* Antallet er selve boten — det sto ingen
                                     steder, verken i lista eller her. */}
-                                <Badge variant="secondary">
-                                    {fine.amount}{" "}
-                                    {fine.amount === 1 ? "bot" : "bøter"}
-                                </Badge>
-                                <Badge
-                                    variant={
-                                        fine.approved ? "default" : "outline"
-                                    }
-                                >
-                                    {fine.approved
-                                        ? "Godkjent"
-                                        : "Ikke godkjent"}
-                                </Badge>
-                                <Badge
-                                    variant={fine.paid ? "default" : "outline"}
-                                >
-                                    {fine.paid ? "Betalt" : "Ikke betalt"}
-                                </Badge>
-                            </div>
-                            {/* «Opprettet av» er flyttet opp i Til/Fra-paret i
-                                headeren, så her står bare datoen igjen. */}
-                            <div className="text-sm">
-                                <p>Dato: {fine.date}</p>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs text-muted-foreground">
-                                    Begrunnelse
-                                </span>
-                                <p className="wrap-anywhere text-sm">
-                                    {fine.reason}
-                                </p>
-                            </div>
-                            {fine.image ? (
-                                <img
-                                    src={assetImageUrl(fine.image, 960)}
-                                    alt="Bevis for boten"
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="max-h-80 w-full rounded-md object-contain"
-                                />
-                            ) : null}
-                            {isOwnFine ? (
-                                <div className="flex flex-col gap-2">
-                                    <Label htmlFor="fine-defense">
-                                        Ditt forsvar
-                                    </Label>
-                                    <Textarea
-                                        id="fine-defense"
-                                        rows={3}
-                                        placeholder="Forklar din side av saken"
-                                        value={defenseValue}
-                                        onChange={(event) =>
-                                            setDefenseDraft(event.target.value)
+                                    <Badge variant="secondary">
+                                        {fine.amount}{" "}
+                                        {fine.amount === 1 ? "bot" : "bøter"}
+                                    </Badge>
+                                    <Badge
+                                        variant={
+                                            fine.approved
+                                                ? "default"
+                                                : "outline"
                                         }
-                                    />
-                                    <Button
-                                        size="sm"
-                                        className="self-start"
-                                        disabled={!defenseChanged}
-                                        onClick={() => {
-                                            onSaveDefense(fine, defenseValue);
-                                            setDefenseDraft(null);
-                                        }}
                                     >
-                                        Lagre forsvar
-                                    </Button>
+                                        {fine.approved
+                                            ? "Godkjent"
+                                            : "Ikke godkjent"}
+                                    </Badge>
+                                    <Badge
+                                        variant={
+                                            fine.paid ? "default" : "outline"
+                                        }
+                                    >
+                                        {fine.paid ? "Betalt" : "Ikke betalt"}
+                                    </Badge>
                                 </div>
-                            ) : fine.defense ? (
+                                {/* «Opprettet av» er flyttet opp i Til/Fra-paret i
+                                headeren, så her står bare datoen igjen. */}
+                                <div className="text-sm">
+                                    <p>Dato: {fine.date}</p>
+                                </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs text-muted-foreground">
-                                        Forsvar
+                                        Begrunnelse
                                     </span>
                                     <p className="wrap-anywhere text-sm">
-                                        {fine.defense}
+                                        {fine.reason}
                                     </p>
                                 </div>
-                            ) : null}
-                            {/* «Rediger bot» lå her, men PATCH-endepunktet tar
+                                {fine.image ? (
+                                    <img
+                                        src={assetImageUrl(fine.image, 960)}
+                                        alt="Bevis for boten"
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="max-h-80 w-full rounded-md object-contain"
+                                    />
+                                ) : null}
+                                {isOwnFine ? (
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="fine-defense">
+                                            Ditt forsvar
+                                        </Label>
+                                        <Textarea
+                                            id="fine-defense"
+                                            rows={3}
+                                            placeholder="Forklar din side av saken"
+                                            value={defenseValue}
+                                            onChange={(event) =>
+                                                setDefenseDraft(
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                        <Button
+                                            size="sm"
+                                            className="self-start"
+                                            disabled={!defenseChanged}
+                                            onClick={() => {
+                                                onSaveDefense(
+                                                    fine,
+                                                    defenseValue,
+                                                );
+                                                setDefenseDraft(null);
+                                            }}
+                                        >
+                                            Lagre forsvar
+                                        </Button>
+                                    </div>
+                                ) : fine.defense ? (
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xs text-muted-foreground">
+                                            Forsvar
+                                        </span>
+                                        <p className="wrap-anywhere text-sm">
+                                            {fine.defense}
+                                        </p>
+                                    </div>
+                                ) : null}
+                                {/* «Rediger bot» lå her, men PATCH-endepunktet tar
                                 bare status og forsvar — begrunnelse og beløp
                                 kan ikke endres, så knappen gjorde ingenting. */}
-                            {canManage ? (
-                                /* Hierarki i handlingsraden: neste steg i
+                                {canManage ? (
+                                    /* Hierarki i handlingsraden: neste steg i
                                    botens livsløp er fylt, det andre er dempet
                                    og sletting er destruktiv. Før var alle tre
                                    «outline» og raden forsvant i bakgrunnen. */
-                                <div className="flex flex-wrap gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant={
-                                            fine.approved
-                                                ? "outline"
-                                                : "default"
-                                        }
-                                        disabled={fine.approved}
-                                        onClick={() => onApprove(fine)}
-                                    >
-                                        Merk som godkjent
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant={
-                                            !fine.approved || fine.paid
-                                                ? "outline"
-                                                : "default"
-                                        }
-                                        disabled={fine.paid}
-                                        onClick={() => onMarkPaid(fine)}
-                                    >
-                                        Merk som betalt
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="ml-auto"
-                                        onClick={() => setConfirmDelete(true)}
-                                    >
-                                        <Trash2 />
-                                        Slett bot
-                                    </Button>
-                                </div>
-                            ) : null}
-                        </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant={
+                                                fine.approved
+                                                    ? "outline"
+                                                    : "default"
+                                            }
+                                            disabled={fine.approved}
+                                            onClick={() => onApprove(fine)}
+                                        >
+                                            Merk som godkjent
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant={
+                                                !fine.approved || fine.paid
+                                                    ? "outline"
+                                                    : "default"
+                                            }
+                                            disabled={fine.paid}
+                                            onClick={() => onMarkPaid(fine)}
+                                        >
+                                            Merk som betalt
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="ml-auto"
+                                            onClick={() =>
+                                                setConfirmDelete(true)
+                                            }
+                                        >
+                                            <Trash2 />
+                                            Slett bot
+                                        </Button>
+                                    </div>
+                                ) : null}
+                            </div>
+                        </DialogBody>
                         <DialogFooter className="justify-between sm:justify-between">
                             <Button
                                 variant="outline"

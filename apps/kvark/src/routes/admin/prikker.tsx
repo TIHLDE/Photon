@@ -10,6 +10,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -313,96 +314,107 @@ function CreateStrikeDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>Ny prikk</DialogTitle>
                     </DialogHeader>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel>Bruker</FieldLabel>
-                            <UserSearchCombobox
-                                holder={user}
-                                emptyLabel="Velg bruker"
-                                query={userQuery}
-                                onQueryChange={setUserQuery}
-                                results={searchResults ?? []}
-                                isSearching={isFetching}
-                                onSelect={(selected) => setUser(selected)}
-                                onRemove={
-                                    user ? () => setUser(null) : undefined
-                                }
-                                onOpenChange={(isOpen) => {
-                                    if (!isOpen) setUserQuery("");
-                                }}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel>Arrangement</FieldLabel>
-                            <Select
-                                items={eventItems}
-                                value={eventId}
-                                onValueChange={(value) =>
-                                    setEventId(value ?? null)
-                                }
+                    <DialogBody>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel>Bruker</FieldLabel>
+                                <UserSearchCombobox
+                                    holder={user}
+                                    emptyLabel="Velg bruker"
+                                    query={userQuery}
+                                    onQueryChange={setUserQuery}
+                                    results={searchResults ?? []}
+                                    isSearching={isFetching}
+                                    onSelect={(selected) => setUser(selected)}
+                                    onRemove={
+                                        user ? () => setUser(null) : undefined
+                                    }
+                                    onOpenChange={(isOpen) => {
+                                        if (!isOpen) setUserQuery("");
+                                    }}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel>Arrangement</FieldLabel>
+                                <Select
+                                    items={eventItems}
+                                    value={eventId}
+                                    onValueChange={(value) =>
+                                        setEventId(value ?? null)
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Velg arrangement" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {eventItems.map((item) => (
+                                            <SelectItem
+                                                key={item.value}
+                                                value={item.value}
+                                            >
+                                                {item.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field>
+                                <FieldLabel>Antall prikker</FieldLabel>
+                                <Select
+                                    items={STRIKE_COUNTS.map((value) => ({
+                                        value,
+                                        label: value,
+                                    }))}
+                                    value={count}
+                                    onValueChange={(value) => {
+                                        if (value) setCount(value);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-24">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {STRIKE_COUNTS.map((value) => (
+                                            <SelectItem
+                                                key={value}
+                                                value={value}
+                                            >
+                                                {value}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="strike-reason">
+                                    Begrunnelse (valgfritt)
+                                </FieldLabel>
+                                <Textarea
+                                    id="strike-reason"
+                                    rows={2}
+                                    value={reason}
+                                    onChange={(event) =>
+                                        setReason(event.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                        {error && (
+                            <p
+                                className="text-sm text-destructive"
+                                role="alert"
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Velg arrangement" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {eventItems.map((item) => (
-                                        <SelectItem
-                                            key={item.value}
-                                            value={item.value}
-                                        >
-                                            {item.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel>Antall prikker</FieldLabel>
-                            <Select
-                                items={STRIKE_COUNTS.map((value) => ({
-                                    value,
-                                    label: value,
-                                }))}
-                                value={count}
-                                onValueChange={(value) => {
-                                    if (value) setCount(value);
-                                }}
-                            >
-                                <SelectTrigger className="w-24">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {STRIKE_COUNTS.map((value) => (
-                                        <SelectItem key={value} value={value}>
-                                            {value}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="strike-reason">
-                                Begrunnelse (valgfritt)
-                            </FieldLabel>
-                            <Textarea
-                                id="strike-reason"
-                                rows={2}
-                                value={reason}
-                                onChange={(event) =>
-                                    setReason(event.target.value)
-                                }
-                            />
-                        </Field>
-                    </FieldGroup>
-                    {error && (
-                        <p className="text-sm text-destructive" role="alert">
-                            {error}
-                        </p>
-                    )}
+                                {error}
+                            </p>
+                        )}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

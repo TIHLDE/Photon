@@ -1,6 +1,6 @@
 {
-  "id": "f75a5b48-1c1b-481a-968b-63ef343d2b82",
-  "prevId": "00b1e539-36da-4916-91c6-639f25652146",
+  "id": "7c4463bc-99b6-453d-a35d-0e1bf3bcc9b8",
+  "prevId": "c1686880-419e-465d-ad0e-bec4adce0705",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -446,7 +446,7 @@
         },
         "amount_nok": {
           "name": "amount_nok",
-          "type": "integer",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
@@ -2243,6 +2243,12 @@
         },
         "no_show_processed_at": {
           "name": "no_show_processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_reminder_sent_at": {
+          "name": "registration_reminder_sent_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false

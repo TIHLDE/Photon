@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { userHasSubmitted } from "~/lib/form/service";
+import { isGroupFormOpen, userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -97,7 +97,13 @@ export const getRoute = route().get(
                   }
                 : null,
             can_submit_multiple: groupForm?.canSubmitMultiple ?? null,
-            is_open_for_submissions: groupForm?.isOpenForSubmissions ?? null,
+            // Svarsiden spør «kan jeg svare nå?», så et skjema som er planlagt
+            // fram i tid rapporteres som stengt til tidspunktet har passert.
+            // `opens_at` lar siden si når det åpner.
+            is_open_for_submissions: groupForm
+                ? isGroupFormOpen(groupForm)
+                : null,
+            opens_at: groupForm?.opensAt?.toISOString() ?? null,
             only_for_group_members: groupForm?.onlyForGroupMembers ?? null,
             website_url: `/sporreskjema/${form.id}/`,
             created_at: form.createdAt.toISOString(),

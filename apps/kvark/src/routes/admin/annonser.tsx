@@ -19,6 +19,7 @@ import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -487,233 +488,255 @@ function JobDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-2xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {isEdit ? "Rediger annonse" : "Ny annonse"}
                         </DialogTitle>
                     </DialogHeader>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="job-title">Tittel</FieldLabel>
-                            <Input
-                                id="job-title"
-                                required
-                                value={title}
-                                onChange={(event) =>
-                                    setTitle(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    <DialogBody>
+                        <FieldGroup>
                             <Field>
-                                <FieldLabel htmlFor="job-company">
-                                    Bedrift
+                                <FieldLabel htmlFor="job-title">
+                                    Tittel
                                 </FieldLabel>
                                 <Input
-                                    id="job-company"
+                                    id="job-title"
                                     required
-                                    value={company}
+                                    value={title}
                                     onChange={(event) =>
-                                        setCompany(event.target.value)
+                                        setTitle(event.target.value)
                                     }
                                 />
                             </Field>
-                            <Field>
-                                <FieldLabel htmlFor="job-location">
-                                    Sted
-                                </FieldLabel>
-                                <Input
-                                    id="job-location"
-                                    required
-                                    value={location}
-                                    onChange={(event) =>
-                                        setLocation(event.target.value)
-                                    }
-                                />
-                            </Field>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <Field>
-                                <FieldLabel htmlFor="job-type">Type</FieldLabel>
-                                <Select
-                                    items={JOB_TYPES.map((type) => ({
-                                        value: type,
-                                        label: JOB_TYPE_LABELS[type],
-                                    }))}
-                                    value={jobType}
-                                    onValueChange={(value) =>
-                                        setJobType(
-                                            (value as JobType) ?? "other",
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="job-type">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {JOB_TYPES.map((type) => (
-                                            <SelectItem key={type} value={type}>
-                                                {JOB_TYPE_LABELS[type]}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="job-class-start">
-                                    Fra klasse
-                                </FieldLabel>
-                                <Select
-                                    items={CLASSES.map((cls) => ({
-                                        value: cls,
-                                        label: CLASS_LABELS[cls],
-                                    }))}
-                                    value={classStart}
-                                    onValueChange={(value) =>
-                                        setClassStart(
-                                            (value as UserClass) ?? "first",
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="job-class-start">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CLASSES.map((cls) => (
-                                            <SelectItem key={cls} value={cls}>
-                                                {CLASS_LABELS[cls]}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="job-class-end">
-                                    Til klasse
-                                </FieldLabel>
-                                <Select
-                                    items={CLASSES.map((cls) => ({
-                                        value: cls,
-                                        label: CLASS_LABELS[cls],
-                                    }))}
-                                    value={classEnd}
-                                    onValueChange={(value) =>
-                                        setClassEnd(
-                                            (value as UserClass) ?? "fifth",
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="job-class-end">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {CLASSES.map((cls) => (
-                                            <SelectItem key={cls} value={cls}>
-                                                {CLASS_LABELS[cls]}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <Field>
-                                <FieldLabel htmlFor="job-deadline">
-                                    Søknadsfrist *
-                                </FieldLabel>
-                                <DateTimePicker
-                                    id="job-deadline"
-                                    locale={nb}
-                                    placeholder="Velg dato"
-                                    value={deadline}
-                                    onValueChange={setDeadline}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Også fortløpende annonser trenger en frist,
-                                    ellers blir de liggende for alltid.
-                                </p>
-                            </Field>
-                            <div className="flex items-center gap-2 sm:self-end sm:pb-2">
-                                <Checkbox
-                                    id="job-continuous"
-                                    checked={isContinuouslyHiring}
-                                    onCheckedChange={(checked) =>
-                                        setIsContinuouslyHiring(
-                                            Boolean(checked),
-                                        )
-                                    }
-                                />
-                                <Label htmlFor="job-continuous">
-                                    Fortløpende ansettelse
-                                </Label>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="job-company">
+                                        Bedrift
+                                    </FieldLabel>
+                                    <Input
+                                        id="job-company"
+                                        required
+                                        value={company}
+                                        onChange={(event) =>
+                                            setCompany(event.target.value)
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="job-location">
+                                        Sted
+                                    </FieldLabel>
+                                    <Input
+                                        id="job-location"
+                                        required
+                                        value={location}
+                                        onChange={(event) =>
+                                            setLocation(event.target.value)
+                                        }
+                                    />
+                                </Field>
                             </div>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <Field>
+                                    <FieldLabel htmlFor="job-type">
+                                        Type
+                                    </FieldLabel>
+                                    <Select
+                                        items={JOB_TYPES.map((type) => ({
+                                            value: type,
+                                            label: JOB_TYPE_LABELS[type],
+                                        }))}
+                                        value={jobType}
+                                        onValueChange={(value) =>
+                                            setJobType(
+                                                (value as JobType) ?? "other",
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="job-type">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {JOB_TYPES.map((type) => (
+                                                <SelectItem
+                                                    key={type}
+                                                    value={type}
+                                                >
+                                                    {JOB_TYPE_LABELS[type]}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="job-class-start">
+                                        Fra klasse
+                                    </FieldLabel>
+                                    <Select
+                                        items={CLASSES.map((cls) => ({
+                                            value: cls,
+                                            label: CLASS_LABELS[cls],
+                                        }))}
+                                        value={classStart}
+                                        onValueChange={(value) =>
+                                            setClassStart(
+                                                (value as UserClass) ?? "first",
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="job-class-start">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CLASSES.map((cls) => (
+                                                <SelectItem
+                                                    key={cls}
+                                                    value={cls}
+                                                >
+                                                    {CLASS_LABELS[cls]}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="job-class-end">
+                                        Til klasse
+                                    </FieldLabel>
+                                    <Select
+                                        items={CLASSES.map((cls) => ({
+                                            value: cls,
+                                            label: CLASS_LABELS[cls],
+                                        }))}
+                                        value={classEnd}
+                                        onValueChange={(value) =>
+                                            setClassEnd(
+                                                (value as UserClass) ?? "fifth",
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="job-class-end">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {CLASSES.map((cls) => (
+                                                <SelectItem
+                                                    key={cls}
+                                                    value={cls}
+                                                >
+                                                    {CLASS_LABELS[cls]}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="job-deadline">
+                                        Søknadsfrist *
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="job-deadline"
+                                        locale={nb}
+                                        placeholder="Velg dato"
+                                        value={deadline}
+                                        onValueChange={setDeadline}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Også fortløpende annonser trenger en
+                                        frist, ellers blir de liggende for
+                                        alltid.
+                                    </p>
+                                </Field>
+                                <div className="flex items-center gap-2 sm:self-end sm:pb-2">
+                                    <Checkbox
+                                        id="job-continuous"
+                                        checked={isContinuouslyHiring}
+                                        onCheckedChange={(checked) =>
+                                            setIsContinuouslyHiring(
+                                                Boolean(checked),
+                                            )
+                                        }
+                                    />
+                                    <Label htmlFor="job-continuous">
+                                        Fortløpende ansettelse
+                                    </Label>
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="job-email">
+                                        Kontakt-e-post
+                                    </FieldLabel>
+                                    <Input
+                                        id="job-email"
+                                        type="email"
+                                        value={email}
+                                        onChange={(event) =>
+                                            setEmail(event.target.value)
+                                        }
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="job-link">
+                                        Søknadslenke
+                                    </FieldLabel>
+                                    <Input
+                                        id="job-link"
+                                        type="url"
+                                        value={link}
+                                        onChange={(event) =>
+                                            setLink(event.target.value)
+                                        }
+                                        placeholder="https://"
+                                    />
+                                </Field>
+                            </div>
                             <Field>
-                                <FieldLabel htmlFor="job-email">
-                                    Kontakt-e-post
+                                <FieldLabel htmlFor="job-ingress">
+                                    Ingress
                                 </FieldLabel>
-                                <Input
-                                    id="job-email"
-                                    type="email"
-                                    value={email}
+                                <Textarea
+                                    id="job-ingress"
+                                    rows={2}
+                                    value={ingress}
                                     onChange={(event) =>
-                                        setEmail(event.target.value)
+                                        setIngress(event.target.value)
                                     }
                                 />
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="job-link">
-                                    Søknadslenke
-                                </FieldLabel>
-                                <Input
-                                    id="job-link"
-                                    type="url"
-                                    value={link}
-                                    onChange={(event) =>
-                                        setLink(event.target.value)
-                                    }
-                                    placeholder="https://"
+                                <FieldLabel>Beskrivelse</FieldLabel>
+                                <RichEditor
+                                    registry={richRegistry}
+                                    value={body}
+                                    onChange={setBody}
                                 />
                             </Field>
-                        </div>
-                        <Field>
-                            <FieldLabel htmlFor="job-ingress">
-                                Ingress
-                            </FieldLabel>
-                            <Textarea
-                                id="job-ingress"
-                                rows={2}
-                                value={ingress}
-                                onChange={(event) =>
-                                    setIngress(event.target.value)
-                                }
+                            <AdminImageField
+                                label={`Bilde${isEdit ? " (la stå tom for å beholde)" : ""}`}
+                                preset="cover-wide"
+                                value={image}
+                                onChange={setImage}
+                                existingImageUrl={job?.imageUrl}
+                                disabled={isPending}
                             />
-                        </Field>
-                        <Field>
-                            <FieldLabel>Beskrivelse</FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={body}
-                                onChange={setBody}
-                            />
-                        </Field>
-                        <AdminImageField
-                            label={`Bilde${isEdit ? " (la stå tom for å beholde)" : ""}`}
-                            preset="cover-wide"
-                            value={image}
-                            onChange={setImage}
-                            existingImageUrl={job?.imageUrl}
-                            disabled={isPending}
-                        />
-                    </FieldGroup>
-                    {error && (
-                        <p className="text-sm text-destructive" role="alert">
-                            {error}
-                        </p>
-                    )}
+                        </FieldGroup>
+                        {error && (
+                            <p
+                                className="text-sm text-destructive"
+                                role="alert"
+                            >
+                                {error}
+                            </p>
+                        )}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"
