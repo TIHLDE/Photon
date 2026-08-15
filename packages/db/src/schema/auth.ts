@@ -8,6 +8,8 @@ import {
     pgTableCreator,
 } from "drizzle-orm/pg-core";
 
+import { userSettings } from "./user";
+
 const pgTable = pgTableCreator((name) => `auth_${name}`);
 
 /**
@@ -237,13 +239,29 @@ export const oauthConsent = pgTable(
     ],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
     sessions: many(session),
     accounts: many(account),
     oauthClients: many(oauthClient),
     oauthRefreshTokens: many(oauthRefreshToken),
     oauthAccessTokens: many(oauthAccessToken),
     oauthConsents: many(oauthConsent),
+    /**
+     * Declared from this side, not from `userSettings`, so a user with no
+     * settings row still answers: three accounts in production have none, and
+     * `approvalStatus` — read alongside the settings on every `get-session` —
+     * would silently read as "approved" for them if the query started at the
+     * settings table.
+     *
+     * `userSettings` is imported lazily through the relations callback, which
+     * is what keeps this from being a module cycle: `user.ts` imports `user`
+     * from here at load, and this only touches `userSettings` when the
+     * relational schema is built.
+     */
+    settings: one(userSettings, {
+        fields: [user.id],
+        references: [userSettings.userId],
+    }),
 }));
 
 export const sessionRelations = relations(session, ({ one, many }) => ({
