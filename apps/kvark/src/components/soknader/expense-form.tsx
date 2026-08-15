@@ -18,8 +18,8 @@ const schema = z.object({
     cc: z.custom<CcOption | null>().nullable(),
     amountNok: z
         .number({ error: "Feltet er påkrevd" })
-        .int({ error: "Beløpet må være et helt antall kroner" })
-        .positive({ error: "Beløpet må være større enn 0" }),
+        .positive({ error: "Beløpet må være større enn 0" })
+        .multipleOf(0.01, { error: "Beløpet kan ha maks to desimaler (øre)" }),
     date: z.date({ error: "Feltet er påkrevd" }),
     group: z.custom<GroupOption>(
         (value) => value !== null && value !== undefined,
@@ -116,7 +116,18 @@ export function ExpenseForm({
                             {(field) => (
                                 <field.Field required>
                                     <field.Label>Sum (NOK)</field.Label>
-                                    <field.Number min={1} placeholder="0" />
+                                    <field.Number
+                                        min={0.01}
+                                        step={1}
+                                        format={{
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }}
+                                        placeholder="0,00"
+                                    />
+                                    <field.Description>
+                                        Øre skrives med komma, f.eks. 249,90
+                                    </field.Description>
                                     <field.Error />
                                 </field.Field>
                             )}

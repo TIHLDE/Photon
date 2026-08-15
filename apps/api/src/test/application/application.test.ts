@@ -91,6 +91,103 @@ describe("Søknader", () => {
     );
 
     integrationTest(
+        "expense: keeps øre exactly and rejects more than two decimals",
+        async ({ ctx }) => {
+            const group = await setupGroup(ctx);
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+
+            const base = {
+                contactName: "Test Testesen",
+                contactEmail: "test@tihlde.org",
+                expenseDate: "2026-07-20",
+                groupSlug: group.slug,
+                budgetType: "group_budget" as const,
+                description: "Kaffe",
+                accountNumber: "1234.56.78901",
+            };
+
+            const response = await client.api.applications.expense.$post({
+                json: {
+                    ...base,
+                    amountNok: 249.9,
+                    attachmentKeys: [await stageAttachment(ctx, member.id)],
+                },
+            });
+            expect(response.status).toBe(201);
+            const created = await response.json();
+            // The PDF prints the amount, so it must survive the decimal too.
+            expect(created.pdfGenerated).toBe(true);
+
+            const stored = await ctx.db.query.applicationExpense.findFirst({
+                where: eq(schema.applicationExpense.applicationId, created.id),
+            });
+            expect(stored?.amountNok).toBe(249.9);
+
+            const detail = await client.api.applications[":id"].$get({
+                param: { id: created.id },
+            });
+            expect(detail.status).toBe(200);
+            expect((await detail.json()).expense?.amountNok).toBe(249.9);
+
+            // Anything finer than øre is not a real amount of money.
+            const tooPrecise = await client.api.applications.expense.$post({
+                json: {
+                    ...base,
+                    amountNok: 10.005,
+                    attachmentKeys: [await stageAttachment(ctx, member.id)],
+                },
+            });
+            expect(tooPrecise.status).toBe(400);
+        },
+    );
+
+    integrationTest(
+        "støtte: both the general and the idrettslag variant submit and store",
+        async ({ ctx }) => {
+            const group = await setupGroup(ctx);
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+
+            const base = {
+                contactName: "Test Testesen",
+                contactEmail: "test@tihlde.org",
+                groupSlug: group.slug,
+                purpose: "Støtte til kodekveld",
+                eventDescription: "Vi arrangerer kodekveld for medlemmene.",
+                justification: "Fremmer faglig aktivitet.",
+                totalAmountNok: 5000,
+                attachmentKeys: [] as string[],
+            };
+
+            // Both routes come off one factory whose path is a variable, so
+            // Hono cannot infer their literal paths and types them as
+            // optional on the RPC client. They are registered unconditionally.
+            const supportRoute = client.api.applications.support;
+            const sportsRoute = client.api.applications["sports-support"];
+            if (!supportRoute || !sportsRoute) {
+                throw new Error("Støtte-rutene er ikke registrert");
+            }
+
+            const support = await supportRoute.$post({ json: base });
+            expect(support.status).toBe(201);
+            expect((await support.json()).pdfGenerated).toBe(true);
+
+            // Same payload, different handler — a break in either would
+            // otherwise be easy to miss.
+            const sports = await sportsRoute.$post({
+                json: { ...base, totalAmountNok: 8000 },
+            });
+            expect(sports.status).toBe(201);
+            expect((await sports.json()).pdfGenerated).toBe(true);
+
+            const mine = await client.api.applications.mine.$get({ query: {} });
+            const types = (await mine.json()).map((a) => a.type).sort();
+            expect(types).toEqual(["sports_support", "support"]);
+        },
+    );
+
+    integrationTest(
         "expense: rejects an unknown group, a bad account number and a foreign attachment",
         async ({ ctx }) => {
             const group = await setupGroup(ctx);

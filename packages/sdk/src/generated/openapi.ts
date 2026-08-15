@@ -3029,7 +3029,7 @@ export interface components {
              * @description Optional copy to a group's økonomiansvarlig. Must match a group's registered finance address.
              */
             ccEmail?: string;
-            /** @description Amount in whole NOK */
+            /** @description Amount in NOK, at most two decimals (øre) */
             amountNok: number;
             /** @description Date of the expense, YYYY-MM-DD */
             expenseDate: string;
