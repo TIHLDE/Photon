@@ -4,12 +4,12 @@ import {
     type QueueJob,
     type WorkerLike,
 } from "@photon/core/services/queue";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
 import { getPaymentDetails, refundPayment } from "../vipps";
-import { calculateWaitlistPosition } from "./priority";
+import { calculateWaitlistPositions } from "./priority";
 
 /**
  * Payload for the delayed job that enforces a paid event's payment deadline.
@@ -28,6 +28,7 @@ type PaidEventLike = {
     id: string;
     title: string;
     slug: string;
+    capacity?: number | null;
     isPaidEvent: boolean;
     priceMinor: number | null;
     paymentGracePeriodMinutes: number | null;
@@ -260,10 +261,32 @@ export async function refundOwed(
  * the remaining waitlist positions. For a paid event the promoted user gets a
  * fresh payment obligation (and countdown timer) of their own.
  */
-async function promoteFromWaitlist(
+export async function promoteFromWaitlist(
     ctx: AppContext,
     event: PaidEventLike,
 ): Promise<void> {
+    // A spot has to actually be free. Callers that just cancelled a
+    // registration know one is; the unregister route calls this for every
+    // cancellation, including ones that give up a waitlist place rather than a
+    // spot, so the count decides rather than the caller.
+    const capacity = event.capacity ?? null;
+
+    if (capacity !== null) {
+        const [taken] = await ctx.db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(schema.eventRegistration)
+            .where(
+                and(
+                    eq(schema.eventRegistration.eventId, event.id),
+                    eq(schema.eventRegistration.status, "registered"),
+                ),
+            );
+
+        if (Number(taken?.count ?? 0) >= capacity) {
+            return;
+        }
+    }
+
     const waitlisted = await ctx.db.query.eventRegistration.findMany({
         where: (r, { and, eq }) =>
             and(eq(r.eventId, event.id), eq(r.status, "waitlisted")),
@@ -307,22 +330,23 @@ async function promoteFromWaitlist(
     // The promoted user now owes payment on a paid event.
     await createPaymentObligation(ctx, event, promoted.userId);
 
-    // Recalculate positions for everyone still on the waitlist.
-    for (const reg of waitlisted.slice(1)) {
-        const newPosition = await calculateWaitlistPosition(
-            reg.userId,
-            event.id,
-            event.pools,
-            event.enforcesPreviousStrikes,
-            ctx.db,
-        );
+    // Recalculate positions for everyone still on the waitlist — one pass over
+    // the waitlist, not one pass per member of it.
+    const positions = await calculateWaitlistPositions(
+        event.id,
+        event.pools,
+        event.enforcesPreviousStrikes,
+        ctx.db,
+    );
+
+    for (const [userId, newPosition] of positions) {
         await ctx.db
             .update(schema.eventRegistration)
             .set({ waitlistPosition: newPosition })
             .where(
                 and(
                     eq(schema.eventRegistration.eventId, event.id),
-                    eq(schema.eventRegistration.userId, reg.userId),
+                    eq(schema.eventRegistration.userId, userId),
                 ),
             );
     }
