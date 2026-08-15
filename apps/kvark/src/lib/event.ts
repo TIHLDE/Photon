@@ -108,6 +108,23 @@ export function deriveRegistrationState(
 }
 
 /**
+ * Hvor lenge vi venter før vi spør igjen om en påmelding som står som
+ * «pending», gitt hvor lenge den har stått slik.
+ *
+ * Serveren avgjør plassen med én gang påmeldingen er lagret, så svaret ligger
+ * som regel klart et titalls millisekunder etter at knappen ga fra seg
+ * kontrollen. Første spørring kommer derfor raskt. Blir den likevel stående —
+ * et fullt arrangement med lang venteliste tar lengre tid å avgjøre — trapper
+ * vi ned, så en treg avklaring ikke blir til titalls spørringer i minuttet fra
+ * hver eneste som venter.
+ */
+export function registrationPollInterval(pendingForMs: number): number {
+    if (pendingForMs < 3_000) return 300;
+    if (pendingForMs < 15_000) return 1_000;
+    return 3_000;
+}
+
+/**
  * Oversett en feil fra påmeldings-endepunktet til noe et medlem forstår.
  *
  * API-meldingene er engelske og skrevet for utviklere. De vanligste årsakene

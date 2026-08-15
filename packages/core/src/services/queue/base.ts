@@ -6,6 +6,8 @@ export const PAYMENT_QUEUE_NAME = "payment" satisfies QueueName;
 
 export const PUSH_QUEUE_NAME = "push" satisfies QueueName;
 
+export const REGISTRATION_QUEUE_NAME = "registration" satisfies QueueName;
+
 /** Options accepted when enqueueing a job. */
 export interface QueueAddOptions {
     /** Delay in milliseconds before the job becomes available to a worker. */
