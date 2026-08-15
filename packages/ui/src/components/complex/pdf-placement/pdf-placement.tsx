@@ -41,12 +41,32 @@ type Slot = {
     /** Default box size as a fraction of the page. */
     w: number;
     h: number;
+    /**
+     * Which part of the box follows the pointer, matching where the API draws
+     * the field inside it: the signature rests on the box's bottom edge, the
+     * name line is centred. Dropping a bottom-anchored box centred on the
+     * cursor put the ink half a box height — some 12 mm — below the line the
+     * admin aimed at, which is how the 2026 contract ended up signed across
+     * its own signature line instead of on it.
+     */
+    anchor: "bottom" | "center";
 };
 
 const SLOTS: Slot[] = [
-    { key: "signature", label: "Signatur", w: 0.28, h: 0.08 },
-    { key: "name", label: "Navn og dato", w: 0.26, h: 0.022 },
+    { key: "signature", label: "Signatur", w: 0.28, h: 0.08, anchor: "bottom" },
+    {
+        key: "name",
+        label: "Navn og dato",
+        w: 0.26,
+        h: 0.022,
+        anchor: "center",
+    },
 ];
+
+/** Box top for a pointer at `atPct`, given the box's height and anchor. */
+function topForPointer(atPct: number, hPct: number, anchor: Slot["anchor"]) {
+    return atPct - (anchor === "bottom" ? hPct : hPct / 2);
+}
 
 const SLOT_BY_KEY = Object.fromEntries(SLOTS.map((s) => [s.key, s])) as Record<
     FieldKey,
@@ -92,10 +112,15 @@ export function PdfPlacement({
         [fields, onChange],
     );
 
-    /** Click a page while a slot is armed to drop it, centred on the cursor. */
+    /**
+     * Click a page while a slot is armed to drop it. Horizontally the box is
+     * centred on the cursor; vertically the cursor lands on whichever edge the
+     * field is drawn from, so clicking a signature line puts the signature on
+     * it.
+     */
     function onPageClick(e: React.MouseEvent, pageIndex: number) {
         if (!placing) return;
-        const { w, h } = SLOT_BY_KEY[placing];
+        const { w, h, anchor } = SLOT_BY_KEY[placing];
         const rect = e.currentTarget.getBoundingClientRect();
         const xPct = clamp(
             (e.clientX - rect.left) / rect.width - w / 2,
@@ -103,7 +128,7 @@ export function PdfPlacement({
             1 - w,
         );
         const yPct = clamp(
-            (e.clientY - rect.top) / rect.height - h / 2,
+            topForPointer((e.clientY - rect.top) / rect.height, h, anchor),
             0,
             1 - h,
         );
@@ -136,7 +161,11 @@ export function PdfPlacement({
                 1 - placement.wPct,
             ),
             yPct: clamp(
-                (e.clientY - rect.top) / rect.height - placement.hPct / 2,
+                topForPointer(
+                    (e.clientY - rect.top) / rect.height,
+                    placement.hPct,
+                    SLOT_BY_KEY[drag.key].anchor,
+                ),
                 0,
                 1 - placement.hPct,
             ),
@@ -149,7 +178,7 @@ export function PdfPlacement({
                 <span className="text-muted-foreground text-xs">
                     {placing
                         ? `Klikk i dokumentet for å plassere «${SLOT_BY_KEY[placing].label}»`
-                        : "Plasser feltene på dokumentet. Signaturen står på nederste kant av boksen — legg den på signaturlinja. Navn og dato er valgfritt."}
+                        : "Plasser feltene på dokumentet. Klikk rett på signaturlinja — signaturen står på den heltrukne kanten av boksen. Navn og dato er valgfritt."}
                 </span>
                 {SLOTS.map((slot) => (
                     <Button
@@ -249,6 +278,16 @@ export function PdfPlacement({
                                                     top: p.yPct * pageHeight,
                                                     width: p.wPct * width,
                                                     height: p.hPct * pageHeight,
+                                                    // The edge the ink rests on
+                                                    // is drawn solid, so it is
+                                                    // visible which part of the
+                                                    // box has to meet the line.
+                                                    ...(slot.anchor === "bottom"
+                                                        ? {
+                                                              borderBottomStyle:
+                                                                  "solid",
+                                                          }
+                                                        : null),
                                                 }}
                                             >
                                                 {slot.label}
