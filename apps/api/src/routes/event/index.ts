@@ -1,4 +1,5 @@
 import { route } from "../../lib/route";
+import { getCalendarFeedRoute } from "./calendar/feed";
 import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
 import { getFavoriteEventsRoute } from "./favorite/get";
@@ -14,6 +15,7 @@ import { refundEventPaymentRoute } from "./payment/refund";
 import { paymentWebhookRoute } from "./payment/webhook";
 import { setAttendanceRoute } from "./registration/attendance";
 import { getMyEventHistoryRoute } from "./registration/history";
+import { getMyUpcomingEventsRoute } from "./registration/upcoming";
 import { registerToEventRoute } from "./registration/create";
 import { deleteEventRegistrationRoute } from "./registration/delete";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
@@ -27,8 +29,12 @@ export const eventRoutes = route()
     .route("/", listStrikesRoute)
     // Static path, so it has to beat "/:eventId" to the punch as well
     .route("/", getMyEventHistoryRoute)
+    .route("/", getMyUpcomingEventsRoute)
     .route("/", createStrikeRoute)
     .route("/", deleteStrikeRoute)
+
+    // Kalender-abonnement (statisk /calendar-sti, må slå "/:eventId")
+    .route("/", getCalendarFeedRoute)
 
     // Favorites (registered before "/:eventId" so the static /favorite path wins)
     .route("/favorite", updateFavoriteEventsRoute)

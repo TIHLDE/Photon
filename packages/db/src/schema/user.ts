@@ -36,6 +36,14 @@ export const userSettings = pgTable("settings", {
     githubUrl: varchar("github_url", { length: 256 }),
     linkedinUrl: varchar("linkedin_url", { length: 256 }),
     receiveMailCommunication: boolean("receive_mail_communication").notNull(),
+    /**
+     * Whether the member is listed by name in deltakerlister. Off means they
+     * still register as normal, but other members see them as anonymous.
+     * Defaults to true to match how påmeldinger have always been shown.
+     */
+    publicEventRegistrations: boolean("public_event_registrations")
+        .default(true)
+        .notNull(),
     isOnboarded: boolean("is_onboarded").default(false).notNull(),
     ...timestamps,
 });
@@ -43,6 +51,22 @@ export const userSettings = pgTable("settings", {
 export const userSettingsRelations = relations(userSettings, ({ many }) => ({
     allergies: many(userAllergy),
 }));
+
+/**
+ * Hemmelig nøkkel som gir tilgang til brukerens egen kalenderstrøm
+ * (`/api/event/calendar/:token/events.ics`). Kalenderklienter kan ikke logge
+ * inn, så URL-en må bære autentiseringen selv. Nøkkelen ligger i sin egen
+ * tabell — ikke på `user_settings` — fordi den skal kunne rulleres uten å
+ * røre innstillingene, og fordi brukere uten fullført onboarding ikke har
+ * en settings-rad.
+ */
+export const userCalendarToken = pgTable("calendar_token", {
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => user.id, { onDelete: "cascade" }),
+    token: varchar("token", { length: 64 }).notNull().unique(),
+    ...timestamps,
+});
 
 export const allergy = pgTable("allergy", {
     slug: varchar("slug", { length: 64 }).primaryKey(),

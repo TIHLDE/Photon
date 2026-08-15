@@ -1,1 +1,0 @@
-ALTER TABLE "form_group_form" ADD COLUMN "opens_at" timestamp;

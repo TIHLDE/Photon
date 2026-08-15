@@ -1,6 +1,6 @@
 {
-  "id": "d59c7bb2-97e8-4f4f-80cc-95f3dc62f8d9",
-  "prevId": "2aec9eea-1639-4695-98a7-4de416e24f59",
+  "id": "00b1e539-36da-4916-91c6-639f25652146",
+  "prevId": "d59c7bb2-97e8-4f4f-80cc-95f3dc62f8d9",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -6320,6 +6320,67 @@
         }
       },
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_calendar_token": {
+      "name": "user_calendar_token",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_calendar_token_user_id_auth_user_id_fk": {
+          "name": "user_calendar_token_user_id_auth_user_id_fk",
+          "tableFrom": "user_calendar_token",
+          "tableTo": "auth_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_calendar_token_token_unique": {
+          "name": "user_calendar_token_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

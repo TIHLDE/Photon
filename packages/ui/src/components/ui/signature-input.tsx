@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SignaturePad } from "#/components/ui/signature-pad";
@@ -115,35 +116,57 @@ export function SignatureInput({
             </TabsList>
 
             <TabsContent value="type" className="mt-2">
-                <div className="grid grid-cols-3 gap-2">
-                    {STYLES.map((s) => (
-                        <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setStyleId(s.id)}
-                            className={cn(
-                                "flex h-16 w-full cursor-pointer flex-col items-center justify-center",
-                                "overflow-hidden rounded-md border px-1 transition-colors",
-                                // Paper-white regardless of theme: the ink is stamped
-                                // onto a white PDF page, so the preview shows it on
-                                // the background it will actually land on.
-                                "bg-white",
-                                styleId === s.id
-                                    ? "border-foreground"
-                                    : "border-transparent hover:border-muted-foreground",
-                            )}
-                        >
-                            <span
-                                className="block w-full truncate text-center text-lg leading-[1.7] text-black"
-                                style={{ fontFamily: `'${s.family}', cursive` }}
+                <div className="grid grid-cols-3 gap-3">
+                    {STYLES.map((s) => {
+                        const selected = styleId === s.id;
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                aria-pressed={selected}
+                                onClick={() => setStyleId(s.id)}
+                                className={cn(
+                                    "relative flex h-16 w-full cursor-pointer flex-col items-center justify-center",
+                                    "overflow-hidden rounded-md border px-1 transition-all",
+                                    // Paper-white regardless of theme: the ink is stamped
+                                    // onto a white PDF page, so the preview shows it on
+                                    // the background it will actually land on.
+                                    "bg-white",
+                                    // The card is always white, so the selected state
+                                    // has to be marked outside it — a ring on the page
+                                    // background reads in both themes, where a border
+                                    // in `foreground` disappeared in dark mode.
+                                    selected
+                                        ? "border-primary ring-primary ring-offset-background ring-2 ring-offset-2"
+                                        : "border-neutral-300 hover:border-neutral-500",
+                                )}
                             >
-                                {name.trim() || "Signatur"}
-                            </span>
-                            <span className="mt-1 text-[10px] tracking-widest text-neutral-500 uppercase">
-                                {s.label}
-                            </span>
-                        </button>
-                    ))}
+                                {selected && (
+                                    <span className="bg-primary text-primary-foreground absolute top-1 right-1 flex size-4 items-center justify-center rounded-full">
+                                        <Check className="size-3" />
+                                    </span>
+                                )}
+                                <span
+                                    className="block w-full truncate text-center text-lg leading-[1.7] text-black"
+                                    style={{
+                                        fontFamily: `'${s.family}', cursive`,
+                                    }}
+                                >
+                                    {name.trim() || "Signatur"}
+                                </span>
+                                <span
+                                    className={cn(
+                                        "mt-1 text-[10px] tracking-widest uppercase",
+                                        selected
+                                            ? "font-semibold text-neutral-900"
+                                            : "text-neutral-500",
+                                    )}
+                                >
+                                    {s.label}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
                 {/* Offscreen; only used to export the PNG data URL. */}
                 <canvas ref={canvasRef} className="hidden" />

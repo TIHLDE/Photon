@@ -86,6 +86,87 @@ describe("Event registration listing", () => {
     );
 
     integrationTest(
+        "hides name, picture and id of members with public registrations off",
+        async ({ ctx }) => {
+            const { event, registered } = await seedRegistrations(ctx);
+            await ctx.db.insert(schema.userSettings).values({
+                userId: registered.id,
+                gender: "other",
+                allowsPhotosByDefault: true,
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+                publicEventRegistrations: false,
+            });
+
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+            const res = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+
+            const body = await res.json();
+            // The spot is still counted — only the identity is withheld.
+            expect(body.totalCount).toBe(1);
+            const [user] = body.registeredUsers;
+            expect(user?.isAnonymous).toBe(true);
+            expect(user?.name).not.toBe(registered.name);
+            expect(user?.id).not.toBe(registered.id);
+            expect(user?.image).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "still shows the member their own registration, and admins theirs",
+        async ({ ctx }) => {
+            const { event } = await seedRegistrations(ctx);
+
+            const shy = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.userSettings).values({
+                userId: shy.id,
+                gender: "other",
+                allowsPhotosByDefault: true,
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+                publicEventRegistrations: false,
+            });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: shy.id,
+                status: "registered",
+            });
+
+            const selfClient = await ctx.utils.clientForUser(shy);
+            const selfRes = await selfClient.api.event[
+                ":eventId"
+            ].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+            const selfBody = await selfRes.json();
+            const own = selfBody.registeredUsers.find((u) => u.id === shy.id);
+            expect(own?.name).toBe(shy.name);
+            expect(own?.isAnonymous).toBe(false);
+
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["events:manage"]);
+            const adminClient = await ctx.utils.clientForUser(admin);
+            const adminRes = await adminClient.api.event[
+                ":eventId"
+            ].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+            const adminBody = await adminRes.json();
+            const seen = adminBody.registeredUsers.find((u) => u.id === shy.id);
+            expect(seen?.name).toBe(shy.name);
+            expect(seen?.isAnonymous).toBe(false);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "returns the same default set for admins, with admin fields added",
         async ({ ctx }) => {
             const { event, registered } = await seedRegistrations(ctx);

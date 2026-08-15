@@ -13,6 +13,7 @@ const UserQueryKeys = {
     unansweredEvaluations: ["user", "unanswered-evaluations"] as const,
     listInfinite: ["user", "list-infinite"] as const,
     profile: ["user", "profile"] as const,
+    calendarSubscription: ["user", "calendar-subscription"] as const,
 } as const;
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -291,5 +292,26 @@ export const updateUserStudyYearMutation = mutationOptions({
             queryKey: [...UserQueryKeys.profile],
             exact: false,
         });
+    },
+});
+
+/**
+ * Den personlige .ics-lenken brukeren abonnerer på i kalenderen sin. Lenken
+ * lages på serveren første gang den hentes, så spørringen kjøres først når
+ * brukeren faktisk åpner kalender-seksjonen.
+ */
+export const getCalendarSubscriptionQuery = () =>
+    queryOptions({
+        queryKey: [...UserQueryKeys.calendarSubscription],
+        queryFn: () => apiClient.get("/api/user/me/calendar"),
+        // Lenken endrer seg aldri av seg selv.
+        staleTime: Number.POSITIVE_INFINITY,
+    });
+
+/** Lager en ny lenke og gjør den gamle ubrukelig. */
+export const regenerateCalendarSubscriptionMutation = mutationOptions({
+    mutationFn: () => apiClient.post("/api/user/me/calendar/regenerate"),
+    onSuccess(data, _, __, ctx) {
+        ctx.client.setQueryData([...UserQueryKeys.calendarSubscription], data);
     },
 });

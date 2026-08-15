@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
+import { ScrollFade } from "@tihlde/ui/ui/scroll-fade";
 import { Separator } from "@tihlde/ui/ui/separator";
 import {
     CalendarDays,
@@ -308,9 +309,10 @@ function ProfileNav({
     return (
         <>
             {/* Mobile: horizontal scroll */}
-            {/* overflow-y-hidden: se DetailLayoutNav — én akse satt gjør den
-                andre til `auto`, og fanene blir vertikalt scrollbare. */}
-            <nav className="-mx-4 min-w-0 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+            {/* Ingen full-bleed her: scrollboksen følger innholdsbredden, så
+                fanene holder seg i linje med resten av siden, og ScrollFade
+                toner dem ut i kanten det finnes mer å scrolle til. */}
+            <ScrollFade render={<nav />} className="md:hidden">
                 <ul className="flex w-max gap-2">
                     {flatItems.map((item) => (
                         <li key={item.label} className="shrink-0">
@@ -332,7 +334,7 @@ function ProfileNav({
                         </li>
                     ) : null}
                 </ul>
-            </nav>
+            </ScrollFade>
 
             {/* Desktop: vertical sidebar */}
             <aside className="hidden md:block">

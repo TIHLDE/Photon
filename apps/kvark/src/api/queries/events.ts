@@ -24,6 +24,7 @@ const EventQueryKeys = {
     payments: ["events", "payments"] as const,
     forms: ["events", "forms"] as const,
     strikes: ["events", "strikes"] as const,
+    myUpcoming: ["events", "my-upcoming"] as const,
     myHistory: ["events", "my-history"] as const,
     myHistoryInfinite: ["events", "my-history-infinite"] as const,
 } as const;
@@ -168,6 +169,17 @@ export const getFavoriteEventsQuery = () =>
     });
 
 /**
+ * Alt du er påmeldt som ikke er over ennå — «Kommende» på profilen. Ventelisten
+ * og uavklarte påmeldinger er med, og ingenting filtreres på kategori, så
+ * aktiviteter havner i samme liste som resten.
+ */
+export const getMyUpcomingEventsQuery = () =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.myUpcoming],
+        queryFn: () => apiClient.get("/api/event/my-upcoming-registrations"),
+    });
+
+/**
  * Arrangementene du faktisk har vært på — brukes i «Tidligere» på profilen.
  * Avlyste og ubetalte påmeldinger og alt som ikke er over ennå er filtrert
  * bort server-side.
@@ -293,6 +305,11 @@ export const registerForEventMutation = mutationOptions({
             queryKey: [...EventQueryKeys.registrations, vars.eventId],
             exact: false,
         });
+        // «Kommende» på profilen er en liste over egne påmeldinger, så den er
+        // utdatert i det man melder seg på eller av.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.myUpcoming],
+        });
         invalidateEventDetails(ctx.client);
     },
 });
@@ -306,6 +323,11 @@ export const unregisterFromEventMutation = mutationOptions({
         ctx.client.invalidateQueries({
             queryKey: [...EventQueryKeys.registrations, vars.eventId],
             exact: false,
+        });
+        // «Kommende» på profilen er en liste over egne påmeldinger, så den er
+        // utdatert i det man melder seg på eller av.
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.myUpcoming],
         });
         invalidateEventDetails(ctx.client);
     },
