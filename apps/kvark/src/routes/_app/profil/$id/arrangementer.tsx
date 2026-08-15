@@ -4,7 +4,11 @@ import {
     getMyEventHistoryInfiniteQuery,
     getMyUpcomingEventsQuery,
 } from "#/api/queries/events";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+    getCalendarSubscriptionQuery,
+    regenerateCalendarSubscriptionMutation,
+} from "#/api/queries/user";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Card } from "@tihlde/ui/ui/card";
@@ -18,6 +22,7 @@ import {
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarDays, Star } from "lucide-react";
 
+import { CalendarSubscription } from "#/components/calendar-subscription";
 import { LoadMoreButton } from "#/components/load-more-button";
 import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
 import { formatEventDate } from "#/lib/event";
@@ -27,6 +32,24 @@ export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
     beforeLoad: ({ location, params }) =>
         requireOwnProfile(params.id, location.href),
 });
+
+/** Den personlige .ics-lenken, hentet (og opprettet) på forespørsel. */
+function CalendarSubscriptionSection() {
+    const { data, isPending } = useQuery(getCalendarSubscriptionQuery());
+    const regenerate = useMutation(regenerateCalendarSubscriptionMutation);
+
+    if (isPending || !data) {
+        return <Skeleton className="h-48 w-full" />;
+    }
+
+    return (
+        <CalendarSubscription
+            url={data.url}
+            onRegenerate={() => regenerate.mutate(undefined)}
+            isRegenerating={regenerate.isPending}
+        />
+    );
+}
 
 function RouteComponent() {
     const { data: favorites, isPending } = useQuery(getFavoriteEventsQuery());
@@ -43,6 +66,8 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
+            <CalendarSubscriptionSection />
+
             <section className="flex flex-col gap-3">
                 <h3>Kommende</h3>
                 <ProfileUpcomingEvents

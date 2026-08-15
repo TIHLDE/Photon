@@ -682,6 +682,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/calendar/{token}/events.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user's event calendar as iCalendar
+         * @description Returns the events the token's owner is registered for as an iCalendar (.ics) feed. Authenticated by the secret token in the path, so calendar clients can subscribe to it directly.
+         */
+        get: operations["getCalendarFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/favorite/{id}": {
         parameters: {
             query?: never;
@@ -2500,6 +2520,46 @@ export interface paths {
          * @description Update a job posting. Requires 'jobs:update' or 'jobs:manage', held globally or for any single group, or being the creator.
          */
         patch: operations["updateJob"];
+        trace?: never;
+    };
+    "/api/user/me/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my calendar subscription URL
+         * @description Retrieve the personal iCalendar subscription URL for the authenticated user's event registrations. The URL is created on first request.
+         */
+        get: operations["getCalendarSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/me/calendar/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate my calendar subscription URL
+         * @description Issue a new personal iCalendar subscription URL. The previous URL stops working immediately.
+         */
+        post: operations["regenerateCalendarSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/user/me/settings": {
@@ -5940,6 +6000,10 @@ export interface components {
         DeleteJobResponse: {
             message: string;
         };
+        CalendarSubscription: {
+            /** @description Personal iCalendar (.ics) URL the user subscribes to in their calendar app. Contains a secret token — treat it like a password. */
+            url: string;
+        };
         UserSettings: {
             /** @enum {string} */
             gender: "male" | "female" | "other";
@@ -7774,6 +7838,35 @@ export interface operations {
                 };
             };
             /** @description Not Found - Strike not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description iCalendar feed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description Not Found - Unknown calendar token */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13853,6 +13946,64 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getCalendarSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar subscription URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarSubscription"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    regenerateCalendarSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New calendar subscription URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarSubscription"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

@@ -52,6 +52,22 @@ export const userSettingsRelations = relations(userSettings, ({ many }) => ({
     allergies: many(userAllergy),
 }));
 
+/**
+ * Hemmelig nøkkel som gir tilgang til brukerens egen kalenderstrøm
+ * (`/api/event/calendar/:token/events.ics`). Kalenderklienter kan ikke logge
+ * inn, så URL-en må bære autentiseringen selv. Nøkkelen ligger i sin egen
+ * tabell — ikke på `user_settings` — fordi den skal kunne rulleres uten å
+ * røre innstillingene, og fordi brukere uten fullført onboarding ikke har
+ * en settings-rad.
+ */
+export const userCalendarToken = pgTable("calendar_token", {
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => user.id, { onDelete: "cascade" }),
+    token: varchar("token", { length: 64 }).notNull().unique(),
+    ...timestamps,
+});
+
 export const allergy = pgTable("allergy", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
     label: varchar("label", { length: 128 }).notNull(),
