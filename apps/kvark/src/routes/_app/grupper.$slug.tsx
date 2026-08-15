@@ -21,6 +21,7 @@ import { authQueryOptions } from "#/api/auth";
 import { searchUsersQuery } from "#/api/queries/roles";
 import { useImageUploader } from "#/api/queries/assets";
 import {
+    deleteFormMutation,
     getFormByIdQuery,
     getFormSubmissionsQuery,
     updateFormMutation,
@@ -175,6 +176,7 @@ function GroupDetail() {
     const [formError, setFormError] = useState<string | null>(null);
     const [editingForm, setEditingForm] = useState<Form | null>(null);
     const [editFormError, setEditFormError] = useState<string | null>(null);
+    const [deleteFormError, setDeleteFormError] = useState<string | null>(null);
 
     function setActive(tab: GroupNavKey) {
         navigate({ search: (prev) => ({ ...prev, tab }) });
@@ -201,6 +203,7 @@ function GroupDetail() {
     const updateLaw = useMutation(updateLawMutation);
     const deleteLaw = useMutation(deleteLawMutation);
     const updateForm = useMutation(updateFormMutation);
+    const deleteForm = useMutation(deleteFormMutation);
 
     // The scope is known here, so these mirror the API exactly: a grant for
     // this group counts, a grant for another group does not.
@@ -284,9 +287,10 @@ function GroupDetail() {
         ...getGroupFineStatisticsQuery(slug),
         enabled: canViewFines,
     });
+    const isLoggedIn = Boolean(session);
     const { data: apiForms } = useQuery({
         ...getGroupFormsQuery(slug),
-        enabled: Boolean(session),
+        enabled: isLoggedIn,
     });
     const { data: apiLaws } = useQuery({
         ...getGroupLawsQuery(slug),
@@ -413,12 +417,17 @@ function GroupDetail() {
 
     const navItems = useMemo(
         () =>
-            GROUP_NAV_ITEMS.filter((item) =>
-                item.key === "boter" || item.key === "lovverk"
-                    ? canViewFines
-                    : true,
-            ),
-        [canViewFines],
+            GROUP_NAV_ITEMS.filter((item) => {
+                if (item.key === "boter" || item.key === "lovverk") {
+                    return canViewFines;
+                }
+                // Spørreskjemaene ligger bak innlogging i API-et, så en
+                // utlogget besøkende skal ikke se fanen i det hele tatt — den
+                // ville uansett bare stått tom.
+                if (item.key === "sporreskjema") return isLoggedIn;
+                return true;
+            }),
+        [canViewFines, isLoggedIn],
     );
     // ?tab=boter kan stå i URL-en fra før rettighetene ble sjekket, så en fane
     // som ikke lenger finnes faller tilbake til «Om».
@@ -515,7 +524,27 @@ function GroupDetail() {
 
     function handleEditForm(form: Form | null) {
         setEditFormError(null);
+        setDeleteFormError(null);
         setEditingForm(form);
+    }
+
+    /**
+     * Sletting følger den samme tilgangen som redigering, og tar med seg
+     * svarene: API-et kaskaderer til spørsmål, alternativer og innsendinger.
+     */
+    async function handleDeleteForm() {
+        if (!editingForm) return;
+        setDeleteFormError(null);
+        try {
+            await deleteForm.mutateAsync({ formId: editingForm.id });
+            setEditingForm(null);
+        } catch (error) {
+            setDeleteFormError(
+                error instanceof Error
+                    ? error.message
+                    : "Ukjent feil da skjemaet skulle slettes",
+            );
+        }
     }
 
     /**
@@ -873,6 +902,9 @@ function GroupDetail() {
                 onSubmit={handleSaveForm}
                 isSubmitting={updateForm.isPending}
                 error={editFormError}
+                onDelete={canManageForms ? handleDeleteForm : undefined}
+                isDeleting={deleteForm.isPending}
+                deleteError={deleteFormError}
             />
         </>
     );
