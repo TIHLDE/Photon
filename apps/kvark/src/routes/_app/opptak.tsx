@@ -110,8 +110,8 @@ function AdmissionsPage() {
                         Det er mange verv å velge mellom!
                     </h2>
                     <p className="mx-auto max-w-lg text-muted-foreground">
-                        Du vil bli kalt inn til intervju etter søknadsfristen,
-                        for alle verv du har søkt på.
+                        Det er separate intervjuer for hvert verv du har søkt
+                        på, dersom du blir tatt opp til intervju
                     </p>
                 </div>
 
