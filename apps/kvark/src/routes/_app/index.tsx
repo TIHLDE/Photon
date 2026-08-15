@@ -209,14 +209,20 @@ function EventsSkeleton() {
 }
 
 function Hero() {
+    // The hero fills exactly the space the first screen actually offers, so its
+    // content lands on the optical centre on every device instead of drifting
+    // low: 100svh (stable while mobile browser chrome hides and shows) minus
+    // the 3.5rem header, and below lg also the fixed bottom bar with its
+    // safe-area inset. The padding is the floor for short viewports, where the
+    // content is taller than the space available.
     return (
-        <div className="relative">
+        <div className="relative flex min-h-[calc(100svh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] flex-col justify-center lg:min-h-[calc(100svh_-_3.5rem)]">
             <HeroSectionBackground className="h-full text-primary -z-50" />
             {/* Logo, blurb and actions are the section's three direct children,
              * so Stagger walks them in that reading order on its own. */}
             <Stagger
                 render={
-                    <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-50 text-center" />
+                    <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-16 text-center" />
                 }
             >
                 <div
