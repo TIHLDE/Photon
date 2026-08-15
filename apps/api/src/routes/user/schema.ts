@@ -392,3 +392,13 @@ export const userProfileSchema = Schema(
             .meta({ description: "Account creation timestamp" }),
     }),
 );
+
+export const calendarSubscriptionSchema = Schema(
+    "CalendarSubscription",
+    z.object({
+        url: z.string().meta({
+            description:
+                "Personal iCalendar (.ics) URL the user subscribes to in their calendar app. Contains a secret token — treat it like a password.",
+        }),
+    }),
+);

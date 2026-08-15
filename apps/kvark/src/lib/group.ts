@@ -115,7 +115,18 @@ export type Form = {
     id: string;
     title: string;
     description: string;
+    /** Bryteren «åpent for svar», slik den er lagret. */
     isOpen: boolean;
+    /**
+     * ISO-tidspunktet skjemaet åpner seg selv, eller null når det ikke er
+     * planlagt fram i tid.
+     */
+    opensAt: string | null;
+    /**
+     * Om skjemaet tar imot svar nå. Skiller seg fra `isOpen` bare når
+     * skjemaet er planlagt til et tidspunkt som ikke har kommet ennå.
+     */
+    isOpenNow: boolean;
     /** Om samme person kan sende inn flere svar. */
     canSubmitMultiple: boolean;
     onlyForMembers: boolean;
@@ -407,6 +418,8 @@ export function mapForm(form: ApiGroupForm): Form {
         title: form.title,
         description: form.description ?? "",
         isOpen: form.is_open_for_submissions,
+        opensAt: form.opens_at ?? null,
+        isOpenNow: form.is_open_now,
         canSubmitMultiple: form.can_submit_multiple,
         onlyForMembers: form.only_for_group_members,
         emailReceiver: form.email_receiver_on_submit ?? "",

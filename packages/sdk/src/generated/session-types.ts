@@ -11,10 +11,10 @@ export type ExtendedSession = {
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            gender: "other" | "male" | "female";
-            imageUrl: string | null;
+            gender: "male" | "female" | "other";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
+            imageUrl: string | null;
             bioDescription: string | null;
             githubUrl: string | null;
             linkedinUrl: string | null;

@@ -6,6 +6,7 @@ import {
     pgEnum,
     pgTableCreator,
     text,
+    timestamp,
     unique,
     uuid,
     varchar,
@@ -105,6 +106,13 @@ export const formGroupForm = pgTable(
         isOpenForSubmissions: boolean("is_open_for_submissions")
             .default(false)
             .notNull(),
+        /**
+         * Når skjemaet skal åpne seg selv. Null betyr «med en gang», altså at
+         * `is_open_for_submissions` alene avgjør. Er tidspunktet satt og ikke
+         * passert, er skjemaet stengt selv om bryteren står på — det er slik
+         * man planlegger et skjema fram i tid uten å måtte huske å åpne det.
+         */
+        opensAt: timestamp("opens_at"),
         onlyForGroupMembers: boolean("only_for_group_members")
             .default(false)
             .notNull(),

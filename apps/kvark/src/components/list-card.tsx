@@ -18,6 +18,8 @@ type ListCardProps = {
     imageUrl?: string;
     imageAlt?: string;
     imageBadge?: ReactNode;
+    /** Status ved siden av tittelen, f.eks. ventelisteplassen din. */
+    titleBadge?: ReactNode;
     meta: ListCardMetaRow[];
 };
 
@@ -27,6 +29,7 @@ export function ListCard({
     imageUrl,
     imageAlt,
     imageBadge,
+    titleBadge,
     meta,
 }: ListCardProps) {
     return useRender({
@@ -73,9 +76,14 @@ export function ListCard({
                          * long title set the row's max-content width and push
                          * the list wider than the viewport.
                          */}
-                        <h3 className="line-clamp-1 text-lg sm:text-xl">
-                            {title}
-                        </h3>
+                        <div className="flex items-start justify-between gap-2">
+                            <h3 className="line-clamp-1 text-lg sm:text-xl">
+                                {title}
+                            </h3>
+                            {titleBadge ? (
+                                <div className="shrink-0">{titleBadge}</div>
+                            ) : null}
+                        </div>
                         <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                             {meta.map((row, i) => (
                                 // `min-w-0`: uten den setter et langt stedsnavn

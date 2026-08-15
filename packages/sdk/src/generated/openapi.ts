@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/my-upcoming-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my upcoming event registrations
+         * @description Retrieve the events you are registered, waitlisted or pending for that have not ended yet, soonest first.
+         */
+        get: operations["getMyUpcomingEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/strikes/{strikeId}": {
         parameters: {
             query?: never;
@@ -657,6 +677,26 @@ export interface paths {
          * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage', globally or for the group arranging the strike's event.
          */
         delete: operations["deleteStrike"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/event/calendar/{token}/events.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user's event calendar as iCalendar
+         * @description Returns the events the token's owner is registered for as an iCalendar (.ics) feed. Authenticated by the secret token in the path, so calendar clients can subscribe to it directly.
+         */
+        get: operations["getCalendarFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2482,6 +2522,46 @@ export interface paths {
         patch: operations["updateJob"];
         trace?: never;
     };
+    "/api/user/me/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my calendar subscription URL
+         * @description Retrieve the personal iCalendar subscription URL for the authenticated user's event registrations. The URL is created on first request.
+         */
+        get: operations["getCalendarSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/me/calendar/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate my calendar subscription URL
+         * @description Issue a new personal iCalendar subscription URL. The previous URL stops working immediately.
+         */
+        post: operations["regenerateCalendarSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/me/settings": {
         parameters: {
             query?: never;
@@ -3389,6 +3469,41 @@ export interface components {
                 status: "registered" | "attended" | "no_show";
             }[];
         };
+        MyUpcomingEvents: {
+            /** @description Event ID */
+            eventId: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event slug */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description When the event starts (ISO 8601)
+             */
+            startTime: string;
+            /**
+             * Format: date-time
+             * @description When the event ends (ISO 8601)
+             */
+            endTime: string;
+            /** @description Slug of the event's category */
+            categorySlug: string;
+            /** @description Where the event takes place */
+            location: string | null;
+            /** @description Cover image URL */
+            image: string | null;
+            /** @description Alt text for the cover image */
+            imageAlt: string | null;
+            /** @description Name of the organizing group */
+            organizer: string | null;
+            /**
+             * @description Your registration status for the event
+             * @enum {string}
+             */
+            status: "registered" | "waitlisted" | "pending";
+            /** @description Your place in the waitlist, or null if you have a spot */
+            waitlistPosition: number | null;
+        }[];
         CreateStrike: {
             /** @description User ID who receives the strike */
             userId: string;
@@ -4209,6 +4324,7 @@ export interface components {
             } | null;
             can_submit_multiple: boolean | null;
             is_open_for_submissions: boolean | null;
+            opens_at: string | null;
             only_for_group_members: boolean | null;
         };
         UpdateFormResponse: {
@@ -4237,6 +4353,7 @@ export interface components {
             email_receiver_on_submit?: string | null;
             can_submit_multiple?: boolean | null;
             is_open_for_submissions?: boolean | null;
+            opens_at?: string | null;
             only_for_group_members?: boolean | null;
         };
         UpdateForm: {
@@ -4265,6 +4382,8 @@ export interface components {
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
             only_for_group_members?: boolean;
+            /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            opens_at?: string | null;
         };
         DeleteFormResponse: {
             detail: string;
@@ -5121,6 +5240,7 @@ export interface components {
             email_receiver_on_submit?: string | null;
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
+            opens_at?: string | null;
             only_for_group_members?: boolean;
             resource_type: string;
             created_at?: string;
@@ -5170,6 +5290,8 @@ export interface components {
             is_open_for_submissions: boolean;
             /** @default false */
             only_for_group_members: boolean;
+            /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            opens_at?: string | null;
         };
         GroupFormList: {
             /** Format: uuid */
@@ -5180,6 +5302,8 @@ export interface components {
             email_receiver_on_submit: string | null;
             can_submit_multiple: boolean;
             is_open_for_submissions: boolean;
+            opens_at: string | null;
+            is_open_now: boolean;
             only_for_group_members: boolean;
             resource_type: string;
             viewer_has_answered: boolean;
@@ -5884,6 +6008,10 @@ export interface components {
         };
         DeleteJobResponse: {
             message: string;
+        };
+        CalendarSubscription: {
+            /** @description Personal iCalendar (.ics) URL the user subscribes to in their calendar app. Contains a secret token — treat it like a password. */
+            url: string;
         };
         UserSettings: {
             /** @enum {string} */
@@ -7642,6 +7770,44 @@ export interface operations {
             };
         };
     };
+    getMyUpcomingEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyUpcomingEvents"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
     deleteStrike: {
         parameters: {
             query?: never;
@@ -7681,6 +7847,35 @@ export interface operations {
                 };
             };
             /** @description Not Found - Strike not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCalendarFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description iCalendar feed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description Not Found - Unknown calendar token */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -13760,6 +13955,64 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getCalendarSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar subscription URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarSubscription"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    regenerateCalendarSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New calendar subscription URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarSubscription"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };

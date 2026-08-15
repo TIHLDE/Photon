@@ -336,7 +336,12 @@ export const groupFormListSchema = Schema(
             group: z.string(),
             email_receiver_on_submit: z.string().nullable(),
             can_submit_multiple: z.boolean(),
+            // Bryteren slik den er lagret. Et skjema som er planlagt fram i
+            // tid står som åpent her, men tar ikke imot svar før `opens_at`
+            // har passert — se `is_open_now`.
             is_open_for_submissions: z.boolean(),
+            opens_at: z.iso.datetime().nullable(),
+            is_open_now: z.boolean(),
             only_for_group_members: z.boolean(),
             resource_type: z.string(),
             viewer_has_answered: z.boolean(),
@@ -371,6 +376,7 @@ export const createGroupFormResponseSchema = Schema(
         email_receiver_on_submit: z.string().nullable().optional(),
         can_submit_multiple: z.boolean().optional(),
         is_open_for_submissions: z.boolean().optional(),
+        opens_at: z.iso.datetime().nullable().optional(),
         only_for_group_members: z.boolean().optional(),
         resource_type: z.string(),
         created_at: z.string().optional(),

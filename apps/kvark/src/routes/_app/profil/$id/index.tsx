@@ -3,11 +3,13 @@ import {
     getActiveContractQuery,
     getMySignatureQuery,
 } from "#/api/queries/contracts";
+import { getMyUpcomingEventsQuery } from "#/api/queries/events";
 import { getUnreadNotificationCountQuery } from "#/api/queries/notifications";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileMembershipChips } from "#/components/profile-membership-chips";
 import { ProfileOverviewHeader } from "#/components/profile-overview-header";
+import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
 import type { ProfileLink } from "#/components/profile-header";
 import { isPrivateGroupType } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
@@ -22,7 +24,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
-import { CalendarDays, FileSignature, ListTodo } from "lucide-react";
+import { FileSignature, ListTodo } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/")({
     component: RouteComponent,
@@ -48,6 +50,12 @@ function RouteComponent() {
     // Kontraktbanneret gjelder bare egen profil, så begge kallene hoppes over
     // på andres. Begge nøklene deles med /kontrakt, så signeringen der
     // invaliderer banneret her uten et ekstra kall.
+    // Egne påmeldinger, så listen hentes bare på egen profil.
+    const { data: upcomingEvents, isPending: isUpcomingPending } = useQuery({
+        ...getMyUpcomingEventsQuery(),
+        enabled: isOwnProfile,
+    });
+
     const { data: activeContract } = useQuery({
         ...getActiveContractQuery(),
         enabled: isOwnProfile,
@@ -140,20 +148,10 @@ function RouteComponent() {
                 <>
                     <div className="flex flex-col gap-3">
                         <h3>KOMMENDE</h3>
-                        <Empty>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <CalendarDays />
-                                </EmptyMedia>
-                                <EmptyTitle>
-                                    Ingen kommende arrangementer
-                                </EmptyTitle>
-                                <EmptyDescription>
-                                    Påmeldingene dine vises her når du melder
-                                    deg på et arrangement.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
+                        <ProfileUpcomingEvents
+                            events={upcomingEvents ?? []}
+                            isPending={isUpcomingPending}
+                        />
                     </div>
 
                     <div className="flex flex-col gap-3">
