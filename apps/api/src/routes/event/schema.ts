@@ -853,6 +853,10 @@ export const registeredUserSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "User image url (if any)" }),
+        isAnonymous: z.boolean().meta({
+            description:
+                "True when the member has turned off public event registrations, in which case `id`, `name` and `image` carry no identity. Never true for event admins or for the caller's own registration.",
+        }),
         allowPhoto: z.boolean().optional().meta({
             description:
                 "Photo consent for this event. Only included when the caller has event admin permissions.",
