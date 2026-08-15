@@ -5,6 +5,7 @@ import { getQueryClient } from "#/integrations/tanstack-query";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createPhotonAuthClient } from "@photon/auth/client";
+import { authErrorMessage } from "#/lib/auth-error-message";
 
 export const clientAuthInstance = createPhotonAuthClient({
     baseUrl: import.meta.env.VITE_AUTH_BASE_URL ?? "https://photon.tihlde.org",
@@ -374,7 +375,10 @@ export async function signInWithFeide(
 
     if (result.error) {
         throw new Error(
-            result.error.message ?? "Kunne ikke starte Feide-innlogging",
+            authErrorMessage(
+                result.error,
+                "Kunne ikke starte Feide-innlogging.",
+            ),
         );
     }
 
@@ -405,7 +409,10 @@ export const changePasswordMutationOptions = mutationOptions({
         });
         if (result.error) {
             throw new Error(
-                "Kunne ikke endre passord: " + result.error.message,
+                authErrorMessage(
+                    result.error,
+                    "Vi fikk ikke endret passordet.",
+                ),
             );
         }
         return result.data;
@@ -429,7 +436,9 @@ export const signInEmailMutationOptions = mutationOptions({
             password,
         });
         if (result.error) {
-            throw new Error(result.error.message ?? "Innlogging feilet");
+            throw new Error(
+                authErrorMessage(result.error, "Vi fikk ikke logget deg inn."),
+            );
         }
         return result.data as SignInEmailResult;
     },
@@ -449,7 +458,7 @@ export const signInUsernameMutationOptions = mutationOptions({
         });
         if (result.error) {
             throw new AuthError(
-                result.error.message ?? "Innlogging feilet",
+                authErrorMessage(result.error, "Vi fikk ikke logget deg inn."),
                 result.error.code,
             );
         }
@@ -485,7 +494,12 @@ export const signUpEmailMutationOptions = mutationOptions({
             ...(username ? { username } : {}),
         });
         if (result.error) {
-            throw new Error(result.error.message ?? "Registrering feilet");
+            throw new Error(
+                authErrorMessage(
+                    result.error,
+                    "Vi fikk ikke opprettet brukeren.",
+                ),
+            );
         }
         return result.data as SignUpEmailResult;
     },
@@ -520,7 +534,10 @@ export const sendVerificationEmailMutationOptions = mutationOptions({
         });
         if (result.error) {
             throw new Error(
-                result.error.message ?? "Kunne ikke sende lenke akkurat nå.",
+                authErrorMessage(
+                    result.error,
+                    "Kunne ikke sende lenke akkurat nå.",
+                ),
             );
         }
         return result.data;
@@ -552,7 +569,7 @@ export const linkFeideMutationOptions = mutationOptions({
 
         if (result.error) {
             throw new Error(
-                result.error.message ?? "Kunne ikke koble til Feide",
+                authErrorMessage(result.error, "Kunne ikke koble til Feide."),
             );
         }
 
@@ -578,7 +595,10 @@ export const requestPasswordResetMutationOptions = mutationOptions({
         });
         if (result.error) {
             throw new Error(
-                result.error.message ?? "Kunne ikke sende lenke akkurat nå.",
+                authErrorMessage(
+                    result.error,
+                    "Kunne ikke sende lenke akkurat nå.",
+                ),
             );
         }
         return result.data;
