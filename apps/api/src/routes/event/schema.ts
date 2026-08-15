@@ -780,6 +780,37 @@ export const favoriteEventsSchema = Schema(
     ),
 );
 
+/**
+ * The registrations that still lie ahead. No category filter: activities are
+ * ordinary events with the `aktivitet` category, so they belong here too.
+ */
+export const myUpcomingEventsSchema = Schema(
+    "MyUpcomingEvents",
+    z.array(
+        z.object({
+            eventId: z.string().meta({ description: "Event ID" }),
+            title: z.string().meta({ description: "Event title" }),
+            slug: z.string().meta({ description: "Event slug" }),
+            startTime: z.iso.datetime().meta({
+                description: "When the event starts (ISO 8601)",
+            }),
+            endTime: z.iso.datetime().meta({
+                description: "When the event ends (ISO 8601)",
+            }),
+            categorySlug: z
+                .string()
+                .meta({ description: "Slug of the event's category" }),
+            status: z.enum(["registered", "waitlisted", "pending"]).meta({
+                description: "Your registration status for the event",
+            }),
+            waitlistPosition: z.number().nullable().meta({
+                description:
+                    "Your place in the waitlist, or null if you have a spot",
+            }),
+        }),
+    ),
+);
+
 export const myEventHistorySchema = Schema(
     "MyEventHistory",
     z.object({
