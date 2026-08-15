@@ -165,7 +165,7 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
                 {isLoggedIn ? (
                     // Skjemaet følger ikke den brede spalten — inndatafelt på
                     // over 1000 px er verre å bruke, ikke bedre.
-                    <div className="flex w-full max-w-2xl flex-col gap-4">
+                    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
                         <Field>
                             <FieldLabel htmlFor="signed-name">
                                 Fullt navn
