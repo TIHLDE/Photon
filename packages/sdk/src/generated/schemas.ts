@@ -153,6 +153,7 @@ export type MotetidSyncCalendarResponse = Schemas["MotetidSyncCalendarResponse"]
 export type MyEventHistory = Schemas["MyEventHistory"];
 export type MyGroup = Schemas["MyGroup"];
 export type MyGroupList = Schemas["MyGroupList"];
+export type MyUpcomingEvents = Schemas["MyUpcomingEvents"];
 export type NewsArticle = Schemas["NewsArticle"];
 export type NewsList = Schemas["NewsList"];
 export type NewsListItem = Schemas["NewsListItem"];

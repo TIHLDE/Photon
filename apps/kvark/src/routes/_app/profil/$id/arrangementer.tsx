@@ -2,6 +2,7 @@ import { requireOwnProfile } from "#/api/auth";
 import {
     getFavoriteEventsQuery,
     getMyEventHistoryInfiniteQuery,
+    getMyUpcomingEventsQuery,
 } from "#/api/queries/events";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -18,6 +19,7 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarDays, Star } from "lucide-react";
 
 import { LoadMoreButton } from "#/components/load-more-button";
+import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
 import { formatEventDate } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
@@ -28,6 +30,9 @@ export const Route = createFileRoute("/_app/profil/$id/arrangementer")({
 
 function RouteComponent() {
     const { data: favorites, isPending } = useQuery(getFavoriteEventsQuery());
+    const { data: upcoming, isPending: isUpcomingPending } = useQuery(
+        getMyUpcomingEventsQuery(),
+    );
 
     // Favoritter er en huskeliste over noe som skal skje. Et arrangement som
     // er over hører ikke hjemme der — det står allerede under «Tidligere».
@@ -38,6 +43,14 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-3">
+                <h3>Kommende</h3>
+                <ProfileUpcomingEvents
+                    events={upcoming ?? []}
+                    isPending={isUpcomingPending}
+                />
+            </section>
+
             <section className="flex flex-col gap-3">
                 <h3>Favoritter</h3>
                 {isPending ? (

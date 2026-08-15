@@ -642,6 +642,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/my-upcoming-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my upcoming event registrations
+         * @description Retrieve the events you are registered, waitlisted or pending for that have not ended yet, soonest first.
+         */
+        get: operations["getMyUpcomingEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/strikes/{strikeId}": {
         parameters: {
             query?: never;
@@ -3389,6 +3409,41 @@ export interface components {
                 status: "registered" | "attended" | "no_show";
             }[];
         };
+        MyUpcomingEvents: {
+            /** @description Event ID */
+            eventId: string;
+            /** @description Event title */
+            title: string;
+            /** @description Event slug */
+            slug: string;
+            /**
+             * Format: date-time
+             * @description When the event starts (ISO 8601)
+             */
+            startTime: string;
+            /**
+             * Format: date-time
+             * @description When the event ends (ISO 8601)
+             */
+            endTime: string;
+            /** @description Slug of the event's category */
+            categorySlug: string;
+            /** @description Where the event takes place */
+            location: string | null;
+            /** @description Cover image URL */
+            image: string | null;
+            /** @description Alt text for the cover image */
+            imageAlt: string | null;
+            /** @description Name of the organizing group */
+            organizer: string | null;
+            /**
+             * @description Your registration status for the event
+             * @enum {string}
+             */
+            status: "registered" | "waitlisted" | "pending";
+            /** @description Your place in the waitlist, or null if you have a spot */
+            waitlistPosition: number | null;
+        }[];
         CreateStrike: {
             /** @description User ID who receives the strike */
             userId: string;
@@ -7620,6 +7675,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyEventHistory"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+        };
+    };
+    getMyUpcomingEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyUpcomingEvents"];
                 };
             };
             /** @description Authentication required */
