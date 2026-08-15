@@ -188,10 +188,7 @@ function useEditForm({
                 title: value.title.trim(),
                 description: value.description,
                 isOpen: value.isOpen,
-                // Et stengt skjema skal ikke ha et planlagt tidspunkt liggende
-                // igjen — da ville det åpnet seg selv neste gang bryteren ble
-                // slått på.
-                opensAt: value.isOpen ? value.opensAt : null,
+                opensAt: value.opensAt,
                 canSubmitMultiple: value.canSubmitMultiple,
                 onlyForMembers: value.onlyForMembers,
                 emailReceiver: value.emailReceiver.trim(),
@@ -246,42 +243,43 @@ function EditForm({
                         </field.Field>
                     )}
                 </editForm.AppField>
+                {/* Bryteren gjelder bare når det ikke står et åpningstidspunkt
+                    under — da er det datoen som avgjør. */}
                 <editForm.AppField name="isOpen">
                     {(field) => (
                         <field.Field orientation="horizontal">
                             <FieldContent>
                                 <field.Label>Åpent for svar</field.Label>
-                                <field.Description>
-                                    Skjemaet kan bare svares på og deles når det
-                                    er åpent
-                                </field.Description>
+                                <editForm.Subscribe
+                                    selector={(state) => state.values.opensAt}
+                                >
+                                    {(opensAt) => (
+                                        <field.Description>
+                                            {opensAt
+                                                ? "Styres av åpningstidspunktet under"
+                                                : "Skjemaet kan bare svares på og deles når det er åpent"}
+                                        </field.Description>
+                                    )}
+                                </editForm.Subscribe>
                             </FieldContent>
                             <field.Switch />
                         </field.Field>
                     )}
                 </editForm.AppField>
-                {/* Åpningstidspunktet henger på bryteren over: er skjemaet
-                    stengt, hjelper ingen dato. */}
-                <editForm.Subscribe selector={(state) => state.values.isOpen}>
-                    {(isOpen) =>
-                        isOpen ? (
-                            <editForm.AppField name="opensAt">
-                                {(field) => (
-                                    <field.Field>
-                                        <field.Label>Åpner</field.Label>
-                                        <field.DateTimePicker />
-                                        <field.Description>
-                                            La stå tom for å åpne skjemaet med
-                                            en gang. Med et tidspunkt er
-                                            skjemaet stengt til da.
-                                        </field.Description>
-                                        <field.Error />
-                                    </field.Field>
-                                )}
-                            </editForm.AppField>
-                        ) : null
-                    }
-                </editForm.Subscribe>
+                <editForm.AppField name="opensAt">
+                    {(field) => (
+                        <field.Field>
+                            <field.Label>Åpner</field.Label>
+                            <field.DateTimePicker />
+                            <field.Description>
+                                Valgfritt. Med et tidspunkt er skjemaet stengt
+                                til da, og åpner seg selv når tiden kommer.
+                                Fjern tidspunktet for å styre med bryteren over.
+                            </field.Description>
+                            <field.Error />
+                        </field.Field>
+                    )}
+                </editForm.AppField>
                 <editForm.AppField name="canSubmitMultiple">
                     {(field) => (
                         <field.Field orientation="horizontal">

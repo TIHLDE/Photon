@@ -4265,7 +4265,7 @@ export interface components {
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
             only_for_group_members?: boolean;
-            /** @description When the form opens for submissions. Null opens it immediately, subject to is_open_for_submissions. */
+            /** @description When the form opens for submissions. While set, it overrides is_open_for_submissions; null hands control back to that switch. */
             opens_at?: string | null;
         };
         DeleteFormResponse: {
@@ -5173,7 +5173,7 @@ export interface components {
             is_open_for_submissions: boolean;
             /** @default false */
             only_for_group_members: boolean;
-            /** @description When the form opens for submissions. Null opens it immediately, subject to is_open_for_submissions. */
+            /** @description When the form opens for submissions. While set, it overrides is_open_for_submissions; null hands control back to that switch. */
             opens_at?: string | null;
         };
         GroupFormList: {

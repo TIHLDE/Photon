@@ -129,6 +129,92 @@ describe("Scheduled group forms", () => {
     );
 
     integrationTest(
+        "The opening date opens the form even when the switch says closed",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const member = await ctx.utils.createTestUser();
+
+            await ctx.utils.setupGroups();
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: leader.id, groupSlug: "index", role: "leader" },
+                { userId: member.id, groupSlug: "index", role: "member" },
+            ]);
+
+            const leaderClient = await ctx.utils.clientForUser(leader);
+            const memberClient = await ctx.utils.clientForUser(member);
+
+            // Bryteren står av, men tidspunktet har passert — da er skjemaet
+            // åpent. Å planlegge er hele beskjeden; man skal ikke måtte huske
+            // å slå på bryteren den dagen.
+            const passed = new Date(Date.now() - HOUR);
+            const createResponse = await leaderClient.api.groups[
+                ":slug"
+            ].forms.$post({
+                param: { slug: "index" },
+                json: {
+                    title: "Planlagt, bryter av",
+                    template: false,
+                    group: "index",
+                    can_submit_multiple: true,
+                    is_open_for_submissions: false,
+                    only_for_group_members: false,
+                    opens_at: passed.toISOString(),
+                    fields: [
+                        {
+                            title: "Hva synes du?",
+                            type: "text_answer",
+                            required: true,
+                            order: 0,
+                        },
+                    ],
+                },
+            });
+            const form = await createResponse.json();
+
+            const detail = await memberClient.api.forms[":id"].$get({
+                param: { id: form.id! },
+            });
+            expect((await detail.json()).is_open_for_submissions).toBe(true);
+
+            const submitResponse = await memberClient.api.forms[
+                ":formId"
+            ].submissions.$post({
+                param: { formId: form.id! },
+                json: {
+                    answers: [
+                        {
+                            field: { id: form.fields?.[0]?.id! },
+                            answer_text: "Åpent nå",
+                        },
+                    ],
+                },
+            });
+            expect(submitResponse.status).toBe(201);
+
+            const listResponse = await memberClient.api.groups[
+                ":slug"
+            ].forms.$get({ param: { slug: "index" } });
+            const list = await listResponse.json();
+            expect(list[0]?.is_open_for_submissions).toBe(false);
+            expect(list[0]?.is_open_now).toBe(true);
+
+            // Å fjerne tidspunktet gir bryteren styringen tilbake, og den står
+            // fortsatt av — skjemaet stenger.
+            await leaderClient.api.forms[":id"].$patch({
+                param: { id: form.id! },
+                json: { opens_at: null },
+            });
+
+            const closedDetail = await memberClient.api.forms[":id"].$get({
+                param: { id: form.id! },
+            });
+            expect((await closedDetail.json()).is_open_for_submissions).toBe(
+                false,
+            );
+        },
+    );
+
+    integrationTest(
         "Clearing the opening date leaves the open/closed switch in charge",
         async ({ ctx }) => {
             const leader = await ctx.utils.createTestUser();

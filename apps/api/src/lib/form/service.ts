@@ -23,9 +23,11 @@ type Database = NodePgDatabase<DbSchema>;
 /**
  * Om et gruppeskjema faktisk tar imot svar akkurat nå.
  *
- * Bryteren «åpent for svar» er hovedbryteren, mens `opensAt` utsetter den:
- * et skjema som er planlagt fram i tid er stengt til tidspunktet har passert.
- * Uten et planlagt tidspunkt er det bare bryteren som gjelder.
+ * Et planlagt tidspunkt bestemmer alene: skjemaet er stengt fram til da og
+ * åpent etterpå, uansett hva bryteren «åpent for svar» sto på da datoen ble
+ * satt. Det er hele poenget med å planlegge — man skal slippe å huske å åpne
+ * skjemaet den dagen. Vil man stenge et skjema som har åpnet seg selv, fjerner
+ * man tidspunktet; da er det bryteren som gjelder igjen.
  */
 export function isGroupFormOpen(
     groupForm: Pick<
@@ -34,8 +36,10 @@ export function isGroupFormOpen(
     >,
     now: Date = new Date(),
 ): boolean {
-    if (!groupForm.isOpenForSubmissions) return false;
-    return !groupForm.opensAt || groupForm.opensAt.getTime() <= now.getTime();
+    if (groupForm.opensAt) {
+        return groupForm.opensAt.getTime() <= now.getTime();
+    }
+    return groupForm.isOpenForSubmissions;
 }
 
 /**

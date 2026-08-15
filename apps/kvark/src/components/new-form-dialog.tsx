@@ -7,7 +7,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { FieldError, FieldGroup, FieldSeparator } from "@tihlde/ui/ui/field";
+import {
+    FieldContent,
+    FieldError,
+    FieldGroup,
+    FieldSeparator,
+} from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect } from "react";
@@ -378,49 +383,51 @@ export function NewFormDialog({
                             <>
                                 <FieldSeparator />
 
+                                {/* Et åpningstidspunkt overstyrer bryteren, så
+                                    den sier fra når den ikke er den som
+                                    bestemmer. */}
                                 <form.AppField name="isOpenForSubmissions">
                                     {(field) => (
                                         <field.Field orientation="horizontal">
-                                            <field.Label>
-                                                Åpent for svar
-                                            </field.Label>
+                                            <FieldContent>
+                                                <field.Label>
+                                                    Åpent for svar
+                                                </field.Label>
+                                                <form.Subscribe
+                                                    selector={(state) =>
+                                                        state.values.opensAt
+                                                    }
+                                                >
+                                                    {(opensAt) =>
+                                                        opensAt ? (
+                                                            <field.Description>
+                                                                Styres av
+                                                                åpningstidspunktet
+                                                                under
+                                                            </field.Description>
+                                                        ) : null
+                                                    }
+                                                </form.Subscribe>
+                                            </FieldContent>
                                             <field.Switch />
                                         </field.Field>
                                     )}
                                 </form.AppField>
 
-                                {/* Åpningstidspunktet gjelder bare når skjemaet
-                                    er åpent for svar — bryteren av betyr stengt
-                                    uansett dato. */}
-                                <form.Subscribe
-                                    selector={(state) =>
-                                        state.values.isOpenForSubmissions
-                                    }
-                                >
-                                    {(isOpen) =>
-                                        isOpen ? (
-                                            <form.AppField name="opensAt">
-                                                {(field) => (
-                                                    <field.Field>
-                                                        <field.Label>
-                                                            Åpner
-                                                        </field.Label>
-                                                        <field.DateTimePicker />
-                                                        <field.Description>
-                                                            La stå tom for å
-                                                            åpne skjemaet med en
-                                                            gang. Med et
-                                                            tidspunkt er
-                                                            skjemaet stengt til
-                                                            da.
-                                                        </field.Description>
-                                                        <field.Error />
-                                                    </field.Field>
-                                                )}
-                                            </form.AppField>
-                                        ) : null
-                                    }
-                                </form.Subscribe>
+                                <form.AppField name="opensAt">
+                                    {(field) => (
+                                        <field.Field>
+                                            <field.Label>Åpner</field.Label>
+                                            <field.DateTimePicker />
+                                            <field.Description>
+                                                Valgfritt. Med et tidspunkt er
+                                                skjemaet stengt til da, og åpner
+                                                seg selv når tiden kommer.
+                                            </field.Description>
+                                            <field.Error />
+                                        </field.Field>
+                                    )}
+                                </form.AppField>
 
                                 <form.AppField name="canSubmitMultiple">
                                     {(field) => (
