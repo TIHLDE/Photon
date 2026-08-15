@@ -4,7 +4,6 @@ import {
     getMySignatureQuery,
 } from "#/api/queries/contracts";
 import { getMyUpcomingEventsQuery } from "#/api/queries/events";
-import { getUnreadNotificationCountQuery } from "#/api/queries/notifications";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileMembershipChips } from "#/components/profile-membership-chips";
@@ -38,14 +37,6 @@ function RouteComponent() {
     const { data: profile } = useSuspenseQuery(getUserProfileQuery(id));
     const { data: session } = useQuery(authQueryOptions);
     const isOwnProfile = session?.user.id === profile.id;
-
-    // Varselmerket vises bare på egen profil, så andres profiler skal heller
-    // ikke koste et kall til det innloggede-scopede endepunktet. Den som venter
-    // på godkjenning får 403 på det kallet, så det hoppes over.
-    const { data: unreadNotifications } = useQuery({
-        ...getUnreadNotificationCountQuery(),
-        enabled: isOwnProfile && session?.user?.isPendingApproval !== true,
-    });
 
     // Kontraktbanneret gjelder bare egen profil, så begge kallene hoppes over
     // på andres. Begge nøklene deles med /kontrakt, så signeringen der
@@ -106,7 +97,6 @@ function RouteComponent() {
             <ProfileOverviewHeader
                 name={profile.name}
                 isOwnProfile={isOwnProfile}
-                notifications={unreadNotifications}
             />
             {profile.bio ? (
                 <div className="flex flex-col gap-2">
