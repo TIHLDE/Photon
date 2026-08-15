@@ -11,6 +11,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -301,70 +302,77 @@ function NewsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-2xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {news ? "Rediger nyhet" : "Ny nyhet"}
                         </DialogTitle>
                     </DialogHeader>
+                    <DialogBody>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="news-title">
+                                    Tittel
+                                </FieldLabel>
+                                <Input
+                                    id="news-title"
+                                    type="text"
+                                    required
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="news-excerpt">
+                                    Utdrag
+                                </FieldLabel>
+                                <Textarea
+                                    id="news-excerpt"
+                                    rows={2}
+                                    required
+                                    value={excerpt}
+                                    onChange={(e) => setExcerpt(e.target.value)}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel>Brødtekst</FieldLabel>
+                                <RichEditor
+                                    registry={richRegistry}
+                                    value={body}
+                                    onChange={setBody}
+                                />
+                            </Field>
+                            <AdminImageField
+                                label="Forsidebilde"
+                                description="Vises på nyhetskortet og øverst på nyhetssiden."
+                                preset="cover-wide"
+                                value={image}
+                                onChange={setImage}
+                                existingImageUrl={news?.imageUrl ?? undefined}
+                            />
+                            <Field>
+                                <FieldLabel htmlFor="news-image-alt">
+                                    Bildebeskrivelse
+                                </FieldLabel>
+                                <Input
+                                    id="news-image-alt"
+                                    type="text"
+                                    maxLength={255}
+                                    placeholder="Kort beskrivelse for skjermlesere"
+                                    value={imageAlt}
+                                    onChange={(e) =>
+                                        setImageAlt(e.target.value)
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
 
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="news-title">Tittel</FieldLabel>
-                            <Input
-                                id="news-title"
-                                type="text"
-                                required
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="news-excerpt">
-                                Utdrag
-                            </FieldLabel>
-                            <Textarea
-                                id="news-excerpt"
-                                rows={2}
-                                required
-                                value={excerpt}
-                                onChange={(e) => setExcerpt(e.target.value)}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel>Brødtekst</FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={body}
-                                onChange={setBody}
-                            />
-                        </Field>
-                        <AdminImageField
-                            label="Forsidebilde"
-                            description="Vises på nyhetskortet og øverst på nyhetssiden."
-                            preset="cover-wide"
-                            value={image}
-                            onChange={setImage}
-                            existingImageUrl={news?.imageUrl ?? undefined}
-                        />
-                        <Field>
-                            <FieldLabel htmlFor="news-image-alt">
-                                Bildebeskrivelse
-                            </FieldLabel>
-                            <Input
-                                id="news-image-alt"
-                                type="text"
-                                maxLength={255}
-                                placeholder="Kort beskrivelse for skjermlesere"
-                                value={imageAlt}
-                                onChange={(e) => setImageAlt(e.target.value)}
-                            />
-                        </Field>
-                    </FieldGroup>
-
-                    {error && <p role="alert">{error}</p>}
-
+                        {error && <p role="alert">{error}</p>}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

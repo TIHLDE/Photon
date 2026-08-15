@@ -2,6 +2,7 @@ import { formHandlers, useAppForm } from "#/hooks/form";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -93,87 +94,94 @@ export function CreateEventDialog({
                         Fyll ut detaljer for å publisere arrangementet.
                     </DialogDescription>
                 </DialogHeader>
-                <form {...formHandlers(form)} className="flex flex-col gap-4">
-                    <FieldGroup>
-                        <form.AppField name="title">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Tittel</field.Label>
-                                    <field.Input placeholder="F.eks. Bedriftspresentasjon" />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="category">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Kategori</field.Label>
-                                    <field.Select
-                                        options={CATEGORIES}
-                                        placeholder="Velg kategori"
-                                    />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="description">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Beskrivelse</field.Label>
-                                    <field.Textarea
-                                        rows={4}
-                                        placeholder="Hva skjer på arrangementet?"
-                                    />
-                                    <field.Description>
-                                        Markdown støttes
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="period">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Periode</field.Label>
-                                    <field.DateRangePicker
-                                        view="day"
-                                        placeholder="Velg start- og sluttdato"
-                                    />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="maxParticipants">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Maks deltakere</field.Label>
-                                    <field.Number
-                                        min={1}
-                                        max={500}
-                                        placeholder="50"
-                                    />
-                                    <field.Description>
-                                        La stå tom for ingen grense
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                        <form.AppField name="image">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Coverbilde</field.Label>
-                                    <field.ImageDropzone
-                                        maxSize={5 * 1024 * 1024}
-                                    />
-                                    <field.Description>
-                                        Bilde, maks 5 MB
-                                    </field.Description>
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
-                    </FieldGroup>
+                <form
+                    {...formHandlers(form)}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
+                    <DialogBody>
+                        <FieldGroup>
+                            <form.AppField name="title">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Tittel</field.Label>
+                                        <field.Input placeholder="F.eks. Bedriftspresentasjon" />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="category">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Kategori</field.Label>
+                                        <field.Select
+                                            options={CATEGORIES}
+                                            placeholder="Velg kategori"
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="description">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Beskrivelse</field.Label>
+                                        <field.Textarea
+                                            rows={4}
+                                            placeholder="Hva skjer på arrangementet?"
+                                        />
+                                        <field.Description>
+                                            Markdown støttes
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="period">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Periode</field.Label>
+                                        <field.DateRangePicker
+                                            view="day"
+                                            placeholder="Velg start- og sluttdato"
+                                        />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="maxParticipants">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>
+                                            Maks deltakere
+                                        </field.Label>
+                                        <field.Number
+                                            min={1}
+                                            max={500}
+                                            placeholder="50"
+                                        />
+                                        <field.Description>
+                                            La stå tom for ingen grense
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                            <form.AppField name="image">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>Coverbilde</field.Label>
+                                        <field.ImageDropzone
+                                            maxSize={5 * 1024 * 1024}
+                                        />
+                                        <field.Description>
+                                            Bilde, maks 5 MB
+                                        </field.Description>
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
+                        </FieldGroup>
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

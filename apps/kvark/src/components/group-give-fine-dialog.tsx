@@ -1,6 +1,7 @@
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -115,102 +116,105 @@ export function GroupGiveFineDialog({
                         Opprett en ny bot for et lovbrudd
                     </DialogDescription>
                 </DialogHeader>
-                <form
-                    id="give-fine-form"
-                    className="flex flex-col gap-4"
-                    onSubmit={handleSubmit}
-                >
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel>
-                                Hvem har begått et lovbrudd? *
-                            </FieldLabel>
-                            <MemberMultiCombobox
-                                items={members}
-                                value={recipients}
-                                onValueChange={setRecipients}
-                                placeholder="Velg bruker..."
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Du kan velge flere personer. Alle får hver sin
-                                bot.
-                            </p>
-                        </Field>
-
-                        <Field>
-                            <FieldLabel>
-                                Lovbrudd {lawRequired ? "*" : null}
-                            </FieldLabel>
-                            <LawCombobox
-                                items={laws}
-                                value={law}
-                                onValueChange={handleLawChange}
-                            />
-                            {law ? (
-                                <div className="mt-2 flex gap-3">
-                                    <Separator
-                                        orientation="vertical"
-                                        className="h-auto self-stretch"
-                                    />
-                                    <p className="text-sm text-muted-foreground">
-                                        {law.description}
-                                    </p>
-                                </div>
-                            ) : null}
-                            {lawRequired ? null : (
+                <DialogBody>
+                    <form
+                        id="give-fine-form"
+                        className="flex flex-col gap-4"
+                        onSubmit={handleSubmit}
+                    >
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel>
+                                    Hvem har begått et lovbrudd? *
+                                </FieldLabel>
+                                <MemberMultiCombobox
+                                    items={members}
+                                    value={recipients}
+                                    onValueChange={setRecipients}
+                                    placeholder="Velg bruker..."
+                                />
                                 <p className="text-xs text-muted-foreground">
-                                    Gruppa har ikke lagt inn noe lovverk ennå,
-                                    så boten gis uten paragraf.
+                                    Du kan velge flere personer. Alle får hver
+                                    sin bot.
                                 </p>
-                            )}
-                        </Field>
+                            </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor="fine-amount">
-                                Forslag til antall bøter *
-                            </FieldLabel>
-                            <Input
-                                id="fine-amount"
-                                type="number"
-                                min={0}
-                                step={1}
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Sett 0 hvis boten skal registreres uten å telle.
-                            </p>
-                        </Field>
+                            <Field>
+                                <FieldLabel>
+                                    Lovbrudd {lawRequired ? "*" : null}
+                                </FieldLabel>
+                                <LawCombobox
+                                    items={laws}
+                                    value={law}
+                                    onValueChange={handleLawChange}
+                                />
+                                {law ? (
+                                    <div className="mt-2 flex gap-3">
+                                        <Separator
+                                            orientation="vertical"
+                                            className="h-auto self-stretch"
+                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            {law.description}
+                                        </p>
+                                    </div>
+                                ) : null}
+                                {lawRequired ? null : (
+                                    <p className="text-xs text-muted-foreground">
+                                        Gruppa har ikke lagt inn noe lovverk
+                                        ennå, så boten gis uten paragraf.
+                                    </p>
+                                )}
+                            </Field>
 
-                        <Field>
-                            <FieldLabel htmlFor="fine-reason">
-                                Begrunnelse *
-                            </FieldLabel>
-                            <Textarea
-                                id="fine-reason"
-                                rows={3}
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                placeholder="Skriv en kort begrunnelse..."
-                            />
-                        </Field>
+                            <Field>
+                                <FieldLabel htmlFor="fine-amount">
+                                    Forslag til antall bøter *
+                                </FieldLabel>
+                                <Input
+                                    id="fine-amount"
+                                    type="number"
+                                    min={0}
+                                    step={1}
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Sett 0 hvis boten skal registreres uten å
+                                    telle.
+                                </p>
+                            </Field>
 
-                        <Field>
-                            <FieldLabel>Bilde</FieldLabel>
-                            <ImageDropzone
-                                preset="natural"
-                                value={image ? [image] : []}
-                                onValueChange={(next) =>
-                                    setImage(next[0] ?? null)
-                                }
-                                accept={{ "image/*": [] }}
-                                disabled={isSubmitting}
-                                labels={imageDropzoneLabels}
-                            />
-                        </Field>
-                    </FieldGroup>
-                    {error ? <p role="alert">{error}</p> : null}
-                </form>
+                            <Field>
+                                <FieldLabel htmlFor="fine-reason">
+                                    Begrunnelse *
+                                </FieldLabel>
+                                <Textarea
+                                    id="fine-reason"
+                                    rows={3}
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    placeholder="Skriv en kort begrunnelse..."
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>Bilde</FieldLabel>
+                                <ImageDropzone
+                                    preset="natural"
+                                    value={image ? [image] : []}
+                                    onValueChange={(next) =>
+                                        setImage(next[0] ?? null)
+                                    }
+                                    accept={{ "image/*": [] }}
+                                    disabled={isSubmitting}
+                                    labels={imageDropzoneLabels}
+                                />
+                            </Field>
+                        </FieldGroup>
+                        {error ? <p role="alert">{error}</p> : null}
+                    </form>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         type="button"

@@ -17,6 +17,7 @@ import {
 } from "@tihlde/ui/ui/collapsible";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -272,124 +273,135 @@ function CreateGroupDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>Ny gruppe</DialogTitle>
                     </DialogHeader>
-
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="group-name">Navn</FieldLabel>
-                            <Input
-                                id="group-name"
-                                type="text"
-                                required
-                                value={name}
-                                onChange={(e) =>
-                                    handleNameChange(e.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="group-slug">
-                                Slug (URL)
-                            </FieldLabel>
-                            <Input
-                                id="group-slug"
-                                type="text"
-                                required
-                                value={slug}
-                                onChange={(e) => {
-                                    setSlugTouched(true);
-                                    setSlug(e.target.value);
-                                }}
-                            />
-                            <FieldDescription>
-                                Kan ikke endres senere.
-                            </FieldDescription>
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="group-type">Type</FieldLabel>
-                            <Select
-                                items={GROUP_TYPE_TABS.map(
-                                    ({ type: value, label }) => ({
-                                        value,
-                                        label,
-                                    }),
-                                )}
-                                value={type}
-                                onValueChange={(value) =>
-                                    setType((value as TabType) ?? defaultType)
-                                }
-                            >
-                                <SelectTrigger id="group-type">
-                                    <SelectValue placeholder="Velg type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {GROUP_TYPE_TABS.map(
-                                        ({ type: value, label }) => (
-                                            <SelectItem
-                                                key={value}
-                                                value={value}
-                                            >
-                                                {label}
-                                            </SelectItem>
-                                        ),
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                        {supportsGroupSubtype(type) ? (
+                    <DialogBody>
+                        <FieldGroup>
                             <Field>
-                                <FieldLabel htmlFor="group-subtype">
-                                    Underkategori
+                                <FieldLabel htmlFor="group-name">
+                                    Navn
                                 </FieldLabel>
-                                <Select
-                                    items={[...GROUP_SUBTYPE_OPTIONS]}
-                                    value={subtype}
-                                    onValueChange={(value) =>
-                                        setSubtype(value ?? subtype)
+                                <Input
+                                    id="group-name"
+                                    type="text"
+                                    required
+                                    value={name}
+                                    onChange={(e) =>
+                                        handleNameChange(e.target.value)
                                     }
-                                >
-                                    <SelectTrigger id="group-subtype">
-                                        <SelectValue placeholder="Velg underkategori" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {GROUP_SUBTYPE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="group-slug">
+                                    Slug (URL)
+                                </FieldLabel>
+                                <Input
+                                    id="group-slug"
+                                    type="text"
+                                    required
+                                    value={slug}
+                                    onChange={(e) => {
+                                        setSlugTouched(true);
+                                        setSlug(e.target.value);
+                                    }}
+                                />
                                 <FieldDescription>
-                                    Idrettsgrupper får sin egen seksjon i
-                                    organisasjonskartet.
+                                    Kan ikke endres senere.
                                 </FieldDescription>
                             </Field>
-                        ) : null}
-                        <Field>
-                            <FieldLabel id="group-description-label">
-                                Beskrivelse
-                            </FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={description}
-                                onChange={setDescription}
-                                ariaLabelledBy="group-description-label"
-                            />
-                            <FieldDescription>
-                                Vises på «Om»-fanen til gruppen.
-                            </FieldDescription>
-                        </Field>
-                    </FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="group-type">
+                                    Type
+                                </FieldLabel>
+                                <Select
+                                    items={GROUP_TYPE_TABS.map(
+                                        ({ type: value, label }) => ({
+                                            value,
+                                            label,
+                                        }),
+                                    )}
+                                    value={type}
+                                    onValueChange={(value) =>
+                                        setType(
+                                            (value as TabType) ?? defaultType,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="group-type">
+                                        <SelectValue placeholder="Velg type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {GROUP_TYPE_TABS.map(
+                                            ({ type: value, label }) => (
+                                                <SelectItem
+                                                    key={value}
+                                                    value={value}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            {supportsGroupSubtype(type) ? (
+                                <Field>
+                                    <FieldLabel htmlFor="group-subtype">
+                                        Underkategori
+                                    </FieldLabel>
+                                    <Select
+                                        items={[...GROUP_SUBTYPE_OPTIONS]}
+                                        value={subtype}
+                                        onValueChange={(value) =>
+                                            setSubtype(value ?? subtype)
+                                        }
+                                    >
+                                        <SelectTrigger id="group-subtype">
+                                            <SelectValue placeholder="Velg underkategori" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GROUP_SUBTYPE_OPTIONS.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FieldDescription>
+                                        Idrettsgrupper får sin egen seksjon i
+                                        organisasjonskartet.
+                                    </FieldDescription>
+                                </Field>
+                            ) : null}
+                            <Field>
+                                <FieldLabel id="group-description-label">
+                                    Beskrivelse
+                                </FieldLabel>
+                                <RichEditor
+                                    registry={richRegistry}
+                                    value={description}
+                                    onChange={setDescription}
+                                    ariaLabelledBy="group-description-label"
+                                />
+                                <FieldDescription>
+                                    Vises på «Om»-fanen til gruppen.
+                                </FieldDescription>
+                            </Field>
+                        </FieldGroup>
 
-                    {error && <p role="alert">{error}</p>}
-
+                        {error && <p role="alert">{error}</p>}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"
