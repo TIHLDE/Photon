@@ -84,12 +84,7 @@ function JobsPage() {
                 </aside>
 
                 <section className="flex min-w-0 flex-col gap-3">
-                    <p className="text-sm text-muted-foreground">
-                        {data.totalCount} stillinger funnet
-                    </p>
-                    <Stagger
-                        render={<ul className="flex flex-col gap-4 sm:gap-1" />}
-                    >
+                    <Stagger render={<ul className="flex flex-col gap-3" />}>
                         {jobs.map((job) => (
                             <li key={job.id}>
                                 <JobCard
