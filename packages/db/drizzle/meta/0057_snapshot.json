@@ -1,6 +1,6 @@
 {
-  "id": "f75a5b48-1c1b-481a-968b-63ef343d2b82",
-  "prevId": "00b1e539-36da-4916-91c6-639f25652146",
+  "id": "c1686880-419e-465d-ad0e-bec4adce0705",
+  "prevId": "f75a5b48-1c1b-481a-968b-63ef343d2b82",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2243,6 +2243,12 @@
         },
         "no_show_processed_at": {
           "name": "no_show_processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_reminder_sent_at": {
+          "name": "registration_reminder_sent_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false

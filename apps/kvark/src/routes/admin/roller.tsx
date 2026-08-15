@@ -14,6 +14,7 @@ import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -752,42 +753,44 @@ function MemberPermissionsDialog({
                 <DialogHeader>
                     <DialogTitle>Tilganger for alle medlemmer</DialogTitle>
                 </DialogHeader>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel>Gjelder denne gruppen</FieldLabel>
-                        <PermissionDomainCheckboxes
-                            value={scoped}
-                            onChange={setScoped}
-                            domains={GROUP_SCOPABLE_DOMAINS}
-                            lockedDomains={globalDomains}
-                            lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
-                        />
-                        <p className="text-sm text-muted-foreground">
-                            Alle i gruppen får dette, men bare for gruppens eget
-                            innhold. Andre områder kan ikke begrenses til én
-                            gruppe, og ligger derfor bare nedenfor.
-                        </p>
-                    </Field>
-
-                    {canGrantGlobally ? (
+                <DialogBody>
+                    <FieldGroup>
                         <Field>
-                            <FieldLabel>Gjelder hele TIHLDE</FieldLabel>
+                            <FieldLabel>Gjelder denne gruppen</FieldLabel>
                             <PermissionDomainCheckboxes
-                                value={global}
-                                onChange={setGlobal}
+                                value={scoped}
+                                onChange={setScoped}
+                                domains={GROUP_SCOPABLE_DOMAINS}
+                                lockedDomains={globalDomains}
+                                lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
                             <p className="text-sm text-muted-foreground">
-                                Alle i gruppen får dette på tvers av alle
-                                grupper. Du kan bare gi bort tilganger du selv
-                                har.
+                                Alle i gruppen får dette, men bare for gruppens
+                                eget innhold. Andre områder kan ikke begrenses
+                                til én gruppe, og ligger derfor bare nedenfor.
                             </p>
                         </Field>
-                    ) : null}
 
-                    {error ? (
-                        <p className="text-sm text-destructive">{error}</p>
-                    ) : null}
-                </FieldGroup>
+                        {canGrantGlobally ? (
+                            <Field>
+                                <FieldLabel>Gjelder hele TIHLDE</FieldLabel>
+                                <PermissionDomainCheckboxes
+                                    value={global}
+                                    onChange={setGlobal}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Alle i gruppen får dette på tvers av alle
+                                    grupper. Du kan bare gi bort tilganger du
+                                    selv har.
+                                </p>
+                            </Field>
+                        ) : null}
+
+                        {error ? (
+                            <p className="text-sm text-destructive">{error}</p>
+                        ) : null}
+                    </FieldGroup>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         variant="outline"
@@ -964,24 +967,26 @@ function LeaderPermissionsDialog({
                 <DialogHeader>
                     <DialogTitle>Rediger ledertilganger</DialogTitle>
                 </DialogHeader>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel>Tilganger</FieldLabel>
-                        <PermissionDomainCheckboxes
-                            value={permissions}
-                            onChange={setPermissions}
-                            lockedDomains={covered}
-                            lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
-                        />
-                        <p className="text-sm text-muted-foreground">
-                            Gjelder bare i denne gruppen, og følger den som til
-                            enhver tid er leder.
-                        </p>
-                    </Field>
-                    {error ? (
-                        <p className="text-sm text-destructive">{error}</p>
-                    ) : null}
-                </FieldGroup>
+                <DialogBody>
+                    <FieldGroup>
+                        <Field>
+                            <FieldLabel>Tilganger</FieldLabel>
+                            <PermissionDomainCheckboxes
+                                value={permissions}
+                                onChange={setPermissions}
+                                lockedDomains={covered}
+                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Gjelder bare i denne gruppen, og følger den som
+                                til enhver tid er leder.
+                            </p>
+                        </Field>
+                        {error ? (
+                            <p className="text-sm text-destructive">{error}</p>
+                        ) : null}
+                    </FieldGroup>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         variant="outline"
@@ -1131,69 +1136,74 @@ function PositionDialog({
                         {position ? `Rediger «${position.name}»` : "Nytt verv"}
                     </DialogTitle>
                 </DialogHeader>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel>Navn</FieldLabel>
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="f.eks. Økonomiansvarlig"
-                        />
-                    </Field>
-                    {canAssignHolder ? (
+                <DialogBody>
+                    <FieldGroup>
                         <Field>
-                            <FieldLabel>Bruker</FieldLabel>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {holder ? (
-                                    <HolderChip
-                                        name={holder.name}
-                                        image={holder.image}
-                                        onRemove={() => setHolder(null)}
-                                    />
-                                ) : (
-                                    <UserSearchCombobox
-                                        holder={null}
-                                        emptyLabel="Ingen tildelt"
-                                        query={holderQuery}
-                                        onQueryChange={setHolderQuery}
-                                        results={memberOptions}
-                                        onSelect={setHolder}
-                                        onOpenChange={(isOpen) => {
-                                            if (!isOpen) setHolderQuery("");
-                                        }}
-                                        placeholder="Søk blant gruppens medlemmer…"
-                                    />
-                                )}
-                            </div>
-                        </Field>
-                    ) : null}
-                    <Field>
-                        <FieldLabel>Tilganger</FieldLabel>
-                        <PermissionDomainCheckboxes
-                            value={permissions}
-                            onChange={setPermissions}
-                            lockedDomains={covered}
-                            lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
-                        />
-                    </Field>
-                    <Field>
-                        <label className="flex items-center gap-2">
-                            <Checkbox
-                                checked={scope === "global"}
-                                onCheckedChange={(next) =>
-                                    setScope(next === true ? "global" : "group")
-                                }
+                            <FieldLabel>Navn</FieldLabel>
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="f.eks. Økonomiansvarlig"
                             />
-                            <span className="text-sm">
-                                Gjelder hele TIHLDE (ikke bare denne gruppen) —
-                                krever rolle-administrasjonstilgang
-                            </span>
-                        </label>
-                    </Field>
-                    {error ? (
-                        <p className="text-sm text-destructive">{error}</p>
-                    ) : null}
-                </FieldGroup>
+                        </Field>
+                        {canAssignHolder ? (
+                            <Field>
+                                <FieldLabel>Bruker</FieldLabel>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {holder ? (
+                                        <HolderChip
+                                            name={holder.name}
+                                            image={holder.image}
+                                            onRemove={() => setHolder(null)}
+                                        />
+                                    ) : (
+                                        <UserSearchCombobox
+                                            holder={null}
+                                            emptyLabel="Ingen tildelt"
+                                            query={holderQuery}
+                                            onQueryChange={setHolderQuery}
+                                            results={memberOptions}
+                                            onSelect={setHolder}
+                                            onOpenChange={(isOpen) => {
+                                                if (!isOpen) setHolderQuery("");
+                                            }}
+                                            placeholder="Søk blant gruppens medlemmer…"
+                                        />
+                                    )}
+                                </div>
+                            </Field>
+                        ) : null}
+                        <Field>
+                            <FieldLabel>Tilganger</FieldLabel>
+                            <PermissionDomainCheckboxes
+                                value={permissions}
+                                onChange={setPermissions}
+                                lockedDomains={covered}
+                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
+                            />
+                        </Field>
+                        <Field>
+                            <label className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={scope === "global"}
+                                    onCheckedChange={(next) =>
+                                        setScope(
+                                            next === true ? "global" : "group",
+                                        )
+                                    }
+                                />
+                                <span className="text-sm">
+                                    Gjelder hele TIHLDE (ikke bare denne
+                                    gruppen) — krever
+                                    rolle-administrasjonstilgang
+                                </span>
+                            </label>
+                        </Field>
+                        {error ? (
+                            <p className="text-sm text-destructive">{error}</p>
+                        ) : null}
+                    </FieldGroup>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         variant="outline"

@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -99,76 +100,80 @@ export function GalleryPictureEditorDialog({
                         Endre tittel, beskrivelse og bildetekst.
                     </DialogDescription>
                 </DialogHeader>
+                <DialogBody>
+                    {picture ? (
+                        <img
+                            src={assetImageUrl(picture.imageUrl, 480)}
+                            alt={picture.imageAlt ?? picture.title ?? ""}
+                            decoding="async"
+                            className="max-h-48 w-full object-contain"
+                        />
+                    ) : null}
 
-                {picture ? (
-                    <img
-                        src={assetImageUrl(picture.imageUrl, 480)}
-                        alt={picture.imageAlt ?? picture.title ?? ""}
-                        decoding="async"
-                        className="max-h-48 w-full object-contain"
-                    />
-                ) : null}
+                    <form
+                        className="flex flex-col gap-4"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSubmit();
+                        }}
+                    >
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="picture-title">
+                                    Tittel
+                                </FieldLabel>
+                                <Input
+                                    id="picture-title"
+                                    value={title}
+                                    maxLength={100}
+                                    placeholder="Skriv her..."
+                                    onChange={(e) => setTitle(e.target.value)}
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="picture-description">
+                                    Beskrivelse
+                                </FieldLabel>
+                                <Textarea
+                                    id="picture-description"
+                                    rows={3}
+                                    value={description}
+                                    maxLength={5000}
+                                    placeholder="Skriv her..."
+                                    onChange={(e) =>
+                                        setDescription(e.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="picture-alt">
+                                    Bildetekst
+                                </FieldLabel>
+                                <Input
+                                    id="picture-alt"
+                                    value={imageAlt}
+                                    maxLength={200}
+                                    placeholder="Skriv her..."
+                                    onChange={(e) =>
+                                        setImageAlt(e.target.value)
+                                    }
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Beskriver bildet for skjermlesere og vises
+                                    hvis bildet ikke lastes.
+                                </p>
+                            </Field>
+                        </FieldGroup>
+                    </form>
 
-                <form
-                    className="flex flex-col gap-4"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        handleSubmit();
-                    }}
-                >
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="picture-title">
-                                Tittel
-                            </FieldLabel>
-                            <Input
-                                id="picture-title"
-                                value={title}
-                                maxLength={100}
-                                placeholder="Skriv her..."
-                                onChange={(e) => setTitle(e.target.value)}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="picture-description">
-                                Beskrivelse
-                            </FieldLabel>
-                            <Textarea
-                                id="picture-description"
-                                rows={3}
-                                value={description}
-                                maxLength={5000}
-                                placeholder="Skriv her..."
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="picture-alt">
-                                Bildetekst
-                            </FieldLabel>
-                            <Input
-                                id="picture-alt"
-                                value={imageAlt}
-                                maxLength={200}
-                                placeholder="Skriv her..."
-                                onChange={(e) => setImageAlt(e.target.value)}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Beskriver bildet for skjermlesere og vises hvis
-                                bildet ikke lastes.
-                            </p>
-                        </Field>
-                    </FieldGroup>
-                </form>
-
-                {error ? (
-                    <Alert variant="destructive">
-                        <XCircle className="size-4" />
-                        <AlertTitle>Kunne ikke lagre</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                ) : null}
-
+                    {error ? (
+                        <Alert variant="destructive">
+                            <XCircle className="size-4" />
+                            <AlertTitle>Kunne ikke lagre</AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    ) : null}
+                </DialogBody>
                 {confirmingDelete ? (
                     <DialogFooter>
                         <p className="mr-auto text-sm text-muted-foreground">

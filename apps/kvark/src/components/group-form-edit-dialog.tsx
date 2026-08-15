@@ -29,6 +29,8 @@ export type GroupFormEditValues = {
     title: string;
     description: string;
     isOpen: boolean;
+    /** Null betyr «åpner med en gang». */
+    opensAt: Date | null;
     canSubmitMultiple: boolean;
     onlyForMembers: boolean;
     /** Tom streng betyr «ingen varsling». */
@@ -74,6 +76,7 @@ const schema = z.object({
         .max(400, { error: "Maks 400 tegn" }),
     description: z.string(),
     isOpen: z.boolean(),
+    opensAt: z.date().nullable(),
     canSubmitMultiple: z.boolean(),
     onlyForMembers: z.boolean(),
     emailReceiver: z.union([
@@ -173,6 +176,7 @@ function useEditForm({
             title: form.title,
             description: form.description,
             isOpen: form.isOpen,
+            opensAt: form.opensAt ? new Date(form.opensAt) : null,
             canSubmitMultiple: form.canSubmitMultiple,
             onlyForMembers: form.onlyForMembers,
             emailReceiver: form.emailReceiver,
@@ -184,6 +188,7 @@ function useEditForm({
                 title: value.title.trim(),
                 description: value.description,
                 isOpen: value.isOpen,
+                opensAt: value.opensAt,
                 canSubmitMultiple: value.canSubmitMultiple,
                 onlyForMembers: value.onlyForMembers,
                 emailReceiver: value.emailReceiver.trim(),
@@ -238,7 +243,16 @@ function EditForm({
                         </field.Field>
                     )}
                 </editForm.AppField>
-                <editForm.AppField name="isOpen">
+                {/* Stenger man skjemaet, følger åpningstidspunktet med: ellers
+                    ville skjemaet man nettopp stengte åpnet seg selv igjen. */}
+                <editForm.AppField
+                    name="isOpen"
+                    listeners={{
+                        onChange: ({ value }) => {
+                            if (!value) editForm.setFieldValue("opensAt", null);
+                        },
+                    }}
+                >
                     {(field) => (
                         <field.Field orientation="horizontal">
                             <FieldContent>
@@ -249,6 +263,28 @@ function EditForm({
                                 </field.Description>
                             </FieldContent>
                             <field.Switch />
+                        </field.Field>
+                    )}
+                </editForm.AppField>
+                {/* Og setter man et tidspunkt, er det fordi skjemaet skal åpne
+                    da — bryteren følger etter. */}
+                <editForm.AppField
+                    name="opensAt"
+                    listeners={{
+                        onChange: ({ value }) => {
+                            if (value) editForm.setFieldValue("isOpen", true);
+                        },
+                    }}
+                >
+                    {(field) => (
+                        <field.Field>
+                            <field.Label>Åpner</field.Label>
+                            <field.DateTimePicker />
+                            <field.Description>
+                                Valgfritt. Med et tidspunkt er skjemaet stengt
+                                til da, og åpner seg selv når tiden kommer.
+                            </field.Description>
+                            <field.Error />
                         </field.Field>
                     )}
                 </editForm.AppField>

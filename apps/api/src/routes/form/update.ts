@@ -4,7 +4,11 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { FormHasSubmissionsException } from "~/lib/form/exceptions";
-import { canManageForm, updateFieldsAndOptions } from "~/lib/form/service";
+import {
+    canManageForm,
+    resolveScheduledOpenState,
+    updateFieldsAndOptions,
+} from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -104,10 +108,22 @@ export const updateRoute = route().patch(
                 .where(eq(schema.form.id, formId));
         }
 
+        // `null` fjerner planleggingen; utelatt lar den stå.
+        const openState = resolveScheduledOpenState({
+            isOpenForSubmissions: body.is_open_for_submissions,
+            opensAt:
+                body.opens_at === undefined
+                    ? undefined
+                    : body.opens_at === null
+                      ? null
+                      : new Date(body.opens_at),
+        });
+
         const groupFormValues = {
             emailReceiverOnSubmit: body.email_receiver_on_submit,
             canSubmitMultiple: body.can_submit_multiple,
-            isOpenForSubmissions: body.is_open_for_submissions,
+            isOpenForSubmissions: openState.isOpenForSubmissions,
+            opensAt: openState.opensAt,
             onlyForGroupMembers: body.only_for_group_members,
         };
 
@@ -157,6 +173,7 @@ export const updateRoute = route().patch(
             can_submit_multiple: updatedGroupForm?.canSubmitMultiple ?? null,
             is_open_for_submissions:
                 updatedGroupForm?.isOpenForSubmissions ?? null,
+            opens_at: updatedGroupForm?.opensAt?.toISOString() ?? null,
             only_for_group_members:
                 updatedGroupForm?.onlyForGroupMembers ?? null,
             created_at: updatedForm?.createdAt.toISOString(),
