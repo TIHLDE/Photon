@@ -212,6 +212,19 @@ export const updateRoute = route().put(
                 return undefined;
             };
 
+            const nextRegistrationStart = updateDateNullable(
+                body.registrationStart,
+            );
+
+            // Moving the opening means the already-sent "åpner snart" reminder
+            // was about the old time, so clear the marker and let the reminder
+            // cron send a fresh one for the new opening. `undefined` leaves the
+            // opening — and therefore the marker — untouched.
+            const registrationStartChanged =
+                nextRegistrationStart !== undefined &&
+                (nextRegistrationStart?.getTime() ?? null) !==
+                    (event.registrationStart?.getTime() ?? null);
+
             const updatedEvent: Partial<InferInsertModel<DbSchema["event"]>> = {
                 allowWaitlist: body.allowWaitlist,
                 categorySlug: body.categorySlug,
@@ -242,7 +255,10 @@ export const updateRoute = route().put(
                 title: body.title,
                 start: updateDate(body.start),
                 end: updateDate(body.end),
-                registrationStart: updateDateNullable(body.registrationStart),
+                registrationStart: nextRegistrationStart,
+                registrationReminderSentAt: registrationStartChanged
+                    ? null
+                    : undefined,
                 registrationEnd: updateDateNullable(body.registrationEnd),
                 cancellationDeadline: updateDateNullable(
                     body.cancellationDeadline,

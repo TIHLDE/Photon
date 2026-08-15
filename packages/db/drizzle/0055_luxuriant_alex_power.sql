@@ -1,0 +1,1 @@
+ALTER TABLE "event_event" ADD COLUMN "registration_reminder_sent_at" timestamp;
