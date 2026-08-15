@@ -111,7 +111,7 @@ function AdmissionsPage() {
                     </h2>
                     <p className="mx-auto max-w-lg text-muted-foreground">
                         Det er separate intervjuer for hvert verv du har søkt
-                        på, dersom du blir tatt opp til intervju
+                        på, dersom du blir tatt opp til intervju.
                     </p>
                 </div>
 
