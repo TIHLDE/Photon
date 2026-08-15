@@ -41,6 +41,10 @@ export const getMyUpcomingEventsRoute = route().get(
                 startTime: schema.event.start,
                 endTime: schema.event.end,
                 categorySlug: schema.event.categorySlug,
+                location: schema.event.location,
+                image: schema.event.imageUrl,
+                imageAlt: schema.event.imageAlt,
+                organizer: schema.group.name,
                 status: schema.eventRegistration.status,
                 waitlistPosition: schema.eventRegistration.waitlistPosition,
             })
@@ -48,6 +52,12 @@ export const getMyUpcomingEventsRoute = route().get(
             .innerJoin(
                 schema.event,
                 eq(schema.eventRegistration.eventId, schema.event.id),
+            )
+            // Left join: an event without an organizing group still belongs in
+            // the list, it just has no badge.
+            .leftJoin(
+                schema.group,
+                eq(schema.event.organizerGroupSlug, schema.group.slug),
             )
             .where(
                 and(
@@ -70,6 +80,10 @@ export const getMyUpcomingEventsRoute = route().get(
                 startTime: row.startTime.toISOString(),
                 endTime: row.endTime.toISOString(),
                 categorySlug: row.categorySlug,
+                location: row.location,
+                image: row.image,
+                imageAlt: row.imageAlt,
+                organizer: row.organizer,
                 status: row.status as "registered" | "waitlisted" | "pending",
                 waitlistPosition: row.waitlistPosition,
             }),

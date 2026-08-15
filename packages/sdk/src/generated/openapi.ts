@@ -3428,6 +3428,14 @@ export interface components {
             endTime: string;
             /** @description Slug of the event's category */
             categorySlug: string;
+            /** @description Where the event takes place */
+            location: string | null;
+            /** @description Cover image URL */
+            image: string | null;
+            /** @description Alt text for the cover image */
+            imageAlt: string | null;
+            /** @description Name of the organizing group */
+            organizer: string | null;
             /**
              * @description Your registration status for the event
              * @enum {string}

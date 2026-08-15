@@ -27,6 +27,10 @@ describe("my upcoming registrations", () => {
                 categorySlug: "aktivitet",
                 start: new Date(now + DAY),
                 end: new Date(now + DAY + 2 * HOUR),
+                location: "Klatresenteret",
+                imageUrl: "https://example.com/klatring.jpg",
+                imageAlt: "Klatrevegg",
+                organizerGroupSlug: "basket",
             });
             const waitlisted = await ctx.utils.createTestEvent({
                 title: "Fullt arrangement",
@@ -74,6 +78,13 @@ describe("my upcoming registrations", () => {
                 waitlisted.slug,
             ]);
             expect(body.map((e) => e.categorySlug)).toContain("aktivitet");
+
+            // Kortet trenger bilde, sted og arrangør, ikke bare tittel og tid.
+            const activityRow = body.find((e) => e.slug === activity.slug);
+            expect(activityRow?.location).toBe("Klatresenteret");
+            expect(activityRow?.image).toBe("https://example.com/klatring.jpg");
+            expect(activityRow?.imageAlt).toBe("Klatrevegg");
+            expect(activityRow?.organizer).toBe("TIHLDE Basket");
 
             const waitlistRow = body.find((e) => e.slug === waitlisted.slug);
             expect(waitlistRow?.status).toBe("waitlisted");

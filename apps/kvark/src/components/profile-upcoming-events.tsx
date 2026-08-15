@@ -1,6 +1,4 @@
-import { Link } from "@tanstack/react-router";
 import { Badge } from "@tihlde/ui/ui/badge";
-import { Card } from "@tihlde/ui/ui/card";
 import {
     Empty,
     EmptyDescription,
@@ -11,6 +9,7 @@ import {
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { CalendarDays } from "lucide-react";
 
+import { EventCard } from "#/components/event-card";
 import { formatEventDateTime } from "#/lib/event";
 
 export type ProfileUpcomingEvent = {
@@ -18,13 +17,17 @@ export type ProfileUpcomingEvent = {
     title: string;
     slug: string;
     startTime: string;
+    location: string | null;
+    image: string | null;
+    imageAlt: string | null;
+    organizer: string | null;
     status: "registered" | "waitlisted" | "pending";
     waitlistPosition: number | null;
 };
 
 /**
- * Påmeldingene som ikke er over ennå. Ventelisteplassen og uavklarte
- * påmeldinger merkes, siden de betyr noe annet enn en sikret plass.
+ * Ventelisteplassen og uavklarte påmeldinger merkes, siden de betyr noe annet
+ * enn en sikret plass. En vanlig påmelding får ikke merke — det er normalen.
  */
 function statusLabel(event: ProfileUpcomingEvent): string | null {
     if (event.status === "pending") return "Behandles";
@@ -35,6 +38,7 @@ function statusLabel(event: ProfileUpcomingEvent): string | null {
     return null;
 }
 
+/** Påmeldingene som ikke er over ennå, som arrangementskort. */
 export function ProfileUpcomingEvents({
     events,
     isPending,
@@ -47,7 +51,8 @@ export function ProfileUpcomingEvents({
             <ul className="flex flex-col gap-3">
                 {[0, 1].map((i) => (
                     <li key={i}>
-                        <Skeleton className="h-16 w-full" />
+                        {/* Speiler kortet: bilde i 21/9 på mobil, rad på sm+. */}
+                        <Skeleton className="h-48 w-full sm:h-28" />
                     </li>
                 ))}
             </ul>
@@ -77,28 +82,20 @@ export function ProfileUpcomingEvents({
                 const label = statusLabel(event);
                 return (
                     <li key={event.eventId}>
-                        <Card
-                            size="sm"
-                            className="flex-row items-center gap-3 px-3"
-                            render={
-                                <Link
-                                    to="/arrangementer/$slug"
-                                    params={{ slug: event.slug }}
-                                />
+                        <EventCard
+                            slug={event.slug}
+                            title={event.title}
+                            startsAt={formatEventDateTime(event.startTime)}
+                            location={event.location ?? ""}
+                            organizer={event.organizer ?? ""}
+                            imageUrl={event.image || undefined}
+                            imageAlt={event.imageAlt || undefined}
+                            badge={
+                                label ? (
+                                    <Badge variant="secondary">{label}</Badge>
+                                ) : null
                             }
-                        >
-                            <div className="flex min-w-0 flex-1 flex-col">
-                                <span className="truncate font-medium">
-                                    {event.title}
-                                </span>
-                                <span className="truncate text-sm text-muted-foreground">
-                                    {formatEventDateTime(event.startTime)}
-                                </span>
-                            </div>
-                            {label ? (
-                                <Badge variant="secondary">{label}</Badge>
-                            ) : null}
-                        </Card>
+                        />
                     </li>
                 );
             })}

@@ -800,6 +800,22 @@ export const myUpcomingEventsSchema = Schema(
             categorySlug: z
                 .string()
                 .meta({ description: "Slug of the event's category" }),
+            location: z
+                .string()
+                .nullable()
+                .meta({ description: "Where the event takes place" }),
+            image: z
+                .string()
+                .nullable()
+                .meta({ description: "Cover image URL" }),
+            imageAlt: z
+                .string()
+                .nullable()
+                .meta({ description: "Alt text for the cover image" }),
+            organizer: z
+                .string()
+                .nullable()
+                .meta({ description: "Name of the organizing group" }),
             status: z.enum(["registered", "waitlisted", "pending"]).meta({
                 description: "Your registration status for the event",
             }),
