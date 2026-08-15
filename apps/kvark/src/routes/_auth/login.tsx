@@ -31,6 +31,7 @@ import {
 } from "#/components/feide-sign-in-issue";
 import { OrDivider } from "#/components/or-divider";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { feideCallbackErrorMessage } from "#/lib/auth-error-message";
 
 // Keep extra search params (sig, exp, client_id, scope…) so the
 // oauthProviderClient fetch hook can read them off window.location.
@@ -88,6 +89,11 @@ function LoginPage() {
     const { redirectTo, error } = Route.useSearch();
 
     const feideIssue = feideIssueFrom(error);
+    // Everything else the callback can come back with is a plain failure, and
+    // without this the member would land back on an untouched login page with
+    // no sign that anything went wrong.
+    const feideError =
+        error && !feideIssue ? feideCallbackErrorMessage(error) : null;
 
     const [feideLoading, setFeideLoading] = useState(false);
     // Feide is the primary path, so the username/password form stays collapsed
@@ -157,6 +163,12 @@ function LoginPage() {
             </CardHeader>
 
             <CardContent className="flex flex-col gap-4">
+                {feideError && (
+                    <Alert variant="destructive">
+                        <AlertTitle>Innloggingen gikk ikke gjennom</AlertTitle>
+                        <AlertDescription>{feideError}</AlertDescription>
+                    </Alert>
+                )}
                 {feideIssue && (
                     <FeideSignInIssue
                         reason={feideIssue}
