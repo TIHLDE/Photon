@@ -28,6 +28,9 @@ function RouteComponent() {
     const updateSettings = useMutation(updateUserSettingsMutation);
 
     const allowsPhotos = session?.user.settings?.allowsPhotosByDefault ?? false;
+    // Ingen innstillinger-rad betyr standarden: du står oppført med navn.
+    const publicRegistrations =
+        session?.user.settings?.publicEventRegistrations ?? true;
 
     async function handleAllowPhotosChange(checked: boolean) {
         await updateSettings.mutateAsync({
@@ -35,6 +38,13 @@ function RouteComponent() {
         });
         // Samtykket leses fra sesjonen (både her og på arrangementsiden), så
         // den må hentes på nytt for at endringen skal vises uten refresh.
+        await invalidateAuth();
+    }
+
+    async function handlePublicRegistrationsChange(checked: boolean) {
+        await updateSettings.mutateAsync({
+            data: { publicEventRegistrations: checked },
+        });
         await invalidateAuth();
     }
 
@@ -60,6 +70,24 @@ function RouteComponent() {
                         checked={allowsPhotos}
                         disabled={updateSettings.isPending}
                         onCheckedChange={handleAllowPhotosChange}
+                    />
+                </Field>
+                <Field orientation="horizontal">
+                    <FieldContent>
+                        <FieldLabel htmlFor="public-registrations">
+                            Offentlige arrangementspåmeldinger
+                        </FieldLabel>
+                        <FieldDescription>
+                            Navnet ditt vises i deltakerlister på arrangementer.
+                            Skrur du av, står du oppført som anonym for andre
+                            medlemmer. Arrangører ser deg uansett.
+                        </FieldDescription>
+                    </FieldContent>
+                    <Switch
+                        id="public-registrations"
+                        checked={publicRegistrations}
+                        disabled={updateSettings.isPending}
+                        onCheckedChange={handlePublicRegistrationsChange}
                     />
                 </Field>
                 {updateSettings.isError ? (

@@ -3915,6 +3915,8 @@ export interface components {
             name: string;
             /** @description User image url (if any) */
             image: string | null;
+            /** @description True when the member has turned off public event registrations, in which case `id`, `name` and `image` carry no identity. Never true for event admins or for the caller's own registration. */
+            isAnonymous: boolean;
             /** @description Photo consent for this event. Only included when the caller has event admin permissions. */
             allowPhoto?: boolean;
             /** @description Registration status (registered/attended/no_show). Only included for event admins. */
@@ -5958,6 +5960,8 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
+            /** @default true */
+            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
             /** @description Whether the user has completed onboarding */
@@ -5974,6 +5978,8 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
+            /** @default true */
+            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
         };
@@ -5988,6 +5994,8 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication: boolean;
+            /** @default true */
+            publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
         };
@@ -6002,6 +6010,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
+            publicEventRegistrations?: boolean;
             allergies?: string[];
         };
         UpdateUserSettingsInput: {
@@ -6015,6 +6024,7 @@ export interface components {
             githubUrl?: string | "";
             linkedinUrl?: string | "";
             receiveMailCommunication?: boolean;
+            publicEventRegistrations?: boolean;
             allergies?: string[];
         };
         SetPasswordResponse: {
