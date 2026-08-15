@@ -19,8 +19,10 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { LockIcon, PlusIcon, TrashIcon, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 import { z } from "zod";
 
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import { formHandlers, useAppForm } from "#/hooks/form";
 import type { FormQuestionType, FormQuestionValues } from "#/lib/form";
 import type { Form } from "#/lib/group";
@@ -98,6 +100,13 @@ type GroupFormEditDialogProps = {
     onSubmit: (values: GroupFormEditValues) => void;
     isSubmitting: boolean;
     error: string | null;
+    /**
+     * Å slette hører til den samme tilgangen som å redigere. Utelatt når den
+     * som ser på ikke har den.
+     */
+    onDelete?: () => void;
+    isDeleting?: boolean;
+    deleteError?: string | null;
 };
 
 export function GroupFormEditDialog({
@@ -109,7 +118,12 @@ export function GroupFormEditDialog({
     onSubmit,
     isSubmitting,
     error,
+    onDelete,
+    isDeleting = false,
+    deleteError = null,
 }: GroupFormEditDialogProps) {
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
     return (
         <Dialog
             open={open}
@@ -136,6 +150,11 @@ export function GroupFormEditDialog({
                         onSubmit={onSubmit}
                         isSubmitting={isSubmitting}
                         error={error}
+                        onRequestDelete={
+                            onDelete ? () => setConfirmDelete(true) : undefined
+                        }
+                        isDeleting={isDeleting}
+                        deleteError={deleteError}
                     />
                 ) : (
                     <div className="flex flex-col gap-3">
@@ -144,6 +163,25 @@ export function GroupFormEditDialog({
                         <Skeleton className="h-9 w-full" />
                     </div>
                 )}
+
+                {form && onDelete ? (
+                    <ConfirmDeleteDialog
+                        open={confirmDelete}
+                        onOpenChange={setConfirmDelete}
+                        title={`Slette «${form.title}»?`}
+                        description={
+                            answerCount > 0
+                                ? `Skjemaet og de ${answerCount} svarene som er sendt inn forsvinner for godt.`
+                                : "Skjemaet forsvinner for godt, og lenken til det slutter å virke."
+                        }
+                        confirmLabel="Slett skjema"
+                        isPending={isDeleting}
+                        onConfirm={() => {
+                            setConfirmDelete(false);
+                            onDelete();
+                        }}
+                    />
+                ) : null}
             </DialogContent>
         </Dialog>
     );
@@ -157,6 +195,9 @@ type EditFormProps = {
     onSubmit: (values: GroupFormEditValues) => void;
     isSubmitting: boolean;
     error: string | null;
+    onRequestDelete?: () => void;
+    isDeleting: boolean;
+    deleteError: string | null;
 };
 
 /**
@@ -208,6 +249,9 @@ function EditForm({
     onSubmit,
     isSubmitting,
     error,
+    onRequestDelete,
+    isDeleting,
+    deleteError,
 }: EditFormProps) {
     const editForm = useEditForm({ form, questions, answerCount, onSubmit });
 
@@ -218,6 +262,14 @@ function EditForm({
                     <TriangleAlert />
                     <AlertTitle>Klarte ikke å lagre skjemaet</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            ) : null}
+
+            {deleteError ? (
+                <Alert variant="destructive">
+                    <TriangleAlert />
+                    <AlertTitle>Klarte ikke å slette skjemaet</AlertTitle>
+                    <AlertDescription>{deleteError}</AlertDescription>
                 </Alert>
             ) : null}
 
@@ -347,12 +399,24 @@ function EditForm({
             )}
 
             <DialogFooter>
+                {onRequestDelete ? (
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        className="sm:mr-auto"
+                        disabled={isSubmitting || isDeleting}
+                        onClick={onRequestDelete}
+                    >
+                        <TrashIcon />
+                        Slett skjema
+                    </Button>
+                ) : null}
                 <Button type="button" variant="outline" onClick={onClose}>
                     Avbryt
                 </Button>
                 <editForm.AppForm>
                     <editForm.SubmitButton
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isDeleting}
                         loading={
                             <>
                                 <Spinner />
