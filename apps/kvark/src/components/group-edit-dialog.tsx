@@ -254,7 +254,6 @@ export function GroupEditDialog({
 
                         <Separator />
 
-                        <h3 className="text-sm font-medium">Botsystem</h3>
                         <Field orientation="horizontal">
                             <FieldLabel htmlFor="fines-activated">
                                 Botsystem på
