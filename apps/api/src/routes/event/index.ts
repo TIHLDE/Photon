@@ -1,4 +1,5 @@
 import { route } from "../../lib/route";
+import { getCalendarFeedRoute } from "./calendar/feed";
 import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
 import { getFavoriteEventsRoute } from "./favorite/get";
@@ -29,6 +30,9 @@ export const eventRoutes = route()
     .route("/", getMyEventHistoryRoute)
     .route("/", createStrikeRoute)
     .route("/", deleteStrikeRoute)
+
+    // Kalender-abonnement (statisk /calendar-sti, må slå "/:eventId")
+    .route("/", getCalendarFeedRoute)
 
     // Favorites (registered before "/:eventId" so the static /favorite path wins)
     .route("/favorite", updateFavoriteEventsRoute)

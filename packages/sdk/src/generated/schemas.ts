@@ -31,6 +31,7 @@ export type BannerList = Schemas["BannerList"];
 export type BatchUpdateFines = Schemas["BatchUpdateFines"];
 export type BatchUpdateFinesResponse = Schemas["BatchUpdateFinesResponse"];
 export type BatchUpdateUserFines = Schemas["BatchUpdateUserFines"];
+export type CalendarSubscription = Schemas["CalendarSubscription"];
 export type CompanyContact = Schemas["CompanyContact"];
 export type CompanyContactResponse = Schemas["CompanyContactResponse"];
 export type Contract = Schemas["Contract"];
