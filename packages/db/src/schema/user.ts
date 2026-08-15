@@ -36,6 +36,14 @@ export const userSettings = pgTable("settings", {
     githubUrl: varchar("github_url", { length: 256 }),
     linkedinUrl: varchar("linkedin_url", { length: 256 }),
     receiveMailCommunication: boolean("receive_mail_communication").notNull(),
+    /**
+     * Whether the member is listed by name in deltakerlister. Off means they
+     * still register as normal, but other members see them as anonymous.
+     * Defaults to true to match how påmeldinger have always been shown.
+     */
+    publicEventRegistrations: boolean("public_event_registrations")
+        .default(true)
+        .notNull(),
     isOnboarded: boolean("is_onboarded").default(false).notNull(),
     ...timestamps,
 });
