@@ -4,6 +4,7 @@ import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { startPaymentTimerWorker } from "./event/payment";
+import { sendUpcomingRegistrationReminders } from "./event/registration-reminder";
 import {
     enqueueRegistrationResolve,
     startRegistrationResolveWorker,
@@ -75,6 +76,22 @@ function startNoShowStrikeCron(ctx: AppContext): void {
 }
 
 /**
+ * Start cron job that reminds favouriters an hour before registration opens.
+ * Runs every minute so the reminder lands close to the intended lead time.
+ */
+function startRegistrationReminderCron(ctx: AppContext): void {
+    cron.schedule("* * * * *", async () => {
+        try {
+            await sendUpcomingRegistrationReminders(ctx);
+        } catch (error) {
+            console.error("Error in registration reminder cron:", error);
+        }
+    });
+
+    console.log("⏰ Registration reminder cron started (runs every minute)");
+}
+
+/**
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
@@ -99,4 +116,7 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start no-show strike cron
     startNoShowStrikeCron(ctx);
+
+    // Start registration-opening reminder cron
+    startRegistrationReminderCron(ctx);
 }

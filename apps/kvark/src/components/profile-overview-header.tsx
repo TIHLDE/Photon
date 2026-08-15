@@ -1,17 +1,12 @@
-import { Badge } from "@tihlde/ui/ui/badge";
-import { Bell } from "lucide-react";
-
 type ProfileOverviewHeaderProps = {
     name: string;
-    /** Velkomsthilsen og varsler gir bare mening på ens egen profil. */
+    /** Velkomsthilsen gir bare mening på ens egen profil. */
     isOwnProfile?: boolean;
-    notifications?: number;
 };
 
 export function ProfileOverviewHeader({
     name,
     isOwnProfile = true,
-    notifications = 0,
 }: ProfileOverviewHeaderProps) {
     const firstName = name.split(" ")[0] ?? name;
 
@@ -25,14 +20,6 @@ export function ProfileOverviewHeader({
                     </p>
                 ) : null}
             </div>
-            {isOwnProfile ? (
-                <Badge variant="outline" className="gap-1.5">
-                    <Bell />
-                    {notifications === 1
-                        ? "1 nytt varsel"
-                        : `${notifications} nye varsler`}
-                </Badge>
-            ) : null}
         </div>
     );
 }

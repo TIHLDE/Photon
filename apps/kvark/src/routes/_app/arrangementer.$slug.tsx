@@ -251,10 +251,12 @@ function EventDetailPage() {
                             {session ? (
                                 <IconActionButton
                                     icon={isFavorite ? StarOff : Star}
+                                    // Favoritt er også påmeldingsvarselet, så
+                                    // knappen sier hva den faktisk gjør.
                                     label={
                                         isFavorite
-                                            ? "Fjern fra favoritter"
-                                            : "Legg til i favoritter"
+                                            ? "Fjern fra favoritter – skrur av varselet"
+                                            : "Legg til i favoritter – få varsel én time før påmeldingen åpner"
                                     }
                                     onClick={() =>
                                         favoriteMutation.mutate({

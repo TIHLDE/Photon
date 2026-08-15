@@ -12,6 +12,7 @@ import NotificationMail from "./notification-mail";
 import OtpSignInEmail from "./otp-sign-in";
 import RegistrationBlockedEmail from "./registration-blocked";
 import RegistrationConfirmedEmail from "./registration-confirmed";
+import RegistrationOpeningEmail from "./registration-opening";
 import ResetPasswordEmail from "./reset-password";
 import SwappedToWaitlistEmail from "./swapped-to-waitlist";
 import WaitlistPlacementEmail from "./waitlist-placement";
@@ -36,6 +37,7 @@ const EMAIL_TEMPLATES = {
     OtpSignInEmail,
     RegistrationBlockedEmail,
     RegistrationConfirmedEmail,
+    RegistrationOpeningEmail,
     ResetPasswordEmail,
     SwappedToWaitlistEmail,
     WaitlistPlacementEmail,
@@ -82,6 +84,7 @@ export {
     OtpSignInEmail,
     RegistrationBlockedEmail,
     RegistrationConfirmedEmail,
+    RegistrationOpeningEmail,
     ResetPasswordEmail,
     SwappedToWaitlistEmail,
     WaitlistPlacementEmail,

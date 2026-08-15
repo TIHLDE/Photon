@@ -122,7 +122,8 @@ function RouteComponent() {
                             <EmptyTitle>Ingen favorittarrangementer</EmptyTitle>
                             <EmptyDescription>
                                 Kommende arrangementer du markerer som favoritt
-                                vises her.
+                                vises her. Du får varsel én time før påmeldingen
+                                åpner.
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
