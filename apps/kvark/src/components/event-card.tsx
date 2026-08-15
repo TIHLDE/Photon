@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, MapPin, UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { ListCard } from "#/components/list-card";
 
@@ -14,6 +15,8 @@ export type EventCardProps = {
     imageAlt?: string;
     capacity?: number | null;
     registeredCount?: number;
+    /** Status ved siden av tittelen, f.eks. ventelisteplassen din. */
+    badge?: ReactNode;
 };
 
 export function EventCard({
@@ -26,6 +29,7 @@ export function EventCard({
     imageAlt,
     capacity,
     registeredCount,
+    badge,
 }: EventCardProps) {
     const meta = [
         { icon: CalendarDays, text: startsAt },
@@ -50,6 +54,7 @@ export function EventCard({
             imageUrl={imageUrl}
             imageAlt={imageAlt}
             imageBadge={organizer}
+            titleBadge={badge}
             meta={meta}
         />
     );

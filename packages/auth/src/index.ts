@@ -733,30 +733,43 @@ export function createAuth(options: CreateAuthOptions) {
             customSession(async ({ user, session }) => {
                 const db = options.services.db;
 
-                const [settings, permissions, groups, row] = await Promise.all([
-                    db.query.userSettings.findFirst({
-                        where: (s, { eq }) => eq(s.userId, user.id),
-                        with: { allergies: { columns: { allergySlug: true } } },
+                /**
+                 * Three round-trips, and they were seven until we measured
+                 * what this costs: every `get-session` runs this callback,
+                 * cookie cache or not, because `customSession` only caches the
+                 * session Better Auth itself reads. All of it stays live —
+                 * caching the result would open exactly the stale-permission
+                 * window the RBAC rollout depends on not existing (#354).
+                 *
+                 * `approvalStatus` rides along with the settings because it is
+                 * ours, not part of Better Auth's user model: the session
+                 * `user` handed to this callback carries only the columns it
+                 * knows. The frontend needs it to tell a member from someone
+                 * still waiting for an admin. Rooted at `user` rather than at
+                 * the settings row, since not every account has settings.
+                 */
+                const [row, permissions, groups] = await Promise.all([
+                    db.query.user.findFirst({
+                        where: (u, { eq }) => eq(u.id, user.id),
+                        columns: { approvalStatus: true },
+                        with: {
+                            settings: {
+                                with: {
+                                    allergies: {
+                                        columns: { allergySlug: true },
+                                    },
+                                },
+                            },
+                        },
                     }),
                     getUserPermissions({ db }, user.id),
                     db.query.groupMembership.findMany({
                         where: (gm, { eq }) => eq(gm.userId, user.id),
                         with: { group: true },
                     }),
-                    /**
-                     * Read separately because `approvalStatus` is ours, not
-                     * part of Better Auth's user model — the session `user` it
-                     * hands this callback carries only the columns it knows.
-                     * The frontend needs it to tell a member from someone still
-                     * waiting for an admin, and every request already has the
-                     * session in hand, so this is the cheapest place to answer
-                     * it once.
-                     */
-                    db.query.user.findFirst({
-                        where: (u, { eq }) => eq(u.id, user.id),
-                        columns: { approvalStatus: true },
-                    }),
                 ]);
+
+                const settings = row?.settings;
 
                 return {
                     user: {

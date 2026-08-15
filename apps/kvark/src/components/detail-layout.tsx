@@ -1,3 +1,4 @@
+import { ScrollFade } from "@tihlde/ui/ui/scroll-fade";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import type { ReactNode } from "react";
 
@@ -75,10 +76,10 @@ export function DetailLayoutNav<K extends string>({
     const flatItems = sections.flat();
 
     return (
-        // overflow-y-hidden er ikke overflødig: per CSS-spec beregnes den andre
-        // aksen til `auto` når én akse settes, så `overflow-x-auto` alene gjør
-        // fanene til en vertikal scrollcontainer og lar dem rubberband-e på iOS.
-        <nav className="-mx-4 min-w-0 overflow-x-auto overflow-y-hidden px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        // Scrollboksen følger innholdsbredden (ingen full-bleed), så fanene
+        // holder seg i linje med resten av siden. ScrollFade toner dem ut i den
+        // kanten det finnes mer å scrolle til, i stedet for et hardt kutt.
+        <ScrollFade render={<nav />}>
             <Tabs
                 value={active}
                 onValueChange={(value) => onSelect(value as K)}
@@ -96,7 +97,7 @@ export function DetailLayoutNav<K extends string>({
                     ))}
                 </TabsList>
             </Tabs>
-        </nav>
+        </ScrollFade>
     );
 }
 

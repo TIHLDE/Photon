@@ -157,7 +157,6 @@ function EventsPage() {
             ),
         );
     const events = data.pages.flatMap((page) => page.items);
-    const totalCount = data.pages[0]?.totalCount ?? 0;
     // Any-scope: scopet er ukjent på en offentlig liste, og et gruppe-scopet
     // events:create er en ekte tilgang. API-et avviser uansett den enkelte
     // forespørselen som ikke treffer.
@@ -230,9 +229,6 @@ function EventsPage() {
                             </TabsList>
                         </Tabs>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        {totalCount} arrangementer funnet
-                    </p>
                     {visning === "kalender" ? (
                         <EventCalendar
                             events={events.map((event) => ({

@@ -5,8 +5,9 @@
  * both globally and within specific scopes.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { unionAll } from "drizzle-orm/pg-core";
 import {
     group,
     groupMembership,
@@ -31,60 +32,60 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
 // =============================================================================
 
 /**
- * Get all permissions for a user from their roles.
- * Returns raw array with potential duplicates.
+ * Every way a user can hold a permission, as one query.
+ *
+ * The six branches were four separate round-trips until we measured what
+ * `get-session` actually costs: seven queries per call, each holding its own
+ * pool connection, four of them from here. The work itself is sub-millisecond
+ * and every branch is index-covered — it was the round-trips that added up, so
+ * they are now one.
+ *
+ * Each branch yields `(permissions, scope)` and nothing else, so the caller
+ * formats them all the same way. `scope` is {@link GLOBAL_SCOPE} for the
+ * unscoped sources, which {@link formatPermission} passes through untouched —
+ * a role permission that already carries its own `@scope` therefore survives
+ * verbatim, exactly as when this returned the raw column.
+ *
+ * The scope literal is cast explicitly: as a bare parameter Postgres cannot
+ * infer its type inside a UNION and refuses the query.
  */
-async function getPermissionsFromRoles(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
+function permissionRows(ctx: DbCtx, userId: string) {
     const db = ctx.db;
-    const rows = await db
-        .select({ permissions: role.permissions })
+    const globalScope = sql<string>`cast(${GLOBAL_SCOPE} as text)`;
+
+    /** Roles: the permission strings are stored ready-formatted. */
+    const fromRoles = db
+        .select({
+            permissions: role.permissions,
+            scope: globalScope.as("scope"),
+        })
         .from(userRole)
         .innerJoin(role, eq(userRole.roleId, role.id))
         .where(eq(userRole.userId, userId));
 
-    return rows.flatMap((r) => r.permissions ?? []);
-}
-
-/**
- * Get all direct permissions for a user (not from roles).
- * Returns array of permission strings in format "permission" or "permission@scope".
- */
-async function getDirectPermissions(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
+    /** Direct grants: one permission per row, with its own scope. */
+    const fromDirect = db
         .select({
-            permission: userPermission.permission,
+            permissions: sql<
+                string[]
+            >`array[${userPermission.permission}]::text[]`.as("permissions"),
             scope: userPermission.scope,
         })
         .from(userPermission)
         .where(eq(userPermission.userId, userId));
 
-    return rows.map((r) => formatPermission(r.permission, r.scope));
-}
-
-/**
- * Get all permissions a user receives from group positions (verv/titler).
- *
- * Positions with scope "group" grant their permissions scoped to the
- * position's group ("permission@group:<slug>"); positions with scope
- * "global" grant them globally.
- */
-async function getPermissionsFromPositions(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
+    /**
+     * Verv (titler): positions with scope "group" grant their permissions
+     * scoped to the position's group; positions with scope "global" grant
+     * them globally.
+     */
+    const fromPositions = db
         .select({
             permissions: groupPosition.permissions,
-            scope: groupPosition.scope,
-            groupSlug: groupPosition.groupSlug,
+            scope: sql<string>`case
+                when ${groupPosition.scope} = 'global' then cast(${GLOBAL_SCOPE} as text)
+                else 'group:' || ${groupPosition.groupSlug}
+            end`.as("scope"),
         })
         .from(groupPositionHolder)
         .innerJoin(
@@ -93,76 +94,78 @@ async function getPermissionsFromPositions(
         )
         .where(eq(groupPositionHolder.userId, userId));
 
-    return rows.flatMap((row) =>
-        (row.permissions ?? []).map((p) =>
-            row.scope === "global"
-                ? p
-                : formatPermission(p, `group:${row.groupSlug}`),
-        ),
-    );
-}
-
-/**
- * Get all permissions a user receives from BELONGING to a group.
- *
- * Three lists come off the group row, all read live from the membership so a
- * grant cannot outlive the job — leave the group, or step down as leader, and
- * it is gone on the next check:
- *
- * - `memberPermissions` — held by every member, scoped to the group
- *   ("permission@group:<slug>"), so nothing reaches another group's resources.
- * - `memberGlobalPermissions` — held by every member, org-wide. This is what
- *   lets all of Index administer TIHLDE; it replaced the auto-assigned `admin`
- *   and `hs` RBAC roles, which did the same thing invisibly.
- * - `leaderPermissions` — held by the leader only, scoped to the group. The
- *   leader is a member too, so these stack on top of the member lists.
- */
-async function getPermissionsFromGroups(
-    ctx: DbCtx,
-    userId: string,
-): Promise<string[]> {
-    const db = ctx.db;
-    const rows = await db
+    /**
+     * Held by every member, scoped to the group, so nothing reaches another
+     * group's resources.
+     */
+    const fromMembership = db
         .select({
-            memberPermissions: group.memberPermissions,
-            memberGlobalPermissions: group.memberGlobalPermissions,
-            leaderPermissions: group.leaderPermissions,
-            membershipRole: groupMembership.role,
-            groupSlug: group.slug,
+            permissions: group.memberPermissions,
+            scope: sql<string>`'group:' || ${group.slug}`.as("scope"),
         })
         .from(groupMembership)
         .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
         .where(eq(groupMembership.userId, userId));
 
-    return rows.flatMap((row) => {
-        const scoped = [
-            ...(row.memberPermissions ?? []),
-            ...(row.membershipRole === "leader"
-                ? (row.leaderPermissions ?? [])
-                : []),
-        ].map((p) => formatPermission(p, `group:${row.groupSlug}`));
+    /**
+     * Held by the leader only, scoped to the group. The leader is a member
+     * too, so these stack on top of the member lists.
+     */
+    const fromLeadership = db
+        .select({
+            permissions: group.leaderPermissions,
+            scope: sql<string>`'group:' || ${group.slug}`.as("scope"),
+        })
+        .from(groupMembership)
+        .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.role, "leader"),
+            ),
+        );
 
-        return [...scoped, ...(row.memberGlobalPermissions ?? [])];
-    });
+    /**
+     * Held by every member, org-wide. This is what lets all of Index
+     * administer TIHLDE; it replaced the auto-assigned `admin` and `hs` RBAC
+     * roles, which did the same thing invisibly.
+     */
+    const fromMembershipGlobal = db
+        .select({
+            permissions: group.memberGlobalPermissions,
+            scope: globalScope.as("scope"),
+        })
+        .from(groupMembership)
+        .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
+        .where(eq(groupMembership.userId, userId));
+
+    return unionAll(
+        fromRoles,
+        fromDirect,
+        fromPositions,
+        fromMembership,
+        fromLeadership,
+        fromMembershipGlobal,
+    );
 }
 
 /**
  * Get all permissions for a user (roles + direct grants + verv + groups).
  * Returns raw array with potential duplicates.
+ *
+ * Everything a group grants is read live from the membership, so a grant
+ * cannot outlive the job: leave the group, or step down as leader, and it is
+ * gone on the next check.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
     userId: string,
 ): Promise<string[]> {
-    const [rolePerms, directPerms, positionPerms, groupPerms] =
-        await Promise.all([
-            getPermissionsFromRoles(ctx, userId),
-            getDirectPermissions(ctx, userId),
-            getPermissionsFromPositions(ctx, userId),
-            getPermissionsFromGroups(ctx, userId),
-        ]);
+    const rows = await permissionRows(ctx, userId);
 
-    return [...rolePerms, ...directPerms, ...positionPerms, ...groupPerms];
+    return rows.flatMap((row) =>
+        (row.permissions ?? []).map((p) => formatPermission(p, row.scope)),
+    );
 }
 
 /**
