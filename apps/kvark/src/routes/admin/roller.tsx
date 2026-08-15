@@ -14,6 +14,7 @@ import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -1131,69 +1132,74 @@ function PositionDialog({
                         {position ? `Rediger «${position.name}»` : "Nytt verv"}
                     </DialogTitle>
                 </DialogHeader>
-                <FieldGroup>
-                    <Field>
-                        <FieldLabel>Navn</FieldLabel>
-                        <Input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="f.eks. Økonomiansvarlig"
-                        />
-                    </Field>
-                    {canAssignHolder ? (
+                <DialogBody>
+                    <FieldGroup>
                         <Field>
-                            <FieldLabel>Bruker</FieldLabel>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {holder ? (
-                                    <HolderChip
-                                        name={holder.name}
-                                        image={holder.image}
-                                        onRemove={() => setHolder(null)}
-                                    />
-                                ) : (
-                                    <UserSearchCombobox
-                                        holder={null}
-                                        emptyLabel="Ingen tildelt"
-                                        query={holderQuery}
-                                        onQueryChange={setHolderQuery}
-                                        results={memberOptions}
-                                        onSelect={setHolder}
-                                        onOpenChange={(isOpen) => {
-                                            if (!isOpen) setHolderQuery("");
-                                        }}
-                                        placeholder="Søk blant gruppens medlemmer…"
-                                    />
-                                )}
-                            </div>
-                        </Field>
-                    ) : null}
-                    <Field>
-                        <FieldLabel>Tilganger</FieldLabel>
-                        <PermissionDomainCheckboxes
-                            value={permissions}
-                            onChange={setPermissions}
-                            lockedDomains={covered}
-                            lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
-                        />
-                    </Field>
-                    <Field>
-                        <label className="flex items-center gap-2">
-                            <Checkbox
-                                checked={scope === "global"}
-                                onCheckedChange={(next) =>
-                                    setScope(next === true ? "global" : "group")
-                                }
+                            <FieldLabel>Navn</FieldLabel>
+                            <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="f.eks. Økonomiansvarlig"
                             />
-                            <span className="text-sm">
-                                Gjelder hele TIHLDE (ikke bare denne gruppen) —
-                                krever rolle-administrasjonstilgang
-                            </span>
-                        </label>
-                    </Field>
-                    {error ? (
-                        <p className="text-sm text-destructive">{error}</p>
-                    ) : null}
-                </FieldGroup>
+                        </Field>
+                        {canAssignHolder ? (
+                            <Field>
+                                <FieldLabel>Bruker</FieldLabel>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {holder ? (
+                                        <HolderChip
+                                            name={holder.name}
+                                            image={holder.image}
+                                            onRemove={() => setHolder(null)}
+                                        />
+                                    ) : (
+                                        <UserSearchCombobox
+                                            holder={null}
+                                            emptyLabel="Ingen tildelt"
+                                            query={holderQuery}
+                                            onQueryChange={setHolderQuery}
+                                            results={memberOptions}
+                                            onSelect={setHolder}
+                                            onOpenChange={(isOpen) => {
+                                                if (!isOpen) setHolderQuery("");
+                                            }}
+                                            placeholder="Søk blant gruppens medlemmer…"
+                                        />
+                                    )}
+                                </div>
+                            </Field>
+                        ) : null}
+                        <Field>
+                            <FieldLabel>Tilganger</FieldLabel>
+                            <PermissionDomainCheckboxes
+                                value={permissions}
+                                onChange={setPermissions}
+                                lockedDomains={covered}
+                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
+                            />
+                        </Field>
+                        <Field>
+                            <label className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={scope === "global"}
+                                    onCheckedChange={(next) =>
+                                        setScope(
+                                            next === true ? "global" : "group",
+                                        )
+                                    }
+                                />
+                                <span className="text-sm">
+                                    Gjelder hele TIHLDE (ikke bare denne
+                                    gruppen) — krever
+                                    rolle-administrasjonstilgang
+                                </span>
+                            </label>
+                        </Field>
+                        {error ? (
+                            <p className="text-sm text-destructive">{error}</p>
+                        ) : null}
+                    </FieldGroup>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         variant="outline"

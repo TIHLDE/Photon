@@ -57,7 +57,13 @@ function DialogContent({
                     // handlingsknappene under bunnen, og siden er `fixed` kan
                     // ingen av dem nås. overscroll-contain hindrer at siden bak
                     // tar over scrollingen når popupen når enden.
-                    "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+                    //
+                    // flex-col (ikke grid): lar `DialogBody` ta resthøyden og
+                    // scrolle for seg selv, slik at header og footer står låst.
+                    // Uten DialogBody scroller popupen selv, som før — og med
+                    // en DialogBody skal den aldri scrolle, ellers glir den
+                    // låste headeren ut av synet likevel.
+                    "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto overscroll-contain rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none has-data-[slot=dialog-body]:overflow-hidden sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
                     className,
                 )}
                 {...props}
@@ -87,7 +93,39 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     return (
         <div
             data-slot="dialog-header"
-            className={cn("flex flex-col gap-2", className)}
+            className={cn("flex shrink-0 flex-col gap-2", className)}
+            {...props}
+        />
+    );
+}
+
+/**
+ * Valgfri scrollcontainer for innholdet mellom `DialogHeader` og
+ * `DialogFooter`. Uten den scroller hele popupen, og tittel, lukkeknapp og
+ * handlingsknapper forsvinner ut av synet hver sin vei. Med den låses header og
+ * footer, og bare innholdet mellom dem scroller.
+ *
+ * Bruk den når innholdet kan bli høyere enn skjermen (skjemaer, lister,
+ * bildeforhåndsvisninger). Korte dialoger trenger den ikke.
+ *
+ * `min-h-0` er ikke valgfri: uten den lar ikke flex-elementet seg krympe under
+ * innholdshøyden, og scrollingen havner på popupen igjen. `flex-col gap-4`
+ * gjenskaper avstanden barna hadde som direkte barn av `DialogContent`.
+ *
+ * `relative` er heller ikke valgfri: uten den er popupen (som er `fixed`)
+ * containing block for absolutt posisjonerte etterkommere — f.eks. overlegget i
+ * `ImageDropzone` — så de slipper unna klippingen her og gir popupen sin egen
+ * scrollhøyde igjen. Målt i annonse-dialogen: 1251px scrollhøyde uten
+ * `relative`, 780px (= synlig høyde) med.
+ */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+    return (
+        <div
+            data-slot="dialog-body"
+            className={cn(
+                "relative -mx-4 flex min-h-0 flex-auto flex-col gap-4 overflow-y-auto overscroll-contain px-4",
+                className,
+            )}
             {...props}
         />
     );
@@ -105,7 +143,7 @@ function DialogFooter({
         <div
             data-slot="dialog-footer"
             className={cn(
-                "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+                "-mx-4 -mb-4 flex shrink-0 flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
                 className,
             )}
             {...props}
@@ -154,6 +192,7 @@ function DialogDescription({
 
 export {
     Dialog,
+    DialogBody,
     DialogClose,
     DialogContent,
     DialogDescription,

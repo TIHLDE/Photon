@@ -16,6 +16,7 @@ import {
 } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -213,75 +214,78 @@ function GalleryDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {gallery ? "Rediger galleri" : "Nytt galleri"}
                         </DialogTitle>
                     </DialogHeader>
-
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="gallery-title">
-                                Tittel
-                            </FieldLabel>
-                            <Input
-                                id="gallery-title"
-                                type="text"
-                                required
-                                maxLength={100}
-                                value={title}
-                                onChange={(event) =>
-                                    setTitle(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="gallery-description">
-                                Beskrivelse
-                            </FieldLabel>
-                            <Textarea
-                                id="gallery-description"
-                                rows={2}
-                                value={description}
-                                onChange={(event) =>
-                                    setDescription(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="gallery-event">
-                                Arrangement (valgfritt)
-                            </FieldLabel>
-                            <Select
-                                value={eventId}
-                                onValueChange={(value) =>
-                                    setEventId(value ?? NO_EVENT)
-                                }
-                            >
-                                <SelectTrigger id="gallery-event">
-                                    <SelectValue placeholder="Ingen" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={NO_EVENT}>
-                                        Ingen
-                                    </SelectItem>
-                                    {events.items.map((item) => (
-                                        <SelectItem
-                                            key={item.id}
-                                            value={item.id}
-                                        >
-                                            {item.title}
+                    <DialogBody>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="gallery-title">
+                                    Tittel
+                                </FieldLabel>
+                                <Input
+                                    id="gallery-title"
+                                    type="text"
+                                    required
+                                    maxLength={100}
+                                    value={title}
+                                    onChange={(event) =>
+                                        setTitle(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="gallery-description">
+                                    Beskrivelse
+                                </FieldLabel>
+                                <Textarea
+                                    id="gallery-description"
+                                    rows={2}
+                                    value={description}
+                                    onChange={(event) =>
+                                        setDescription(event.target.value)
+                                    }
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="gallery-event">
+                                    Arrangement (valgfritt)
+                                </FieldLabel>
+                                <Select
+                                    value={eventId}
+                                    onValueChange={(value) =>
+                                        setEventId(value ?? NO_EVENT)
+                                    }
+                                >
+                                    <SelectTrigger id="gallery-event">
+                                        <SelectValue placeholder="Ingen" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={NO_EVENT}>
+                                            Ingen
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </Field>
-                    </FieldGroup>
+                                        {events.items.map((item) => (
+                                            <SelectItem
+                                                key={item.id}
+                                                value={item.id}
+                                            >
+                                                {item.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </FieldGroup>
 
-                    {error && <p role="alert">{error}</p>}
-
+                        {error && <p role="alert">{error}</p>}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

@@ -1,6 +1,7 @@
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -145,289 +146,298 @@ export function NewFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
-                <form
-                    id="new-form-dialog"
-                    {...formHandlers(form)}
-                    className="flex flex-col gap-4"
-                >
-                    <FieldGroup>
-                        <form.AppField name="title">
-                            {(field) => (
-                                <field.Field required>
-                                    <field.Label>Tittel</field.Label>
-                                    <field.Input placeholder="Skriv her..." />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                <DialogBody>
+                    <form
+                        id="new-form-dialog"
+                        {...formHandlers(form)}
+                        className="flex flex-col gap-4"
+                    >
+                        <FieldGroup>
+                            <form.AppField name="title">
+                                {(field) => (
+                                    <field.Field required>
+                                        <field.Label>Tittel</field.Label>
+                                        <field.Input placeholder="Skriv her..." />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
 
-                        <form.AppField name="description">
-                            {(field) => (
-                                <field.Field>
-                                    <field.Label>Beskrivelse</field.Label>
-                                    <field.Markdown placeholder="Hva handler skjemaet om?" />
-                                    <field.Error />
-                                </field.Field>
-                            )}
-                        </form.AppField>
+                            <form.AppField name="description">
+                                {(field) => (
+                                    <field.Field>
+                                        <field.Label>Beskrivelse</field.Label>
+                                        <field.Markdown placeholder="Hva handler skjemaet om?" />
+                                        <field.Error />
+                                    </field.Field>
+                                )}
+                            </form.AppField>
 
-                        <FieldSeparator />
+                            <FieldSeparator />
 
-                        <form.Field name="questions" mode="array">
-                            {(questions) => (
-                                <div className="flex flex-col gap-4">
-                                    {questions.state.value.map(
-                                        (question, index) => (
-                                            <div
-                                                key={question.key}
-                                                className="flex flex-col gap-3"
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-sm font-medium">
-                                                        Spørsmål {index + 1}
-                                                    </span>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        aria-label={`Fjern spørsmål ${index + 1}`}
-                                                        onClick={() =>
-                                                            questions.removeValue(
-                                                                index,
-                                                            )
-                                                        }
+                            <form.Field name="questions" mode="array">
+                                {(questions) => (
+                                    <div className="flex flex-col gap-4">
+                                        {questions.state.value.map(
+                                            (question, index) => (
+                                                <div
+                                                    key={question.key}
+                                                    className="flex flex-col gap-3"
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-sm font-medium">
+                                                            Spørsmål {index + 1}
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            aria-label={`Fjern spørsmål ${index + 1}`}
+                                                            onClick={() =>
+                                                                questions.removeValue(
+                                                                    index,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Trash2 />
+                                                        </Button>
+                                                    </div>
+
+                                                    <form.AppField
+                                                        name={`questions[${index}].title`}
                                                     >
-                                                        <Trash2 />
-                                                    </Button>
-                                                </div>
+                                                        {(field) => (
+                                                            <field.Field
+                                                                required
+                                                            >
+                                                                <field.Label>
+                                                                    Spørsmål
+                                                                </field.Label>
+                                                                <field.Input placeholder="Skriv her..." />
+                                                                <field.Error />
+                                                            </field.Field>
+                                                        )}
+                                                    </form.AppField>
 
-                                                <form.AppField
-                                                    name={`questions[${index}].title`}
-                                                >
-                                                    {(field) => (
-                                                        <field.Field required>
-                                                            <field.Label>
-                                                                Spørsmål
-                                                            </field.Label>
-                                                            <field.Input placeholder="Skriv her..." />
-                                                            <field.Error />
-                                                        </field.Field>
-                                                    )}
-                                                </form.AppField>
+                                                    <form.AppField
+                                                        name={`questions[${index}].type`}
+                                                    >
+                                                        {(field) => (
+                                                            <field.Field>
+                                                                <field.Label>
+                                                                    Svartype
+                                                                </field.Label>
+                                                                <field.Select
+                                                                    options={[
+                                                                        ...QUESTION_TYPES,
+                                                                    ]}
+                                                                />
+                                                                <field.Error />
+                                                            </field.Field>
+                                                        )}
+                                                    </form.AppField>
 
-                                                <form.AppField
-                                                    name={`questions[${index}].type`}
-                                                >
-                                                    {(field) => (
-                                                        <field.Field>
-                                                            <field.Label>
-                                                                Svartype
-                                                            </field.Label>
-                                                            <field.Select
-                                                                options={[
-                                                                    ...QUESTION_TYPES,
-                                                                ]}
-                                                            />
-                                                            <field.Error />
-                                                        </field.Field>
-                                                    )}
-                                                </form.AppField>
+                                                    <form.AppField
+                                                        name={`questions[${index}].required`}
+                                                    >
+                                                        {(field) => (
+                                                            <field.Field orientation="horizontal">
+                                                                <field.Label>
+                                                                    Må besvares
+                                                                </field.Label>
+                                                                <field.Switch />
+                                                            </field.Field>
+                                                        )}
+                                                    </form.AppField>
 
-                                                <form.AppField
-                                                    name={`questions[${index}].required`}
-                                                >
-                                                    {(field) => (
-                                                        <field.Field orientation="horizontal">
-                                                            <field.Label>
-                                                                Må besvares
-                                                            </field.Label>
-                                                            <field.Switch />
-                                                        </field.Field>
-                                                    )}
-                                                </form.AppField>
-
-                                                {/* Svartypen leses via Subscribe,
+                                                    {/* Svartypen leses via Subscribe,
                                                     ikke fra spørsmålsobjektet:
                                                     array-feltet rendrer ikke på
                                                     nytt når et underfelt endres,
                                                     så alternativene ville aldri
                                                     dukket opp. */}
-                                                <form.Subscribe
-                                                    selector={(state) =>
-                                                        state.values.questions[
-                                                            index
-                                                        ]?.type
-                                                    }
-                                                >
-                                                    {(type) =>
-                                                        type ===
-                                                        "text_answer" ? null : (
-                                                            <form.Field
-                                                                name={`questions[${index}].options`}
-                                                                mode="array"
-                                                            >
-                                                                {(options) => (
-                                                                    <div className="flex flex-col gap-2">
-                                                                        {options.state.value.map(
-                                                                            (
-                                                                                option,
-                                                                                optionIndex,
-                                                                            ) => (
-                                                                                <div
-                                                                                    key={
-                                                                                        option.key
-                                                                                    }
-                                                                                    className="flex items-end gap-2"
-                                                                                >
-                                                                                    <form.AppField
-                                                                                        name={`questions[${index}].options[${optionIndex}].title`}
-                                                                                    >
-                                                                                        {(
-                                                                                            field,
-                                                                                        ) => (
-                                                                                            <field.Field
-                                                                                                required
-                                                                                                className="flex-1"
-                                                                                            >
-                                                                                                <field.Label>
-                                                                                                    Alternativ{" "}
-                                                                                                    {optionIndex +
-                                                                                                        1}
-                                                                                                </field.Label>
-                                                                                                <field.Input placeholder="Skriv her..." />
-                                                                                                <field.Error />
-                                                                                            </field.Field>
-                                                                                        )}
-                                                                                    </form.AppField>
-                                                                                    <Button
-                                                                                        type="button"
-                                                                                        variant="ghost"
-                                                                                        size="icon"
-                                                                                        aria-label={`Fjern alternativ ${optionIndex + 1}`}
-                                                                                        onClick={() =>
-                                                                                            options.removeValue(
-                                                                                                optionIndex,
-                                                                                            )
+                                                    <form.Subscribe
+                                                        selector={(state) =>
+                                                            state.values
+                                                                .questions[
+                                                                index
+                                                            ]?.type
+                                                        }
+                                                    >
+                                                        {(type) =>
+                                                            type ===
+                                                            "text_answer" ? null : (
+                                                                <form.Field
+                                                                    name={`questions[${index}].options`}
+                                                                    mode="array"
+                                                                >
+                                                                    {(
+                                                                        options,
+                                                                    ) => (
+                                                                        <div className="flex flex-col gap-2">
+                                                                            {options.state.value.map(
+                                                                                (
+                                                                                    option,
+                                                                                    optionIndex,
+                                                                                ) => (
+                                                                                    <div
+                                                                                        key={
+                                                                                            option.key
                                                                                         }
+                                                                                        className="flex items-end gap-2"
                                                                                     >
-                                                                                        <Trash2 />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            ),
-                                                                        )}
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                options.pushValue(
-                                                                                    {
-                                                                                        key: newKey(),
-                                                                                        title: "",
-                                                                                    },
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <Plus />
-                                                                            Legg
-                                                                            til
-                                                                            alternativ
-                                                                        </Button>
-                                                                        <FieldError
-                                                                            errors={
-                                                                                options
-                                                                                    .state
-                                                                                    .meta
-                                                                                    .errors
-                                                                            }
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                            </form.Field>
-                                                        )
-                                                    }
-                                                </form.Subscribe>
+                                                                                        <form.AppField
+                                                                                            name={`questions[${index}].options[${optionIndex}].title`}
+                                                                                        >
+                                                                                            {(
+                                                                                                field,
+                                                                                            ) => (
+                                                                                                <field.Field
+                                                                                                    required
+                                                                                                    className="flex-1"
+                                                                                                >
+                                                                                                    <field.Label>
+                                                                                                        Alternativ{" "}
+                                                                                                        {optionIndex +
+                                                                                                            1}
+                                                                                                    </field.Label>
+                                                                                                    <field.Input placeholder="Skriv her..." />
+                                                                                                    <field.Error />
+                                                                                                </field.Field>
+                                                                                            )}
+                                                                                        </form.AppField>
+                                                                                        <Button
+                                                                                            type="button"
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            aria-label={`Fjern alternativ ${optionIndex + 1}`}
+                                                                                            onClick={() =>
+                                                                                                options.removeValue(
+                                                                                                    optionIndex,
+                                                                                                )
+                                                                                            }
+                                                                                        >
+                                                                                            <Trash2 />
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                ),
+                                                                            )}
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() =>
+                                                                                    options.pushValue(
+                                                                                        {
+                                                                                            key: newKey(),
+                                                                                            title: "",
+                                                                                        },
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Plus />
+                                                                                Legg
+                                                                                til
+                                                                                alternativ
+                                                                            </Button>
+                                                                            <FieldError
+                                                                                errors={
+                                                                                    options
+                                                                                        .state
+                                                                                        .meta
+                                                                                        .errors
+                                                                                }
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </form.Field>
+                                                            )
+                                                        }
+                                                    </form.Subscribe>
 
-                                                <FieldSeparator />
-                                            </div>
-                                        ),
-                                    )}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                            questions.pushValue(emptyQuestion())
-                                        }
-                                    >
-                                        <Plus />
-                                        Legg til spørsmål
-                                    </Button>
-                                </div>
-                            )}
-                        </form.Field>
+                                                    <FieldSeparator />
+                                                </div>
+                                            ),
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() =>
+                                                questions.pushValue(
+                                                    emptyQuestion(),
+                                                )
+                                            }
+                                        >
+                                            <Plus />
+                                            Legg til spørsmål
+                                        </Button>
+                                    </div>
+                                )}
+                            </form.Field>
 
-                        {showGroupSettings ? (
-                            <>
-                                <FieldSeparator />
+                            {showGroupSettings ? (
+                                <>
+                                    <FieldSeparator />
 
-                                <form.AppField name="isOpenForSubmissions">
-                                    {(field) => (
-                                        <field.Field orientation="horizontal">
-                                            <field.Label>
-                                                Åpent for svar
-                                            </field.Label>
-                                            <field.Switch />
-                                        </field.Field>
-                                    )}
-                                </form.AppField>
+                                    <form.AppField name="isOpenForSubmissions">
+                                        {(field) => (
+                                            <field.Field orientation="horizontal">
+                                                <field.Label>
+                                                    Åpent for svar
+                                                </field.Label>
+                                                <field.Switch />
+                                            </field.Field>
+                                        )}
+                                    </form.AppField>
 
-                                <form.AppField name="canSubmitMultiple">
-                                    {(field) => (
-                                        <field.Field orientation="horizontal">
-                                            <field.Label>
-                                                Kan svare flere ganger
-                                            </field.Label>
-                                            <field.Switch />
-                                        </field.Field>
-                                    )}
-                                </form.AppField>
+                                    <form.AppField name="canSubmitMultiple">
+                                        {(field) => (
+                                            <field.Field orientation="horizontal">
+                                                <field.Label>
+                                                    Kan svare flere ganger
+                                                </field.Label>
+                                                <field.Switch />
+                                            </field.Field>
+                                        )}
+                                    </form.AppField>
 
-                                <form.AppField name="onlyForGroupMembers">
-                                    {(field) => (
-                                        <field.Field orientation="horizontal">
-                                            <field.Label>
-                                                Kun for gruppens medlemmer
-                                            </field.Label>
-                                            <field.Switch />
-                                        </field.Field>
-                                    )}
-                                </form.AppField>
+                                    <form.AppField name="onlyForGroupMembers">
+                                        {(field) => (
+                                            <field.Field orientation="horizontal">
+                                                <field.Label>
+                                                    Kun for gruppens medlemmer
+                                                </field.Label>
+                                                <field.Switch />
+                                            </field.Field>
+                                        )}
+                                    </form.AppField>
 
-                                <form.AppField name="emailReceiverOnSubmit">
-                                    {(field) => (
-                                        <field.Field>
-                                            <field.Label>
-                                                Varsle denne e-postadressen ved
-                                                nye svar
-                                            </field.Label>
-                                            <field.Input
-                                                type="email"
-                                                placeholder="valgfritt@tihlde.org"
-                                            />
-                                            <field.Error />
-                                        </field.Field>
-                                    )}
-                                </form.AppField>
-                            </>
-                        ) : null}
-                    </FieldGroup>
-                    {error ? <p role="alert">{error}</p> : null}
-                </form>
+                                    <form.AppField name="emailReceiverOnSubmit">
+                                        {(field) => (
+                                            <field.Field>
+                                                <field.Label>
+                                                    Varsle denne e-postadressen
+                                                    ved nye svar
+                                                </field.Label>
+                                                <field.Input
+                                                    type="email"
+                                                    placeholder="valgfritt@tihlde.org"
+                                                />
+                                                <field.Error />
+                                            </field.Field>
+                                        )}
+                                    </form.AppField>
+                                </>
+                            ) : null}
+                        </FieldGroup>
+                        {error ? <p role="alert">{error}</p> : null}
+                    </form>
+                </DialogBody>
                 <DialogFooter>
                     <Button
                         type="button"

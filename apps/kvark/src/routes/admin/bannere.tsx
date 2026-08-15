@@ -11,6 +11,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogFooter,
     DialogHeader,
@@ -286,102 +287,112 @@ function BannerDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <DialogContent className="sm:max-w-2xl">
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex min-h-0 flex-auto flex-col gap-4"
+                >
                     <DialogHeader>
                         <DialogTitle>
                             {isEdit ? "Rediger banner" : "Nytt banner"}
                         </DialogTitle>
                     </DialogHeader>
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel htmlFor="banner-title">
-                                Tittel
-                            </FieldLabel>
-                            <Input
-                                id="banner-title"
-                                required
-                                maxLength={200}
-                                value={title}
-                                onChange={(event) =>
-                                    setTitle(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="banner-description">
-                                Beskrivelse
-                            </FieldLabel>
-                            <Textarea
-                                id="banner-description"
-                                required
-                                rows={3}
-                                maxLength={500}
-                                value={description}
-                                onChange={(event) =>
-                                    setDescription(event.target.value)
-                                }
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="banner-url">
-                                Lenke (valgfri)
-                            </FieldLabel>
-                            <Input
-                                id="banner-url"
-                                type="url"
-                                value={url}
-                                onChange={(event) => setUrl(event.target.value)}
-                                placeholder="https://"
-                            />
-                        </Field>
-                        <Field>
-                            <FieldLabel htmlFor="banner-link-text">
-                                Lenketekst (valgfri)
-                            </FieldLabel>
-                            <Input
-                                id="banner-link-text"
-                                maxLength={100}
-                                value={linkText}
-                                onChange={(event) =>
-                                    setLinkText(event.target.value)
-                                }
-                                placeholder="Les mer"
-                            />
-                        </Field>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                    <DialogBody>
+                        <FieldGroup>
                             <Field>
-                                <FieldLabel htmlFor="banner-visible-from">
-                                    Synlig fra
+                                <FieldLabel htmlFor="banner-title">
+                                    Tittel
                                 </FieldLabel>
-                                <DateTimePicker
-                                    id="banner-visible-from"
-                                    locale={nb}
-                                    placeholder="Velg dato"
-                                    value={visibleFrom}
-                                    onValueChange={setVisibleFrom}
+                                <Input
+                                    id="banner-title"
+                                    required
+                                    maxLength={200}
+                                    value={title}
+                                    onChange={(event) =>
+                                        setTitle(event.target.value)
+                                    }
                                 />
                             </Field>
                             <Field>
-                                <FieldLabel htmlFor="banner-visible-until">
-                                    Synlig til
+                                <FieldLabel htmlFor="banner-description">
+                                    Beskrivelse
                                 </FieldLabel>
-                                <DateTimePicker
-                                    id="banner-visible-until"
-                                    locale={nb}
-                                    placeholder="Velg dato"
-                                    minDate={visibleFrom ?? undefined}
-                                    value={visibleUntil}
-                                    onValueChange={setVisibleUntil}
+                                <Textarea
+                                    id="banner-description"
+                                    required
+                                    rows={3}
+                                    maxLength={500}
+                                    value={description}
+                                    onChange={(event) =>
+                                        setDescription(event.target.value)
+                                    }
                                 />
                             </Field>
-                        </div>
-                    </FieldGroup>
-                    {error && (
-                        <p className="text-sm text-destructive" role="alert">
-                            {error}
-                        </p>
-                    )}
+                            <Field>
+                                <FieldLabel htmlFor="banner-url">
+                                    Lenke (valgfri)
+                                </FieldLabel>
+                                <Input
+                                    id="banner-url"
+                                    type="url"
+                                    value={url}
+                                    onChange={(event) =>
+                                        setUrl(event.target.value)
+                                    }
+                                    placeholder="https://"
+                                />
+                            </Field>
+                            <Field>
+                                <FieldLabel htmlFor="banner-link-text">
+                                    Lenketekst (valgfri)
+                                </FieldLabel>
+                                <Input
+                                    id="banner-link-text"
+                                    maxLength={100}
+                                    value={linkText}
+                                    onChange={(event) =>
+                                        setLinkText(event.target.value)
+                                    }
+                                    placeholder="Les mer"
+                                />
+                            </Field>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="banner-visible-from">
+                                        Synlig fra
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="banner-visible-from"
+                                        locale={nb}
+                                        placeholder="Velg dato"
+                                        value={visibleFrom}
+                                        onValueChange={setVisibleFrom}
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="banner-visible-until">
+                                        Synlig til
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="banner-visible-until"
+                                        locale={nb}
+                                        placeholder="Velg dato"
+                                        minDate={visibleFrom ?? undefined}
+                                        value={visibleUntil}
+                                        onValueChange={setVisibleUntil}
+                                    />
+                                </Field>
+                            </div>
+                        </FieldGroup>
+                        {error && (
+                            <p
+                                className="text-sm text-destructive"
+                                role="alert"
+                            >
+                                {error}
+                            </p>
+                        )}
+                    </DialogBody>
                     <DialogFooter>
                         <Button
                             type="button"

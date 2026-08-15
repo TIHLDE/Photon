@@ -1,6 +1,7 @@
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogHeader,
@@ -150,7 +151,7 @@ export function AdminDetailDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
                 {isLoading || !application ? (
                     <div className="flex flex-col gap-3">
                         <Skeleton className="h-6 w-1/2" />
@@ -168,197 +169,205 @@ export function AdminDetailDialog({
                                 {application.contactEmail})
                             </DialogDescription>
                         </DialogHeader>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <ApplicationStatusBadge
-                                status={application.status}
-                                label={application.statusLabel}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                                {new Date(application.createdAt).toLocaleString(
-                                    "nb-NO",
+                        <DialogBody>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <ApplicationStatusBadge
+                                    status={application.status}
+                                    label={application.statusLabel}
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                    {new Date(
+                                        application.createdAt,
+                                    ).toLocaleString("nb-NO")}
+                                </span>
+                                {application.hasPdf && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="ml-auto"
+                                        onClick={onDownloadPdf}
+                                    >
+                                        <Download className="size-4" />
+                                        Last ned PDF
+                                    </Button>
                                 )}
-                            </span>
-                            {application.hasPdf && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="ml-auto"
-                                    onClick={onDownloadPdf}
-                                >
-                                    <Download className="size-4" />
-                                    Last ned PDF
-                                </Button>
-                            )}
-                        </div>
-
-                        <Separator />
-
-                        <dl className="grid gap-3">
-                            {detailFields(application).map((field) => (
-                                <div
-                                    key={field.label}
-                                    className="flex flex-col gap-1"
-                                >
-                                    <dt className="text-sm text-muted-foreground">
-                                        {field.label}
-                                    </dt>
-                                    <dd className="whitespace-pre-wrap">
-                                        {field.value}
-                                    </dd>
-                                </div>
-                            ))}
-                            <div className="flex flex-col gap-1">
-                                <dt className="text-sm text-muted-foreground">
-                                    Signatur
-                                </dt>
-                                <dd>{application.signature}</dd>
                             </div>
-                        </dl>
 
-                        {application.attachments.length > 0 && (
-                            <>
-                                <Separator />
-                                <div className="flex flex-col gap-2">
-                                    <span className="text-sm text-muted-foreground">
-                                        Vedlegg
-                                    </span>
-                                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                                        {application.attachments.map(
-                                            (attachment) => {
-                                                const url =
-                                                    attachmentUrls[
-                                                        attachment.assetKey
-                                                    ];
-                                                return url ? (
-                                                    <a
-                                                        key={attachment.id}
-                                                        href={url}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                    >
-                                                        <img
-                                                            src={url}
-                                                            alt="Vedlegg"
-                                                            className="h-32 w-full rounded-md object-cover"
-                                                        />
-                                                    </a>
-                                                ) : (
-                                                    <Skeleton
-                                                        key={attachment.id}
-                                                        className="h-32 w-full"
-                                                    />
-                                                );
-                                            },
-                                        )}
+                            <Separator />
+
+                            <dl className="grid gap-3">
+                                {detailFields(application).map((field) => (
+                                    <div
+                                        key={field.label}
+                                        className="flex flex-col gap-1"
+                                    >
+                                        <dt className="text-sm text-muted-foreground">
+                                            {field.label}
+                                        </dt>
+                                        <dd className="whitespace-pre-wrap">
+                                            {field.value}
+                                        </dd>
                                     </div>
+                                ))}
+                                <div className="flex flex-col gap-1">
+                                    <dt className="text-sm text-muted-foreground">
+                                        Signatur
+                                    </dt>
+                                    <dd>{application.signature}</dd>
                                 </div>
-                            </>
-                        )}
+                            </dl>
 
-                        {canManage ? (
-                            <>
-                                <Separator />
-
-                                <div className="flex flex-col gap-4">
+                            {application.attachments.length > 0 && (
+                                <>
+                                    <Separator />
                                     <div className="flex flex-col gap-2">
-                                        <Label htmlFor="application-status">
-                                            Status
-                                        </Label>
-                                        <Select
-                                            value={status}
-                                            onValueChange={(value) =>
-                                                setStatus(
-                                                    value as ApplicationStatus,
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger
-                                                id="application-status"
-                                                className="w-full"
-                                            >
-                                                <SelectValue>
-                                                    {(value) =>
-                                                        STATUS_OPTIONS.find(
-                                                            (option) =>
-                                                                option.value ===
-                                                                value,
-                                                        )?.label ?? null
-                                                    }
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {STATUS_OPTIONS.map(
-                                                    (option) => (
-                                                        <SelectItem
-                                                            key={option.value}
-                                                            value={option.value}
+                                        <span className="text-sm text-muted-foreground">
+                                            Vedlegg
+                                        </span>
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                            {application.attachments.map(
+                                                (attachment) => {
+                                                    const url =
+                                                        attachmentUrls[
+                                                            attachment.assetKey
+                                                        ];
+                                                    return url ? (
+                                                        <a
+                                                            key={attachment.id}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
                                                         >
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ),
-                                                )}
-                                            </SelectContent>
-                                        </Select>
+                                                            <img
+                                                                src={url}
+                                                                alt="Vedlegg"
+                                                                className="h-32 w-full rounded-md object-cover"
+                                                            />
+                                                        </a>
+                                                    ) : (
+                                                        <Skeleton
+                                                            key={attachment.id}
+                                                            className="h-32 w-full"
+                                                        />
+                                                    );
+                                                },
+                                            )}
+                                        </div>
                                     </div>
+                                </>
+                            )}
 
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="application-comment">
-                                            Internt notat
-                                        </Label>
-                                        <Textarea
-                                            id="application-comment"
-                                            rows={3}
-                                            value={internalComment}
-                                            onChange={(event) =>
-                                                setInternalComment(
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="Kun synlig for behandlere"
-                                        />
-                                    </div>
+                            {canManage ? (
+                                <>
+                                    <Separator />
 
-                                    {/* Bedriftshenvendelser get no automated decision
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex flex-col gap-2">
+                                            <Label htmlFor="application-status">
+                                                Status
+                                            </Label>
+                                            <Select
+                                                value={status}
+                                                onValueChange={(value) =>
+                                                    setStatus(
+                                                        value as ApplicationStatus,
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="application-status"
+                                                    className="w-full"
+                                                >
+                                                    <SelectValue>
+                                                        {(value) =>
+                                                            STATUS_OPTIONS.find(
+                                                                (option) =>
+                                                                    option.value ===
+                                                                    value,
+                                                            )?.label ?? null
+                                                        }
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {STATUS_OPTIONS.map(
+                                                        (option) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    option.value
+                                                                }
+                                                                value={
+                                                                    option.value
+                                                                }
+                                                            >
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                            <Label htmlFor="application-comment">
+                                                Internt notat
+                                            </Label>
+                                            <Textarea
+                                                id="application-comment"
+                                                rows={3}
+                                                value={internalComment}
+                                                onChange={(event) =>
+                                                    setInternalComment(
+                                                        event.target.value,
+                                                    )
+                                                }
+                                                placeholder="Kun synlig for behandlere"
+                                            />
+                                        </div>
+
+                                        {/* Bedriftshenvendelser get no automated decision
                                 email — the Næringslivsminister answers them
                                 directly — so offering a message would be a
                                 field that goes nowhere. */}
-                                    {isDecision &&
-                                        !application.companyContact && (
-                                            <div className="flex flex-col gap-2">
-                                                <Label htmlFor="application-message">
-                                                    Melding til innsender
-                                                </Label>
-                                                <Textarea
-                                                    id="application-message"
-                                                    rows={3}
-                                                    value={messageToSubmitter}
-                                                    onChange={(event) =>
-                                                        setMessageToSubmitter(
-                                                            event.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Valgfritt — blir med i e-posten om avgjørelsen"
-                                                />
-                                            </div>
-                                        )}
+                                        {isDecision &&
+                                            !application.companyContact && (
+                                                <div className="flex flex-col gap-2">
+                                                    <Label htmlFor="application-message">
+                                                        Melding til innsender
+                                                    </Label>
+                                                    <Textarea
+                                                        id="application-message"
+                                                        rows={3}
+                                                        value={
+                                                            messageToSubmitter
+                                                        }
+                                                        onChange={(event) =>
+                                                            setMessageToSubmitter(
+                                                                event.target
+                                                                    .value,
+                                                            )
+                                                        }
+                                                        placeholder="Valgfritt — blir med i e-posten om avgjørelsen"
+                                                    />
+                                                </div>
+                                            )}
 
-                                    <Button
-                                        disabled={isSaving}
-                                        onClick={() =>
-                                            onSave({
-                                                status,
-                                                internalComment,
-                                                messageToSubmitter,
-                                            })
-                                        }
-                                    >
-                                        {isSaving ? <Spinner /> : null}
-                                        Lagre
-                                    </Button>
-                                </div>
-                            </>
-                        ) : null}
+                                        <Button
+                                            disabled={isSaving}
+                                            onClick={() =>
+                                                onSave({
+                                                    status,
+                                                    internalComment,
+                                                    messageToSubmitter,
+                                                })
+                                            }
+                                        >
+                                            {isSaving ? <Spinner /> : null}
+                                            Lagre
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : null}
+                        </DialogBody>
                     </>
                 )}
             </DialogContent>
