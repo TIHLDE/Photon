@@ -21,6 +21,24 @@ type Database = NodePgDatabase<DbSchema>;
 // ===== FORM HELPERS =====
 
 /**
+ * Om et gruppeskjema faktisk tar imot svar akkurat nå.
+ *
+ * Bryteren «åpent for svar» er hovedbryteren, mens `opensAt` utsetter den:
+ * et skjema som er planlagt fram i tid er stengt til tidspunktet har passert.
+ * Uten et planlagt tidspunkt er det bare bryteren som gjelder.
+ */
+export function isGroupFormOpen(
+    groupForm: Pick<
+        typeof schema.formGroupForm.$inferSelect,
+        "isOpenForSubmissions" | "opensAt"
+    >,
+    now: Date = new Date(),
+): boolean {
+    if (!groupForm.isOpenForSubmissions) return false;
+    return !groupForm.opensAt || groupForm.opensAt.getTime() <= now.getTime();
+}
+
+/**
  * Check if user has submitted to a form
  */
 export async function userHasSubmitted(
@@ -382,8 +400,9 @@ export async function validateAndCreateSubmission(
         });
 
         if (groupForm) {
-            // Check if form is open
-            if (!groupForm.isOpenForSubmissions) {
+            // Check if form is open — either stengt for godt, eller ennå ikke
+            // åpnet fordi det er planlagt fram i tid.
+            if (!isGroupFormOpen(groupForm)) {
                 throw new FormNotOpenForSubmissionException();
             }
 

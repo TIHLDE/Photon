@@ -101,6 +101,7 @@ export const createGroupFormRoute = route().post(
             emailReceiverOnSubmit: body.email_receiver_on_submit,
             canSubmitMultiple: body.can_submit_multiple,
             isOpenForSubmissions: body.is_open_for_submissions,
+            opensAt: body.opens_at ? new Date(body.opens_at) : null,
             onlyForGroupMembers: body.only_for_group_members,
         });
 
@@ -137,6 +138,7 @@ export const createGroupFormRoute = route().post(
                 email_receiver_on_submit: groupForm?.emailReceiverOnSubmit,
                 can_submit_multiple: groupForm?.canSubmitMultiple,
                 is_open_for_submissions: groupForm?.isOpenForSubmissions,
+                opens_at: groupForm?.opensAt?.toISOString() ?? null,
                 only_for_group_members: groupForm?.onlyForGroupMembers,
                 resource_type: "GroupForm",
                 created_at: createdForm?.createdAt.toISOString(),

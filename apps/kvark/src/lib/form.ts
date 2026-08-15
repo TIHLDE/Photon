@@ -63,6 +63,13 @@ export function toFormFieldsPayload(
     }));
 }
 
+/**
+ * Tidspunktet et planlagt skjema åpner, f.eks. «tor. 30. apr. 2026 kl. 12:00».
+ */
+export function formatFormOpensAt(iso: string): string {
+    return format(new Date(iso), "EEE d. MMM yyyy 'kl.' HH:mm", { locale: nb });
+}
+
 // -- Svar --
 
 /** Ett svar på ett spørsmål, klart til visning. */

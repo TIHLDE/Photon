@@ -60,6 +60,12 @@ const groupFormSettings = {
     can_submit_multiple: z.boolean().optional(),
     is_open_for_submissions: z.boolean().optional(),
     only_for_group_members: z.boolean().optional(),
+    // Tidspunktet skjemaet åpner seg selv. `null` fjerner planleggingen, slik
+    // at «åpent for svar» igjen gjelder med en gang.
+    opens_at: z.iso.datetime().nullable().optional().meta({
+        description:
+            "When the form opens for submissions. Null opens it immediately, subject to is_open_for_submissions.",
+    }),
 };
 
 /**
@@ -98,6 +104,10 @@ export const createGroupFormSchema = Schema(
         can_submit_multiple: z.boolean().default(true),
         is_open_for_submissions: z.boolean().default(false),
         only_for_group_members: z.boolean().default(false),
+        opens_at: z.iso.datetime().nullable().optional().meta({
+            description:
+                "When the form opens for submissions. Null opens it immediately, subject to is_open_for_submissions.",
+        }),
     }),
 );
 
@@ -200,7 +210,10 @@ export const formDetailSchema = Schema(
         // Only set when resource_type is "GroupForm".
         group: formGroupContextSchema.nullable(),
         can_submit_multiple: z.boolean().nullable(),
+        // Om skjemaet tar imot svar akkurat nå. Et skjema som er planlagt fram
+        // i tid er `false` her til tidspunktet i `opens_at` har passert.
         is_open_for_submissions: z.boolean().nullable(),
+        opens_at: z.iso.datetime().nullable(),
         only_for_group_members: z.boolean().nullable(),
     }),
 );
@@ -247,6 +260,7 @@ export const updateFormResponseSchema = Schema(
         email_receiver_on_submit: z.string().nullable().optional(),
         can_submit_multiple: z.boolean().nullable().optional(),
         is_open_for_submissions: z.boolean().nullable().optional(),
+        opens_at: z.iso.datetime().nullable().optional(),
         only_for_group_members: z.boolean().nullable().optional(),
     }),
 );

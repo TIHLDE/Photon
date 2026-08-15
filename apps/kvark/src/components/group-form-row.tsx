@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { ListChecksIcon, PencilIcon } from "lucide-react";
 
 import { ShareButton } from "#/components/share-button";
+import { formatFormOpensAt } from "#/lib/form";
 import type { Form } from "#/lib/group";
 
 type GroupFormRowProps = {
@@ -20,14 +21,18 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                 <CardTitle>{form.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {!form.isOpen ? (
+                {form.isOpenNow ? null : form.isOpen && form.opensAt ? (
+                    <p className="text-sm text-muted-foreground">
+                        Spørreskjemaet åpner {formatFormOpensAt(form.opensAt)}.
+                    </p>
+                ) : (
                     <p className="text-sm text-muted-foreground">
                         Spørreskjemaet er ikke åpent for innsending av svar.
                         {canManage
                             ? " Åpne det under «Rediger» for å kunne svare på og dele skjemaet."
                             : ""}
                     </p>
-                ) : null}
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                     <Button
                         variant="outline"

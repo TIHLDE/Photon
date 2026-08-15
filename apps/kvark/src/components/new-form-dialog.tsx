@@ -58,6 +58,8 @@ const newFormSchema = z.object({
     ]),
     canSubmitMultiple: z.boolean(),
     isOpenForSubmissions: z.boolean(),
+    /** Tomt betyr «åpner med en gang». */
+    opensAt: z.date().nullable(),
     onlyForGroupMembers: z.boolean(),
     questions: z.array(questionSchema),
 });
@@ -74,6 +76,7 @@ const EMPTY_VALUES: NewFormValues = {
     // lager et skjema fordi man vil ha svar nå. Det kan stenges igjen under
     // «Rediger».
     isOpenForSubmissions: true,
+    opensAt: null,
     onlyForGroupMembers: false,
     questions: [],
 };
@@ -385,6 +388,39 @@ export function NewFormDialog({
                                         </field.Field>
                                     )}
                                 </form.AppField>
+
+                                {/* Åpningstidspunktet gjelder bare når skjemaet
+                                    er åpent for svar — bryteren av betyr stengt
+                                    uansett dato. */}
+                                <form.Subscribe
+                                    selector={(state) =>
+                                        state.values.isOpenForSubmissions
+                                    }
+                                >
+                                    {(isOpen) =>
+                                        isOpen ? (
+                                            <form.AppField name="opensAt">
+                                                {(field) => (
+                                                    <field.Field>
+                                                        <field.Label>
+                                                            Åpner
+                                                        </field.Label>
+                                                        <field.DateTimePicker />
+                                                        <field.Description>
+                                                            La stå tom for å
+                                                            åpne skjemaet med en
+                                                            gang. Med et
+                                                            tidspunkt er
+                                                            skjemaet stengt til
+                                                            da.
+                                                        </field.Description>
+                                                        <field.Error />
+                                                    </field.Field>
+                                                )}
+                                            </form.AppField>
+                                        ) : null
+                                    }
+                                </form.Subscribe>
 
                                 <form.AppField name="canSubmitMultiple">
                                     {(field) => (

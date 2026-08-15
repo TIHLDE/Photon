@@ -108,6 +108,13 @@ export const updateRoute = route().patch(
             emailReceiverOnSubmit: body.email_receiver_on_submit,
             canSubmitMultiple: body.can_submit_multiple,
             isOpenForSubmissions: body.is_open_for_submissions,
+            // `null` fjerner planleggingen; utelatt lar den stå.
+            opensAt:
+                body.opens_at === undefined
+                    ? undefined
+                    : body.opens_at === null
+                      ? null
+                      : new Date(body.opens_at),
             onlyForGroupMembers: body.only_for_group_members,
         };
 
@@ -157,6 +164,7 @@ export const updateRoute = route().patch(
             can_submit_multiple: updatedGroupForm?.canSubmitMultiple ?? null,
             is_open_for_submissions:
                 updatedGroupForm?.isOpenForSubmissions ?? null,
+            opens_at: updatedGroupForm?.opensAt?.toISOString() ?? null,
             only_for_group_members:
                 updatedGroupForm?.onlyForGroupMembers ?? null,
             created_at: updatedForm?.createdAt.toISOString(),
