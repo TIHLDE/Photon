@@ -4,12 +4,21 @@ import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { startPaymentTimerWorker } from "./event/payment";
-import { resolveRegistrationsForEvent } from "./event/resolve-registration";
+import {
+    enqueueRegistrationResolve,
+    startRegistrationResolveWorker,
+} from "./event/resolve-queue";
 import { startPushNotificationWorker } from "./notification/push";
 
 /**
  * Start cron job to resolve pending event registrations
- * Runs every 5 seconds to process pending registrations from database
+ *
+ * Registrations are queued for resolution the moment they are created — see
+ * {@link enqueueRegistrationResolve}. This sweep is the safety net for the
+ * rows that missed out: an enqueue that failed because Redis was unreachable,
+ * an instance that died between the insert and the job, or a row written by
+ * something other than the registration route. It runs every 5 seconds and
+ * normally finds nothing.
  */
 function startRegistrationResolverCron(ctx: AppContext): void {
     // Run every 5 seconds
@@ -29,14 +38,16 @@ function startRegistrationResolverCron(ctx: AppContext): void {
                 eventsWithPending.map((reg) => reg.eventId),
             );
 
-            // Resolve registrations for each event that has pending registrations
+            // Hand each event to the same worker the registration route uses,
+            // so a sweep never opens a second transaction alongside a pass
+            // that is already running.
             if (eventIds.size > 0) {
                 console.log(
                     `🔄 Processing pending registrations for ${eventIds.size} event(s)`,
                 );
 
                 for (const eventId of eventIds) {
-                    await resolveRegistrationsForEvent(eventId, ctx);
+                    await enqueueRegistrationResolve(eventId, ctx);
                 }
             }
         } catch (error) {
@@ -73,6 +84,9 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start payment-deadline countdown worker
     startPaymentTimerWorker(ctx);
+
+    // Start the worker that resolves pending registrations
+    startRegistrationResolveWorker(ctx);
 
     // Start push notification worker
     startPushNotificationWorker(ctx);
