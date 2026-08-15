@@ -4,6 +4,7 @@ import {
     DateRangePicker as DateRangePickerPrimitive,
     type DateRange,
 } from "@tihlde/ui/ui/date-picker";
+import { nb } from "date-fns/locale";
 import { useField } from "./field";
 
 type DatePickerWrapperProps = Omit<
@@ -11,13 +12,14 @@ type DatePickerWrapperProps = Omit<
     "value" | "onValueChange" | "id" | "name" | "aria-invalid"
 >;
 
-export function DatePicker(props: DatePickerWrapperProps) {
+export function DatePicker({ locale = nb, ...props }: DatePickerWrapperProps) {
     const field = useFieldContext<Date | null>();
     const ctx = useField();
 
     return (
         <DatePickerPrimitive
             {...props}
+            locale={locale}
             id={ctx.inputId}
             name={field.name}
             aria-invalid={ctx.isInvalid}
@@ -35,13 +37,17 @@ type DateRangePickerWrapperProps = Omit<
     "value" | "onValueChange" | "id" | "name" | "aria-invalid"
 >;
 
-export function DateRangePicker(props: DateRangePickerWrapperProps) {
+export function DateRangePicker({
+    locale = nb,
+    ...props
+}: DateRangePickerWrapperProps) {
     const field = useFieldContext<DateRange | null>();
     const ctx = useField();
 
     return (
         <DateRangePickerPrimitive
             {...props}
+            locale={locale}
             id={ctx.inputId}
             name={field.name}
             aria-invalid={ctx.isInvalid}
