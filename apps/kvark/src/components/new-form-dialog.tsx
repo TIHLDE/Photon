@@ -154,7 +154,9 @@ export function NewFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            {/* Bredt: spørsmålstekstene er ofte lange setninger, og på en smal
+            dialog ser man bare en flik av det man skriver. */}
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>

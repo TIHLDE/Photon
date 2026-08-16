@@ -38,7 +38,13 @@ export function FormSubmissionsTable({
                     <TableHead>Navn</TableHead>
                     <TableHead>Sendt inn</TableHead>
                     {questions.map((question) => (
-                        <TableHead key={question.id} className="max-w-xs">
+                        // `whitespace-normal` som i cellene under: uten den
+                        // står overskriften på én linje uansett `max-w`, og et
+                        // langt spørsmål legger seg oppå nabokolonnen.
+                        <TableHead
+                            key={question.id}
+                            className="max-w-xs whitespace-normal"
+                        >
                             {question.title}
                         </TableHead>
                     ))}
