@@ -25,18 +25,24 @@ type RouteNotFoundProps = {
  */
 export function RouteNotFound({ onBack, children }: RouteNotFoundProps) {
     return (
-        <Empty className="py-16">
-            <EmptyHeader>
-                <EmptyMedia variant="icon">
-                    <MapPinOffIcon />
+        <Empty className="min-h-[60vh] gap-6 py-24">
+            <EmptyHeader className="max-w-md gap-3">
+                <EmptyMedia variant="icon" className="size-12">
+                    <MapPinOffIcon className="size-6" />
                 </EmptyMedia>
                 <EmptyTitle>Fant ikke siden</EmptyTitle>
                 <EmptyDescription>
                     Lenken kan være gammel, eller adressen feilskrevet.
                 </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-                <Button onClick={onBack}>Gå tilbake</Button>
+            {/* Handlingene står side om side og deler bredden likt.
+             * `items-stretch` gir dem samme høyde uansett hvilken størrelse
+             * kalleren gir sekundærknappen, og `flex-1` på barna sparer
+             * kalleren for å måtte vite om bredden i det hele tatt. */}
+            <EmptyContent className="w-full max-w-md flex-row items-stretch justify-center gap-3 [&>*]:flex-1">
+                <Button size="lg" onClick={onBack}>
+                    Gå tilbake
+                </Button>
                 {children}
             </EmptyContent>
         </Empty>
