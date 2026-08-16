@@ -8,7 +8,7 @@ import {
     NavigationMenuList,
     NavigationMenuTrigger,
 } from "@tihlde/ui/ui/navigation-menu";
-import { ExternalLinkIcon, User } from "lucide-react";
+import { SquareArrowOutUpRight, User } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ThemeSwitcher } from "./theme-switcher";
@@ -92,7 +92,7 @@ export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
                                                             ) : null}
                                                             {sub.kind ===
                                                             "external" ? (
-                                                                <ExternalLinkIcon
+                                                                <SquareArrowOutUpRight
                                                                     className="absolute top-0 right-0 size-4"
                                                                     aria-hidden
                                                                 />
@@ -109,7 +109,15 @@ export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
                                     <NavigationMenuLink
                                         render={renderLink(item)}
                                     >
-                                        {item.label}
+                                        <span className="flex items-center gap-1">
+                                            {item.label}
+                                            {item.kind === "external" ? (
+                                                <SquareArrowOutUpRight
+                                                    className="size-3.5"
+                                                    aria-hidden
+                                                />
+                                            ) : null}
+                                        </span>
                                     </NavigationMenuLink>
                                 </NavigationMenuItem>
                             ),

@@ -81,6 +81,11 @@ export function useSiteNavItems(
                     href: "https://wiki.tihlde.org",
                 },
                 {
+                    kind: "external",
+                    label: "Varsling",
+                    href: "https://forms.gle/UE85Da8et8VJc7XWA",
+                },
+                {
                     kind: "internal",
                     label: "Stillinger",
                     link: linkOptions({ to: "/annonser" }),
