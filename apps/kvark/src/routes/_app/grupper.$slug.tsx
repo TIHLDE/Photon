@@ -548,9 +548,10 @@ function GroupDetail() {
     }
 
     /**
-     * Spørsmålene sendes bare når dialogen faktisk lot noen endre dem:
-     * `updateFieldsAndOptions` sletter spørsmål som mangler i lista, og med
-     * dem svarene som hører til.
+     * Spørsmålene sendes alltid med, id-ene inkludert: `updateFieldsAndOptions`
+     * kjenner igjen spørsmål og alternativer på id og lar svarene stå. API-et
+     * avviser bare endringene som ville tatt svar med seg — se
+     * `findDestructiveFieldChanges`.
      */
     async function handleSaveForm(values: GroupFormEditValues) {
         if (!editingForm) return;
@@ -568,9 +569,7 @@ function GroupDetail() {
                     can_submit_multiple: values.canSubmitMultiple,
                     only_for_group_members: values.onlyForMembers,
                     email_receiver_on_submit: values.emailReceiver || null,
-                    ...(values.questions
-                        ? { fields: toFormFieldsPayload(values.questions) }
-                        : {}),
+                    fields: toFormFieldsPayload(values.questions),
                 },
             });
             setEditingForm(null);

@@ -37,11 +37,7 @@ export type GroupFormEditValues = {
     onlyForMembers: boolean;
     /** Tom streng betyr «ingen varsling». */
     emailReceiver: string;
-    /**
-     * Utelatt når skjemaet allerede har svar. Da skal spørsmålene ikke sendes
-     * med i det hele tatt — API-et sletter svarene til spørsmål som forsvinner.
-     */
-    questions?: FormQuestionValues[];
+    questions: FormQuestionValues[];
 };
 
 const QUESTION_TYPES: { value: FormQuestionType; label: string }[] = [
@@ -207,11 +203,8 @@ type EditFormProps = {
 function useEditForm({
     form,
     questions,
-    answerCount,
     onSubmit,
-}: Pick<EditFormProps, "form" | "questions" | "answerCount" | "onSubmit">) {
-    const questionsLocked = answerCount > 0;
-
+}: Pick<EditFormProps, "form" | "questions" | "onSubmit">) {
     return useAppForm({
         defaultValues: {
             title: form.title,
@@ -233,7 +226,7 @@ function useEditForm({
                 canSubmitMultiple: value.canSubmitMultiple,
                 onlyForMembers: value.onlyForMembers,
                 emailReceiver: value.emailReceiver.trim(),
-                ...(questionsLocked ? {} : { questions: value.questions }),
+                questions: value.questions,
             });
         },
     });
@@ -253,7 +246,7 @@ function EditForm({
     isDeleting,
     deleteError,
 }: EditFormProps) {
-    const editForm = useEditForm({ form, questions, answerCount, onSubmit });
+    const editForm = useEditForm({ form, questions, onSubmit });
 
     return (
         <form {...formHandlers(editForm)} className="flex flex-col gap-6">
@@ -387,16 +380,20 @@ function EditForm({
             {answerCount > 0 ? (
                 <Alert>
                     <LockIcon />
-                    <AlertTitle>Spørsmålene er låst</AlertTitle>
-                    <AlertDescription>
+                    <AlertTitle>
                         Skjemaet har {answerCount}{" "}
-                        {answerCount === 1 ? "svar" : "svar"}. Å endre
-                        spørsmålene nå ville slettet svarene som hører til dem.
+                        {answerCount === 1 ? "svar" : "svar"}
+                    </AlertTitle>
+                    <AlertDescription>
+                        Du kan endre tekst, rekkefølge og «påkrevd», og legge
+                        til nye spørsmål og alternativer. Spørsmålene som
+                        allerede er besvart kan ikke fjernes eller bytte type —
+                        da ville svarene på dem forsvunnet.
                     </AlertDescription>
                 </Alert>
-            ) : (
-                <QuestionsEditor editForm={editForm} />
-            )}
+            ) : null}
+
+            <QuestionsEditor editForm={editForm} hasAnswers={answerCount > 0} />
 
             <DialogFooter>
                 {onRequestDelete ? (
@@ -435,8 +432,21 @@ function EditForm({
 /**
  * Spørsmålene redigeres som en liste: rekkefølgen i listen blir rekkefølgen i
  * skjemaet, og `order` settes av den som lagrer.
+ *
+ * `hasAnswers` sperrer det som ville tatt svar med seg. Sperringen gjelder alt
+ * som er lagret fra før, mens spørsmål og alternativer man legger til i denne
+ * runden kan fjernes igjen — ingen har rukket å svare på dem. API-et er
+ * finere kornet og slipper gjennom et lagret spørsmål ingen har svart på, men
+ * dialogen vet ikke hvilke det er, og velger heller å ikke friste med en
+ * knapp som kan gi 409.
  */
-function QuestionsEditor({ editForm }: { editForm: EditFormApi }) {
+function QuestionsEditor({
+    editForm,
+    hasAnswers,
+}: {
+    editForm: EditFormApi;
+    hasAnswers: boolean;
+}) {
     return (
         <editForm.Field name="questions" mode="array">
             {(questionList) => (
@@ -469,13 +479,14 @@ function QuestionsEditor({ editForm }: { editForm: EditFormApi }) {
                         </p>
                     ) : null}
 
-                    {questionList.state.value.map((_, index) => (
+                    {questionList.state.value.map((question, index) => (
                         <QuestionRow
                             // Indeksen er nøkkelen: et nytt spørsmål har ingen
                             // stabil id før det er lagret.
                             key={index}
                             editForm={editForm}
                             index={index}
+                            locked={hasAnswers && question.id !== undefined}
                             onRemove={() => questionList.removeValue(index)}
                         />
                     ))}
@@ -488,10 +499,13 @@ function QuestionsEditor({ editForm }: { editForm: EditFormApi }) {
 function QuestionRow({
     editForm,
     index,
+    locked,
     onRemove,
 }: {
     editForm: EditFormApi;
     index: number;
+    /** Spørsmålet er besvart: det kan endres, men ikke fjernes eller byttes. */
+    locked: boolean;
     onRemove: () => void;
 }) {
     return (
@@ -507,16 +521,18 @@ function QuestionRow({
                             </field.Field>
                         )}
                     </editForm.AppField>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Slett spørsmål ${index + 1}`}
-                        className="mt-6"
-                        onClick={onRemove}
-                    >
-                        <TrashIcon />
-                    </Button>
+                    {locked ? null : (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Slett spørsmål ${index + 1}`}
+                            className="mt-6"
+                            onClick={onRemove}
+                        >
+                            <TrashIcon />
+                        </Button>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -524,7 +540,15 @@ function QuestionRow({
                         {(field) => (
                             <field.Field className="flex-1">
                                 <field.Label>Type</field.Label>
-                                <field.Select options={QUESTION_TYPES} />
+                                <field.Select
+                                    options={QUESTION_TYPES}
+                                    disabled={locked}
+                                />
+                                {locked ? (
+                                    <field.Description>
+                                        Låst fordi spørsmålet er besvart
+                                    </field.Description>
+                                ) : null}
                                 <field.Error />
                             </field.Field>
                         )}
@@ -546,7 +570,11 @@ function QuestionRow({
                 >
                     {(type) =>
                         type === "text_answer" || type === undefined ? null : (
-                            <OptionsEditor editForm={editForm} index={index} />
+                            <OptionsEditor
+                                editForm={editForm}
+                                index={index}
+                                lockSaved={locked}
+                            />
                         )
                     }
                 </editForm.Subscribe>
@@ -558,15 +586,18 @@ function QuestionRow({
 function OptionsEditor({
     editForm,
     index,
+    lockSaved,
 }: {
     editForm: EditFormApi;
     index: number;
+    /** Alternativer som allerede er lagret kan ikke fjernes; nye kan. */
+    lockSaved: boolean;
 }) {
     return (
         <editForm.Field name={`questions[${index}].options`} mode="array">
             {(optionList) => (
                 <div className="flex flex-col gap-2">
-                    {optionList.state.value.map((_, optionIndex) => (
+                    {optionList.state.value.map((option, optionIndex) => (
                         <div key={optionIndex} className="flex items-end gap-2">
                             <editForm.AppField
                                 name={`questions[${index}].options[${optionIndex}].title`}
@@ -581,17 +612,19 @@ function OptionsEditor({
                                     </field.Field>
                                 )}
                             </editForm.AppField>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                aria-label={`Slett alternativ ${optionIndex + 1}`}
-                                onClick={() =>
-                                    optionList.removeValue(optionIndex)
-                                }
-                            >
-                                <TrashIcon />
-                            </Button>
+                            {lockSaved && option.id !== undefined ? null : (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={`Slett alternativ ${optionIndex + 1}`}
+                                    onClick={() =>
+                                        optionList.removeValue(optionIndex)
+                                    }
+                                >
+                                    <TrashIcon />
+                                </Button>
+                            )}
                         </div>
                     ))}
                     {optionList.state.value.length === 0 ? (
