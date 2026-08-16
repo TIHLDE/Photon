@@ -1,5 +1,10 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, type LinkProps, createFileRoute } from "@tanstack/react-router";
+import {
+    CatchBoundary,
+    Link,
+    type LinkProps,
+    createFileRoute,
+} from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { EventCalendar } from "@tihlde/ui/complex/event-calendar";
 import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
@@ -16,6 +21,7 @@ import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
 import { InfoBanner } from "#/components/info-banner";
 import { NewsCard } from "#/components/news-card";
+import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { formatEventDateTime } from "#/lib/event";
@@ -36,13 +42,11 @@ const latestNewsQuery = () => getNewsQuery(0, {}, NEWS_PREVIEW_COUNT);
 
 export const Route = createFileRoute("/_app/")({
     component: Home,
-    loader: async ({ context }) => {
-        await Promise.all([
-            context.queryClient.ensureQueryData(upcomingEventsQuery()),
-            context.queryClient.ensureQueryData(getVisibleBannersQuery()),
-            context.queryClient.ensureQueryData(latestNewsQuery()),
-        ]);
-    },
+    // Bare arrangementene blokkerer — de er grunnen til at forsida finnes.
+    // Bannere og nyheter henter seg selv bak hver sin Suspense- og feilgrense,
+    // så et feilende kall der koster oss den seksjonen og ikke hele sida.
+    loader: ({ context }) =>
+        context.queryClient.ensureQueryData(upcomingEventsQuery()),
 });
 
 function Home() {
@@ -57,10 +61,16 @@ function Home() {
 
     return (
         <>
-            {/* Preloaded in the route loader, so the fallback never flashes. */}
-            <Suspense fallback={null}>
-                <BannersSection />
-            </Suspense>
+            {/* Bannere er beskjeder vi av og til har. Både mens de lastes og
+             * hvis de feiler er riktig svar det samme: ingenting. */}
+            <CatchBoundary
+                getResetKey={() => "banners"}
+                errorComponent={() => null}
+            >
+                <Suspense fallback={null}>
+                    <BannersSection />
+                </Suspense>
+            </CatchBoundary>
 
             <Hero />
 
@@ -84,9 +94,14 @@ function Home() {
                     actionTo="/admin/nyheter"
                     actionSearch={{ ny: true }}
                 />
-                <Suspense fallback={<NewsSkeleton />}>
-                    <NewsSection />
-                </Suspense>
+                <CatchBoundary
+                    getResetKey={() => "news"}
+                    errorComponent={NewsUnavailable}
+                >
+                    <Suspense fallback={<NewsSkeleton />}>
+                        <NewsSection />
+                    </Suspense>
+                </CatchBoundary>
             </section>
         </>
     );
@@ -183,6 +198,11 @@ function NewsSection() {
             ))}
         </Stagger>
     );
+}
+
+/** Nyhetene er ikke verdt en feilside — vi sier fra og lar resten stå. */
+function NewsUnavailable() {
+    return <SectionError message="Vi fikk ikke lastet nyhetene." />;
 }
 
 function NewsSkeleton() {
