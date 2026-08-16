@@ -126,6 +126,25 @@ function permissionRows(ctx: DbCtx, userId: string) {
         );
 
     /**
+     * Held by the leader only, org-wide. The group-scoped list above cannot
+     * express "presidenten answers kontaktskjema for all of TIHLDE", which
+     * otherwise had to be modelled as a global verv shadowing the leader.
+     */
+    const fromLeadershipGlobal = db
+        .select({
+            permissions: group.leaderGlobalPermissions,
+            scope: globalScope.as("scope"),
+        })
+        .from(groupMembership)
+        .innerJoin(group, eq(groupMembership.groupSlug, group.slug))
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.role, "leader"),
+            ),
+        );
+
+    /**
      * Held by every member, org-wide. This is what lets all of Index
      * administer TIHLDE; it replaced the auto-assigned `admin` and `hs` RBAC
      * roles, which did the same thing invisibly.
@@ -145,6 +164,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
         fromPositions,
         fromMembership,
         fromLeadership,
+        fromLeadershipGlobal,
         fromMembershipGlobal,
     );
 }

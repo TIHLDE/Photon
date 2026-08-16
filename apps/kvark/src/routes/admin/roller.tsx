@@ -71,6 +71,7 @@ import {
     PERMISSION_DOMAINS,
     domainsOf,
     summarizeExtraPermissions,
+    summarizeExtraPermissionsByScope,
     summarizePermissions,
     toggleDomain,
 } from "#/lib/permission-domains";
@@ -82,7 +83,7 @@ export const Route = createFileRoute("/admin/roller")({
     component: RolesAdminPage,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
-        return { breadcrumbs: "Verv og tilganger" };
+        return { breadcrumbs: "Tilganger" };
     },
 });
 
@@ -122,7 +123,7 @@ function RolesAdminPage() {
             }
         >
             <AdminPageHeader
-                title="Verv og tilganger"
+                title="Tilganger"
                 description="Administrer verv og tilganger for hver gruppe."
             />
 
@@ -419,6 +420,7 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                         groupSlug={groupSlug}
                         canManage={canManage}
                         covered={coveredForGroupScope}
+                        coveredGlobally={coveredForGlobalScope}
                         leaders={leaders.map((leader) => ({
                             userId: leader.userId,
                             name: leader.user?.name ?? leader.userId,
@@ -850,6 +852,7 @@ function LeaderRow({
     groupSlug,
     canManage,
     covered,
+    coveredGlobally,
     leaders,
 }: {
     groupSlug: string;
@@ -857,6 +860,9 @@ function LeaderRow({
     /** Domains the group already gives every member, and which the leader
      *  therefore does not get listed for a second time. */
     covered: Set<string>;
+    /** The same, but only what the group gives org-wide — the org-wide half of
+     *  the leader's set is not covered by a group-scoped member grant. */
+    coveredGlobally: Set<string>;
     leaders: { userId: string; name: string; image: string | null }[];
 }) {
     const [editing, setEditing] = useState(false);
@@ -866,14 +872,21 @@ function LeaderRow({
         enabled: canManage,
     });
     const permissions = data?.permissions ?? [];
+    const globalPermissions = data?.globalPermissions ?? [];
+    // Groups that call their leader something else — HS's «President» — used
+    // to keep a separate verv by that name held by the same person. The title
+    // lives on the leader row instead, so there is only one of them.
+    const title = data?.title ?? null;
 
     return (
         <TableRow>
             <TableCell>
                 <div className="flex flex-col">
-                    <span className="font-medium">Leder</span>
+                    <span className="font-medium">{title ?? "Leder"}</span>
                     <span className="text-xs text-muted-foreground">
-                        Settes i gruppens medlemsliste
+                        {title
+                            ? "Gruppens leder — settes i medlemslisten"
+                            : "Settes i gruppens medlemsliste"}
                     </span>
                 </div>
             </TableCell>
@@ -896,7 +909,13 @@ function LeaderRow({
             </TableCell>
             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
-                    ? summarizeExtraPermissions(permissions, covered)
+                    ? summarizeExtraPermissionsByScope([
+                          { permissions, covered },
+                          {
+                              permissions: globalPermissions,
+                              covered: coveredGlobally,
+                          },
+                      ])
                     : "Gruppens ledertilganger"}
             </TableCell>
             <TableCell>
@@ -923,6 +942,8 @@ function LeaderRow({
                     open={editing}
                     onOpenChange={setEditing}
                     permissions={permissions}
+                    globalPermissions={globalPermissions}
+                    title={title}
                 />
             )}
         </TableRow>
@@ -934,23 +955,45 @@ function LeaderPermissionsDialog({
     open,
     onOpenChange,
     permissions: initial,
+    globalPermissions: initialGlobal,
+    title: initialTitle,
 }: {
     groupSlug: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     permissions: string[];
+    globalPermissions: string[];
+    /** The group's own name for the role, or null for plain «Leder». */
+    title: string | null;
 }) {
     const update = useMutation(updateLeaderPermissionsMutation);
+    const canGrantGlobally = useCanGrantGlobally();
     const [permissions, setPermissions] = useState<string[]>(initial);
+    const [global, setGlobal] = useState<string[]>(initialGlobal);
+    const [title, setTitle] = useState(initialTitle ?? "");
     const [error, setError] = useState<string | null>(null);
-    // Leader permissions are always scoped to the group, so anything the
-    // group already gives every member covers the leader too.
-    const covered = useGroupCoveredDomains(groupSlug, true, "group");
+    // The group-scoped list is covered both by what the group gives every
+    // member and by anything the leader already holds org-wide.
+    const coveredByGroup = useGroupCoveredDomains(groupSlug, true, "group");
+    const covered = useMemo(() => {
+        const all = new Set(coveredByGroup);
+        for (const domain of domainsOf(global)) all.add(domain);
+        return all;
+    }, [coveredByGroup, global]);
 
     async function handleSubmit() {
         setError(null);
         try {
-            await update.mutateAsync({ groupSlug, permissions });
+            await update.mutateAsync({
+                groupSlug,
+                permissions,
+                // Left out entirely for someone who cannot write it — sending
+                // the list back unchanged would 403 them out of saving the
+                // group-scoped half they may edit.
+                globalPermissions: canGrantGlobally ? global : undefined,
+                // Blank means «Leder» — the field is cleared, not left as it was.
+                title: title.trim() || null,
+            });
             onOpenChange(false);
         } catch (submitError) {
             setError(
@@ -965,23 +1008,51 @@ function LeaderPermissionsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Rediger ledertilganger</DialogTitle>
+                    <DialogTitle>Rediger lederrollen</DialogTitle>
                 </DialogHeader>
                 <DialogBody>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel>Tilganger</FieldLabel>
+                            <FieldLabel>Tittel</FieldLabel>
+                            <Input
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Leder"
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Hva gruppen kaller lederen sin, f.eks.
+                                «President». Tomt felt gir «Leder».
+                            </p>
+                        </Field>
+                        <Field>
+                            <FieldLabel>Gjelder denne gruppen</FieldLabel>
                             <PermissionDomainCheckboxes
                                 value={permissions}
                                 onChange={setPermissions}
                                 lockedDomains={covered}
-                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
+                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer, eller for hele TIHLDE nedenfor."
                             />
                             <p className="text-sm text-muted-foreground">
-                                Gjelder bare i denne gruppen, og følger den som
-                                til enhver tid er leder.
+                                Gjelder bare gruppens eget innhold, og følger
+                                den som til enhver tid er leder.
                             </p>
                         </Field>
+
+                        {canGrantGlobally ? (
+                            <Field>
+                                <FieldLabel>Gjelder hele TIHLDE</FieldLabel>
+                                <PermissionDomainCheckboxes
+                                    value={global}
+                                    onChange={setGlobal}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Lederen får dette på tvers av alle grupper —
+                                    det presidenten trenger utover HS. Du kan
+                                    bare gi bort tilganger du selv har.
+                                </p>
+                            </Field>
+                        ) : null}
+
                         {error ? (
                             <p className="text-sm text-destructive">{error}</p>
                         ) : null}
