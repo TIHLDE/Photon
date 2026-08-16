@@ -6,6 +6,7 @@ import { HTTPException } from "hono/http-exception";
 import { FormHasSubmissionsException } from "~/lib/form/exceptions";
 import {
     canManageForm,
+    findDestructiveFieldChanges,
     resolveScheduledOpenState,
     updateFieldsAndOptions,
 } from "~/lib/form/service";
@@ -80,15 +81,18 @@ export const updateRoute = route().patch(
             where: eq(schema.formGroupForm.formId, formId),
         });
 
-        // Rewriting the questions deletes the answers hanging off them. Event
-        // forms are left alone here — organisers may edit a survey while
-        // registrations are open, and re-submitting replaces the old answer.
+        // Spørsmålene kan endres selv om skjemaet har svar — det er bare det å
+        // fjerne noe noen har svart på som stoppes. Event forms are left alone
+        // here — organisers may edit a survey while registrations are open, and
+        // re-submitting replaces the old answer.
         if (body.fields && groupForm) {
-            const answered = await db.query.formSubmission.findFirst({
-                where: eq(schema.formSubmission.formId, formId),
-            });
-            if (answered) {
-                throw new FormHasSubmissionsException();
+            const problems = await findDestructiveFieldChanges(
+                db,
+                formId,
+                body.fields,
+            );
+            if (problems.length > 0) {
+                throw new FormHasSubmissionsException(problems);
             }
         }
 

@@ -220,6 +220,130 @@ export async function createFieldsAndOptions(
 }
 
 /**
+ * Endringene i `fields` som ville tatt svar med seg, beskrevet på norsk.
+ *
+ * Å skrive om spørsmålene er ikke destruktivt i seg selv: `updateFieldsAndOptions`
+ * kjenner igjen spørsmål og alternativer på id, så tittel, rekkefølge og
+ * «påkrevd» kan endres uten at noe forsvinner. Det som tar svar med seg er å
+ * fjerne noe noen har svart på:
+ *
+ * - Fjernes et spørsmål, blir `answer.field_id` satt til null, og svaret hører
+ *   ikke lenger til noe spørsmål.
+ * - Fjernes et alternativ, kaskaderer det til `answer_option` — selve valget
+ *   forsvinner.
+ * - Byttes typen på et spørsmål, sletter oppdateringen alternativene som ikke
+ *   passer den nye typen, med de samme følgene.
+ *
+ * Spørsmål og alternativer ingen har svart på kan fjernes fritt. Tom liste
+ * betyr at oppdateringen er trygg.
+ */
+export async function findDestructiveFieldChanges(
+    db: Database,
+    formId: string,
+    fields: UpdateFieldInput[],
+): Promise<string[]> {
+    const existingFields = await db.query.formField.findMany({
+        where: eq(schema.formField.formId, formId),
+        with: { options: true },
+    });
+
+    if (existingFields.length === 0) return [];
+
+    const answeredFieldIds = new Set(
+        (
+            await db
+                .selectDistinct({ fieldId: schema.formAnswer.fieldId })
+                .from(schema.formAnswer)
+                .where(
+                    inArray(
+                        schema.formAnswer.fieldId,
+                        existingFields.map((field) => field.id),
+                    ),
+                )
+        )
+            .map((row) => row.fieldId)
+            .filter((id): id is string => id !== null),
+    );
+
+    const existingOptionIds = existingFields.flatMap((field) =>
+        field.options.map((option) => option.id),
+    );
+
+    const answeredOptionIds = new Set(
+        existingOptionIds.length === 0
+            ? []
+            : (
+                  await db
+                      .selectDistinct({
+                          optionId: schema.formAnswerOption.optionId,
+                      })
+                      .from(schema.formAnswerOption)
+                      .where(
+                          inArray(
+                              schema.formAnswerOption.optionId,
+                              existingOptionIds,
+                          ),
+                      )
+              ).map((row) => row.optionId),
+    );
+
+    // Bare id-er som faktisk hører til dette skjemaet teller som «beholdt».
+    // En id fra et annet skjema oppretter et nytt spørsmål her, den flytter
+    // ikke det andre — se `updateFieldsAndOptions`.
+    const ownFieldIds = new Set(existingFields.map((field) => field.id));
+    const keptFields = new Map(
+        fields
+            .filter((field) => field.id && ownFieldIds.has(field.id))
+            .map((field) => [field.id as string, field]),
+    );
+
+    const problems: string[] = [];
+
+    for (const existing of existingFields) {
+        const kept = keptFields.get(existing.id);
+
+        if (!kept) {
+            if (answeredFieldIds.has(existing.id)) {
+                problems.push(
+                    `spørsmålet «${existing.title}» er fjernet, og noen har svart på det`,
+                );
+            }
+            continue;
+        }
+
+        if (kept.type !== existing.type && answeredFieldIds.has(existing.id)) {
+            problems.push(
+                `spørsmålet «${existing.title}» har byttet type, og noen har svart på det`,
+            );
+            // Typebyttet sletter alternativene uansett hvilke som er med i
+            // lista, så det er ingen grunn til å telle dem opp i tillegg.
+            continue;
+        }
+
+        // Uten `options` i payloaden sletter oppdateringen alle alternativene
+        // til spørsmålet, akkurat som en tom liste ville gjort.
+        const keptOptionIds = new Set(
+            (kept.options ?? [])
+                .map((option) => option.id)
+                .filter((id): id is string => id !== undefined),
+        );
+
+        for (const option of existing.options) {
+            if (
+                !keptOptionIds.has(option.id) &&
+                answeredOptionIds.has(option.id)
+            ) {
+                problems.push(
+                    `alternativet «${option.title}» i «${existing.title}» er fjernet, og noen har valgt det`,
+                );
+            }
+        }
+    }
+
+    return problems;
+}
+
+/**
  * Update fields and options for a form
  * - Fields/options with id: update
  * - Fields/options without id: create
@@ -237,6 +361,8 @@ export async function updateFieldsAndOptions(
             options: true,
         },
     });
+
+    const existingFieldIds = new Set(existingFields.map((f) => f.id));
 
     const updatedFieldIds = fields
         .filter((f) => f.id)
@@ -257,7 +383,10 @@ export async function updateFieldsAndOptions(
 
     // Update or create fields
     for (const fieldData of fields) {
-        if (fieldData.id) {
+        // En id som ikke hører til dette skjemaet behandles som et nytt
+        // spørsmål: ellers ville en payload kunne skrive om spørsmålene i et
+        // annet skjema, som den som sender den ikke nødvendigvis eier.
+        if (fieldData.id && existingFieldIds.has(fieldData.id)) {
             // Update existing field
             await db
                 .update(schema.formField)
@@ -296,9 +425,16 @@ export async function updateFieldsAndOptions(
                     );
                 }
 
+                const existingOptionIds = new Set(
+                    existingOptions.map((o) => o.id),
+                );
+
                 // Update or create options
                 for (const optionData of fieldData.options) {
-                    if (optionData.id) {
+                    // Som for spørsmålene: en id som ikke hører til dette
+                    // spørsmålet blir et nytt alternativ, ikke en skriving inn
+                    // i et annet skjema.
+                    if (optionData.id && existingOptionIds.has(optionData.id)) {
                         await db
                             .update(schema.formOption)
                             .set({
