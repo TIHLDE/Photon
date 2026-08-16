@@ -224,6 +224,22 @@ export const group = pgTable("group", {
      */
     leaderPermissions: text("leader_permissions").array().notNull().default([]),
     /**
+     * Permissions the group's leader holds org-wide, unscoped.
+     *
+     * The counterpart to {@link memberGlobalPermissions}, for the rights that
+     * belong to the person rather than the group: presidenten answering
+     * kontaktskjema for all of TIHLDE, not just for HS. Without it, the only
+     * home for those was a verv duplicating the leader row.
+     *
+     * Bounded by the same rule as everything else: you may only grant what you
+     * hold yourself, at the scope you grant it at — so a group leader, who
+     * holds nothing globally, can never write this list.
+     */
+    leaderGlobalPermissions: text("leader_global_permissions")
+        .array()
+        .notNull()
+        .default([]),
+    /**
      * What this group calls its leader — "President" in HS, "Leder" everywhere
      * else. Purely a label: leadership is still the membership role, and the
      * permissions above still follow whoever holds it.

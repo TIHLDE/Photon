@@ -13,7 +13,9 @@
  * now the whole truth.
  *
  * Guardrails are the position ones, deliberately: managing this is managing a
- * group-scoped verv, and you still cannot hand out what you do not hold.
+ * verv, and you still cannot hand out what you do not hold — the group list is
+ * checked for this group, the org-wide one globally, so a group leader (who
+ * holds nothing globally) can never write the second.
  *
  * The group's name for the role travels with the permissions here: a group
  * that calls its leader "President" should not have to keep a second, manually
@@ -63,6 +65,7 @@ export const getLeaderPermissionsRoute = route().get(
         const [group] = await ctx.db
             .select({
                 permissions: schema.group.leaderPermissions,
+                globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
             })
             .from(schema.group)
@@ -83,6 +86,7 @@ export const getLeaderPermissionsRoute = route().get(
 
         return c.json({
             permissions: knownPermissions(group.permissions),
+            globalPermissions: knownPermissions(group.globalPermissions),
             title: group.title,
         });
     },
@@ -151,12 +155,35 @@ export const updateLeaderPermissionsRoute = route().patch(
             });
         }
 
+        // The org-wide list is checked globally, so holding a permission for
+        // this group is not enough to hand it out for every other one. A group
+        // leader holds nothing globally and is stopped here.
+        if (
+            body.globalPermissions !== undefined &&
+            !(await canGrantPositionPermissions(
+                ctx,
+                user.id,
+                groupSlug,
+                body.globalPermissions,
+                "global",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only grant permissions you hold yourself across all of TIHLDE",
+            });
+        }
+
         const [updated] = await ctx.db
             .update(schema.group)
             .set({
                 leaderPermissions: body.permissions,
-                // Omitted means "leave the title alone" — only an explicit
-                // null clears it back to «Leder».
+                // Both optional fields mean "leave alone" when omitted, so a
+                // client that knows nothing about them cannot wipe them. For
+                // the title, only an explicit null clears it back to «Leder».
+                ...(body.globalPermissions === undefined
+                    ? {}
+                    : { leaderGlobalPermissions: body.globalPermissions }),
                 ...(body.title === undefined
                     ? {}
                     : { leaderTitle: body.title?.trim() || null }),
@@ -164,11 +191,13 @@ export const updateLeaderPermissionsRoute = route().patch(
             .where(eq(schema.group.slug, groupSlug))
             .returning({
                 permissions: schema.group.leaderPermissions,
+                globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
             });
 
         return c.json({
             permissions: updated?.permissions ?? [],
+            globalPermissions: updated?.globalPermissions ?? [],
             title: updated?.title ?? null,
         });
     },

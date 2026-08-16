@@ -110,16 +110,19 @@ export const updateLeaderPermissionsMutation = mutationOptions({
     mutationFn: ({
         groupSlug,
         permissions,
+        globalPermissions,
         title,
     }: {
         groupSlug: string;
         permissions: string[];
+        /** Omit to leave the org-wide list unchanged (a group leader may not write it). */
+        globalPermissions?: string[];
         /** Omit to leave the group's name for the role unchanged. */
         title?: string | null;
     }) =>
         apiClient.patch("/api/groups/{groupSlug}/leader-permissions", {
             params: { groupSlug },
-            json: { permissions, title },
+            json: { permissions, globalPermissions, title },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries({
