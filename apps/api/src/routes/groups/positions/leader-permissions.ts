@@ -14,6 +14,10 @@
  *
  * Guardrails are the position ones, deliberately: managing this is managing a
  * group-scoped verv, and you still cannot hand out what you do not hold.
+ *
+ * The group's name for the role travels with the permissions here: a group
+ * that calls its leader "President" should not have to keep a second, manually
+ * assigned verv by that name pointing at the same person.
  */
 
 import { schema } from "@photon/db";
@@ -57,7 +61,10 @@ export const getLeaderPermissionsRoute = route().get(
         const groupSlug = c.req.param("groupSlug");
 
         const [group] = await ctx.db
-            .select({ permissions: schema.group.leaderPermissions })
+            .select({
+                permissions: schema.group.leaderPermissions,
+                title: schema.group.leaderTitle,
+            })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);
@@ -74,7 +81,10 @@ export const getLeaderPermissionsRoute = route().get(
             });
         }
 
-        return c.json({ permissions: knownPermissions(group.permissions) });
+        return c.json({
+            permissions: knownPermissions(group.permissions),
+            title: group.title,
+        });
     },
 );
 
@@ -143,10 +153,23 @@ export const updateLeaderPermissionsRoute = route().patch(
 
         const [updated] = await ctx.db
             .update(schema.group)
-            .set({ leaderPermissions: body.permissions })
+            .set({
+                leaderPermissions: body.permissions,
+                // Omitted means "leave the title alone" — only an explicit
+                // null clears it back to «Leder».
+                ...(body.title === undefined
+                    ? {}
+                    : { leaderTitle: body.title?.trim() || null }),
+            })
             .where(eq(schema.group.slug, groupSlug))
-            .returning({ permissions: schema.group.leaderPermissions });
+            .returning({
+                permissions: schema.group.leaderPermissions,
+                title: schema.group.leaderTitle,
+            });
 
-        return c.json({ permissions: updated?.permissions ?? [] });
+        return c.json({
+            permissions: updated?.permissions ?? [],
+            title: updated?.title ?? null,
+        });
     },
 );

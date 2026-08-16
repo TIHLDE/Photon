@@ -57,6 +57,10 @@ export const updateLeaderPermissionsSchema = Schema(
             description:
                 "Permissions the group's leader holds, scoped to this group. Replaces the existing list.",
         }),
+        title: z.string().min(1).max(128).nullable().optional().meta({
+            description:
+                "What this group calls its leader, e.g. 'President'. Null clears it back to 'Leder'. Omit to leave unchanged.",
+        }),
     }),
 );
 
@@ -130,6 +134,10 @@ export const leaderPermissionsSchema = Schema(
         permissions: z.array(z.string()).meta({
             description:
                 "Permissions held by whoever currently leads this group, scoped to this group.",
+        }),
+        title: z.string().nullable().meta({
+            description:
+                "What this group calls its leader, e.g. 'President'. Null when the group has no custom title and the leader is simply «Leder».",
         }),
     }),
 );

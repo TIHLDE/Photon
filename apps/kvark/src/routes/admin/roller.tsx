@@ -82,7 +82,7 @@ export const Route = createFileRoute("/admin/roller")({
     component: RolesAdminPage,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
-        return { breadcrumbs: "Verv og tilganger" };
+        return { breadcrumbs: "Tilganger" };
     },
 });
 
@@ -122,7 +122,7 @@ function RolesAdminPage() {
             }
         >
             <AdminPageHeader
-                title="Verv og tilganger"
+                title="Tilganger"
                 description="Administrer verv og tilganger for hver gruppe."
             />
 
@@ -866,14 +866,20 @@ function LeaderRow({
         enabled: canManage,
     });
     const permissions = data?.permissions ?? [];
+    // Groups that call their leader something else — HS's «President» — used
+    // to keep a separate verv by that name held by the same person. The title
+    // lives on the leader row instead, so there is only one of them.
+    const title = data?.title ?? null;
 
     return (
         <TableRow>
             <TableCell>
                 <div className="flex flex-col">
-                    <span className="font-medium">Leder</span>
+                    <span className="font-medium">{title ?? "Leder"}</span>
                     <span className="text-xs text-muted-foreground">
-                        Settes i gruppens medlemsliste
+                        {title
+                            ? "Gruppens leder — settes i medlemslisten"
+                            : "Settes i gruppens medlemsliste"}
                     </span>
                 </div>
             </TableCell>
@@ -923,6 +929,7 @@ function LeaderRow({
                     open={editing}
                     onOpenChange={setEditing}
                     permissions={permissions}
+                    title={title}
                 />
             )}
         </TableRow>
@@ -934,14 +941,18 @@ function LeaderPermissionsDialog({
     open,
     onOpenChange,
     permissions: initial,
+    title: initialTitle,
 }: {
     groupSlug: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     permissions: string[];
+    /** The group's own name for the role, or null for plain «Leder». */
+    title: string | null;
 }) {
     const update = useMutation(updateLeaderPermissionsMutation);
     const [permissions, setPermissions] = useState<string[]>(initial);
+    const [title, setTitle] = useState(initialTitle ?? "");
     const [error, setError] = useState<string | null>(null);
     // Leader permissions are always scoped to the group, so anything the
     // group already gives every member covers the leader too.
@@ -950,7 +961,12 @@ function LeaderPermissionsDialog({
     async function handleSubmit() {
         setError(null);
         try {
-            await update.mutateAsync({ groupSlug, permissions });
+            await update.mutateAsync({
+                groupSlug,
+                permissions,
+                // Blank means «Leder» — the field is cleared, not left as it was.
+                title: title.trim() || null,
+            });
             onOpenChange(false);
         } catch (submitError) {
             setError(
@@ -965,10 +981,22 @@ function LeaderPermissionsDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Rediger ledertilganger</DialogTitle>
+                    <DialogTitle>Rediger lederrollen</DialogTitle>
                 </DialogHeader>
                 <DialogBody>
                     <FieldGroup>
+                        <Field>
+                            <FieldLabel>Tittel</FieldLabel>
+                            <Input
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Leder"
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Hva gruppen kaller lederen sin, f.eks.
+                                «President». Tomt felt gir «Leder».
+                            </p>
+                        </Field>
                         <Field>
                             <FieldLabel>Tilganger</FieldLabel>
                             <PermissionDomainCheckboxes

@@ -224,6 +224,18 @@ export const group = pgTable("group", {
      */
     leaderPermissions: text("leader_permissions").array().notNull().default([]),
     /**
+     * What this group calls its leader — "President" in HS, "Leder" everywhere
+     * else. Purely a label: leadership is still the membership role, and the
+     * permissions above still follow whoever holds it.
+     *
+     * Exists because the alternative was a verv named "President" pointing at
+     * the same person as the leader row, which then showed up twice in the
+     * admin table and needed its permissions kept in sync by hand.
+     *
+     * NULL means "no custom title" and reads as "Leder".
+     */
+    leaderTitle: varchar("leader_title", { length: 128 }),
+    /**
      * Permissions every member of this group holds, granted scoped to the
      * group ("permission@group:<slug>"). The leader is a member too, so these
      * stack on top of {@link leaderPermissions}.

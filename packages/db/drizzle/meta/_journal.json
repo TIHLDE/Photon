@@ -414,6 +414,13 @@
       "when": 1786818545921,
       "tag": "0058_puzzling_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1786885224591,
+      "tag": "0059_awesome_warstar",
+      "breakpoints": true
     }
   ]
 }

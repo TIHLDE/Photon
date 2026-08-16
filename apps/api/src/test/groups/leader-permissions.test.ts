@@ -154,4 +154,53 @@ describe("group leader permissions", () => {
             500_000,
         );
     });
+
+    /**
+     * The group's own name for the role. It exists so HS does not need a verv
+     * called "President" held by the same person as the leader row.
+     */
+    describe("title", () => {
+        integrationTest(
+            "a leader can name the role, clear it, and leave it untouched",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const patch = (json: {
+                    permissions: string[];
+                    title?: string | null;
+                }) =>
+                    client.api.groups[":groupSlug"][
+                        "leader-permissions"
+                    ].$patch({ param: { groupSlug: group.slug }, json });
+
+                const named = await patch({
+                    permissions: [],
+                    title: "President",
+                });
+                expect(named.status).toBe(200);
+                expect((await named.json()).title).toBe("President");
+
+                // Omitting the field edits permissions without touching the name.
+                const untouched = await patch({ permissions: [] });
+                expect((await untouched.json()).title).toBe("President");
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: group.slug } });
+                expect((await read.json()).title).toBe("President");
+
+                const cleared = await patch({ permissions: [], title: null });
+                expect((await cleared.json()).title).toBeNull();
+            },
+            500_000,
+        );
+    });
 });
