@@ -3,7 +3,7 @@ import type { RegistrationStatus } from "@photon/db/schema";
 import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
-import { sendNotification } from "../notification";
+import { createDeferredNotifications } from "../notification/deferred";
 import {
     createPaymentObligation,
     findOwedRefund,
@@ -11,10 +11,9 @@ import {
     refundOwed,
 } from "./payment";
 import {
-    calculateWaitlistPosition,
+    calculateWaitlistPositions,
     findSwapTarget,
-    getUserGroupSlugs,
-    isUserPrioritized,
+    loadPrioritization,
 } from "./priority";
 import { canRegisterBasedOnStrikes, getUserStrikeCount } from "./strikes";
 
@@ -37,6 +36,13 @@ export async function resolveRegistrationsForEvent(
      * those locks for as long as Vipps takes to answer — see {@link refundOwed}.
      */
     const owedRefunds: OwedRefund[] = [];
+
+    /**
+     * Notifications decided inside the transaction and sent once it commits —
+     * rendering an email template per affected member while holding the
+     * `FOR UPDATE` locks below is time the whole event waits on.
+     */
+    const notifications = createDeferredNotifications();
 
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
@@ -109,11 +115,21 @@ export async function resolveRegistrationsForEvent(
             ? Number.POSITIVE_INFINITY
             : Math.max(0, (event.capacity ?? 0) - registeredCount);
 
+        /**
+         * Everyone in this batch, prioritized in two queries up front, rather
+         * than two queries per member inside the loop below.
+         */
+        const isUserPrioritizedForEvent = await loadPrioritization(
+            pendingRegistrations.map((registration) => registration.userId),
+            event.pools,
+            event.enforcesPreviousStrikes,
+            tx,
+        );
+
         // Step 4: Process each pending registration in order
         for (const registration of pendingRegistrations) {
             const { userId, createdAt } = registration;
 
-            const userGroupSlugs = await getUserGroupSlugs(userId, tx);
             const strikeCount = await getUserStrikeCount(userId, tx);
 
             // Check strike-based timing restriction
@@ -136,23 +152,20 @@ export async function resolveRegistrationsForEvent(
                     );
 
                 // Send notification to user with reason
-                await sendNotification(
-                    {
-                        userId,
-                        title: "Påmelding ikke godkjent",
-                        description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
-                        link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
-                        emailTemplate: {
-                            name: "RegistrationBlockedEmail",
-                            props: {
-                                eventName: event.title,
-                                reason,
-                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-                            },
+                notifications.add({
+                    userId,
+                    title: "Påmelding ikke godkjent",
+                    description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
+                    link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
+                    emailTemplate: {
+                        name: "RegistrationBlockedEmail",
+                        props: {
+                            eventName: event.title,
+                            reason,
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                         },
                     },
-                    txCtx,
-                );
+                });
                 console.log(
                     `User ${userId} blocked from registration: ${reason}`,
                 );
@@ -160,12 +173,7 @@ export async function resolveRegistrationsForEvent(
             }
 
             // Determine if user is prioritized
-            const isPrioritized = isUserPrioritized({
-                userGroupSlugs,
-                eventPools: event.pools,
-                strikeCount,
-                enforcesPreviousStrikes: event.enforcesPreviousStrikes,
-            });
+            const isPrioritized = isUserPrioritizedForEvent(userId);
 
             // Determine final status
             let finalStatus: RegistrationStatus;
@@ -247,13 +255,13 @@ export async function resolveRegistrationsForEvent(
             // Calculate and update waitlist position if needed (after status is saved)
             let waitlistPosition: number | null = null;
             if (finalStatus === "waitlisted") {
-                waitlistPosition = await calculateWaitlistPosition(
-                    userId,
+                const positions = await calculateWaitlistPositions(
                     eventId,
                     event.pools,
                     event.enforcesPreviousStrikes,
                     tx,
                 );
+                waitlistPosition = positions.get(userId) ?? null;
 
                 await tx
                     .update(schema.eventRegistration)
@@ -277,42 +285,36 @@ export async function resolveRegistrationsForEvent(
             const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
 
             if (finalStatus === "registered") {
-                await sendNotification(
-                    {
-                        userId,
-                        title: `Du er påmeldt ${event.title}!`,
-                        description: `Din påmelding til ${event.title} er bekreftet.`,
-                        link: eventUrl,
-                        emailTemplate: {
-                            name: "RegistrationConfirmedEmail",
-                            props: {
-                                eventName: event.title,
-                                eventUrl,
-                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-                            },
+                notifications.add({
+                    userId,
+                    title: `Du er påmeldt ${event.title}!`,
+                    description: `Din påmelding til ${event.title} er bekreftet.`,
+                    link: eventUrl,
+                    emailTemplate: {
+                        name: "RegistrationConfirmedEmail",
+                        props: {
+                            eventName: event.title,
+                            eventUrl,
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                         },
                     },
-                    txCtx,
-                );
+                });
             } else if (finalStatus === "waitlisted" && waitlistPosition) {
-                await sendNotification(
-                    {
-                        userId,
-                        title: `Du er på venteliste for ${event.title}`,
-                        description: `Du er nå på venteliste for ${event.title} (posisjon ${waitlistPosition}).`,
-                        link: eventUrl,
-                        emailTemplate: {
-                            name: "WaitlistPlacementEmail",
-                            props: {
-                                eventName: event.title,
-                                eventUrl,
-                                position: waitlistPosition,
-                                logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-                            },
+                notifications.add({
+                    userId,
+                    title: `Du er på venteliste for ${event.title}`,
+                    description: `Du er nå på venteliste for ${event.title} (posisjon ${waitlistPosition}).`,
+                    link: eventUrl,
+                    emailTemplate: {
+                        name: "WaitlistPlacementEmail",
+                        props: {
+                            eventName: event.title,
+                            eventUrl,
+                            position: waitlistPosition,
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                         },
                     },
-                    txCtx,
-                );
+                });
             }
 
             console.log(
@@ -327,19 +329,15 @@ export async function resolveRegistrationsForEvent(
                 (finalStatus === "waitlisted" && isPrioritized);
 
             if (shouldRecalculateWaitlist) {
-                const waitlisted = await tx.query.eventRegistration.findMany({
-                    where: (r, { and, eq }) =>
-                        and(eq(r.eventId, eventId), eq(r.status, "waitlisted")),
-                });
+                // One pass over the waitlist, not one pass per member of it.
+                const positions = await calculateWaitlistPositions(
+                    eventId,
+                    event.pools,
+                    event.enforcesPreviousStrikes,
+                    tx,
+                );
 
-                for (const wReg of waitlisted) {
-                    const newPosition = await calculateWaitlistPosition(
-                        wReg.userId,
-                        eventId,
-                        event.pools,
-                        event.enforcesPreviousStrikes,
-                        tx,
-                    );
+                for (const [waitlistedUserId, newPosition] of positions) {
                     await tx
                         .update(schema.eventRegistration)
                         .set({ waitlistPosition: newPosition })
@@ -348,32 +346,29 @@ export async function resolveRegistrationsForEvent(
                                 eq(schema.eventRegistration.eventId, eventId),
                                 eq(
                                     schema.eventRegistration.userId,
-                                    wReg.userId,
+                                    waitlistedUserId,
                                 ),
                             ),
                         );
 
                     // Send email to swapped user
-                    if (wReg.userId === swappedUserId && newPosition) {
+                    if (waitlistedUserId === swappedUserId) {
                         const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
-                        await sendNotification(
-                            {
-                                userId: wReg.userId,
-                                title: `Endring i din påmelding til ${event.title}`,
-                                description: `Din påmelding til ${event.title} har blitt flyttet til venteliste (posisjon ${newPosition}).`,
-                                link: eventUrl,
-                                emailTemplate: {
-                                    name: "SwappedToWaitlistEmail",
-                                    props: {
-                                        eventName: event.title,
-                                        eventUrl,
-                                        position: newPosition,
-                                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-                                    },
+                        notifications.add({
+                            userId: waitlistedUserId,
+                            title: `Endring i din påmelding til ${event.title}`,
+                            description: `Din påmelding til ${event.title} har blitt flyttet til venteliste (posisjon ${newPosition}).`,
+                            link: eventUrl,
+                            emailTemplate: {
+                                name: "SwappedToWaitlistEmail",
+                                props: {
+                                    eventName: event.title,
+                                    eventUrl,
+                                    position: newPosition,
+                                    logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                                 },
                             },
-                            txCtx,
-                        );
+                        });
                     }
                 }
             }
@@ -416,5 +411,6 @@ export async function resolveRegistrationsForEvent(
     });
 
     // Locks are released; now it is safe to spend time on the network.
+    await notifications.flush(ctx);
     await refundOwed(ctx, owedRefunds);
 }
