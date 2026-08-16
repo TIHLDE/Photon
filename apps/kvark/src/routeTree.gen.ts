@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppSplatRouteImport } from './routes/_app/$'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
@@ -104,6 +105,11 @@ const AdminRoute = AdminRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSplatRoute = AppSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
@@ -460,6 +466,7 @@ const AppSporreskjemaIdSvarRoute = AppSporreskjemaIdSvarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/$': typeof AppSplatRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
   '/kontrakt': typeof AppKontraktRoute
   '/ny-student': typeof AppNyStudentRoute
@@ -531,6 +538,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/$': typeof AppSplatRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
   '/kontrakt': typeof AppKontraktRoute
   '/ny-student': typeof AppNyStudentRoute
@@ -605,6 +613,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/_app/$': typeof AppSplatRoute
   '/_app/kokebok': typeof AppKokebokRouteWithChildren
   '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/ny-student': typeof AppNyStudentRoute
@@ -681,6 +690,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/$'
     | '/kokebok'
     | '/kontrakt'
     | '/ny-student'
@@ -752,6 +762,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$'
     | '/kokebok'
     | '/kontrakt'
     | '/ny-student'
@@ -825,6 +836,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/_dev'
     | '/admin'
+    | '/_app/$'
     | '/_app/kokebok'
     | '/_app/kontrakt'
     | '/_app/ny-student'
@@ -939,6 +951,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/$': {
+      id: '/_app/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof AppSplatRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kokebok': {
@@ -1520,6 +1539,7 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppSplatRoute: typeof AppSplatRoute
   AppKokebokRoute: typeof AppKokebokRouteWithChildren
   AppKontraktRoute: typeof AppKontraktRoute
   AppNyStudentRoute: typeof AppNyStudentRoute
@@ -1552,6 +1572,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSplatRoute: AppSplatRoute,
   AppKokebokRoute: AppKokebokRouteWithChildren,
   AppKontraktRoute: AppKontraktRoute,
   AppNyStudentRoute: AppNyStudentRoute,
