@@ -2,6 +2,21 @@ import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 
 import { cn } from "#/lib/utils";
 
+/**
+ * Prosenten som leses opp, formatert likt på server og klient.
+ *
+ * Uten dette formaterer Base UI den med `Intl.NumberFormat` og standardlokalet
+ * på hver side: serveren skriver «40%», nettleseren «40 %» (med hardt
+ * mellomrom), og React kastet en hydration-feil på `aria-valuetext` for hver
+ * framdriftslinje på sida.
+ */
+function progressAriaValueText(
+    _formattedValue: string | null,
+    value: number | null,
+) {
+    return value === null ? "" : `${value} %`;
+}
+
 function Progress({
     className,
     children,
@@ -11,6 +26,7 @@ function Progress({
     return (
         <ProgressPrimitive.Root
             value={value}
+            getAriaValueText={progressAriaValueText}
             data-slot="progress"
             className={cn("flex flex-wrap gap-3", className)}
             {...props}

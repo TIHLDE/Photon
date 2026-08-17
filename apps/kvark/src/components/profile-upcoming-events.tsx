@@ -26,16 +26,17 @@ export type ProfileUpcomingEvent = {
 };
 
 /**
- * Ventelisteplassen og uavklarte påmeldinger merkes, siden de betyr noe annet
- * enn en sikret plass. En vanlig påmelding får ikke merke — det er normalen.
+ * Hva påmeldingen faktisk er verdt: en sikret plass, en ventelisteplass med
+ * nummer, eller en påmelding som ennå ikke er avgjort. Uten merket måtte
+ * medlemmet åpne hvert arrangement for å finne ut om de har plass.
  */
-function statusLabel(event: ProfileUpcomingEvent): string | null {
+function statusLabel(event: ProfileUpcomingEvent): string {
     if (event.status === "pending") return "Behandles";
     if (event.status === "waitlisted")
         return event.waitlistPosition !== null
             ? `Venteliste #${event.waitlistPosition}`
             : "Venteliste";
-    return null;
+    return "Du har plass";
 }
 
 /** Påmeldingene som ikke er over ennå, som arrangementskort. */
@@ -78,27 +79,24 @@ export function ProfileUpcomingEvents({
 
     return (
         <ul className="flex flex-col gap-3">
-            {events.map((event) => {
-                const label = statusLabel(event);
-                return (
-                    <li key={event.eventId}>
-                        <EventCard
-                            slug={event.slug}
-                            title={event.title}
-                            startsAt={formatEventDateTime(event.startTime)}
-                            location={event.location ?? ""}
-                            organizer={event.organizer ?? ""}
-                            imageUrl={event.image || undefined}
-                            imageAlt={event.imageAlt || undefined}
-                            badge={
-                                label ? (
-                                    <Badge variant="secondary">{label}</Badge>
-                                ) : null
-                            }
-                        />
-                    </li>
-                );
-            })}
+            {events.map((event) => (
+                <li key={event.eventId}>
+                    <EventCard
+                        slug={event.slug}
+                        title={event.title}
+                        startsAt={formatEventDateTime(event.startTime)}
+                        location={event.location ?? ""}
+                        organizer={event.organizer ?? ""}
+                        imageUrl={event.image || undefined}
+                        imageAlt={event.imageAlt || undefined}
+                        badge={
+                            <Badge variant="secondary">
+                                {statusLabel(event)}
+                            </Badge>
+                        }
+                    />
+                </li>
+            ))}
         </ul>
     );
 }
