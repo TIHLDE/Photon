@@ -29,6 +29,13 @@ const pgTable = pgTableCreator((name) => `auth_${name}`);
 export const APPROVAL_STATUSES = ["pending", "approved"] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
+/**
+ * Origin of a stored password. Only `migrated` is ever written — a NULL means
+ * the member chose the password themselves. See `account.passwordSource`.
+ */
+export const PASSWORD_SOURCES = ["migrated"] as const;
+export type PasswordSource = (typeof PASSWORD_SOURCES)[number];
+
 export const user = pgTable(
     "user",
     {
@@ -90,6 +97,24 @@ export const account = pgTable(
         refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
         scope: text("scope"),
         password: text("password"),
+        /**
+         * Where `password` came from — only ever set on `credential` rows.
+         *
+         * `migrated` marks the 1634 accounts the Lepton migration created with
+         * a `crypto.randomUUID()` password it never stored anywhere
+         * (`packages/lepton-migration/import-users.ts`). Those rows grant
+         * nobody access: the member cannot know the value, so "this account
+         * has a password" is true in the schema and false in practice.
+         *
+         * Without this the two states are indistinguishable, and the prompt to
+         * choose a TIHLDE password would skip exactly the people who need it —
+         * 215 of them also have Feide and would otherwise never be asked.
+         *
+         * NULL means the password was chosen by the member. Deliberately not
+         * `notNull` with a default: a backfilled marker is a statement about
+         * the past, and every row written from here on is a real password.
+         */
+        passwordSource: text("password_source").$type<PasswordSource>(),
         createdAt: timestamp("created_at").notNull(),
         updatedAt: timestamp("updated_at")
             .$onUpdate(() => new Date())

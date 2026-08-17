@@ -5,11 +5,13 @@ import { authQueryOptions } from "#/api/auth";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { NotificationBell } from "#/components/notification-bell";
 import { PendingApprovalNotice } from "#/components/pending-approval-notice";
+import { SetPasswordNotice } from "#/components/set-password-notice";
 import { SiteBottomBar } from "#/components/site-bottom-bar";
 import { SiteFooter } from "#/components/site-footer";
 import { SiteHeader } from "#/components/site-header";
 import { useSiteNavItems } from "#/components/site-nav-items";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
+import { useSetPassword } from "#/hooks/use-set-password";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -18,6 +20,9 @@ function AppLayout() {
     // Vises over hele appen til reglene er godkjent, så ingen møter sperren
     // først i det påmeldingen åpner.
     const eventRules = useEventRulesConsent();
+    // Blir stående til passordet finnes. Ikke blokkerende: de kom gjennom
+    // Feide, så retten til å være her er allerede bevist.
+    const setPassword = useSetPassword();
 
     const currentUser = session?.user
         ? {
@@ -55,6 +60,14 @@ function AppLayout() {
             {isPendingApproval ? (
                 <div className="container mx-auto px-4 pt-4">
                     <PendingApprovalNotice />
+                </div>
+            ) : null}
+            {setPassword.mustSet ? (
+                <div className="container mx-auto px-4 pt-4">
+                    <SetPasswordNotice
+                        state={setPassword.state}
+                        href={setPassword.href}
+                    />
                 </div>
             ) : null}
             {eventRules.mustAccept ? (

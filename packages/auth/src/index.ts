@@ -20,7 +20,7 @@ import {
 import { and, eq, isNull } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
-import { user } from "@photon/db/schema";
+import { account, user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
@@ -78,6 +78,71 @@ export function usernameFromStudentEmail(
 ): string | undefined {
     if (typeof email !== "string") return undefined;
     return STUD_NTNU_EMAIL_PATTERN.exec(email.trim().toLowerCase())?.[1];
+}
+
+/**
+ * How many approval-queue mails one process will send per hour.
+ *
+ * The trigger is `/sign-up/email`, which anyone on the internet can reach, so
+ * without a ceiling "register an account" doubles as a way to bury the
+ * teknologiminister's inbox. The cap is per process rather than in Redis
+ * because the failure it guards against is volume, not precision — a few extra
+ * mails across instances cost nothing, and a shared counter would put a store
+ * round trip in the sign-up path.
+ *
+ * Volume in production has been 1 self-registration ever, so any legitimate
+ * burst is already a signal worth looking into on its own.
+ */
+const APPROVAL_MAILS_PER_HOUR = 10;
+const approvalMailTimes: number[] = [];
+
+/**
+ * Tell whoever owns the approval queue that somebody is waiting in it.
+ *
+ * Failure is swallowed on purpose, the same way `approve.ts` treats its mail:
+ * the account was created and is waiting either way, and a mail server having
+ * a bad afternoon must not turn a successful sign-up into a 500.
+ */
+async function notifyApprovalQueue(
+    email: EmailService,
+    frontendUrl: string,
+    member: { name: string; email: string; username: string | null },
+): Promise<void> {
+    const now = Date.now();
+    const hourAgo = now - 60 * 60 * 1000;
+    while (approvalMailTimes.length > 0 && approvalMailTimes[0]! < hourAgo) {
+        approvalMailTimes.shift();
+    }
+    if (approvalMailTimes.length >= APPROVAL_MAILS_PER_HOUR) {
+        console.warn(
+            "Suppressed an approval-queue notification: hourly cap reached.",
+        );
+        return;
+    }
+    approvalMailTimes.push(now);
+
+    try {
+        await email.sendEmail(
+            {
+                from: env.MAIL_FROM,
+                to: env.ACCOUNT_APPROVAL_NOTIFY_EMAIL,
+                subject: "Ny bruker venter på godkjenning",
+            },
+            {
+                type: "text",
+                text: [
+                    `${member.name} har registrert seg på tihlde.org og venter på godkjenning.`,
+                    "",
+                    `E-post: ${member.email}`,
+                    `Brukernavn: ${member.username ?? "(ikke satt)"}`,
+                    "",
+                    `Godkjenn her: ${frontendUrl}/admin/brukere`,
+                ].join("\n"),
+            },
+        );
+    } catch (error) {
+        console.error("Failed to notify the approval queue:", error);
+    }
 }
 
 /** Shape a caller-supplied username has to have: the same one Feide hands out. */
@@ -377,6 +442,23 @@ export function createAuth(options: CreateAuthOptions) {
                     .update(user)
                     .set({ emailVerified: true })
                     .where(eq(user.id, u.id));
+
+                /**
+                 * The reset just replaced a password nobody knew with one this
+                 * member chose, so the placeholder marker no longer describes
+                 * the row. Clearing it here rather than in a nightly job is
+                 * what stops the "choose a TIHLDE password" banner from
+                 * following them around after they already did.
+                 */
+                await options.services.db
+                    .update(account)
+                    .set({ passwordSource: null })
+                    .where(
+                        and(
+                            eq(account.userId, u.id),
+                            eq(account.providerId, "credential"),
+                        ),
+                    );
             },
             ...(options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM && !isProd
                 ? {
@@ -615,7 +697,7 @@ export function createAuth(options: CreateAuthOptions) {
                     const email = ctx.body?.email;
                     if (typeof email === "string" && email.length > 0) {
                         try {
-                            await options.services.db
+                            const queued = await options.services.db
                                 .update(user)
                                 .set({ approvalStatus: "pending" })
                                 .where(
@@ -626,7 +708,26 @@ export function createAuth(options: CreateAuthOptions) {
                                         ),
                                         isNull(user.approvalStatus),
                                     ),
+                                )
+                                .returning({
+                                    name: user.name,
+                                    email: user.email,
+                                    username: user.username,
+                                });
+
+                            /**
+                             * Only on a real transition — `returning()` is
+                             * empty when the status was already set, so a
+                             * repeated sign-up cannot mail the queue twice for
+                             * the same person.
+                             */
+                            if (queued[0]) {
+                                await notifyApprovalQueue(
+                                    options.services.email,
+                                    options.urls.frontend,
+                                    queued[0],
                                 );
+                            }
                         } catch (error) {
                             console.error(
                                 "Failed to mark a self-registered account as awaiting approval:",
@@ -748,7 +849,7 @@ export function createAuth(options: CreateAuthOptions) {
                  * still waiting for an admin. Rooted at `user` rather than at
                  * the settings row, since not every account has settings.
                  */
-                const [row, permissions, groups] = await Promise.all([
+                const [row, permissions, groups, accounts] = await Promise.all([
                     db.query.user.findFirst({
                         where: (u, { eq }) => eq(u.id, user.id),
                         columns: { approvalStatus: true },
@@ -767,15 +868,41 @@ export function createAuth(options: CreateAuthOptions) {
                         where: (gm, { eq }) => eq(gm.userId, user.id),
                         with: { group: true },
                     }),
+                    /**
+                     * Which accounts back this login, so the frontend can tell
+                     * "no TIHLDE password" from "a password nobody knows".
+                     * They need different repairs — one sets a password, the
+                     * other has to reset one — and the difference is invisible
+                     * from the user table alone.
+                     */
+                    db.query.account.findMany({
+                        where: (a, { eq }) => eq(a.userId, user.id),
+                        columns: { providerId: true, passwordSource: true },
+                    }),
                 ]);
 
                 const settings = row?.settings;
+                const credential = accounts.find(
+                    (a) => a.providerId === "credential",
+                );
 
                 return {
                     user: {
                         ...user,
                         approvalStatus: row?.approvalStatus ?? null,
                         isPendingApproval: row?.approvalStatus === "pending",
+                        /**
+                         * Three states, not two, and the prompt differs:
+                         * `none` sets a password, `placeholder` has to reset
+                         * one (the Lepton migration left a value nobody knows,
+                         * and `/user/me/password` answers 409 while it is
+                         * there), `chosen` needs nothing.
+                         */
+                        passwordState: !credential
+                            ? ("none" as const)
+                            : credential.passwordSource === "migrated"
+                              ? ("placeholder" as const)
+                              : ("chosen" as const),
                         settings: settings
                             ? {
                                   ...settings,

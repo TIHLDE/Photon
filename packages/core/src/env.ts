@@ -141,6 +141,18 @@ const envSchema = z
             .string()
             .default("naeringslivsminister@tihlde.org"),
         /**
+         * Who is told that a self-registered account is waiting for approval.
+         *
+         * A role address rather than a person, so it follows the verv instead
+         * of going stale when someone hands over. Without this the queue is
+         * pull-only: `approve.ts` mails the member once an admin says yes, but
+         * nothing says an admin should look — and the member is promised that
+         * mail on the waiting screen.
+         */
+        ACCOUNT_APPROVAL_NOTIFY_EMAIL: z
+            .string()
+            .default("teknologiminister@tihlde.org"),
+        /**
          * Where "jeg får ikke koblet Feide til den gamle brukeren min" lands.
          * These need a human: the member has proved nothing yet, so linking
          * their accounts is a judgement call, not something the flow can
