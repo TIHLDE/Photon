@@ -36,6 +36,19 @@ export type PoolGroup = {
 /** En pool er en liste med gruppe-slugs. Rekkefølgen på poolene er uten betydning. */
 export type PriorityPool = { groups: string[] };
 
+/**
+ * Poolene slik de skal lagres: tomme kastes.
+ *
+ * En pool uten grupper matcher ingen (`isUserPrioritized` krever
+ * `length > 0`), så lagret ville den bare vært en rad som ser ut som en regel
+ * uten å være det — og sammen med «bare prioriterte» ville den stengt
+ * arrangementet for alle. En nettopp lagt til gruppe brukeren ikke rakk å
+ * fylle ut er en mellomtilstand i skjemaet, ikke noe å skrive til databasen.
+ */
+export function poolsForSubmit(pools: PriorityPool[]): PriorityPool[] {
+    return pools.filter((pool) => pool.groups.length > 0);
+}
+
 type PriorityPoolEditorProps = {
     pools: PriorityPool[];
     /** Alle grupper i TIHLDE — ikke bare de brukeren kan arrangere for. */
@@ -115,8 +128,28 @@ export function PriorityPoolEditor({
 }: PriorityPoolEditorProps) {
     const bySlug = new Map(groups.map((g) => [g.slug, g]));
 
+    /**
+     * En gruppe uten kriterier stenger alle ute i stedet for å slippe noen inn.
+     *
+     * `isUserPrioritized` krever `poolGroupSlugs.length > 0`, så en tom pool
+     * matcher ingen — og API-ets validering ser bare at det *finnes* en pool,
+     * ikke at den har innhold. «Bare prioriterte» + én tom gruppe passerer
+     * altså validering og gjør arrangementet umulig å melde seg på.
+     *
+     * Bryteren følger derfor gruppene som faktisk har kriterier, ikke antallet
+     * rader i skjemaet. En nettopp lagt til gruppe er en mellomtilstand, ikke
+     * et valg.
+     */
+    const effectivePools = pools.filter((p) => p.groups.length > 0);
+
     function updatePool(index: number, next: string[]) {
-        onChange(pools.map((p, i) => (i === index ? { groups: next } : p)));
+        const updated = pools.map((p, i) =>
+            i === index ? { groups: next } : p,
+        );
+        onChange(updated);
+        if (!updated.some((p) => p.groups.length > 0)) {
+            onOnlyAllowPrioritizedChange(false);
+        }
     }
 
     function removePool(index: number) {
@@ -125,7 +158,9 @@ export function PriorityPoolEditor({
         // Kravet i API-et: «bare prioriterte» kan ikke stå igjen uten pooler.
         // Å la den henge ville gitt en 400 ved lagring, uten at feltet som
         // forårsaket den er synlig lenger.
-        if (next.length === 0) onOnlyAllowPrioritizedChange(false);
+        if (!next.some((p) => p.groups.length > 0)) {
+            onOnlyAllowPrioritizedChange(false);
+        }
     }
 
     return (
@@ -197,14 +232,15 @@ export function PriorityPoolEditor({
                 <Label className="flex items-start gap-3">
                     <Switch
                         checked={onlyAllowPrioritized}
-                        disabled={pools.length === 0}
+                        disabled={effectivePools.length === 0}
                         onCheckedChange={onOnlyAllowPrioritizedChange}
                     />
                     <span className="flex flex-col gap-1">
                         <span>Bare prioriterte kan melde seg på</span>
                         <CardDescription>
                             Uten denne havner alle andre på venteliste i stedet
-                            for å bli avvist. Krever minst én prioritert gruppe.
+                            for å bli avvist. Krever minst én prioritert gruppe
+                            med et kriterium.
                         </CardDescription>
                     </span>
                 </Label>

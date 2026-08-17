@@ -65,6 +65,7 @@ import { AdminStatCard } from "#/components/admin-stat-card";
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
+import { poolsForSubmit } from "#/components/priority-pool-editor";
 import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
 import {
@@ -375,7 +376,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
             isRegistrationClosed: event.closed,
             requiresSigningUp: values.requiresSigningUp,
             allowWaitlist: values.requiresSigningUp,
-            priorityPools: values.priorityPools,
+            priorityPools: poolsForSubmit(values.priorityPools),
             onlyAllowPrioritized: values.onlyAllowPrioritized,
             canCauseStrikes: values.canCauseStrikes,
             enforcesPreviousStrikes: values.canCauseStrikes,

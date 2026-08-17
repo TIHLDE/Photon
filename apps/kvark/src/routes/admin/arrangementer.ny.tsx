@@ -18,6 +18,7 @@ import { AdminNoAccess } from "#/components/admin-no-access";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
+import { poolsForSubmit } from "#/components/priority-pool-editor";
 import {
     useAnyScopePermission,
     useCanActForGroup,
@@ -214,7 +215,7 @@ function NewEventPage() {
                     isRegistrationClosed: false,
                     requiresSigningUp: values.requiresSigningUp,
                     allowWaitlist: values.requiresSigningUp,
-                    priorityPools: values.priorityPools,
+                    priorityPools: poolsForSubmit(values.priorityPools),
                     onlyAllowPrioritized: values.onlyAllowPrioritized,
                     canCauseStrikes: values.canCauseStrikes,
                     enforcesPreviousStrikes: values.canCauseStrikes,
