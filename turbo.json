@@ -4,7 +4,11 @@
     "ui": "tui",
     "tasks": {
         "dev": {
-            "dependsOn": ["^build", "@photon/docker#dev:up", "@photon/db#db:push"],
+            "dependsOn": [
+                "^build",
+                "@photon/docker#dev:up",
+                "@photon/db#db:push"
+            ],
             "persistent": true
         },
         "@photon/web#dev": {

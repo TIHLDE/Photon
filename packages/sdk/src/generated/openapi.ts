@@ -2679,7 +2679,7 @@ export interface paths {
         };
         /**
          * Search users
-         * @description Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign'.
+         * @description Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign' — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).
          */
         get: operations["searchUsers"];
         put?: never;
@@ -14306,6 +14306,8 @@ export interface operations {
             query: {
                 /** @description Search term (name or username) */
                 q: string;
+                /** @description Group the search is for. Lets that group's leader (or anyone with 'groups:manage' for it) search users in order to add members. */
+                groupSlug?: string;
             };
             header?: never;
             path?: never;
