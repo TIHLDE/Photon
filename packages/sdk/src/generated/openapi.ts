@@ -3848,6 +3848,8 @@ export interface components {
             canCauseStrikes: boolean;
             /** @description Number of people signed up (registered, attended or no-show). Public, unlike the roster itself, so the open event page can show how many are going without naming them. */
             registeredCount: number;
+            /** @description Number of people on the waitlist. Public for the same reason as registeredCount: how long the queue is tells a member whether signing up is worth it, without naming anyone in it. */
+            waitlistCount: number;
             /** @description Event image URL (nullable) */
             image: string | null;
             /** @description Alt text for the event image (nullable) */

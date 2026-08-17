@@ -561,6 +561,10 @@ export const eventDetailSchema = Schema(
             description:
                 "Number of people signed up (registered, attended or no-show). Public, unlike the roster itself, so the open event page can show how many are going without naming them.",
         }),
+        waitlistCount: z.number().int().meta({
+            description:
+                "Number of people on the waitlist. Public for the same reason as registeredCount: how long the queue is tells a member whether signing up is worth it, without naming anyone in it.",
+        }),
         image: z
             .url()
             .nullable()
