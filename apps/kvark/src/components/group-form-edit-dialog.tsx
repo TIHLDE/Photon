@@ -3,6 +3,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
     Dialog,
+    DialogBody,
     DialogContent,
     DialogDescription,
     DialogFooter,
@@ -127,7 +128,9 @@ export function GroupFormEditDialog({
                 if (!o) onClose();
             }}
         >
-            <DialogContent className="sm:max-w-lg">
+            {/* Bredt: spørsmålstekstene er ofte lange setninger, og på en smal
+            dialog ser man bare en flik av det man skriver. */}
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Rediger spørreskjema</DialogTitle>
                     <DialogDescription>
@@ -249,151 +252,176 @@ function EditForm({
     const editForm = useEditForm({ form, questions, onSubmit });
 
     return (
-        <form {...formHandlers(editForm)} className="flex flex-col gap-6">
-            {error ? (
-                <Alert variant="destructive">
-                    <TriangleAlert />
-                    <AlertTitle>Klarte ikke å lagre skjemaet</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            ) : null}
+        // DialogBody låser tittel og knapperad mens spørsmålene scroller. Uten
+        // den scroller hele dialogen, og med et opptaksskjema på ti spørsmål
+        // er «Lagre» langt under skjermkanten. Knapperaden står utenfor
+        // <form>: SubmitButton kaller handleSubmit selv når den ikke hører til
+        // et form-element.
+        <>
+            <DialogBody>
+                <form
+                    {...formHandlers(editForm)}
+                    className="flex flex-col gap-6"
+                >
+                    {error ? (
+                        <Alert variant="destructive">
+                            <TriangleAlert />
+                            <AlertTitle>
+                                Klarte ikke å lagre skjemaet
+                            </AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    ) : null}
 
-            {deleteError ? (
-                <Alert variant="destructive">
-                    <TriangleAlert />
-                    <AlertTitle>Klarte ikke å slette skjemaet</AlertTitle>
-                    <AlertDescription>{deleteError}</AlertDescription>
-                </Alert>
-            ) : null}
+                    {deleteError ? (
+                        <Alert variant="destructive">
+                            <TriangleAlert />
+                            <AlertTitle>
+                                Klarte ikke å slette skjemaet
+                            </AlertTitle>
+                            <AlertDescription>{deleteError}</AlertDescription>
+                        </Alert>
+                    ) : null}
 
-            <FieldGroup>
-                <editForm.AppField name="title">
-                    {(field) => (
-                        <field.Field required>
-                            <field.Label>Tittel</field.Label>
-                            <field.Input placeholder="Skriv her..." />
-                            <field.Error />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                <editForm.AppField name="description">
-                    {(field) => (
-                        <field.Field>
-                            <field.Label>Beskrivelse</field.Label>
-                            <field.Markdown placeholder="Skriv her..." />
-                            <field.Description>
-                                Vises over spørsmålene
-                            </field.Description>
-                            <field.Error />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                {/* Stenger man skjemaet, følger åpningstidspunktet med: ellers
+                    <FieldGroup>
+                        <editForm.AppField name="title">
+                            {(field) => (
+                                <field.Field required>
+                                    <field.Label>Tittel</field.Label>
+                                    <field.Input placeholder="Skriv her..." />
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        <editForm.AppField name="description">
+                            {(field) => (
+                                <field.Field>
+                                    <field.Label>Beskrivelse</field.Label>
+                                    <field.Markdown placeholder="Skriv her..." />
+                                    <field.Description>
+                                        Vises over spørsmålene
+                                    </field.Description>
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        {/* Stenger man skjemaet, følger åpningstidspunktet med: ellers
                     ville skjemaet man nettopp stengte åpnet seg selv igjen. */}
-                <editForm.AppField
-                    name="isOpen"
-                    listeners={{
-                        onChange: ({ value }) => {
-                            if (!value) editForm.setFieldValue("opensAt", null);
-                        },
-                    }}
-                >
-                    {(field) => (
-                        <field.Field orientation="horizontal">
-                            <FieldContent>
-                                <field.Label>Åpent for svar</field.Label>
-                                <field.Description>
-                                    Skjemaet kan bare svares på og deles når det
-                                    er åpent
-                                </field.Description>
-                            </FieldContent>
-                            <field.Switch />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                {/* Og setter man et tidspunkt, er det fordi skjemaet skal åpne
+                        <editForm.AppField
+                            name="isOpen"
+                            listeners={{
+                                onChange: ({ value }) => {
+                                    if (!value)
+                                        editForm.setFieldValue("opensAt", null);
+                                },
+                            }}
+                        >
+                            {(field) => (
+                                <field.Field orientation="horizontal">
+                                    <FieldContent>
+                                        <field.Label>
+                                            Åpent for svar
+                                        </field.Label>
+                                        <field.Description>
+                                            Skjemaet kan bare svares på og deles
+                                            når det er åpent
+                                        </field.Description>
+                                    </FieldContent>
+                                    <field.Switch />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        {/* Og setter man et tidspunkt, er det fordi skjemaet skal åpne
                     da — bryteren følger etter. */}
-                <editForm.AppField
-                    name="opensAt"
-                    listeners={{
-                        onChange: ({ value }) => {
-                            if (value) editForm.setFieldValue("isOpen", true);
-                        },
-                    }}
-                >
-                    {(field) => (
-                        <field.Field>
-                            <field.Label>Åpner</field.Label>
-                            <field.DateTimePicker />
-                            <field.Description>
-                                Valgfritt. Med et tidspunkt er skjemaet stengt
-                                til da, og åpner seg selv når tiden kommer.
-                            </field.Description>
-                            <field.Error />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                <editForm.AppField name="canSubmitMultiple">
-                    {(field) => (
-                        <field.Field orientation="horizontal">
-                            <FieldContent>
-                                <field.Label>
-                                    Tillat flere svar fra samme person
-                                </field.Label>
-                            </FieldContent>
-                            <field.Switch />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                <editForm.AppField name="onlyForMembers">
-                    {(field) => (
-                        <field.Field orientation="horizontal">
-                            <FieldContent>
-                                <field.Label>
-                                    Bare for medlemmer av gruppen
-                                </field.Label>
-                            </FieldContent>
-                            <field.Switch />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-                <editForm.AppField name="emailReceiver">
-                    {(field) => (
-                        <field.Field>
-                            <field.Label>Varsle på e-post</field.Label>
-                            <field.Input
-                                type="email"
-                                placeholder="navn@tihlde.org"
-                            />
-                            <field.Description>
-                                Får en e-post for hvert svar. La stå tom for
-                                ingen varsling.
-                            </field.Description>
-                            <field.Error />
-                        </field.Field>
-                    )}
-                </editForm.AppField>
-            </FieldGroup>
+                        <editForm.AppField
+                            name="opensAt"
+                            listeners={{
+                                onChange: ({ value }) => {
+                                    if (value)
+                                        editForm.setFieldValue("isOpen", true);
+                                },
+                            }}
+                        >
+                            {(field) => (
+                                <field.Field>
+                                    <field.Label>Åpner</field.Label>
+                                    <field.DateTimePicker />
+                                    <field.Description>
+                                        Valgfritt. Med et tidspunkt er skjemaet
+                                        stengt til da, og åpner seg selv når
+                                        tiden kommer.
+                                    </field.Description>
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        <editForm.AppField name="canSubmitMultiple">
+                            {(field) => (
+                                <field.Field orientation="horizontal">
+                                    <FieldContent>
+                                        <field.Label>
+                                            Tillat flere svar fra samme person
+                                        </field.Label>
+                                    </FieldContent>
+                                    <field.Switch />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        <editForm.AppField name="onlyForMembers">
+                            {(field) => (
+                                <field.Field orientation="horizontal">
+                                    <FieldContent>
+                                        <field.Label>
+                                            Bare for medlemmer av gruppen
+                                        </field.Label>
+                                    </FieldContent>
+                                    <field.Switch />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        <editForm.AppField name="emailReceiver">
+                            {(field) => (
+                                <field.Field>
+                                    <field.Label>Varsle på e-post</field.Label>
+                                    <field.Input
+                                        type="email"
+                                        placeholder="navn@tihlde.org"
+                                    />
+                                    <field.Description>
+                                        Får en e-post for hvert svar. La stå tom
+                                        for ingen varsling.
+                                    </field.Description>
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                    </FieldGroup>
 
-            <Separator />
+                    <Separator />
 
-            {answerCount > 0 ? (
-                <Alert>
-                    <LockIcon />
-                    <AlertTitle>
-                        Skjemaet har {answerCount}{" "}
-                        {answerCount === 1 ? "svar" : "svar"}
-                    </AlertTitle>
-                    <AlertDescription>
-                        Du kan endre tekst, rekkefølge og «påkrevd», og legge
-                        til nye spørsmål og alternativer. Spørsmålene som
-                        allerede er besvart kan ikke fjernes eller bytte type —
-                        da ville svarene på dem forsvunnet.
-                    </AlertDescription>
-                </Alert>
-            ) : null}
+                    {answerCount > 0 ? (
+                        <Alert>
+                            <LockIcon />
+                            <AlertTitle>
+                                Skjemaet har {answerCount}{" "}
+                                {answerCount === 1 ? "svar" : "svar"}
+                            </AlertTitle>
+                            <AlertDescription>
+                                Du kan endre tekst, rekkefølge og «påkrevd», og
+                                legge til nye spørsmål og alternativer.
+                                Spørsmålene som allerede er besvart kan ikke
+                                fjernes eller bytte type — da ville svarene på
+                                dem forsvunnet.
+                            </AlertDescription>
+                        </Alert>
+                    ) : null}
 
-            <QuestionsEditor editForm={editForm} hasAnswers={answerCount > 0} />
+                    <QuestionsEditor
+                        editForm={editForm}
+                        hasAnswers={answerCount > 0}
+                    />
+                </form>
+            </DialogBody>
 
             <DialogFooter>
                 {onRequestDelete ? (
@@ -425,7 +453,7 @@ function EditForm({
                     </editForm.SubmitButton>
                 </editForm.AppForm>
             </DialogFooter>
-        </form>
+        </>
     );
 }
 
