@@ -32,7 +32,7 @@ export function FormSubmissionsTable({
     // slik at et langt fritekstsvar brytes i stedet for å strekke tabellen ut
     // i titusenvis av piksler.
     return (
-        <Table>
+        <Table className="min-w-max">
             <TableHeader>
                 <TableRow>
                     <TableHead>Navn</TableHead>
