@@ -48,7 +48,7 @@ function DefaultRouteNotFound() {
                 else void router.navigate({ to: "/" });
             }}
         >
-            <Button variant="outline" render={<Link to="/" />}>
+            <Button size="lg" variant="outline" render={<Link to="/" />}>
                 Til forsida
             </Button>
         </RouteNotFound>
