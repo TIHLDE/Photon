@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
     useInfiniteQuery,
@@ -57,6 +58,7 @@ import {
     formatEventPrice,
     formatEventTime,
     registrationErrorMessage,
+    registrationPollInterval,
 } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/arrangementer/$slug")({
@@ -69,13 +71,24 @@ function EventDetailPage() {
     const { slug } = Route.useParams();
     const navigate = useNavigate();
 
-    // En fersk påmelding ligger som «pending» til cron-en på serveren har
-    // avgjort plass eller venteliste. Vi poller til den er avklart, ellers
-    // ville brukeren blitt stående i behandling til de lastet siden på nytt.
+    // En fersk påmelding ligger som «pending» til serveren har avgjort plass
+    // eller venteliste. Vi poller til den er avklart, ellers ville brukeren
+    // blitt stående i behandling til de lastet siden på nytt. Intervallet
+    // trappes ned med hvor lenge den har stått — se
+    // `registrationPollInterval`.
+    const pendingSinceRef = useRef<number | null>(null);
     const { data: event } = useSuspenseQuery({
         ...getEventByIdQuery(slug),
-        refetchInterval: (query) =>
-            query.state.data?.registration?.status === "pending" ? 2000 : false,
+        refetchInterval: (query) => {
+            if (query.state.data?.registration?.status !== "pending") {
+                pendingSinceRef.current = null;
+                return false;
+            }
+            pendingSinceRef.current ??= Date.now();
+            return registrationPollInterval(
+                Date.now() - pendingSinceRef.current,
+            );
+        },
         // Pollingen står ellers stille når fanen ikke er i forgrunnen, og en
         // bruker som bytter fane mens vi behandler ville kommet tilbake til
         // «Behandler påmeldingen din …» som aldri gikk videre.
@@ -238,10 +251,12 @@ function EventDetailPage() {
                             {session ? (
                                 <IconActionButton
                                     icon={isFavorite ? StarOff : Star}
+                                    // Favoritt er også påmeldingsvarselet, så
+                                    // knappen sier hva den faktisk gjør.
                                     label={
                                         isFavorite
-                                            ? "Fjern fra favoritter"
-                                            : "Legg til i favoritter"
+                                            ? "Fjern fra favoritter – skrur av varselet"
+                                            : "Legg til i favoritter – få varsel én time før påmeldingen åpner"
                                     }
                                     onClick={() =>
                                         favoriteMutation.mutate({

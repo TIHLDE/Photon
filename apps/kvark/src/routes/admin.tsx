@@ -185,7 +185,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 // permission — they may create and assign verv inside their
                 // own group, and set what its members hold there. The page
                 // hides the TIHLDE-wide section from them.
-                label: "Verv og tilganger",
+                label: "Tilganger",
                 icon: CrownIcon,
                 link: linkOptions({ to: "/admin/roller" }),
                 permission: ADMIN_SECTION_PERMISSIONS.roller,

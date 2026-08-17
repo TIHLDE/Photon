@@ -9,7 +9,7 @@ ALTER TABLE "auth_account" ADD COLUMN "password_source" text;--> statement-break
 -- of members who have since reset their password for real.
 --
 -- Nothing is deleted. A real password reset overwrites the hash and clears
--- this marker in the same statement (see the reset hook), so a placeholder
+-- this marker in the same statement (see `onPasswordReset`), so a placeholder
 -- stops being one the moment its owner chooses a password they know.
 UPDATE "auth_account"
 SET "password_source" = 'migrated'

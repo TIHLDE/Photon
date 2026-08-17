@@ -49,7 +49,16 @@ export function formatApplicationDate(isoDate: string): string {
     return `${day}.${month}.${year}`;
 }
 
-/** 1250 → "1 250 kr" (non-breaking space, as nb-NO formats it). */
+/**
+ * 1250 → "1 250,00 kr" (non-breaking space, as nb-NO formats it).
+ *
+ * Øre are always shown: an utlegg is an accounting document, and "1 250 kr"
+ * would hide the difference between 1250,00 and 1250,45.
+ */
 export function formatNok(amount: number): string {
-    return `${new Intl.NumberFormat("nb-NO").format(amount)} kr`;
+    const formatted = new Intl.NumberFormat("nb-NO", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(amount);
+    return `${formatted} kr`;
 }

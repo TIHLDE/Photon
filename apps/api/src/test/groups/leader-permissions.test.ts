@@ -154,4 +154,174 @@ describe("group leader permissions", () => {
             500_000,
         );
     });
+
+    /**
+     * The org-wide half of the leader's set. It exists because the rights a
+     * president needs outside HS could otherwise only live in a global verv
+     * shadowing the leader row.
+     */
+    describe("global permissions", () => {
+        integrationTest(
+            "the leader holds them unscoped, and loses them on stepping down",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderGlobalPermissions: ["news:manage"] })
+                    .where(eq(schema.group.slug, group.slug));
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                expect(await getUserPermissions(ctx, leader.id)).toContain(
+                    "news:manage",
+                );
+
+                await updateGroupMemberRole(
+                    ctx,
+                    leader.id,
+                    group.slug,
+                    "member",
+                );
+
+                expect(await getUserPermissions(ctx, leader.id)).not.toContain(
+                    "news:manage",
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a group leader cannot grant them from a right they only hold for their group",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderPermissions: ["news:manage"] })
+                    .where(eq(schema.group.slug, group.slug));
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                // Holds news:manage@group:<slug>, so the group list is fine…
+                const scoped = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: ["news:manage"] },
+                });
+                expect(scoped.status).toBe(200);
+
+                // …but the same permission org-wide is an escalation.
+                const global = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        permissions: ["news:manage"],
+                        globalPermissions: ["news:manage"],
+                    },
+                });
+                expect(global.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "omitting the list leaves it alone",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.utils.giveUserPermissions(admin, [
+                    "roles:create",
+                    "news:manage",
+                ]);
+
+                const granted = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        permissions: [],
+                        globalPermissions: ["news:manage"],
+                    },
+                });
+                expect(granted.status).toBe(200);
+                expect((await granted.json()).globalPermissions).toEqual([
+                    "news:manage",
+                ]);
+
+                const untouched = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: [] },
+                });
+                expect((await untouched.json()).globalPermissions).toEqual([
+                    "news:manage",
+                ]);
+            },
+            500_000,
+        );
+    });
+
+    /**
+     * The group's own name for the role. It exists so HS does not need a verv
+     * called "President" held by the same person as the leader row.
+     */
+    describe("title", () => {
+        integrationTest(
+            "a leader can name the role, clear it, and leave it untouched",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(leader);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: leader.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const patch = (json: {
+                    permissions: string[];
+                    title?: string | null;
+                }) =>
+                    client.api.groups[":groupSlug"][
+                        "leader-permissions"
+                    ].$patch({ param: { groupSlug: group.slug }, json });
+
+                const named = await patch({
+                    permissions: [],
+                    title: "President",
+                });
+                expect(named.status).toBe(200);
+                expect((await named.json()).title).toBe("President");
+
+                // Omitting the field edits permissions without touching the name.
+                const untouched = await patch({ permissions: [] });
+                expect((await untouched.json()).title).toBe("President");
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: group.slug } });
+                expect((await read.json()).title).toBe("President");
+
+                const cleared = await patch({ permissions: [], title: null });
+                expect((await cleared.json()).title).toBeNull();
+            },
+            500_000,
+        );
+    });
 });

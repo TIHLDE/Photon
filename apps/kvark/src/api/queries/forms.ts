@@ -127,6 +127,12 @@ export const deleteFormMutation = mutationOptions({
             queryKey: [...FormQueryKeys.listInfinite],
             exact: false,
         });
+        // Gruppeskjemaene ligger under gruppas egen nøkkel, så uten denne blir
+        // et slettet skjema stående i lista på gruppesiden.
+        ctx.client.invalidateQueries({
+            queryKey: [...GroupQueryKeys.forms],
+            exact: false,
+        });
     },
 });
 

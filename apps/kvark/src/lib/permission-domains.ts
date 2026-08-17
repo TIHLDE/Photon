@@ -267,3 +267,29 @@ export function summarizeExtraPermissions(
         ? "Ingen egne tilganger"
         : `+ ${labels.join(", ")}`;
 }
+
+/**
+ * The same summary for a holder with lists at more than one scope.
+ *
+ * Each list is measured against its own covered set: a group that gives every
+ * member «Bannere» for its own banners does not cover a leader who may edit
+ * everyone's, so that grant still has to show up on the row.
+ */
+export function summarizeExtraPermissionsByScope(
+    entries: { permissions: string[]; covered: Set<string> }[],
+): string {
+    if (entries.some((entry) => entry.permissions.includes("root"))) {
+        return "Full tilgang (root)";
+    }
+    const labels = new Set<string>();
+    for (const { permissions, covered } of entries) {
+        for (const slug of domainsOf(permissions)) {
+            if (!covered.has(slug)) {
+                labels.add(DOMAIN_LABELS.get(slug) ?? slug);
+            }
+        }
+    }
+    return labels.size === 0
+        ? "Ingen egne tilganger"
+        : `+ ${[...labels].sort((a, b) => a.localeCompare(b, "nb")).join(", ")}`;
+}

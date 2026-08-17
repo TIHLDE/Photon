@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { CatchBoundary, Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
@@ -17,6 +17,7 @@ import { CompanyContactForm } from "#/components/company-contact-form";
 import { CompanyOfferCard } from "#/components/company-offer-card";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { JobCard } from "#/components/job-card";
+import { SectionError } from "#/components/section-error";
 import { StudyProgrammeCard } from "#/components/study-programme-card";
 import {
     COMPANY_EVENT_TYPES,
@@ -35,10 +36,10 @@ const EVENT_TYPE_OPTIONS = COMPANY_EVENT_TYPES.map((type) => ({
 
 export const Route = createFileRoute("/_app/bedrift/")({
     component: CompanyLandingPage,
-    loader: ({ context }) =>
-        context.queryClient.ensureQueryData(
-            getJobsQuery(0, {}, JOB_PREVIEW_COUNT),
-        ),
+    // Sida er i hovedsak fast innhold og et kontaktskjema som ikke henter
+    // noe. Stillingene er den eneste biten som spør API-et, og de får hente
+    // seg selv bak sin egen Suspense- og feilgrense — et nede endepunkt skal
+    // ikke ta med seg kontaktskjemaet, som er grunnen til at sida finnes.
 });
 
 function CompanyLandingPage() {
@@ -91,9 +92,16 @@ function CompanyLandingPage() {
                         de beste kandidatene!
                     </p>
                 </div>
-                <Suspense fallback={<JobPreviewSkeleton />}>
-                    <JobPreview />
-                </Suspense>
+                <CatchBoundary
+                    getResetKey={() => "jobs"}
+                    errorComponent={() => (
+                        <SectionError message="Vi fikk ikke lastet stillingene." />
+                    )}
+                >
+                    <Suspense fallback={<JobPreviewSkeleton />}>
+                        <JobPreview />
+                    </Suspense>
+                </CatchBoundary>
             </section>
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-4 px-4 py-16">

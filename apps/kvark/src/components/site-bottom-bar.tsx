@@ -13,7 +13,12 @@ import {
     DrawerTitle,
     DrawerTrigger,
 } from "@tihlde/ui/ui/drawer";
-import { BriefcaseBusiness, Calendar, Menu } from "lucide-react";
+import {
+    BriefcaseBusiness,
+    Calendar,
+    Menu,
+    SquareArrowOutUpRight,
+} from "lucide-react";
 import { useState } from "react";
 
 import { TihldeLogo } from "./icons/tihlde";
@@ -148,10 +153,11 @@ function MenuLink({
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-2"
+                className="flex items-center gap-1 py-2"
                 onClick={onNavigate}
             >
                 {link.label}
+                <SquareArrowOutUpRight className="size-3.5" aria-hidden />
             </a>
         );
     }

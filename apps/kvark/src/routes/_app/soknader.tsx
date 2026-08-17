@@ -2,7 +2,7 @@ import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { CheckCircle2, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { authClientWithRedirect, authQueryOptions } from "#/api/auth";
@@ -72,6 +72,20 @@ function SoknaderPage() {
         message: string;
     } | null>(null);
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+    /**
+     * The forms are tall enough that the submit button sits well below this
+     * banner. Without scrolling to it, a submitted — or rejected — søknad
+     * reads as "nothing happened".
+     */
+    const feedbackRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!feedback) return;
+        feedbackRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+        });
+    }, [feedback]);
 
     function setActive(tab: SoknadNavKey) {
         setFeedback(null);
@@ -231,7 +245,7 @@ function SoknaderPage() {
 
             <DetailLayoutContent>
                 {feedback ? (
-                    <Alert>
+                    <Alert ref={feedbackRef}>
                         {feedback.kind === "success" ? (
                             <CheckCircle2 />
                         ) : (

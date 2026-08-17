@@ -1,5 +1,5 @@
 {
-  "id": "ee7e2300-c08e-459d-a09d-af20a9035c46",
+  "id": "c1686880-419e-465d-ad0e-bec4adce0705",
   "prevId": "f75a5b48-1c1b-481a-968b-63ef343d2b82",
   "version": "7",
   "dialect": "postgresql",
@@ -843,12 +843,6 @@
         },
         "password": {
           "name": "password",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "password_source": {
-          "name": "password_source",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -2249,6 +2243,12 @@
         },
         "no_show_processed_at": {
           "name": "no_show_processed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "registration_reminder_sent_at": {
+          "name": "registration_reminder_sent_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false

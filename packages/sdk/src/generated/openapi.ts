@@ -3029,7 +3029,7 @@ export interface components {
              * @description Optional copy to a group's økonomiansvarlig. Must match a group's registered finance address.
              */
             ccEmail?: string;
-            /** @description Amount in whole NOK */
+            /** @description Amount in NOK, at most two decimals (øre) */
             amountNok: number;
             /** @description Date of the expense, YYYY-MM-DD */
             expenseDate: string;
@@ -5214,10 +5214,18 @@ export interface components {
         GroupLeaderPermissions: {
             /** @description Permissions held by whoever currently leads this group, scoped to this group. */
             permissions: string[];
+            /** @description Permissions held by whoever currently leads this group across all of TIHLDE, unscoped. */
+            globalPermissions: string[];
+            /** @description What this group calls its leader, e.g. 'President'. Null when the group has no custom title and the leader is simply «Leder». */
+            title: string | null;
         };
         UpdateGroupLeaderPermissions: {
             /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. */
             permissions: string[];
+            /** @description Permissions the group's leader holds across all of TIHLDE. Replaces the existing list. Requires holding each permission globally yourself. Omit to leave unchanged. */
+            globalPermissions?: string[];
+            /** @description What this group calls its leader, e.g. 'President'. Null clears it back to 'Leder'. Omit to leave unchanged. */
+            title?: string | null;
         };
         GroupMemberPermissions: {
             /** @description Permissions held by every member of this group, scoped to this group. */

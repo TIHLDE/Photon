@@ -35,6 +35,28 @@ type FormAPI = {
     reset: () => void | Promise<void>;
 };
 
+/**
+ * Bring the first field that failed validation into view.
+ *
+ * Long forms put the submit button far below the fields it validates, so a
+ * rejected submit otherwise looks like the button did nothing at all — the
+ * error message renders off-screen.
+ */
+function revealFirstInvalidField(formEl: HTMLFormElement) {
+    const field = formEl.querySelector<HTMLElement>(
+        '[data-invalid="true"], [data-invalid=""]',
+    );
+    if (!field) return;
+
+    field.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Only text-like controls are focused: focusing a select or combobox
+    // trigger risks reopening its popup right under the user's cursor.
+    field
+        .querySelector<HTMLElement>("input:not([type=hidden]), textarea")
+        ?.focus({ preventScroll: true });
+}
+
 export function formHandlers<TFormAPI extends FormAPI>(
     formApi: TFormAPI,
     preventDefault = true,
@@ -43,7 +65,12 @@ export function formHandlers<TFormAPI extends FormAPI>(
         noValidate: true,
         onSubmit: (e) => {
             if (preventDefault) e.preventDefault();
-            formApi.handleSubmit();
+            // `currentTarget` is nulled once the handler returns, so keep the
+            // element before awaiting the submit.
+            const formEl = e.currentTarget;
+            void Promise.resolve(formApi.handleSubmit()).then(() =>
+                revealFirstInvalidField(formEl),
+            );
         },
         onReset: (e) => {
             if (preventDefault) e.preventDefault();

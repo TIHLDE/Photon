@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
     index,
     integer,
+    numeric,
     pgEnum,
     pgTable,
     text,
@@ -154,7 +155,16 @@ export const applicationExpense = pgTable("application_expense", {
         .references(() => application.id, { onDelete: "cascade" }),
     /** Optional copy to a group's økonomiansvarlig. Validated as an allowlist. */
     ccEmail: text("cc_email"),
-    amountNok: integer("amount_nok").notNull(),
+    /**
+     * Kroner with øre. `numeric` rather than a float: receipts are exact to the
+     * øre, and binary floats are not. Read back as a JS number — two decimals
+     * under a million kroner is far inside the exact-integer range.
+     */
+    amountNok: numeric("amount_nok", {
+        precision: 12,
+        scale: 2,
+        mode: "number",
+    }).notNull(),
     /**
      * "YYYY-MM-DD". Stored as a string on purpose — the old portal had an
      * explicit timezone-shift workaround; a date-only string kills the class

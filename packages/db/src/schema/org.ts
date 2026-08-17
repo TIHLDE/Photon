@@ -224,6 +224,34 @@ export const group = pgTable("group", {
      */
     leaderPermissions: text("leader_permissions").array().notNull().default([]),
     /**
+     * Permissions the group's leader holds org-wide, unscoped.
+     *
+     * The counterpart to {@link memberGlobalPermissions}, for the rights that
+     * belong to the person rather than the group: presidenten answering
+     * kontaktskjema for all of TIHLDE, not just for HS. Without it, the only
+     * home for those was a verv duplicating the leader row.
+     *
+     * Bounded by the same rule as everything else: you may only grant what you
+     * hold yourself, at the scope you grant it at — so a group leader, who
+     * holds nothing globally, can never write this list.
+     */
+    leaderGlobalPermissions: text("leader_global_permissions")
+        .array()
+        .notNull()
+        .default([]),
+    /**
+     * What this group calls its leader — "President" in HS, "Leder" everywhere
+     * else. Purely a label: leadership is still the membership role, and the
+     * permissions above still follow whoever holds it.
+     *
+     * Exists because the alternative was a verv named "President" pointing at
+     * the same person as the leader row, which then showed up twice in the
+     * admin table and needed its permissions kept in sync by hand.
+     *
+     * NULL means "no custom title" and reads as "Leder".
+     */
+    leaderTitle: varchar("leader_title", { length: 128 }),
+    /**
      * Permissions every member of this group holds, granted scoped to the
      * group ("permission@group:<slug>"). The leader is a member too, so these
      * stack on top of {@link leaderPermissions}.

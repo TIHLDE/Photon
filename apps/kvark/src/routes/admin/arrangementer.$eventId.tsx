@@ -103,8 +103,16 @@ export const Route = createFileRoute("/admin/arrangementer/$eventId")({
         const event = await context.queryClient.ensureQueryData(
             getEventByIdQuery(params.eventId),
         );
-        void context.queryClient.ensureQueryData(getGroupsQuery(0));
-        void context.queryClient.ensureQueryData(getInstitutesQuery());
+        // Varmer cachen til detaljfanen uten å blokkere. Feiler de, tar
+        // `DetailsTab` det med sin egen Suspense-grense — men løftet må
+        // fanges her, ellers står vi igjen med en ubehandlet avvisning som
+        // kan felle SSR-prosessen.
+        void context.queryClient
+            .ensureQueryData(getGroupsQuery(0))
+            .catch(() => {});
+        void context.queryClient
+            .ensureQueryData(getInstitutesQuery())
+            .catch(() => {});
         return { breadcrumbs: event.title };
     },
 });

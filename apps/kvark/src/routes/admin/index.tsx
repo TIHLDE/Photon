@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { CatchBoundary, createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
@@ -26,31 +26,20 @@ import { getEventsQuery } from "#/api/queries/events";
 import { getGroupsQuery } from "#/api/queries/groups";
 import { getJobsQuery } from "#/api/queries/jobs";
 import { getNewsQuery } from "#/api/queries/news";
-import { authClient, sessionHasPermissionInAnyScope } from "#/api/auth";
+import { SectionError } from "#/components/section-error";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 
 export const Route = createFileRoute("/admin/")({
     component: DashboardPage,
-    loader: async ({ context }) => {
-        // Only prefetch what the viewer may read. `/api/contracts` answers 403
-        // without `contracts:view`, and prefetching it unconditionally took
-        // the whole dashboard down with an error for everyone else.
-        const auth = await authClient();
-        const mayRead = (permission: string | readonly string[]) =>
-            sessionHasPermissionInAnyScope(auth?.permissions, permission);
-
-        await Promise.all([
-            context.queryClient.ensureQueryData(getEventsQuery(0)),
-            context.queryClient.ensureQueryData(getNewsQuery(0)),
-            context.queryClient.ensureQueryData(getJobsQuery(0)),
-            context.queryClient.ensureQueryData(getGroupsQuery(0)),
-            ...(mayRead(ADMIN_SECTION_PERMISSIONS.opptak)
-                ? [context.queryClient.ensureQueryData(getContractListQuery())]
-                : []),
-        ]);
-        return { breadcrumbs: "Dashboard" };
-    },
+    // Dashbordet er en samling uavhengige widgeter, og ingen av dem er sida.
+    // Derfor blokkerer loaderen ikke på noe: hver widget henter selv bak sin
+    // egen Suspense- og feilgrense, så ett feilende endepunkt koster oss den
+    // ene widgeten. Tidligere prefetchet loaderen alt under ett `Promise.all`,
+    // og da tok `/api/contracts` med seg hele dashbordet for alle uten
+    // `contracts:view` — se `ContractsStatCard`, som fortsatt er skilt ut for
+    // at den spørringen ikke skal kjøre for andre i det hele tatt.
+    loader: () => ({ breadcrumbs: "Dashboard" }),
 });
 
 function DashboardPage() {
@@ -78,21 +67,57 @@ function DashboardPage() {
                 }
             />
 
-            <Suspense fallback={<StatsSkeleton />}>
-                <StatsGrid />
-            </Suspense>
+            <CatchBoundary
+                getResetKey={() => "stats"}
+                errorComponent={() => (
+                    <SectionError message="Vi fikk ikke lastet tallene." />
+                )}
+            >
+                <Suspense fallback={<StatsSkeleton />}>
+                    <StatsGrid />
+                </Suspense>
+            </CatchBoundary>
 
             <QuickActions />
 
             <div className="grid gap-6 lg:grid-cols-2">
-                <Suspense fallback={<ListCardSkeleton />}>
-                    <RecentEvents />
-                </Suspense>
-                <Suspense fallback={<ListCardSkeleton />}>
-                    <RecentNews />
-                </Suspense>
+                <CatchBoundary
+                    getResetKey={() => "recent-events"}
+                    errorComponent={() => (
+                        <CardError title="Siste arrangementer" />
+                    )}
+                >
+                    <Suspense fallback={<ListCardSkeleton />}>
+                        <RecentEvents />
+                    </Suspense>
+                </CatchBoundary>
+                <CatchBoundary
+                    getResetKey={() => "recent-news"}
+                    errorComponent={() => <CardError title="Siste nyheter" />}
+                >
+                    <Suspense fallback={<ListCardSkeleton />}>
+                        <RecentNews />
+                    </Suspense>
+                </CatchBoundary>
             </div>
         </Stagger>
+    );
+}
+
+/**
+ * Feilet innhold i et av korta i rutenettet. Kortet beholder tittelen og
+ * plassen sin, så resten av dashbordet ikke hopper.
+ */
+function CardError({ title }: { title: string }) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <SectionError message="Vi fikk ikke lastet dette." />
+            </CardContent>
+        </Card>
     );
 }
 

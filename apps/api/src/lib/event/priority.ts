@@ -1,5 +1,8 @@
 import type { DbSchema } from "@photon/db";
+import { schema } from "@photon/db";
+import { and, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { getStrikeActiveCutoff } from "./strikes";
 
 /**
  * Get all group slugs that a user belongs to
@@ -64,6 +67,79 @@ export function isUserPrioritized({
     return false;
 }
 
+/**
+ * Answers "is this user prioritized for this event" without touching the
+ * database — every membership and strike it needs was fetched up front.
+ */
+export type PrioritizationLookup = (userId: string) => boolean;
+
+/**
+ * Fetch everything needed to prioritize a whole group of users, in two
+ * queries, and hand back a lookup over the result.
+ *
+ * Deciding this one user at a time is what made the waitlist O(n²): the
+ * position of every waitlisted member was recomputed by walking the entire
+ * waitlist, and each step asked the database for that member's groups and
+ * strikes. A 200-person waitlist meant tens of thousands of queries inside a
+ * transaction holding `FOR UPDATE` locks.
+ */
+export async function loadPrioritization(
+    userIds: string[],
+    eventPools: EventPool[],
+    enforcesPreviousStrikes: boolean,
+    db: NodePgDatabase<DbSchema>,
+): Promise<PrioritizationLookup> {
+    const ids = [...new Set(userIds)];
+
+    if (ids.length === 0) {
+        return () => false;
+    }
+
+    const [memberships, strikes] = await Promise.all([
+        db
+            .select({
+                userId: schema.groupMembership.userId,
+                groupSlug: schema.groupMembership.groupSlug,
+            })
+            .from(schema.groupMembership)
+            .where(inArray(schema.groupMembership.userId, ids)),
+        db
+            .select({
+                userId: schema.eventStrike.userId,
+                // Sum, not count: a single strike row can be worth several,
+                // exactly as {@link getUserStrikeCount} treats it.
+                total: sql<number>`coalesce(sum(${schema.eventStrike.count}), 0)::int`,
+            })
+            .from(schema.eventStrike)
+            .where(
+                and(
+                    inArray(schema.eventStrike.userId, ids),
+                    gte(schema.eventStrike.createdAt, getStrikeActiveCutoff()),
+                ),
+            )
+            .groupBy(schema.eventStrike.userId),
+    ]);
+
+    const groupsByUser = new Map<string, Set<string>>();
+    for (const membership of memberships) {
+        const slugs = groupsByUser.get(membership.userId) ?? new Set<string>();
+        slugs.add(membership.groupSlug);
+        groupsByUser.set(membership.userId, slugs);
+    }
+
+    const strikesByUser = new Map<string, number>(
+        strikes.map((row) => [row.userId, Number(row.total)]),
+    );
+
+    return (userId: string) =>
+        isUserPrioritized({
+            userGroupSlugs: groupsByUser.get(userId) ?? new Set<string>(),
+            eventPools,
+            strikeCount: strikesByUser.get(userId) ?? 0,
+            enforcesPreviousStrikes,
+        });
+}
+
 interface Registration {
     userId: string;
     eventId: string;
@@ -88,19 +164,16 @@ export async function findSwapTarget(
         .filter((r) => r.status === "registered")
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
+    const isPrioritized = await loadPrioritization(
+        registered.map((r) => r.userId),
+        eventPools,
+        enforcesPreviousStrikes,
+        db,
+    );
+
     // Find the first non-prioritized user
     for (const reg of registered) {
-        const userGroupSlugs = await getUserGroupSlugs(reg.userId, db);
-        const strikeCount = await getUserStrikeCount(reg.userId, db);
-
-        const isPrioritized = isUserPrioritized({
-            userGroupSlugs,
-            eventPools,
-            strikeCount,
-            enforcesPreviousStrikes,
-        });
-
-        if (!isPrioritized) {
+        if (!isPrioritized(reg.userId)) {
             return reg;
         }
     }
@@ -108,19 +181,55 @@ export async function findSwapTarget(
     return null; // All registered users are prioritized
 }
 
-async function getUserStrikeCount(
-    userId: string,
+/**
+ * Work out where everyone on the waitlist stands, in one pass.
+ *
+ * Prioritized users are ordered before non-prioritized users. Within each
+ * group, users are ordered by createdAt (FIFO).
+ */
+export async function calculateWaitlistPositions(
+    eventId: string,
+    eventPools: EventPool[],
+    enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
-): Promise<number> {
-    const { getUserStrikeCount: getStrikes } = await import("./strikes");
-    return getStrikes(userId, db);
+): Promise<Map<string, number>> {
+    const waitlisted = await db.query.eventRegistration.findMany({
+        where: (reg, { and, eq }) =>
+            and(eq(reg.eventId, eventId), eq(reg.status, "waitlisted")),
+        orderBy: (reg, { asc }) => asc(reg.createdAt),
+    });
+
+    const isPrioritized = await loadPrioritization(
+        waitlisted.map((reg) => reg.userId),
+        eventPools,
+        enforcesPreviousStrikes,
+        db,
+    );
+
+    const prioritized: string[] = [];
+    const nonPrioritized: string[] = [];
+
+    for (const reg of waitlisted) {
+        if (isPrioritized(reg.userId)) {
+            prioritized.push(reg.userId);
+        } else {
+            nonPrioritized.push(reg.userId);
+        }
+    }
+
+    return new Map(
+        [...prioritized, ...nonPrioritized].map((userId, index) => [
+            userId,
+            index + 1,
+        ]),
+    );
 }
 
 /**
- * Calculate the waitlist position for a user
+ * Calculate the waitlist position for a single user.
  *
- * Prioritized users are ordered before non-prioritized users.
- * Within each group, users are ordered by createdAt (FIFO).
+ * Prefer {@link calculateWaitlistPositions} when more than one position is
+ * needed — this one recomputes the whole waitlist to answer for one member.
  */
 export async function calculateWaitlistPosition(
     userId: string,
@@ -129,51 +238,20 @@ export async function calculateWaitlistPosition(
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
 ): Promise<number> {
-    // Get all waitlisted registrations for this event
-    const waitlisted = await db.query.eventRegistration.findMany({
-        where: (reg, { and, eq }) =>
-            and(eq(reg.eventId, eventId), eq(reg.status, "waitlisted")),
-        orderBy: (reg, { asc }) => asc(reg.createdAt),
-    });
+    const positions = await calculateWaitlistPositions(
+        eventId,
+        eventPools,
+        enforcesPreviousStrikes,
+        db,
+    );
 
-    // Categorize into prioritized and non-prioritized
-    const prioritizedList: Registration[] = [];
-    const nonPrioritizedList: Registration[] = [];
+    const position = positions.get(userId);
 
-    for (const reg of waitlisted) {
-        const userGroupSlugs = await getUserGroupSlugs(reg.userId, db);
-        const strikeCount = await getUserStrikeCount(reg.userId, db);
-
-        const isPrioritized = isUserPrioritized({
-            userGroupSlugs,
-            eventPools,
-            strikeCount,
-            enforcesPreviousStrikes,
-        });
-
-        if (isPrioritized) {
-            prioritizedList.push(reg);
-        } else {
-            nonPrioritizedList.push(reg);
-        }
+    if (position === undefined) {
+        throw new Error(
+            `User ${userId} not found in waitlist for event ${eventId}`,
+        );
     }
 
-    // Find the user in the appropriate list
-    const prioritizedIndex = prioritizedList.findIndex(
-        (r) => r.userId === userId,
-    );
-    if (prioritizedIndex !== -1) {
-        return prioritizedIndex + 1;
-    }
-
-    const nonPrioritizedIndex = nonPrioritizedList.findIndex(
-        (r) => r.userId === userId,
-    );
-    if (nonPrioritizedIndex !== -1) {
-        return prioritizedList.length + nonPrioritizedIndex + 1;
-    }
-
-    throw new Error(
-        `User ${userId} not found in waitlist for event ${eventId}`,
-    );
+    return position;
 }

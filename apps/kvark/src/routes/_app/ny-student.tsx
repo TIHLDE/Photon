@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { CatchBoundary, Link, createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
@@ -185,9 +185,16 @@ function NewStudentPage() {
                 </Suspense>
             </section>
 
-            <Suspense fallback={null}>
-                <LatestToddelSection />
-            </Suspense>
+            {/* Seksjonen skjuler seg selv når det ikke er noe å vise, så en
+             * feil skal føre til det samme — ikke til at hele sida ryker. */}
+            <CatchBoundary
+                getResetKey={() => "toddel"}
+                errorComponent={() => null}
+            >
+                <Suspense fallback={null}>
+                    <LatestToddelSection />
+                </Suspense>
+            </CatchBoundary>
 
             <section className="container mx-auto flex max-w-5xl flex-col gap-8 px-4 py-16">
                 <h2 className="text-center text-2xl md:text-4xl">

@@ -9,14 +9,17 @@ export class DuplicateSubmissionException extends HTTPException {
 }
 
 /**
- * Rewriting the questions deletes the answers that belong to them, so a group
- * form is frozen from the first submission.
+ * Et gruppeskjema med svar kan fortsatt redigeres — det er bare endringene som
+ * ville tatt svar med seg som stoppes, og meldingen sier hvilke. Se
+ * `findDestructiveFieldChanges`.
  */
 export class FormHasSubmissionsException extends HTTPException {
-    constructor() {
+    constructor(problems: string[] = []) {
         super(409, {
             message:
-                "Spørsmålene kan ikke endres etter at noen har svart på skjemaet",
+                problems.length > 0
+                    ? `Endringen ville slettet svar som allerede er sendt inn: ${problems.join("; ")}`
+                    : "Spørsmålene kan ikke endres etter at noen har svart på skjemaet",
         });
     }
 }

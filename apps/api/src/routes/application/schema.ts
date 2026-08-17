@@ -42,10 +42,10 @@ export const createExpenseApplicationSchema = Schema(
         }),
         amountNok: z
             .number()
-            .int()
             .positive()
             .max(1_000_000)
-            .meta({ description: "Amount in whole NOK" }),
+            .multipleOf(0.01, "Beløpet kan ha maks to desimaler (øre)")
+            .meta({ description: "Amount in NOK, at most two decimals (øre)" }),
         expenseDate: z
             .string()
             .regex(/^\d{4}-\d{2}-\d{2}$/, "Dato må være på formatet YYYY-MM-DD")
@@ -221,7 +221,7 @@ export const applicationSummarySchema = Schema(
         contactEmail: z.string(),
         submittedById: z.string().nullable(),
         submittedByName: z.string().nullable(),
-        amountNok: z.number().int().nullable().meta({
+        amountNok: z.number().nullable().meta({
             description: "Amount for expense/support types, otherwise null",
         }),
         groupName: z.string().nullable(),
@@ -248,7 +248,7 @@ export const applicationDetailSchema = Schema(
         expense: z
             .object({
                 ccEmail: z.string().nullable(),
-                amountNok: z.number().int(),
+                amountNok: z.number(),
                 expenseDate: z.string(),
                 budgetType: z.enum(applicationBudgetTypeVariants),
                 budgetTypeLabel: z.string(),
