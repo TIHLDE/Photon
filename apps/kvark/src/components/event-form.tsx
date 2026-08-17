@@ -1,6 +1,11 @@
 import { RichEditor } from "@tihlde/ui/complex/markdown";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import {
+    PriorityPoolEditor,
+    type PoolGroup,
+    type PriorityPool,
+} from "#/components/priority-pool-editor";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import {
@@ -61,12 +66,25 @@ export type EventFormValues = {
     price: string;
     image: File | null;
     imageAlt: string;
+    /**
+     * Prioriteringspooler. Alle gruppene i én pool må stemme samtidig, og det
+     * holder å treffe én av poolene — se `PriorityPoolEditor`.
+     */
+    priorityPools: PriorityPool[];
+    /** Avvis alle utenfor en pool i stedet for å sette dem på venteliste. */
+    onlyAllowPrioritized: boolean;
 };
 
 type EventFormProps = {
     values: EventFormValues;
     onChange: (patch: Partial<EventFormValues>) => void;
     groups: Array<{ slug: string; name: string }>;
+    /**
+     * Alle grupper i TIHLDE, til prioriteringspoolene. `groups` over er
+     * filtrert til dem brukeren kan arrangere for, og duger derfor ikke —
+     * en pool peker typisk på kull og studier arrangøren ikke er medlem av.
+     */
+    poolGroups: PoolGroup[];
     institutes: Array<{ slug: string; shortName: string; name: string }>;
     /** Medlemmene i den valgte arrangørgruppen — kandidatene til kontaktperson. */
     contactPersonCandidates: Array<{ id: string; name: string }>;
@@ -92,6 +110,7 @@ export function EventForm({
     values,
     onChange,
     groups,
+    poolGroups,
     institutes,
     contactPersonCandidates,
     addressSuggestions,
@@ -553,6 +572,22 @@ export function EventForm({
                     </FieldGroup>
                 </CardContent>
             </Card>
+
+            {/*
+             * Bare relevant når arrangementet har påmelding i det hele tatt —
+             * prioritering uten påmelding er ingenting å prioritere.
+             */}
+            {values.requiresSigningUp ? (
+                <PriorityPoolEditor
+                    pools={values.priorityPools}
+                    groups={poolGroups}
+                    onChange={(priorityPools) => onChange({ priorityPools })}
+                    onlyAllowPrioritized={values.onlyAllowPrioritized}
+                    onOnlyAllowPrioritizedChange={(onlyAllowPrioritized) =>
+                        onChange({ onlyAllowPrioritized })
+                    }
+                />
+            ) : null}
 
             <Card>
                 <CardHeader>

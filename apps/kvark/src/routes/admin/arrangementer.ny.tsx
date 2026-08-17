@@ -64,6 +64,8 @@ function eventDateDefaults() {
 }
 
 const emptyValues: EventFormValues = {
+    priorityPools: [],
+    onlyAllowPrioritized: false,
     title: "",
     description: "",
     categorySlug: "",
@@ -212,8 +214,8 @@ function NewEventPage() {
                     isRegistrationClosed: false,
                     requiresSigningUp: values.requiresSigningUp,
                     allowWaitlist: values.requiresSigningUp,
-                    priorityPools: null,
-                    onlyAllowPrioritized: false,
+                    priorityPools: values.priorityPools,
+                    onlyAllowPrioritized: values.onlyAllowPrioritized,
                     canCauseStrikes: values.canCauseStrikes,
                     enforcesPreviousStrikes: values.canCauseStrikes,
                     isPaidEvent: values.isPaidEvent,
@@ -267,6 +269,7 @@ function NewEventPage() {
                 values={values}
                 onChange={handleChange}
                 groups={groups}
+                poolGroups={allGroups}
                 institutes={institutes}
                 contactPersonCandidates={contactPersonCandidates}
                 addressSuggestions={addressSuggestions ?? []}

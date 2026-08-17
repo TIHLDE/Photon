@@ -218,6 +218,12 @@ function valuesFromEvent(event: Event): EventFormValues {
         typeof event.locationLng === "number";
 
     return {
+        // Arrangementet leverer poolene med hele gruppeobjekter; skjemaet
+        // jobber på slugs, som er det API-et tar imot igjen.
+        priorityPools: (event.priorityPools ?? []).map((pool) => ({
+            groups: pool.groups.map((g) => g.slug),
+        })),
+        onlyAllowPrioritized: event.onlyAllowPrioritized,
         title: event.title,
         description: event.description,
         categorySlug: event.category.slug,
@@ -369,8 +375,8 @@ function DetailsTab({ eventId }: { eventId: string }) {
             isRegistrationClosed: event.closed,
             requiresSigningUp: values.requiresSigningUp,
             allowWaitlist: values.requiresSigningUp,
-            priorityPools: null,
-            onlyAllowPrioritized: event.onlyAllowPrioritized,
+            priorityPools: values.priorityPools,
+            onlyAllowPrioritized: values.onlyAllowPrioritized,
             canCauseStrikes: values.canCauseStrikes,
             enforcesPreviousStrikes: values.canCauseStrikes,
             isPaidEvent: values.isPaidEvent,
@@ -415,6 +421,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 values={values}
                 onChange={handleChange}
                 groups={groups}
+                poolGroups={allGroups}
                 institutes={institutes}
                 contactPersonCandidates={contactPersonCandidates}
                 existingImageUrl={event.image}
