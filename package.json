@@ -73,12 +73,13 @@
         "changeset": "changeset",
         "version-packages": "changeset version",
         "release": "turbo build --filter=@tihlde/sdk && changeset publish",
-        "cut-release": "bash scripts/cut-release.sh"
+        "cut-release": "bun scripts/cut-release.ts"
     },
     "devDependencies": {
         "@changesets/changelog-github": "^0.5.2",
         "@changesets/cli": "^2.29.8",
         "@tihlde/sdk": "workspace:*",
+        "@types/bun": "catalog:",
         "oxfmt": "catalog:",
         "oxlint": "catalog:",
         "ts-morph": "^27.0.2",
