@@ -96,9 +96,6 @@ function LoginPage() {
         error && !feideIssue ? feideCallbackErrorMessage(error) : null;
 
     const [feideLoading, setFeideLoading] = useState(false);
-    // Feide is the primary path, so the username/password form stays collapsed
-    // behind a "Kan du ikke bruke Feide?" link.
-    const [showPasswordForm, setShowPasswordForm] = useState(false);
 
     // Verifying the address is what lets Better Auth attach Feide to a
     // migrated account; the member does it themselves, since reading that
@@ -158,7 +155,7 @@ function LoginPage() {
             <CardHeader>
                 <CardTitle>Logg inn</CardTitle>
                 <CardDescription>
-                    Velkommen tilbake. Logg inn med Feide.
+                    Velkommen tilbake. Logg inn med TIHLDE-brukernavnet ditt.
                 </CardDescription>
             </CardHeader>
 
@@ -202,87 +199,89 @@ function LoginPage() {
                         helpError={helpMutation.error?.message}
                     />
                 )}
-                <FeideSignInButton
-                    variant="default"
-                    onSignIn={() => handleFeideSignIn()}
-                    loading={feideLoading}
-                />
-                {!showPasswordForm && (
-                    <Button
-                        type="button"
-                        variant="link"
-                        className="mx-auto"
-                        onClick={() => setShowPasswordForm(true)}
-                    >
-                        Kan du ikke bruke Feide?
-                    </Button>
-                )}
             </CardContent>
 
-            {showPasswordForm && (
-                <form {...formHandlers(form)} className="flex flex-col gap-4">
-                    <div className="px-6">
-                        <OrDivider label="eller logg inn med brukernavn" />
-                    </div>
-                    <CardContent className="flex flex-col gap-5">
-                        <FieldGroup>
-                            <form.AppField name="username">
+            <form {...formHandlers(form)} className="flex flex-col gap-4">
+                <CardContent className="flex flex-col gap-5">
+                    <FieldGroup>
+                        <form.AppField name="username">
+                            {(field) => (
+                                <field.InputField
+                                    label="Brukernavn"
+                                    type="text"
+                                    autoComplete="username"
+                                    required
+                                />
+                            )}
+                        </form.AppField>
+                        <div className="flex flex-col gap-2">
+                            <form.AppField name="password">
                                 {(field) => (
-                                    <field.InputField
-                                        label="Brukernavn"
-                                        type="text"
-                                        autoComplete="username"
+                                    <field.PasswordField
+                                        label="Passord"
+                                        autoComplete="current-password"
                                         required
                                     />
                                 )}
                             </form.AppField>
-                            <div className="flex flex-col gap-2">
-                                <form.AppField name="password">
-                                    {(field) => (
-                                        <field.PasswordField
-                                            label="Passord"
-                                            autoComplete="current-password"
-                                            required
-                                        />
-                                    )}
-                                </form.AppField>
-                                <div className="flex justify-end">
-                                    <Link
-                                        to="/forgot-password"
-                                        className="text-sm text-muted-foreground underline underline-offset-4"
-                                    >
-                                        Glemt passord?
-                                    </Link>
-                                </div>
+                            <div className="flex justify-end">
+                                <Link
+                                    to="/forgot-password"
+                                    className="text-sm text-muted-foreground underline underline-offset-4"
+                                >
+                                    Glemt passord?
+                                </Link>
                             </div>
-                        </FieldGroup>
+                        </div>
+                    </FieldGroup>
 
-                        <form.AppForm>
-                            <form.FormErrors />
-                        </form.AppForm>
+                    <form.AppForm>
+                        <form.FormErrors />
+                    </form.AppForm>
 
-                        {signInMutation.isError && !emailNotVerified && (
-                            <p className="text-sm text-destructive">
-                                {signInMutation.error.message}
-                            </p>
-                        )}
+                    {signInMutation.isError && !emailNotVerified && (
+                        <p className="text-sm text-destructive">
+                            {signInMutation.error.message}
+                        </p>
+                    )}
 
-                        <form.AppForm>
-                            <form.SubmitButton
-                                className="w-full"
-                                loading={
-                                    <>
-                                        <Spinner />
-                                        <span>Logger inn...</span>
-                                    </>
-                                }
-                            >
-                                Logg inn
-                            </form.SubmitButton>
-                        </form.AppForm>
-                    </CardContent>
-                </form>
-            )}
+                    <form.AppForm>
+                        <form.SubmitButton
+                            className="w-full"
+                            loading={
+                                <>
+                                    <Spinner />
+                                    <span>Logger inn...</span>
+                                </>
+                            }
+                        >
+                            Logg inn
+                        </form.SubmitButton>
+                    </form.AppForm>
+                </CardContent>
+            </form>
+
+            {/*
+             * Feide stays visible one step down, not hidden behind a link. It
+             * is the only way in for the members who have never set a TIHLDE
+             * password, and the only way to register — so burying it would
+             * strand exactly the people the fallback exists for.
+             */}
+            <div className="px-6">
+                <OrDivider label="eller" />
+            </div>
+            <CardContent className="flex flex-col gap-2">
+                <FeideSignInButton
+                    variant="outline"
+                    onSignIn={() => handleFeideSignIn()}
+                    loading={feideLoading}
+                />
+                <p className="text-sm text-muted-foreground">
+                    Registrerte du deg med Feide og aldri satte et
+                    TIHLDE-passord? Logg inn med Feide, eller bruk «Glemt
+                    passord» for å lage et.
+                </p>
+            </CardContent>
 
             {emailNotVerified && (
                 <EmailVerificationPrompt

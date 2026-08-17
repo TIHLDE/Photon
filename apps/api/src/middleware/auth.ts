@@ -33,7 +33,7 @@ async function sessionFromVerifiedToken(
     if (!session || session.userId !== verified.sub) return null;
     if (session.expiresAt <= new Date()) return null;
 
-    const [user, settings] = await Promise.all([
+    const [user, settings, accounts] = await Promise.all([
         ctx.db.query.user.findFirst({
             where: eq(schema.user.id, verified.sub),
         }),
@@ -41,8 +41,14 @@ async function sessionFromVerifiedToken(
             where: eq(schema.userSettings.userId, verified.sub),
             with: { allergies: { columns: { allergySlug: true } } },
         }),
+        ctx.db.query.account.findMany({
+            where: eq(schema.account.userId, verified.sub),
+            columns: { providerId: true, passwordSource: true },
+        }),
     ]);
     if (!user) return null;
+
+    const credential = accounts.find((a) => a.providerId === "credential");
 
     // Mirror the shape `customSession` builds, so bearer- and cookie-authenticated
     // requests see the same user object. `approvedAt`/`approvedBy` are left out
@@ -58,9 +64,14 @@ async function sessionFromVerifiedToken(
                       allergies: settings.allergies.map((a) => a.allergySlug),
                   }
                 : null,
-            // `customSession` computes this rather than storing it, so a
-            // bearer-authenticated request has to compute it too.
+            // `customSession` computes these rather than storing them, so a
+            // bearer-authenticated request has to compute them too.
             isPendingApproval: user.approvalStatus === "pending",
+            passwordState: !credential
+                ? "none"
+                : credential.passwordSource === "migrated"
+                  ? "placeholder"
+                  : "chosen",
         } as unknown as AuthUser,
         session: session as AuthSession,
     };

@@ -428,6 +428,13 @@
       "when": 1786888589089,
       "tag": "0060_modern_micromax",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1786971846852,
+      "tag": "0061_wide_night_nurse",
+      "breakpoints": true
     }
   ]
 }
