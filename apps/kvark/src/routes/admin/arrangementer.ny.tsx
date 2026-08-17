@@ -18,6 +18,7 @@ import { AdminNoAccess } from "#/components/admin-no-access";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
+import { poolsForSubmit } from "#/components/priority-pool-editor";
 import {
     useAnyScopePermission,
     useCanActForGroup,
@@ -64,6 +65,8 @@ function eventDateDefaults() {
 }
 
 const emptyValues: EventFormValues = {
+    priorityPools: [],
+    onlyAllowPrioritized: false,
     title: "",
     description: "",
     categorySlug: "",
@@ -212,8 +215,8 @@ function NewEventPage() {
                     isRegistrationClosed: false,
                     requiresSigningUp: values.requiresSigningUp,
                     allowWaitlist: values.requiresSigningUp,
-                    priorityPools: null,
-                    onlyAllowPrioritized: false,
+                    priorityPools: poolsForSubmit(values.priorityPools),
+                    onlyAllowPrioritized: values.onlyAllowPrioritized,
                     canCauseStrikes: values.canCauseStrikes,
                     enforcesPreviousStrikes: values.canCauseStrikes,
                     isPaidEvent: values.isPaidEvent,
@@ -267,6 +270,7 @@ function NewEventPage() {
                 values={values}
                 onChange={handleChange}
                 groups={groups}
+                poolGroups={allGroups}
                 institutes={institutes}
                 contactPersonCandidates={contactPersonCandidates}
                 addressSuggestions={addressSuggestions ?? []}
