@@ -11,12 +11,17 @@ const RoleQueryKeys = {
 
 // -- User search (for assigning roles/positions by name, not ID) --
 
-export const searchUsersQuery = (q: string) =>
+/**
+ * `groupSlug` sendes med når søket skjer på vegne av en gruppe. Da slipper
+ * gruppens leder gjennom uten `users:view` — ellers ville et søk hen har lov
+ * til å handle på (legge til medlem) svart 403 og sett ut som «ingen treff».
+ */
+export const searchUsersQuery = (q: string, groupSlug?: string) =>
     queryOptions({
-        queryKey: [...RoleQueryKeys.userSearch, q],
+        queryKey: [...RoleQueryKeys.userSearch, q, groupSlug ?? null],
         queryFn: () =>
             apiClient.get("/api/user/search", {
-                searchParams: { q },
+                searchParams: groupSlug ? { q, groupSlug } : { q },
             }),
         staleTime: 30_000,
     });

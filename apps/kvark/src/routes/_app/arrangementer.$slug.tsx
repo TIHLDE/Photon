@@ -147,6 +147,8 @@ function EventDetailPage() {
         registrationStart: event.registrationStart,
         registrationEnd: event.registrationEnd,
         endTime: event.endTime,
+        capacity: event.capacity,
+        registeredCount: event.registeredCount,
     });
     // Feil fra på- eller avmelding. Uten dette så knappen ut til å ikke gjøre
     // noe når API-et avviste forsøket.
@@ -384,12 +386,15 @@ function EventDetailPage() {
                                 ? toEventDeadline(event.registrationEnd)
                                 : undefined
                         }
-                        capacity={null}
+                        capacity={event.capacity}
                         registeredCount={registeredCount}
-                        waitlistCount={0}
+                        waitlistCount={event.waitlistCount}
                         isAdmin={isAdmin}
                         price={price}
                         onRegister={handleRegister}
+                        // Ventelista er samme påmelding: serveren avgjør om
+                        // det ble plass eller kø.
+                        onJoinWaitlist={handleRegister}
                         onUnregister={handleUnregister}
                         isSubmitting={
                             registerMutation.isPending ||

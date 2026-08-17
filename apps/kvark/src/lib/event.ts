@@ -56,6 +56,10 @@ type RegistrationStateInput = {
     registrationEnd?: string | null;
     /** When the event itself ends. */
     endTime?: string | null;
+    /** Maksgrensen for antall plasser. Null means "no limit". */
+    capacity?: number | null;
+    /** How many already hold a spot — compared against `capacity`. */
+    registeredCount?: number;
 };
 
 /**
@@ -76,6 +80,8 @@ export function deriveRegistrationState(
         registrationStart,
         registrationEnd,
         endTime,
+        capacity,
+        registeredCount,
     }: RegistrationStateInput,
     now: Date = new Date(),
 ): EventRegistrationState {
@@ -102,6 +108,14 @@ export function deriveRegistrationState(
             }
             if (registrationStart && new Date(registrationStart) > now) {
                 return "not-open";
+            }
+            // Sist av alle grensene: at plassene er tatt betyr ingenting så
+            // lenge påmeldingen er stengt eller ikke åpnet ennå — da er det
+            // det som skal stå. Uten dette sto det «Meld deg på» på et fullt
+            // arrangement, og medlemmet oppdaget først etterpå at de havnet
+            // på venteliste.
+            if (capacity != null && (registeredCount ?? 0) >= capacity) {
+                return "full";
             }
             return "open";
     }

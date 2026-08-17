@@ -235,19 +235,28 @@ function getStateRendering(
                 message: "Påmelding er stengt",
             };
 
+        // Fullt stopper aldri en påmelding: det finnes alltid en venteliste, og
+        // plassen går videre til den som står først når noen melder seg av.
         case "full":
             return {
                 icon: AlertCircle,
                 message: "Arrangementet er fullt",
+                secondary:
+                    props.waitlistCount > 0
+                        ? `${props.waitlistCount} står på venteliste.`
+                        : "Meld deg på ventelista, så får du plassen om noen melder seg av.",
                 // Ventelista går gjennom samme påmelding, så den er stengt av
                 // samme grunn — knappen ville bare gitt en avvisning.
                 actions: blockedByEventRules ? null : (
                     <Button
                         variant="outline"
                         className="w-full"
-                        onClick={props.onJoinWaitlist}
+                        disabled={props.isSubmitting}
+                        onClick={() => props.onJoinWaitlist?.()}
                     >
-                        Sett meg på venteliste
+                        {props.isSubmitting
+                            ? "Setter deg på ventelista …"
+                            : "Sett meg på venteliste"}
                     </Button>
                 ),
             };

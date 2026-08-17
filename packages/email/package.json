@@ -12,7 +12,7 @@
     },
     "scripts": {
         "build": "tsdown",
-        "dev": "tsdown --watch",
+        "build:watch": "tsdown --watch",
         "typecheck": "tsc --noEmit",
         "email": "email dev --port 4001 --dir src/template"
     },

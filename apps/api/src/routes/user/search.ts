@@ -1,10 +1,14 @@
+import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { ilike, or } from "drizzle-orm";
+import { createMiddleware } from "hono/factory";
+import { HTTPException } from "hono/http-exception";
 import { validator } from "hono-openapi";
 import z from "zod";
+import type { AppContext } from "~/lib/ctx";
+import { isGroupLeader } from "~/lib/group/middleware";
 import { Schema, describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 
 export const userSearchResultSchema = Schema(
@@ -19,6 +23,52 @@ export const userSearchResultSchema = Schema(
     ),
 );
 
+/**
+ * Søket brukes til to ting: å tildele roller/verv (admin), og å finne noen som
+ * skal legges til i en gruppe. Tilgangen speiler handlingen søket tjener — en
+ * undergruppeleder har lov til å legge til medlemmer i sin egen gruppe, og må
+ * derfor kunne søke opp folk når `groupSlug` peker på den gruppen. Uten
+ * `groupSlug` er det fortsatt bare `users:view`/`roles:assign` som gjelder, så
+ * hele brukerregisteret ikke blir åpent for enhver leder.
+ */
+const requireUserSearchAccess = createMiddleware<{
+    Variables: {
+        user: { id: string } | null;
+        ctx: AppContext;
+    };
+}>(async (c, next) => {
+    const user = c.get("user");
+    if (!user) {
+        throw new HTTPException(401, { message: "Authentication required" });
+    }
+    const ctx = c.get("ctx");
+
+    if (await hasPermission(ctx, user.id, ["users:view", "roles:assign"])) {
+        await next();
+        return;
+    }
+
+    const groupSlug = c.req.query("groupSlug");
+    if (groupSlug) {
+        const canManageGroup =
+            (await hasScopedPermission(
+                ctx,
+                user.id,
+                "groups:manage",
+                `group:${groupSlug}`,
+            )) || (await isGroupLeader(ctx, groupSlug, user.id));
+        if (canManageGroup) {
+            await next();
+            return;
+        }
+    }
+
+    throw new HTTPException(403, {
+        message:
+            "Forbidden - requires permission: users:view or roles:assign, or the right to manage the given group",
+    });
+});
+
 export const searchUsersRoute = route().get(
     "/search",
     describeRoute({
@@ -26,17 +76,20 @@ export const searchUsersRoute = route().get(
         summary: "Search users",
         operationId: "searchUsers",
         description:
-            "Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign'.",
+            "Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign' — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).",
     })
         .schemaResponse({
             statusCode: 200,
             schema: userSearchResultSchema,
             description: "Matching users",
         })
-        .forbidden({ description: "Requires users:view or roles:assign" })
+        .forbidden({
+            description:
+                "Requires users:view or roles:assign, or the right to manage the given group",
+        })
         .build(),
     requireAuth,
-    requireAccess({ permission: ["users:view", "roles:assign"] }),
+    requireUserSearchAccess,
     validator(
         "query",
         z.object({
@@ -45,6 +98,10 @@ export const searchUsersRoute = route().get(
                 .min(2)
                 .max(100)
                 .meta({ description: "Search term (name or username)" }),
+            groupSlug: z.string().optional().meta({
+                description:
+                    "Group the search is for. Lets that group's leader (or anyone with 'groups:manage' for it) search users in order to add members.",
+            }),
         }),
     ),
     async (c) => {

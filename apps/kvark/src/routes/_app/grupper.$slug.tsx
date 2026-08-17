@@ -99,6 +99,12 @@ import { errorStatus } from "#/lib/utils";
 /** Module-level so the permission lookup keeps a stable identity. */
 const EVENT_CREATE_PERMISSIONS = ["events:create", "events:manage"] as const;
 
+/**
+ * Et feilet søk skal ikke se ut som at ingen matcher — da leter man videre
+ * etter en person som aldri ville dukket opp.
+ */
+const SEARCH_FAILED_MESSAGE = "Søket feilet. Prøv igjen.";
+
 const searchSchema = z.object({
     tab: z
         .enum([
@@ -333,11 +339,17 @@ function GroupDetail() {
     // avledet gruppe"), men den må hentes ut av responsen asynkront.
     const [addMemberError, setAddMemberError] = useState<string | null>(null);
     const debouncedMemberQuery = useDebounced(memberQuery);
-    const { data: memberSearchResults, isFetching: isSearchingMembers } =
-        useQuery({
-            ...searchUsersQuery(debouncedMemberQuery),
-            enabled: debouncedMemberQuery.length >= 2,
-        });
+    const {
+        data: memberSearchResults,
+        isFetching: isSearchingMembers,
+        error: memberSearchFailure,
+    } = useQuery({
+        // Gruppen sendes med så lederen selv kan søke: uten den svarer API-et
+        // 403 for alle uten `users:view`, og en tom liste ser ut som at
+        // personen ikke finnes.
+        ...searchUsersQuery(debouncedMemberQuery, slug),
+        enabled: debouncedMemberQuery.length >= 2,
+    });
     // Den som allerede er med skal ikke kunne legges til på nytt — API-et
     // svarer 400, og det er en dårligere forklaring enn å utelate treffet.
     const addableUsers = useMemo(
@@ -353,12 +365,14 @@ function GroupDetail() {
     const [leaderQuery, setLeaderQuery] = useState("");
     const [leaderError, setLeaderError] = useState<string | null>(null);
     const debouncedLeaderQuery = useDebounced(leaderQuery);
-    const { data: leaderSearchResults, isFetching: isSearchingLeader } =
-        useQuery({
-            ...searchUsersQuery(debouncedLeaderQuery),
-            enabled:
-                canPickLeaderOutsideGroup && debouncedLeaderQuery.length >= 2,
-        });
+    const {
+        data: leaderSearchResults,
+        isFetching: isSearchingLeader,
+        error: leaderSearchFailure,
+    } = useQuery({
+        ...searchUsersQuery(debouncedLeaderQuery, slug),
+        enabled: canPickLeaderOutsideGroup && debouncedLeaderQuery.length >= 2,
+    });
     const leaderCandidates = useMemo(
         () =>
             (leaderSearchResults ?? []).filter(
@@ -671,7 +685,11 @@ function GroupDetail() {
                                           results: leaderCandidates,
                                           isSearching: isSearchingLeader,
                                           isAdding: updateMemberRole.isPending,
-                                          error: leaderError,
+                                          error:
+                                              leaderError ??
+                                              (leaderSearchFailure
+                                                  ? SEARCH_FAILED_MESSAGE
+                                                  : null),
                                           onAdd: async (userId) => {
                                               setLeaderError(null);
                                               try {
@@ -702,7 +720,11 @@ function GroupDetail() {
                                 results: addableUsers,
                                 isSearching: isSearchingMembers,
                                 isAdding: addMember.isPending,
-                                error: addMemberError,
+                                error:
+                                    addMemberError ??
+                                    (memberSearchFailure
+                                        ? SEARCH_FAILED_MESSAGE
+                                        : null),
                                 onAdd: async (userId) => {
                                     setAddMemberError(null);
                                     try {
