@@ -233,6 +233,24 @@ function EventDetailPage() {
         unregisterMutation.mutate({ eventId: event.id });
     }
 
+    // Nettleseren fryser siden når vi sender medlemmet til Vipps, og gir den
+    // tilbake akkurat slik den var hvis de trykker «tilbake». Uten dette sto
+    // knappen igjen som opptatt, og en betaling som ble avbrutt underveis lyste
+    // rødt som om noe hadde gått galt. Vi nullstiller derfor betalingen og
+    // henter arrangementet på nytt, så kortet viser tilstanden slik den faktisk
+    // er nå.
+    const resetPayment = payMutation.reset;
+    useEffect(() => {
+        function handlePageShow(pageEvent: PageTransitionEvent) {
+            if (!pageEvent.persisted) return;
+            resetPayment();
+            void refetchEvent();
+        }
+
+        window.addEventListener("pageshow", handlePageShow);
+        return () => window.removeEventListener("pageshow", handlePageShow);
+    }, [resetPayment, refetchEvent]);
+
     // Betalingen skjer hos Vipps: vi ber API-et om en kasse og sender
     // medlemmet dit. `returnUrl` er siden de står på, så de kommer tilbake hit
     // med betalingen registrert.

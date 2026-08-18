@@ -230,6 +230,27 @@ export async function refundPayment(
 }
 
 /**
+ * Cancel a Vipps payment that has not been paid yet.
+ *
+ * A checkout the member walked away from — they pressed back in the browser
+ * instead of paying — stays `CREATED` in Vipps and blocks a new checkout for
+ * the same event. Cancelling it is what lets "Betal med Vipps" work on the
+ * second press.
+ */
+export async function cancelPayment(reference: string): Promise<void> {
+    const token = await getVippsToken();
+    const vipps = getVippsClient();
+
+    const response = await vipps.payment.cancel(token, reference);
+
+    if (!response.ok) {
+        throw new Error(
+            `Failed to cancel payment: ${response.error instanceof Error ? response.error.message : "title" in response.error ? response.error.title : "Unknown error"}`,
+        );
+    }
+}
+
+/**
  * Get payment details from Vipps
  */
 export async function getPaymentDetails(
