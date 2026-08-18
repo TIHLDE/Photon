@@ -33,6 +33,26 @@ export interface CreatePaymentParams {
     userPhoneNumber?: string;
 }
 
+/** Vipps caps `paymentDescription` at 100 characters. */
+const PAYMENT_DESCRIPTION_MAX = 100;
+
+/**
+ * Build the `paymentDescription` for a payment.
+ *
+ * Vipps has no field for the payer's name, so leading the description with it
+ * is what lets an admin see *who* paid — the merchant portal and the
+ * settlement files otherwise only show a generic label. Mirrors the
+ * "Navn - Arrangement" format the other TIHLDE integrations use.
+ */
+export function buildPaymentDescription(
+    label: string,
+    payerName?: string | null,
+): string {
+    const name = payerName?.trim();
+    const description = name ? `${name} - ${label}` : label;
+    return description.slice(0, PAYMENT_DESCRIPTION_MAX);
+}
+
 const VIPPS_TOKEN_CACHE_KEY = "vipps:access_token";
 
 /**
