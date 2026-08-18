@@ -272,6 +272,7 @@ export const getEventRegistrationsQuery = (
  */
 export const getEventRegistrationsInfiniteQuery = (
     eventId: string,
+    filters: RegistrationListFilters = {},
     pageSize: number = MAX_PAGE_SIZE,
 ) =>
     infiniteQueryOptions({
@@ -282,11 +283,12 @@ export const getEventRegistrationsInfiniteQuery = (
             eventId,
             "infinite",
             pageSize,
+            filters,
         ] as const,
         queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/{eventId}/registration", {
                 params: { eventId },
-                searchParams: { page: pageParam, pageSize },
+                searchParams: { page: pageParam, pageSize, ...filters },
             }),
         initialPageParam: 0,
         getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -379,25 +381,32 @@ type PaymentListFilters = Omit<
     "page" | "pageSize"
 >;
 
-export const getEventPaymentsQuery = (
+/**
+ * Alle betalingene for et arrangement, side for side. Admin-fanen grupperer
+ * dem per person og søker lokalt, så hele lista må være lastet.
+ */
+export const getEventPaymentsInfiniteQuery = (
     eventId: string,
-    page: number,
     filters: PaymentListFilters = {},
-    pageSize: number = DEFAULT_PAGE_SIZE,
+    pageSize: number = MAX_PAGE_SIZE,
 ) =>
-    queryOptions({
+    infiniteQueryOptions({
+        // eventId før «infinite», slik at refusjoner – som invaliderer
+        // `[...payments, eventId]` – også treffer denne.
         queryKey: [
             ...EventQueryKeys.payments,
             eventId,
-            page,
+            "infinite",
             pageSize,
             filters,
-        ],
-        queryFn: () =>
+        ] as const,
+        queryFn: ({ pageParam }) =>
             apiClient.get("/api/event/{eventId}/payments", {
                 params: { eventId },
-                searchParams: { page, pageSize, ...filters },
+                searchParams: { page: pageParam, pageSize, ...filters },
             }),
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPage,
     });
 
 export const refundEventPaymentMutation = mutationOptions({

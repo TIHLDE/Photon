@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useSuspenseInfiniteQuery,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
 import {
     createFileRoute,
     Link,
@@ -8,6 +14,8 @@ import {
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import {
+    BanknoteArrowDownIcon,
+    BanknoteIcon,
     CheckCircle2,
     CircleCheckBigIcon,
     ExternalLink,
@@ -17,10 +25,16 @@ import {
     WalletIcon,
     XCircle,
 } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
-import type { Event, UpdateEventSchema } from "@tihlde/sdk";
+import type { Event, EventPaymentAdmin, UpdateEventSchema } from "@tihlde/sdk";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@tihlde/ui/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -54,8 +68,8 @@ import {
     deleteEventMutation,
     getEventByIdQuery,
     getEventFormsQuery,
-    getEventPaymentsQuery,
-    getEventRegistrationsQuery,
+    getEventPaymentsInfiniteQuery,
+    getEventRegistrationsInfiniteQuery,
     refundEventPaymentMutation,
     setAttendanceMutation,
     updateEventMutation,
@@ -83,6 +97,7 @@ import {
     useCanActOnResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
+import { cn } from "#/lib/utils";
 import { EVENT_FORM_ERRORS } from "#/lib/event";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
@@ -95,9 +110,6 @@ const TABS = [
     "betalinger",
 ] as const;
 type TabValue = (typeof TABS)[number];
-
-/** The API caps pageSize at 100; asking for more is a 400. */
-const MAX_PAGE_SIZE = 100;
 
 /** Module-level so the permission predicate keeps a stable identity. */
 const EVENT_UPDATE_PERMISSIONS = ["events:update", "events:manage"] as const;
@@ -612,17 +624,30 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
     const [filter, setFilter] =
         useState<(typeof REGISTRATION_FILTERS)[number]["value"]>("aktive");
     const status = REGISTRATION_FILTERS.find((f) => f.value === filter)?.status;
+    const [search, setSearch] = useState("");
 
-    const { data, isPending } = useQuery(
-        getEventRegistrationsQuery(
-            eventId,
-            0,
-            status ? { status } : {},
-            MAX_PAGE_SIZE,
-        ),
+    const registrationsQuery = useInfiniteQuery(
+        getEventRegistrationsInfiniteQuery(eventId, status ? { status } : {}),
     );
+    useLoadAllPages(registrationsQuery);
 
-    const participants = data?.registeredUsers ?? [];
+    const participants = useMemo(
+        () =>
+            registrationsQuery.data?.pages.flatMap(
+                (page) => page.registeredUsers,
+            ) ?? [],
+        [registrationsQuery.data],
+    );
+    const isPending = registrationsQuery.isPending;
+
+    const query = search.trim().toLowerCase();
+    const visibleParticipants = useMemo(
+        () =>
+            participants.filter((participant) =>
+                matchesQuery([participant.name, participant.email], query),
+            ),
+        [participants, query],
+    );
 
     return (
         <div className="flex flex-col gap-4">
@@ -643,6 +668,14 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                 </TabsList>
             </Tabs>
 
+            {participants.length > 0 ? (
+                <SearchField
+                    id="registrations-search"
+                    value={search}
+                    onChange={setSearch}
+                />
+            ) : null}
+
             {isPending ? (
                 <TableSkeleton />
             ) : participants.length === 0 ? (
@@ -652,6 +685,16 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                             icon={UsersIcon}
                             title="Ingen påmeldte"
                             description="Ingen deltakere i denne kategorien."
+                        />
+                    </CardContent>
+                </Card>
+            ) : visibleParticipants.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen treff"
+                            description={`Ingen påmeldte matcher «${search.trim()}».`}
                         />
                     </CardContent>
                 </Card>
@@ -669,7 +712,7 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {participants.map((participant) => {
+                                {visibleParticipants.map((participant) => {
                                     const participantStatus =
                                         participant.status ?? "registered";
                                     return (
@@ -735,13 +778,20 @@ function AttendanceTab({ eventId }: { eventId: string }) {
         "events:update",
         "events:manage",
     ]);
-    const { data, isPending } = useQuery(
-        getEventRegistrationsQuery(eventId, 0, {}, MAX_PAGE_SIZE),
+    const registrations = useInfiniteQuery(
+        getEventRegistrationsInfiniteQuery(eventId),
     );
+    useLoadAllPages(registrations);
     const setAttendance = useMutation(setAttendanceMutation);
     const [search, setSearch] = useState("");
 
-    const participants = data?.registeredUsers ?? [];
+    const participants = useMemo(
+        () =>
+            registrations.data?.pages.flatMap((page) => page.registeredUsers) ??
+            [],
+        [registrations.data],
+    );
+    const isPending = registrations.isPending;
 
     const stats = useMemo(() => {
         const attended = participants.filter(
@@ -750,18 +800,14 @@ function AttendanceTab({ eventId }: { eventId: string }) {
         return { attended, total: participants.length };
     }, [participants]);
 
-    // Hele lista ligger allerede i minnet, så søket filtrerer den her. På et
-    // arrangement med hundrevis av påmeldte er det forskjellen på å finne én
-    // person og å skrolle etter navnet i døra.
     const query = search.trim().toLowerCase();
-    const visibleParticipants = useMemo(() => {
-        if (!query) return participants;
-        return participants.filter((participant) =>
-            [participant.name, participant.email]
-                .filter(Boolean)
-                .some((field) => field?.toLowerCase().includes(query)),
-        );
-    }, [participants, query]);
+    const visibleParticipants = useMemo(
+        () =>
+            participants.filter((participant) =>
+                matchesQuery([participant.name, participant.email], query),
+            ),
+        [participants, query],
+    );
 
     if (isPending) {
         return <TableSkeleton />;
@@ -813,20 +859,11 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                 </div>
             ) : null}
 
-            <Card>
-                <CardContent>
-                    <div className="flex flex-col gap-2">
-                        <Label htmlFor="attendance-search">Søk</Label>
-                        <Input
-                            id="attendance-search"
-                            type="search"
-                            placeholder="Søk etter navn eller e-post…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
+            <SearchField
+                id="attendance-search"
+                value={search}
+                onChange={setSearch}
+            />
 
             {visibleParticipants.length === 0 ? (
                 <Card>
@@ -846,7 +883,12 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                                 <TableRow>
                                     <TableHead>Navn</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">
+                                    {/* pr-3 møter avkryssingsboksens usynlige
+                                        trykkflate (::after, 12px utenfor
+                                        boksen). Den ga tabellen vannrett
+                                        rulling og dyttet boksen ut av lodd med
+                                        denne overskriften. */}
+                                    <TableHead className="pr-3 text-right">
                                         Møtt
                                     </TableHead>
                                 </TableRow>
@@ -874,7 +916,7 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex justify-end">
+                                                <div className="flex justify-end pr-3">
                                                     <Checkbox
                                                         checked={
                                                             status ===
@@ -1107,11 +1149,112 @@ function PaymentFlagBadge({ flag }: { flag: string }) {
     );
 }
 
-function PaymentsTab({ eventId }: { eventId: string }) {
-    const { data } = useSuspenseQuery(getEventPaymentsQuery(eventId, 0));
-    const canRefund = useAnyScopePermission(["events:payments:refund"]);
+/**
+ * One person can leave a trail of payment attempts behind — a started Vipps
+ * payment that expired, a retry, the one that finally went through. Listing
+ * them flat buries the person in their own attempts, so each accordion is one
+ * payer and the attempts live inside it.
+ */
+type PaymentGroup = {
+    userId: string;
+    user: EventPaymentAdmin["user"];
+    /** Newest attempt first. */
+    payments: EventPaymentAdmin[];
+    /** What the payer's situation is, across every attempt. */
+    status: EventPaymentAdmin["status"];
+    /** Paid total, or the newest attempt's amount when nothing is paid. */
+    amountMinor: number;
+    flags: NonNullable<EventPaymentAdmin["flag"]>[];
+};
 
-    if (data.payments.length === 0) {
+/** The state an organiser should read off the closed accordion, in priority order. */
+const PAYMENT_STATUS_PRIORITY: EventPaymentAdmin["status"][] = [
+    "paid",
+    "pending",
+    "refunded",
+    "failed",
+];
+
+function groupPaymentsByUser(payments: EventPaymentAdmin[]): PaymentGroup[] {
+    const groups = new Map<string, EventPaymentAdmin[]>();
+    for (const payment of payments) {
+        const existing = groups.get(payment.userId);
+        if (existing) existing.push(payment);
+        else groups.set(payment.userId, [payment]);
+    }
+
+    return Array.from(groups.values())
+        .map((userPayments) => {
+            const sorted = [...userPayments].sort(
+                (a, b) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime(),
+            );
+            const statuses = new Set(sorted.map((payment) => payment.status));
+            const status =
+                PAYMENT_STATUS_PRIORITY.find((candidate) =>
+                    statuses.has(candidate),
+                ) ?? sorted[0].status;
+            const paid = sorted.filter((payment) => payment.status === "paid");
+            const amountMinor =
+                paid.length > 0
+                    ? paid.reduce(
+                          (sum, payment) => sum + payment.amountMinor,
+                          0,
+                      )
+                    : sorted[0].amountMinor;
+
+            return {
+                userId: sorted[0].userId,
+                user: sorted[0].user,
+                payments: sorted,
+                status,
+                amountMinor,
+                flags: Array.from(
+                    new Set(
+                        sorted
+                            .map((payment) => payment.flag)
+                            .filter(
+                                (
+                                    flag,
+                                ): flag is NonNullable<
+                                    EventPaymentAdmin["flag"]
+                                > => Boolean(flag),
+                            ),
+                    ),
+                ),
+            };
+        })
+        .sort((a, b) => a.user.name.localeCompare(b.user.name, "nb"));
+}
+
+function PaymentsTab({ eventId }: { eventId: string }) {
+    const paymentsQuery = useSuspenseInfiniteQuery(
+        getEventPaymentsInfiniteQuery(eventId),
+    );
+    useLoadAllPages(paymentsQuery);
+    const canRefund = useAnyScopePermission(["events:payments:refund"]);
+    const [search, setSearch] = useState("");
+
+    const payments = useMemo(
+        () => paymentsQuery.data.pages.flatMap((page) => page.payments),
+        [paymentsQuery.data],
+    );
+    // Summen dekker hele arrangementet, ikke bare siden, så første side holder.
+    const summary = paymentsQuery.data.pages[0].summary;
+
+    const groups = useMemo(() => groupPaymentsByUser(payments), [payments]);
+
+    const query = search.trim().toLowerCase();
+    const visibleGroups = useMemo(
+        () =>
+            groups.filter((group) =>
+                matchesQuery([group.user.name, group.user.email], query),
+            ),
+        [groups, query],
+    );
+
+    if (payments.length === 0) {
         return (
             <Card>
                 <CardContent>
@@ -1130,96 +1273,250 @@ function PaymentsTab({ eventId }: { eventId: string }) {
             <div className="grid gap-4 sm:grid-cols-3">
                 <AdminStatCard
                     label="Betalt"
-                    value={data.summary.paidCount}
+                    value={summary.paidCount}
                     icon={WalletIcon}
                 />
                 <AdminStatCard
                     label="Venter"
-                    value={data.summary.pendingCount}
+                    value={summary.pendingCount}
                     icon={WalletIcon}
                 />
                 <AdminStatCard
                     label="Sum innbetalt"
-                    value={formatAmount(data.summary.totalPaidMinor)}
+                    value={formatAmount(summary.totalPaidMinor)}
                     icon={WalletIcon}
                 />
             </div>
 
-            {data.summary.flaggedCount > 0 ? (
+            {summary.flaggedCount > 0 ? (
                 <Card className="border-destructive/50">
                     <CardContent className="flex items-center gap-3 py-4 text-sm">
                         <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
                         <span>
-                            {data.summary.flaggedCount === 1
+                            {summary.flaggedCount === 1
                                 ? "1 betaling trenger gjennomgang."
-                                : `${data.summary.flaggedCount} betalinger trenger gjennomgang.`}{" "}
-                            Se merkelappene i tabellen under.
+                                : `${summary.flaggedCount} betalinger trenger gjennomgang.`}{" "}
+                            Se merkelappene på personene under.
                         </span>
                     </CardContent>
                 </Card>
             ) : null}
 
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Navn</TableHead>
-                                <TableHead>E-post</TableHead>
-                                <TableHead>Beløp</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Betalt</TableHead>
-                                <TableHead className="text-right">
-                                    Handlinger
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.payments.map((payment) => (
-                                <TableRow key={payment.id}>
-                                    <TableCell>{payment.user.name}</TableCell>
-                                    <TableCell>{payment.user.email}</TableCell>
-                                    <TableCell>
-                                        {formatAmount(payment.amountMinor)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-wrap items-center gap-1">
-                                            <PaymentStatusBadge
-                                                status={payment.status}
-                                            />
-                                            {payment.flag ? (
-                                                <PaymentFlagBadge
-                                                    flag={payment.flag}
+            <SearchField
+                id="payments-search"
+                value={search}
+                onChange={setSearch}
+            />
+
+            {visibleGroups.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={WalletIcon}
+                            title="Ingen treff"
+                            description={`Ingen betalinger matcher «${search.trim()}».`}
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        <Accordion>
+                            {visibleGroups.map((group) => (
+                                <AccordionItem
+                                    key={group.userId}
+                                    value={group.userId}
+                                    className="px-4"
+                                >
+                                    {/* Standardtriggeren toppstiller innholdet;
+                                        her er raden to linjer høy, så pila
+                                        skal stå midt i den. */}
+                                    <AccordionTrigger className="items-center hover:no-underline">
+                                        <div className="flex flex-1 flex-col gap-2 pr-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex flex-col">
+                                                <span>{group.user.name}</span>
+                                                <span className="text-muted-foreground text-xs font-normal">
+                                                    {group.user.email}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {group.flags.map((flag) => (
+                                                    <PaymentFlagBadge
+                                                        key={flag}
+                                                        flag={flag}
+                                                    />
+                                                ))}
+                                                <span className="text-muted-foreground text-xs font-normal">
+                                                    {group.payments.length === 1
+                                                        ? "1 hendelse"
+                                                        : `${group.payments.length} hendelser`}
+                                                </span>
+                                                <PaymentHealthIcon
+                                                    group={group}
                                                 />
-                                            ) : null}
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {payment.receivedPaymentAt
-                                            ? formatDateTime(
-                                                  payment.receivedPaymentAt,
-                                              )
-                                            : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {canRefund &&
-                                        payment.status === "paid" ? (
-                                            <RefundAction
-                                                eventId={eventId}
-                                                paymentId={payment.id}
-                                                name={payment.user.name}
-                                                amountMinor={
-                                                    payment.amountMinor
-                                                }
-                                            />
-                                        ) : null}
-                                    </TableCell>
-                                </TableRow>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="flex flex-col gap-3">
+                                            {group.payments.map((payment) => (
+                                                <li
+                                                    key={payment.id}
+                                                    className="flex flex-col gap-2 rounded-lg border p-3"
+                                                >
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="flex flex-wrap items-center gap-1">
+                                                            <PaymentStatusBadge
+                                                                status={
+                                                                    payment.status
+                                                                }
+                                                            />
+                                                            {payment.flag ? (
+                                                                <PaymentFlagBadge
+                                                                    flag={
+                                                                        payment.flag
+                                                                    }
+                                                                />
+                                                            ) : null}
+                                                        </div>
+                                                        <span className="tabular-nums">
+                                                            {formatAmount(
+                                                                payment.amountMinor,
+                                                            )}
+                                                        </span>
+                                                    </div>
+
+                                                    <dl className="grid gap-x-6 gap-y-1 text-muted-foreground text-xs sm:grid-cols-2">
+                                                        <PaymentDetail
+                                                            term="Opprettet"
+                                                            value={formatDateTime(
+                                                                payment.createdAt,
+                                                            )}
+                                                        />
+                                                        {payment.receivedPaymentAt ? (
+                                                            <PaymentDetail
+                                                                term="Betalt"
+                                                                value={formatDateTime(
+                                                                    payment.receivedPaymentAt,
+                                                                )}
+                                                            />
+                                                        ) : null}
+                                                        {payment.expiresAt ? (
+                                                            <PaymentDetail
+                                                                term="Frist"
+                                                                value={formatDateTime(
+                                                                    payment.expiresAt,
+                                                                )}
+                                                            />
+                                                        ) : null}
+                                                        {payment.providerPaymentId ? (
+                                                            <PaymentDetail
+                                                                term="Referanse"
+                                                                value={
+                                                                    payment.providerPaymentId
+                                                                }
+                                                            />
+                                                        ) : null}
+                                                    </dl>
+
+                                                    {canRefund &&
+                                                    payment.status ===
+                                                        "paid" ? (
+                                                        <div className="flex justify-end">
+                                                            <RefundAction
+                                                                eventId={
+                                                                    eventId
+                                                                }
+                                                                paymentId={
+                                                                    payment.id
+                                                                }
+                                                                name={
+                                                                    group.user
+                                                                        .name
+                                                                }
+                                                                amountMinor={
+                                                                    payment.amountMinor
+                                                                }
+                                                            />
+                                                        </div>
+                                                    ) : null}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                        </Accordion>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Fargen bærer statusen, så raden slipper en pille ved siden av: grønn når
+ * pengene er inne, rød når en betaling feilet, oransje når noe er flagget for
+ * gjennomgang, gult seddel-med-pil-ned når den er refundert, og nedtonet så
+ * lenge det står tomt. Beløpene ligger på hvert forsøk inne i raden.
+ */
+function PaymentHealthIcon({ group }: { group: PaymentGroup }) {
+    const { Icon, className, label } = paymentHealth(group);
+
+    return (
+        <span title={label} className="flex">
+            <Icon
+                aria-label={label}
+                className={cn("size-5 shrink-0", className)}
+            />
+        </span>
+    );
+}
+
+function paymentHealth(group: PaymentGroup) {
+    // Et flagg betyr at en arrangør må se på den, og går foran alt annet –
+    // også en betaling som gikk gjennom.
+    if (group.flags.length > 0) {
+        return {
+            Icon: BanknoteIcon,
+            className: "text-amber-600 dark:text-amber-500",
+            label: "Trenger gjennomgang",
+        };
+    }
+
+    switch (group.status) {
+        case "paid":
+            return {
+                Icon: BanknoteIcon,
+                className: "text-emerald-600 dark:text-emerald-500",
+                label: `Betalt – ${formatAmount(group.amountMinor)}`,
+            };
+        case "failed":
+            return {
+                Icon: BanknoteIcon,
+                className: "text-destructive",
+                label: "Betalingen feilet",
+            };
+        case "refunded":
+            return {
+                Icon: BanknoteArrowDownIcon,
+                className: "text-yellow-600 dark:text-yellow-500",
+                label: "Refundert",
+            };
+        default:
+            return {
+                Icon: BanknoteIcon,
+                className: "text-muted-foreground/40",
+                label: "Ikke betalt",
+            };
+    }
+}
+
+function PaymentDetail({ term, value }: { term: string; value: string }) {
+    return (
+        <div className="flex justify-between gap-2 sm:justify-start">
+            <dt>{term}</dt>
+            <dd className="text-foreground">{value}</dd>
         </div>
     );
 }
@@ -1304,6 +1601,65 @@ function RefundAction({
 }
 
 /* -------------------------------- Helpers -------------------------------- */
+
+/**
+ * Lists here are held in memory in full, so the search filters locally. On an
+ * event with hundreds of participants that is the difference between finding
+ * one person and scrolling for the name.
+ */
+function SearchField({
+    id,
+    value,
+    onChange,
+    placeholder = "Søk etter navn eller e-post…",
+}: {
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+}) {
+    return (
+        <Card>
+            <CardContent>
+                <div className="flex flex-col gap-2">
+                    <Label htmlFor={id}>Søk</Label>
+                    <Input
+                        id={id}
+                        type="search"
+                        placeholder={placeholder}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+/**
+ * Pulls the remaining pages in as soon as one lands. The admin tabs group and
+ * search their lists locally, and a filter that only sees page one quietly
+ * hides people.
+ */
+function useLoadAllPages({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+}: {
+    hasNextPage: boolean;
+    isFetchingNextPage: boolean;
+    fetchNextPage: () => void;
+}) {
+    useEffect(() => {
+        if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+}
+
+/** Case-insensitive match across the fields a person is searched by. */
+function matchesQuery(fields: (string | null | undefined)[], query: string) {
+    if (!query) return true;
+    return fields.some((field) => field?.toLowerCase().includes(query));
+}
 
 function formatDateTime(iso: string) {
     return format(new Date(iso), "d. MMM yyyy 'kl.' HH:mm", { locale: nb });
