@@ -75,6 +75,7 @@ import {
     useCanActOnResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
+import { EVENT_FORM_ERRORS } from "#/lib/event";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
 
@@ -299,6 +300,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
         valuesFromEvent(event),
     );
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [formError, setFormError] = useState<string | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const priorityUserSearch = usePriorityUserSearch();
 
@@ -327,14 +329,21 @@ function DetailsTab({ eventId }: { eventId: string }) {
     async function handleSubmit(formEvent: React.FormEvent<HTMLFormElement>) {
         formEvent.preventDefault();
         setUploadError(null);
+        setFormError(null);
 
-        if (!values.start || !values.end) return;
-        if (!values.categorySlug) return;
-        if (
-            values.requiresSigningUp &&
-            (!values.registrationStart || !values.registrationEnd)
-        ) {
-            return;
+        // Hver vakt sier fra. Uten dette avbrøt de i stillhet, så «Lagre
+        // endringer» så død ut på ethvert arrangement uten påmeldingsstart.
+        const fail = (message: string) => setFormError(message);
+        if (!values.start || !values.end) {
+            return fail(EVENT_FORM_ERRORS.missingTime);
+        }
+        if (!values.categorySlug) {
+            return fail(EVENT_FORM_ERRORS.missingCategory);
+        }
+        // Bare fristen er påkrevd. Påmeldingsstart kan stå tom: API-et lar
+        // påmeldingen åpne med én gang når den er `null`.
+        if (values.requiresSigningUp && !values.registrationEnd) {
+            return fail(EVENT_FORM_ERRORS.missingRegistrationEnd);
         }
         // Se skjemaet: datovelgerne begrenser ikke lenger hverandre, så
         // rekkefølgen stoppes her.
@@ -343,7 +352,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
             values.registrationEnd &&
             values.registrationStart >= values.registrationEnd
         ) {
-            return;
+            return fail(EVENT_FORM_ERRORS.registrationOrder);
         }
 
         // Lastes opp først: en feilet opplasting skal ikke lagre resten av
@@ -476,6 +485,13 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     ) : undefined
                 }
             >
+                {formError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke lagre</AlertTitle>
+                        <AlertDescription>{formError}</AlertDescription>
+                    </Alert>
+                )}
                 {uploadError && (
                     <Alert variant="destructive">
                         <XCircle className="size-4" />

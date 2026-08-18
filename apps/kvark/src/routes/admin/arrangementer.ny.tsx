@@ -27,6 +27,7 @@ import {
 } from "#/hooks/use-permission";
 import { compareGroupHierarchy, isCohortGroupType } from "#/lib/group";
 import { nextWholeHour } from "#/lib/date";
+import { EVENT_FORM_ERRORS } from "#/lib/event";
 import { useDebounced } from "#/lib/use-debounced";
 
 // `?gruppe=<slug>` lar «Nytt arrangement» på en gruppeside sende deg hit med
@@ -123,6 +124,7 @@ function NewEventPage() {
             : "",
     }));
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const [formError, setFormError] = useState<string | null>(null);
     const priorityUserSearch = usePriorityUserSearch();
 
     const debouncedLocation = useDebounced(values.location, 250);
@@ -178,6 +180,7 @@ function NewEventPage() {
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setUploadError(null);
+        setFormError(null);
 
         const startIso = toIso(values.start);
         const endIso = toIso(values.end);
@@ -188,13 +191,18 @@ function NewEventPage() {
         const registrationEndIso = values.requiresSigningUp
             ? toIso(values.registrationEnd)
             : null;
-        if (!startIso || !endIso) return;
-        if (!values.categorySlug) return;
-        if (
-            values.requiresSigningUp &&
-            (!registrationStartIso || !registrationEndIso)
-        ) {
-            return;
+        // Hver vakt sier fra. Uten dette avbrøt de i stillhet, og knappen så
+        // ut til å være død — påmeldingsstart var tom som standard, så det
+        // traff hvert eneste nye arrangement.
+        const fail = (message: string) => setFormError(message);
+        if (!startIso || !endIso) return fail(EVENT_FORM_ERRORS.missingTime);
+        if (!values.categorySlug) {
+            return fail(EVENT_FORM_ERRORS.missingCategory);
+        }
+        // Bare fristen er påkrevd. Påmeldingsstart kan stå tom: API-et lar
+        // påmeldingen åpne med én gang når den er `null`.
+        if (values.requiresSigningUp && !registrationEndIso) {
+            return fail(EVENT_FORM_ERRORS.missingRegistrationEnd);
         }
         // Datovelgerne begrenser ikke lenger hverandre, så rekkefølgen stoppes
         // her. Skjemaet viser den samme feilen ved feltet.
@@ -203,7 +211,7 @@ function NewEventPage() {
             values.registrationEnd &&
             values.registrationStart >= values.registrationEnd
         ) {
-            return;
+            return fail(EVENT_FORM_ERRORS.registrationOrder);
         }
 
         // Uploaded first: a failed upload must not leave an event behind that
@@ -327,6 +335,13 @@ function NewEventPage() {
                 submitLabel={isUploading ? "Laster opp bilde …" : "Publiser"}
                 isSubmitting={createEvent.isPending || isUploading}
             >
+                {formError && (
+                    <Alert variant="destructive">
+                        <XCircle className="size-4" />
+                        <AlertTitle>Kunne ikke publisere</AlertTitle>
+                        <AlertDescription>{formError}</AlertDescription>
+                    </Alert>
+                )}
                 {uploadError && (
                     <Alert variant="destructive">
                         <XCircle className="size-4" />

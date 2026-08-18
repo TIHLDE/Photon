@@ -278,3 +278,22 @@ export function alignEventEnd(
 
     return addMilliseconds(start, previousDuration);
 }
+
+/**
+ * Meldingene arrangementsskjemaet viser når det ikke kan lagres.
+ *
+ * Vaktene i «Publiser» og «Lagre endringer» returnerte tidligere uten å si
+ * fra, så knappene så ut til å ikke gjøre noe i det hele tatt — verst på et
+ * nytt arrangement, der påmeldingen er på som standard. Meldingene ligger her
+ * fordi begge skjemaene håndhever de samme reglene.
+ *
+ * Påmeldingsstart står bevisst ikke på lista: API-et tar imot `null` og lar
+ * påmeldingen åpne med én gang.
+ */
+export const EVENT_FORM_ERRORS = {
+    missingTime: "Arrangementet mangler start- eller sluttidspunkt.",
+    missingCategory: "Velg en kategori for arrangementet.",
+    missingRegistrationEnd:
+        "Arrangementer med påmelding må ha en påmeldingsfrist.",
+    registrationOrder: "Påmeldingen må åpne før påmeldingsfristen.",
+} as const;
