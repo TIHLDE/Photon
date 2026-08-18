@@ -469,6 +469,7 @@ function EventDetailPage() {
                                     registrantName={
                                         session?.user?.name ?? "Deltaker"
                                     }
+                                    userId={session?.user?.id}
                                     trigger={
                                         <Button className="w-full">
                                             <QrCode />
