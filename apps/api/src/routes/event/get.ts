@@ -121,6 +121,20 @@ export const getRoute = route().get(
             });
 
             if (dbRegistration) {
+                // Betalingen ligger i sin egen tabell. Frontend trenger å vite
+                // om den er gjennomført, for en betalt plass kan ikke meldes av.
+                const paidPayment = event.isPaidEvent
+                    ? await db.query.eventPayment.findFirst({
+                          columns: { id: true },
+                          where: (payment, { eq, and }) =>
+                              and(
+                                  eq(payment.userId, user.id),
+                                  eq(payment.eventId, event.id),
+                                  eq(payment.status, "paid"),
+                              ),
+                      })
+                    : undefined;
+
                 registration = {
                     attendedAt:
                         dbRegistration.attendedAt?.toISOString() ?? null,
@@ -128,6 +142,7 @@ export const getRoute = route().get(
                     status: dbRegistration.status,
                     updatedAt: dbRegistration.updatedAt.toISOString(),
                     waitlistPosition: dbRegistration.waitlistPosition,
+                    hasPaid: paidPayment != null,
                 };
             }
         }

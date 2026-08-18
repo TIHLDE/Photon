@@ -32,6 +32,11 @@ type EventRegistrationCardProps = {
     registrationOpensInLabel?: string;
     registrationClosesAt?: EventDeadline;
     unregisterDeadline?: EventDeadline;
+    /**
+     * Satt når medlemmet har betalt for plassen. Da forsvinner avmeldingen:
+     * systemet refunderer ikke automatisk, og API-et avviser forsøket.
+     */
+    hasPaid?: boolean;
     paymentDeadline?: EventDeadline;
     capacity: number | null;
     registeredCount: number;
@@ -171,6 +176,9 @@ function getStateRendering(
             return {
                 icon: CheckCircle2,
                 message: "Du har plass på arrangementet!",
+                secondary: props.hasPaid
+                    ? "Du har betalt. Ta kontakt med arrangøren hvis du ikke kan komme."
+                    : null,
                 actions: (
                     <>
                         {props.qrSlot ?? (
@@ -179,13 +187,15 @@ function getStateRendering(
                                 Påmeldingsbevis
                             </Button>
                         )}
-                        <Button
-                            variant="destructive"
-                            className="w-full"
-                            onClick={props.onUnregister}
-                        >
-                            Meld deg av
-                        </Button>
+                        {!props.hasPaid && (
+                            <Button
+                                variant="destructive"
+                                className="w-full"
+                                onClick={props.onUnregister}
+                            >
+                                Meld deg av
+                            </Button>
+                        )}
                     </>
                 ),
             };
@@ -309,8 +319,9 @@ function buildTimeline(props: EventRegistrationCardProps): TimelinePoint[] {
         });
     }
     const showUnregister =
-        props.registrationState === "joined" ||
-        props.registrationState === "awaiting-payment";
+        !props.hasPaid &&
+        (props.registrationState === "joined" ||
+            props.registrationState === "awaiting-payment");
     if (showUnregister && props.unregisterDeadline) {
         points.push({
             label: "Avmelding",

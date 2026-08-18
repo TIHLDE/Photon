@@ -830,7 +830,7 @@ export interface paths {
         post: operations["createEventRegistration"];
         /**
          * Unregister from event
-         * @description Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike.
+         * @description Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user.
          */
         delete: operations["deleteEventRegistration"];
         options?: never;
@@ -3939,6 +3939,8 @@ export interface components {
                 waitlistPosition: number | null;
                 /** @description When the user was registered as an attendee by TIHLDE for this event. Is null if not attended. */
                 attendedAt: string | null;
+                /** @description Whether the user has a completed payment for this event. Always false for free events. A paid registration cannot be cancelled by the user. */
+                hasPaid: boolean;
             } | null;
         };
         EventRegistration: {

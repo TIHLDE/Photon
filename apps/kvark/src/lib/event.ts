@@ -1,4 +1,9 @@
-import { format, formatDistanceToNowStrict } from "date-fns";
+import {
+    addMilliseconds,
+    format,
+    formatDistanceToNowStrict,
+    set,
+} from "date-fns";
 import { nb } from "date-fns/locale";
 
 // -- Shared display types (previously in mock/events) --
@@ -227,4 +232,41 @@ export function formatTimeUntil(iso: string): string {
  */
 export function formatEventDateTime(iso: string): string {
     return `${formatEventDate(iso)}, ${formatEventTime(iso)}`;
+}
+
+/** Reservevarighet når vi ikke kan utlede hvor langt arrangementet var. */
+const FALLBACK_EVENT_DURATION_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Sluttidspunktet som hører til et nytt starttidspunkt.
+ *
+ * Flytter man starten forbi slutten, blir arrangementet negativt langt. I
+ * stedet for å la admin rydde opp manuelt drar vi slutten med: den beholder
+ * klokkeslettet sitt og flyttes til samme dato som starten. Er den fortsatt
+ * for tidlig — start 22:00, slutt 09:00 — legger vi den opprinnelige
+ * varigheten til starten i stedet.
+ *
+ * Returnerer `end` uendret når den allerede ligger etter starten.
+ */
+export function alignEventEnd(
+    start: Date,
+    end: Date | null,
+    previousStart: Date | null,
+): Date | null {
+    if (!end || end > start) return end;
+
+    const sameDay = set(start, {
+        hours: end.getHours(),
+        minutes: end.getMinutes(),
+        seconds: 0,
+        milliseconds: 0,
+    });
+    if (sameDay > start) return sameDay;
+
+    const previousDuration =
+        previousStart && end > previousStart
+            ? end.getTime() - previousStart.getTime()
+            : FALLBACK_EVENT_DURATION_MS;
+
+    return addMilliseconds(start, previousDuration);
 }

@@ -11,6 +11,7 @@ import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
 import {
     Field,
     FieldDescription,
+    FieldError,
     FieldGroup,
     FieldLabel,
 } from "@tihlde/ui/ui/field";
@@ -31,6 +32,7 @@ import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { ALL_EVENT_CATEGORIES } from "#/lib/event-categories";
+import { alignEventEnd } from "#/lib/event";
 
 /** Sentinel for "no institute restriction" — Select has no empty value. */
 export const ALL_INSTITUTES = "all";
@@ -58,6 +60,12 @@ export type EventFormValues = {
     /** Når påmeldingen åpner. */
     registrationStart: Date | null;
     registrationEnd: Date | null;
+    /**
+     * Siste frist for å melde seg av. Avmelding etter fristen gir prikk, så
+     * feltet gjelder bare arrangementer som ikke er betalte — betalte
+     * arrangementer kan uansett ikke meldes av etter betaling.
+     */
+    cancellationDeadline: Date | null;
     capacity: string;
     visibility: "public" | "members";
     instituteSlug: string;
@@ -179,6 +187,50 @@ export function EventForm({
     const wideWhenNoCapacity = values.requiresSigningUp
         ? undefined
         : "lg:col-span-2";
+
+    /**
+     * Å flytte starten forbi slutten skal ikke etterlate et arrangement som
+     * varer negativt lenge — slutten drar med seg, se `alignEventEnd`.
+     */
+    function handleStartChange(start: Date | null) {
+        if (!start) {
+            onChange({ start });
+            return;
+        }
+        onChange({
+            start,
+            end: alignEventEnd(start, values.end, values.start),
+        });
+    }
+
+    /**
+     * Betalte arrangementer gir aldri prikker, og kan ikke meldes av etter at
+     * pengene er trukket. Begge feltene forsvinner fra skjemaet, så verdiene
+     * deres må nullstilles — ellers ville en avhuket boks blitt sendt videre
+     * usett, og API-et ville avvist lagringen.
+     */
+    function handlePaidChange(isPaidEvent: boolean) {
+        onChange(
+            isPaidEvent
+                ? {
+                      isPaidEvent,
+                      canCauseStrikes: false,
+                      cancellationDeadline: null,
+                  }
+                : { isPaidEvent },
+        );
+    }
+
+    /**
+     * Datovelgerne begrenser ikke lenger hverandre — da kunne man ikke sette
+     * påmeldingsstart før fristen var flyttet — så rekkefølgen vises som feil
+     * i stedet. Rutene blokkerer lagring på det samme.
+     */
+    const registrationOrderInvalid = Boolean(
+        values.registrationStart &&
+        values.registrationEnd &&
+        values.registrationStart >= values.registrationEnd,
+    );
 
     function handleSelectAddress(suggestion: AddressSuggestion) {
         const coords = {
@@ -340,9 +392,7 @@ export function EventForm({
                                     locale={nb}
                                     placeholder="Velg startdato"
                                     value={values.start}
-                                    onValueChange={(start) =>
-                                        onChange({ start })
-                                    }
+                                    onValueChange={handleStartChange}
                                 />
                             </Field>
                             <Field>
@@ -359,7 +409,7 @@ export function EventForm({
                                 />
                             </Field>
                         </div>
-                        <Field orientation="horizontal" className="gap-3">
+                        <Field orientation="horizontal" className="w-fit gap-3">
                             <Checkbox
                                 id="event-requires-signup"
                                 checked={values.requiresSigningUp}
@@ -383,16 +433,18 @@ export function EventForm({
                                         id="event-reg-start"
                                         locale={nb}
                                         placeholder="Velg dato"
-                                        maxDate={
-                                            values.registrationEnd ??
-                                            values.start ??
-                                            undefined
-                                        }
                                         value={values.registrationStart}
                                         onValueChange={(registrationStart) =>
                                             onChange({ registrationStart })
                                         }
+                                        aria-invalid={registrationOrderInvalid}
                                     />
+                                    {registrationOrderInvalid ? (
+                                        <FieldError>
+                                            Påmeldingen må åpne før
+                                            påmeldingsfristen.
+                                        </FieldError>
+                                    ) : null}
                                 </Field>
                                 <Field>
                                     <FieldLabel htmlFor="event-reg-end">
@@ -402,17 +454,40 @@ export function EventForm({
                                         id="event-reg-end"
                                         locale={nb}
                                         placeholder="Velg dato"
-                                        minDate={
-                                            values.registrationStart ??
-                                            undefined
-                                        }
                                         maxDate={values.start ?? undefined}
                                         value={values.registrationEnd}
                                         onValueChange={(registrationEnd) =>
                                             onChange({ registrationEnd })
                                         }
+                                        aria-invalid={registrationOrderInvalid}
                                     />
                                 </Field>
+                                {!values.isPaidEvent ? (
+                                    <Field>
+                                        <FieldLabel htmlFor="event-cancel-deadline">
+                                            Avmeldingsfrist (valgfritt)
+                                        </FieldLabel>
+                                        <DateTimePicker
+                                            id="event-cancel-deadline"
+                                            locale={nb}
+                                            placeholder="Velg dato"
+                                            maxDate={values.start ?? undefined}
+                                            value={values.cancellationDeadline}
+                                            onValueChange={(
+                                                cancellationDeadline,
+                                            ) =>
+                                                onChange({
+                                                    cancellationDeadline,
+                                                })
+                                            }
+                                        />
+                                        <FieldDescription>
+                                            Avmelding etter denne fristen gir
+                                            prikk, forutsatt at «Kan gi prikker»
+                                            er huket av.
+                                        </FieldDescription>
+                                    </Field>
+                                ) : null}
                             </div>
                         ) : null}
                         <div className="grid gap-4 lg:grid-cols-4">
@@ -516,12 +591,12 @@ export function EventForm({
                                 </FieldDescription>
                             </Field>
                         </div>
-                        <Field orientation="horizontal" className="gap-3">
+                        <Field orientation="horizontal" className="w-fit gap-3">
                             <Checkbox
                                 id="event-paid"
                                 checked={values.isPaidEvent}
                                 onCheckedChange={(checked) =>
-                                    onChange({ isPaidEvent: Boolean(checked) })
+                                    handlePaidChange(Boolean(checked))
                                 }
                             />
                             <FieldLabel htmlFor="event-paid">
@@ -544,21 +619,26 @@ export function EventForm({
                                 />
                             </Field>
                         )}
-                        <Field orientation="horizontal" className="gap-3">
-                            <Checkbox
-                                id="event-strikes"
-                                checked={values.canCauseStrikes}
-                                onCheckedChange={(checked) =>
-                                    onChange({
-                                        canCauseStrikes: Boolean(checked),
-                                    })
-                                }
-                            />
-                            <FieldLabel htmlFor="event-strikes">
-                                Kan gi prikker (avmelding etter frist og
-                                no-show)
-                            </FieldLabel>
-                        </Field>
+                        {!values.isPaidEvent ? (
+                            <Field
+                                orientation="horizontal"
+                                className="w-fit gap-3"
+                            >
+                                <Checkbox
+                                    id="event-strikes"
+                                    checked={values.canCauseStrikes}
+                                    onCheckedChange={(checked) =>
+                                        onChange({
+                                            canCauseStrikes: Boolean(checked),
+                                        })
+                                    }
+                                />
+                                <FieldLabel htmlFor="event-strikes">
+                                    Kan gi prikker (avmelding etter frist og
+                                    no-show)
+                                </FieldLabel>
+                            </Field>
+                        ) : null}
                         <Field>
                             <FieldLabel>Beskrivelse</FieldLabel>
                             <RichEditor

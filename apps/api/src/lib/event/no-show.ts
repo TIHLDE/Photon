@@ -24,12 +24,25 @@ const NO_SHOW_REASON = "Møtte ikke opp på arrangementet";
  *   up once an organizer performs check-in.
  * - Every remaining `registered` user is flipped to `no_show` and given strikes.
  * - Marks the event processed so strikes are issued at most once.
+ * - Paid events never give strikes, no matter what `canCauseStrikes` says.
  */
 export async function processEventNoShows(
     eventId: string,
     ctx: AppContext,
 ): Promise<{ processed: boolean; struck: number }> {
     return ctx.db.transaction(async (tx) => {
+        // Betalte arrangementer gir aldri prikker. Skjemaet avviser
+        // kombinasjonen, men arrangementer opprettet før regelen kan fortsatt
+        // ha begge deler satt i databasen.
+        const event = await tx.query.event.findFirst({
+            columns: { isPaidEvent: true },
+            where: eq(schema.event.id, eventId),
+        });
+
+        if (event?.isPaidEvent) {
+            return { processed: false, struck: 0 };
+        }
+
         const registrations = await tx.query.eventRegistration.findMany({
             columns: { userId: true, status: true },
             where: eq(schema.eventRegistration.eventId, eventId),
@@ -85,8 +98,8 @@ export async function processEventNoShows(
 
 /**
  * Scan for events that have ended and issue no-show strikes for each. Skips
- * events that already were processed, that cannot cause strikes, or that ended
- * outside the lookback window.
+ * events that already were processed, that cannot cause strikes, that are paid,
+ * or that ended outside the lookback window.
  */
 export async function processNoShowStrikesForEndedEvents(
     ctx: AppContext,
@@ -100,6 +113,7 @@ export async function processNoShowStrikesForEndedEvents(
         columns: { id: true },
         where: and(
             eq(schema.event.canCauseStrikes, true),
+            eq(schema.event.isPaidEvent, false),
             isNull(schema.event.noShowProcessedAt),
             lt(schema.event.end, now),
             gt(schema.event.end, lookbackCutoff),
