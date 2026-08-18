@@ -70,10 +70,15 @@ const toEventListFilters = (
     query: string,
     showPast: boolean,
     category: string[],
+    openRegistration: boolean,
 ) => ({
     search: query.trim() || undefined,
     expired: showPast,
     category,
+    // Utelatt når den er av, slik `search` er: API-et filtrerer bare på
+    // `true`, og en tom boks skal ikke legge igjen en parameter i
+    // spørringsnøkkelen.
+    openSignUp: openRegistration || undefined,
 });
 
 const VIEWS = [
@@ -101,6 +106,7 @@ export const Route = createFileRoute("/_app/arrangementer/")({
                     DEFAULT_EVENT_FILTERS.query,
                     DEFAULT_EVENT_FILTERS.showPast,
                     TAB_SLUGS.arrangementer,
+                    DEFAULT_EVENT_FILTERS.openRegistration,
                 ),
             ),
         ),
@@ -141,8 +147,15 @@ function EventsPage() {
                 filters.category === ALL_CATEGORIES.value
                     ? TAB_SLUGS[tab]
                     : [filters.category],
+                filters.openRegistration,
             ),
-        [debouncedQuery, filters.showPast, filters.category, tab],
+        [
+            debouncedQuery,
+            filters.showPast,
+            filters.category,
+            filters.openRegistration,
+            tab,
+        ],
     );
 
     // useSuspenseQuery has no placeholderData, so a changed key would otherwise
