@@ -31,6 +31,8 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
+import { Input } from "@tihlde/ui/ui/input";
+import { Label } from "@tihlde/ui/ui/label";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import {
     Table,
@@ -738,6 +740,7 @@ function AttendanceTab({ eventId }: { eventId: string }) {
         getEventRegistrationsQuery(eventId, 0, {}, MAX_PAGE_SIZE),
     );
     const setAttendance = useMutation(setAttendanceMutation);
+    const [search, setSearch] = useState("");
 
     const participants = data?.registeredUsers ?? [];
 
@@ -747,6 +750,19 @@ function AttendanceTab({ eventId }: { eventId: string }) {
         ).length;
         return { attended, total: participants.length };
     }, [participants]);
+
+    // Hele lista ligger allerede i minnet, så søket filtrerer den her. På et
+    // arrangement med hundrevis av påmeldte er det forskjellen på å finne én
+    // person og å skrolle etter navnet i døra.
+    const query = search.trim().toLowerCase();
+    const visibleParticipants = useMemo(() => {
+        if (!query) return participants;
+        return participants.filter((participant) =>
+            [participant.name, participant.email]
+                .filter(Boolean)
+                .some((field) => field?.toLowerCase().includes(query)),
+        );
+    }, [participants, query]);
 
     if (isPending) {
         return <TableSkeleton />;
@@ -799,71 +815,101 @@ function AttendanceTab({ eventId }: { eventId: string }) {
             ) : null}
 
             <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Navn</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">
-                                    Møtt
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {participants.map((participant) => {
-                                const status =
-                                    participant.status ?? "registered";
-                                return (
-                                    <TableRow key={participant.id}>
-                                        <TableCell>
-                                            {participant.name}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                variant={
-                                                    REGISTRATION_STATUS_VARIANTS[
-                                                        status
-                                                    ] ?? "outline"
-                                                }
-                                            >
-                                                {REGISTRATION_STATUS_LABELS[
-                                                    status
-                                                ] ?? status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex justify-end">
-                                                <Checkbox
-                                                    checked={
-                                                        status === "attended"
-                                                    }
-                                                    disabled={
-                                                        !canSetAttendance ||
-                                                        setAttendance.isPending
-                                                    }
-                                                    onCheckedChange={(
-                                                        checked,
-                                                    ) =>
-                                                        setAttendance.mutate({
-                                                            eventId,
-                                                            userId: participant.id,
-                                                            attended:
-                                                                Boolean(
-                                                                    checked,
-                                                                ),
-                                                        })
-                                                    }
-                                                />
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
+                <CardContent>
+                    <div className="flex flex-col gap-2">
+                        <Label htmlFor="attendance-search">Søk</Label>
+                        <Input
+                            id="attendance-search"
+                            type="search"
+                            placeholder="Søk etter navn eller e-post…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
                 </CardContent>
             </Card>
+
+            {visibleParticipants.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen treff"
+                            description={`Ingen påmeldte matcher «${search.trim()}».`}
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Navn</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">
+                                        Møtt
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {visibleParticipants.map((participant) => {
+                                    const status =
+                                        participant.status ?? "registered";
+                                    return (
+                                        <TableRow key={participant.id}>
+                                            <TableCell>
+                                                {participant.name}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant={
+                                                        REGISTRATION_STATUS_VARIANTS[
+                                                            status
+                                                        ] ?? "outline"
+                                                    }
+                                                >
+                                                    {REGISTRATION_STATUS_LABELS[
+                                                        status
+                                                    ] ?? status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex justify-end">
+                                                    <Checkbox
+                                                        checked={
+                                                            status ===
+                                                            "attended"
+                                                        }
+                                                        disabled={
+                                                            !canSetAttendance ||
+                                                            setAttendance.isPending
+                                                        }
+                                                        onCheckedChange={(
+                                                            checked,
+                                                        ) =>
+                                                            setAttendance.mutate(
+                                                                {
+                                                                    eventId,
+                                                                    userId: participant.id,
+                                                                    attended:
+                                                                        Boolean(
+                                                                            checked,
+                                                                        ),
+                                                                },
+                                                            )
+                                                        }
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

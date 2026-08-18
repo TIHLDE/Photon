@@ -6,7 +6,12 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { buildPaymentDescription, createPayment } from "~/lib/vipps";
+import {
+    buildPaymentDescription,
+    cancelPayment,
+    createPayment,
+    getPaymentDetails,
+} from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
 import {
     createPaymentBodySchema,
@@ -85,27 +90,68 @@ export const createPaymentRoute = route().post(
         // An unstarted obligation (created automatically on registration) is a
         // pending payment without a provider reference. Reuse it instead of
         // creating a duplicate — the countdown timer already tracks its id.
-        const obligation = existingPayments.find(
+        let obligation = existingPayments.find(
             (p) => p.status === "pending" && !p.providerPaymentId,
         );
-
-        // A pending payment that has already been handed to Vipps blocks a new
-        // checkout for the same event.
-        if (
-            existingPayments.some(
-                (p) => p.status === "pending" && p.providerPaymentId,
-            )
-        ) {
-            throw new HTTPException(409, {
-                message: "A pending payment already exists for this event",
-            });
-        }
 
         // Check if already paid
         if (existingPayments.some((p) => p.status === "paid")) {
             throw new HTTPException(409, {
                 message: "The user has already paid for the event",
             });
+        }
+
+        // A pending payment that has already been handed to Vipps is usually a
+        // checkout the member walked away from — they pressed back in the
+        // browser instead of paying — and it must not become a dead end. Ask
+        // Vipps what actually happened to it: an unfinished checkout is
+        // cancelled so this press gets a fresh one, and only a checkout that is
+        // genuinely underway blocks a new attempt.
+        const startedPayment = existingPayments.find(
+            (p) => p.status === "pending" && p.providerPaymentId,
+        );
+
+        if (startedPayment?.providerPaymentId) {
+            const reference = startedPayment.providerPaymentId;
+            let details: Awaited<ReturnType<typeof getPaymentDetails>>;
+
+            try {
+                details = await getPaymentDetails(reference);
+            } catch {
+                // Without an answer from Vipps we cannot tell a paid checkout
+                // from an abandoned one, so we keep the safe old behaviour.
+                throw new HTTPException(409, {
+                    message: "A pending payment already exists for this event",
+                });
+            }
+
+            // Money has been reserved or drawn: the webhook settles this one,
+            // and a second checkout would charge the member twice.
+            if (
+                details.state === "AUTHORIZED" ||
+                details.aggregate.capturedAmount.value > 0 ||
+                details.aggregate.authorizedAmount.value > 0
+            ) {
+                throw new HTTPException(409, {
+                    message: "A pending payment already exists for this event",
+                });
+            }
+
+            if (details.state === "CREATED") {
+                try {
+                    await cancelPayment(reference);
+                } catch {
+                    throw new HTTPException(409, {
+                        message:
+                            "A pending payment already exists for this event",
+                    });
+                }
+            }
+
+            // Nothing was paid, so the row is free to carry the new checkout —
+            // and reusing it keeps the payment deadline the member already
+            // sees counting down.
+            obligation = startedPayment;
         }
 
         // Remaining states are either aborted or refunded. In that case they can create a new payment
