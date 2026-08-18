@@ -308,7 +308,7 @@ function getStateRendering(
                     >
                         {props.isSubmitting
                             ? "Setter deg på ventelista …"
-                            : "Sett meg på venteliste"}
+                            : "Meld meg på"}
                     </Button>
                 ),
             };
