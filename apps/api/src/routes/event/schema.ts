@@ -93,9 +93,20 @@ const eventMutationSchema = z.object({
             description:
                 "List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority.",
         }),
+    priorityUserIds: z
+        .array(z.string())
+        .nullable()
+        // Valgfritt, i motsetning til `priorityPools`: feltet kom etter at
+        // API-et var i bruk, og et kall som ikke nevner det skal fortsatt
+        // opprette arrangementer — ikke feile på et felt det ikke kjenner.
+        .optional()
+        .meta({
+            description:
+                "User IDs prioritized individually, independent of the priority pools. A user named here is prioritized on their own — the pools' all-groups-must-match rule does not apply to them.",
+        }),
     onlyAllowPrioritized: z.boolean().meta({
         description:
-            "Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools.",
+            "Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds.",
     }),
     restrictedToInstituteSlug: z.string().nullable().optional().meta({
         description:
@@ -136,17 +147,31 @@ const eventMutationSchema = z.object({
     }),
 });
 
+/**
+ * «Bare prioriterte kan melde seg på» trenger noen å slippe inn.
+ *
+ * Enten en pool eller en navngitt person holder: en pool uten grupper matcher
+ * ingen, og et arrangement som bare slipper inn prioriterte uten å ha noen
+ * prioriterte er stengt for alle uten å si det.
+ */
+function hasAnyPriority(val: {
+    priorityPools?: Array<{ groups: string[] }> | null;
+    priorityUserIds?: string[] | null;
+}): boolean {
+    const hasPool = (val.priorityPools ?? []).some(
+        (pool) => pool.groups.length > 0,
+    );
+    return hasPool || (val.priorityUserIds ?? []).length > 0;
+}
+
 export const createEventSchema = Schema(
     "CreateEventSchema",
     eventMutationSchema.superRefine((val, ctx) => {
-        if (
-            val.onlyAllowPrioritized &&
-            (!val.priorityPools || val.priorityPools.length === 0)
-        ) {
+        if (val.onlyAllowPrioritized && !hasAnyPriority(val)) {
             ctx.addIssue({
                 code: "custom",
                 message:
-                    "onlyAllowPrioritized cannot be true if priorityPools is empty",
+                    "onlyAllowPrioritized cannot be true if both priorityPools and priorityUserIds are empty",
                 path: ["onlyAllowPrioritized"],
             });
         }
@@ -275,11 +300,11 @@ export const updateEventSchema = Schema(
             val.onlyAllowPrioritized !== undefined &&
             val.onlyAllowPrioritized
         ) {
-            if (!val.priorityPools || val.priorityPools.length === 0) {
+            if (!hasAnyPriority(val)) {
                 ctx.addIssue({
                     code: "custom",
                     message:
-                        "onlyAllowPrioritized cannot be true if priorityPools is empty",
+                        "onlyAllowPrioritized cannot be true if both priorityPools and priorityUserIds are empty",
                     path: ["onlyAllowPrioritized"],
                 });
             }
@@ -630,6 +655,28 @@ export const eventDetailSchema = Schema(
                 }),
             )
             .meta({ description: "Priority registration pools" }),
+        priorityUsers: z
+            .array(
+                z.object({
+                    id: z.string().meta({ description: "User ID" }),
+                    name: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "Full name" }),
+                    username: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "Username" }),
+                    image: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "Avatar URL (nullable)" }),
+                }),
+            )
+            .meta({
+                description:
+                    "Users prioritized individually, independent of the pools",
+            }),
         enforcesPreviousStrikes: z.boolean().meta({
             description:
                 "Does the event enforce previous strikes for registration",

@@ -2679,7 +2679,7 @@ export interface paths {
         };
         /**
          * Search users
-         * @description Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign' — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).
+         * @description Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions, and to name individually prioritized users on an event. Requires 'users:view' or 'roles:assign', or an event permission ('events:create'/'events:update'/'events:manage') held for at least one group — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).
          */
         get: operations["searchUsers"];
         put?: never;
@@ -3605,7 +3605,9 @@ export interface components {
                 /** @description Group slugs in this pool */
                 groups: string[];
             }[] | null;
-            /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+            /** @description User IDs prioritized individually, independent of the priority pools. A user named here is prioritized on their own — the pools' all-groups-must-match rule does not apply to them. */
+            priorityUserIds?: string[] | null;
+            /** @description Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds. */
             onlyAllowPrioritized: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
@@ -3754,7 +3756,9 @@ export interface components {
                 /** @description Group slugs in this pool */
                 groups: string[];
             }[] | null;
-            /** @description Only allow users in at least one priority pool to sign up. Can only be true if at least one group is in priorityPools. */
+            /** @description User IDs prioritized individually, independent of the priority pools. A user named here is prioritized on their own — the pools' all-groups-must-match rule does not apply to them. */
+            priorityUserIds?: string[] | null;
+            /** @description Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds. */
             onlyAllowPrioritized?: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
@@ -3902,6 +3906,17 @@ export interface components {
                     /** @description Group logo URL (nullable) */
                     logoUrl: string | null;
                 }[];
+            }[];
+            /** @description Users prioritized individually, independent of the pools */
+            priorityUsers: {
+                /** @description User ID */
+                id: string;
+                /** @description Full name */
+                name: string | null;
+                /** @description Username */
+                username: string | null;
+                /** @description Avatar URL (nullable) */
+                image: string | null;
             }[];
             /** @description Does the event enforce previous strikes for registration */
             enforcesPreviousStrikes: boolean;

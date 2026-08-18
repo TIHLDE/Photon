@@ -34,6 +34,7 @@ type PaidEventLike = {
     paymentGracePeriodMinutes: number | null;
     enforcesPreviousStrikes: boolean;
     pools: Array<{ groups: Array<{ groupSlug: string }> }>;
+    priorityUsers: Array<{ userId: string }>;
 };
 
 function eventUrl(slug: string): string {
@@ -334,7 +335,7 @@ export async function promoteFromWaitlist(
     // the waitlist, not one pass per member of it.
     const positions = await calculateWaitlistPositions(
         event.id,
-        event.pools,
+        event,
         event.enforcesPreviousStrikes,
         ctx.db,
     );
@@ -423,6 +424,7 @@ export async function handlePaymentExpiration(
                         groups: true,
                     },
                 },
+                priorityUsers: true,
             },
         });
 

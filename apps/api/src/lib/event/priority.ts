@@ -2,7 +2,47 @@ import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { HTTPException } from "hono/http-exception";
 import { getStrikeActiveCutoff } from "./strikes";
+
+/**
+ * De unike id-ene i lista over navngitte prioriterte, etter at det er
+ * kontrollert at brukerne finnes.
+ *
+ * Uten sjekken slår en id som ikke finnes ut som en fremmednøkkelfeil midt i
+ * transaksjonen — 500, med spørringen i svaret. Det er ikke et teoretisk
+ * tilfelle: arrangøren søker opp noen, brukeren slettes, og lagringen skjer
+ * etterpå. Samme mønster som kontaktpersonen valideres med.
+ *
+ * Duplikater fjernes her, ikke i rutene: den sammensatte primærnøkkelen ville
+ * ellers avvist hele arrangementet fordi noen sto to ganger i lista.
+ */
+export async function resolvePriorityUserIds(
+    userIds: string[],
+    db: NodePgDatabase<DbSchema>,
+): Promise<string[]> {
+    const ids = [...new Set(userIds)];
+
+    if (ids.length === 0) {
+        return [];
+    }
+
+    const found = await db
+        .select({ id: schema.user.id })
+        .from(schema.user)
+        .where(inArray(schema.user.id, ids));
+
+    const foundIds = new Set(found.map((row) => row.id));
+    const missing = ids.filter((id) => !foundIds.has(id));
+
+    if (missing.length > 0) {
+        throw new HTTPException(400, {
+            message: `User with ID "${missing[0]}" does not exist`,
+        });
+    }
+
+    return ids;
+}
 
 /**
  * Get all group slugs that a user belongs to
@@ -25,33 +65,63 @@ interface EventPool {
     groups: Array<{ groupSlug: string }>;
 }
 
+/**
+ * The two ways an event grants priority, in the shape the loaded event row
+ * already has: pools of groups, and named individuals.
+ *
+ * Passed as one object rather than two parameters so a caller cannot load the
+ * event without its `priorityUsers` and still typecheck — forgetting it would
+ * silently drop everyone the organizer named by hand.
+ */
+export interface EventPriorityRules {
+    pools: EventPool[];
+    priorityUsers: Array<{ userId: string }>;
+}
+
 interface IsUserPrioritizedParams {
     userGroupSlugs: Set<string>;
-    eventPools: EventPool[];
+    event: EventPriorityRules;
     strikeCount: number;
     enforcesPreviousStrikes: boolean;
+    /**
+     * Whether the event names this user directly. Kept as a flag rather than
+     * a user id so the group-based path stays free of identity: this function
+     * never learns who it is reasoning about.
+     */
+    isNamedIndividually: boolean;
 }
 
 /**
  * Determine if a user is prioritized for an event
  *
  * A user is prioritized if they:
+ * - Are named individually on the event, OR
  * - Belong to ALL groups in AT LEAST ONE priority pool
- * - Have fewer than 3 strikes (if enforcesPreviousStrikes is true)
+ * - and have fewer than 3 strikes (if enforcesPreviousStrikes is true)
+ *
+ * The strike rule applies to named individuals too. Being singled out says
+ * the organizer wants you ahead of the queue, not that prikkene dine er
+ * strøket — and an event that enforces strikes would otherwise have a way to
+ * quietly not enforce them.
  */
 export function isUserPrioritized({
     userGroupSlugs,
-    eventPools,
+    event,
     strikeCount,
     enforcesPreviousStrikes,
+    isNamedIndividually,
 }: IsUserPrioritizedParams): boolean {
     // Users with 3+ strikes cannot be prioritized
     if (enforcesPreviousStrikes && strikeCount >= 3) {
         return false;
     }
 
+    if (isNamedIndividually) {
+        return true;
+    }
+
     // Check if user matches any priority pool
-    for (const pool of eventPools) {
+    for (const pool of event.pools) {
         const poolGroupSlugs = pool.groups.map((g) => g.groupSlug);
 
         // User must belong to ALL groups in the pool
@@ -85,7 +155,7 @@ export type PrioritizationLookup = (userId: string) => boolean;
  */
 export async function loadPrioritization(
     userIds: string[],
-    eventPools: EventPool[],
+    event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
 ): Promise<PrioritizationLookup> {
@@ -131,12 +201,17 @@ export async function loadPrioritization(
         strikes.map((row) => [row.userId, Number(row.total)]),
     );
 
+    const namedIndividually = new Set(
+        event.priorityUsers.map((entry) => entry.userId),
+    );
+
     return (userId: string) =>
         isUserPrioritized({
             userGroupSlugs: groupsByUser.get(userId) ?? new Set<string>(),
-            eventPools,
+            event,
             strikeCount: strikesByUser.get(userId) ?? 0,
             enforcesPreviousStrikes,
+            isNamedIndividually: namedIndividually.has(userId),
         });
 }
 
@@ -155,7 +230,7 @@ interface Registration {
  */
 export async function findSwapTarget(
     registeredUsers: Registration[],
-    eventPools: EventPool[],
+    event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
 ): Promise<Registration | null> {
@@ -166,7 +241,7 @@ export async function findSwapTarget(
 
     const isPrioritized = await loadPrioritization(
         registered.map((r) => r.userId),
-        eventPools,
+        event,
         enforcesPreviousStrikes,
         db,
     );
@@ -189,7 +264,7 @@ export async function findSwapTarget(
  */
 export async function calculateWaitlistPositions(
     eventId: string,
-    eventPools: EventPool[],
+    event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
 ): Promise<Map<string, number>> {
@@ -201,7 +276,7 @@ export async function calculateWaitlistPositions(
 
     const isPrioritized = await loadPrioritization(
         waitlisted.map((reg) => reg.userId),
-        eventPools,
+        event,
         enforcesPreviousStrikes,
         db,
     );
@@ -234,13 +309,13 @@ export async function calculateWaitlistPositions(
 export async function calculateWaitlistPosition(
     userId: string,
     eventId: string,
-    eventPools: EventPool[],
+    event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
 ): Promise<number> {
     const positions = await calculateWaitlistPositions(
         eventId,
-        eventPools,
+        event,
         enforcesPreviousStrikes,
         db,
     );

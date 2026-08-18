@@ -48,6 +48,7 @@ export const deleteEventRegistrationRoute = route().delete(
                         groups: true,
                     },
                 },
+                priorityUsers: true,
             },
             where: eq(schema.event.id, eventId),
         });
