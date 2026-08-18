@@ -15,6 +15,7 @@ import {
     Lock,
     QrCode,
     Tag,
+    Ticket,
     Users,
     type LucideIcon,
 } from "lucide-react";
@@ -45,6 +46,12 @@ type EventRegistrationCardProps = {
     onPay?: () => void;
     qrSlot?: ReactNode;
     headerSlot?: ReactNode;
+    /**
+     * Lenka til Facebook-gruppa for billettsalg. Settes bare når medlemmet har
+     * betalt for plassen sin, så tilbudet om å selge billetten videre kun
+     * dukker opp for dem som faktisk har en billett å selge.
+     */
+    ticketResaleUrl?: string;
     /**
      * Satt når medlemmet ikke har godkjent arrangementsreglene. Da vises
      * `eventRulesSlot` i stedet for påmeldingsknappen — også før påmeldingen
@@ -179,6 +186,22 @@ function getStateRendering(
                                 Påmeldingsbevis
                             </Button>
                         )}
+                        {props.ticketResaleUrl ? (
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                render={
+                                    <a
+                                        href={props.ticketResaleUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    />
+                                }
+                            >
+                                <Ticket />
+                                Selg billetten din
+                            </Button>
+                        ) : null}
                         <Button
                             variant="destructive"
                             className="w-full"

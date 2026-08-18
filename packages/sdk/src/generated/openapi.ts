@@ -3939,6 +3939,8 @@ export interface components {
                 waitlistPosition: number | null;
                 /** @description When the user was registered as an attendee by TIHLDE for this event. Is null if not attended. */
                 attendedAt: string | null;
+                /** @description Whether the user has a completed payment for this event. Always false on free events. */
+                hasPaid: boolean;
             } | null;
         };
         EventRegistration: {
