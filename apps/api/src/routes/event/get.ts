@@ -65,17 +65,13 @@ export const getRoute = route().get(
                     },
                 },
                 pools: {
-                    columns: { priorityScore: true, id: true },
+                    columns: { id: true, classYear: true },
                     with: {
-                        groups: {
-                            with: {
-                                group: {
-                                    columns: {
-                                        name: true,
-                                        slug: true,
-                                        logoUrl: true,
-                                    },
-                                },
+                        group: {
+                            columns: {
+                                name: true,
+                                slug: true,
+                                logoUrl: true,
                             },
                         },
                     },
@@ -249,11 +245,14 @@ export const getRoute = route().get(
             : [];
 
         const priorityPools = event.pools.map((pool) => ({
-            groups: pool.groups.map((g) => ({
-                name: g.group.name,
-                slug: g.group.slug,
-                logoUrl: g.group.logoUrl,
-            })),
+            classYear: pool.classYear,
+            group: pool.group
+                ? {
+                      name: pool.group.name,
+                      slug: pool.group.slug,
+                      logoUrl: pool.group.logoUrl,
+                  }
+                : null,
         }));
 
         const returnEvent: z.infer<typeof eventDetailSchema> = {

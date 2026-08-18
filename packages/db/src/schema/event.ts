@@ -1,12 +1,14 @@
 import { relations, sql } from "drizzle-orm";
 import {
     boolean,
+    check,
     doublePrecision,
     index,
     integer,
     pgEnum,
     pgTableCreator,
     primaryKey,
+    smallint,
     text,
     timestamp,
     uuid,
@@ -382,26 +384,81 @@ export const eventReactionRelations = relations(eventReaction, ({ one }) => ({
     }),
 }));
 
-export const eventPriorityPool = pgTable("priority_pool", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    priorityScore: integer("priority_score").notNull(),
-    ...timestamps,
-});
+/**
+ * One criterion that earns a member priority on an event.
+ *
+ * A pool is at most one group and at most one class level, ANDed; the pools on
+ * an event are ORed. Deliberately *not* an arbitrary set of groups: a pool
+ * that could name several groups at once let an admin build a criterion that
+ * matched nobody, and nothing in the UI could express the rolling "1. klasse"
+ * rule that replaced the old cohort groups.
+ *
+ * {@link classYear} is resolved against the member's cohort at registration
+ * time, so a pool keeps meaning "first years" as the years roll over instead
+ * of freezing to the intake that happened to be first when it was created.
+ */
+export const eventPriorityPool = pgTable(
+    "priority_pool",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        /**
+         * The group a member must belong to, or null when the pool is a pure
+         * class-level rule.
+         *
+         * Cascades on group delete, which drops the whole pool. That is the
+         * right reading of "this criterion named a group that no longer
+         * exists" — the predecessor deleted a single row out of a multi-group
+         * pool and silently *widened* it instead.
+         */
+        groupSlug: varchar("group_slug", { length: 128 }).references(
+            () => group.slug,
+            { onDelete: "cascade" },
+        ),
+        /** 1-5, or null when the pool does not care about class level. */
+        classYear: smallint("class_year"),
+        ...timestamps,
+    },
+    (t) => [
+        check(
+            "priority_pool_not_empty",
+            sql`${t.groupSlug} is not null or ${t.classYear} is not null`,
+        ),
+        check(
+            "priority_pool_class_year_range",
+            sql`${t.classYear} is null or ${t.classYear} between 1 and 5`,
+        ),
+        index("priority_pool_event_id_idx").on(t.eventId),
+    ],
+);
 
 export const eventPriorityPoolRelations = relations(
     eventPriorityPool,
-    ({ one, many }) => ({
+    ({ one }) => ({
         event: one(event, {
             fields: [eventPriorityPool.eventId],
             references: [event.id],
         }),
-        groups: many(eventPriorityPoolGroup),
+        group: one(group, {
+            fields: [eventPriorityPool.groupSlug],
+            references: [group.slug],
+        }),
     }),
 );
 
+/**
+ * Frozen archive of the pre-2026 priority pools, when a pool was a set of
+ * group slugs ANDed together.
+ *
+ * Nothing reads or writes this table any more — the migration that added
+ * `class_year` and `group_slug` to {@link eventPriorityPool} collapsed each
+ * pool to a single group, and multi-group pools survive here and nowhere else.
+ * It stays until that backfill has been verified in production, then a
+ * follow-up drops it; removing it now would make `db:generate` emit a
+ * `DROP TABLE` and take the only copy of the old rows with it.
+ */
 export const eventPriorityPoolGroup = pgTable(
     "priority_pool_group",
     {

@@ -442,6 +442,20 @@
       "when": 1787049324426,
       "tag": "0062_silly_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1787058890876,
+      "tag": "0063_slim_eternity",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1787058913437,
+      "tag": "0064_common_korvac",
+      "breakpoints": true
     }
   ]
 }

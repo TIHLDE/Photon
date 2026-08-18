@@ -1,6 +1,13 @@
+import {
+    MASTER_CLASS_OFFSET,
+    MAX_CLASS_YEAR,
+    MIN_CLASS_YEAR,
+    computeClassYear,
+    isMasterStudySlug,
+} from "@photon/auth/academic-year";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
-import { and, gte, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
 import { getStrikeActiveCutoff } from "./strikes";
@@ -44,25 +51,111 @@ export async function resolvePriorityUserIds(
     return ids;
 }
 
-/**
- * Get all group slugs that a user belongs to
- */
-export async function getUserGroupSlugs(
-    userId: string,
-    db: NodePgDatabase<DbSchema>,
-): Promise<Set<string>> {
-    const memberships = await db.query.groupMembership.findMany({
-        where: (membership, { eq }) => eq(membership.userId, userId),
-        columns: {
-            groupSlug: true,
-        },
-    });
+/** A member's group membership, as far as prioritization cares. */
+type MembershipRow = {
+    slug: string;
+    /** Group name. A cohort group's name is its year, e.g. "2023". */
+    name: string;
+    /** Free-text and upper-case from Lepton — always compare case-insensitively. */
+    type: string;
+};
 
-    return new Set(memberships.map((m) => m.groupSlug));
+/** What a member is, reduced to the two things a priority pool can ask about. */
+export type UserPriorityFacts = {
+    groupSlugs: Set<string>;
+    /** 1-5, or null when we cannot place the member on a class level. */
+    classYear: number | null;
+};
+
+/**
+ * Which class level a member is on, from their group memberships.
+ *
+ * Derived from the `STUDYYEAR`/`STUDY` groups rather than
+ * `studyProgramMembership`, for the reason spelled out on {@link UserStudy} in
+ * `~/lib/user/study`: the table only gets rows from a Feide login, so a
+ * handful of members have one while almost everyone carries the groups from
+ * the Lepton migration. Reading the table here would leave the overwhelming
+ * majority with no class level at all.
+ *
+ * Masters are the awkward case. TIHLDE counts the master's first year as 4.
+ * klasse, but the cohort group only ever holds a start year — and which start
+ * year it is depends on whether Feide handed out a `fc:fs:kull` for the master
+ * itself. Rather than guess, we compute both readings and keep the one that
+ * lands in the master's own range; a member on a master can only be on 4. or
+ * 5. klasse, so at most one of the two can be right.
+ *
+ * Anything outside 1-5 is an alumnus and returns null — they match no class
+ * pool, which is the whole point of the range.
+ */
+export function computeUserClassYear(
+    groups: readonly MembershipRow[],
+    now = new Date(),
+): number | null {
+    let startYear: number | null = null;
+    let onMaster = false;
+
+    for (const group of groups) {
+        const type = group.type.toLowerCase();
+
+        if (type === "study") {
+            onMaster ||= isMasterStudySlug(group.slug);
+            continue;
+        }
+
+        if (type !== "studyyear") continue;
+
+        // Several cohorts linger on one account — a bachelor who continued
+        // into a master, or someone who transferred — and the newest is the
+        // one the class level follows.
+        const year = Number.parseInt(group.name, 10);
+        if (Number.isFinite(year) && (startYear === null || year > startYear)) {
+            startYear = year;
+        }
+    }
+
+    if (startYear === null) return null;
+
+    const base = computeClassYear(startYear, now);
+    const candidates = onMaster ? [base + MASTER_CLASS_OFFSET, base] : [base];
+
+    for (const candidate of candidates) {
+        const floor = onMaster ? MASTER_CLASS_OFFSET + 1 : MIN_CLASS_YEAR;
+        if (candidate >= floor && candidate <= MAX_CLASS_YEAR) {
+            return candidate;
+        }
+    }
+
+    return null;
 }
 
-interface EventPool {
-    groups: Array<{ groupSlug: string }>;
+/**
+ * Load everything prioritization needs to know about one member.
+ *
+ * Prefer {@link loadPrioritization} for more than one member — this issues its
+ * own query.
+ */
+export async function getUserPriorityFacts(
+    userId: string,
+    db: NodePgDatabase<DbSchema>,
+    now = new Date(),
+): Promise<UserPriorityFacts> {
+    const rows = await db
+        .select({
+            slug: schema.group.slug,
+            name: schema.group.name,
+            type: schema.group.type,
+        })
+        .from(schema.groupMembership)
+        .innerJoin(
+            schema.group,
+            eq(schema.group.slug, schema.groupMembership.groupSlug),
+        )
+        .where(eq(schema.groupMembership.userId, userId));
+
+    return {
+        groupSlugs: new Set(rows.map((row) => row.slug)),
+        classYear: computeUserClassYear(rows, now),
+    };
 }
 
 /**
@@ -74,12 +167,18 @@ interface EventPool {
  * silently drop everyone the organizer named by hand.
  */
 export interface EventPriorityRules {
-    pools: EventPool[];
+    /**
+     * One criterion each: at most one group and at most one class level.
+     * Both null is rejected by a CHECK constraint, by Zod and by the editor.
+     */
+    pools: Array<{ groupSlug: string | null; classYear: number | null }>;
     priorityUsers: Array<{ userId: string }>;
 }
 
 interface IsUserPrioritizedParams {
     userGroupSlugs: Set<string>;
+    /** Null when the member has no cohort — matches no class-level pool. */
+    userClassYear: number | null;
     event: EventPriorityRules;
     strikeCount: number;
     enforcesPreviousStrikes: boolean;
@@ -96,7 +195,7 @@ interface IsUserPrioritizedParams {
  *
  * A user is prioritized if they:
  * - Are named individually on the event, OR
- * - Belong to ALL groups in AT LEAST ONE priority pool
+ * - Satisfy every criterion of AT LEAST ONE priority pool
  * - and have fewer than 3 strikes (if enforcesPreviousStrikes is true)
  *
  * The strike rule applies to named individuals too. Being singled out says
@@ -106,6 +205,7 @@ interface IsUserPrioritizedParams {
  */
 export function isUserPrioritized({
     userGroupSlugs,
+    userClassYear,
     event,
     strikeCount,
     enforcesPreviousStrikes,
@@ -120,18 +220,19 @@ export function isUserPrioritized({
         return true;
     }
 
-    // Check if user matches any priority pool
     for (const pool of event.pools) {
-        const poolGroupSlugs = pool.groups.map((g) => g.groupSlug);
+        // An empty pool asks nothing and would otherwise match everyone.
+        if (pool.groupSlug === null && pool.classYear === null) continue;
 
-        // User must belong to ALL groups in the pool
-        const hasAllGroups = poolGroupSlugs.every((slug) =>
-            userGroupSlugs.has(slug),
-        );
-
-        if (hasAllGroups && poolGroupSlugs.length > 0) {
-            return true;
+        if (pool.groupSlug !== null && !userGroupSlugs.has(pool.groupSlug)) {
+            continue;
         }
+
+        if (pool.classYear !== null && userClassYear !== pool.classYear) {
+            continue;
+        }
+
+        return true;
     }
 
     return false;
@@ -158,6 +259,7 @@ export async function loadPrioritization(
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
+    now = new Date(),
 ): Promise<PrioritizationLookup> {
     const ids = [...new Set(userIds)];
 
@@ -166,12 +268,21 @@ export async function loadPrioritization(
     }
 
     const [memberships, strikes] = await Promise.all([
+        // Joined to `group` so the same pass yields both the slugs a pool can
+        // name and the name/type the class level is derived from — a separate
+        // query per member is what this function exists to avoid.
         db
             .select({
                 userId: schema.groupMembership.userId,
-                groupSlug: schema.groupMembership.groupSlug,
+                slug: schema.group.slug,
+                name: schema.group.name,
+                type: schema.group.type,
             })
             .from(schema.groupMembership)
+            .innerJoin(
+                schema.group,
+                eq(schema.group.slug, schema.groupMembership.groupSlug),
+            )
             .where(inArray(schema.groupMembership.userId, ids)),
         db
             .select({
@@ -190,11 +301,19 @@ export async function loadPrioritization(
             .groupBy(schema.eventStrike.userId),
     ]);
 
-    const groupsByUser = new Map<string, Set<string>>();
+    const rowsByUser = new Map<string, MembershipRow[]>();
     for (const membership of memberships) {
-        const slugs = groupsByUser.get(membership.userId) ?? new Set<string>();
-        slugs.add(membership.groupSlug);
-        groupsByUser.set(membership.userId, slugs);
+        const rows = rowsByUser.get(membership.userId) ?? [];
+        rows.push(membership);
+        rowsByUser.set(membership.userId, rows);
+    }
+
+    const factsByUser = new Map<string, UserPriorityFacts>();
+    for (const [userId, rows] of rowsByUser) {
+        factsByUser.set(userId, {
+            groupSlugs: new Set(rows.map((row) => row.slug)),
+            classYear: computeUserClassYear(rows, now),
+        });
     }
 
     const strikesByUser = new Map<string, number>(
@@ -205,14 +324,18 @@ export async function loadPrioritization(
         event.priorityUsers.map((entry) => entry.userId),
     );
 
-    return (userId: string) =>
-        isUserPrioritized({
-            userGroupSlugs: groupsByUser.get(userId) ?? new Set<string>(),
+    return (userId: string) => {
+        const facts = factsByUser.get(userId);
+
+        return isUserPrioritized({
+            userGroupSlugs: facts?.groupSlugs ?? new Set<string>(),
+            userClassYear: facts?.classYear ?? null,
             event,
             strikeCount: strikesByUser.get(userId) ?? 0,
             enforcesPreviousStrikes,
             isNamedIndividually: namedIndividually.has(userId),
         });
+    };
 }
 
 interface Registration {
@@ -233,6 +356,7 @@ export async function findSwapTarget(
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
+    now = new Date(),
 ): Promise<Registration | null> {
     // Filter to only registered users and sort by createdAt DESC (most recent first)
     const registered = registeredUsers
@@ -244,6 +368,7 @@ export async function findSwapTarget(
         event,
         enforcesPreviousStrikes,
         db,
+        now,
     );
 
     // Find the first non-prioritized user
@@ -267,6 +392,7 @@ export async function calculateWaitlistPositions(
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
+    now = new Date(),
 ): Promise<Map<string, number>> {
     const waitlisted = await db.query.eventRegistration.findMany({
         where: (reg, { and, eq }) =>
@@ -279,6 +405,7 @@ export async function calculateWaitlistPositions(
         event,
         enforcesPreviousStrikes,
         db,
+        now,
     );
 
     const prioritized: string[] = [];
@@ -312,12 +439,14 @@ export async function calculateWaitlistPosition(
     event: EventPriorityRules,
     enforcesPreviousStrikes: boolean,
     db: NodePgDatabase<DbSchema>,
+    now = new Date(),
 ): Promise<number> {
     const positions = await calculateWaitlistPositions(
         eventId,
         event,
         enforcesPreviousStrikes,
         db,
+        now,
     );
 
     const position = positions.get(userId);

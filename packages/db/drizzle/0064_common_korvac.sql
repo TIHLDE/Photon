@@ -1,0 +1,3 @@
+ALTER TABLE "event_priority_pool" DROP COLUMN "priority_score";--> statement-breakpoint
+ALTER TABLE "event_priority_pool" ADD CONSTRAINT "priority_pool_not_empty" CHECK ("event_priority_pool"."group_slug" is not null or "event_priority_pool"."class_year" is not null);--> statement-breakpoint
+ALTER TABLE "event_priority_pool" ADD CONSTRAINT "priority_pool_class_year_range" CHECK ("event_priority_pool"."class_year" is null or "event_priority_pool"."class_year" between 1 and 5);

@@ -7,7 +7,7 @@ import {
     isUserInInstitute,
 } from "../../../lib/event/institute";
 import {
-    getUserGroupSlugs,
+    getUserPriorityFacts,
     isUserPrioritized,
 } from "../../../lib/event/priority";
 import { enqueueRegistrationResolve } from "../../../lib/event/resolve-queue";
@@ -75,11 +75,7 @@ export const registerToEventRoute = route().post(
             db.query.event.findFirst({
                 where: (event, { eq }) => eq(event.id, eventId),
                 with: {
-                    pools: {
-                        with: {
-                            groups: true,
-                        },
-                    },
+                    pools: true,
                     priorityUsers: true,
                     restrictedToInstitute: true,
                 },
@@ -158,13 +154,14 @@ export const registerToEventRoute = route().post(
         // Events with onlyAllowPrioritized reject non-prioritized users
         // outright at sign-up time, instead of waitlisting them.
         if (event.onlyAllowPrioritized) {
-            const [userGroupSlugs, strikeCount] = await Promise.all([
-                getUserGroupSlugs(userId, db),
+            const [priorityFacts, strikeCount] = await Promise.all([
+                getUserPriorityFacts(userId, db),
                 getUserStrikeCount(userId, db),
             ]);
 
             const isPrioritized = isUserPrioritized({
-                userGroupSlugs,
+                userGroupSlugs: priorityFacts.groupSlugs,
+                userClassYear: priorityFacts.classYear,
                 event,
                 strikeCount,
                 enforcesPreviousStrikes: event.enforcesPreviousStrikes,

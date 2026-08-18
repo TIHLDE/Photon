@@ -18,9 +18,6 @@ export const newsIdMap = new Map<number, string>();
 /** old content_category.id (int) -> new event_category.slug */
 export const categoryIdMap = new Map<number, string>();
 
-/** old content_prioritypool.id (int) -> new event_priority_pool.id (uuid) */
-export const priorityPoolIdMap = new Map<number, string>();
-
 /** old form id (char32) -> new form_form.id (uuid) — via char32ToUuid */
 export const formIdMap = new Map<string, string>();
 

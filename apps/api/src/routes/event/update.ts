@@ -1,5 +1,6 @@
 import { type DbSchema, schema } from "@photon/db";
 import { type InferInsertModel, and, eq } from "drizzle-orm";
+import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
@@ -113,6 +114,15 @@ export const updateRoute = route().put(
                     });
                 }
             }
+            // Validated against the organizer the event will have after this
+            // update, not the one it had before: moving an event to another
+            // group can invalidate a pool that was legal a moment ago.
+            await validatePriorityPools(
+                tx,
+                body.priorityPools,
+                body.organizerGroupSlug ?? event.organizerGroupSlug,
+            );
+
             if (
                 body.contactPersonUserId &&
                 body.contactPersonUserId !== event.contactPersonId
@@ -176,30 +186,14 @@ export const updateRoute = route().put(
                     .delete(schema.eventPriorityPool)
                     .where(eq(schema.eventPriorityPool.eventId, eventId));
 
-                for (let p = 0; p < body.priorityPools.length; p++) {
-                    const pool = body.priorityPools[p];
-                    const priorityScore = 10 - p;
-                    const [insertedPool] = await tx
-                        .insert(schema.eventPriorityPool)
-                        .values({
+                if (body.priorityPools.length) {
+                    await tx.insert(schema.eventPriorityPool).values(
+                        body.priorityPools.map((pool) => ({
                             eventId,
-                            priorityScore,
-                        })
-                        .returning({ poolId: schema.eventPriorityPool.id });
-                    const poolId = insertedPool?.poolId;
-
-                    if (!poolId) {
-                        throw new HTTPException(500, {
-                            message: "Failed to create priority pool",
-                        });
-                    }
-
-                    for (const groupSlug of pool?.groups ?? []) {
-                        await tx.insert(schema.eventPriorityPoolGroup).values({
-                            groupSlug,
-                            priorityPoolId: poolId,
-                        });
-                    }
+                            groupSlug: pool.groupSlug,
+                            classYear: pool.classYear,
+                        })),
+                    );
                 }
             }
 
@@ -322,7 +316,7 @@ export const updateRoute = route().put(
                     where: (e, { eq }) => eq(e.id, eventId),
                     columns: { enforcesPreviousStrikes: true },
                     with: {
-                        pools: { with: { groups: true } },
+                        pools: true,
                         priorityUsers: true,
                     },
                 });

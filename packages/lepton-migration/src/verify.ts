@@ -46,7 +46,10 @@ export async function verify(db: NodePgDatabase<DbSchema>): Promise<void> {
         { name: "Strikes", old: "content_strike", new: "event_strike" },
         { name: "Payments", old: "payment_order", new: "event_payment" },
         {
-            name: "Priority Pools",
+            // Expect New < Old: a Lepton pool that expressed nothing, or whose
+            // cohort had already graduated by the time of the event, is
+            // dropped rather than carried over. See phase 08.
+            name: "Priority Pools*",
             old: "content_prioritypool",
             new: "event_priority_pool",
         },
