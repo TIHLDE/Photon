@@ -62,7 +62,7 @@ type PaidEventLike = {
 };
 
 function eventUrl(slug: string): string {
-    return `${env.ROOT_URL}/arrangementer/${slug}`;
+    return `${env.WEBSITE_URL}/arrangementer/${slug}`;
 }
 
 /**

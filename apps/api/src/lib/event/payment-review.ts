@@ -125,7 +125,7 @@ export async function notifyOrganizersOfPaymentsWithoutSpot(
                     userId,
                     title: `Betalinger uten plass på ${claimed.title}`,
                     description,
-                    link: `${env.ROOT_URL}/admin/arrangementer/${claimed.id}`,
+                    link: `${env.WEBSITE_URL}/admin/arrangementer/${claimed.id}`,
                 },
                 ctx,
             );
