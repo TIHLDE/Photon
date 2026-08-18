@@ -129,6 +129,20 @@ export function PriorityPoolEditor({
     const bySlug = new Map(groups.map((g) => [g.slug, g]));
 
     /**
+     * Private grupper er bøtelag, ikke noe å prioritere etter. De lages
+     * automatisk per lag og sier ingenting om hvem arrangementet er for, så de
+     * hører ikke hjemme i kriterielista. Typen ligger som fritekst i basen,
+     * arvet fra Lepton, derfor sammenligningen uten hensyn til store bokstaver.
+     *
+     * Filtreres bare bort fra det som kan velges: `bySlug` går fortsatt over
+     * alle gruppene, så en pool som allerede peker på en privat gruppe viser
+     * navnet sitt i stedet for å forsvinne stille ved lagring.
+     */
+    const selectableGroups = groups.filter(
+        (g) => g.type.toUpperCase() !== "PRIVATE",
+    );
+
+    /**
      * En gruppe uten kriterier stenger alle ute i stedet for å slippe noen inn.
      *
      * `isUserPrioritized` krever `poolGroupSlugs.length > 0`, så en tom pool
@@ -202,7 +216,7 @@ export function PriorityPoolEditor({
                                 </Button>
                             </div>
                             <GroupPicker
-                                groups={groups}
+                                groups={selectableGroups}
                                 value={pool.groups
                                     .map((slug) => bySlug.get(slug))
                                     .filter((g): g is PoolGroup => Boolean(g))}
