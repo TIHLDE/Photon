@@ -19,6 +19,7 @@ import { AdminPageHeader } from "#/components/admin-page-header";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
 import { poolsForSubmit } from "#/components/priority-pool-editor";
+import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
 import {
     useAnyScopePermission,
     useCanActForGroup,
@@ -68,6 +69,7 @@ function eventDateDefaults() {
 
 const emptyValues: EventFormValues = {
     priorityPools: [],
+    priorityUsers: [],
     onlyAllowPrioritized: false,
     title: "",
     description: "",
@@ -121,6 +123,7 @@ function NewEventPage() {
             : "",
     }));
     const [uploadError, setUploadError] = useState<string | null>(null);
+    const priorityUserSearch = usePriorityUserSearch();
 
     const debouncedLocation = useDebounced(values.location, 250);
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
@@ -256,6 +259,9 @@ function NewEventPage() {
                     requiresSigningUp: values.requiresSigningUp,
                     allowWaitlist: values.requiresSigningUp,
                     priorityPools: poolsForSubmit(values.priorityPools),
+                    priorityUserIds: values.priorityUsers.map(
+                        (user) => user.id,
+                    ),
                     onlyAllowPrioritized: values.onlyAllowPrioritized,
                     // Betalte arrangementer gir aldri prikker.
                     canCauseStrikes: canCauseStrikes,
@@ -312,6 +318,7 @@ function NewEventPage() {
                 onChange={handleChange}
                 groups={groups}
                 poolGroups={allGroups}
+                priorityUserSearch={priorityUserSearch}
                 institutes={institutes}
                 contactPersonCandidates={contactPersonCandidates}
                 addressSuggestions={addressSuggestions ?? []}

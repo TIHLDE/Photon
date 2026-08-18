@@ -1,10 +1,14 @@
 import { type DbSchema, schema } from "@photon/db";
-import { type InferInsertModel, eq } from "drizzle-orm";
+import { type InferInsertModel, and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
+import {
+    calculateWaitlistPositions,
+    resolvePriorityUserIds,
+} from "~/lib/event/priority";
 import { isEventOwner } from "../../lib/event/middleware";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
@@ -199,6 +203,28 @@ export const updateRoute = route().put(
                 }
             }
 
+            // Som poolene over: feltet erstattes i sin helhet når det er med,
+            // og røres ikke når det mangler — en PATCH som ikke nevner
+            // prioriterte personer skal ikke fjerne dem.
+            if (body.priorityUserIds) {
+                await tx
+                    .delete(schema.eventPriorityUser)
+                    .where(eq(schema.eventPriorityUser.eventId, eventId));
+
+                const priorityUserIds = await resolvePriorityUserIds(
+                    body.priorityUserIds,
+                    tx,
+                );
+                if (priorityUserIds.length > 0) {
+                    await tx.insert(schema.eventPriorityUser).values(
+                        priorityUserIds.map((priorityUserId) => ({
+                            eventId,
+                            userId: priorityUserId,
+                        })),
+                    );
+                }
+            }
+
             const updateDateNullable = (
                 date: string | null | undefined,
             ): Date | null | undefined => {
@@ -270,6 +296,64 @@ export const updateRoute = route().put(
                 .update(schema.event)
                 .set(updatedEvent)
                 .where(eq(schema.event.id, eventId));
+
+            /**
+             * Ventelista står i den rekkefølgen prioriteringen ga den, og
+             * `waitlistPosition` er det lagrede svaret — både medlemmet og
+             * `promoteFromWaitlist` leser den kolonnen, ikke reglene.
+             *
+             * Uten denne omregningen ville en nettopp lagt til prioritert
+             * blitt stående der hen sto til noen andre meldte seg på og
+             * resolveren regnet om lista som en bieffekt. Det er nettopp det
+             * tilfellet feltet er laget for: arrangementet er fullt, noen får
+             * plass lovet, og de legges til etterpå.
+             *
+             * Kjøres når prioriteringen faktisk er rørt — endres bare
+             * tittelen, er rekkefølgen den samme. Prikkehåndhevingen teller
+             * med, siden den avgjør hvem prioriteringen gjelder for.
+             */
+            const priorityChanged =
+                body.priorityPools !== undefined ||
+                body.priorityUserIds !== undefined ||
+                body.enforcesPreviousStrikes !== undefined;
+
+            if (priorityChanged) {
+                const refreshed = await tx.query.event.findFirst({
+                    where: (e, { eq }) => eq(e.id, eventId),
+                    columns: { enforcesPreviousStrikes: true },
+                    with: {
+                        pools: { with: { groups: true } },
+                        priorityUsers: true,
+                    },
+                });
+
+                if (refreshed) {
+                    const positions = await calculateWaitlistPositions(
+                        eventId,
+                        refreshed,
+                        refreshed.enforcesPreviousStrikes,
+                        tx,
+                    );
+
+                    for (const [waitlistedUserId, position] of positions) {
+                        await tx
+                            .update(schema.eventRegistration)
+                            .set({ waitlistPosition: position })
+                            .where(
+                                and(
+                                    eq(
+                                        schema.eventRegistration.eventId,
+                                        eventId,
+                                    ),
+                                    eq(
+                                        schema.eventRegistration.userId,
+                                        waitlistedUserId,
+                                    ),
+                                ),
+                            );
+                    }
+                }
+            }
 
             return slug;
         });

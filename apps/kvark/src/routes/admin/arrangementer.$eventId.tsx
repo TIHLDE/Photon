@@ -66,6 +66,7 @@ import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
 import { poolsForSubmit } from "#/components/priority-pool-editor";
+import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
 import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
 import {
@@ -225,6 +226,10 @@ function valuesFromEvent(event: Event): EventFormValues {
         priorityPools: (event.priorityPools ?? []).map((pool) => ({
             groups: pool.groups.map((g) => g.slug),
         })),
+        // Navn og bilde er med så lista kan vise hvem det er; bare id-ene
+        // sendes tilbake. Feltet er tomt for de som ikke kan redigere
+        // arrangementet — API-et deler ikke navngitte personer med andre.
+        priorityUsers: event.priorityUsers ?? [],
         onlyAllowPrioritized: event.onlyAllowPrioritized,
         title: event.title,
         description: event.description,
@@ -295,6 +300,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
     );
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const priorityUserSearch = usePriorityUserSearch();
 
     const debouncedLocation = useDebounced(values.location, 250);
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
@@ -398,6 +404,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
             requiresSigningUp: values.requiresSigningUp,
             allowWaitlist: values.requiresSigningUp,
             priorityPools: poolsForSubmit(values.priorityPools),
+            priorityUserIds: values.priorityUsers.map((user) => user.id),
             onlyAllowPrioritized: values.onlyAllowPrioritized,
             // Betalte arrangementer gir aldri prikker.
             canCauseStrikes: canCauseStrikes,
@@ -445,6 +452,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 onChange={handleChange}
                 groups={groups}
                 poolGroups={allGroups}
+                priorityUserSearch={priorityUserSearch}
                 institutes={institutes}
                 contactPersonCandidates={contactPersonCandidates}
                 existingImageUrl={event.image}

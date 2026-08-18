@@ -179,6 +179,7 @@ export const eventRelations = relations(event, ({ one, many }) => ({
     }),
     reactions: many(eventReaction),
     pools: many(eventPriorityPool),
+    priorityUsers: many(eventPriorityUser),
     favorites: many(eventFavorite),
     registrations: many(eventRegistration),
 }));
@@ -425,6 +426,43 @@ export const eventPriorityPoolGroupRelations = relations(
         group: one(group, {
             fields: [eventPriorityPoolGroup.groupSlug],
             references: [group.slug],
+        }),
+    }),
+);
+
+/**
+ * Enkeltpersoner som er prioritert på et arrangement.
+ *
+ * Bevisst en egen tabell og ikke enda et kriterium i en pool: en pool er et
+ * OG av grupper, og «brukeren er Ola» kan ikke stå sammen med «brukeren er i
+ * 1. klasse» uten å bety noe annet enn arrangøren mener. Her er regelen
+ * flat — står du i lista, er du prioritert, på lik linje med å treffe en
+ * pool.
+ */
+export const eventPriorityUser = pgTable(
+    "priority_user",
+    {
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        ...timestamps,
+    },
+    (t) => [primaryKey({ columns: [t.eventId, t.userId] })],
+);
+
+export const eventPriorityUserRelations = relations(
+    eventPriorityUser,
+    ({ one }) => ({
+        event: one(event, {
+            fields: [eventPriorityUser.eventId],
+            references: [event.id],
+        }),
+        user: one(user, {
+            fields: [eventPriorityUser.userId],
+            references: [user.id],
         }),
     }),
 );

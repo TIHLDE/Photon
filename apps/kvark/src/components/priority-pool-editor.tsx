@@ -23,7 +23,13 @@ import { Label } from "@tihlde/ui/ui/label";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
 
-import { computeClassYear } from "#/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import {
+    UserSearchCombobox,
+    type UserSearchOption,
+} from "#/components/user-search-combobox";
+import { avatarImageUrl } from "#/lib/assets";
+import { computeClassYear, initials } from "#/lib/utils";
 
 /** Det minste en pool-velger trenger for å sende en slug videre. */
 export type PoolGroup = {
@@ -49,11 +55,22 @@ export function poolsForSubmit(pools: PriorityPool[]): PriorityPool[] {
     return pools.filter((pool) => pool.groups.length > 0);
 }
 
+/**
+ * En prioritert enkeltperson, med nok til å vise hvem det er etter at siden er
+ * lastet på nytt. Bare `id` sendes til API-et.
+ */
+export type PriorityUser = UserSearchOption;
+
 type PriorityPoolEditorProps = {
     pools: PriorityPool[];
     /** Alle grupper i TIHLDE — ikke bare de brukeren kan arrangere for. */
     groups: PoolGroup[];
     onChange: (pools: PriorityPool[]) => void;
+    /** Enkeltpersoner som er prioritert uavhengig av gruppene. */
+    users: PriorityUser[];
+    onUsersChange: (users: PriorityUser[]) => void;
+    /** Søket etter personer eies av ruten — se `userSearch` i `EventForm`. */
+    userSearch: UserSearchState;
     onlyAllowPrioritized: boolean;
     onOnlyAllowPrioritizedChange: (next: boolean) => void;
 };
@@ -123,10 +140,27 @@ export function PriorityPoolEditor({
     pools,
     groups,
     onChange,
+    users,
+    onUsersChange,
+    userSearch,
     onlyAllowPrioritized,
     onOnlyAllowPrioritizedChange,
 }: PriorityPoolEditorProps) {
     const bySlug = new Map(groups.map((g) => [g.slug, g]));
+
+    /**
+     * Private grupper er bøtelag, ikke noe å prioritere etter. De lages
+     * automatisk per lag og sier ingenting om hvem arrangementet er for, så de
+     * hører ikke hjemme i kriterielista. Typen ligger som fritekst i basen,
+     * arvet fra Lepton, derfor sammenligningen uten hensyn til store bokstaver.
+     *
+     * Filtreres bare bort fra det som kan velges: `bySlug` går fortsatt over
+     * alle gruppene, så en pool som allerede peker på en privat gruppe viser
+     * navnet sitt i stedet for å forsvinne stille ved lagring.
+     */
+    const selectableGroups = groups.filter(
+        (g) => g.type.toUpperCase() !== "PRIVATE",
+    );
 
     /**
      * En gruppe uten kriterier stenger alle ute i stedet for å slippe noen inn.
@@ -141,13 +175,20 @@ export function PriorityPoolEditor({
      * et valg.
      */
     const effectivePools = pools.filter((p) => p.groups.length > 0);
+    /**
+     * Bryteren trenger noen å slippe inn, og en navngitt person teller like
+     * mye som en gruppe. Uten den ville «bare prioriterte» vært utilgjengelig
+     * på et arrangement der de prioriterte er tre personer og ingen gruppe.
+     */
+    const hasSomethingPrioritized =
+        effectivePools.length > 0 || users.length > 0;
 
     function updatePool(index: number, next: string[]) {
         const updated = pools.map((p, i) =>
             i === index ? { groups: next } : p,
         );
         onChange(updated);
-        if (!updated.some((p) => p.groups.length > 0)) {
+        if (!updated.some((p) => p.groups.length > 0) && users.length === 0) {
             onOnlyAllowPrioritizedChange(false);
         }
     }
@@ -158,7 +199,15 @@ export function PriorityPoolEditor({
         // Kravet i API-et: «bare prioriterte» kan ikke stå igjen uten pooler.
         // Å la den henge ville gitt en 400 ved lagring, uten at feltet som
         // forårsaket den er synlig lenger.
-        if (!next.some((p) => p.groups.length > 0)) {
+        if (!next.some((p) => p.groups.length > 0) && users.length === 0) {
+            onOnlyAllowPrioritizedChange(false);
+        }
+    }
+
+    function removeUser(userId: string) {
+        const next = users.filter((u) => u.id !== userId);
+        onUsersChange(next);
+        if (effectivePools.length === 0 && next.length === 0) {
             onOnlyAllowPrioritizedChange(false);
         }
     }
@@ -202,7 +251,7 @@ export function PriorityPoolEditor({
                                 </Button>
                             </div>
                             <GroupPicker
-                                groups={groups}
+                                groups={selectableGroups}
                                 value={pool.groups
                                     .map((slug) => bySlug.get(slug))
                                     .filter((g): g is PoolGroup => Boolean(g))}
@@ -229,10 +278,20 @@ export function PriorityPoolEditor({
                     </Button>
                 </div>
 
+                <PriorityUserPicker
+                    users={users}
+                    search={userSearch}
+                    onAdd={(user) => {
+                        if (users.some((u) => u.id === user.id)) return;
+                        onUsersChange([...users, user]);
+                    }}
+                    onRemove={removeUser}
+                />
+
                 <Label className="flex items-start gap-3">
                     <Switch
                         checked={onlyAllowPrioritized}
-                        disabled={effectivePools.length === 0}
+                        disabled={!hasSomethingPrioritized}
                         onCheckedChange={onOnlyAllowPrioritizedChange}
                     />
                     <span className="flex flex-col gap-1">
@@ -240,7 +299,7 @@ export function PriorityPoolEditor({
                         <CardDescription>
                             Uten denne havner alle andre på venteliste i stedet
                             for å bli avvist. Krever minst én prioritert gruppe
-                            med et kriterium.
+                            med et kriterium, eller én prioritert person.
                         </CardDescription>
                     </span>
                 </Label>
@@ -319,5 +378,112 @@ function GroupPicker({
                 </ComboboxList>
             </ComboboxContent>
         </Combobox>
+    );
+}
+
+/**
+ * Søket etter personer, slik ruten leverer det.
+ *
+ * Komponentene her henter ikke data selv (se `apps/kvark/CLAUDE.md`), så
+ * spørringen og teksten det søkes på eies av siden som bruker skjemaet.
+ */
+export type UserSearchState = {
+    query: string;
+    onQueryChange: (query: string) => void;
+    results: PriorityUser[];
+    isSearching: boolean;
+};
+
+/**
+ * Prioriterte enkeltpersoner.
+ *
+ * Egen liste, ikke enda et kriterium i en prioritert gruppe: kriteriene i en
+ * gruppe må stemme samtidig, og «personen er Ola» sammen med «personen går
+ * første klasse» ville betydd noe annet enn arrangøren mener. Her er regelen
+ * flat — står du i lista, er du prioritert.
+ *
+ * Søket går mot hele brukerregisteret og ikke bare arrangørgruppa. Den som
+ * skal prioriteres er ofte nettopp en utenfor: en fadder, en foredragsholder,
+ * en som fikk plass lovet.
+ */
+function PriorityUserPicker({
+    users,
+    search,
+    onAdd,
+    onRemove,
+}: {
+    users: PriorityUser[];
+    search: UserSearchState;
+    onAdd: (user: PriorityUser) => void;
+    onRemove: (userId: string) => void;
+}) {
+    // De som allerede står i lista filtreres bort fra treffene: å klikke dem
+    // igjen gjør ingenting, og et valg uten virkning ser ut som en feil.
+    const selectable = search.results.filter(
+        (user) => !users.some((selected) => selected.id === user.id),
+    );
+
+    return (
+        <div className="flex flex-col gap-2">
+            <Label>Prioriterte personer</Label>
+            {users.length === 0 ? (
+                <CardDescription>
+                    Ingen enkeltpersoner er prioritert.
+                </CardDescription>
+            ) : (
+                <ul className="flex flex-col gap-1">
+                    {users.map((user) => (
+                        <li
+                            key={user.id}
+                            className="flex items-center justify-between gap-2"
+                        >
+                            <span className="flex min-w-0 items-center gap-2">
+                                <Avatar className="size-7">
+                                    <AvatarImage
+                                        src={avatarImageUrl(
+                                            user.image ?? undefined,
+                                        )}
+                                    />
+                                    <AvatarFallback>
+                                        {initials(user.name ?? "?")}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <span className="flex min-w-0 flex-col">
+                                    <span className="truncate text-sm">
+                                        {user.name ?? user.username}
+                                    </span>
+                                    {user.username ? (
+                                        <CardDescription className="truncate">
+                                            {user.username}
+                                        </CardDescription>
+                                    ) : null}
+                                </span>
+                            </span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onRemove(user.id)}
+                                aria-label={`Fjern ${user.name ?? user.username ?? "person"} fra prioriterte`}
+                            >
+                                <Trash2 />
+                            </Button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <UserSearchCombobox
+                holder={null}
+                query={search.query}
+                onQueryChange={search.onQueryChange}
+                results={selectable}
+                isSearching={search.isSearching}
+                onSelect={(user) => {
+                    onAdd(user);
+                    search.onQueryChange("");
+                }}
+                emptyLabel="Legg til person"
+            />
+        </div>
     );
 }

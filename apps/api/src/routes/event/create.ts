@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
 import { canActOnEventsForGroup } from "~/lib/event/access";
+import { resolvePriorityUserIds } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { requireAccess } from "~/middleware/access";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
@@ -216,6 +217,21 @@ export const createRoute = route().post(
                         });
                     }
                 }
+            }
+
+            // Navngitte enkeltpersoner. Duplikater og ukjente id-er tas av
+            // `resolvePriorityUserIds`, som kontaktpersonen over.
+            const priorityUserIds = await resolvePriorityUserIds(
+                body.priorityUserIds ?? [],
+                tx,
+            );
+            if (priorityUserIds.length > 0) {
+                await tx.insert(schema.eventPriorityUser).values(
+                    priorityUserIds.map((priorityUserId) => ({
+                        eventId,
+                        userId: priorityUserId,
+                    })),
+                );
             }
         });
 

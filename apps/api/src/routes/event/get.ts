@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq, inArray } from "drizzle-orm";
 import type z from "zod";
+import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { isMemberAudience } from "~/lib/auth";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
@@ -24,7 +25,8 @@ export const getRoute = route().get(
         .build(),
     captureAuth,
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const identifier = c.req.param("eventId");
         // The public frontend routes events by slug, while other clients use
         // the UUID. Accept either: match by id when the param is a UUID,
@@ -48,6 +50,19 @@ export const getRoute = route().get(
                 },
                 restrictedToInstitute: {
                     columns: { slug: true, shortName: true, name: true },
+                },
+                priorityUsers: {
+                    columns: {},
+                    with: {
+                        user: {
+                            columns: {
+                                id: true,
+                                name: true,
+                                username: true,
+                                image: true,
+                            },
+                        },
+                    },
                 },
                 pools: {
                     columns: { priorityScore: true, id: true },
@@ -121,15 +136,18 @@ export const getRoute = route().get(
             });
 
             if (dbRegistration) {
-                // Betalingen ligger i sin egen tabell. Frontend trenger å vite
-                // om den er gjennomført, for en betalt plass kan ikke meldes av.
-                const paidPayment = event.isPaidEvent
+                // Om betalingen er gjennomført avgjør både om medlemmet får
+                // tilbudet om å selge billetten sin videre, og om avmeldingen
+                // er stengt — en betalt plass kan ikke gis fra seg. Bare
+                // paid-events har rader i betalingstabellen, så
+                // gratisarrangementer slipper spørringen.
+                const payment = event.isPaidEvent
                     ? await db.query.eventPayment.findFirst({
                           columns: { id: true },
                           where: (payment, { eq, and }) =>
                               and(
-                                  eq(payment.userId, user.id),
                                   eq(payment.eventId, event.id),
+                                  eq(payment.userId, user.id),
                                   eq(payment.status, "paid"),
                               ),
                       })
@@ -142,7 +160,7 @@ export const getRoute = route().get(
                     status: dbRegistration.status,
                     updatedAt: dbRegistration.updatedAt.toISOString(),
                     waitlistPosition: dbRegistration.waitlistPosition,
-                    hasPaid: paidPayment != null,
+                    hasPaid: payment !== undefined,
                 };
             }
         }
@@ -189,6 +207,47 @@ export const getRoute = route().get(
               }
             : null;
 
+        /**
+         * Hvem som er prioritert som gruppe er en regel; hvem som er
+         * prioritert ved navn er en opplysning om enkeltpersoner. Lista deles
+         * derfor bare med de som kan redigere arrangementet — de trenger den
+         * for å redigere den. Alle andre får en tom liste, ikke et hull i
+         * responsen, så klientene slipper å skille «ingen» fra «vet ikke».
+         *
+         * Samme regel som PUT-en krever (`requireEventAccess` + eierskap), så
+         * den som får se lista er nøyaktig den som får skrive den.
+         *
+         * Rekkefølgen i betingelsen er ikke tilfeldig: dette er den mest
+         * trafikkerte ruten på nettsiden, og de aller fleste arrangementer har
+         * ingen navngitte i det hele tatt. Da skal ingen rettighetssjekk
+         * kjøre. Scopet leses fra raden vi allerede har lastet, framfor å be
+         * `canActOnEvent` hente arrangørgruppa på nytt.
+         */
+        const maySeePriorityUsers =
+            event.priorityUsers.length > 0 &&
+            user != null &&
+            (event.createdByUserId === user.id ||
+                (event.organizerGroupSlug
+                    ? await hasScopedPermission(
+                          ctx,
+                          user.id,
+                          ["events:update", "events:manage"],
+                          `group:${event.organizerGroupSlug}`,
+                      )
+                    : await hasPermission(ctx, user.id, [
+                          "events:update",
+                          "events:manage",
+                      ])));
+
+        const priorityUsers = maySeePriorityUsers
+            ? event.priorityUsers.map((entry) => ({
+                  id: entry.user.id,
+                  name: entry.user.name,
+                  username: entry.user.username,
+                  image: entry.user.image,
+              }))
+            : [];
+
         const priorityPools = event.pools.map((pool) => ({
             groups: pool.groups.map((g) => ({
                 name: g.group.name,
@@ -234,6 +293,7 @@ export const getRoute = route().get(
             restrictedToInstitute: event.restrictedToInstitute ?? null,
             visibility: event.visibility,
             priorityPools,
+            priorityUsers,
             registration,
         };
 

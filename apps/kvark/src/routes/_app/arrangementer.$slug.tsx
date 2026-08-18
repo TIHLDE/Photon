@@ -59,6 +59,7 @@ import {
     formatEventTime,
     registrationErrorMessage,
     registrationPollInterval,
+    TICKET_RESALE_GROUP_URL,
 } from "#/lib/event";
 
 export const Route = createFileRoute("/_app/arrangementer/$slug")({
@@ -429,6 +430,14 @@ function EventDetailPage() {
                         }
                         waitlistPosition={
                             event.registration?.waitlistPosition ?? undefined
+                        }
+                        // Har man betalt for plassen sin, er billetten noe man
+                        // kan bli sittende igjen med. Da tilbyr vi samme utvei
+                        // som før: legg den ut i Facebook-gruppa.
+                        ticketResaleUrl={
+                            event.registration?.hasPaid
+                                ? TICKET_RESALE_GROUP_URL
+                                : undefined
                         }
                         headerSlot={
                             canSeeRegistrants ? (

@@ -5,6 +5,8 @@ import {
     PriorityPoolEditor,
     type PoolGroup,
     type PriorityPool,
+    type PriorityUser,
+    type UserSearchState,
 } from "#/components/priority-pool-editor";
 import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { DateTimePicker } from "@tihlde/ui/ui/date-time-picker";
@@ -79,6 +81,8 @@ export type EventFormValues = {
      * holder å treffe én av poolene — se `PriorityPoolEditor`.
      */
     priorityPools: PriorityPool[];
+    /** Enkeltpersoner som er prioritert uavhengig av poolene. */
+    priorityUsers: PriorityUser[];
     /** Avvis alle utenfor en pool i stedet for å sette dem på venteliste. */
     onlyAllowPrioritized: boolean;
 };
@@ -93,6 +97,11 @@ type EventFormProps = {
      * en pool peker typisk på kull og studier arrangøren ikke er medlem av.
      */
     poolGroups: PoolGroup[];
+    /**
+     * Søket etter prioriterte enkeltpersoner. Eies av ruten fordi
+     * komponentene her ikke henter data selv.
+     */
+    priorityUserSearch: UserSearchState;
     institutes: Array<{ slug: string; shortName: string; name: string }>;
     /** Medlemmene i den valgte arrangørgruppen — kandidatene til kontaktperson. */
     contactPersonCandidates: Array<{ id: string; name: string }>;
@@ -119,6 +128,7 @@ export function EventForm({
     onChange,
     groups,
     poolGroups,
+    priorityUserSearch,
     institutes,
     contactPersonCandidates,
     addressSuggestions,
@@ -662,6 +672,11 @@ export function EventForm({
                     pools={values.priorityPools}
                     groups={poolGroups}
                     onChange={(priorityPools) => onChange({ priorityPools })}
+                    users={values.priorityUsers}
+                    userSearch={priorityUserSearch}
+                    onUsersChange={(priorityUsers) =>
+                        onChange({ priorityUsers })
+                    }
                     onlyAllowPrioritized={values.onlyAllowPrioritized}
                     onOnlyAllowPrioritizedChange={(onlyAllowPrioritized) =>
                         onChange({ onlyAllowPrioritized })
