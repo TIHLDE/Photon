@@ -416,26 +416,28 @@ function EventDetailPage() {
                                 : []),
                             ...(priorityLabels.length > 0
                                 ? [
-                                      <div className="flex flex-col gap-2 text-sm">
-                                          <div className="flex items-center gap-2.5 text-muted-foreground">
-                                              <Star className="size-4 shrink-0" />
-                                              <span>
-                                                  {event.onlyAllowPrioritized
-                                                      ? "Kun for"
-                                                      : "Prioritert"}
+                                      <DetailField
+                                          icon={Star}
+                                          label={
+                                              event.onlyAllowPrioritized
+                                                  ? "Kun for"
+                                                  : "Prioritert"
+                                          }
+                                          value={
+                                              <span className="flex flex-wrap justify-end gap-1.5">
+                                                  {priorityLabels.map(
+                                                      (label) => (
+                                                          <Badge
+                                                              key={label}
+                                                              variant="secondary"
+                                                          >
+                                                              {label}
+                                                          </Badge>
+                                                      ),
+                                                  )}
                                               </span>
-                                          </div>
-                                          <div className="flex flex-col items-start gap-1.5">
-                                              {priorityLabels.map((label) => (
-                                                  <Badge
-                                                      key={label}
-                                                      variant="secondary"
-                                                  >
-                                                      {label}
-                                                  </Badge>
-                                              ))}
-                                          </div>
-                                      </div>,
+                                          }
+                                      />,
                                   ]
                                 : []),
                             ...(event.contactPerson
