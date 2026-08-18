@@ -885,7 +885,12 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                                 <TableRow>
                                     <TableHead>Navn</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">
+                                    {/* pr-3 møter avkryssingsboksens usynlige
+                                        trykkflate (::after, 12px utenfor
+                                        boksen). Den ga tabellen vannrett
+                                        rulling og dyttet boksen ut av lodd med
+                                        denne overskriften. */}
+                                    <TableHead className="pr-3 text-right">
                                         Møtt
                                     </TableHead>
                                 </TableRow>
@@ -913,7 +918,7 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
-                                                <div className="flex justify-end">
+                                                <div className="flex justify-end pr-3">
                                                     <Checkbox
                                                         checked={
                                                             status ===
