@@ -10,6 +10,7 @@
         "./roles": "./src/rbac/roles/index.ts",
         "./oauth-verify": "./src/oauth-verify.ts",
         "./feide": "./src/feide.ts",
+        "./academic-year": "./src/academic-year.ts",
         "./client": "./src/client.ts"
     },
     "scripts": {

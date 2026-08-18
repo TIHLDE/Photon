@@ -1,3 +1,4 @@
+import { computeClassYear } from "@photon/auth/academic-year";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -29,14 +30,13 @@ export function initials(name: string): string {
 }
 
 /**
- * Beregn hvilket klassetrinn en student er på ut fra oppstartsåret (kull).
- * Det norske studieåret starter i august, så fra og med august teller man ett
- * trinn opp. Måned er 0-indeksert, så `>= 7` betyr august og senere.
- * Returnerer det rå tallet (ingen cap) — la kalleren bestemme gyldig intervall.
+ * Klassetrinn og studieår deles med backend, slik at kullet Feide-synken
+ * skriver og klassetrinnet vi viser aldri kan komme i utakt.
  */
-export function computeClassYear(startYear: number, now = new Date()): number {
-    return now.getFullYear() - startYear + (now.getMonth() >= 7 ? 1 : 0);
-}
+export {
+    computeClassYear,
+    currentAcademicYear,
+} from "@photon/auth/academic-year";
 
 type StudyGroupLike = { name: string; type: string };
 

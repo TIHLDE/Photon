@@ -33,7 +33,7 @@ type PaidEventLike = {
     priceMinor: number | null;
     paymentGracePeriodMinutes: number | null;
     enforcesPreviousStrikes: boolean;
-    pools: Array<{ groups: Array<{ groupSlug: string }> }>;
+    pools: Array<{ groupSlug: string | null; classYear: number | null }>;
     priorityUsers: Array<{ userId: string }>;
 };
 
@@ -419,11 +419,7 @@ export async function handlePaymentExpiration(
         const event = await tx.query.event.findFirst({
             where: (e, { eq }) => eq(e.id, eventId),
             with: {
-                pools: {
-                    with: {
-                        groups: true,
-                    },
-                },
+                pools: true,
                 priorityUsers: true,
             },
         });

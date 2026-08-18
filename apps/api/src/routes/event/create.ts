@@ -1,4 +1,5 @@
 import { type DbSchema, schema } from "@photon/db";
+import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { type InferInsertModel, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
@@ -102,6 +103,14 @@ export const createRoute = route().post(
                 });
             }
 
+            // Needs the organizer, so it runs after the lookup above: an
+            // interest group may only be prioritized on its own events.
+            await validatePriorityPools(
+                tx,
+                body.priorityPools,
+                body.organizerGroupSlug,
+            );
+
             // Check that contact person exists
             if (body.contactPersonUserId) {
                 const contactPerson = await tx
@@ -191,32 +200,14 @@ export const createRoute = route().post(
 
             createdEventId = eventId;
 
-            if (body.priorityPools) {
-                for (let p = 0; p < body.priorityPools.length; p++) {
-                    const pool = body.priorityPools[p];
-                    const priorityScore = 10 - p;
-                    const [insertedPool] = await tx
-                        .insert(schema.eventPriorityPool)
-                        .values({
-                            eventId,
-                            priorityScore,
-                        })
-                        .returning({ poolId: schema.eventPriorityPool.id });
-                    const poolId = insertedPool?.poolId;
-
-                    if (!poolId) {
-                        throw new HTTPException(500, {
-                            message: "Failed to create priority pool",
-                        });
-                    }
-
-                    for (const groupSlug of pool?.groups ?? []) {
-                        await tx.insert(schema.eventPriorityPoolGroup).values({
-                            groupSlug,
-                            priorityPoolId: poolId,
-                        });
-                    }
-                }
+            if (body.priorityPools?.length) {
+                await tx.insert(schema.eventPriorityPool).values(
+                    body.priorityPools.map((pool) => ({
+                        eventId,
+                        groupSlug: pool.groupSlug,
+                        classYear: pool.classYear,
+                    })),
+                );
             }
 
             // Navngitte enkeltpersoner. Duplikater og ukjente id-er tas av

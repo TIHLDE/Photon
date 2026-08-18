@@ -43,11 +43,7 @@ export const deleteEventRegistrationRoute = route().delete(
                 enforcesPreviousStrikes: true,
             },
             with: {
-                pools: {
-                    with: {
-                        groups: true,
-                    },
-                },
+                pools: true,
                 priorityUsers: true,
             },
             where: eq(schema.event.id, eventId),

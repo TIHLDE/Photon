@@ -65,7 +65,11 @@ import { AdminStatCard } from "#/components/admin-stat-card";
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
-import { poolsForSubmit } from "#/components/priority-pool-editor";
+import {
+    allowedPoolKeys,
+    poolsForSubmit,
+    toFormPool,
+} from "#/components/priority-pool-editor";
 import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
 import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
@@ -214,8 +218,16 @@ function toDate(iso: string | null | undefined): Date | null {
     return iso ? new Date(iso) : null;
 }
 
-/** Fyller skjemaet med arrangementet slik det er lagret i dag. */
-function valuesFromEvent(event: Event): EventFormValues {
+/**
+ * Fyller skjemaet med arrangementet slik det er lagret i dag.
+ *
+ * `allowedKeys` er kriteriene velgeren faktisk tilbyr for dette arrangementet;
+ * alt annet i `priorityPools` faller bort — se `toFormPool`.
+ */
+function valuesFromEvent(
+    event: Event,
+    allowedKeys: ReadonlySet<string>,
+): EventFormValues {
     const location = event.location ?? "";
     const hasCoords =
         typeof event.locationLat === "number" &&
@@ -223,10 +235,12 @@ function valuesFromEvent(event: Event): EventFormValues {
 
     return {
         // Arrangementet leverer poolene med hele gruppeobjekter; skjemaet
-        // jobber på slugs, som er det API-et tar imot igjen.
-        priorityPools: (event.priorityPools ?? []).map((pool) => ({
-            groups: pool.groups.map((g) => g.slug),
-        })),
+        // jobber på slugs, som er det API-et tar imot igjen. Kriterier som
+        // ikke kan vises lenger faller bort her og telles av
+        // `droppedPoolCount`, som sier fra i grensesnittet.
+        priorityPools: (event.priorityPools ?? [])
+            .map((pool) => toFormPool(pool, allowedKeys))
+            .filter((pool) => pool !== null),
         // Navn og bilde er med så lista kan vise hvem det er; bare id-ene
         // sendes tilbake. Feltet er tomt for de som ikke kan redigere
         // arrangementet — API-et deler ikke navngitte personer med andre.
@@ -296,13 +310,32 @@ function DetailsTab({ eventId }: { eventId: string }) {
         event.createdById,
     );
 
+    const allowedKeys = useMemo(
+        () => allowedPoolKeys(allGroups, event.organizer?.slug ?? null),
+        [allGroups, event.organizer?.slug],
+    );
+
     const [values, setValues] = useState<EventFormValues>(() =>
-        valuesFromEvent(event),
+        valuesFromEvent(event, allowedKeys),
     );
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [formError, setFormError] = useState<string | null>(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const priorityUserSearch = usePriorityUserSearch();
+
+    /**
+     * Kriterier fra det gamle systemet som ikke lar seg vise — et kull som er
+     * ferdigutdannet, eller en gruppe som ikke kan velges lenger. De ligger
+     * fortsatt i databasen og virker, men lagring skriver poolene på nytt, så
+     * da forsvinner de. Brukeren skal vite det før de trykker lagre.
+     */
+    const droppedPoolCount = useMemo(
+        () =>
+            (event.priorityPools ?? []).filter(
+                (pool) => toFormPool(pool, allowedKeys) === null,
+            ).length,
+        [event.priorityPools, allowedKeys],
+    );
 
     const debouncedLocation = useDebounced(values.location, 250);
     const { data: addressSuggestions, isFetching: isSearchingAddress } =
@@ -456,6 +489,19 @@ function DetailsTab({ eventId }: { eventId: string }) {
 
     return (
         <div className="flex flex-col gap-4">
+            {droppedPoolCount > 0 ? (
+                <Alert variant="destructive">
+                    <AlertTitle>
+                        {droppedPoolCount === 1
+                            ? "Ett prioriteringskriterium kan ikke vises"
+                            : `${droppedPoolCount} prioriteringskriterier kan ikke vises`}
+                    </AlertTitle>
+                    <AlertDescription>
+                        De er fra det gamle systemet og virker fortsatt, men de
+                        fjernes hvis du lagrer arrangementet.
+                    </AlertDescription>
+                </Alert>
+            ) : null}
             <EventForm
                 values={values}
                 onChange={handleChange}

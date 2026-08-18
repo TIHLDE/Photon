@@ -22,6 +22,7 @@ import {
     userRole,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
+import { currentAcademicYear } from "./academic-year";
 
 /**
  * Database access required by the Feide sync hook.
@@ -61,22 +62,10 @@ type ProgramCode = (typeof ALLOWED_PROGRAM_CODES)[number];
 const TIHLDE_CAMPUS: Campus = "trondheim";
 
 /**
- * The intake year someone registering right now belongs to.
- *
- * The Norwegian academic year starts in August, so a member who signs up in
- * March 2027 started in the 2026 intake, not 2027. Month is zero-indexed, so
- * `>= 7` is August onwards.
- *
- * Deliberately duplicated rather than shared: `computeClassYear` in
- * `apps/kvark/src/lib/utils.ts` applies the same cutover, and this package
- * cannot import from the frontend. Change both together, or a member's cohort
- * and the class year shown on their profile will disagree for part of the year.
- *
- * Exported for testing.
+ * Re-exported so callers that already import from this module keep working.
+ * The implementation lives in `academic-year.ts`, which kvark shares.
  */
-export function currentAcademicYear(now = new Date()): number {
-    return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-}
+export { currentAcademicYear };
 
 /**
  * Programmes NTNU runs on more than one campus under a *single* FS programme

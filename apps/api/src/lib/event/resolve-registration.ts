@@ -73,11 +73,7 @@ export async function resolveRegistrationsForEvent(
                 registrations: {
                     where: (reg, { ne }) => ne(reg.status, "pending"),
                 },
-                pools: {
-                    with: {
-                        groups: true,
-                    },
-                },
+                pools: true,
                 priorityUsers: true,
             },
         });

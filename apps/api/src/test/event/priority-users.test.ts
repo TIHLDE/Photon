@@ -280,9 +280,9 @@ describe("individually prioritized users", () => {
                     isRegistrationClosed: false,
                     requiresSigningUp: true,
                     allowWaitlist: true,
-                    // En pool uten grupper matcher ingen: sammen med «bare
+                    // En pool uten kriterier matcher ingen: sammen med «bare
                     // prioriterte» stenger den arrangementet for alle.
-                    priorityPools: [{ groups: [] }],
+                    priorityPools: [{ groupSlug: null, classYear: null }],
                     priorityUserIds: [],
                     onlyAllowPrioritized: true,
                     canCauseStrikes: false,

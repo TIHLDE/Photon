@@ -273,16 +273,10 @@ describe("Paid event payment lifecycle", () => {
                 });
 
                 // Priority pool requiring "index" membership.
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
-                    priorityPoolId: pool.id,
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
                     groupSlug: "index",
+                    classYear: null,
                 });
 
                 // Non-prioritized user grabs the single spot first.
@@ -409,16 +403,10 @@ describe("Paid event payment lifecycle", () => {
                     paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
-                    priorityPoolId: pool.id,
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
                     groupSlug: "index",
+                    classYear: null,
                 });
 
                 const nonPrioritized = await ctx.utils.createTestUser();

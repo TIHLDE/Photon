@@ -3,6 +3,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import {
     PriorityPoolEditor,
+    buildPoolItems,
     type PoolGroup,
     type PriorityPool,
     type PriorityUser,
@@ -77,8 +78,9 @@ export type EventFormValues = {
     image: File | null;
     imageAlt: string;
     /**
-     * Prioriteringspooler. Alle gruppene i én pool må stemme samtidig, og det
-     * holder å treffe én av poolene — se `PriorityPoolEditor`.
+     * Prioriteringspooler. Hver pool er ett kriterium — maks én gruppe og maks
+     * ett klassetrinn — og det holder å treffe én av dem. Se
+     * `PriorityPoolEditor`.
      */
     priorityPools: PriorityPool[];
     /** Enkeltpersoner som er prioritert uavhengig av poolene. */
@@ -94,7 +96,7 @@ type EventFormProps = {
     /**
      * Alle grupper i TIHLDE, til prioriteringspoolene. `groups` over er
      * filtrert til dem brukeren kan arrangere for, og duger derfor ikke —
-     * en pool peker typisk på kull og studier arrangøren ikke er medlem av.
+     * en pool peker typisk på studier arrangøren ikke er medlem av.
      */
     poolGroups: PoolGroup[];
     /**
@@ -315,11 +317,38 @@ export function EventForm({
                                         label: group.name,
                                     }))}
                                     value={values.organizerGroupSlug}
-                                    onValueChange={(value) =>
+                                    onValueChange={(value) => {
+                                        const organizerGroupSlug = value ?? "";
+
+                                        // Arrangøren avgjør hvilke valg som
+                                        // finnes: en interessegruppe kan bare
+                                        // prioriteres på sitt eget arrangement.
+                                        // Bytter man arrangør bort fra den,
+                                        // må kriteriet gå med — ellers gir
+                                        // lagring en 400 om et felt brukeren
+                                        // ikke lenger kan se.
+                                        const allowed = new Set(
+                                            buildPoolItems(
+                                                poolGroups,
+                                                organizerGroupSlug,
+                                            ).map(
+                                                (item) => item.pool.groupSlug,
+                                            ),
+                                        );
+
                                         onChange({
-                                            organizerGroupSlug: value ?? "",
-                                        })
-                                    }
+                                            organizerGroupSlug,
+                                            priorityPools:
+                                                values.priorityPools.filter(
+                                                    (pool) =>
+                                                        pool.groupSlug ===
+                                                            null ||
+                                                        allowed.has(
+                                                            pool.groupSlug,
+                                                        ),
+                                                ),
+                                        });
+                                    }}
                                 >
                                     <SelectTrigger id="event-organizer">
                                         <SelectValue placeholder="Velg gruppe" />
@@ -671,6 +700,7 @@ export function EventForm({
                 <PriorityPoolEditor
                     pools={values.priorityPools}
                     groups={poolGroups}
+                    organizerGroupSlug={values.organizerGroupSlug || null}
                     onChange={(priorityPools) => onChange({ priorityPools })}
                     users={values.priorityUsers}
                     userSearch={priorityUserSearch}

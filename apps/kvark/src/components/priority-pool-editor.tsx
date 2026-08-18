@@ -1,15 +1,17 @@
 import {
+    MASTER_CLASS_OFFSET,
+    MAX_CLASS_YEAR,
+    computeClassYear,
+    isMasterStudySlug,
+} from "@photon/auth/academic-year";
+import {
     Combobox,
-    ComboboxChip,
-    ComboboxChips,
-    ComboboxChipsInput,
     ComboboxCollection,
     ComboboxContent,
     ComboboxEmpty,
+    ComboboxInput,
     ComboboxItem,
     ComboboxList,
-    ComboboxValue,
-    useComboboxAnchor,
 } from "@tihlde/ui/ui/combobox";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -22,6 +24,7 @@ import {
 import { Label } from "@tihlde/ui/ui/label";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
+import { useMemo } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import {
@@ -29,30 +32,227 @@ import {
     type UserSearchOption,
 } from "#/components/user-search-combobox";
 import { avatarImageUrl } from "#/lib/assets";
-import { computeClassYear, initials } from "#/lib/utils";
+import { initials } from "#/lib/utils";
 
-/** Det minste en pool-velger trenger for å sende en slug videre. */
+/** Det minste en pool-velger trenger for å bygge valglista. */
 export type PoolGroup = {
     slug: string;
     name: string;
-    /** `STUDYYEAR`, `STUDY`, `COMMITTEE` … Vises som undertekst i lista. */
+    /** `STUDY`, `COMMITTEE`, `INTERESTGROUP` … Fritekst i store bokstaver. */
     type: string;
 };
 
-/** En pool er en liste med gruppe-slugs. Rekkefølgen på poolene er uten betydning. */
-export type PriorityPool = { groups: string[] };
+/**
+ * Én pool er ett kriterium: maks én gruppe og maks ett klassetrinn, som må
+ * stemme samtidig. Poolene på et arrangement er likestilte — det holder å
+ * treffe én av dem.
+ */
+export type PriorityPool = {
+    groupSlug: string | null;
+    classYear: number | null;
+};
 
 /**
  * Poolene slik de skal lagres: tomme kastes.
  *
- * En pool uten grupper matcher ingen (`isUserPrioritized` krever
- * `length > 0`), så lagret ville den bare vært en rad som ser ut som en regel
- * uten å være det — og sammen med «bare prioriterte» ville den stengt
- * arrangementet for alle. En nettopp lagt til gruppe brukeren ikke rakk å
- * fylle ut er en mellomtilstand i skjemaet, ikke noe å skrive til databasen.
+ * En pool uten kriterier avvises av API-et (og av en CHECK i databasen), men
+ * den oppstår hver gang brukeren trykker «legg til» uten å velge noe ennå.
+ * Det er en mellomtilstand i skjemaet, ikke noe å skrive til databasen.
  */
 export function poolsForSubmit(pools: PriorityPool[]): PriorityPool[] {
-    return pools.filter((pool) => pool.groups.length > 0);
+    return pools.filter(isFilled);
+}
+
+function isFilled(pool: PriorityPool): boolean {
+    return pool.groupSlug !== null || pool.classYear !== null;
+}
+
+/** Stabil nøkkel for et valg, så to pooler kan sammenlignes uten dyp likhet. */
+export function poolKey(pool: PriorityPool): string {
+    return `${pool.groupSlug ?? ""}:${pool.classYear ?? ""}`;
+}
+
+/** Ett valg i nedtrekkslista. */
+type PoolItem = {
+    key: string;
+    label: string;
+    /** Kort typetekst under navnet, f.eks. «Studie» eller «Komité». */
+    hint: string;
+    pool: PriorityPool;
+};
+
+/**
+ * Norske etiketter for gruppetypene. Typene ligger i databasen som fritekst i
+ * store bokstaver, arvet fra Lepton.
+ */
+const TYPE_LABELS: Record<string, string> = {
+    STUDY: "Studie",
+    COMMITTEE: "Komité",
+    BOARD: "Styre",
+    SUBGROUP: "Undergruppe",
+    INTERESTGROUP: "Interessegruppe",
+    SPORTSTEAM: "Idrettslag",
+    TIHLDE: "TIHLDE",
+};
+
+/**
+ * Gruppetyper som kan velges fritt.
+ *
+ * Interessegrupper står med vilje ikke her — de slipper bare inn gjennom
+ * arrangør-unntaket i {@link buildPoolItems}. Kull (`STUDYYEAR`) er også ute:
+ * de er erstattet av klassetrinn, som følger årene i stedet for å fryse fast
+ * til ett opptaksår. `PRIVATE` er bøtelag og angår ingen andre.
+ */
+const SELECTABLE_TYPES = new Set([
+    "STUDY",
+    "COMMITTEE",
+    "BOARD",
+    "SUBGROUP",
+    "SPORTSTEAM",
+    "TIHLDE",
+]);
+
+/**
+ * Bygg valglista for én arrangørgruppe.
+ *
+ * Formen på lista *er* reglene: et valg som ikke finnes, kan ikke velges. Det
+ * er derfor ingen utgråingslogikk her for interessegrupper eller for umulige
+ * kombinasjoner — de er ikke representerbare. Det eneste som håndheves i
+ * grensesnittet er at samme valg ikke kan brukes i to pooler.
+ *
+ * - 1.–3. klasse står alene, og gjelder alle bachelorstudier.
+ * - Studieprogrammene står alene, og gjelder alle trinn.
+ * - Masteren finnes *bare* som «4. klasse» og «5. klasse»: det er de eneste
+ *   trinnene den har, og et bart valg ville stilltiende betydd begge.
+ * - Arrangørens egen interessegruppe finnes bare som frittstående valg, så den
+ *   kan aldri kombineres med et trinn.
+ */
+export function buildPoolItems(
+    groups: readonly PoolGroup[],
+    organizerGroupSlug: string | null,
+): PoolItem[] {
+    const items: PoolItem[] = [];
+
+    for (let year = 1; year <= MASTER_CLASS_OFFSET; year++) {
+        items.push({
+            key: `class:${year}`,
+            label: `${year}. klasse`,
+            hint: "Klassetrinn",
+            pool: { groupSlug: null, classYear: year },
+        });
+    }
+
+    const studies: PoolItem[] = [];
+    const others: PoolItem[] = [];
+
+    for (const group of groups) {
+        const type = group.type.toUpperCase();
+
+        if (type === "STUDY" && isMasterStudySlug(group.slug)) {
+            for (
+                let year = MASTER_CLASS_OFFSET + 1;
+                year <= MAX_CLASS_YEAR;
+                year++
+            ) {
+                studies.push({
+                    key: `group:${group.slug}+class:${year}`,
+                    label: `${group.name} ${year}. klasse`,
+                    hint: "Studie",
+                    pool: { groupSlug: group.slug, classYear: year },
+                });
+            }
+            continue;
+        }
+
+        // Interessegrupper (og idrettsgruppene, som ligger som interessegrupper
+        // med undertype i basen) kan bare prioriteres av seg selv.
+        if (type === "INTERESTGROUP") {
+            if (group.slug !== organizerGroupSlug) continue;
+
+            others.push({
+                key: `group:${group.slug}`,
+                label: group.name,
+                hint: "Din egen gruppe",
+                pool: { groupSlug: group.slug, classYear: null },
+            });
+            continue;
+        }
+
+        if (!SELECTABLE_TYPES.has(type)) continue;
+
+        const item: PoolItem = {
+            key: `group:${group.slug}`,
+            label: group.name,
+            hint: TYPE_LABELS[type] ?? group.type,
+            pool: { groupSlug: group.slug, classYear: null },
+        };
+
+        if (type === "STUDY") studies.push(item);
+        else others.push(item);
+    }
+
+    const byLabel = (a: PoolItem, b: PoolItem) =>
+        a.label.localeCompare(b.label, "nb");
+
+    return [...items, ...studies.sort(byLabel), ...others.sort(byLabel)];
+}
+
+/** En kull-gruppe har opptaksåret både som slug og som navn, f.eks. «2023». */
+const COHORT_SLUG = /^\d{4}$/;
+
+/**
+ * Gjør en lagret pool om til noe editoren kan vise, eller null.
+ *
+ * To ting kan gjøre en lagret pool uvisbar. Kull-pooler fra det gamle systemet
+ * ble regnet om til klassetrinn i databasen, så den grenen her er et
+ * sikkerhetsnett for rader migreringen ikke traff. Viktigere er den andre:
+ * databasen inneholder kombinasjoner den nye velgeren ikke tilbyr — bare «4.
+ * klasse» uten studie, eller en interessegruppe som ikke er arrangøren. De
+ * virker fortsatt, men API-et avviser dem ved lagring, så de kan ikke bli
+ * stående i skjemaet: da hadde brukeren fått en 400 om et kriterium velgeren
+ * ikke engang viser.
+ *
+ * `allowedKeys` er nøklene fra {@link buildPoolItems} for dette arrangementet.
+ * Kalleren teller hvor mange som ble null og sier fra.
+ */
+export function toFormPool(
+    pool: {
+        classYear: number | null;
+        group: { slug: string; name: string } | null;
+    },
+    allowedKeys: ReadonlySet<string>,
+    now = new Date(),
+): PriorityPool | null {
+    let next: PriorityPool;
+
+    if (pool.group && COHORT_SLUG.test(pool.group.slug)) {
+        const startYear = Number.parseInt(pool.group.slug, 10);
+        const classYear = computeClassYear(startYear, now);
+        if (classYear < 1 || classYear > MAX_CLASS_YEAR) return null;
+
+        next = { groupSlug: null, classYear };
+    } else {
+        next = {
+            groupSlug: pool.group?.slug ?? null,
+            classYear: pool.classYear,
+        };
+    }
+
+    if (!isFilled(next)) return null;
+
+    return allowedKeys.has(poolKey(next)) ? next : null;
+}
+
+/** Nøklene til alt som kan velges — se {@link toFormPool}. */
+export function allowedPoolKeys(
+    groups: readonly PoolGroup[],
+    organizerGroupSlug: string | null,
+): Set<string> {
+    return new Set(
+        buildPoolItems(groups, organizerGroupSlug).map((item) =>
+            poolKey(item.pool),
+        ),
+    );
 }
 
 /**
@@ -65,6 +265,8 @@ type PriorityPoolEditorProps = {
     pools: PriorityPool[];
     /** Alle grupper i TIHLDE — ikke bare de brukeren kan arrangere for. */
     groups: PoolGroup[];
+    /** Arrangøren, som avgjør om en interessegruppe kan velges i det hele tatt. */
+    organizerGroupSlug: string | null;
     onChange: (pools: PriorityPool[]) => void;
     /** Enkeltpersoner som er prioritert uavhengig av gruppene. */
     users: PriorityUser[];
@@ -76,69 +278,28 @@ type PriorityPoolEditorProps = {
 };
 
 /**
- * «Kull» og «1. klasse i år» på samme rad.
- *
- * Kriteriet som lagres er kull-gruppa — opptaksåret — og det er med vilje:
- * ekte klassetrinn som kriterium hører hjemme i #581, der det utledes ved
- * oppslag i stedet for å fryses ned i arrangementet. Men opptaksår er ikke
- * det arrangøren tenker i. «1. og 4. klasse har prioritet» har fire år på rad
- * blitt kodet som «i år minus tre», regnet i hodet, og bommet minst like ofte
- * som det traff.
- *
- * Så vi sier begge deler: verdien er kullet, og hva kullet betyr akkurat nå.
- * Klassetrinnet vises bare når det er innenfor et studieløp — 2017-kullet er
- * ikke «10. klasse», det er alumni, og da er året det eneste meningsfulle.
- */
-function cohortDetail(name: string, now = new Date()): string | null {
-    const startYear = Number.parseInt(name, 10);
-    if (!Number.isFinite(startYear)) return null;
-
-    const classYear = computeClassYear(startYear, now);
-    // 5 er lengste studieløp (master); over det studerer man ikke lenger.
-    if (classYear < 1 || classYear > 5) return null;
-
-    return `${classYear}. klasse i år`;
-}
-
-/**
- * Norske etiketter for gruppetypene, så lista kan skille «2026» (kull) fra et
- * studie med samme navn. Typene ligger i databasen som fritekst i store
- * bokstaver, arvet fra Lepton.
- */
-const TYPE_LABELS: Record<string, string> = {
-    STUDYYEAR: "Kull",
-    STUDY: "Studie",
-    COMMITTEE: "Komité",
-    BOARD: "Styre",
-    SUBGROUP: "Undergruppe",
-    INTERESTGROUP: "Interessegruppe",
-    SPORTSTEAM: "Idrettslag",
-    TIHLDE: "TIHLDE",
-    PRIVATE: "Privat",
-};
-
-/**
  * Redigerer prioriteringspoolene på et arrangement.
  *
- * Poolene fantes i databasen og i API-et hele tiden, men begge adminsidene
- * sendte `priorityPools: null`, så feltet var uåpnelig fra nettsiden. Ingen
- * pool var laget i Photon siden Lepton-importen — alle 258 kom derfra — og
- * arrangementer opprettet etter det sto uten prioritering uten at noe sa fra.
+ * Semantikken er verdt å lese før du endrer noe her: **hver prioritert gruppe
+ * er ett kriterium, og det holder å treffe én av dem.** Modellen tillater bare
+ * ett valg per prioritert gruppe, så kombinasjoner av studie og trinn finnes
+ * bare der de er meningsfulle, som ferdige valg («Digital transformasjon 4.
+ * klasse»). En navngitt person teller like mye som en gruppe. Se
+ * `isUserPrioritized` i API-et.
  *
- * Semantikken er verdt å lese før du endrer noe her: **alle gruppene i én pool
- * må stemme samtidig, mens det holder å treffe én av poolene.** «1. klasse
- * eller 4. klasse» er derfor to pooler, mens «førsteklassinger på data» er én
- * pool med to grupper. Se `isUserPrioritized` i API-et.
+ * Klassetrinn er rullerende: det løses mot medlemmets kull ved påmelding, så
+ * et arrangement som gjenbrukes til neste år treffer neste års førsteklassinger
+ * uten at noen må regne om årstall.
  *
  * Merk at koden og grensesnittet bruker ulike ord med hensikt. API-et og typene
- * her sier «pool» og «grupper», fordi det er det feltene heter. Brukeren ser
- * «prioritert gruppe» og «kriterie», fordi «pool» ikke betyr noe for en
- * arrangør — og fordi «gruppe» i den forstand er nettopp det poolen beskriver:
- * de som skal prioriteres. Endrer du ordene ett sted, gjør det begge.
+ * her sier «pool», fordi det er det feltene heter. Brukeren ser «prioritert
+ * gruppe», fordi «pool» ikke betyr noe for en arrangør. Endrer du ordene ett
+ * sted, gjør det begge.
  */
 export function PriorityPoolEditor({
     pools,
     groups,
+    organizerGroupSlug,
     onChange,
     users,
     onUsersChange,
@@ -146,35 +307,24 @@ export function PriorityPoolEditor({
     onlyAllowPrioritized,
     onOnlyAllowPrioritizedChange,
 }: PriorityPoolEditorProps) {
-    const bySlug = new Map(groups.map((g) => [g.slug, g]));
+    const items = useMemo(
+        () => buildPoolItems(groups, organizerGroupSlug),
+        [groups, organizerGroupSlug],
+    );
 
-    /**
-     * Private grupper er bøtelag, ikke noe å prioritere etter. De lages
-     * automatisk per lag og sier ingenting om hvem arrangementet er for, så de
-     * hører ikke hjemme i kriterielista. Typen ligger som fritekst i basen,
-     * arvet fra Lepton, derfor sammenligningen uten hensyn til store bokstaver.
-     *
-     * Filtreres bare bort fra det som kan velges: `bySlug` går fortsatt over
-     * alle gruppene, så en pool som allerede peker på en privat gruppe viser
-     * navnet sitt i stedet for å forsvinne stille ved lagring.
-     */
-    const selectableGroups = groups.filter(
-        (g) => g.type.toUpperCase() !== "PRIVATE",
+    const itemByKey = useMemo(
+        () => new Map(items.map((item) => [poolKey(item.pool), item])),
+        [items],
     );
 
     /**
-     * En gruppe uten kriterier stenger alle ute i stedet for å slippe noen inn.
-     *
-     * `isUserPrioritized` krever `poolGroupSlugs.length > 0`, så en tom pool
-     * matcher ingen — og API-ets validering ser bare at det *finnes* en pool,
-     * ikke at den har innhold. «Bare prioriterte» + én tom gruppe passerer
-     * altså validering og gjør arrangementet umulig å melde seg på.
-     *
-     * Bryteren følger derfor gruppene som faktisk har kriterier, ikke antallet
-     * rader i skjemaet. En nettopp lagt til gruppe er en mellomtilstand, ikke
-     * et valg.
+     * En prioritert gruppe uten kriterium stenger alle ute i stedet for å
+     * slippe noen inn: sammen med «bare prioriterte» ville arrangementet vært
+     * umulig å melde seg på. Bryteren følger derfor gruppene som faktisk har
+     * et kriterium, ikke antallet rader i skjemaet.
      */
-    const effectivePools = pools.filter((p) => p.groups.length > 0);
+    const effectivePools = pools.filter(isFilled);
+
     /**
      * Bryteren trenger noen å slippe inn, og en navngitt person teller like
      * mye som en gruppe. Uten den ville «bare prioriterte» vært utilgjengelig
@@ -183,23 +333,12 @@ export function PriorityPoolEditor({
     const hasSomethingPrioritized =
         effectivePools.length > 0 || users.length > 0;
 
-    function updatePool(index: number, next: string[]) {
-        const updated = pools.map((p, i) =>
-            i === index ? { groups: next } : p,
-        );
-        onChange(updated);
-        if (!updated.some((p) => p.groups.length > 0) && users.length === 0) {
-            onOnlyAllowPrioritizedChange(false);
-        }
-    }
-
-    function removePool(index: number) {
-        const next = pools.filter((_, i) => i !== index);
+    function commit(next: PriorityPool[]) {
         onChange(next);
-        // Kravet i API-et: «bare prioriterte» kan ikke stå igjen uten pooler.
-        // Å la den henge ville gitt en 400 ved lagring, uten at feltet som
-        // forårsaket den er synlig lenger.
-        if (!next.some((p) => p.groups.length > 0) && users.length === 0) {
+        // Kravet i API-et: «bare prioriterte» kan ikke stå igjen uten noen å
+        // slippe inn. Å la den henge ville gitt en 400 ved lagring, uten at
+        // feltet som forårsaket den er synlig lenger.
+        if (!next.some(isFilled) && users.length === 0) {
             onOnlyAllowPrioritizedChange(false);
         }
     }
@@ -217,10 +356,10 @@ export function PriorityPoolEditor({
             <CardHeader>
                 <CardTitle>Prioritert påmelding</CardTitle>
                 <CardDescription>
-                    Alle prioriterte grupper er likestilte. Legg til flere
-                    kriterier i samme gruppe for å oppnå strengere krav.
-                    «Førsteklassinger på data» blir én gruppe med kriteriene
-                    «Dataingeniør» og «1. klasse».
+                    Hver prioritert gruppe er ett kriterium, og alle er
+                    likestilte — det holder å treffe én av dem. Legg til flere
+                    rader for «eller». Klassetrinn følger studieåret, så et
+                    arrangement som gjenbrukes treffer neste kull av seg selv.
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -230,40 +369,66 @@ export function PriorityPoolEditor({
                         stiller likt.
                     </CardDescription>
                 ) : (
-                    pools.map((pool, index) => (
-                        <div
-                            // Poolene har ingen id, og innholdet kan være tomt
-                            // mens det redigeres, så posisjonen er det eneste
-                            // stabile å nøkle på.
-                            key={index}
-                            className="flex flex-col gap-2"
-                        >
-                            <div className="flex items-center justify-between gap-2">
-                                <Label>Prioritert gruppe {index + 1}</Label>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removePool(index)}
-                                    aria-label={`Fjern prioritert gruppe ${index + 1}`}
-                                >
-                                    <Trash2 />
-                                </Button>
+                    pools.map((pool, index) => {
+                        // Valg som allerede er brukt i en annen rad, så samme
+                        // kriterium ikke kan stå to ganger (API-et gir 400).
+                        const takenElsewhere = new Set(
+                            pools
+                                .filter((_, i) => i !== index)
+                                .filter(isFilled)
+                                .map(poolKey),
+                        );
+
+                        return (
+                            <div
+                                // Poolene har ingen id, og kan være tomme mens
+                                // de redigeres, så posisjonen er det eneste
+                                // stabile å nøkle på.
+                                key={index}
+                                className="flex flex-col gap-2"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label>Prioritert gruppe {index + 1}</Label>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                            commit(
+                                                pools.filter(
+                                                    (_, i) => i !== index,
+                                                ),
+                                            )
+                                        }
+                                        aria-label={`Fjern prioritert gruppe ${index + 1}`}
+                                    >
+                                        <Trash2 />
+                                    </Button>
+                                </div>
+                                <PoolPicker
+                                    items={items.filter(
+                                        (item) =>
+                                            !takenElsewhere.has(
+                                                poolKey(item.pool),
+                                            ),
+                                    )}
+                                    value={itemByKey.get(poolKey(pool)) ?? null}
+                                    onValueChange={(next) =>
+                                        commit(
+                                            pools.map((p, i) =>
+                                                i === index
+                                                    ? (next?.pool ?? {
+                                                          groupSlug: null,
+                                                          classYear: null,
+                                                      })
+                                                    : p,
+                                            ),
+                                        )
+                                    }
+                                />
                             </div>
-                            <GroupPicker
-                                groups={selectableGroups}
-                                value={pool.groups
-                                    .map((slug) => bySlug.get(slug))
-                                    .filter((g): g is PoolGroup => Boolean(g))}
-                                onValueChange={(next) =>
-                                    updatePool(
-                                        index,
-                                        next.map((g) => g.slug),
-                                    )
-                                }
-                            />
-                        </div>
-                    ))
+                        );
+                    })
                 )}
 
                 <div>
@@ -271,7 +436,12 @@ export function PriorityPoolEditor({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => onChange([...pools, { groups: [] }])}
+                        onClick={() =>
+                            onChange([
+                                ...pools,
+                                { groupSlug: null, classYear: null },
+                            ])
+                        }
                     >
                         <Plus />
                         Legg til prioritert gruppe
@@ -308,68 +478,35 @@ export function PriorityPoolEditor({
     );
 }
 
-function GroupPicker({
-    groups,
+function PoolPicker({
+    items,
     value,
     onValueChange,
 }: {
-    groups: PoolGroup[];
-    value: PoolGroup[];
-    onValueChange: (next: PoolGroup[]) => void;
+    items: PoolItem[];
+    value: PoolItem | null;
+    onValueChange: (next: PoolItem | null) => void;
 }) {
-    const anchor = useComboboxAnchor();
     return (
         <Combobox
-            items={groups}
-            multiple
+            items={items}
             value={value}
             onValueChange={onValueChange}
-            itemToStringLabel={(item: PoolGroup) => item.name}
-            itemToStringValue={(item: PoolGroup) => item.slug}
-            isItemEqualToValue={(a: PoolGroup, b: PoolGroup) =>
-                a.slug === b.slug
-            }
+            itemToStringLabel={(item: PoolItem) => item.label}
+            itemToStringValue={(item: PoolItem) => item.key}
+            isItemEqualToValue={(a: PoolItem, b: PoolItem) => a.key === b.key}
         >
-            <ComboboxChips ref={anchor}>
-                <ComboboxValue>
-                    {(selected: PoolGroup[]) => (
-                        <>
-                            {selected.map((group) => {
-                                const detail = cohortDetail(group.name);
-                                return (
-                                    <ComboboxChip key={group.slug}>
-                                        {detail
-                                            ? `${group.name} (${detail.replace(" i år", "")})`
-                                            : group.name}
-                                    </ComboboxChip>
-                                );
-                            })}
-                            <ComboboxChipsInput placeholder="Legg til kriterie" />
-                        </>
-                    )}
-                </ComboboxValue>
-            </ComboboxChips>
-            <ComboboxContent anchor={anchor}>
+            <ComboboxInput placeholder="Velg kriterie" />
+            <ComboboxContent>
                 <ComboboxList>
                     <ComboboxEmpty>Ingen treff</ComboboxEmpty>
                     <ComboboxCollection>
-                        {(item: PoolGroup) => (
-                            <ComboboxItem key={item.slug} value={item}>
+                        {(item: PoolItem) => (
+                            <ComboboxItem key={item.key} value={item}>
                                 <span className="flex flex-col">
-                                    <span>{item.name}</span>
-                                    {/*
-                                     * Uten typen er «2026» (kull) umulig å
-                                     * skille fra et studie som heter det samme.
-                                     */}
+                                    <span>{item.label}</span>
                                     <CardDescription>
-                                        {[
-                                            TYPE_LABELS[
-                                                item.type.toUpperCase()
-                                            ] ?? item.type,
-                                            cohortDetail(item.name),
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" · ")}
+                                        {item.hint}
                                     </CardDescription>
                                 </span>
                             </ComboboxItem>
@@ -381,12 +518,6 @@ function GroupPicker({
     );
 }
 
-/**
- * Søket etter personer, slik ruten leverer det.
- *
- * Komponentene her henter ikke data selv (se `apps/kvark/CLAUDE.md`), så
- * spørringen og teksten det søkes på eies av siden som bruker skjemaet.
- */
 export type UserSearchState = {
     query: string;
     onQueryChange: (query: string) => void;

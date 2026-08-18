@@ -3600,14 +3600,16 @@ export interface components {
             requiresSigningUp: boolean;
             /** @description Should users be allowed to join a waitlist if the event is full? */
             allowWaitlist: boolean;
-            /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+            /** @description Priority pools, ORed together. Each pool is one criterion: at most one group and at most one class level, ANDed. At least one of the two must be set. Pools are unordered — being in one is what counts, not which. */
             priorityPools: {
-                /** @description Group slugs in this pool */
-                groups: string[];
+                /** @description Slug of the single group this pool requires, or null */
+                groupSlug: string | null;
+                /** @description Class level (1-5) this pool requires, or null. Resolved against the member's cohort at registration time, so the pool keeps meaning the same class level as the years roll over. */
+                classYear: number | null;
             }[] | null;
             /** @description User IDs prioritized individually, independent of the priority pools. A user named here is prioritized on their own — the pools' all-groups-must-match rule does not apply to them. */
             priorityUserIds?: string[] | null;
-            /** @description Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds. */
+            /** @description Only allow prioritized users to sign up. Can only be true if at least one priority pool has a criterion, or at least one user is in priorityUserIds. */
             onlyAllowPrioritized: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
@@ -3751,14 +3753,16 @@ export interface components {
             requiresSigningUp?: boolean;
             /** @description Should users be allowed to join a waitlist if the event is full? */
             allowWaitlist?: boolean;
-            /** @description List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority. */
+            /** @description Priority pools, ORed together. Each pool is one criterion: at most one group and at most one class level, ANDed. At least one of the two must be set. Pools are unordered — being in one is what counts, not which. */
             priorityPools?: {
-                /** @description Group slugs in this pool */
-                groups: string[];
+                /** @description Slug of the single group this pool requires, or null */
+                groupSlug: string | null;
+                /** @description Class level (1-5) this pool requires, or null. Resolved against the member's cohort at registration time, so the pool keeps meaning the same class level as the years roll over. */
+                classYear: number | null;
             }[] | null;
             /** @description User IDs prioritized individually, independent of the priority pools. A user named here is prioritized on their own — the pools' all-groups-must-match rule does not apply to them. */
             priorityUserIds?: string[] | null;
-            /** @description Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds. */
+            /** @description Only allow prioritized users to sign up. Can only be true if at least one priority pool has a criterion, or at least one user is in priorityUserIds. */
             onlyAllowPrioritized?: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
@@ -3898,14 +3902,17 @@ export interface components {
             } | null;
             /** @description Priority registration pools */
             priorityPools: {
-                groups: {
+                /** @description Class level (1-5) required by this pool, or null */
+                classYear: number | null;
+                /** @description Group required by this pool, or null */
+                group: {
                     /** @description Group name */
                     name: string;
                     /** @description Group slug */
                     slug: string;
                     /** @description Group logo URL (nullable) */
                     logoUrl: string | null;
-                }[];
+                } | null;
             }[];
             /** @description Users prioritized individually, independent of the pools */
             priorityUsers: {

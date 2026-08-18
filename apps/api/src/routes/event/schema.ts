@@ -83,15 +83,20 @@ const eventMutationSchema = z.object({
     priorityPools: z
         .array(
             z.object({
-                groups: z
-                    .array(z.string())
-                    .meta({ description: "Group slugs in this pool" }),
+                groupSlug: z.string().max(128).nullable().meta({
+                    description:
+                        "Slug of the single group this pool requires, or null",
+                }),
+                classYear: z.number().int().min(1).max(5).nullable().meta({
+                    description:
+                        "Class level (1-5) this pool requires, or null. Resolved against the member's cohort at registration time, so the pool keeps meaning the same class level as the years roll over.",
+                }),
             }),
         )
         .nullable()
         .meta({
             description:
-                "List of priority pools, with priority in descending order. Each pool contains a list of group slugs. Users in groups in the first pool have highest priority, then second pool, etc. Users not in any pool have lowest priority.",
+                "Priority pools, ORed together. Each pool is one criterion: at most one group and at most one class level, ANDed. At least one of the two must be set. Pools are unordered — being in one is what counts, not which.",
         }),
     priorityUserIds: z
         .array(z.string())
@@ -106,7 +111,7 @@ const eventMutationSchema = z.object({
         }),
     onlyAllowPrioritized: z.boolean().meta({
         description:
-            "Only allow prioritized users to sign up. Can only be true if at least one group is in priorityPools, or at least one user is in priorityUserIds.",
+            "Only allow prioritized users to sign up. Can only be true if at least one priority pool has a criterion, or at least one user is in priorityUserIds.",
     }),
     restrictedToInstituteSlug: z.string().nullable().optional().meta({
         description:
@@ -148,33 +153,81 @@ const eventMutationSchema = z.object({
 });
 
 /**
- * «Bare prioriterte kan melde seg på» trenger noen å slippe inn.
+ * Prioriteringsreglene som ikke trenger annet enn selve forespørselen.
  *
- * Enten en pool eller en navngitt person holder: en pool uten grupper matcher
- * ingen, og et arrangement som bare slipper inn prioriterte uten å ha noen
- * prioriterte er stengt for alle uten å si det.
+ * Delt av create og update så de to aldri kan komme i utakt; alt som må vite
+ * hva en gruppe *er* ligger i `~/lib/event/validate-priority-pools`, fordi det
+ * krever databasen.
+ *
+ * «Bare prioriterte kan melde seg på» trenger noen å slippe inn, og enten en
+ * prioritert gruppe eller en navngitt person holder. Et arrangement som bare
+ * slipper inn prioriterte uten å ha noen prioriterte er stengt for alle uten
+ * å si det.
  */
-function hasAnyPriority(val: {
-    priorityPools?: Array<{ groups: string[] }> | null;
-    priorityUserIds?: string[] | null;
-}): boolean {
-    const hasPool = (val.priorityPools ?? []).some(
-        (pool) => pool.groups.length > 0,
-    );
-    return hasPool || (val.priorityUserIds ?? []).length > 0;
+export function refinePriorityPools(
+    val: {
+        priorityPools?: Array<{
+            groupSlug: string | null;
+            classYear: number | null;
+        }> | null;
+        priorityUserIds?: string[] | null;
+        onlyAllowPrioritized?: boolean;
+    },
+    ctx: z.core.$RefinementCtx,
+): void {
+    const pools = val.priorityPools;
+
+    const hasCriterion = (pool: {
+        groupSlug: string | null;
+        classYear: number | null;
+    }) => pool.groupSlug !== null || pool.classYear !== null;
+
+    const hasAnyPriority =
+        (pools ?? []).some(hasCriterion) ||
+        (val.priorityUserIds ?? []).length > 0;
+
+    if (val.onlyAllowPrioritized && !hasAnyPriority) {
+        ctx.addIssue({
+            code: "custom",
+            message:
+                "onlyAllowPrioritized cannot be true if both priorityPools and priorityUserIds are empty",
+            path: ["onlyAllowPrioritized"],
+        });
+    }
+
+    if (!pools) return;
+
+    const seen = new Set<string>();
+
+    for (const [index, pool] of pools.entries()) {
+        // En pool som ikke spør om noe ville prioritert alle — slik havner et
+        // arrangement med en prioriteringsregel ingen kan feile.
+        if (!hasCriterion(pool)) {
+            ctx.addIssue({
+                code: "custom",
+                message:
+                    "A priority pool must set a group, a class level, or both",
+                path: ["priorityPools", index],
+            });
+            continue;
+        }
+
+        const key = `${pool.groupSlug ?? ""}:${pool.classYear ?? ""}`;
+        if (seen.has(key)) {
+            ctx.addIssue({
+                code: "custom",
+                message: "Duplicate priority pool",
+                path: ["priorityPools", index],
+            });
+        }
+        seen.add(key);
+    }
 }
 
 export const createEventSchema = Schema(
     "CreateEventSchema",
     eventMutationSchema.superRefine((val, ctx) => {
-        if (val.onlyAllowPrioritized && !hasAnyPriority(val)) {
-            ctx.addIssue({
-                code: "custom",
-                message:
-                    "onlyAllowPrioritized cannot be true if both priorityPools and priorityUserIds are empty",
-                path: ["onlyAllowPrioritized"],
-            });
-        }
+        refinePriorityPools(val, ctx);
 
         if (val.isPaidEvent) {
             if (val.price === undefined) {
@@ -330,19 +383,7 @@ export const createEventSchema = Schema(
 export const updateEventSchema = Schema(
     "UpdateEventSchema",
     eventMutationSchema.partial().superRefine((val, ctx) => {
-        if (
-            val.onlyAllowPrioritized !== undefined &&
-            val.onlyAllowPrioritized
-        ) {
-            if (!hasAnyPriority(val)) {
-                ctx.addIssue({
-                    code: "custom",
-                    message:
-                        "onlyAllowPrioritized cannot be true if both priorityPools and priorityUserIds are empty",
-                    path: ["onlyAllowPrioritized"],
-                });
-            }
-        }
+        refinePriorityPools(val, ctx);
         if (val.isPaidEvent !== undefined && val.isPaidEvent) {
             if (val.price === undefined) {
                 ctx.addIssue({
@@ -702,8 +743,12 @@ export const eventDetailSchema = Schema(
         priorityPools: z
             .array(
                 z.object({
-                    groups: z.array(
-                        z.object({
+                    classYear: z.number().int().nullable().meta({
+                        description:
+                            "Class level (1-5) required by this pool, or null",
+                    }),
+                    group: z
+                        .object({
                             name: z
                                 .string()
                                 .meta({ description: "Group name" }),
@@ -713,8 +758,11 @@ export const eventDetailSchema = Schema(
                             logoUrl: z.string().nullable().meta({
                                 description: "Group logo URL (nullable)",
                             }),
+                        })
+                        .nullable()
+                        .meta({
+                            description: "Group required by this pool, or null",
                         }),
-                    ),
                 }),
             )
             .meta({ description: "Priority registration pools" }),

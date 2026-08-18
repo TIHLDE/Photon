@@ -162,18 +162,10 @@ describe("Registration Resolver", () => {
                 const event = await ctx.utils.createTestEvent({ capacity: 1 });
 
                 // Create priority pool requiring membership in "index" group
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
-
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
-                    priorityPoolId: pool.id,
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
                     groupSlug: "index",
+                    classYear: null,
                 });
 
                 // Create non-prioritized user
@@ -254,33 +246,26 @@ describe("Registration Resolver", () => {
         );
 
         integrationTest(
-            "User must belong to ALL groups in a pool to be prioritized",
+            "User must satisfy every criterion in a pool to be prioritized",
             async ({ ctx }) => {
                 await ctx.utils.setupEventCategories();
                 await ctx.utils.setupGroups();
 
                 const event = await ctx.utils.createTestEvent({ capacity: 1 });
 
-                // Create priority pool requiring BOTH "index" AND "drift" groups
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
+                // Pool requiring BOTH the study programme AND 1. klasse
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
+                    groupSlug: "dataingenir",
+                    classYear: 1,
+                });
 
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values([
-                    { priorityPoolId: pool.id, groupSlug: "index" },
-                    { priorityPoolId: pool.id, groupSlug: "drift" },
-                ]);
-
-                // Create user with only "index" membership (not both)
+                // On the right study, but no cohort at all — so no class
+                // level, so the second criterion cannot be satisfied.
                 const partialUser = await ctx.utils.createTestUser();
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: partialUser.id,
-                    groupSlug: "index",
+                    groupSlug: "dataingenir",
                     role: "member",
                 });
 
@@ -412,18 +397,10 @@ describe("Registration Resolver", () => {
                 });
 
                 // Create priority pool
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
-
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
-                    priorityPoolId: pool.id,
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
                     groupSlug: "index",
+                    classYear: null,
                 });
 
                 // Non-prioritized user gets the spot
@@ -485,18 +462,10 @@ describe("Registration Resolver", () => {
                 const event = await ctx.utils.createTestEvent({ capacity: 1 });
 
                 // Create priority pool
-                const [pool] = await ctx.db
-                    .insert(schema.eventPriorityPool)
-                    .values({ eventId: event.id, priorityScore: 1 })
-                    .returning();
-
-                if (!pool) {
-                    throw new Error("Failed to create priority pool");
-                }
-
-                await ctx.db.insert(schema.eventPriorityPoolGroup).values({
-                    priorityPoolId: pool.id,
+                await ctx.db.insert(schema.eventPriorityPool).values({
+                    eventId: event.id,
                     groupSlug: "index",
+                    classYear: null,
                 });
 
                 // User 1: prioritized, gets the spot
