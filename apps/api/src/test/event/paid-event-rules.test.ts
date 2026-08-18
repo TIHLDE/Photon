@@ -48,7 +48,6 @@ function createEventBody(overrides: Record<string, unknown>) {
         enforcesPreviousStrikes: false,
         isPaidEvent: false,
         price: null,
-        paymentGracePeriodMinutes: null,
         contactPersonUserId: null,
         reactionsAllowed: true,
         ...overrides,
@@ -70,7 +69,6 @@ describe("Paid event rules", () => {
                 json: createEventBody({
                     isPaidEvent: true,
                     price: 100,
-                    paymentGracePeriodMinutes: 30,
                     canCauseStrikes: true,
                 }) as never,
             });
@@ -93,7 +91,6 @@ describe("Paid event rules", () => {
                 json: createEventBody({
                     isPaidEvent: true,
                     price: 100,
-                    paymentGracePeriodMinutes: 30,
                     cancellationDeadline: "2025-11-30T12:00:00Z",
                 }) as never,
             });
@@ -132,7 +129,6 @@ describe("Paid event rules", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10_000,
-                paymentGracePeriodMinutes: 30,
                 start: new Date(now + 3 * HOUR),
                 end: new Date(now + 5 * HOUR),
             });
@@ -176,7 +172,6 @@ describe("Paid event rules", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10_000,
-                paymentGracePeriodMinutes: 30,
                 start: new Date(now + 3 * HOUR),
                 end: new Date(now + 5 * HOUR),
             });

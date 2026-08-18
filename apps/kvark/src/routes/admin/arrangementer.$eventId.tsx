@@ -460,8 +460,6 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 values.isPaidEvent && values.price
                     ? Number(values.price)
                     : null,
-            paymentGracePeriodMinutes:
-                event.payInfo?.paymentGracePeriodMinutes ?? null,
             contactPersonUserId: values.contactPersonUserId || null,
             reactionsAllowed: false,
         };

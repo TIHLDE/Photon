@@ -27,7 +27,6 @@ const baseEventBody = {
     enforcesPreviousStrikes: false,
     isPaidEvent: false,
     price: null,
-    paymentGracePeriodMinutes: null,
     contactPersonUserId: null,
     reactionsAllowed: true,
 };

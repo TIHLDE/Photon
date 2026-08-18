@@ -3621,8 +3621,6 @@ export interface components {
             isPaidEvent: boolean;
             /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
             price: number | null;
-            /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-            paymentGracePeriodMinutes: number | null;
             /** @description User ID of the primary contact person for the event */
             contactPersonUserId: string | null;
             /** @description Should users be able to react to this event with emojis? */
@@ -3774,8 +3772,6 @@ export interface components {
             isPaidEvent?: boolean;
             /** @description Price in NOK for attending the event. Can only be set if isPaidEvent is true. */
             price?: number | null;
-            /** @description The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true. */
-            paymentGracePeriodMinutes?: number | null;
             /** @description User ID of the primary contact person for the event */
             contactPersonUserId?: string | null;
             /** @description Should users be able to react to this event with emojis? */
@@ -3897,7 +3893,7 @@ export interface components {
             payInfo: {
                 /** @description Event price in minor units (øre). Note the create/update endpoints take `price` in whole kroner instead. */
                 price: number;
-                /** @description Payment grace period in minutes */
+                /** @description How long a member has to pay after securing a spot, in minutes. Read-only and the same for every event — it is a constant in the API, not a per-event setting. */
                 paymentGracePeriodMinutes: number;
             } | null;
             /** @description Priority registration pools */

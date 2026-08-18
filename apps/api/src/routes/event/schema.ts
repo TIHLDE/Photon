@@ -132,10 +132,6 @@ const eventMutationSchema = z.object({
         description:
             "Price in NOK for attending the event. Can only be set if isPaidEvent is true.",
     }),
-    paymentGracePeriodMinutes: z.number().nullable().meta({
-        description:
-            "The time (in minutes) between sign up and payment must be made. After this period, unpaid registrations are cancelled. Can only be set if isPaidEvent is true.",
-    }),
 
     // Misc
     contactPersonUserId: z.string().nullable().meta({
@@ -244,14 +240,6 @@ export const createEventSchema = Schema(
                     minimum: 1,
                     origin: "number",
                     path: ["price"],
-                });
-            }
-            if (val.paymentGracePeriodMinutes === undefined) {
-                ctx.addIssue({
-                    code: "custom",
-                    message:
-                        "paymentGracePeriodMinutes must be set if isPaidEvent is true",
-                    path: ["paymentGracePeriod"],
                 });
             }
             // Betalte arrangementer gir aldri prikker. Regelen er absolutt:
@@ -363,20 +351,6 @@ export const createEventSchema = Schema(
                 path: ["capacity"],
             });
         }
-
-        if (val.paymentGracePeriodMinutes) {
-            if (
-                val.paymentGracePeriodMinutes < 5 ||
-                val.paymentGracePeriodMinutes > 60 * 6
-            ) {
-                ctx.addIssue({
-                    code: "custom",
-                    message:
-                        "paymentGracePeriod must be between PT5M and PT6H (5 minutes to 6 hours)",
-                    path: ["paymentGracePeriod"],
-                });
-            }
-        }
     }),
 );
 
@@ -399,14 +373,6 @@ export const updateEventSchema = Schema(
                     minimum: 1,
                     origin: "number",
                     path: ["price"],
-                });
-            }
-            if (val.paymentGracePeriodMinutes === undefined) {
-                ctx.addIssue({
-                    code: "custom",
-                    message:
-                        "paymentGracePeriodMinutes must be set if isPaidEvent is true",
-                    path: ["paymentGracePeriod"],
                 });
             }
             // Se create-skjemaet: betalte arrangementer gir aldri prikker.
@@ -499,19 +465,6 @@ export const updateEventSchema = Schema(
                 message: "cancellationDeadline must be before event start time",
                 path: ["cancellationDeadline"],
             });
-        }
-        if (val.paymentGracePeriodMinutes) {
-            if (
-                val.paymentGracePeriodMinutes < 5 ||
-                val.paymentGracePeriodMinutes > 60 * 6
-            ) {
-                ctx.addIssue({
-                    code: "custom",
-                    message:
-                        "paymentGracePeriodMinutes must be between 5 minutes and 6 hours",
-                    path: ["paymentGracePeriodMinutes"],
-                });
-            }
         }
     }),
 );
@@ -734,9 +687,10 @@ export const eventDetailSchema = Schema(
                     description:
                         "Event price in minor units (øre). Note the create/update endpoints take `price` in whole kroner instead.",
                 }),
-                paymentGracePeriodMinutes: z
-                    .number()
-                    .meta({ description: "Payment grace period in minutes" }),
+                paymentGracePeriodMinutes: z.number().meta({
+                    description:
+                        "How long a member has to pay after securing a spot, in minutes. Read-only and the same for every event — it is a constant in the API, not a per-event setting.",
+                }),
             })
             .nullable()
             .meta({ description: "Payment info" }),

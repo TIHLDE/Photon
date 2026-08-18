@@ -129,14 +129,6 @@ export const event = pgTable("event", {
     isPaidEvent: boolean("is_paid_event").default(false).notNull(),
     requiresSigningUp: boolean("requires_signing_up").default(false).notNull(),
     priceMinor: integer("price"),
-    /**
-     * The time between signing up and the payment falling due. Events that do
-     * not set their own get 120 minutes — the two hours Lepton's organisers
-     * settled on.
-     */
-    paymentGracePeriodMinutes: integer("payment_grace_period_minutes").default(
-        120,
-    ),
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
@@ -320,10 +312,11 @@ export const eventPayment = pgTable(
         status: paymentStatus("status").notNull().default("pending"),
         receivedPaymentAt: timestamp("received_payment_at"),
         /**
-         * Deadline for when this payment obligation must be fulfilled. Set when a
-         * user is registered to a paid event to `now + paymentGracePeriodMinutes`.
-         * A countdown job cancels the registration if payment is not completed by
-         * this time.
+         * Deadline for when this payment obligation must be fulfilled. Set to
+         * `now + DEFAULT_PAYMENT_GRACE_MINUTES` when a user is registered to a
+         * paid event, or the longer waiting-list window when they are promoted
+         * into a spot, and never past the event's start. A countdown job
+         * cancels the registration if payment is not completed by this time.
          */
         expiresAt: timestamp("expires_at"),
         /**

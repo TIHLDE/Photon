@@ -16,7 +16,6 @@ describe("event detail registration.hasPaid", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10000,
-                paymentGracePeriodMinutes: 30,
             });
             const user = await ctx.utils.createTestUser();
             await ctx.utils.createPendingRegistration(event.id, user.id);
@@ -49,7 +48,6 @@ describe("event detail registration.hasPaid", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10000,
-                paymentGracePeriodMinutes: 30,
             });
             const user = await ctx.utils.createTestUser();
             await ctx.utils.createPendingRegistration(event.id, user.id);
@@ -86,7 +84,6 @@ describe("event detail registration.hasPaid", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10000,
-                paymentGracePeriodMinutes: 30,
             });
             const user = await ctx.utils.createTestUser();
             await ctx.utils.createPendingRegistration(event.id, user.id);
@@ -131,7 +128,6 @@ describe("event detail registration.hasPaid", () => {
             const event = await ctx.utils.createTestEvent({
                 isPaidEvent: true,
                 priceMinor: 10000,
-                paymentGracePeriodMinutes: 30,
             });
             const user = await ctx.utils.createTestUser();
             await ctx.utils.createPendingRegistration(event.id, user.id);

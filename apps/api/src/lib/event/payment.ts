@@ -13,6 +13,20 @@ import { capturePayment, getPaymentDetails, refundPayment } from "../vipps";
 import { calculateWaitlistPositions } from "./priority";
 
 /**
+ * How long a member has to pay after securing a spot on a paid event.
+ *
+ * Two hours, the length Lepton's organisers settled on, and the same for every
+ * event. Deliberately a constant rather than a per-event setting: the column
+ * that used to hold it could be set to `0` through the API, and a `0` disabled
+ * the deadline outright — which is how both paid events in production ended up
+ * handing out spots nobody ever had to pay for. Changing it is a code change,
+ * like {@link WAITLIST_PROMOTION_GRACE_MINUTES} already was.
+ *
+ * The `payment_grace_period_minutes` column that used to hold it is gone.
+ */
+export const DEFAULT_PAYMENT_GRACE_MINUTES = 120;
+
+/**
  * How long a member gets to pay after being promoted from the waiting list.
  *
  * Twelve hours, matching Lepton: a promotion can land at any hour, and a member
@@ -55,7 +69,6 @@ type PaidEventLike = {
     capacity?: number | null;
     isPaidEvent: boolean;
     priceMinor: number | null;
-    paymentGracePeriodMinutes: number | null;
     enforcesPreviousStrikes: boolean;
     pools: Array<{ groupSlug: string | null; classYear: number | null }>;
     priorityUsers: Array<{ userId: string }>;
@@ -131,22 +144,15 @@ export function paymentDeadline(
  */
 export async function createPaymentObligation(
     ctx: AppContext,
-    event: Pick<
-        PaidEventLike,
-        "id" | "isPaidEvent" | "priceMinor" | "paymentGracePeriodMinutes"
-    > & { start?: Date | null },
+    event: Pick<PaidEventLike, "id" | "isPaidEvent" | "priceMinor"> & {
+        start?: Date | null;
+    },
     userId: string,
     options: { graceMinutes?: number } = {},
 ): Promise<{ id: string } | null> {
-    const graceMinutes =
-        options.graceMinutes ?? event.paymentGracePeriodMinutes ?? null;
+    const graceMinutes = options.graceMinutes || DEFAULT_PAYMENT_GRACE_MINUTES;
 
-    if (
-        !event.isPaidEvent ||
-        event.priceMinor == null ||
-        graceMinutes == null ||
-        graceMinutes <= 0
-    ) {
+    if (!event.isPaidEvent || event.priceMinor == null) {
         return null;
     }
 

@@ -39,7 +39,6 @@ export const deleteEventRegistrationRoute = route().delete(
                 cancellationDeadline: true,
                 isPaidEvent: true,
                 priceMinor: true,
-                paymentGracePeriodMinutes: true,
                 enforcesPreviousStrikes: true,
             },
             with: {

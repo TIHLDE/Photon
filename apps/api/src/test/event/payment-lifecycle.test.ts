@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import type { PaymentTimerJobData } from "~/lib/event/payment";
 import {
+    DEFAULT_PAYMENT_GRACE_MINUTES,
     handlePaymentExpiration,
     paymentDeadline,
     promoteFromWaitlist,
@@ -24,7 +25,8 @@ vi.mock("~/lib/vipps", () => ({
     verifyVippsWebhookRequest: vi.fn(),
 }));
 
-const GRACE_MINUTES = 30;
+// The deadline is a constant now, not something an event carries.
+const GRACE_MINUTES = DEFAULT_PAYMENT_GRACE_MINUTES;
 
 async function getPaymentTimerJobs(ctx: {
     queue: {
@@ -49,7 +51,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 10,
                     isPaidEvent: true,
                     priceMinor: 10000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -131,7 +132,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user1 = await ctx.utils.createTestUser();
@@ -215,7 +215,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -270,7 +269,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 7500,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 // Priority pool requiring "index" membership.
@@ -373,7 +371,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 7500,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const paidUser = await ctx.utils.createTestUser();
@@ -446,7 +443,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 7500,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                     // Far enough out that the deadline is not capped by it.
                     start: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                     end: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000),
@@ -508,7 +504,6 @@ describe("Paid event payment lifecycle", () => {
                     isPaidEvent: true,
                     priceMinor: 5000,
                     // Two hours, on an event that starts in twenty minutes.
-                    paymentGracePeriodMinutes: 120,
                     start,
                     end: new Date(start.getTime() + 2 * 60 * 60 * 1000),
                 });
@@ -561,7 +556,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -641,7 +635,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -694,7 +687,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -764,7 +756,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
@@ -852,7 +843,6 @@ describe("Paid event payment lifecycle", () => {
                     capacity: 1,
                     isPaidEvent: true,
                     priceMinor: 5000,
-                    paymentGracePeriodMinutes: GRACE_MINUTES,
                 });
 
                 const user = await ctx.utils.createTestUser();
