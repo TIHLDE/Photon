@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
     useInfiniteQuery,
@@ -26,6 +26,7 @@ import {
 
 import { authQueryOptions } from "#/api/auth";
 import {
+    confirmEventPaymentMutation,
     createEventPaymentMutation,
     getEventByIdQuery,
     getEventRegistrationsInfiniteQuery,
@@ -55,6 +56,7 @@ import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
 import {
     deriveRegistrationState,
+    formatCountdown,
     formatTimeUntil,
     toEventDeadline,
     formatEventDate,
@@ -65,6 +67,47 @@ import {
     registrationPollInterval,
     TICKET_RESALE_GROUP_URL,
 } from "#/lib/event";
+
+/**
+ * Merket vi henger på `returnUrl` når medlemmet sendes til Vipps, så sida
+ * kjenner igjen at den er kommet tilbake derfra.
+ */
+const VIPPS_RETURN_PARAM = "betaling";
+
+/** Adressa Vipps skal sende medlemmet tilbake til — denne sida, merket. */
+function vippsReturnUrl(): string {
+    const url = new URL(window.location.href);
+    url.searchParams.set(VIPPS_RETURN_PARAM, "vipps");
+    return url.toString();
+}
+
+/**
+ * Sier fra om vi nettopp kom tilbake fra Vipps — én gang. Merket fjernes fra
+ * adressa med det samme: det hører til turen, ikke til sida, og skal ikke bli
+ * med videre i en bokmerket lenke eller en oppfriskning.
+ */
+function consumeVippsReturn(): boolean {
+    if (typeof window === "undefined") return false;
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(VIPPS_RETURN_PARAM) !== "vipps") return false;
+
+    url.searchParams.delete(VIPPS_RETURN_PARAM);
+    window.history.replaceState(
+        null,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+    );
+    return true;
+}
+
+/**
+ * Hvor mange ganger vi spør Vipps før vi gir opp, og hvor lenge vi venter
+ * mellom forsøkene. Et svar kommer normalt på første forsøk; resten er til for
+ * de gangene medlemmet er raskere tilbake enn Vipps rekker å bli ferdig.
+ */
+const PAYMENT_CONFIRM_ATTEMPTS = 6;
+const PAYMENT_CONFIRM_RETRY_MS = 2_000;
 
 export const Route = createFileRoute("/_app/arrangementer/$slug")({
     component: EventDetailPage,
@@ -132,6 +175,7 @@ function EventDetailPage() {
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
     const payMutation = useMutation(createEventPaymentMutation);
+    const confirmPaymentMutation = useMutation(confirmEventPaymentMutation);
     const favoriteMutation = useMutation(updateFavoriteEventMutation);
 
     // Arrangementet sier ikke selv om det er en favoritt, så favorittlisten —
@@ -148,6 +192,14 @@ function EventDetailPage() {
     // Klokka som teller ned mot at påmeldingen åpner. Uten den sto både
     // «åpner om …» og selve tilstanden stille til siden ble lastet på nytt.
     const now = useNow(event.registrationStart);
+    // Betalingsfristen har sin egen klokke: den løper i et helt annet vindu
+    // enn påmeldingsåpningen, og en felles klokke ville stått stille i det
+    // ene tilfellet mens den tikket i det andre.
+    const paymentExpiresAt = event.registration?.paymentExpiresAt ?? null;
+    const paymentNow = useNow(paymentExpiresAt);
+    const paymentExpiresInLabel = paymentExpiresAt
+        ? formatCountdown(paymentExpiresAt, paymentNow)
+        : undefined;
     const registrationState = deriveRegistrationState(
         {
             registration: event.registration,
@@ -176,6 +228,72 @@ function EventDetailPage() {
         wasNotOpenRef.current = false;
         void refetchEvent();
     }, [registrationState, refetchEvent]);
+
+    // Når betalingsfristen løper ut mens sida står åpen, er plassen allerede
+    // på vei videre til neste på ventelista. Vi henter arrangementet på nytt
+    // i samme øyeblikk, så kortet viser den plassen medlemmet faktisk har —
+    // ikke en Vipps-knapp som API-et vil avvise.
+    const paymentExpiredRef = useRef(false);
+    useEffect(() => {
+        if (paymentExpiresInLabel !== null) {
+            paymentExpiredRef.current = false;
+            return;
+        }
+        if (paymentExpiredRef.current) return;
+        paymentExpiredRef.current = true;
+        void refetchEvent();
+    }, [paymentExpiresInLabel, refetchEvent]);
+
+    // Vipps sender medlemmet tilbake i det de har godkjent i appen — som
+    // regel før webhooken som registrerer betalingen har rukket fram. Uten
+    // dette landet de på «venter på betaling» og måtte laste sida på nytt til
+    // webhooken tilfeldigvis kom. Vi spør heller Vipps direkte.
+    const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+    useEffect(() => {
+        if (consumeVippsReturn()) setIsConfirmingPayment(true);
+    }, []);
+
+    const confirmPayment = confirmPaymentMutation.mutateAsync;
+    useEffect(() => {
+        if (!isConfirmingPayment) return;
+
+        let cancelled = false;
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+
+        const ask = async (attempt: number) => {
+            let status: string | null = null;
+            try {
+                status = (await confirmPayment({ eventId: event.id })).status;
+            } catch {
+                // Nettverket eller API-et svikta. Det er ikke et svar om
+                // betalingen, så vi behandler det som «vet ikke ennå».
+                status = null;
+            }
+            if (cancelled) return;
+
+            // «pending» er det eneste som er verdt å vente på: betalingen er
+            // underveis hos Vipps. Alt annet er et svar, og da er
+            // arrangementet selv fasiten på hva medlemmet sitter igjen med.
+            const keepWaiting = status === null || status === "pending";
+            if (keepWaiting && attempt + 1 < PAYMENT_CONFIRM_ATTEMPTS) {
+                timeout = setTimeout(
+                    () => void ask(attempt + 1),
+                    PAYMENT_CONFIRM_RETRY_MS,
+                );
+                return;
+            }
+
+            await refetchEvent();
+            if (!cancelled) setIsConfirmingPayment(false);
+        };
+
+        void ask(0);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timeout);
+        };
+    }, [isConfirmingPayment, event.id, confirmPayment, refetchEvent]);
 
     // Feil fra på- eller avmelding. Uten dette så knappen ut til å ikke gjøre
     // noe når API-et avviste forsøket.
@@ -266,7 +384,7 @@ function EventDetailPage() {
             {
                 eventId: event.id,
                 data: {
-                    returnUrl: window.location.href,
+                    returnUrl: vippsReturnUrl(),
                     userFlow: "WEB_REDIRECT",
                 },
             },
@@ -494,12 +612,12 @@ function EventDetailPage() {
                         }
                         hasPaid={event.registration?.hasPaid ?? false}
                         paymentDeadline={
-                            event.registration?.paymentExpiresAt
-                                ? toEventDeadline(
-                                      event.registration.paymentExpiresAt,
-                                  )
+                            paymentExpiresAt
+                                ? toEventDeadline(paymentExpiresAt)
                                 : undefined
                         }
+                        paymentExpiresInLabel={paymentExpiresInLabel}
+                        isConfirmingPayment={isConfirmingPayment}
                         capacity={event.capacity}
                         registeredCount={registeredCount}
                         waitlistCount={event.waitlistCount}

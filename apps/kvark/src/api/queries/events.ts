@@ -374,6 +374,18 @@ export const createEventPaymentMutation = mutationOptions({
         }),
 });
 
+/**
+ * «Gikk betalingen min gjennom?», stilt av medlemmet som nettopp kom tilbake
+ * fra Vipps. API-et spør Vipps direkte, så svaret er ikke avhengig av at
+ * webhooken har rukket fram.
+ */
+export const confirmEventPaymentMutation = mutationOptions({
+    mutationFn: ({ eventId }: { eventId: string }) =>
+        apiClient.post("/api/event/{eventId}/payment/confirm", {
+            params: { eventId },
+        }),
+});
+
 type PaymentListFilters = Omit<
     QueryParamsHelper<"get", "/api/event/{eventId}/payments">,
     "page" | "pageSize"

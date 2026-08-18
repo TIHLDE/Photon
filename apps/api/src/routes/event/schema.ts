@@ -1184,6 +1184,16 @@ export const refundEventPaymentResponseSchema = Schema(
     }),
 );
 
+export const confirmPaymentResponseSchema = Schema(
+    "ConfirmPaymentResponse",
+    z.object({
+        status: z.enum(["paid", "pending", "failed", "none"]).meta({
+            description:
+                "What the payment provider says about the caller's outstanding checkout. 'pending' means the checkout is still open or the provider could not be reached — ask again shortly. 'none' means there is nothing outstanding to confirm.",
+        }),
+    }),
+);
+
 export const createPaymentResponseSchema = Schema(
     "CreatePaymentResponse",
     z.object({
