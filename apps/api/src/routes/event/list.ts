@@ -7,8 +7,10 @@ import {
     gte,
     ilike,
     inArray,
+    isNull,
     lt,
     lte,
+    or,
     sql,
 } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -112,12 +114,24 @@ export const listRoute = route().get(
                         ? lt(schema.event.end, sql`NOW()`)
                         : gte(schema.event.end, sql`NOW()`)
                     : undefined,
-                // TODO: Test if works :)
+                // Påmeldingen er åpen når vinduet omslutter nå-tidspunktet:
+                // den har startet og ikke gått ut. Begge grensene er
+                // nullbare og betyr da «ingen grense» — åpnet med én gang,
+                // respektive ingen frist — så de teller som innenfor.
+                // `isRegistrationClosed` overstyrer vinduet, slik den gjør
+                // ellers i arrangementslogikken.
                 openSignUp === true
                     ? and(
                           eq(schema.event.requiresSigningUp, true),
-                          lte(schema.event.registrationEnd, new Date()),
-                          gte(schema.event.registrationStart, new Date()),
+                          eq(schema.event.isRegistrationClosed, false),
+                          or(
+                              isNull(schema.event.registrationStart),
+                              lte(schema.event.registrationStart, sql`NOW()`),
+                          ),
+                          or(
+                              isNull(schema.event.registrationEnd),
+                              gte(schema.event.registrationEnd, sql`NOW()`),
+                          ),
                       )
                     : undefined,
             ].filter(Boolean),
