@@ -60,6 +60,7 @@ import {
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { AttendanceScannerDialog } from "#/components/attendance-scanner-dialog";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminStatCard } from "#/components/admin-stat-card";
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
@@ -791,6 +792,12 @@ function AttendanceTab({ eventId }: { eventId: string }) {
                     icon={UsersIcon}
                 />
             </div>
+
+            {canSetAttendance ? (
+                <div className="flex justify-end">
+                    <AttendanceScannerDialog eventId={eventId} />
+                </div>
+            ) : null}
 
             <Card>
                 <CardContent className="p-0">
