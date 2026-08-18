@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
     useInfiniteQuery,
@@ -25,6 +25,7 @@ import {
 
 import { authQueryOptions } from "#/api/auth";
 import {
+    createEventPaymentMutation,
     getEventByIdQuery,
     getEventRegistrationsInfiniteQuery,
     getFavoriteEventsQuery,
@@ -47,6 +48,7 @@ import { MapLink } from "#/components/map-link";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { ShareButton } from "#/components/share-button";
 import { useEventRulesConsent } from "#/hooks/use-event-rules-consent";
+import { useNow } from "#/hooks/use-now";
 import { useCanActOnResource, usePermission } from "#/hooks/use-permission";
 import { buildGoogleCalendarUrl } from "#/lib/calendar-url";
 import { buildMapsUrls } from "#/lib/maps";
@@ -78,7 +80,7 @@ function EventDetailPage() {
     // trappes ned med hvor lenge den har stått — se
     // `registrationPollInterval`.
     const pendingSinceRef = useRef<number | null>(null);
-    const { data: event } = useSuspenseQuery({
+    const { data: event, refetch: refetchEvent } = useSuspenseQuery({
         ...getEventByIdQuery(slug),
         refetchInterval: (query) => {
             if (query.state.data?.registration?.status !== "pending") {
@@ -127,6 +129,7 @@ function EventDetailPage() {
     const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
+    const payMutation = useMutation(createEventPaymentMutation);
     const favoriteMutation = useMutation(updateFavoriteEventMutation);
 
     // Arrangementet sier ikke selv om det er en favoritt, så favorittlisten —
@@ -140,20 +143,42 @@ function EventDetailPage() {
     );
     const organizerSlug = event.organizer?.slug;
 
-    const registrationState = deriveRegistrationState({
-        registration: event.registration,
-        closed: event.closed,
-        requiresSigningUp: event.requiresSigningUp,
-        isPaidEvent: event.isPaidEvent,
-        registrationStart: event.registrationStart,
-        registrationEnd: event.registrationEnd,
-        endTime: event.endTime,
-        capacity: event.capacity,
-        registeredCount: event.registeredCount,
-    });
+    // Klokka som teller ned mot at påmeldingen åpner. Uten den sto både
+    // «åpner om …» og selve tilstanden stille til siden ble lastet på nytt.
+    const now = useNow(event.registrationStart);
+    const registrationState = deriveRegistrationState(
+        {
+            registration: event.registration,
+            closed: event.closed,
+            requiresSigningUp: event.requiresSigningUp,
+            isPaidEvent: event.isPaidEvent,
+            registrationStart: event.registrationStart,
+            registrationEnd: event.registrationEnd,
+            endTime: event.endTime,
+            capacity: event.capacity,
+            registeredCount: event.registeredCount,
+        },
+        now,
+    );
+    // Tallene i kortet — plasser og venteliste — er fra før påmeldingen åpnet,
+    // og på et populært arrangement er de utdaterte i samme sekund. Vi henter
+    // arrangementet på nytt i det klokka passerer åpningen, så knappen som
+    // dukker opp står ved siden av riktige tall.
+    const wasNotOpenRef = useRef(false);
+    useEffect(() => {
+        if (registrationState === "not-open") {
+            wasNotOpenRef.current = true;
+            return;
+        }
+        if (!wasNotOpenRef.current) return;
+        wasNotOpenRef.current = false;
+        void refetchEvent();
+    }, [registrationState, refetchEvent]);
+
     // Feil fra på- eller avmelding. Uten dette så knappen ut til å ikke gjøre
     // noe når API-et avviste forsøket.
-    const failedAction = registerMutation.error ?? unregisterMutation.error;
+    const failedAction =
+        registerMutation.error ?? unregisterMutation.error ?? payMutation.error;
     const registrationError = failedAction
         ? registrationErrorMessage(failedAction)
         : null;
@@ -206,6 +231,26 @@ function EventDetailPage() {
 
     function handleUnregister() {
         unregisterMutation.mutate({ eventId: event.id });
+    }
+
+    // Betalingen skjer hos Vipps: vi ber API-et om en kasse og sender
+    // medlemmet dit. `returnUrl` er siden de står på, så de kommer tilbake hit
+    // med betalingen registrert.
+    function handlePay() {
+        payMutation.mutate(
+            {
+                eventId: event.id,
+                data: {
+                    returnUrl: window.location.href,
+                    userFlow: "WEB_REDIRECT",
+                },
+            },
+            {
+                onSuccess: (payment) => {
+                    window.location.href = payment.checkoutUrl;
+                },
+            },
+        );
     }
 
     return (
@@ -385,7 +430,7 @@ function EventDetailPage() {
                         registrationOpensInLabel={
                             registrationState === "not-open" &&
                             event.registrationStart
-                                ? formatTimeUntil(event.registrationStart)
+                                ? formatTimeUntil(event.registrationStart, now)
                                 : undefined
                         }
                         registrationClosesAt={
@@ -399,6 +444,13 @@ function EventDetailPage() {
                                 : undefined
                         }
                         hasPaid={event.registration?.hasPaid ?? false}
+                        paymentDeadline={
+                            event.registration?.paymentExpiresAt
+                                ? toEventDeadline(
+                                      event.registration.paymentExpiresAt,
+                                  )
+                                : undefined
+                        }
                         capacity={event.capacity}
                         registeredCount={registeredCount}
                         waitlistCount={event.waitlistCount}
@@ -409,11 +461,22 @@ function EventDetailPage() {
                         // det ble plass eller kø.
                         onJoinWaitlist={handleRegister}
                         onUnregister={handleUnregister}
+                        onPay={handlePay}
                         isSubmitting={
                             registerMutation.isPending ||
-                            unregisterMutation.isPending
+                            unregisterMutation.isPending ||
+                            // Vipps-omdirigeringen skjer i `onSuccess`, så
+                            // knappen skal stå som opptatt helt til nettleseren
+                            // faktisk har forlatt siden.
+                            payMutation.isPending ||
+                            payMutation.isSuccess
                         }
                         actionError={registrationError}
+                        actionErrorTitle={
+                            payMutation.error
+                                ? "Betalingen kunne ikke startes"
+                                : undefined
+                        }
                         requiresEventRulesConsent={eventRules.mustAccept}
                         eventRulesSlot={
                             <EventRulesConsent
