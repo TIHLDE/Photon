@@ -78,6 +78,7 @@ export async function resolveRegistrationsForEvent(
                         groups: true,
                     },
                 },
+                priorityUsers: true,
             },
         });
 
@@ -121,7 +122,7 @@ export async function resolveRegistrationsForEvent(
          */
         const isUserPrioritizedForEvent = await loadPrioritization(
             pendingRegistrations.map((registration) => registration.userId),
-            event.pools,
+            event,
             event.enforcesPreviousStrikes,
             tx,
         );
@@ -189,7 +190,7 @@ export async function resolveRegistrationsForEvent(
                 // Try to swap with non-prioritized user
                 const swapTarget = await findSwapTarget(
                     event.registrations,
-                    event.pools,
+                    event,
                     event.enforcesPreviousStrikes,
                     tx,
                 );
@@ -257,7 +258,7 @@ export async function resolveRegistrationsForEvent(
             if (finalStatus === "waitlisted") {
                 const positions = await calculateWaitlistPositions(
                     eventId,
-                    event.pools,
+                    event,
                     event.enforcesPreviousStrikes,
                     tx,
                 );
@@ -332,7 +333,7 @@ export async function resolveRegistrationsForEvent(
                 // One pass over the waitlist, not one pass per member of it.
                 const positions = await calculateWaitlistPositions(
                     eventId,
-                    event.pools,
+                    event,
                     event.enforcesPreviousStrikes,
                     tx,
                 );

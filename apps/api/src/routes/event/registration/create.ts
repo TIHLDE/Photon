@@ -80,6 +80,7 @@ export const registerToEventRoute = route().post(
                             groups: true,
                         },
                     },
+                    priorityUsers: true,
                     restrictedToInstitute: true,
                 },
             }),
@@ -164,9 +165,12 @@ export const registerToEventRoute = route().post(
 
             const isPrioritized = isUserPrioritized({
                 userGroupSlugs,
-                eventPools: event.pools,
+                event,
                 strikeCount,
                 enforcesPreviousStrikes: event.enforcesPreviousStrikes,
+                isNamedIndividually: event.priorityUsers.some(
+                    (entry) => entry.userId === userId,
+                ),
             });
 
             if (!isPrioritized) {

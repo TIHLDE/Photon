@@ -80,7 +80,7 @@ describe("waitlist position calculation scales linearly", () => {
                         await calculateWaitlistPosition(
                             userId,
                             event.id,
-                            [],
+                            { pools: [], priorityUsers: [] },
                             false,
                             ctx.db,
                         ),
@@ -99,7 +99,7 @@ describe("waitlist position calculation scales linearly", () => {
             try {
                 const all = await calculateWaitlistPositions(
                     event.id,
-                    [],
+                    { pools: [], priorityUsers: [] },
                     false,
                     ctx.db,
                 );

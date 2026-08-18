@@ -1,4 +1,8 @@
-import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
+import {
+    hasPermission,
+    hasPermissionInAnyGroupScope,
+    hasScopedPermission,
+} from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { ilike, or } from "drizzle-orm";
 import { createMiddleware } from "hono/factory";
@@ -24,12 +28,19 @@ export const userSearchResultSchema = Schema(
 );
 
 /**
- * Søket brukes til to ting: å tildele roller/verv (admin), og å finne noen som
- * skal legges til i en gruppe. Tilgangen speiler handlingen søket tjener — en
+ * Søket brukes til tre ting: å tildele roller/verv (admin), å finne noen som
+ * skal legges til i en gruppe, og å peke ut enkeltpersoner på et arrangement
+ * (prioritert påmelding). Tilgangen speiler handlingen søket tjener — en
  * undergruppeleder har lov til å legge til medlemmer i sin egen gruppe, og må
  * derfor kunne søke opp folk når `groupSlug` peker på den gruppen. Uten
  * `groupSlug` er det fortsatt bare `users:view`/`roles:assign` som gjelder, så
  * hele brukerregisteret ikke blir åpent for enhver leder.
+ *
+ * Arrangøren slipper inn på `events:create`/`events:update`/`events:manage`
+ * holdt for minst én gruppe. Den prioriterte kan være hvem som helst på
+ * nettsiden — en foredragsholder, en fadder, en som fikk plass lovet — så det
+ * finnes ingen gruppe å begrense søket til, og et arrangement er ikke bundet
+ * til arrangørgruppas medlemmer.
  */
 const requireUserSearchAccess = createMiddleware<{
     Variables: {
@@ -44,6 +55,17 @@ const requireUserSearchAccess = createMiddleware<{
     const ctx = c.get("ctx");
 
     if (await hasPermission(ctx, user.id, ["users:view", "roles:assign"])) {
+        await next();
+        return;
+    }
+
+    if (
+        await hasPermissionInAnyGroupScope(ctx, user.id, [
+            "events:create",
+            "events:update",
+            "events:manage",
+        ])
+    ) {
         await next();
         return;
     }
@@ -65,7 +87,7 @@ const requireUserSearchAccess = createMiddleware<{
 
     throw new HTTPException(403, {
         message:
-            "Forbidden - requires permission: users:view or roles:assign, or the right to manage the given group",
+            "Forbidden - requires permission: users:view, roles:assign or an events permission, or the right to manage the given group",
     });
 });
 
@@ -76,7 +98,7 @@ export const searchUsersRoute = route().get(
         summary: "Search users",
         operationId: "searchUsers",
         description:
-            "Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions. Requires 'users:view' or 'roles:assign' — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).",
+            "Search users by name or username (case-insensitive substring). Used by admin UIs to assign roles and positions, and to name individually prioritized users on an event. Requires 'users:view' or 'roles:assign', or an event permission ('events:create'/'events:update'/'events:manage') held for at least one group — or, when 'groupSlug' is given, the right to manage that group's roster ('groups:manage' scoped to it, or being its leader).",
     })
         .schemaResponse({
             statusCode: 200,
