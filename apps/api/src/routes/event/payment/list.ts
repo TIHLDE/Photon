@@ -86,6 +86,7 @@ export const listEventPaymentsRoute = route().get(
             .select({
                 status: schema.eventPayment.status,
                 amountMinor: schema.eventPayment.amountMinor,
+                flag: schema.eventPayment.flag,
             })
             .from(schema.eventPayment)
             .where(eq(schema.eventPayment.eventId, eventId));
@@ -101,6 +102,7 @@ export const listEventPaymentsRoute = route().get(
             totalPaidMinor: allPayments
                 .filter((p) => p.status === "paid")
                 .reduce((sum, p) => sum + p.amountMinor, 0),
+            flaggedCount: allPayments.filter((p) => p.flag !== null).length,
         };
 
         const totalPages = getTotalPages(totalCount, pageSize);
@@ -125,6 +127,8 @@ export const listEventPaymentsRoute = route().get(
                 status: p.status,
                 receivedPaymentAt: p.receivedPaymentAt?.toISOString() ?? null,
                 expiresAt: p.expiresAt?.toISOString() ?? null,
+                flag: p.flag,
+                flaggedAt: p.flaggedAt?.toISOString() ?? null,
                 createdAt: p.createdAt.toISOString(),
             })),
             summary,

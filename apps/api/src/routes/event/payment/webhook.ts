@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { flagPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
 import {
@@ -154,6 +155,47 @@ export const paymentWebhookRoute = route().post(
                         (paymentReceived ? new Date() : null),
                 })
                 .where(eq(schema.eventPayment.id, payment.id));
+
+            // Safety net: money can land on a registration that is gone — a
+            // checkout completed just after the deadline reclaimed the spot, or
+            // one finished in another tab after the member unregistered.
+            // Nothing here refunds automatically (that is an organiser's call),
+            // but it must never pass in silence.
+            //
+            // A `waitlisted` payer is deliberately *not* flagged: keeping the
+            // payment of someone displaced by a prioritised registration is the
+            // intended behaviour, not an anomaly, and organisers are reminded
+            // about them when the event starts.
+            if (newStatus === "paid") {
+                const registration = await db.query.eventRegistration.findFirst(
+                    {
+                        columns: { status: true },
+                        where: (r, { and, eq }) =>
+                            and(
+                                eq(r.eventId, payment.eventId),
+                                eq(r.userId, payment.userId),
+                            ),
+                    },
+                );
+
+                // No registration at all, or one that was cancelled. A
+                // `no_show` held their spot and paid correctly; a `waitlisted`
+                // payer is the intended displacement case above.
+                const stranded =
+                    !registration || registration.status === "cancelled";
+
+                if (stranded) {
+                    await flagPayment(
+                        c.get("ctx"),
+                        payment.id,
+                        "paid_without_spot",
+                    );
+                    console.warn(
+                        `Payment ${payment.id} completed for user ${payment.userId} on event ${payment.eventId}, ` +
+                            `but their registration is ${registration?.status ?? "missing"} — flagged for an organiser.`,
+                    );
+                }
+            }
 
             return c.json(
                 {

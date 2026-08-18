@@ -4079,6 +4079,9 @@ export interface components {
             status: "pending" | "paid" | "refunded" | "failed";
             receivedPaymentAt: string | null;
             expiresAt: string | null;
+            /** @description Set when this payment needs an organiser to look at it: 'provider_unreachable' means the deadline fell due while Vipps could not be reached, 'paid_without_spot' means the payment completed for someone who no longer holds a spot. */
+            flag: ("provider_unreachable" | "paid_without_spot") | null;
+            flaggedAt: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -4099,6 +4102,8 @@ export interface components {
                 failedCount: number;
                 /** @description Sum of all completed (paid) payments, in minor units */
                 totalPaidMinor: number;
+                /** @description Payments that need an organiser to look at them */
+                flaggedCount: number;
             };
         };
         RefundEventPayment: {

@@ -1046,6 +1046,8 @@ export const eventRegistrationResponseSchema = Schema(
 
 const paymentStatusSchema = z.enum(["pending", "paid", "refunded", "failed"]);
 
+const paymentFlagSchema = z.enum(["provider_unreachable", "paid_without_spot"]);
+
 /**
  * Slim payment view attached to an admin's registration listing.
  */
@@ -1136,6 +1138,11 @@ export const eventPaymentAdminSchema = Schema(
         status: paymentStatusSchema,
         receivedPaymentAt: z.iso.datetime().nullable(),
         expiresAt: z.iso.datetime().nullable(),
+        flag: paymentFlagSchema.nullable().meta({
+            description:
+                "Set when this payment needs an organiser to look at it: 'provider_unreachable' means the deadline fell due while Vipps could not be reached, 'paid_without_spot' means the payment completed for someone who no longer holds a spot.",
+        }),
+        flaggedAt: z.iso.datetime().nullable(),
         createdAt: z.iso.datetime(),
     }),
 );
@@ -1155,6 +1162,10 @@ export const eventPaymentListResponseSchema = Schema(
                 totalPaidMinor: z.number().meta({
                     description:
                         "Sum of all completed (paid) payments, in minor units",
+                }),
+                flaggedCount: z.number().meta({
+                    description:
+                        "Payments that need an organiser to look at them",
                 }),
             })
             .describe("Totals across every payment for the event"),

@@ -12,6 +12,7 @@ import {
     CircleCheckBigIcon,
     ExternalLink,
     PlusIcon,
+    TriangleAlertIcon,
     UsersIcon,
     WalletIcon,
     XCircle,
@@ -1085,6 +1086,29 @@ function PaymentStatusBadge({ status }: { status: string }) {
     );
 }
 
+const PAYMENT_FLAG_LABELS: Record<string, string> = {
+    provider_unreachable: "Vipps svarte ikke",
+    paid_without_spot: "Betalt uten plass",
+};
+
+const PAYMENT_FLAG_HINTS: Record<string, string> = {
+    provider_unreachable:
+        "Betalingsfristen gikk ut mens Vipps ikke kunne nås. Sjekk i Vipps om betalingen faktisk gikk gjennom.",
+    paid_without_spot:
+        "Betalingen gikk gjennom, men personen har ikke plass på arrangementet. Vurder om den skal refunderes.",
+};
+
+function PaymentFlagBadge({ flag }: { flag: string }) {
+    return (
+        <Badge
+            variant="destructive"
+            title={PAYMENT_FLAG_HINTS[flag] ?? undefined}
+        >
+            {PAYMENT_FLAG_LABELS[flag] ?? flag}
+        </Badge>
+    );
+}
+
 function PaymentsTab({ eventId }: { eventId: string }) {
     const { data } = useSuspenseQuery(getEventPaymentsQuery(eventId, 0));
     const canRefund = useAnyScopePermission(["events:payments:refund"]);
@@ -1123,6 +1147,20 @@ function PaymentsTab({ eventId }: { eventId: string }) {
                 />
             </div>
 
+            {data.summary.flaggedCount > 0 ? (
+                <Card className="border-destructive/50">
+                    <CardContent className="flex items-center gap-3 py-4 text-sm">
+                        <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
+                        <span>
+                            {data.summary.flaggedCount === 1
+                                ? "1 betaling trenger gjennomgang."
+                                : `${data.summary.flaggedCount} betalinger trenger gjennomgang.`}{" "}
+                            Se merkelappene i tabellen under.
+                        </span>
+                    </CardContent>
+                </Card>
+            ) : null}
+
             <Card>
                 <CardContent className="p-0">
                     <Table>
@@ -1147,9 +1185,16 @@ function PaymentsTab({ eventId }: { eventId: string }) {
                                         {formatAmount(payment.amountMinor)}
                                     </TableCell>
                                     <TableCell>
-                                        <PaymentStatusBadge
-                                            status={payment.status}
-                                        />
+                                        <div className="flex flex-wrap items-center gap-1">
+                                            <PaymentStatusBadge
+                                                status={payment.status}
+                                            />
+                                            {payment.flag ? (
+                                                <PaymentFlagBadge
+                                                    flag={payment.flag}
+                                                />
+                                            ) : null}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         {payment.receivedPaymentAt

@@ -1,15 +1,37 @@
 import { schema } from "@photon/db";
+import type { PaymentFlag } from "@photon/db/schema";
 import {
     PAYMENT_QUEUE_NAME,
     type QueueJob,
     type WorkerLike,
 } from "@photon/core/services/queue";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
-import { getPaymentDetails, refundPayment } from "../vipps";
+import { capturePayment, getPaymentDetails, refundPayment } from "../vipps";
 import { calculateWaitlistPositions } from "./priority";
+
+/**
+ * How long a member gets to pay after being promoted from the waiting list.
+ *
+ * Twelve hours, matching Lepton: a promotion can land at any hour, and a member
+ * who is asleep when a spot frees up should not lose it to a two-hour window
+ * they never saw. Deliberately not configurable per event, also matching
+ * Lepton.
+ */
+export const WAITLIST_PROMOTION_GRACE_MINUTES = 12 * 60;
+
+/**
+ * The extra time granted when the deadline falls due while a Vipps checkout is
+ * still alive (or while Vipps cannot be reached).
+ *
+ * Vipps expires an unfinished payment session on its own after ten minutes, so
+ * this is that window plus a little slack for the webhook to land — the
+ * extension cannot become an open-ended hold even before the once-only rule
+ * below applies.
+ */
+export const PAYMENT_DEADLINE_EXTENSION_MS = 12 * 60 * 1000;
 
 /**
  * Payload for the delayed job that enforces a paid event's payment deadline.
@@ -28,6 +50,8 @@ type PaidEventLike = {
     id: string;
     title: string;
     slug: string;
+    /** When the event begins. A payment deadline is never allowed past it. */
+    start?: Date | null;
     capacity?: number | null;
     isPaidEvent: boolean;
     priceMinor: number | null;
@@ -42,33 +66,100 @@ function eventUrl(slug: string): string {
 }
 
 /**
+ * Whether `userId` has already paid for `eventId` — a completed payment that
+ * has not been reversed.
+ *
+ * A member who was pushed to the waiting list by a prioritised registration
+ * keeps their payment, so that they do not have to pay again (and race a fresh
+ * deadline) if a spot frees up. Every place that would otherwise hand out a new
+ * obligation has to ask this first.
+ */
+export async function hasPaidForEvent(
+    ctx: AppContext,
+    eventId: string,
+    userId: string,
+): Promise<boolean> {
+    const paid = await ctx.db.query.eventPayment.findFirst({
+        columns: { id: true },
+        where: (p, { and, eq }) =>
+            and(
+                eq(p.eventId, eventId),
+                eq(p.userId, userId),
+                eq(p.status, "paid"),
+            ),
+    });
+
+    return Boolean(paid);
+}
+
+/**
+ * When a payment obligation created now falls due.
+ *
+ * The deadline is never allowed to run past the event's start: a member who is
+ * promoted three hours before doors open would otherwise hold an unpaid spot
+ * through the whole event, which is exactly the spot the deadline exists to
+ * pass on. Events that have already started are left uncapped — there is no
+ * start left to protect, and capping there would expire the obligation on
+ * arrival.
+ */
+export function paymentDeadline(
+    graceMinutes: number,
+    eventStart: Date | null | undefined,
+    now: Date = new Date(),
+): Date {
+    const deadline = new Date(now.getTime() + graceMinutes * 60 * 1000);
+
+    if (eventStart && eventStart > now && eventStart < deadline) {
+        return eventStart;
+    }
+
+    return deadline;
+}
+
+/**
  * Create a payment obligation for a user who just secured a spot on a paid
  * event, and schedule a countdown timer that reclaims the spot if the payment
- * is not completed before the grace period elapses.
+ * is not completed before the deadline.
  *
- * Returns `null` (no-op) when the event is not a payable event or has no grace
- * period configured — an unpaid, deadline-less "paid" event has no obligation
- * to enforce.
+ * `graceMinutes` overrides the event's own grace period — waiting-list
+ * promotions get {@link WAITLIST_PROMOTION_GRACE_MINUTES} rather than the
+ * shorter window a direct registration gets.
+ *
+ * Returns `null` (no-op) when the event is not a payable event, when no grace
+ * period applies, or when the user has already paid — a member who kept their
+ * payment through a demotion owes nothing on the way back in.
  */
 export async function createPaymentObligation(
     ctx: AppContext,
     event: Pick<
         PaidEventLike,
         "id" | "isPaidEvent" | "priceMinor" | "paymentGracePeriodMinutes"
-    >,
+    > & { start?: Date | null },
     userId: string,
+    options: { graceMinutes?: number } = {},
 ): Promise<{ id: string } | null> {
+    const graceMinutes =
+        options.graceMinutes ?? event.paymentGracePeriodMinutes ?? null;
+
     if (
         !event.isPaidEvent ||
         event.priceMinor == null ||
-        event.paymentGracePeriodMinutes == null ||
-        event.paymentGracePeriodMinutes <= 0
+        graceMinutes == null ||
+        graceMinutes <= 0
     ) {
         return null;
     }
 
-    const graceMs = event.paymentGracePeriodMinutes * 60 * 1000;
-    const expiresAt = new Date(Date.now() + graceMs);
+    // Already paid — see {@link hasPaidForEvent}. Handing this member a fresh
+    // deadline would cancel a spot they have already paid for, since the
+    // checkout route refuses a second payment for the same event.
+    if (await hasPaidForEvent(ctx, event.id, userId)) {
+        return null;
+    }
+
+    const now = new Date();
+    const expiresAt = paymentDeadline(graceMinutes, event.start, now);
+    const delay = Math.max(0, expiresAt.getTime() - now.getTime());
 
     const [payment] = await ctx.db
         .insert(schema.eventPayment)
@@ -95,10 +186,31 @@ export async function createPaymentObligation(
         .add(
             "payment-expiration",
             { eventId: event.id, userId, paymentId: payment.id },
-            { delay: graceMs },
+            { delay },
         );
 
     return { id: payment.id };
+}
+
+/**
+ * Raise (or replace) the flag that puts a payment in front of an organiser.
+ *
+ * Flagging is best-effort bookkeeping around a decision that has already been
+ * made, so a failure here must never take down the caller.
+ */
+export async function flagPayment(
+    ctx: AppContext,
+    paymentId: string,
+    flag: PaymentFlag,
+): Promise<void> {
+    try {
+        await ctx.db
+            .update(schema.eventPayment)
+            .set({ flag, flaggedAt: new Date() })
+            .where(eq(schema.eventPayment.id, paymentId));
+    } catch (error) {
+        console.error(`Failed to flag payment ${paymentId} as ${flag}:`, error);
+    }
 }
 
 /**
@@ -172,95 +284,12 @@ export async function reverseEventPayment(
     return refundable;
 }
 
-/** A refund that has been decided on but not yet carried out with Vipps. */
-export type OwedRefund = {
-    payment: ReversiblePayment;
-    notification: { title: string; description: string; link: string };
-};
-
-/**
- * Find the payment owed back to a user who is losing a registered spot, without
- * contacting Vipps.
- *
- * Split from the refund itself so a caller inside a transaction can decide
- * *that* a refund is due — a cheap indexed read — and carry it out only once
- * the transaction has committed. See {@link refundOwed} for why that split
- * matters.
- *
- * Returns null unless the event is a paid event and a completed ("paid")
- * payment with a provider reference exists for the user.
- */
-export async function findOwedRefund(
-    ctx: AppContext,
-    event: Pick<PaidEventLike, "id" | "title" | "slug" | "isPaidEvent">,
-    userId: string,
-): Promise<OwedRefund | null> {
-    if (!event.isPaidEvent) {
-        return null;
-    }
-
-    const paid = await ctx.db.query.eventPayment.findFirst({
-        where: (p, { and, eq }) =>
-            and(
-                eq(p.eventId, event.id),
-                eq(p.userId, userId),
-                eq(p.status, "paid"),
-            ),
-    });
-
-    if (!paid || !paid.providerPaymentId) {
-        return null;
-    }
-
-    return {
-        payment: paid,
-        notification: {
-            title: `Betaling refundert for ${event.title}`,
-            description: `Du mistet plassen din på ${event.title} og betalingen din har blitt refundert.`,
-            link: eventUrl(event.slug),
-        },
-    };
-}
-
-/**
- * Carry out refunds decided earlier, one Vipps round-trip at a time.
- *
- * **Must be called after the surrounding transaction has committed.** Refunding
- * means up to three calls out to Vipps (token, payment details, refund), and
- * doing that inside a transaction holds every row lock it took for as long as
- * Vipps takes to answer. The registration resolver runs every 5 seconds and
- * locks registration rows `FOR UPDATE`, so a slow Vipps would have parked those
- * locks — the same shape as the outage on 2026-08-13, where one request waiting
- * on a lock it could not get took the whole site down.
- *
- * A refund that fails is logged and the rest still run. That is a deliberate
- * trade: before this split, a Vipps error rolled the registration changes back,
- * which is safer for consistency but pays for it by holding locks across the
- * network. A member whose refund failed keeps their (correct) waitlist status
- * and needs the refund issued by hand — which the log line is there to make
- * possible.
- */
-export async function refundOwed(
-    ctx: AppContext,
-    owed: OwedRefund[],
-): Promise<void> {
-    for (const { payment, notification } of owed) {
-        try {
-            await reverseEventPayment(ctx, { payment, notification });
-        } catch (error) {
-            console.error(
-                `Refund failed for user ${payment.userId} on payment ${payment.id} — ` +
-                    "the registration change stands, so this must be refunded manually:",
-                error,
-            );
-        }
-    }
-}
-
 /**
  * Promote the highest-ranked waitlisted user into a freed spot, recalculating
  * the remaining waitlist positions. For a paid event the promoted user gets a
- * fresh payment obligation (and countdown timer) of their own.
+ * payment obligation (and countdown timer) of their own, with the longer
+ * waiting-list deadline — unless they had already paid before losing the spot,
+ * in which case they owe nothing and get no deadline.
  */
 export async function promoteFromWaitlist(
     ctx: AppContext,
@@ -328,8 +357,12 @@ export async function promoteFromWaitlist(
         ctx,
     );
 
-    // The promoted user now owes payment on a paid event.
-    await createPaymentObligation(ctx, event, promoted.userId);
+    // The promoted user now owes payment on a paid event — with the longer
+    // waiting-list window, and skipped entirely for someone who kept their
+    // payment through an earlier demotion.
+    await createPaymentObligation(ctx, event, promoted.userId, {
+        graceMinutes: WAITLIST_PROMOTION_GRACE_MINUTES,
+    });
 
     // Recalculate positions for everyone still on the waitlist — one pass over
     // the waitlist, not one pass per member of it.
@@ -354,11 +387,159 @@ export async function promoteFromWaitlist(
 }
 
 /**
+ * What the provider says about an obligation whose deadline has just fallen
+ * due.
+ *
+ * - `paid`: the money is in — reconciled and recorded here, so a late or lost
+ *   webhook cannot cost a member their spot.
+ * - `live`: a checkout is still open. Vipps closes an unfinished session on its
+ *   own after ten minutes, so this state cannot last.
+ * - `dead`: no checkout, or one that was aborted, expired or terminated
+ *   without capturing anything.
+ * - `unknown`: Vipps could not be reached, so "unpaid" would be a guess.
+ */
+type ProviderVerdict = "paid" | "live" | "dead" | "unknown";
+
+/**
+ * Ask Vipps what actually happened to a pending obligation, and record a
+ * completed payment if that is the answer.
+ *
+ * Deliberately reads from the provider rather than trusting our own row: the
+ * webhook may be late, may have been lost, or may be racing this very check,
+ * and the cost of guessing wrong is cancelling a spot somebody has paid for.
+ * Lepton does the same thing (`reconcile_orders_from_vipps`) before it touches
+ * a registration.
+ *
+ * **Never call this inside a transaction** — it is up to three round-trips to
+ * Vipps, and holding registration locks across them is what took the site down
+ * on 2026-08-13.
+ */
+async function reconcileWithProvider(
+    ctx: AppContext,
+    payment: {
+        id: string;
+        amountMinor: number;
+        currency: string;
+        providerPaymentId: string | null;
+        receivedPaymentAt: Date | null;
+    },
+): Promise<ProviderVerdict> {
+    // An obligation the member never even opened a checkout for. Nothing to
+    // ask about, and nothing to wait for.
+    if (!payment.providerPaymentId) {
+        return "dead";
+    }
+
+    let details: Awaited<ReturnType<typeof getPaymentDetails>>;
+    try {
+        details = await getPaymentDetails(payment.providerPaymentId);
+    } catch (error) {
+        console.error(
+            `Could not reach Vipps for payment ${payment.id} at its deadline:`,
+            error,
+        );
+        return "unknown";
+    }
+
+    const { capturedAmount } = details.aggregate;
+
+    // AUTHORIZED only reserves the amount; capture it so "paid" means the money
+    // was actually collected, exactly as the webhook does.
+    if (
+        details.state === "AUTHORIZED" &&
+        capturedAmount.value < payment.amountMinor
+    ) {
+        try {
+            await capturePayment({
+                reference: payment.providerPaymentId,
+                amount: payment.amountMinor,
+                currency: payment.currency,
+            });
+        } catch (error) {
+            console.error(
+                `Failed to capture authorized payment ${payment.id} at its deadline:`,
+                error,
+            );
+            return "unknown";
+        }
+    }
+
+    if (details.state === "AUTHORIZED" || capturedAmount.value > 0) {
+        await ctx.db
+            .update(schema.eventPayment)
+            .set({
+                status: "paid",
+                receivedPaymentAt: payment.receivedPaymentAt ?? new Date(),
+            })
+            .where(eq(schema.eventPayment.id, payment.id));
+
+        return "paid";
+    }
+
+    return details.state === "CREATED" ? "live" : "dead";
+}
+
+/**
+ * Grant this registration its single deadline extension: push the obligation's
+ * deadline out and re-arm the countdown.
+ *
+ * Returns false when the extension has already been spent, which is what stops
+ * a member from holding a spot forever by starting a fresh checkout every time
+ * the timer comes round. The claim is a conditional update, so two timer runs
+ * for the same obligation cannot both extend it.
+ */
+async function grantDeadlineExtension(
+    ctx: AppContext,
+    data: PaymentTimerJobData,
+    payment: { id: string; deadlineExtendedAt: Date | null },
+): Promise<boolean> {
+    if (payment.deadlineExtendedAt) {
+        return false;
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + PAYMENT_DEADLINE_EXTENSION_MS);
+
+    const [claimed] = await ctx.db
+        .update(schema.eventPayment)
+        .set({ deadlineExtendedAt: now, expiresAt })
+        .where(
+            and(
+                eq(schema.eventPayment.id, payment.id),
+                isNull(schema.eventPayment.deadlineExtendedAt),
+            ),
+        )
+        .returning({ id: schema.eventPayment.id });
+
+    if (!claimed) {
+        return false;
+    }
+
+    await ctx.queue
+        .getQueue<PaymentTimerJobData>(PAYMENT_QUEUE_NAME)
+        .add("payment-expiration", data, {
+            delay: PAYMENT_DEADLINE_EXTENSION_MS,
+        });
+
+    return true;
+}
+
+/**
  * Enforce a paid event's payment deadline for a single registration.
  *
- * When the countdown timer fires: if the payment was not completed, the unpaid
- * registration is cancelled (freeing the spot), the obligation is marked
- * failed, and the top waitlisted user is promoted into the freed spot.
+ * When the countdown timer fires, the provider is asked what really happened
+ * before anything is taken away:
+ *
+ * - Paid (however late the webhook was) — the member keeps the spot.
+ * - A checkout still in progress, or a Vipps we cannot reach — the deadline is
+ *   extended once, and only once. An unreachable Vipps is also flagged, so an
+ *   organiser knows the eventual outcome rested on a guess.
+ * - Anything else — the obligation is marked failed, the registration is
+ *   **cancelled** (not moved to the waiting list; the member is off the event
+ *   and free to sign up again from scratch), and the top waitlisted member is
+ *   promoted into the freed spot.
+ *
+ * Every provider call happens outside the transaction that changes rows.
  */
 export async function handlePaymentExpiration(
     ctx: AppContext,
@@ -366,52 +547,121 @@ export async function handlePaymentExpiration(
 ): Promise<void> {
     const { eventId, userId, paymentId } = data;
 
+    const payment = await ctx.db.query.eventPayment.findFirst({
+        where: (p, { eq }) => eq(p.id, paymentId),
+    });
+
+    // Obligation gone, already paid, or already refunded — nothing to do.
+    if (
+        !payment ||
+        payment.status === "paid" ||
+        payment.status === "refunded"
+    ) {
+        return;
+    }
+
+    const registration = await ctx.db.query.eventRegistration.findFirst({
+        where: (r, { and, eq }) =>
+            and(eq(r.eventId, eventId), eq(r.userId, userId)),
+    });
+
+    // Only reclaim a spot that is still actively held by this user.
+    if (!registration || registration.status !== "registered") {
+        if (payment.status === "pending") {
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(eq(schema.eventPayment.id, paymentId));
+        }
+        return;
+    }
+
+    // A member who aborted one checkout and started another holds a second,
+    // newer obligation row. Judge them on whichever attempt is still alive,
+    // rather than on the one this timer happens to point at — the once-only
+    // extension is what keeps that from becoming a loophole.
+    const attempts = await ctx.db.query.eventPayment.findMany({
+        where: (p, { and, eq }) =>
+            and(
+                eq(p.eventId, eventId),
+                eq(p.userId, userId),
+                eq(p.status, "pending"),
+            ),
+    });
+
+    let verdict: ProviderVerdict = "dead";
+    for (const attempt of attempts) {
+        const attemptVerdict = await reconcileWithProvider(ctx, attempt);
+
+        if (attemptVerdict === "paid") {
+            verdict = "paid";
+            break;
+        }
+        if (attemptVerdict === "live") {
+            verdict = "live";
+        } else if (attemptVerdict === "unknown" && verdict !== "live") {
+            verdict = "unknown";
+        }
+    }
+
+    // The money is in after all — the spot stands.
+    if (verdict === "paid") {
+        return;
+    }
+
+    if (verdict === "live" || verdict === "unknown") {
+        const extended = await grantDeadlineExtension(ctx, data, payment);
+
+        if (verdict === "unknown") {
+            // Whatever we end up doing rests on an answer Vipps never gave, so
+            // put it in front of an organiser either way.
+            await flagPayment(ctx, paymentId, "provider_unreachable");
+        }
+
+        if (extended) {
+            return;
+        }
+        // Extension already spent: fall through and reclaim the spot. Chained
+        // checkouts buy time once, not indefinitely.
+    }
+
     await ctx.db.transaction(async (tx) => {
         const txCtx = { ...ctx, db: tx };
 
-        const payment = await tx.query.eventPayment.findFirst({
-            where: (p, { eq }) => eq(p.id, paymentId),
-        });
-
-        // Obligation gone, already paid, or already refunded — nothing to do.
-        if (
-            !payment ||
-            payment.status === "paid" ||
-            payment.status === "refunded"
-        ) {
-            return;
-        }
-
-        const registration = await tx.query.eventRegistration.findFirst({
-            where: (r, { and, eq }) =>
-                and(eq(r.eventId, eventId), eq(r.userId, userId)),
-        });
-
-        // Only reclaim a spot that is still actively held by this user.
-        if (!registration || registration.status !== "registered") {
-            if (payment.status === "pending") {
-                await tx
-                    .update(schema.eventPayment)
-                    .set({ status: "failed" })
-                    .where(eq(schema.eventPayment.id, paymentId));
-            }
-            return;
-        }
-
-        // 1. Mark the unpaid obligation as failed.
-        await tx
-            .update(schema.eventPayment)
-            .set({ status: "failed" })
-            .where(eq(schema.eventPayment.id, paymentId));
-
-        // 2. Cancel the unpaid registration, freeing the spot.
-        await tx
+        // 1. Claim the spot by cancelling it, conditional on it still being
+        // held. The reads above happened outside this transaction — they have
+        // to, because they talk to Vipps — so a second timer run could
+        // otherwise reach this point too and promote twice off the waiting
+        // list. The registration is what is being reclaimed, so it is what the
+        // claim keys on: keying on the payment row instead would miss the case
+        // where that row was already marked failed (an aborted first checkout)
+        // while the spot itself was never freed.
+        const [claimed] = await tx
             .update(schema.eventRegistration)
             .set({ status: "cancelled", waitlistPosition: null })
             .where(
                 and(
                     eq(schema.eventRegistration.eventId, eventId),
                     eq(schema.eventRegistration.userId, userId),
+                    eq(schema.eventRegistration.status, "registered"),
+                ),
+            )
+            .returning({ userId: schema.eventRegistration.userId });
+
+        if (!claimed) {
+            return;
+        }
+
+        // 2. Every unpaid attempt for this member is now moot — the one this
+        // timer points at and any later checkout they abandoned.
+        await tx
+            .update(schema.eventPayment)
+            .set({ status: "failed" })
+            .where(
+                and(
+                    eq(schema.eventPayment.eventId, eventId),
+                    eq(schema.eventPayment.userId, userId),
+                    eq(schema.eventPayment.status, "pending"),
                 ),
             );
 
@@ -433,7 +683,7 @@ export async function handlePaymentExpiration(
             {
                 userId,
                 title: `Din plass på ${event.title} ble kansellert`,
-                description: `Du fullførte ikke betalingen for ${event.title} innen fristen, og plassen din har blitt gitt videre.`,
+                description: `Du fullførte ikke betalingen for ${event.title} innen fristen, og plassen din har blitt gitt videre. Du kan melde deg på på nytt.`,
                 link: eventUrl(event.slug),
             },
             txCtx,
