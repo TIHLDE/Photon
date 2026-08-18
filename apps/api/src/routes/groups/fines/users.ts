@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -21,7 +21,7 @@ export const listFineUsersRoute = route().get(
         summary: "List a group's members with their fine totals",
         operationId: "listFineUsers",
         description:
-            "Paginated list of the group's members with the sum of their fine amounts, highest first. Members without fines are included with a total of 0. Filter the totals with 'status'.",
+            "Paginated list of the group's members with the sum of their active fine amounts, highest first. Active means not settled: fines awaiting approval and approved but unpaid ones. Paid and rejected fines are left out unless 'status' asks for them. Members without active fines are included with a total of 0.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -41,7 +41,9 @@ export const listFineUsersRoute = route().get(
         PaginationSchema.extend({
             status: fineStatusSchema
                 .optional()
-                .describe("Only count fines with this status"),
+                .describe(
+                    "Only count fines with this status, instead of the active ones",
+                ),
         }),
     ),
     async (c) => {
@@ -63,17 +65,19 @@ export const listFineUsersRoute = route().get(
          * Lepton parity: the list is driven by the membership table, not by the
          * fines, so a member who has stayed out of trouble still shows up with
          * 0. That is what makes "per medlem" a roster rather than a rap sheet.
+         *
+         * Without a status filter only the active fines count: the ones that
+         * have not been settled. Paid fines are history and rejected ones never
+         * happened, and counting both inflated the number a botsjef reads as
+         * "who owes something right now".
          */
-        const fineJoin = status
-            ? and(
-                  eq(schema.fine.userId, schema.groupMembership.userId),
-                  eq(schema.fine.groupSlug, groupSlug),
-                  eq(schema.fine.status, status),
-              )
-            : and(
-                  eq(schema.fine.userId, schema.groupMembership.userId),
-                  eq(schema.fine.groupSlug, groupSlug),
-              );
+        const fineJoin = and(
+            eq(schema.fine.userId, schema.groupMembership.userId),
+            eq(schema.fine.groupSlug, groupSlug),
+            status
+                ? eq(schema.fine.status, status)
+                : inArray(schema.fine.status, ["pending", "approved"]),
+        );
 
         const totalCount = await db.$count(
             schema.groupMembership,
