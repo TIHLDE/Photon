@@ -1485,7 +1485,7 @@ describe("fines", () => {
 
     describe("fines per member", () => {
         integrationTest(
-            "lists every member, sums their amounts and honours the status filter",
+            "sums only the active fines per member, and honours the status filter",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -1519,8 +1519,9 @@ describe("fines", () => {
                     { userId: clean.user.id, groupSlug: group.slug },
                 ]);
 
-                // To bøter på samme person: tallet skal være summen av
-                // beløpene (2 + 5 = 7), ikke antall rader.
+                // Flere bøter på samme person: tallet skal være summen av
+                // beløpene, ikke antall rader — og bare de aktive bøtene
+                // (pending + approved) teller. Betalte og avviste er gjort opp.
                 await ctx.db.insert(schema.fine).values([
                     {
                         userId: fined.user.id,
@@ -1535,6 +1536,20 @@ describe("fines", () => {
                         reason: "b",
                         amount: 5,
                         status: "paid",
+                    },
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "c",
+                        amount: 3,
+                        status: "approved",
+                    },
+                    {
+                        userId: fined.user.id,
+                        groupSlug: group.slug,
+                        reason: "d",
+                        amount: 9,
+                        status: "rejected",
                     },
                 ]);
 
@@ -1551,7 +1566,7 @@ describe("fines", () => {
                 expect(json.totalCount).toBe(3);
 
                 const finedRow = json.users.find((u) => u.id === fined.user.id);
-                expect(finedRow?.finesAmount).toBe(7);
+                expect(finedRow?.finesAmount).toBe(5);
                 expect(finedRow?.finesCount).toBe(2);
 
                 // Medlemmer uten bøter skal stå i lista med 0, ikke mangle.
@@ -1566,10 +1581,11 @@ describe("fines", () => {
                     query: { status: "paid" },
                 });
                 const paidJson = await paidOnly.json();
-                expect(
-                    paidJson.users.find((u) => u.id === fined.user.id)
-                        ?.finesAmount,
-                ).toBe(5);
+                const paidRow = paidJson.users.find(
+                    (u) => u.id === fined.user.id,
+                );
+                expect(paidRow?.finesAmount).toBe(5);
+                expect(paidRow?.finesCount).toBe(1);
             },
             500_000,
         );

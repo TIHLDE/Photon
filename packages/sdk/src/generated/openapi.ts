@@ -1519,7 +1519,7 @@ export interface paths {
         };
         /**
          * List a group's members with their fine totals
-         * @description Paginated list of the group's members with the sum of their fine amounts, highest first. Members without fines are included with a total of 0. Filter the totals with 'status'.
+         * @description Paginated list of the group's members with the sum of their active fine amounts, highest first. Active means not settled: fines awaiting approval and approved but unpaid ones. Paid and rejected fines are left out unless 'status' asks for them. Members without active fines are included with a total of 0.
          */
         get: operations["listFineUsers"];
         put?: never;
@@ -10663,7 +10663,7 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
-                /** @description Only count fines with this status */
+                /** @description Only count fines with this status, instead of the active ones */
                 status?: "pending" | "approved" | "paid" | "rejected";
             };
             header?: never;

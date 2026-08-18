@@ -74,6 +74,21 @@ type GroupFinesTabProps = {
     onSettleAllForUser: (userId: string, status: "approved" | "paid") => void;
 };
 
+/**
+ * «Per medlem» summerer bare de aktive bøtene — betalte og avviste er gjort
+ * opp — så det ufiltrerte valget heter noe annet der enn i bøtelista, hvor
+ * det faktisk viser alt.
+ */
+function statusLabel(
+    option: { value: FineStatusFilter; label: string },
+    grouping: FineGrouping,
+): string {
+    if (option.value === "alle" && grouping === "per-medlem") {
+        return "Aktive bøter";
+    }
+    return option.label;
+}
+
 function perMember(value: number, memberCount: number): string {
     if (memberCount <= 0) return "0.0";
     return (value / memberCount).toFixed(1);
@@ -167,7 +182,7 @@ export function GroupFinesTab({
                                             key={option.value}
                                             value={option.value}
                                         >
-                                            {option.label}
+                                            {statusLabel(option, grouping)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
