@@ -201,6 +201,26 @@ export const createEventSchema = Schema(
                     path: ["paymentGracePeriod"],
                 });
             }
+            // Betalte arrangementer gir aldri prikker. Regelen er absolutt:
+            // har man betalt, er pengene straffen nok, og man kan uansett
+            // ikke melde seg av (se registration/delete.ts). Da gir verken
+            // en avmeldingsfrist eller prikkflagget mening.
+            if (val.canCauseStrikes) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "canCauseStrikes cannot be true if isPaidEvent is true",
+                    path: ["canCauseStrikes"],
+                });
+            }
+            if (val.cancellationDeadline) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "cancellationDeadline cannot be set if isPaidEvent is true",
+                    path: ["cancellationDeadline"],
+                });
+            }
         }
 
         if (new Date(val.end) <= new Date(val.start)) {
@@ -253,6 +273,20 @@ export const createEventSchema = Schema(
                 message:
                     "registrationEnd is required if requiresSigningUp is true",
                 path: ["registrationEnd"],
+            });
+        }
+
+        // Feltene fylles ut i vilkårlig rekkefølge i admin-skjemaet, så
+        // rekkefølgen håndheves her i stedet for i datovelgeren.
+        if (
+            val.registrationStart &&
+            val.registrationEnd &&
+            new Date(val.registrationStart) >= new Date(val.registrationEnd)
+        ) {
+            ctx.addIssue({
+                code: "custom",
+                message: "registrationStart must be before registrationEnd",
+                path: ["registrationStart"],
             });
         }
 
@@ -334,6 +368,23 @@ export const updateEventSchema = Schema(
                     path: ["paymentGracePeriod"],
                 });
             }
+            // Se create-skjemaet: betalte arrangementer gir aldri prikker.
+            if (val.canCauseStrikes) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "canCauseStrikes cannot be true if isPaidEvent is true",
+                    path: ["canCauseStrikes"],
+                });
+            }
+            if (val.cancellationDeadline) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "cancellationDeadline cannot be set if isPaidEvent is true",
+                    path: ["cancellationDeadline"],
+                });
+            }
         }
         if (val.start && val.end && new Date(val.end) <= new Date(val.start)) {
             ctx.addIssue({
@@ -384,6 +435,18 @@ export const updateEventSchema = Schema(
                     path: ["capacity"],
                 });
             }
+        }
+        // Se create-skjemaet.
+        if (
+            val.registrationStart &&
+            val.registrationEnd &&
+            new Date(val.registrationStart) >= new Date(val.registrationEnd)
+        ) {
+            ctx.addIssue({
+                code: "custom",
+                message: "registrationStart must be before registrationEnd",
+                path: ["registrationStart"],
+            });
         }
         if (
             val.cancellationDeadline &&
@@ -720,7 +783,7 @@ export const eventDetailSchema = Schema(
                 }),
                 hasPaid: z.boolean().meta({
                     description:
-                        "Whether the user has a completed payment for this event. Always false on free events.",
+                        "Whether the user has a completed payment for this event. Always false on free events. A paid registration cannot be cancelled by the user.",
                 }),
             })
             .nullable()

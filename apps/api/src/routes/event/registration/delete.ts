@@ -14,7 +14,7 @@ export const deleteEventRegistrationRoute = route().delete(
         summary: "Unregister from event",
         operationId: "deleteEventRegistration",
         description:
-            "Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike.",
+            "Remove the authenticated user's registration from an event. If the event can cause strikes and the user unregisters from a confirmed spot after the cancellation deadline, they are given 1 strike. Registrations with a completed payment cannot be cancelled by the user.",
     })
         .response({ statusCode: 200, description: "OK" })
         .build(),
@@ -53,6 +53,28 @@ export const deleteEventRegistrationRoute = route().delete(
             where: eq(schema.event.id, eventId),
         });
 
+        // En betalt plass kan ikke gis fra seg av brukeren selv: pengene er
+        // allerede trukket, og systemet refunderer ikke automatisk. Sjekken må
+        // skje før slettingen, ellers er registreringen borte uansett utfall.
+        if (event?.isPaidEvent) {
+            const paidPayment = await db.query.eventPayment.findFirst({
+                columns: { id: true },
+                where: (payment, { eq, and }) =>
+                    and(
+                        eq(payment.userId, userId),
+                        eq(payment.eventId, eventId),
+                        eq(payment.status, "paid"),
+                    ),
+            });
+
+            if (paidPayment) {
+                throw new HTTPException(400, {
+                    message:
+                        "Du kan ikke melde deg av et arrangement du har betalt for. Ta kontakt med arrangøren for refusjon.",
+                });
+            }
+        }
+
         const [deleted] = await db
             .delete(schema.eventRegistration)
             .where(
@@ -69,8 +91,12 @@ export const deleteEventRegistrationRoute = route().delete(
 
         // Late cancellation: only a confirmed ("registered") spot given up after
         // the cancellation deadline earns a strike — waitlisted users are exempt.
+        // `!isPaidEvent` er ikke bare et belte til skjemavalideringens
+        // bukseseler: arrangementer opprettet før regelen kan fortsatt ha
+        // `canCauseStrikes` satt sammen med betaling.
         const isLateCancellation =
             event?.canCauseStrikes &&
+            !event.isPaidEvent &&
             event.cancellationDeadline != null &&
             deleted.status === "registered" &&
             new Date() > event.cancellationDeadline;

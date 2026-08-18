@@ -243,6 +243,51 @@ export function isPrivateGroupType(type: string): boolean {
 }
 
 /**
+ * Om gruppa er et kull (klassetrinn). Kull opprettes automatisk og arrangerer
+ * ingenting, så de hører ikke hjemme i arrangørgruppe-lista — men de er
+ * fortsatt helt legitime i prioriterte grupper.
+ *
+ * Case-insensitiv: `type` er en fritekstkolonne, og radene fra Lepton er
+ * store bokstaver.
+ */
+export function isCohortGroupType(type: string | null | undefined): boolean {
+    return type?.toUpperCase() === "STUDYYEAR";
+}
+
+/**
+ * Gruppetypene sortert etter hvor høyt de sitter i TIHLDE. Rekkefølgen er den
+ * samme som organisasjonskartet på /grupper bruker: Hovedorgan øverst, så
+ * undergrupper, komitéer, og til slutt interesse- og idrettsgrupper på samme
+ * nivå.
+ */
+export const GROUP_HIERARCHY_ORDER = [
+    "BOARD",
+    "SUBGROUP",
+    "COMMITTEE",
+    "INTERESTGROUP",
+    "SPORTSTEAM",
+] as const;
+
+function groupHierarchyRank(type: string | null | undefined): number {
+    const index = (GROUP_HIERARCHY_ORDER as readonly string[]).indexOf(
+        type?.toUpperCase() ?? "",
+    );
+    // Ukjente typer (kull, studier, private bøtelag) sorteres bakerst.
+    return index === -1 ? GROUP_HIERARCHY_ORDER.length : index;
+}
+
+/**
+ * Sorterer to grupper etter plassen deres i hierarkiet, høyest først. Brukes
+ * til å velge «den viktigste» gruppa når en bruker leder flere.
+ */
+export function compareGroupHierarchy(
+    a: { type?: string | null },
+    b: { type?: string | null },
+): number {
+    return groupHierarchyRank(a.type) - groupHierarchyRank(b.type);
+}
+
+/**
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 30. apr. 2026".
  */
 export function formatGroupDate(iso: string): string {

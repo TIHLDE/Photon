@@ -136,10 +136,11 @@ export const getRoute = route().get(
             });
 
             if (dbRegistration) {
-                // Om betalingen er gjennomført avgjør om medlemmet får
-                // tilbudet om å selge billetten sin videre. Bare paid-events
-                // har rader i betalingstabellen, så gratisarrangementer
-                // slipper spørringen.
+                // Om betalingen er gjennomført avgjør både om medlemmet får
+                // tilbudet om å selge billetten sin videre, og om avmeldingen
+                // er stengt — en betalt plass kan ikke gis fra seg. Bare
+                // paid-events har rader i betalingstabellen, så
+                // gratisarrangementer slipper spørringen.
                 const payment = event.isPaidEvent
                     ? await db.query.eventPayment.findFirst({
                           columns: { id: true },

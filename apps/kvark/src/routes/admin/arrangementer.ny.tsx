@@ -23,7 +23,9 @@ import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
 import {
     useAnyScopePermission,
     useCanActForGroup,
+    useLedGroupSlugs,
 } from "#/hooks/use-permission";
+import { compareGroupHierarchy, isCohortGroupType } from "#/lib/group";
 import { nextWholeHour } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 
@@ -81,6 +83,7 @@ const emptyValues: EventFormValues = {
     requiresSigningUp: true,
     registrationStart: null,
     registrationEnd: null,
+    cancellationDeadline: null,
     capacity: "",
     visibility: "public",
     instituteSlug: ALL_INSTITUTES,
@@ -99,7 +102,11 @@ function NewEventPage() {
     // Only offer groups the caller may actually arrange for: a group-scoped
     // grant covers one group, and the API rejects the rest anyway.
     const groups = useMemo(
-        () => allGroups.filter((group) => canArrangeFor(group.slug)),
+        () =>
+            allGroups.filter(
+                (group) =>
+                    canArrangeFor(group.slug) && !isCohortGroupType(group.type),
+            ),
         [allGroups, canArrangeFor],
     );
     const { data: institutes } = useSuspenseQuery(getInstitutesQuery());
@@ -129,7 +136,20 @@ function NewEventPage() {
         enabled: Boolean(values.organizerGroupSlug),
     });
 
+    // Leder man en gruppe, er det nesten alltid den man arrangerer for. Leder
+    // man flere, vinner den som sitter høyest i TIHLDE — Hovedstyret før
+    // undergruppe før komité.
+    const ledGroupSlugs = useLedGroupSlugs();
+    const defaultOrganizerSlug = useMemo(() => {
+        const led = groups.filter((group) => ledGroupSlugs.has(group.slug));
+        if (led.length === 0) return "";
+        return [...led].sort(compareGroupHierarchy)[0]?.slug ?? "";
+    }, [groups, ledGroupSlugs]);
+
     // Sett standardverdier på klienten for å unngå SSR-hydration-mismatch.
+    // Arrangørgruppa settes her av samme grunn, og bare når feltet står tomt —
+    // et eksplisitt `?gruppe=` eller et valg brukeren har rukket å gjøre selv
+    // skal ikke overskrives.
     useEffect(() => {
         const defaults = eventDateDefaults();
         setValues((current) => ({
@@ -138,8 +158,10 @@ function NewEventPage() {
             end: current.end ?? defaults.end,
             registrationEnd:
                 current.registrationEnd ?? defaults.registrationEnd,
+            organizerGroupSlug:
+                current.organizerGroupSlug || defaultOrganizerSlug,
         }));
-    }, []);
+    }, [defaultOrganizerSlug]);
 
     const contactPersonCandidates = (organizerMembers ?? []).map((member) => ({
         id: member.user.id,
@@ -174,6 +196,15 @@ function NewEventPage() {
         ) {
             return;
         }
+        // Datovelgerne begrenser ikke lenger hverandre, så rekkefølgen stoppes
+        // her. Skjemaet viser den samme feilen ved feltet.
+        if (
+            values.registrationStart &&
+            values.registrationEnd &&
+            values.registrationStart >= values.registrationEnd
+        ) {
+            return;
+        }
 
         // Uploaded first: a failed upload must not leave an event behind that
         // silently lost its cover.
@@ -188,6 +219,10 @@ function NewEventPage() {
                 return;
             }
         }
+
+        const canCauseStrikes = values.isPaidEvent
+            ? false
+            : values.canCauseStrikes;
 
         createEvent.mutate(
             {
@@ -205,7 +240,12 @@ function NewEventPage() {
                     end: endIso,
                     registrationStart: registrationStartIso,
                     registrationEnd: registrationEndIso,
-                    cancellationDeadline: null,
+                    // Avmeldingsfristen gjelder bare arrangementer med
+                    // påmelding som ikke er betalte — API-et avviser resten.
+                    cancellationDeadline:
+                        values.requiresSigningUp && !values.isPaidEvent
+                            ? toIso(values.cancellationDeadline)
+                            : null,
                     capacity:
                         values.requiresSigningUp && values.capacity
                             ? Number(values.capacity)
@@ -223,8 +263,9 @@ function NewEventPage() {
                         (user) => user.id,
                     ),
                     onlyAllowPrioritized: values.onlyAllowPrioritized,
-                    canCauseStrikes: values.canCauseStrikes,
-                    enforcesPreviousStrikes: values.canCauseStrikes,
+                    // Betalte arrangementer gir aldri prikker.
+                    canCauseStrikes: canCauseStrikes,
+                    enforcesPreviousStrikes: canCauseStrikes,
                     isPaidEvent: values.isPaidEvent,
                     price:
                         values.isPaidEvent && values.price

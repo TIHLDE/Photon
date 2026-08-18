@@ -75,6 +75,7 @@ import {
     useCanActOnResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
+import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
 
 const TABS = [
@@ -249,6 +250,7 @@ function valuesFromEvent(event: Event): EventFormValues {
         requiresSigningUp: event.requiresSigningUp,
         registrationStart: toDate(event.registrationStart),
         registrationEnd: toDate(event.registrationEnd),
+        cancellationDeadline: toDate(event.cancellationDeadline),
         capacity: event.capacity === null ? "" : String(event.capacity),
         visibility: event.visibility === "members" ? "members" : "public",
         instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
@@ -278,7 +280,8 @@ function DetailsTab({ eventId }: { eventId: string }) {
             allGroups.filter(
                 (group) =>
                     group.slug === event.organizer?.slug ||
-                    canArrangeFor(group.slug),
+                    (canArrangeFor(group.slug) &&
+                        !isCohortGroupType(group.type)),
             ),
         [allGroups, canArrangeFor, event.organizer?.slug],
     );
@@ -333,6 +336,15 @@ function DetailsTab({ eventId }: { eventId: string }) {
         ) {
             return;
         }
+        // Se skjemaet: datovelgerne begrenser ikke lenger hverandre, så
+        // rekkefølgen stoppes her.
+        if (
+            values.registrationStart &&
+            values.registrationEnd &&
+            values.registrationStart >= values.registrationEnd
+        ) {
+            return;
+        }
 
         // Lastes opp først: en feilet opplasting skal ikke lagre resten av
         // endringene med et bilde som mangler.
@@ -347,6 +359,10 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 return;
             }
         }
+
+        const canCauseStrikes = values.isPaidEvent
+            ? false
+            : values.canCauseStrikes;
 
         const data: UpdateEventSchema = {
             title: values.title,
@@ -369,7 +385,12 @@ function DetailsTab({ eventId }: { eventId: string }) {
             registrationEnd: values.requiresSigningUp
                 ? (values.registrationEnd?.toISOString() ?? null)
                 : null,
-            cancellationDeadline: null,
+            // Avmeldingsfristen gjelder bare arrangementer med påmelding som
+            // ikke er betalte — API-et avviser resten.
+            cancellationDeadline:
+                values.requiresSigningUp && !values.isPaidEvent
+                    ? (values.cancellationDeadline?.toISOString() ?? null)
+                    : null,
             capacity:
                 values.requiresSigningUp && values.capacity
                     ? Number(values.capacity)
@@ -385,8 +406,9 @@ function DetailsTab({ eventId }: { eventId: string }) {
             priorityPools: poolsForSubmit(values.priorityPools),
             priorityUserIds: values.priorityUsers.map((user) => user.id),
             onlyAllowPrioritized: values.onlyAllowPrioritized,
-            canCauseStrikes: values.canCauseStrikes,
-            enforcesPreviousStrikes: values.canCauseStrikes,
+            // Betalte arrangementer gir aldri prikker.
+            canCauseStrikes: canCauseStrikes,
+            enforcesPreviousStrikes: canCauseStrikes,
             isPaidEvent: values.isPaidEvent,
             price:
                 values.isPaidEvent && values.price

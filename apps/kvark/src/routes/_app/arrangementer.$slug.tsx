@@ -350,15 +350,21 @@ function EventDetailPage() {
                                           icon={UserRound}
                                           label="Kontaktperson"
                                           value={
-                                              // E-posten deles kun med innloggede
-                                              // medlemmer, så den mangler for
-                                              // utloggede besøkende.
+                                              // Profilsiden krever innlogging,
+                                              // så utloggede får navnet som ren
+                                              // tekst. E-posten deles etter
+                                              // samme regel og røper hvem som
+                                              // er innlogget.
                                               event.contactPerson.email ? (
-                                                  <a
-                                                      href={`mailto:${event.contactPerson.email}`}
+                                                  <Link
+                                                      to="/profil/$id"
+                                                      params={{
+                                                          id: event
+                                                              .contactPerson.id,
+                                                      }}
                                                   >
                                                       {event.contactPerson.name}
-                                                  </a>
+                                                  </Link>
                                               ) : (
                                                   event.contactPerson.name
                                               )
@@ -387,6 +393,12 @@ function EventDetailPage() {
                                 ? toEventDeadline(event.registrationEnd)
                                 : undefined
                         }
+                        unregisterDeadline={
+                            event.cancellationDeadline
+                                ? toEventDeadline(event.cancellationDeadline)
+                                : undefined
+                        }
+                        hasPaid={event.registration?.hasPaid ?? false}
                         capacity={event.capacity}
                         registeredCount={registeredCount}
                         waitlistCount={event.waitlistCount}
