@@ -3,6 +3,7 @@ import cron from "node-cron";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
+import { reviewPaymentsForStartedEvents } from "./event/payment-review";
 import { startPaymentTimerWorker } from "./event/payment";
 import { sendUpcomingRegistrationReminders } from "./event/registration-reminder";
 import {
@@ -92,6 +93,23 @@ function startRegistrationReminderCron(ctx: AppContext): void {
 }
 
 /**
+ * Start cron job that asks organisers to review payments made by members who
+ * hold no spot, once their event has started. Runs every 5 minutes — the notice
+ * is not time-critical, it just has to arrive.
+ */
+function startPaymentReviewCron(ctx: AppContext): void {
+    cron.schedule("*/5 * * * *", async () => {
+        try {
+            await reviewPaymentsForStartedEvents(ctx);
+        } catch (error) {
+            console.error("Error in payment review cron:", error);
+        }
+    });
+
+    console.log("⏰ Payment review cron started (runs every 5 minutes)");
+}
+
+/**
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
@@ -119,4 +137,7 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start registration-opening reminder cron
     startRegistrationReminderCron(ctx);
+
+    // Start the payments-without-a-spot review cron
+    startPaymentReviewCron(ctx);
 }

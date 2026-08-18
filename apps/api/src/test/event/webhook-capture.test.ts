@@ -171,6 +171,70 @@ describe("Vipps webhook — capture and status mapping", () => {
     );
 
     integrationTest(
+        "flags a payment that lands on a registration without a spot",
+        async ({ ctx }) => {
+            /**
+             * Money can arrive after the spot is gone: a checkout finished just
+             * after the deadline reclaimed it, or in another tab after the
+             * member unregistered. Nothing is refunded automatically — that is
+             * an organiser's call — but it must not pass in silence.
+             */
+            const { event, user, payment } = await seedPayment(ctx);
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: user.id,
+                status: "cancelled",
+            });
+            mockVippsState("AUTHORIZED", {
+                authorized: 10000,
+                captured: 10000,
+                refunded: 0,
+            });
+
+            const client = ctx.utils.client();
+            await client.api.event.payment.webhook.$post({
+                json: { reference: "vipps-hook-ref" },
+            });
+
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: (p, { eq }) => eq(p.id, payment.id),
+            });
+            expect(row?.status).toBe("paid");
+            expect(row?.flag).toBe("paid_without_spot");
+            expect(row?.flaggedAt).not.toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "leaves a payment unflagged when the member holds their spot",
+        async ({ ctx }) => {
+            const { event, user, payment } = await seedPayment(ctx);
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: user.id,
+                status: "registered",
+            });
+            mockVippsState("AUTHORIZED", {
+                authorized: 10000,
+                captured: 10000,
+                refunded: 0,
+            });
+
+            const client = ctx.utils.client();
+            await client.api.event.payment.webhook.$post({
+                json: { reference: "vipps-hook-ref" },
+            });
+
+            const row = await ctx.db.query.eventPayment.findFirst({
+                where: (p, { eq }) => eq(p.id, payment.id),
+            });
+            expect(row?.flag).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
         "marks an aborted payment as failed",
         async ({ ctx }) => {
             const { payment } = await seedPayment(ctx);

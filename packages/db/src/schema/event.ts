@@ -56,6 +56,24 @@ export const paymentStatus = pgEnum("event_payment_status", [
 
 export type PaymentStatus = (typeof paymentStatus)["enumValues"][number];
 
+/**
+ * Why a payment needs a human to look at it. Both cases mean money and
+ * registration have drifted apart in a way the system cannot resolve on its
+ * own, so they are surfaced to organisers rather than only logged.
+ *
+ * - `provider_unreachable`: the deadline fell due while Vipps could not be
+ *   reached, so "unpaid" was a guess rather than an answer.
+ * - `paid_without_spot`: the payment completed for someone who no longer holds
+ *   a spot — a checkout that landed after the deadline, or after the member
+ *   unregistered.
+ */
+export const paymentFlag = pgEnum("event_payment_flag", [
+    "provider_unreachable",
+    "paid_without_spot",
+]);
+
+export type PaymentFlag = (typeof paymentFlag)["enumValues"][number];
+
 export const eventVisibilityVariants = [
     // Visible to everyone, including logged-out visitors
     "public",
@@ -111,8 +129,14 @@ export const event = pgTable("event", {
     isPaidEvent: boolean("is_paid_event").default(false).notNull(),
     requiresSigningUp: boolean("requires_signing_up").default(false).notNull(),
     priceMinor: integer("price"),
-    // The time between sign up and it must be paid
-    paymentGracePeriodMinutes: integer("payment_grace_period_minutes"),
+    /**
+     * The time between signing up and the payment falling due. Events that do
+     * not set their own get 120 minutes — the two hours Lepton's organisers
+     * settled on.
+     */
+    paymentGracePeriodMinutes: integer("payment_grace_period_minutes").default(
+        120,
+    ),
     reactionsAllowed: boolean("reactions_allowed").default(true).notNull(),
     organizerGroupSlug: varchar("organizer_group_slug", {
         length: 128,
@@ -136,6 +160,12 @@ export const event = pgTable("event", {
      * is moved, so a rescheduled opening gets its own reminder.
      */
     registrationReminderSentAt: timestamp("registration_reminder_sent_at"),
+    /**
+     * Set once organisers have been told, at the event's start, who paid
+     * without holding a spot. Idempotency marker so the review notice is sent
+     * at most once per event.
+     */
+    paymentReviewNotifiedAt: timestamp("payment_review_notified_at"),
     /** Only members covered by a priority pool may register. */
     onlyAllowPrioritized: boolean("only_allow_prioritized")
         .default(false)
@@ -296,6 +326,17 @@ export const eventPayment = pgTable(
          * this time.
          */
         expiresAt: timestamp("expires_at"),
+        /**
+         * Set when the one — and only — deadline extension has been spent on
+         * this obligation, because a live Vipps checkout (or an unreachable
+         * Vipps) was found at the deadline. A second extension is never
+         * granted, so chained checkouts cannot hold a spot indefinitely.
+         */
+        deadlineExtendedAt: timestamp("deadline_extended_at"),
+        /** Why this payment needs an organiser's attention, if it does. */
+        flag: paymentFlag("flag"),
+        /** When {@link flag} was raised. */
+        flaggedAt: timestamp("flagged_at"),
         ...timestamps,
     },
     (t) => [

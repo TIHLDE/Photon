@@ -4,12 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { createDeferredNotifications } from "../notification/deferred";
-import {
-    createPaymentObligation,
-    findOwedRefund,
-    type OwedRefund,
-    refundOwed,
-} from "./payment";
+import { createPaymentObligation } from "./payment";
 import {
     calculateWaitlistPositions,
     findSwapTarget,
@@ -30,13 +25,6 @@ export async function resolveRegistrationsForEvent(
     eventId: string,
     ctx: AppContext,
 ): Promise<void> {
-    /**
-     * Refunds decided inside the transaction and carried out after it commits.
-     * Talking to Vipps while holding the `FOR UPDATE` locks below would park
-     * those locks for as long as Vipps takes to answer — see {@link refundOwed}.
-     */
-    const owedRefunds: OwedRefund[] = [];
-
     /**
      * Notifications decided inside the transaction and sent once it commits —
      * rendering an email template per affected member while holding the
@@ -212,17 +200,12 @@ export async function resolveRegistrationsForEvent(
                     swappedUserId = swapTarget.userId;
                     finalStatus = "registered";
 
-                    // If the swapped-out user had already paid, they are owed a
-                    // refund. Only the lookup happens here; the Vipps call
-                    // waits until the transaction has let go of its locks.
-                    const owed = await findOwedRefund(
-                        txCtx,
-                        event,
-                        swapTarget.userId,
-                    );
-                    if (owed) {
-                        owedRefunds.push(owed);
-                    }
+                    // A swapped-out member who had already paid keeps their
+                    // payment. Refunding here would mean they had to pay again
+                    // — and race a fresh deadline — if a spot frees up and they
+                    // are promoted back in. Money that ends up owed is returned
+                    // by an organiser instead; they are reminded at the event's
+                    // start. See `notifyOrganizersOfPaymentsWithoutSpot`.
 
                     // Send notification to swapped user (will calculate position later)
                     console.log(
@@ -409,5 +392,4 @@ export async function resolveRegistrationsForEvent(
 
     // Locks are released; now it is safe to spend time on the network.
     await notifications.flush(ctx);
-    await refundOwed(ctx, owedRefunds);
 }
