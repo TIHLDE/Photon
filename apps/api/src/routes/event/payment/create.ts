@@ -6,7 +6,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { createPayment } from "~/lib/vipps";
+import { buildPaymentDescription, createPayment } from "~/lib/vipps";
 import { requireAuth } from "~/middleware/auth";
 import {
     createPaymentBodySchema,
@@ -38,7 +38,8 @@ export const createPaymentRoute = route().post(
     validator("json", createPaymentBodySchema),
     async (c) => {
         const eventId = c.req.param("eventId");
-        const userId = c.get("user").id;
+        const user = c.get("user");
+        const userId = user.id;
         const body = c.req.valid("json");
         const { db } = c.get("ctx");
 
@@ -120,7 +121,7 @@ export const createPaymentRoute = route().post(
                 reference: vippsReference,
                 userFlow: body.userFlow,
                 returnUrl: body.returnUrl,
-                description: `Payment for ${event.title}`,
+                description: buildPaymentDescription(event.title, user.name),
             });
 
             let payment: InferSelectModel<DbSchema["eventPayment"]> | undefined;
