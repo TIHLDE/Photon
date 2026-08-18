@@ -833,6 +833,10 @@ export const eventDetailSchema = Schema(
                     description:
                         "Whether the user has a completed payment for this event. Always false on free events. A paid registration cannot be cancelled by the user.",
                 }),
+                paymentExpiresAt: z.iso.datetime().nullable().meta({
+                    description:
+                        "Deadline for paying for the reserved spot (ISO 8601). Null when there is nothing to pay — a free event, an already completed payment, or a spot without a payment deadline. The spot is released when the deadline passes.",
+                }),
             })
             .nullable()
             .meta({

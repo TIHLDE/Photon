@@ -73,6 +73,13 @@ type EventRegistrationCardProps = {
      * så knappen ut til å ikke gjøre noe når API-et avviste påmeldingen.
      */
     actionError?: string | null;
+    /**
+     * Overskriften over `actionError`. Standarden gjelder påmeldingen; en
+     * betaling som ikke lot seg starte er noe annet, og da ville «Påmeldingen
+     * gikk ikke gjennom» sendt medlemmet ut på leting etter en påmelding som
+     * er helt i orden.
+     */
+    actionErrorTitle?: string;
 };
 
 export function EventRegistrationCard(props: EventRegistrationCardProps) {
@@ -124,7 +131,10 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                 {props.actionError ? (
                     <Alert variant="destructive">
                         <AlertCircle className="size-4" />
-                        <AlertTitle>Påmeldingen gikk ikke gjennom</AlertTitle>
+                        <AlertTitle>
+                            {props.actionErrorTitle ??
+                                "Påmeldingen gikk ikke gjennom"}
+                        </AlertTitle>
                         <AlertDescription>{props.actionError}</AlertDescription>
                     </Alert>
                 ) : null}
@@ -229,15 +239,22 @@ function getStateRendering(
             return {
                 icon: CreditCard,
                 message: "Plass reservert — venter på betaling",
+                // Uten frist står plassen til arrangøren rydder opp. Da er det
+                // riktigere å si ingenting enn å dikte opp en frist.
                 secondary: props.paymentDeadline
-                    ? `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}`
+                    ? `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}, ellers gis plassen videre.`
                     : null,
                 actions: (
                     <>
-                        <VippsButton className="w-full" onClick={props.onPay} />
+                        <VippsButton
+                            className="w-full"
+                            loading={props.isSubmitting}
+                            onClick={props.onPay}
+                        />
                         <Button
                             variant="ghost"
                             className="w-full"
+                            disabled={props.isSubmitting}
                             onClick={props.onUnregister}
                         >
                             Meld deg av

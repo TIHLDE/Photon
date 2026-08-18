@@ -41,6 +41,88 @@ describe("event detail registration.hasPaid", () => {
     );
 
     integrationTest(
+        "carries the deadline of the unpaid obligation, so the page can ask for payment",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const event = await ctx.utils.createTestEvent({
+                isPaidEvent: true,
+                priceMinor: 10000,
+                paymentGracePeriodMinutes: 30,
+            });
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.createPendingRegistration(event.id, user.id);
+            const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+            await ctx.db.insert(schema.eventPayment).values({
+                eventId: event.id,
+                userId: user.id,
+                amountMinor: 10000,
+                status: "pending",
+                expiresAt,
+            });
+
+            const client = await ctx.utils.clientForUser(user);
+            const response = await client.api.event[":eventId"].$get({
+                param: { eventId: event.id },
+            });
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            // 404-svaret er en streng, så smalne typen inn før feltet leses.
+            if (typeof body === "string") throw new Error(body);
+            expect(body.registration?.paymentExpiresAt).toBe(
+                expiresAt.toISOString(),
+            );
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "drops the deadline once the payment is completed",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const event = await ctx.utils.createTestEvent({
+                isPaidEvent: true,
+                priceMinor: 10000,
+                paymentGracePeriodMinutes: 30,
+            });
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.createPendingRegistration(event.id, user.id);
+            // Betalingen ble startet på en tidligere, avbrutt runde og står
+            // igjen som «pending» — den betalte raden er den som gjelder.
+            await ctx.db.insert(schema.eventPayment).values([
+                {
+                    eventId: event.id,
+                    userId: user.id,
+                    amountMinor: 10000,
+                    status: "pending",
+                    expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+                },
+                {
+                    eventId: event.id,
+                    userId: user.id,
+                    amountMinor: 10000,
+                    status: "paid",
+                },
+            ]);
+
+            const client = await ctx.utils.clientForUser(user);
+            const response = await client.api.event[":eventId"].$get({
+                param: { eventId: event.id },
+            });
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            // 404-svaret er en streng, så smalne typen inn før feltet leses.
+            if (typeof body === "string") throw new Error(body);
+            expect(body.registration?.hasPaid).toBe(true);
+            expect(body.registration?.paymentExpiresAt).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
         "is true once the payment is completed",
         async ({ ctx }) => {
             await ctx.utils.setupGroups();

@@ -137,17 +137,31 @@ export const getRoute = route().get(
                 // er stengt — en betalt plass kan ikke gis fra seg. Bare
                 // paid-events har rader i betalingstabellen, så
                 // gratisarrangementer slipper spørringen.
-                const payment = event.isPaidEvent
-                    ? await db.query.eventPayment.findFirst({
-                          columns: { id: true },
+                //
+                // De ubetalte radene er med av samme grunn: en plass på et
+                // betalt arrangement kommer med en frist, og uten den vet ikke
+                // klienten om den skal be om betaling eller hvor lenge
+                // plassen holdes av.
+                const payments = event.isPaidEvent
+                    ? await db.query.eventPayment.findMany({
+                          columns: {
+                              status: true,
+                              expiresAt: true,
+                          },
                           where: (payment, { eq, and }) =>
                               and(
                                   eq(payment.eventId, event.id),
                                   eq(payment.userId, user.id),
-                                  eq(payment.status, "paid"),
                               ),
                       })
-                    : undefined;
+                    : [];
+
+                const hasPaid = payments.some(
+                    (payment) => payment.status === "paid",
+                );
+                const pendingPayment = payments.find(
+                    (payment) => payment.status === "pending",
+                );
 
                 registration = {
                     attendedAt:
@@ -156,7 +170,11 @@ export const getRoute = route().get(
                     status: dbRegistration.status,
                     updatedAt: dbRegistration.updatedAt.toISOString(),
                     waitlistPosition: dbRegistration.waitlistPosition,
-                    hasPaid: payment !== undefined,
+                    hasPaid,
+                    paymentExpiresAt:
+                        !hasPaid && pendingPayment?.expiresAt
+                            ? pendingPayment.expiresAt.toISOString()
+                            : null,
                 };
             }
         }

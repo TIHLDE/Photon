@@ -1,9 +1,4 @@
-import {
-    addMilliseconds,
-    format,
-    formatDistanceToNowStrict,
-    set,
-} from "date-fns";
+import { addMilliseconds, format, formatDistanceStrict, set } from "date-fns";
 import { nb } from "date-fns/locale";
 
 // -- Shared display types (previously in mock/events) --
@@ -44,6 +39,8 @@ type ApiRegistration = {
         | "attended"
         | "no_show"
         | "pending";
+    /** Whether the spot is already paid for. Always false on free events. */
+    hasPaid?: boolean;
 } | null;
 
 type RegistrationStateInput = {
@@ -53,7 +50,7 @@ type RegistrationStateInput = {
     closed: boolean;
     /** Whether the event has sign-up at all. */
     requiresSigningUp: boolean;
-    /** Whether the event costs money — a pending registration then awaits payment. */
+    /** Whether the event costs money — an unpaid spot then awaits payment. */
     isPaidEvent: boolean;
     /** When registration opens. Null means "open immediately". */
     registrationStart?: string | null;
@@ -95,16 +92,27 @@ export function deriveRegistrationState(
     if (!requiresSigningUp) return "no-signup";
 
     switch (registration?.status) {
+        // En plass på et betalt arrangement er reservert, ikke sikret, før
+        // den er betalt: det er her betalingsknappen hører hjemme. Uten dette
+        // fikk medlemmet «Du har plass på arrangementet!» og ingen måte å
+        // betale på — plassen ble så tatt tilbake da fristen gikk ut.
         case "registered":
+            return isPaidEvent && !registration.hasPaid
+                ? "awaiting-payment"
+                : "joined";
+        // Møtt opp betyr at arrangementet er i gang. Da er betalingen et
+        // oppgjør mellom medlemmet og arrangøren, ikke en knapp på nettsida.
         case "attended":
             return "joined";
         case "waitlisted":
             return "on-waitlist";
-        // Påmeldingen ligger som «pending» til cron-en har avgjort om den ble
-        // plass eller venteliste. På et gratis arrangement er det bare noen
-        // sekunders behandling — «venter på betaling» ville vært feil.
+        // Påmeldingen ligger som «pending» til serveren har avgjort om det ble
+        // plass eller venteliste. Betalingen hører til plassen, og API-et
+        // avviser et betalingsforsøk før den er avgjort — derfor «behandler»
+        // også på betalte arrangementer. Ellers blinket Vipps-knappen forbi i
+        // et sekund før medlemmet havnet på venteliste.
         case "pending":
-            return isPaidEvent ? "awaiting-payment" : "processing";
+            return "processing";
         default:
             if (closed) return "closed";
             if (endTime && new Date(endTime) < now) return "closed";
@@ -180,6 +188,23 @@ export function registrationErrorMessage(error: unknown): string {
     if (message.includes("not registered")) {
         return "Du er ikke påmeldt dette arrangementet.";
     }
+    // Betalingsfeilene under kommer fra samme kort: knappen «Betal med Vipps»
+    // ligger i påmeldingskortet, og feilen vises på samme sted.
+    if (message.includes("pending payment already exists")) {
+        return "Du har allerede en betaling på gang i Vipps. Fullfør den der, eller vent et minutt og prøv igjen.";
+    }
+    if (message.includes("already paid")) {
+        return "Plassen er allerede betalt. Last siden på nytt.";
+    }
+    if (message.includes("register for the event before paying")) {
+        return "Du må ha en plass på arrangementet før du kan betale.";
+    }
+    if (message.includes("does not require payment")) {
+        return "Dette arrangementet krever ingen betaling.";
+    }
+    if (message.includes("Failed to initiate Vipps payment")) {
+        return "Vipps svarte ikke. Prøv igjen om litt — plassen din står så lenge fristen ikke har gått ut.";
+    }
 
     return message;
 }
@@ -229,10 +254,14 @@ export function toEventDeadline(iso: string): EventDeadline {
 }
 
 /**
- * "2 dager", "3 timer" — the tail of "Påmelding åpner om …".
+ * "2 dager", "3 timer", "34 sekunder" — the tail of "Påmelding åpner om …".
+ *
+ * `now` kommer utenfra fordi teksten teller ned: siden mater inn en klokke som
+ * tikker (`useNow`), og da må avstanden regnes fra samme klokke som avgjør om
+ * påmeldingen har åpnet.
  */
-export function formatTimeUntil(iso: string): string {
-    return formatDistanceToNowStrict(new Date(iso), { locale: nb });
+export function formatTimeUntil(iso: string, now: Date = new Date()): string {
+    return formatDistanceStrict(new Date(iso), now, { locale: nb });
 }
 
 /**

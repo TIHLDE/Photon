@@ -604,7 +604,6 @@ const REGISTRATION_STATUS_VARIANTS: Record<
 const REGISTRATION_FILTERS = [
     { value: "aktive", label: "Påmeldte", status: undefined },
     { value: "venteliste", label: "Venteliste", status: "waitlisted" },
-    { value: "avmeldte", label: "Avmeldte", status: "cancelled,pending" },
 ] as const;
 
 function RegistrationsTab({ eventId }: { eventId: string }) {
