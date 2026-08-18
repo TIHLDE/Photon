@@ -42,6 +42,17 @@ type ScanResult = {
  */
 const RETRY_COOLDOWN_MS = 3000;
 
+/**
+ * Navnet kommer fra svaret på innsjekken. Står det ikke noe navn der — et API
+ * som er eldre enn denne siden, eller en bruker uten navn — skal skjermen ikke
+ * si «undefined er huket av», men bare at innsjekken gikk gjennom.
+ */
+function checkedInTitle(name: unknown): string {
+    return typeof name === "string" && name.trim()
+        ? `${name.trim()} er huket av`
+        : "Huket av";
+}
+
 /** Hvor ofte bildet analyseres. Raskt nok til å føles umiddelbart. */
 const SCAN_INTERVAL_MS = 120;
 
@@ -135,7 +146,7 @@ export function AttendanceScannerDialog({ eventId }: { eventId: string }) {
                     {
                         key: Date.now(),
                         ok: true,
-                        title: `${result.name} er huket av`,
+                        title: checkedInTitle(result.name),
                         description: "Møtt opp",
                     },
                     ...prev.slice(0, 4),
