@@ -7,6 +7,7 @@ import {
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import {
@@ -59,6 +60,7 @@ import {
     formatEventDate,
     formatEventPrice,
     formatEventTime,
+    priorityPoolLabels,
     registrationErrorMessage,
     registrationPollInterval,
     TICKET_RESALE_GROUP_URL,
@@ -211,6 +213,11 @@ function EventDetailPage() {
     ) : (
         locationLabel
     );
+
+    // Hvem som er prioritert avgjør om det er verdt å melde seg på i det hele
+    // tatt, så det står i detaljene sammen med de andre forbeholdene.
+    // Enkeltpersoner står ikke her: den lista er bare for arrangøren.
+    const priorityLabels = priorityPoolLabels(event.priorityPools ?? []);
 
     const calendarUrl = buildGoogleCalendarUrl({
         title: event.title,
@@ -387,6 +394,30 @@ function EventDetailPage() {
                                           label="Kun for"
                                           value={`Studenter ved ${event.restrictedToInstitute.shortName}`}
                                       />,
+                                  ]
+                                : []),
+                            ...(priorityLabels.length > 0
+                                ? [
+                                      <div className="flex flex-col gap-2 text-sm">
+                                          <div className="flex items-center gap-2.5 text-muted-foreground">
+                                              <Star className="size-4 shrink-0" />
+                                              <span>
+                                                  {event.onlyAllowPrioritized
+                                                      ? "Kun for"
+                                                      : "Prioritert"}
+                                              </span>
+                                          </div>
+                                          <div className="flex flex-col items-start gap-1.5">
+                                              {priorityLabels.map((label) => (
+                                                  <Badge
+                                                      key={label}
+                                                      variant="secondary"
+                                                  >
+                                                      {label}
+                                                  </Badge>
+                                              ))}
+                                          </div>
+                                      </div>,
                                   ]
                                 : []),
                             ...(event.contactPerson

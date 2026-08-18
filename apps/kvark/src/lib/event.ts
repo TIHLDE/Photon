@@ -1,5 +1,6 @@
 import { addMilliseconds, format, formatDistanceStrict, set } from "date-fns";
 import { nb } from "date-fns/locale";
+import { MAX_CLASS_YEAR, computeClassYear } from "@photon/auth/academic-year";
 
 // -- Shared display types (previously in mock/events) --
 
@@ -326,3 +327,78 @@ export const EVENT_FORM_ERRORS = {
         "Arrangementer med påmelding må ha en påmeldingsfrist.",
     registrationOrder: "Påmeldingen må åpne før påmeldingsfristen.",
 } as const;
+
+/**
+ * En prioritert gruppe slik arrangementet leverer den.
+ *
+ * Samme form som `priorityPools` i `GET /events/:id`: maks én gruppe og maks
+ * ett klassetrinn, som må stemme samtidig.
+ */
+export type EventPriorityPool = {
+    classYear: number | null;
+    group: { name: string; slug: string } | null;
+};
+
+/** En kull-gruppe har opptaksåret både som slug og som navn, f.eks. «2023». */
+const COHORT_SLUG = /^\d{4}$/;
+
+/**
+ * Navnet et medlem skal se på én prioritert gruppe.
+ *
+ * Etikettene speiler valgene i `PriorityPoolEditor`, så arrangøren kjenner
+ * igjen det hen valgte: «Dataingeniør», «1. klasse», «Digital transformasjon
+ * 4. klasse». Kull-grupper fra det gamle systemet regnes om til klassetrinn —
+ * «2023» sier ingenting om hvem som er prioritert i år.
+ */
+export function priorityPoolLabel(
+    pool: EventPriorityPool,
+    now = new Date(),
+): string | null {
+    if (pool.group && COHORT_SLUG.test(pool.group.slug)) {
+        const classYear = computeClassYear(
+            Number.parseInt(pool.group.slug, 10),
+            now,
+        );
+        return classYear >= 1 && classYear <= MAX_CLASS_YEAR
+            ? `${classYear}. klasse`
+            : null;
+    }
+
+    if (pool.group) {
+        return pool.classYear
+            ? `${pool.group.name} ${pool.classYear}. klasse`
+            : pool.group.name;
+    }
+
+    return pool.classYear ? `${pool.classYear}. klasse` : null;
+}
+
+/**
+ * Etikettene for alle de prioriterte gruppene, i lesbar rekkefølge.
+ *
+ * Klassetrinnene først og stigende, så gruppene alfabetisk — rekkefølgen i
+ * databasen er den arrangøren tilfeldigvis la dem inn i. Pooler uten kriterier
+ * (eller med et utgått kull) faller bort, og duplikater slås sammen: to pooler
+ * som leses likt er én opplysning for medlemmet.
+ */
+export function priorityPoolLabels(
+    pools: readonly EventPriorityPool[],
+    now = new Date(),
+): string[] {
+    const bare: string[] = [];
+    const named: string[] = [];
+
+    for (const pool of pools) {
+        const label = priorityPoolLabel(pool, now);
+        if (!label) continue;
+        if (pool.group && !COHORT_SLUG.test(pool.group.slug)) named.push(label);
+        else bare.push(label);
+    }
+
+    return [
+        ...new Set([
+            ...bare.sort((a, b) => a.localeCompare(b, "nb")),
+            ...named.sort((a, b) => a.localeCompare(b, "nb")),
+        ]),
+    ];
+}
