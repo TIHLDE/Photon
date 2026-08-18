@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type z from "zod";
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { isMemberAudience } from "~/lib/auth";
+import { DEFAULT_PAYMENT_GRACE_MINUTES } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../lib/route";
 import { captureAuth } from "../../middleware/auth";
@@ -215,8 +216,10 @@ export const getRoute = route().get(
 
         const payInfo = event.isPaidEvent
             ? {
-                  paymentGracePeriodMinutes:
-                      event.paymentGracePeriodMinutes || 0,
+                  // The same for every event, and deliberately not read from
+                  // the row: this is here so the frontend can tell members how
+                  // long they have, not so anyone can change it.
+                  paymentGracePeriodMinutes: DEFAULT_PAYMENT_GRACE_MINUTES,
                   price: event.priceMinor || 0,
               }
             : null;

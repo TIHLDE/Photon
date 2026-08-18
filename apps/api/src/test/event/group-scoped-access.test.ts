@@ -32,7 +32,6 @@ const eventBody = (organizerGroupSlug: string) => ({
     enforcesPreviousStrikes: false,
     isPaidEvent: false,
     price: null,
-    paymentGracePeriodMinutes: null,
     contactPersonUserId: null,
     reactionsAllowed: true,
 });

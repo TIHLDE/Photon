@@ -137,7 +137,6 @@ describe("event visibility", () => {
                     enforcesPreviousStrikes: false,
                     isPaidEvent: false,
                     price: null,
-                    paymentGracePeriodMinutes: null,
                     contactPersonUserId: null,
                     reactionsAllowed: true,
                 },

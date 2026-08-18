@@ -279,7 +279,6 @@ function NewEventPage() {
                         values.isPaidEvent && values.price
                             ? Number(values.price)
                             : null,
-                    paymentGracePeriodMinutes: null,
                     contactPersonUserId: values.contactPersonUserId || null,
                     reactionsAllowed: false,
                 },

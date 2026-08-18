@@ -265,7 +265,6 @@ export const updateRoute = route().put(
                 visibility: body.visibility,
                 isPaidEvent: body.isPaidEvent,
                 isRegistrationClosed: body.isRegistrationClosed,
-                paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 reactionsAllowed: body.reactionsAllowed,
                 requiresSigningUp: body.requiresSigningUp,
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,

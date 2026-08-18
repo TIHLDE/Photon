@@ -1,0 +1,1 @@
+ALTER TABLE "event_event" DROP COLUMN "payment_grace_period_minutes";

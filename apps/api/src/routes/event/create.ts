@@ -173,7 +173,6 @@ export const createRoute = route().post(
                 contactPersonId: body.contactPersonUserId,
                 reactionsAllowed: body.reactionsAllowed,
                 categorySlug: body.categorySlug,
-                paymentGracePeriodMinutes: body.paymentGracePeriodMinutes,
                 imageUrl: body.imageUrl,
                 imageAlt: body.imageAlt,
                 createdByUserId: userId,
