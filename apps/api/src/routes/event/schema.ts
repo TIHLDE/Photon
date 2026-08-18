@@ -671,6 +671,10 @@ export const eventDetailSchema = Schema(
                     description:
                         "When the user was registered as an attendee by TIHLDE for this event. Is null if not attended.",
                 }),
+                hasPaid: z.boolean().meta({
+                    description:
+                        "Whether the user has a completed payment for this event. Always false on free events.",
+                }),
             })
             .nullable()
             .meta({

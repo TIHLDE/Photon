@@ -180,6 +180,14 @@ export function registrationErrorMessage(error: unknown): string {
 }
 
 /**
+ * Facebook-gruppa der medlemmer kjøper og selger billetter til betalte
+ * arrangementer. Samme gruppe som den gamle nettsida lenket til, så alle som
+ * allerede er medlem der finner igjen det de er vant til.
+ */
+export const TICKET_RESALE_GROUP_URL =
+    "https://www.facebook.com/groups/598608738731749/";
+
+/**
  * Build a price label from the API event's paid-event fields.
  * `priceMinor` is stored in minor units (øre).
  */

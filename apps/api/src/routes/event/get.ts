@@ -121,6 +121,22 @@ export const getRoute = route().get(
             });
 
             if (dbRegistration) {
+                // Om betalingen er gjennomført avgjør om medlemmet får
+                // tilbudet om å selge billetten sin videre. Bare paid-events
+                // har rader i betalingstabellen, så gratisarrangementer
+                // slipper spørringen.
+                const payment = event.isPaidEvent
+                    ? await db.query.eventPayment.findFirst({
+                          columns: { id: true },
+                          where: (payment, { eq, and }) =>
+                              and(
+                                  eq(payment.eventId, event.id),
+                                  eq(payment.userId, user.id),
+                                  eq(payment.status, "paid"),
+                              ),
+                      })
+                    : undefined;
+
                 registration = {
                     attendedAt:
                         dbRegistration.attendedAt?.toISOString() ?? null,
@@ -128,6 +144,7 @@ export const getRoute = route().get(
                     status: dbRegistration.status,
                     updatedAt: dbRegistration.updatedAt.toISOString(),
                     waitlistPosition: dbRegistration.waitlistPosition,
+                    hasPaid: payment !== undefined,
                 };
             }
         }
