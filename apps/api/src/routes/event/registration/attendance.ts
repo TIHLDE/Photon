@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
-import { and, eq, inArray } from "drizzle-orm";
+import type { RegistrationStatus } from "@photon/db/schema";
+import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import type z from "zod";
@@ -8,6 +9,17 @@ import { requireEventAccess } from "~/lib/event/access";
 import { Schema, describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
+
+/**
+ * Only these statuses hold an actual spot on the event. Anyone else — the
+ * waitlist, a cancelled spot, an unresolved registration — cannot be checked
+ * in: they do not have access to the event.
+ */
+const CHECK_IN_STATUSES: readonly RegistrationStatus[] = [
+    "registered",
+    "attended",
+    "no_show",
+];
 
 const setAttendanceSchema = Schema(
     "SetAttendance",
@@ -24,6 +36,9 @@ const attendanceResponseSchema = Schema(
     zod.object({
         userId: zod.string(),
         eventId: zod.string(),
+        // Returned so a check-in scanner can name the person it just checked
+        // in without looking them up in the (paginated) participant list.
+        name: zod.string(),
         status: zod.string().meta({ description: "New registration status" }),
         attendedAt: zod.string().nullable(),
     }),
@@ -47,6 +62,11 @@ export const setAttendanceRoute = route().patch(
             description: "Requires events:update or events:manage permission",
         })
         .notFound({ description: "Registration not found" })
+        .response({
+            statusCode: 409,
+            description:
+                "Conflict - the user does not hold a spot on the event (waitlisted, cancelled or pending)",
+        })
         .build(),
     requireAuth,
     requireEventAccess({ permission: ["events:update", "events:manage"] }),
@@ -56,6 +76,31 @@ export const setAttendanceRoute = route().patch(
         const eventId = c.req.param("eventId");
         const userId = c.req.param("userId");
         const { attended } = c.req.valid("json");
+
+        const registration = await db.query.eventRegistration.findFirst({
+            where: and(
+                eq(schema.eventRegistration.userId, userId),
+                eq(schema.eventRegistration.eventId, eventId),
+            ),
+            with: { user: { columns: { name: true } } },
+        });
+
+        if (!registration) {
+            throw new HTTPException(404, {
+                message: "Registration not found",
+            });
+        }
+
+        // Separate from the 404 on purpose: «not registered» and «on the
+        // waitlist» are different answers for whoever is scanning at the door.
+        if (!CHECK_IN_STATUSES.includes(registration.status)) {
+            throw new HTTPException(409, {
+                message:
+                    registration.status === "waitlisted"
+                        ? "User is on the waitlist and does not have a spot on this event"
+                        : "User does not have a spot on this event",
+            });
+        }
 
         const [updated] = await db
             .update(schema.eventRegistration)
@@ -67,12 +112,6 @@ export const setAttendanceRoute = route().patch(
                 and(
                     eq(schema.eventRegistration.userId, userId),
                     eq(schema.eventRegistration.eventId, eventId),
-                    // Only real spots can be checked in — not waitlisted/pending.
-                    inArray(schema.eventRegistration.status, [
-                        "registered",
-                        "attended",
-                        "no_show",
-                    ]),
                 ),
             )
             .returning();
@@ -86,6 +125,7 @@ export const setAttendanceRoute = route().patch(
         return c.json({
             userId,
             eventId,
+            name: registration.user.name,
             status: updated.status,
             attendedAt: updated.attendedAt?.toISOString() ?? null,
         } satisfies z.infer<typeof attendanceResponseSchema>);

@@ -4028,6 +4028,7 @@ export interface components {
         Attendance: {
             userId: string;
             eventId: string;
+            name: string;
             /** @description New registration status */
             status: string;
             attendedAt: string | null;
@@ -8403,6 +8404,13 @@ export interface operations {
             };
             /** @description Not Found - Registration not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict - the user does not hold a spot on the event (waitlisted, cancelled or pending) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
