@@ -4,7 +4,8 @@ import { isMemberAudience } from "~/lib/auth";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { getUserStudy } from "~/lib/user/study";
+import { computeUserClassYear } from "~/lib/event/priority";
+import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { requireAuthAllowPending } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
@@ -114,10 +115,21 @@ export const getUserRoute = route().get(
          * group list by itself is exactly what showed a member who had
          * switched studies whichever one came back first.
          */
-        const { studyProgram, studyStartYear } = await getUserStudy(
-            c.get("ctx"),
-            user.id,
-        );
+        const studyRows =
+            (await loadStudyGroupRows(c.get("ctx"), [user.id])).get(user.id) ??
+            [];
+        const { studyProgram, studyStartYear } =
+            deriveStudyFromGroups(studyRows);
+
+        /**
+         * Served rather than left to the client. A master's first year is 4.
+         * klasse, and the offset that encodes only holds if you know the year
+         * belongs to the master and not the bachelor it followed — which is
+         * exactly what the client cannot see. kvark used to work it out from
+         * the group list and got the programme itself wrong for anyone who had
+         * switched studies.
+         */
+        const classYear = computeUserClassYear(studyRows);
 
         /**
          * Ended memberships — the same rule the group page's "tidligere
@@ -154,6 +166,7 @@ export const getUserRoute = route().get(
             linkedinUrl: settings?.linkedinUrl ?? null,
             studyProgram,
             studyStartYear,
+            classYear,
             groups: memberships.map((m) => ({
                 slug: m.groupSlug,
                 name: m.group.name,

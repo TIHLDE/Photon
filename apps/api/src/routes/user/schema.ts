@@ -359,7 +359,11 @@ export const userProfileSchema = Schema(
         }),
         studyStartYear: z.number().int().nullable().meta({
             description:
-                "The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
+                "The year the user started their current study programme. Falls back to their STUDYYEAR group when we have no year for the programme itself. Null when unknown.",
+        }),
+        classYear: z.number().int().nullable().meta({
+            description:
+                "Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place — served by the API so the rule lives in one place rather than being recomputed per client.",
         }),
         groups: z
             .array(

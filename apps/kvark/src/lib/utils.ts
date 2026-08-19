@@ -1,4 +1,3 @@
-import { computeClassYear } from "@photon/auth/academic-year";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -38,8 +37,6 @@ export {
     currentAcademicYear,
 } from "@photon/auth/academic-year";
 
-type StudyGroupLike = { name: string; type: string };
-
 /**
  * Masterprogrammene ved TIHLDE. Alt annet (Dataingeniør, Digital
  * forretningsutvikling, Digital infrastruktur og cybersikkerhet, Drift,
@@ -58,49 +55,21 @@ export function programmeLength(programme: string | undefined): number {
 }
 
 /**
- * Avled studieprogram, klassetrinn og kull fra brukerens gruppemedlemskap.
- * `study`- og `studyyear`-gruppene er en projeksjon av Feide-dataene; typen
- * lagres i UPPERCASE i databasen, så sammenlign case-insensitivt.
- *
- * Klassetrinn vises kun så lenge man faktisk går på studiet — til og med 3.
- * klasse på bachelor, 5. på master. Er man forbi det, er man alumni, og da er
- * kullet (oppstartsåret) det riktige å vise. Tidligere ble klassetrinnet vist
- * så lenge det lå mellom 1 og 5, så en som startet i 2022 og var ferdig i 2025
- * sto oppført som «4. klasse».
- */
-export function deriveStudy(
-    groups: readonly StudyGroupLike[],
-    now = new Date(),
-): { programme?: string; classYear?: number; startYear?: number } {
-    const programme = groups.find(
-        (g) => g.type.toLowerCase() === "study",
-    )?.name;
-
-    const startYears = groups
-        .filter((g) => g.type.toLowerCase() === "studyyear")
-        .map((g) => Number.parseInt(g.name, 10))
-        .filter((year) => Number.isFinite(year));
-
-    if (startYears.length === 0) return { programme };
-
-    const startYear = Math.max(...startYears);
-    const computed = computeClassYear(startYear, now);
-    const isStudying = computed >= 1 && computed <= programmeLength(programme);
-
-    return {
-        programme,
-        classYear: isStudying ? computed : undefined,
-        startYear,
-    };
-}
-
-/**
  * «Dataingeniør · 3. klasse» mens man studerer, «Dataingeniør · kull 2022»
  * etterpå. Returnerer undefined når vi ikke vet noe om studiet.
+ *
+ * Tar verdiene som de kommer fra API-et. Siden brukes til å utlede dem selv fra
+ * gruppelista, og det gikk galt på to måter samtidig: den plukket den første
+ * studiegruppa i den rekkefølgen serveren tilfeldigvis sendte dem, så et medlem
+ * som hadde byttet studium fikk vist det gamle — og klassetrinnet manglet
+ * master-offsetten, så første år på master ville lest som 1. klasse i stedet for
+ * 4. Begge deler er regler serveren allerede kan, og de hører hjemme ett sted.
  */
-export function formatStudyLabel(
-    study: ReturnType<typeof deriveStudy>,
-): string | undefined {
+export function formatStudyLabel(study: {
+    programme?: string | null;
+    classYear?: number | null;
+    startYear?: number | null;
+}): string | undefined {
     const detail = study.classYear
         ? `${study.classYear}. klasse`
         : study.startYear
