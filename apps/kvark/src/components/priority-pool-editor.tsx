@@ -121,7 +121,8 @@ const SELECTABLE_TYPES = new Set([
  * grensesnittet er at samme valg ikke kan brukes i to pooler.
  *
  * - 1.–3. klasse står alene, og gjelder alle bachelorstudier.
- * - Studieprogrammene står alene, og gjelder alle trinn.
+ * - Bachelorstudiene finnes både alene — da gjelder de alle trinn — og
+ *   kombinert med 1., 2. eller 3. klasse.
  * - Masteren finnes *bare* som «4. klasse» og «5. klasse»: det er de eneste
  *   trinnene den har, og et bart valg ville stilltiende betydd begge.
  * - Arrangørens egen interessegruppe finnes bare som frittstående valg, så den
@@ -187,8 +188,24 @@ export function buildPoolItems(
             pool: { groupSlug: group.slug, classYear: null },
         };
 
-        if (type === "STUDY") studies.push(item);
-        else others.push(item);
+        if (type !== "STUDY") {
+            others.push(item);
+            continue;
+        }
+
+        studies.push(item);
+
+        // Bachelorstudiene finnes også trinn for trinn. Bare studier: API-et
+        // avviser klassetrinn på komiteer, styrer og resten, så et slikt valg
+        // ville vært en 400 i vente.
+        for (let year = 1; year <= MASTER_CLASS_OFFSET; year++) {
+            studies.push({
+                key: `group:${group.slug}+class:${year}`,
+                label: `${group.name} ${year}. klasse`,
+                hint: "Studie",
+                pool: { groupSlug: group.slug, classYear: year },
+            });
+        }
     }
 
     const byLabel = (a: PoolItem, b: PoolItem) =>
@@ -282,10 +299,11 @@ type PriorityPoolEditorProps = {
  *
  * Semantikken er verdt å lese før du endrer noe her: **hver prioritert gruppe
  * er ett kriterium, og det holder å treffe én av dem.** Modellen tillater bare
- * ett valg per prioritert gruppe, så kombinasjoner av studie og trinn finnes
- * bare der de er meningsfulle, som ferdige valg («Digital transformasjon 4.
- * klasse»). En navngitt person teller like mye som en gruppe. Se
- * `isUserPrioritized` i API-et.
+ * ett valg per prioritert gruppe, så et studie og et trinn kommer som ett
+ * ferdig valg («Dataingeniør 2. klasse»), aldri som to felt. Bare de
+ * kombinasjonene som betyr noe finnes: et bachelorstudium med eller uten trinn,
+ * og masteren bare som 4. eller 5. klasse. En navngitt person teller like mye
+ * som en gruppe. Se `isUserPrioritized` i API-et.
  *
  * Klassetrinn er rullerende: det løses mot medlemmets kull ved påmelding, så
  * et arrangement som gjenbrukes til neste år treffer neste års førsteklassinger
