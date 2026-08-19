@@ -112,7 +112,6 @@ function RouteComponent() {
     const studyLabel = formatStudyLabel({
         programme: profile.studyProgram,
         classYear: profile.classYear,
-        startYear: profile.studyStartYear,
     });
     const user: ProfileHeaderUser = {
         name: profile.name,
