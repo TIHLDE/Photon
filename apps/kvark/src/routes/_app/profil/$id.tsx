@@ -44,7 +44,7 @@ import {
     type ProfileHeaderUser,
     type ProfileLink,
 } from "#/components/profile-header";
-import { deriveStudy, formatStudyLabel } from "#/lib/utils";
+import { formatStudyLabel } from "#/lib/utils";
 
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
@@ -107,7 +107,13 @@ function RouteComponent() {
     const [bioOpen, setBioOpen] = useState(false);
 
     const settings = session?.user.settings;
-    const studyLabel = formatStudyLabel(deriveStudy(profile.groups));
+    // Fra API-et, ikke utledet her: hvilket studie som er det gjeldende, og
+    // hvilket klassetrinn det gir, er regler serveren allerede eier.
+    const studyLabel = formatStudyLabel({
+        programme: profile.studyProgram,
+        classYear: profile.classYear,
+        startYear: profile.studyStartYear,
+    });
     const user: ProfileHeaderUser = {
         name: profile.name,
         // E-post er ikke en del av den offentlige profilen. Din egen ligger i
