@@ -237,6 +237,8 @@ function AllUsersTable({
         id: string;
         name: string;
         studyStartYear: number | null;
+        /** Navnet på studiet rettingen gjelder, som er alt lista kjenner til. */
+        studyProgram: string | null;
     } | null>(null);
     const [editingStudy, setEditingStudy] = useState<{
         id: string;
@@ -514,6 +516,8 @@ function AllUsersTable({
                                                                                 name: user.name,
                                                                                 studyStartYear:
                                                                                     user.studyStartYear,
+                                                                                studyProgram:
+                                                                                    user.studyProgram,
                                                                             },
                                                                         )
                                                                     }
@@ -1453,17 +1457,26 @@ function FilterSelect({
 /**
  * Rett kullet til ett medlem.
  *
- * Feide gir ikke kull for alle studier, så nye medlemmer antas å være
- * 1. klassinger. Den antakelsen er riktig for høstopptaket og for alle som
- * bytter studium, men feil for en som melder seg inn senere i løpet — og de
- * merker det selv, fordi de mister prioritet på sitt eget kulls arrangementer.
+ * Feide gir ikke kull for alle studier — digfor og masteren får det aldri — så
+ * året utledes, og utledningen bommer av og til. Da er dette veien inn.
+ *
+ * Rettingen treffer studiet medlemmet går på nå, det samme som står i raden du
+ * klikket på. Det er med vilje: et medlem som har tatt en bachelor og gått
+ * videre på master har to studier med hvert sitt kull, og å skrive samme år på
+ * begge var nettopp feilen som gjorde en førsteårs master umulig å skille fra
+ * en tredjeårs bachelor.
  */
 function EditCohortDialog({
     user,
     open,
     onOpenChange,
 }: {
-    user: { id: string; name: string; studyStartYear: number | null } | null;
+    user: {
+        id: string;
+        name: string;
+        studyStartYear: number | null;
+        studyProgram: string | null;
+    } | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
@@ -1525,10 +1538,11 @@ function EditCohortDialog({
                                 placeholder="2026"
                             />
                             <FieldDescription>
-                                Overstyrer Feide permanent. Medlemmet flyttes
-                                til kullgruppa med en gang, og senere
-                                innlogginger endrer den ikke tilbake. Tomt felt
-                                fjerner kullet.
+                                {user?.studyProgram
+                                    ? `Gjelder ${user.studyProgram}. Har medlemmet studert noe annet før, står det kullet urørt.`
+                                    : "Overstyrer Feide permanent."}{" "}
+                                Senere innlogginger endrer den ikke tilbake.
+                                Tomt felt fjerner kullet.
                             </FieldDescription>
                         </Field>
                     </FieldGroup>

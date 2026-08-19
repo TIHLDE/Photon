@@ -61,6 +61,53 @@ describe("computeUserClassYear", () => {
         ).toBeNull();
     });
 
+    it("stops counting a bachelor at three years, not five", () => {
+        /**
+         * The ceiling used to be a flat five for everyone, so a finished
+         * three-year bachelor kept counting: the 2023 intake read as 4. klasse
+         * and the 2022 intake as 5., and 398 members in production sat in that
+         * state. Any pool asking for 4. or 5. klasse without naming a study
+         * would have pulled them in ahead of the master students it was for.
+         */
+        expect(
+            computeUserClassYear([BACHELOR, cohort(2023)], AUTUMN_2026),
+        ).toBeNull();
+        expect(
+            computeUserClassYear([BACHELOR, cohort(2022)], AUTUMN_2026),
+        ).toBeNull();
+
+        // The last year that is still a real class level.
+        expect(
+            computeUserClassYear([BACHELOR, cohort(2024)], AUTUMN_2026),
+        ).toBe(3);
+    });
+
+    it("uses the master's own intake when we have it", () => {
+        /**
+         * With the programme's own start year there is nothing to infer: year
+         * one of a master is 4. klasse. The cohort group here says 2023, the
+         * year their *bachelor* began — reading that instead is the confusion
+         * the programme row exists to end.
+         */
+        const master = { ...MASTER, isMaster: true, startYear: 2026 };
+        expect(computeUserClassYear([master, cohort(2023)], AUTUMN_2026)).toBe(
+            4,
+        );
+
+        const secondYear = { ...MASTER, isMaster: true, startYear: 2025 };
+        expect(
+            computeUserClassYear([secondYear, cohort(2022)], AUTUMN_2026),
+        ).toBe(5);
+    });
+
+    it("still reads the cohort group when the master has no year of its own", () => {
+        // The 1423 members migrated from Lepton have groups and no programme
+        // row, so this path has to keep working.
+        expect(computeUserClassYear([MASTER, cohort(2023)], AUTUMN_2026)).toBe(
+            4,
+        );
+    });
+
     it("puts a master's first year on 4. klasse, not 1.", () => {
         // Someone who came to the master from another school has only the
         // master's own intake year. Read naively that is "1. klasse", which

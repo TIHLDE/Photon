@@ -6255,6 +6255,8 @@ export interface components {
         UpdateStudyYearInput: {
             /** @description Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group. */
             startYear: number | null;
+            /** @description Which study programme the year applies to, e.g. 'digital-samhandling'. Omit to correct the member's current programme, which is what the admin list shows. Only members who have switched studies have more than one. */
+            studyProgramSlug?: string | null;
         };
         UpdateStudy: {
             message: string;

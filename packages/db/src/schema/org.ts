@@ -63,20 +63,28 @@ export type Campus = (typeof campus)["enumValues"][number];
 /**
  * Where a cohort start year came from, which decides who may overwrite it.
  *
- * NTNU does not hand out `fc:fs:kull` for every programme — ITBAITBEDR
- * (Digital forretningsutvikling) never gets one — so a member who registers
- * from scratch would otherwise land with no cohort at all, and 172 of the 258
- * priority pools select on the cohort group. We therefore assume the current
- * intake for active students we have no year for, and record that it was a
- * guess rather than something Feide told us.
+ * NTNU does not hand out `fc:fs:kull` for every programme. Neither ITBAITBEDR
+ * (Digital forretningsutvikling) nor ITMAIKTSA (the master) ever gets one — 0
+ * of 217 rows in production between them — so for those two a year we work out
+ * ourselves is not a stopgap until FS improves, it is the only source there
+ * will ever be. Without one the member loses priority on everything aimed at
+ * their own intake.
  *
- * Only `assumed` may be overwritten, and only by `feide`. `manual` is a
- * deliberate correction by the board and outranks Feide; `migrated` is the
- * year Lepton carried over, which is real data we have no better source for.
+ * Ranked, highest first: `manual` is a deliberate correction by the board;
+ * `feide` is what NTNU says; `migrated` is the year Lepton carried over, real
+ * data we have no better source for; `derived` is the one we worked out
+ * ourselves. A higher rank overwrites a lower one and nothing else — equal
+ * ranks leave the stored value alone, so the first answer of a given quality
+ * stands.
+ *
+ * `derived` replaced an older `assumed`, which meant "this year's intake,
+ * because you are active now". It answered the same question worse: it was
+ * right only for someone who had just started, and said nothing for the far
+ * larger group whose real intake was sitting in their cohort group all along.
  */
 export const studyYearSource = pgEnum("org_study_year_source", [
     "feide",
-    "assumed",
+    "derived",
     "manual",
     "migrated",
 ]);

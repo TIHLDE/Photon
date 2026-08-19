@@ -4,7 +4,7 @@ import { isMemberAudience } from "~/lib/auth";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { deriveStudyFromGroups } from "~/lib/user/study";
+import { getUserStudy } from "~/lib/user/study";
 import { requireAuthAllowPending } from "~/middleware/auth";
 import { userProfileSchema } from "./schema";
 
@@ -106,11 +106,17 @@ export const getUserRoute = route().get(
             }),
         ]);
 
-        // Derived from the group projection, not `studyProgramMembership`;
-        // see `deriveStudyFromGroups` for why. The memberships are already
-        // loaded above, so this is the pure form rather than a second query.
-        const { studyProgram, studyStartYear } = deriveStudyFromGroups(
-            memberships.map((m) => m.group),
+        /**
+         * A second query rather than reusing the memberships loaded above.
+         * Ranking a member's studies needs their programme rows — which
+         * programme Feide still reports as active, and what year each started
+         * — and the relational query above loads groups alone. Reading the
+         * group list by itself is exactly what showed a member who had
+         * switched studies whichever one came back first.
+         */
+        const { studyProgram, studyStartYear } = await getUserStudy(
+            c.get("ctx"),
+            user.id,
         );
 
         /**

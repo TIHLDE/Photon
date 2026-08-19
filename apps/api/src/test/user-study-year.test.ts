@@ -193,4 +193,260 @@ describe("PATCH /api/user/:id/study-year", () => {
 
         expect(res.status).toBe(404);
     });
+
+    integrationTest(
+        "corrects only the programme the member is on now",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:manage"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            /**
+             * The case the whole per-programme model exists for: a bachelor
+             * from 2023 who started the master in 2026. Writing the year onto
+             * every row — what this route used to do — collapses those two
+             * intakes into one, which is precisely what made a first-year
+             * master indistinguishable from a third-year bachelor.
+             */
+            await ctx.utils.createTestGroup({
+                slug: "dataingenior",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "digital-samhandling",
+                name: "Digital transformasjon",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "2023",
+                name: "2023",
+                type: "STUDYYEAR",
+            });
+
+            const [bachelor] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "dataingenior",
+                    feideCode: "BIDATA",
+                    displayName: "Dataingeniør",
+                    type: "bachelor",
+                })
+                .returning({ id: schema.studyProgram.id });
+            const [master] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-samhandling",
+                    feideCode: "ITMAIKTSA",
+                    displayName: "Digital Samhandling",
+                    type: "master",
+                })
+                .returning({ id: schema.studyProgram.id });
+
+            const target = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values([
+                {
+                    userId: target.id,
+                    groupSlug: "dataingenior",
+                    role: "member",
+                },
+                {
+                    userId: target.id,
+                    groupSlug: "digital-samhandling",
+                    role: "member",
+                },
+                { userId: target.id, groupSlug: "2023", role: "member" },
+            ]);
+            await ctx.db.insert(schema.studyProgramMembership).values([
+                {
+                    userId: target.id,
+                    studyProgramId: bachelor?.id as number,
+                    startYear: 2023,
+                    startYearSource: "derived",
+                    feideActive: false,
+                },
+                {
+                    userId: target.id,
+                    studyProgramId: master?.id as number,
+                    startYear: 2026,
+                    startYearSource: "derived",
+                    feideActive: true,
+                },
+            ]);
+
+            const res = await client.api.user[":id"]["study-year"].$patch({
+                param: { id: target.id },
+                json: { startYear: 2025 },
+            });
+            expect(res.status).toBe(200);
+
+            const rows = await ctx.db
+                .select({
+                    programme: schema.studyProgram.slug,
+                    startYear: schema.studyProgramMembership.startYear,
+                    source: schema.studyProgramMembership.startYearSource,
+                })
+                .from(schema.studyProgramMembership)
+                .innerJoin(
+                    schema.studyProgram,
+                    eq(
+                        schema.studyProgram.id,
+                        schema.studyProgramMembership.studyProgramId,
+                    ),
+                )
+                .where(eq(schema.studyProgramMembership.userId, target.id));
+
+            // The master is the current programme, so it is what was corrected.
+            expect(
+                rows.find((r) => r.programme === "digital-samhandling"),
+            ).toEqual({
+                programme: "digital-samhandling",
+                startYear: 2025,
+                source: "manual",
+            });
+
+            // The bachelor's own intake is untouched.
+            expect(rows.find((r) => r.programme === "dataingenior")).toEqual({
+                programme: "dataingenior",
+                startYear: 2023,
+                source: "derived",
+            });
+
+            /**
+             * And no group moved. A master owns no cohort group, so the only
+             * group carrying a year here belongs to the bachelor — moving it
+             * would take the member's real intake with it.
+             */
+            expect(await cohortGroupsOf(ctx.db, target.id)).toEqual(["2023"]);
+        },
+    );
+
+    integrationTest(
+        "can be aimed at a programme the member has left",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:manage"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            await ctx.utils.createTestGroup({
+                slug: "dataingenior",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "digital-samhandling",
+                name: "Digital transformasjon",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "2023",
+                name: "2023",
+                type: "STUDYYEAR",
+            });
+
+            const [bachelor] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "dataingenior",
+                    feideCode: "BIDATA",
+                    displayName: "Dataingeniør",
+                    type: "bachelor",
+                })
+                .returning({ id: schema.studyProgram.id });
+            const [master] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-samhandling",
+                    feideCode: "ITMAIKTSA",
+                    displayName: "Digital Samhandling",
+                    type: "master",
+                })
+                .returning({ id: schema.studyProgram.id });
+
+            const target = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values([
+                {
+                    userId: target.id,
+                    groupSlug: "dataingenior",
+                    role: "member",
+                },
+                {
+                    userId: target.id,
+                    groupSlug: "digital-samhandling",
+                    role: "member",
+                },
+                { userId: target.id, groupSlug: "2023", role: "member" },
+            ]);
+            await ctx.db.insert(schema.studyProgramMembership).values([
+                {
+                    userId: target.id,
+                    studyProgramId: bachelor?.id as number,
+                    startYear: 2023,
+                    startYearSource: "derived",
+                    feideActive: false,
+                },
+                {
+                    userId: target.id,
+                    studyProgramId: master?.id as number,
+                    startYear: 2026,
+                    startYearSource: "derived",
+                    feideActive: true,
+                },
+            ]);
+
+            const res = await client.api.user[":id"]["study-year"].$patch({
+                param: { id: target.id },
+                json: { startYear: 2022, studyProgramSlug: "dataingenior" },
+            });
+            expect(res.status).toBe(200);
+
+            const rows = await ctx.db
+                .select({
+                    programme: schema.studyProgram.slug,
+                    startYear: schema.studyProgramMembership.startYear,
+                })
+                .from(schema.studyProgramMembership)
+                .innerJoin(
+                    schema.studyProgram,
+                    eq(
+                        schema.studyProgram.id,
+                        schema.studyProgramMembership.studyProgramId,
+                    ),
+                )
+                .where(eq(schema.studyProgramMembership.userId, target.id));
+
+            expect(
+                rows.find((r) => r.programme === "dataingenior")?.startYear,
+            ).toBe(2022);
+            // The master, which was current, is left alone.
+            expect(
+                rows.find((r) => r.programme === "digital-samhandling")
+                    ?.startYear,
+            ).toBe(2026);
+
+            // The bachelor's cohort group followed its own correction.
+            expect(await cohortGroupsOf(ctx.db, target.id)).toEqual(["2022"]);
+        },
+    );
+
+    integrationTest(
+        "rejects a programme the member has no tie to",
+        async ({ ctx }) => {
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:manage"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            const target = await ctx.utils.createTestUser();
+
+            const res = await client.api.user[":id"]["study-year"].$patch({
+                param: { id: target.id },
+                json: {
+                    startYear: 2024,
+                    studyProgramSlug: "digital-samhandling",
+                },
+            });
+
+            expect(res.status).toBe(400);
+        },
+    );
 });

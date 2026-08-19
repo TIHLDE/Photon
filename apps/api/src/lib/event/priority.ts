@@ -4,6 +4,7 @@ import {
     MIN_CLASS_YEAR,
     computeClassYear,
     isMasterStudySlug,
+    programmeLength,
 } from "@photon/auth/academic-year";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
@@ -58,6 +59,14 @@ type MembershipRow = {
     name: string;
     /** Free-text and upper-case from Lepton — always compare case-insensitively. */
     type: string;
+    /** Whether the slug matches a row in `study_program`. */
+    isStudyProgramme?: boolean;
+    /** Whether that programme is one of the five-year masters. */
+    isMaster?: boolean;
+    /** The member's own start year on that programme, when we have one. */
+    startYear?: number | null;
+    /** Whether Feide reported the programme active at the last login. */
+    feideActive?: boolean | null;
 };
 
 /** What a member is, reduced to the two things a priority pool can ask about. */
@@ -68,64 +77,162 @@ export type UserPriorityFacts = {
 };
 
 /**
- * Which class level a member is on, from their group memberships.
+ * Which class level a member is on.
  *
- * Derived from the `STUDYYEAR`/`STUDY` groups rather than
- * `studyProgramMembership`, for the reason spelled out on {@link UserStudy} in
- * `~/lib/user/study`: the table only gets rows from a Feide login, so a
- * handful of members have one while almost everyone carries the groups from
- * the Lepton migration. Reading the table here would leave the overwhelming
- * majority with no class level at all.
+ * Read from the member's *current* study programme, ranked exactly as
+ * `deriveStudyFromGroups` ranks it, because the answer depends on which
+ * programme you mean. A member who took a three-year bachelor from 2023 and
+ * went on to the master in 2026 is on their fourth year of study and their
+ * first of the master — the same person, two different intakes — and the only
+ * way to tell them apart is to know which programme the year belongs to.
  *
- * Masters are the awkward case. TIHLDE counts the master's first year as 4.
- * klasse, but the cohort group only ever holds a start year — and which start
- * year it is depends on whether Feide handed out a `fc:fs:kull` for the master
- * itself. Rather than guess, we compute both readings and keep the one that
- * lands in the master's own range; a member on a master can only be on 4. or
- * 5. klasse, so at most one of the two can be right.
+ * The cohort groups are still the fallback, and carry most members: they are
+ * all 1423 migrated from Lepton have. A cohort group is programme-less, so
+ * when it is all we have the master ambiguity comes back, and the two-candidate
+ * reading below is what resolves it.
  *
- * Anything outside 1-5 is an alumnus and returns null — they match no class
- * pool, which is the whole point of the range.
+ * The ceiling is the programme's own length, not a flat five. That flat five is
+ * why 398 members who finished a three-year bachelor still counted as fourth-
+ * and fifth-years: nothing capped a bachelor at three, so they stayed
+ * "students" for two years after graduating and would have matched any pool
+ * asking for 4. or 5. klasse. `programmeLength` already encoded the right
+ * answer and was already used in kvark — the frontend called them alumni while
+ * the backend handed them priority.
+ *
+ * Anything outside the programme's range returns null: an alumnus matches no
+ * class pool, which is the whole point of having a range.
  */
 export function computeUserClassYear(
     groups: readonly MembershipRow[],
     now = new Date(),
 ): number | null {
-    let startYear: number | null = null;
-    let onMaster = false;
+    let current: MembershipRow | null = null;
+    let latestCohort: number | null = null;
 
     for (const group of groups) {
         const type = group.type.toLowerCase();
 
         if (type === "study") {
-            onMaster ||= isMasterStudySlug(group.slug);
+            if (current === null || outranksForStudy(group, current)) {
+                current = group;
+            }
             continue;
         }
 
         if (type !== "studyyear") continue;
 
-        // Several cohorts linger on one account — a bachelor who continued
-        // into a master, or someone who transferred — and the newest is the
-        // one the class level follows.
         const year = Number.parseInt(group.name, 10);
-        if (Number.isFinite(year) && (startYear === null || year > startYear)) {
-            startYear = year;
+        if (
+            Number.isFinite(year) &&
+            (latestCohort === null || year > latestCohort)
+        ) {
+            latestCohort = year;
         }
     }
+
+    const onMaster = current
+        ? Boolean(current.isMaster) || isMasterStudySlug(current.slug)
+        : false;
+
+    /**
+     * The programme's own year is unambiguous — it says when *this* degree
+     * started. The cohort group does not: for a master it almost always holds
+     * the year their bachelor began.
+     */
+    const ownYear = current?.startYear ?? null;
+    const startYear = ownYear ?? latestCohort;
 
     if (startYear === null) return null;
 
     const base = computeClassYear(startYear, now);
-    const candidates = onMaster ? [base + MASTER_CLASS_OFFSET, base] : [base];
+
+    /**
+     * With the master's own intake there is nothing to guess: year one of a
+     * master is 4. klasse. Without it we compute both readings and keep the one
+     * that lands in the master's range, since a master student can only be on
+     * 4. or 5. klasse and at most one of the two can be right.
+     */
+    const candidates =
+        onMaster && ownYear !== null
+            ? [base + MASTER_CLASS_OFFSET]
+            : onMaster
+              ? [base + MASTER_CLASS_OFFSET, base]
+              : [base];
+
+    const ceiling = current
+        ? programmeLength(current.slug)
+        : onMaster
+          ? MAX_CLASS_YEAR
+          : MIN_CLASS_YEAR;
 
     for (const candidate of candidates) {
         const floor = onMaster ? MASTER_CLASS_OFFSET + 1 : MIN_CLASS_YEAR;
-        if (candidate >= floor && candidate <= MAX_CLASS_YEAR) {
+        if (candidate >= floor && candidate <= ceiling) {
             return candidate;
         }
     }
 
     return null;
+}
+
+/**
+ * Whether `a` is a more current study than `b`.
+ *
+ * Deliberately the same order as `deriveStudyFromGroups` in `~/lib/user/study`:
+ * the study a member is shown as taking and the study their class level is
+ * computed from must never be two different programmes.
+ */
+function outranksForStudy(a: MembershipRow, b: MembershipRow): boolean {
+    if ((a.isStudyProgramme === false) !== (b.isStudyProgramme === false)) {
+        return b.isStudyProgramme === false;
+    }
+
+    const rank = (active: boolean | null | undefined) =>
+        active === true ? 2 : active === false ? 0 : 1;
+    if (rank(a.feideActive) !== rank(b.feideActive)) {
+        return rank(a.feideActive) > rank(b.feideActive);
+    }
+
+    const yearA = a.startYear ?? null;
+    const yearB = b.startYear ?? null;
+    if (yearA !== yearB) {
+        if (yearA === null) return false;
+        if (yearB === null) return true;
+        return yearA > yearB;
+    }
+
+    const masterA = Boolean(a.isMaster) || isMasterStudySlug(a.slug);
+    const masterB = Boolean(b.isMaster) || isMasterStudySlug(b.slug);
+    if (masterA !== masterB) return masterA;
+
+    return a.slug.localeCompare(b.slug) < 0;
+}
+
+/**
+ * Reshape a joined row into what the class-level maths reads.
+ *
+ * The programme columns come from LEFT joins, so every non-study group in the
+ * same pass carries nulls here — which is exactly right: they are not studies
+ * and must not be ranked as one.
+ */
+function toMembershipRow(row: {
+    slug: string;
+    name: string;
+    type: string;
+    programmeId: number | null;
+    programmeType: string | null;
+    startYear: number | null;
+    feideActive: boolean | null;
+}): MembershipRow {
+    return {
+        slug: row.slug,
+        name: row.name,
+        type: row.type,
+        isStudyProgramme: row.programmeId !== null,
+        isMaster: row.programmeType === "master",
+        startYear: row.startYear,
+        feideActive: row.feideActive,
+    };
 }
 
 /**
@@ -144,17 +251,38 @@ export async function getUserPriorityFacts(
             slug: schema.group.slug,
             name: schema.group.name,
             type: schema.group.type,
+            programmeId: schema.studyProgram.id,
+            programmeType: schema.studyProgram.type,
+            startYear: schema.studyProgramMembership.startYear,
+            feideActive: schema.studyProgramMembership.feideActive,
         })
         .from(schema.groupMembership)
         .innerJoin(
             schema.group,
             eq(schema.group.slug, schema.groupMembership.groupSlug),
         )
+        .leftJoin(
+            schema.studyProgram,
+            eq(schema.studyProgram.slug, schema.group.slug),
+        )
+        .leftJoin(
+            schema.studyProgramMembership,
+            and(
+                eq(
+                    schema.studyProgramMembership.userId,
+                    schema.groupMembership.userId,
+                ),
+                eq(
+                    schema.studyProgramMembership.studyProgramId,
+                    schema.studyProgram.id,
+                ),
+            ),
+        )
         .where(eq(schema.groupMembership.userId, userId));
 
     return {
         groupSlugs: new Set(rows.map((row) => row.slug)),
-        classYear: computeUserClassYear(rows, now),
+        classYear: computeUserClassYear(rows.map(toMembershipRow), now),
     };
 }
 
@@ -277,11 +405,32 @@ export async function loadPrioritization(
                 slug: schema.group.slug,
                 name: schema.group.name,
                 type: schema.group.type,
+                programmeId: schema.studyProgram.id,
+                programmeType: schema.studyProgram.type,
+                startYear: schema.studyProgramMembership.startYear,
+                feideActive: schema.studyProgramMembership.feideActive,
             })
             .from(schema.groupMembership)
             .innerJoin(
                 schema.group,
                 eq(schema.group.slug, schema.groupMembership.groupSlug),
+            )
+            .leftJoin(
+                schema.studyProgram,
+                eq(schema.studyProgram.slug, schema.group.slug),
+            )
+            .leftJoin(
+                schema.studyProgramMembership,
+                and(
+                    eq(
+                        schema.studyProgramMembership.userId,
+                        schema.groupMembership.userId,
+                    ),
+                    eq(
+                        schema.studyProgramMembership.studyProgramId,
+                        schema.studyProgram.id,
+                    ),
+                ),
             )
             .where(inArray(schema.groupMembership.userId, ids)),
         db
@@ -304,7 +453,7 @@ export async function loadPrioritization(
     const rowsByUser = new Map<string, MembershipRow[]>();
     for (const membership of memberships) {
         const rows = rowsByUser.get(membership.userId) ?? [];
-        rows.push(membership);
+        rows.push(toMembershipRow(membership));
         rowsByUser.set(membership.userId, rows);
     }
 

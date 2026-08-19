@@ -160,6 +160,10 @@ export const updateStudyYearInputSchema = Schema(
                 description:
                     "Cohort start year, e.g. 2026. Null clears the cohort and removes the member's STUDYYEAR group.",
             }),
+        studyProgramSlug: z.string().trim().min(1).max(64).nullish().meta({
+            description:
+                "Which study programme the year applies to, e.g. 'digital-samhandling'. Omit to correct the member's current programme, which is what the admin list shows. Only members who have switched studies have more than one.",
+        }),
     }),
 );
 

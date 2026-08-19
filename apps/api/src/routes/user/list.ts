@@ -49,29 +49,86 @@ export const listUsersRoute = route().get(
         } = c.req.valid("query");
 
         /**
-         * Study programme and cohort mirror the group-member list: they are a
-         * projection of Feide onto ordinary groups (types STUDY/STUDYYEAR),
-         * not `studyProgramMembership` — that table only gets rows from a
-         * Feide login, so everyone migrated from Lepton is missing there. The
-         * type is stored in UPPERCASE from Lepton, hence the lower() compare.
+         * The member's *current* study programme, one row each.
+         *
+         * `DISTINCT ON` keeps the first row per member, so the ordering below
+         * is the whole decision. It used to be `order by user_id, group.slug`,
+         * which is deterministic and wrong: for a member who took Digital
+         * forretningsutvikling and went on to the master, the alphabetically
+         * first slug is the bachelor they left, so the list showed the old
+         * study. That is the bug this endpoint was reported for.
+         *
+         * The order matches {@link deriveStudyFromGroups}, and has to: the
+         * profile and this list showing different studies for the same person
+         * is its own kind of wrong.
+         *
+         * The join to `study_program` is not decoration. `type = 'STUDY'` is
+         * not proof of a study — `fondsforvalter` carries that type in
+         * production without being one — and ranking on the join is what keeps
+         * it from reading as somebody's degree. See
+         * https://github.com/TIHLDE/Photon/issues/621.
          */
         const studyProgram = db
             .selectDistinctOn([schema.groupMembership.userId], {
                 userId: schema.groupMembership.userId,
                 slug: schema.group.slug,
                 name: schema.group.name,
+                // Named apart from the cohort subquery's `start_year`: both
+                // are joined into the same select, and an unqualified
+                // reference to a name they share is ambiguous in Postgres.
+                programmeStartYear: sql<
+                    number | null
+                >`${schema.studyProgramMembership.startYear}`.as(
+                    "programme_start_year",
+                ),
             })
             .from(schema.groupMembership)
             .innerJoin(
                 schema.group,
                 eq(schema.group.slug, schema.groupMembership.groupSlug),
             )
+            .leftJoin(
+                schema.studyProgram,
+                eq(schema.studyProgram.slug, schema.group.slug),
+            )
+            .leftJoin(
+                schema.studyProgramMembership,
+                and(
+                    eq(
+                        schema.studyProgramMembership.userId,
+                        schema.groupMembership.userId,
+                    ),
+                    eq(
+                        schema.studyProgramMembership.studyProgramId,
+                        schema.studyProgram.id,
+                    ),
+                ),
+            )
             .where(sql`lower(${schema.group.type}) = 'study'`)
-            .orderBy(schema.groupMembership.userId, schema.group.slug)
+            .orderBy(
+                schema.groupMembership.userId,
+                // A group backed by a real study programme beats one that is
+                // not — `fondsforvalter` must never read as someone's degree,
+                // but a study group added before its programme row exists
+                // should still show rather than leaving the member blank.
+                sql`(${schema.studyProgram.id} is not null) desc`,
+                // Feide saying "enrolled" wins; "no answer" beats "not
+                // enrolled", which is the only one of the three that is
+                // evidence against.
+                sql`(case when ${schema.studyProgramMembership.feideActive} then 2
+                          when ${schema.studyProgramMembership.feideActive} is null then 1
+                          else 0 end) desc`,
+                sql`${schema.studyProgramMembership.startYear} desc nulls last`,
+                sql`(${schema.studyProgram.type} = 'master') desc`,
+                schema.studyProgram.slug,
+            )
             .as("study_program");
 
-        // Several cohorts can linger on one account (a bachelor who continued
-        // into a master). The most recent one is the useful one.
+        /**
+         * The cohort year, used only when the current programme has no start
+         * year of its own — which is the 1423 members who carry groups from
+         * the Lepton migration and have no programme row at all.
+         */
         const cohort = db
             .select({
                 userId: schema.groupMembership.userId,
@@ -129,7 +186,11 @@ export const listUsersRoute = route().get(
                 banned: schema.user.banned,
                 createdAt: schema.user.createdAt,
                 studyProgram: studyProgram.name,
-                studyStartYear: cohort.startYear,
+                // The current programme's own year, falling back to the cohort
+                // group for the members who have no programme row at all.
+                studyStartYear: sql<
+                    number | null
+                >`coalesce(${studyProgram.programmeStartYear}, ${cohort.startYear})`,
                 approvalStatus: schema.user.approvalStatus,
                 email: schema.user.email,
             })

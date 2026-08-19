@@ -5,9 +5,9 @@ import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
-    STUDY_GROUP_TYPES,
     type UserStudy,
     deriveStudyFromGroups,
+    loadStudyGroupRows,
 } from "~/lib/user/study";
 import { captureAuth } from "~/middleware/auth";
 import { memberListSchema } from "../schema";
@@ -74,41 +74,7 @@ export const listMembersRoute = route().get(
          * the derivation itself stays the shared one.
          */
         const userIds = members.map((m) => m.userId);
-        const studyRows =
-            userIds.length === 0
-                ? []
-                : await db
-                      .select({
-                          userId: schema.groupMembership.userId,
-                          name: schema.group.name,
-                          type: schema.group.type,
-                      })
-                      .from(schema.groupMembership)
-                      .innerJoin(
-                          schema.group,
-                          eq(
-                              schema.groupMembership.groupSlug,
-                              schema.group.slug,
-                          ),
-                      )
-                      .where(
-                          and(
-                              inArray(schema.groupMembership.userId, userIds),
-                              inArray(sql`lower(${schema.group.type})`, [
-                                  ...STUDY_GROUP_TYPES,
-                              ]),
-                          ),
-                      );
-
-        const groupsByUser = new Map<
-            string,
-            { name: string; type: string }[]
-        >();
-        for (const row of studyRows) {
-            const entry = groupsByUser.get(row.userId) ?? [];
-            entry.push({ name: row.name, type: row.type });
-            groupsByUser.set(row.userId, entry);
-        }
+        const groupsByUser = await loadStudyGroupRows(c.get("ctx"), userIds);
 
         const studyByUser = new Map<string, UserStudy>();
         for (const [userId, groups] of groupsByUser) {

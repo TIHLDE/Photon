@@ -266,21 +266,28 @@ export const updateUserStudyMutation = mutationOptions({
 /**
  * Rett kullet til et medlem for hånd.
  *
- * Feide gir ikke kull for alle studier, så nye medlemmer antas å være
- * 1. klassinger. Denne overstyrer den antakelsen permanent — synken rører
- * aldri et kull som er satt manuelt.
+ * Feide gir ikke kull for alle studier, så året utledes for digfor og
+ * masteren. Denne overstyrer utledningen permanent — synken rører aldri et
+ * kull som er satt manuelt — og treffer bare ett studie om gangen.
  */
 export const updateUserStudyYearMutation = mutationOptions({
     mutationFn: ({
         userId,
         startYear,
+        studyProgramSlug,
     }: {
         userId: string;
         startYear: number | null;
+        /**
+         * Hvilket studie året gjelder. Utelates normalt — da treffer
+         * rettingen studiet medlemmet går på nå. Bare de som har byttet
+         * studium har mer enn ett.
+         */
+        studyProgramSlug?: string | null;
     }) =>
         apiClient.patch("/api/user/{id}/study-year", {
             params: { id: userId },
-            json: { startYear },
+            json: { startYear, studyProgramSlug },
         }),
     onSuccess(_, __, ___, ctx) {
         // Kullet vises både i admin-lista og på profilen.
