@@ -20,31 +20,81 @@ export type UserStudy = {
 /** The two group types that make up the projection, lower-cased. */
 export const STUDY_GROUP_TYPES = ["study", "studyyear"] as const;
 
-type StudyGroupRow = {
-    /** Group name; the cohort's name is its year, e.g. "2023". */
+export type StudyGroupRow = {
+    /** Group slug. A cohort group's slug is its year, e.g. "2023". */
+    slug: string;
+    /** Group name; the cohort's name is its year too. */
     name: string;
     /** Group type. Compared case-insensitively — Lepton stored it upper-case. */
     type: string;
+    /**
+     * Whether this slug matches a row in `study_program`.
+     *
+     * `type = 'STUDY'` is not proof of a study: `fondsforvalter` carries that
+     * type in production without being one, and would otherwise read as
+     * someone's degree. Callers join `study_program` and pass the result here;
+     * a group without one sorts last rather than disappearing. See
+     * https://github.com/TIHLDE/Photon/issues/621.
+     */
+    isStudyProgramme?: boolean;
+    /** Whether the programme is one of the five-year masters. */
+    isMaster?: boolean;
+    /** `studyProgramMembership.startYear`, when the caller loaded it. */
+    startYear?: number | null;
+    /** `studyProgramMembership.feideActive`, when the caller loaded it. */
+    feideActive?: boolean | null;
 };
+
+/**
+ * How sure we are that a member is enrolled on a programme *right now*.
+ *
+ * `true` is Feide saying so at the last login. `null` is no answer — the
+ * member has not logged in with Feide since the Lepton migration, which is
+ * most of them. `false` is Feide saying no, which is the only one of the three
+ * that is evidence against, so it sorts below "we have no idea".
+ */
+function enrolmentRank(feideActive: boolean | null | undefined): number {
+    if (feideActive === true) return 2;
+    if (feideActive === false) return 0;
+    return 1;
+}
 
 /**
  * Derive programme and cohort from a member's groups.
  *
  * Pure, so callers that already hold the memberships do not pay for a second
- * query. Several cohorts can linger on one account — a bachelor who continued
- * into a master, or a member who transferred between programmes — and the most
- * recent one is the useful one, since it is what the class year is computed
- * from.
+ * query.
+ *
+ * A member can hold several study groups — the groups are additive on purpose,
+ * so they accumulate everything someone has ever studied — and this used to
+ * take whichever came back first. That is the bug the whole change exists for:
+ * Postgres returns rows in whatever order it likes, so a member who had
+ * switched programmes was shown an arbitrary one of them, and for the member
+ * who reported it that meant his old bachelor rather than the master he had
+ * started.
+ *
+ * The order, most-current first:
+ *
+ * 1. **Feide says enrolled**, the only signal that means "now".
+ * 2. **The later start year**, which is what separates a master begun in 2026
+ *    from the bachelor it followed. Unknown years sort last, never first.
+ * 3. **Master before bachelor**, then **slug** — neither decides a real case,
+ *    but together they mean no caller can ever depend on Postgres's ordering
+ *    again.
+ *
+ * The cohort year follows the programme that wins, falling back to the highest
+ * cohort group when we have no year for it. That fallback carries the 1423
+ * members who have groups but no programme row at all.
  */
 export function deriveStudyFromGroups(groups: StudyGroupRow[]): UserStudy {
-    let studyProgram: string | null = null;
-    let studyStartYear: number | null = null;
+    let chosen: StudyGroupRow | null = null;
+    let latestCohort: number | null = null;
 
     for (const group of groups) {
         const type = group.type.toLowerCase();
 
         if (type === "study") {
-            studyProgram ??= group.name;
+            if (chosen === null || outranks(group, chosen)) chosen = group;
             continue;
         }
 
@@ -53,45 +103,135 @@ export function deriveStudyFromGroups(groups: StudyGroupRow[]): UserStudy {
         const year = Number.parseInt(group.name, 10);
         if (
             Number.isFinite(year) &&
-            (studyStartYear === null || year > studyStartYear)
+            (latestCohort === null || year > latestCohort)
         ) {
-            studyStartYear = year;
+            latestCohort = year;
         }
     }
 
-    return { studyProgram, studyStartYear };
+    return {
+        studyProgram: chosen?.name ?? null,
+        studyStartYear: chosen?.startYear ?? latestCohort,
+    };
+}
+
+/** Whether `a` is a more current programme than `b`; see the order above. */
+function outranks(a: StudyGroupRow, b: StudyGroupRow): boolean {
+    /**
+     * A group that matches a real study programme beats one that does not.
+     * Ranked rather than filtered out: `fondsforvalter` must never win over
+     * someone's actual degree, but a curated study group added before its
+     * `study_program` row exists should still show up rather than leaving the
+     * member with no study at all.
+     */
+    if ((a.isStudyProgramme === false) !== (b.isStudyProgramme === false)) {
+        return b.isStudyProgramme === false;
+    }
+
+    const rankA = enrolmentRank(a.feideActive);
+    const rankB = enrolmentRank(b.feideActive);
+    if (rankA !== rankB) return rankA > rankB;
+
+    const yearA = a.startYear ?? null;
+    const yearB = b.startYear ?? null;
+    if (yearA !== yearB) {
+        if (yearA === null) return false;
+        if (yearB === null) return true;
+        return yearA > yearB;
+    }
+
+    if (Boolean(a.isMaster) !== Boolean(b.isMaster)) return Boolean(a.isMaster);
+
+    return a.slug.localeCompare(b.slug) < 0;
 }
 
 /**
- * Look up a single member's programme and cohort.
+ * The study and cohort groups of a set of members, with everything
+ * {@link deriveStudyFromGroups} needs to rank them.
  *
- * For callers that do not already have the memberships loaded. Prefer
- * {@link deriveStudyFromGroups} when they do.
+ * One query for the whole page or export rather than one per member, so the
+ * ordering stays the shared one instead of each endpoint growing its own. The
+ * join to `study_program` is a LEFT join on purpose: cohort groups have no
+ * programme, and an inner join would drop them along with the cohort year.
  */
-export async function getUserStudy(
+export async function loadStudyGroupRows(
     ctx: AppContext,
-    userId: string,
-): Promise<UserStudy> {
+    userIds: string[],
+): Promise<Map<string, StudyGroupRow[]>> {
+    const byUser = new Map<string, StudyGroupRow[]>();
+    if (userIds.length === 0) return byUser;
+
     const rows = await ctx.db
         .select({
+            userId: schema.groupMembership.userId,
+            slug: schema.group.slug,
             name: schema.group.name,
             type: schema.group.type,
+            programmeId: schema.studyProgram.id,
+            programmeType: schema.studyProgram.type,
+            startYear: schema.studyProgramMembership.startYear,
+            feideActive: schema.studyProgramMembership.feideActive,
         })
         .from(schema.groupMembership)
         .innerJoin(
             schema.group,
             eq(schema.group.slug, schema.groupMembership.groupSlug),
         )
+        .leftJoin(
+            schema.studyProgram,
+            eq(schema.studyProgram.slug, schema.group.slug),
+        )
+        .leftJoin(
+            schema.studyProgramMembership,
+            and(
+                eq(
+                    schema.studyProgramMembership.userId,
+                    schema.groupMembership.userId,
+                ),
+                eq(
+                    schema.studyProgramMembership.studyProgramId,
+                    schema.studyProgram.id,
+                ),
+            ),
+        )
         .where(
             and(
-                eq(schema.groupMembership.userId, userId),
+                inArray(schema.groupMembership.userId, userIds),
                 inArray(sql`lower(${schema.group.type})`, [
                     ...STUDY_GROUP_TYPES,
                 ]),
             ),
         );
 
-    return deriveStudyFromGroups(rows);
+    for (const row of rows) {
+        const entry = byUser.get(row.userId) ?? [];
+        entry.push({
+            slug: row.slug,
+            name: row.name,
+            type: row.type,
+            isStudyProgramme: row.programmeId !== null,
+            isMaster: row.programmeType === "master",
+            startYear: row.startYear,
+            feideActive: row.feideActive,
+        });
+        byUser.set(row.userId, entry);
+    }
+
+    return byUser;
+}
+
+/**
+ * Look up a single member's programme and cohort.
+ *
+ * For callers that do not already have the memberships loaded. Prefer
+ * {@link loadStudyGroupRows} for more than one member.
+ */
+export async function getUserStudy(
+    ctx: AppContext,
+    userId: string,
+): Promise<UserStudy> {
+    const byUser = await loadStudyGroupRows(ctx, [userId]);
+    return deriveStudyFromGroups(byUser.get(userId) ?? []);
 }
 
 /**
