@@ -143,3 +143,117 @@ export async function hasActiveStudyProgram(
 
     return rows.length > 0;
 }
+
+/**
+ * One study programme a member belongs to, with everything the ordering below
+ * needs to rank it.
+ */
+export type MemberStudyProgram = {
+    id: number;
+    slug: string;
+    displayName: string;
+    isMaster: boolean;
+    startYear: number | null;
+    /** Whether Feide reported this programme as active at the last login. */
+    feideActive: boolean;
+};
+
+/**
+ * Every study programme a member has any tie to, most-current first.
+ *
+ * "Current" cannot be read off a single column. The study *groups* are additive
+ * on purpose — "én gang TIHLDE-medlem, alltid TIHLDE-medlem" — so they hold
+ * everything a member has ever studied, and the programme table only gets rows
+ * from a Feide login, so in production just 502 of 1925 members have one at
+ * all. Either source alone answers the wrong question for most people.
+ *
+ * So both are read, and the ordering decides:
+ *
+ * 1. **`feideActive`**, which is the only field that means "enrolled now".
+ * 2. **The later start year**, which separates a master begun in 2026 from the
+ *    bachelor it followed. Rows without a year sort last — never first, or a
+ *    programme we know nothing about would outrank one we do.
+ * 3. **Master before bachelor**, then **slug**. Neither will decide a real case;
+ *    they are here so no caller ever depends on the order Postgres happened to
+ *    return rows in. That arbitrary order is the original bug: members who had
+ *    switched programmes were shown whichever study came back first.
+ *
+ * Note the join to `study_program`. Filtering on `group.type = 'STUDY'` alone is
+ * not enough — the group `fondsforvalter` carries that type in production
+ * without being a study at all, and would otherwise read as someone's degree.
+ * See https://github.com/TIHLDE/Photon/issues/621.
+ */
+export async function listMemberStudyPrograms(
+    ctx: AppContext,
+    userId: string,
+): Promise<MemberStudyProgram[]> {
+    const rows = await ctx.db
+        .select({
+            id: schema.studyProgram.id,
+            slug: schema.studyProgram.slug,
+            displayName: schema.studyProgram.displayName,
+            type: schema.studyProgram.type,
+            startYear: schema.studyProgramMembership.startYear,
+            feideActive: schema.studyProgramMembership.feideActive,
+            groupSlug: schema.groupMembership.groupSlug,
+        })
+        .from(schema.studyProgram)
+        .leftJoin(
+            schema.studyProgramMembership,
+            and(
+                eq(
+                    schema.studyProgramMembership.studyProgramId,
+                    schema.studyProgram.id,
+                ),
+                eq(schema.studyProgramMembership.userId, userId),
+            ),
+        )
+        .leftJoin(
+            schema.groupMembership,
+            and(
+                eq(schema.groupMembership.groupSlug, schema.studyProgram.slug),
+                eq(schema.groupMembership.userId, userId),
+            ),
+        );
+
+    return rows
+        .filter(
+            (row) =>
+                row.groupSlug !== null ||
+                row.feideActive !== null ||
+                row.startYear !== null,
+        )
+        .map((row) => ({
+            id: row.id,
+            slug: row.slug,
+            displayName: row.displayName,
+            isMaster: row.type === "master",
+            startYear: row.startYear,
+            feideActive: row.feideActive === true,
+        }))
+        .sort((a, b) => {
+            if (a.feideActive !== b.feideActive) return a.feideActive ? -1 : 1;
+            if (a.startYear !== b.startYear) {
+                if (a.startYear === null) return 1;
+                if (b.startYear === null) return -1;
+                return b.startYear - a.startYear;
+            }
+            if (a.isMaster !== b.isMaster) return a.isMaster ? -1 : 1;
+            return a.slug.localeCompare(b.slug);
+        });
+}
+
+/**
+ * The programme a member is on *now*, or null when we have no tie to any.
+ *
+ * Thin wrapper over {@link listMemberStudyPrograms} so callers that want the
+ * single answer do not re-implement the ordering — which is the whole point of
+ * having it in one place.
+ */
+export async function getCurrentStudyProgram(
+    ctx: AppContext,
+    userId: string,
+): Promise<MemberStudyProgram | null> {
+    const [current] = await listMemberStudyPrograms(ctx, userId);
+    return current ?? null;
+}

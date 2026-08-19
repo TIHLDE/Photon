@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { listMemberStudyPrograms } from "~/lib/user/study";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
@@ -21,11 +22,19 @@ import {
  * for the first time — they lose priority on their own graduation ball, notice,
  * and ask us to fix it.
  *
- * Writing `manual` is the point: it outranks Feide in the sync's conflict
- * guard, so the correction survives every later login instead of being quietly
- * reverted. The three group-membership routes still refuse to touch STUDYYEAR
- * groups directly — this is the only sanctioned way in, and it keeps the
- * cohort group and the study-programme row from drifting apart.
+ * Writing `manual` is the point: it outranks every other source in the sync's
+ * conflict guard, so the correction survives every later login instead of being
+ * quietly reverted. The three group-membership routes still refuse to touch
+ * STUDYYEAR groups directly — this is the only sanctioned way in, and it keeps
+ * the cohort group and the study-programme row from drifting apart.
+ *
+ * Scoped to one programme. It used to write the year onto *every* row the
+ * member had, which quietly destroys the one thing this whole model exists to
+ * express: a member who took a bachelor from 2023 and started a master in 2026
+ * has two programmes with two different intakes, and flattening them is exactly
+ * the confusion that left first-year masters indistinguishable from
+ * third-year bachelors. Without an explicit programme the correction lands on
+ * the member's *current* one — the study the admin sees in the row they clicked.
  */
 export const updateStudyYearRoute = route().patch(
     "/:id/study-year",
@@ -48,9 +57,10 @@ export const updateStudyYearRoute = route().patch(
     requireAccess({ permission: "users:manage" }),
     validator("json", updateStudyYearInputSchema),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const userId = c.req.param("id");
-        const { startYear } = c.req.valid("json");
+        const { startYear, studyProgramSlug } = c.req.valid("json");
 
         const user = await db.query.user.findFirst({
             where: eq(schema.user.id, userId),
@@ -63,62 +73,60 @@ export const updateStudyYearRoute = route().patch(
             });
         }
 
-        await db.transaction(async (tx) => {
-            /**
-             * Every programme row, not just one. A member who transferred has
-             * a row per programme, and leaving one behind would let the sync
-             * keep deriving the old cohort group from it on the next login.
-             */
-            const updated = await tx
-                .update(schema.studyProgramMembership)
-                .set({
-                    startYear,
-                    startYearSource: "manual",
-                    updatedAt: new Date(),
-                })
-                .where(eq(schema.studyProgramMembership.userId, userId))
-                .returning({
-                    userId: schema.studyProgramMembership.userId,
-                });
+        const programmes = await listMemberStudyPrograms(ctx, userId);
 
-            /**
-             * Members migrated from Lepton have no programme row — 1699 of
-             * 1707 in production — because the table is only ever written by a
-             * Feide login. Without one there is nowhere to record that the
-             * cohort was set by hand, and the next login that *does* bring a
-             * year from Feide would quietly win.
-             *
-             * So create the row from the member's STUDY group, which carries
-             * the same slug as its study programme by the convention the seed
-             * establishes and `syncDerivedStudyGroups` relies on.
-             */
-            if (updated.length === 0 && startYear !== null) {
-                const [programme] = await tx
-                    .select({ id: schema.studyProgram.id })
-                    .from(schema.groupMembership)
-                    .innerJoin(
-                        schema.group,
-                        eq(schema.group.slug, schema.groupMembership.groupSlug),
-                    )
-                    .innerJoin(
-                        schema.studyProgram,
-                        eq(schema.studyProgram.slug, schema.group.slug),
-                    )
+        /**
+         * Without an explicit programme the correction lands on the member's
+         * current one, which is the study the admin was looking at when they
+         * opened the dialog. Passing the slug is for the rarer case of
+         * correcting the programme they are *not* on any more.
+         */
+        const target = studyProgramSlug
+            ? programmes.find((p) => p.slug === studyProgramSlug)
+            : programmes[0];
+
+        if (studyProgramSlug && !target) {
+            throw new HTTPException(400, {
+                message:
+                    `User "${userId}" has no tie to study programme ` +
+                    `"${studyProgramSlug}". They belong to: ` +
+                    (programmes.map((p) => p.slug).join(", ") || "none"),
+            });
+        }
+
+        await db.transaction(async (tx) => {
+            if (target) {
+                const [updated] = await tx
+                    .update(schema.studyProgramMembership)
+                    .set({
+                        startYear,
+                        startYearSource: "manual",
+                        updatedAt: new Date(),
+                    })
                     .where(
                         and(
-                            eq(schema.groupMembership.userId, userId),
-                            sql`upper(${schema.group.type}) = 'STUDY'`,
+                            eq(schema.studyProgramMembership.userId, userId),
+                            eq(
+                                schema.studyProgramMembership.studyProgramId,
+                                target.id,
+                            ),
                         ),
                     )
-                    .limit(1);
+                    .returning({
+                        userId: schema.studyProgramMembership.userId,
+                    });
 
-                // No study group either (honorary members, long-gone alumni).
-                // The cohort group below is then the only record, which is
-                // what every read uses anyway.
-                if (programme) {
+                /**
+                 * Members migrated from Lepton have no programme row — the
+                 * table is only ever written by a Feide login — so there is
+                 * nowhere to record that the cohort was set by hand, and the
+                 * next login that *does* bring a year would quietly win.
+                 * Create it from the programme we just resolved.
+                 */
+                if (!updated && startYear !== null) {
                     await tx.insert(schema.studyProgramMembership).values({
                         userId,
-                        studyProgramId: programme.id,
+                        studyProgramId: target.id,
                         startYear,
                         startYearSource: "manual",
                     });
@@ -126,27 +134,49 @@ export const updateStudyYearRoute = route().patch(
             }
 
             /**
-             * Clear every cohort group before adding the new one. Members
-             * migrated from Lepton can carry more than one — a bachelor who
-             * continued into a master — and both `deriveStudy` and the profile
-             * endpoint take `Math.max()`, so a leftover higher year would beat
-             * the correction we were just asked to make.
+             * A master owns no cohort group — its intake lives on the
+             * programme row alone, because a cohort group is slugged as a bare
+             * year and would mix master students into the inherited pools
+             * aimed at that year's bachelor intake. So correcting a master's
+             * year must leave the member's groups exactly as they are: the
+             * only group carrying a year is their bachelor's, and it is not
+             * ours to move.
              */
-            const cohortSlugs = await tx
-                .select({ slug: schema.group.slug })
-                .from(schema.group)
-                .where(sql`upper(${schema.group.type}) = 'STUDYYEAR'`);
+            if (target?.isMaster) return;
 
-            if (cohortSlugs.length > 0) {
-                await tx.delete(schema.groupMembership).where(
-                    and(
-                        eq(schema.groupMembership.userId, userId),
-                        inArray(
-                            schema.groupMembership.groupSlug,
-                            cohortSlugs.map((g) => g.slug),
+            /**
+             * Clear the cohort group the correction replaces, then add the new
+             * one. Only the year this programme used to hold: a member who
+             * transferred carries a group per intake, and the blanket delete
+             * this once did took their history with it.
+             *
+             * With no previous year on record there is nothing to aim at, so
+             * every cohort group goes — the member has no per-programme
+             * history for us to preserve, and leaving a stale year behind
+             * would beat the correction, since `deriveStudyFromGroups` takes
+             * `Math.max()` over the groups.
+             */
+            const doomed =
+                target?.startYear !== null && target?.startYear !== undefined
+                    ? [String(target.startYear)]
+                    : (
+                          await tx
+                              .select({ slug: schema.group.slug })
+                              .from(schema.group)
+                              .where(
+                                  sql`upper(${schema.group.type}) = 'STUDYYEAR'`,
+                              )
+                      ).map((g) => g.slug);
+
+            if (doomed.length > 0) {
+                await tx
+                    .delete(schema.groupMembership)
+                    .where(
+                        and(
+                            eq(schema.groupMembership.userId, userId),
+                            inArray(schema.groupMembership.groupSlug, doomed),
                         ),
-                    ),
-                );
+                    );
             }
 
             if (startYear === null) return;
