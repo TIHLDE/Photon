@@ -22,6 +22,13 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Label } from "@tihlde/ui/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
 import { Switch } from "@tihlde/ui/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo } from "react";
@@ -79,7 +86,23 @@ type PoolItem = {
     /** Kort typetekst under navnet, f.eks. «Studie» eller «Komité». */
     hint: string;
     pool: PriorityPool;
+    /**
+     * Om valget kan snevres inn til ett klassetrinn i feltet ved siden av.
+     *
+     * Bare bachelorstudiene. Masteren har trinnet i selve valget, og alt annet
+     * avvises av API-et hvis det kommer med et trinn.
+     */
+    supportsClassYear: boolean;
 };
+
+/** Trinnene et bachelorstudium kan snevres inn til. */
+const BACHELOR_CLASS_YEARS = Array.from(
+    { length: MASTER_CLASS_OFFSET },
+    (_, i) => i + 1,
+);
+
+/** `Select` har ingen tom verdi, så «alle trinn» trenger en egen. */
+const ALL_CLASS_YEARS = "all";
 
 /**
  * Norske etiketter for gruppetypene. Typene ligger i databasen som fritekst i
@@ -102,6 +125,10 @@ const TYPE_LABELS: Record<string, string> = {
  * arrangør-unntaket i {@link buildPoolItems}. Kull (`STUDYYEAR`) er også ute:
  * de er erstattet av klassetrinn, som følger årene i stedet for å fryse fast
  * til ett opptaksår. `PRIVATE` er bøtelag og angår ingen andre.
+ *
+ * `TIHLDE` er ute fordi den gruppa er alle: å prioritere den er det samme som
+ * ikke å prioritere noen, og sammen med «bare prioriterte» ser den ut som en
+ * begrensning uten å være det.
  */
 const SELECTABLE_TYPES = new Set([
     "STUDY",
@@ -109,8 +136,16 @@ const SELECTABLE_TYPES = new Set([
     "BOARD",
     "SUBGROUP",
     "SPORTSTEAM",
-    "TIHLDE",
 ]);
+
+/**
+ * Grupper som ligger som `STUDY` i basen uten å være et studium noen går på.
+ *
+ * «Fondsforvalter» er et verv, og «Drift (studie)» er utfaset — begge ville
+ * stått i lista som et studieprogram å prioritere, og ingen av dem har
+ * medlemmer det gir mening å slippe fram i køen.
+ */
+const EXCLUDED_GROUP_SLUGS = new Set(["fondsforvalter", "drift-studie"]);
 
 /**
  * Bygg valglista for én arrangørgruppe.
@@ -121,12 +156,16 @@ const SELECTABLE_TYPES = new Set([
  * grensesnittet er at samme valg ikke kan brukes i to pooler.
  *
  * - 1.–3. klasse står alene, og gjelder alle bachelorstudier.
- * - Bachelorstudiene finnes både alene — da gjelder de alle trinn — og
- *   kombinert med 1., 2. eller 3. klasse.
+ * - Bachelorstudiene står som ett valg hver. Trinnet settes i et eget felt ved
+ *   siden av, ikke som egne rader i lista: ett valg per studie per trinn ville
+ *   blitt titalls nesten like linjer å bla gjennom.
  * - Masteren finnes *bare* som «4. klasse» og «5. klasse»: det er de eneste
- *   trinnene den har, og et bart valg ville stilltiende betydd begge.
+ *   trinnene den har, og et bart valg ville stilltiende betydd begge. Den har
+ *   derfor ikke trinnfeltet — trinnet ligger allerede i valget.
  * - Arrangørens egen interessegruppe finnes bare som frittstående valg, så den
  *   kan aldri kombineres med et trinn.
+ * - `TIHLDE` og gruppene i {@link EXCLUDED_GROUP_SLUGS} finnes ikke: de er
+ *   enten alle, et verv eller et utfaset studium.
  */
 export function buildPoolItems(
     groups: readonly PoolGroup[],
@@ -140,6 +179,7 @@ export function buildPoolItems(
             label: `${year}. klasse`,
             hint: "Klassetrinn",
             pool: { groupSlug: null, classYear: year },
+            supportsClassYear: false,
         });
     }
 
@@ -160,6 +200,7 @@ export function buildPoolItems(
                     label: `${group.name} ${year}. klasse`,
                     hint: "Studie",
                     pool: { groupSlug: group.slug, classYear: year },
+                    supportsClassYear: false,
                 });
             }
             continue;
@@ -175,37 +216,27 @@ export function buildPoolItems(
                 label: group.name,
                 hint: "Din egen gruppe",
                 pool: { groupSlug: group.slug, classYear: null },
+                supportsClassYear: false,
             });
             continue;
         }
 
         if (!SELECTABLE_TYPES.has(type)) continue;
+        if (EXCLUDED_GROUP_SLUGS.has(group.slug)) continue;
 
         const item: PoolItem = {
             key: `group:${group.slug}`,
             label: group.name,
             hint: TYPE_LABELS[type] ?? group.type,
             pool: { groupSlug: group.slug, classYear: null },
+            // Bare bachelorstudiene får trinnfeltet: API-et avviser klassetrinn
+            // på komiteer, styrer og resten, så et slikt valg ville vært en 400
+            // i vente.
+            supportsClassYear: type === "STUDY",
         };
 
-        if (type !== "STUDY") {
-            others.push(item);
-            continue;
-        }
-
-        studies.push(item);
-
-        // Bachelorstudiene finnes også trinn for trinn. Bare studier: API-et
-        // avviser klassetrinn på komiteer, styrer og resten, så et slikt valg
-        // ville vært en 400 i vente.
-        for (let year = 1; year <= MASTER_CLASS_OFFSET; year++) {
-            studies.push({
-                key: `group:${group.slug}+class:${year}`,
-                label: `${group.name} ${year}. klasse`,
-                hint: "Studie",
-                pool: { groupSlug: group.slug, classYear: year },
-            });
-        }
+        if (type === "STUDY") studies.push(item);
+        else others.push(item);
     }
 
     const byLabel = (a: PoolItem, b: PoolItem) =>
@@ -260,16 +291,54 @@ export function toFormPool(
     return allowedKeys.has(poolKey(next)) ? next : null;
 }
 
-/** Nøklene til alt som kan velges — se {@link toFormPool}. */
+/**
+ * Nøklene til alt som kan velges — se {@link toFormPool}.
+ *
+ * Trinnvariantene av bachelorstudiene står ikke i valglista, men de kan settes
+ * i trinnfeltet, så de hører hjemme her. Det er forskjellen på hva som er
+ * *representerbart* og hva som er *én linje i nedtrekket*.
+ */
 export function allowedPoolKeys(
     groups: readonly PoolGroup[],
     organizerGroupSlug: string | null,
 ): Set<string> {
-    return new Set(
-        buildPoolItems(groups, organizerGroupSlug).map((item) =>
-            poolKey(item.pool),
-        ),
+    const keys = new Set<string>();
+
+    for (const item of buildPoolItems(groups, organizerGroupSlug)) {
+        keys.add(poolKey(item.pool));
+
+        if (!item.supportsClassYear) continue;
+
+        for (const year of BACHELOR_CLASS_YEARS) {
+            keys.add(
+                poolKey({ groupSlug: item.pool.groupSlug, classYear: year }),
+            );
+        }
+    }
+
+    return keys;
+}
+
+/**
+ * Valget en lagret pool hører til.
+ *
+ * Et bachelorstudium med trinn har ingen egen linje i lista — trinnet ligger i
+ * feltet ved siden av — så oppslaget faller tilbake til studiet uten trinn.
+ */
+function itemForPool(
+    pool: PriorityPool,
+    itemByKey: ReadonlyMap<string, PoolItem>,
+): PoolItem | null {
+    const exact = itemByKey.get(poolKey(pool));
+    if (exact) return exact;
+
+    if (pool.groupSlug === null) return null;
+
+    const base = itemByKey.get(
+        poolKey({ groupSlug: pool.groupSlug, classYear: null }),
     );
+
+    return base?.supportsClassYear ? base : null;
 }
 
 /**
@@ -299,11 +368,10 @@ type PriorityPoolEditorProps = {
  *
  * Semantikken er verdt å lese før du endrer noe her: **hver prioritert gruppe
  * er ett kriterium, og det holder å treffe én av dem.** Modellen tillater bare
- * ett valg per prioritert gruppe, så et studie og et trinn kommer som ett
- * ferdig valg («Dataingeniør 2. klasse»), aldri som to felt. Bare de
- * kombinasjonene som betyr noe finnes: et bachelorstudium med eller uten trinn,
- * og masteren bare som 4. eller 5. klasse. En navngitt person teller like mye
- * som en gruppe. Se `isUserPrioritized` i API-et.
+ * ett valg per prioritert gruppe: én gruppe, og for bachelorstudiene et
+ * klassetrinn ved siden av. Masteren har trinnet i selve valget, fordi 4. og 5.
+ * klasse er de eneste den har. En navngitt person teller like mye som en
+ * gruppe. Se `isUserPrioritized` i API-et.
  *
  * Klassetrinn er rullerende: det løses mot medlemmets kull ved påmelding, så
  * et arrangement som gjenbrukes til neste år treffer neste års førsteklassinger
@@ -397,6 +465,8 @@ export function PriorityPoolEditor({
                                 .map(poolKey),
                         );
 
+                        const selected = itemForPool(pool, itemByKey);
+
                         return (
                             <div
                                 // Poolene har ingen id, og kan være tomme mens
@@ -430,7 +500,7 @@ export function PriorityPoolEditor({
                                                 poolKey(item.pool),
                                             ),
                                     )}
-                                    value={itemByKey.get(poolKey(pool)) ?? null}
+                                    value={selected}
                                     onValueChange={(next) =>
                                         commit(
                                             pools.map((p, i) =>
@@ -444,6 +514,34 @@ export function PriorityPoolEditor({
                                         )
                                     }
                                 />
+                                {selected?.supportsClassYear ? (
+                                    <ClassYearPicker
+                                        id={`class-year-${index}`}
+                                        value={pool.classYear}
+                                        // Et trinn som allerede er brukt med
+                                        // samme studie i en annen rad ville
+                                        // vært et duplikat, og API-et gir 400.
+                                        years={BACHELOR_CLASS_YEARS.filter(
+                                            (year) =>
+                                                !takenElsewhere.has(
+                                                    poolKey({
+                                                        groupSlug:
+                                                            pool.groupSlug,
+                                                        classYear: year,
+                                                    }),
+                                                ),
+                                        )}
+                                        onValueChange={(classYear) =>
+                                            commit(
+                                                pools.map((p, i) =>
+                                                    i === index
+                                                        ? { ...p, classYear }
+                                                        : p,
+                                                ),
+                                            )
+                                        }
+                                    />
+                                ) : null}
                             </div>
                         );
                     })
@@ -533,6 +631,63 @@ function PoolPicker({
                 </ComboboxList>
             </ComboboxContent>
         </Combobox>
+    );
+}
+
+/**
+ * Klassetrinnet på et bachelorstudium.
+ *
+ * Eget felt, ikke egne linjer i valglista: ett valg per studie per trinn ble
+ * titalls nesten like linjer å bla gjennom. «Alle trinn» er standard, så et
+ * studie uten videre innsnevring betyr hele studiet — samme som før feltet
+ * fantes.
+ */
+function ClassYearPicker({
+    id,
+    value,
+    years,
+    onValueChange,
+}: {
+    id: string;
+    value: number | null;
+    years: number[];
+    onValueChange: (next: number | null) => void;
+}) {
+    const options = [
+        { label: "Alle trinn", value: ALL_CLASS_YEARS },
+        ...years.map((year) => ({
+            label: `${year}. klasse`,
+            value: String(year),
+        })),
+    ];
+
+    return (
+        <div className="flex flex-col gap-1">
+            <Label htmlFor={id}>Klassetrinn</Label>
+            <Select
+                items={options}
+                value={value === null ? ALL_CLASS_YEARS : String(value)}
+                onValueChange={(next) =>
+                    onValueChange(
+                        next === ALL_CLASS_YEARS || next === null
+                            ? null
+                            : Number(next),
+                    )
+                }
+            >
+                <SelectTrigger id={id}>
+                    <SelectValue placeholder="Alle trinn" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value={ALL_CLASS_YEARS}>Alle trinn</SelectItem>
+                    {years.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                            {year}. klasse
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
     );
 }
 
