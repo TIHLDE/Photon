@@ -613,7 +613,7 @@ export interface paths {
         put?: never;
         /**
          * Create strike
-         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create' or 'events:manage', globally or for the group arranging the event.
+         * @description Give a user a strike (prikk) connected to an event. Requires 'events:strikes:create', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it.
          */
         post: operations["createStrike"];
         delete?: never;
@@ -674,7 +674,7 @@ export interface paths {
         post?: never;
         /**
          * Delete strike
-         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage', globally or for the group arranging the strike's event.
+         * @description Delete a strike (prikk) by its ID. Requires 'events:strikes:delete', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it.
          */
         delete: operations["deleteStrike"];
         options?: never;

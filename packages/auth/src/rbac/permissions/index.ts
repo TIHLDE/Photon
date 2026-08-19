@@ -24,6 +24,7 @@ export {
 
 // Permission checking
 export {
+    getPermissionGroupScopes,
     getUserPermissions,
     getUserPermissionsWithScope,
     hasPermission,

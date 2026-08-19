@@ -28,6 +28,32 @@ type Variables = {
 };
 
 /**
+ * Permissions that make you the arrangør of a group's events.
+ *
+ * Whoever may edit a group's arrangementer runs them, and running an
+ * arrangement includes the prikker it produces: the no-shows belong to the
+ * event the same way the påmeldte do. Requiring a separate `events:strikes:*`
+ * on top meant the person who put the arrangement up could not deal with its
+ * prikker — every group's leader list carried the event permissions and none
+ * of them carried the strike ones, so the answer was always no.
+ *
+ * Held scoped to a group, this reaches that group's own events and nothing
+ * else, so it cannot become a way into another group's prikker.
+ */
+export const EVENT_ARRANGER_PERMISSIONS = [
+    "events:update",
+    "events:manage",
+] as const;
+
+/**
+ * Everything that lets you view, give or remove prikker on an event: the
+ * strike permission itself, or simply arranging the event.
+ */
+export function strikePermissions(action: "view" | "create" | "delete") {
+    return [`events:strikes:${action}`, ...EVENT_ARRANGER_PERMISSIONS];
+}
+
+/**
  * The slug of the group arranging `eventId`, or null when the event has no
  * organiser group (older events migrated from Lepton) or does not exist.
  */
