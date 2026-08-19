@@ -6310,8 +6310,10 @@ export interface components {
             linkedinUrl: string | null;
             /** @description Name of the user's study programme, derived from their STUDY group membership. Null when they have none. */
             studyProgram: string | null;
-            /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
+            /** @description The year the user started their current study programme. Falls back to their STUDYYEAR group when we have no year for the programme itself. Null when unknown. */
             studyStartYear: number | null;
+            /** @description Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place — served by the API so the rule lives in one place rather than being recomputed per client. */
+            classYear: number | null;
             /** @description Every group the user belongs to, including the derived STUDY/STUDYYEAR groups */
             groups: {
                 slug: string;
