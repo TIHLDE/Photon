@@ -1,7 +1,9 @@
 /**
  * One-shot backfill: give every study-programme row that has no start year one.
  *
- * 153 rows in production sit with `start_year = NULL` and a NULL source. They
+ * Around 150 rows in production sit with `start_year = NULL` and a NULL source
+ * — 154 when this was written, and the number grows with every login that
+ * creates a row the old guard could not fill. They
  * could never be filled: the old conflict guard on the Feide sync only ever let
  * `feide` replace `assumed`, so a row that already existed without a year was
  * stuck there for good. Two programmes are affected above all — NTNU issues no
