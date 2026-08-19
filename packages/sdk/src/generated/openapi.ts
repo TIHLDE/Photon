@@ -1495,7 +1495,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Everyone else sees only the fines they are party to: the ones they received and the ones they handed out. Filter with 'status' and 'userId'.
          */
         get: operations["listFines"];
         put?: never;
@@ -1599,7 +1599,7 @@ export interface paths {
         };
         /**
          * Get fine by ID
-         * @description Retrieve detailed information about a specific fine. Group members can view every fine in their own group, users can always view their own, and the fines admin and root can view any.
+         * @description Retrieve detailed information about a specific fine. Group members can view every fine in their own group, and the fines admin and root can view any. Anyone party to a fine — the member who received it and the one who handed it out — can always view it, membership or not.
          */
         get: operations["getFine"];
         put?: never;

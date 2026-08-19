@@ -659,7 +659,7 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to get fine as a non-member",
+            "fails to get fine as a non-member with no part in it",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
@@ -675,6 +675,15 @@ describe("fines", () => {
                         password: "test123!",
                     },
                 });
+                // Boten er gitt av en annen: leseren er verken den bøtelagte
+                // eller den som ga boten, og har da ikke noe der å gjøre.
+                const giver = await ctx.auth.api.createUser({
+                    body: {
+                        email: "giver2@test.com",
+                        name: "Giver User 2",
+                        password: "test123!",
+                    },
+                });
 
                 const [fine] = await ctx.db
                     .insert(schema.fine)
@@ -683,7 +692,7 @@ describe("fines", () => {
                         groupSlug: group.slug,
                         reason: "No view permission",
                         amount: 50,
-                        createdByUserId: user.id,
+                        createdByUserId: giver.user.id,
                         status: "pending",
                     })
                     .returning();
@@ -898,13 +907,120 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "fails to list fines as a non-member",
+            "keeps a removed member's own fines readable, given and received",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-removed-member",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+
+                const other = await ctx.auth.api.createUser({
+                    body: {
+                        email: "removed-other@test.com",
+                        name: "Removed Other",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: other.user.id,
+                    groupSlug: group.slug,
+                });
+
+                const [received] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: user.id,
+                        groupSlug: group.slug,
+                        reason: "Boten jeg fikk",
+                        amount: 50,
+                        createdByUserId: other.user.id,
+                    })
+                    .returning();
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "Boten jeg ga",
+                        amount: 60,
+                        createdByUserId: user.id,
+                    },
+                    // Denne har hen ingen del i, og skal ikke følge med ut.
+                    {
+                        userId: other.user.id,
+                        groupSlug: group.slug,
+                        reason: "Gruppens egen sak",
+                        amount: 70,
+                        createdByUserId: other.user.id,
+                    },
+                ]);
+
+                await removeUserFromGroup(ctx, user.id, group.slug);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$get({
+                    param: { groupSlug: group.slug },
+                    query: {},
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.totalCount).toBe(2);
+                expect(json.fines.map((f) => f.reason).sort()).toEqual([
+                    "Boten jeg fikk",
+                    "Boten jeg ga",
+                ]);
+
+                // Og den enkelte boten er fortsatt mulig å slå opp.
+                if (!received) {
+                    throw new Error("Failed to create fine");
+                }
+                const single = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$get({
+                    param: { groupSlug: group.slug, fineId: received.id },
+                });
+
+                expect(single.status).toBe(200);
+                expect((await single.json()).reason).toBe("Boten jeg fikk");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "hides the group's fines from a non-member with none of their own",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
+                });
+
+                const member = await ctx.auth.api.createUser({
+                    body: {
+                        email: "list-outsider-member@test.com",
+                        name: "List Outsider Member",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                });
+                await ctx.db.insert(schema.fine).values({
+                    userId: member.user.id,
+                    groupSlug: group.slug,
+                    reason: "Ikke utenforståendes bord",
+                    amount: 50,
+                    createdByUserId: member.user.id,
                 });
 
                 const response = await client.api.groups[
@@ -914,7 +1030,12 @@ describe("fines", () => {
                     query: {},
                 });
 
-                expect(response.status).toBe(403);
+                // Botlista er gruppens; den som står utenfor ser bare sine
+                // egne bøter, og har ingen her.
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.fines).toHaveLength(0);
+                expect(json.totalCount).toBe(0);
             },
             500_000,
         );

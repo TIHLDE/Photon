@@ -1,7 +1,6 @@
 import { schema } from "@photon/db";
-import { and, desc, eq } from "drizzle-orm";
+import { type SQL, and, desc, eq, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
-import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -23,15 +22,12 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.",
+            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Everyone else sees only the fines they are party to: the ones they received and the ones they handed out. Filter with 'status' and 'userId'.",
     })
         .schemaResponse({
             statusCode: 200,
             schema: fineListResponseSchema,
             description: "List of fines retrieved successfully",
-        })
-        .forbidden({
-            description: "Not authorized to view fines for this group",
         })
         .notFound({
             description: "Group not found, or fines not activated for it",
@@ -59,13 +55,31 @@ export const listFinesRoute = route().get(
 
         const group = await requireFinesGroup(ctx, groupSlug);
 
-        if (!(await canViewFines(ctx, user.id, group))) {
-            throw new HTTPException(403, {
-                message: "Not authorized to view fines for this group",
-            });
-        }
+        const conditions: (SQL | undefined)[] = [
+            eq(schema.fine.groupSlug, groupSlug),
+        ];
 
-        const conditions = [eq(schema.fine.groupSlug, groupSlug)];
+        /**
+         * Reading the group's whole botliste is for the group: members, the
+         * botsjef, root. Everyone else is narrowed to the fines they are party
+         * to rather than turned away.
+         *
+         * That narrowing is what a removed member is left with, and they need
+         * it. Leaving the group ends their bøter there — the unpaid total
+         * stops counting them — but the ones already handed out stay theirs to
+         * look up: what they were fined for and still owe, and what they
+         * handed out to others while they were in the group. Being removed
+         * should not black out your own record, and a botsjef fielding "hva
+         * var det jeg fikk bot for?" should not be the only way to read it.
+         */
+        if (!(await canViewFines(ctx, user.id, group))) {
+            conditions.push(
+                or(
+                    eq(schema.fine.userId, user.id),
+                    eq(schema.fine.createdByUserId, user.id),
+                ),
+            );
+        }
 
         if (userId) {
             conditions.push(eq(schema.fine.userId, userId));
