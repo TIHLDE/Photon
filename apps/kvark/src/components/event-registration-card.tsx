@@ -39,6 +39,21 @@ type EventRegistrationCardProps = {
      */
     hasPaid?: boolean;
     paymentDeadline?: EventDeadline;
+    /**
+     * «9:32», «0:14» — tida medlemmet har igjen på å betale, som teller ned
+     * mens sida står åpen.
+     * Betalingsvinduet er kort, så en frist på klokka sier lite: det som
+     * betyr noe er hvor lenge det er til plassen gis videre. Satt til
+     * `null` når fristen allerede har gått ut.
+     */
+    paymentExpiresInLabel?: string | null;
+    /**
+     * Satt mens vi spør Vipps om betalingen som nettopp ble gjennomført.
+     * Da forsvinner både betalings- og avmeldingsknappen: betalingen er ute
+     * av medlemmets hender, og et nytt trykk ville enten startet en betaling
+     * til, eller meldt av en plass de akkurat har betalt for.
+     */
+    isConfirmingPayment?: boolean;
     capacity: number | null;
     registeredCount: number;
     waitlistCount: number;
@@ -236,14 +251,20 @@ function getStateRendering(
             };
 
         case "awaiting-payment":
+            if (props.isConfirmingPayment) {
+                return {
+                    icon: Hourglass,
+                    message: "Bekrefter betalingen …",
+                    secondary: "Vi venter på svar fra Vipps.",
+                };
+            }
+
             return {
                 icon: CreditCard,
                 message: "Plass reservert — venter på betaling",
                 // Uten frist står plassen til arrangøren rydder opp. Da er det
                 // riktigere å si ingenting enn å dikte opp en frist.
-                secondary: props.paymentDeadline
-                    ? `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}, ellers gis plassen videre.`
-                    : null,
+                secondary: paymentDeadlineText(props),
                 actions: (
                     <>
                         <VippsButton
@@ -344,6 +365,27 @@ function getStateRendering(
             return _exhaustive;
         }
     }
+}
+
+/**
+ * Fristteksten under «Plass reservert — venter på betaling».
+ *
+ * Nedtellingen står først: vinduet er på minutter, og da er «7:31 igjen» det
+ * medlemmet trenger å vite. Klokkeslettet blir stående ved siden av, så
+ * fristen er til å planlegge etter når det er lenge igjen.
+ */
+function paymentDeadlineText(props: EventRegistrationCardProps): string | null {
+    if (!props.paymentDeadline) return null;
+    // Nedtellingen kan ha passert fristen før serveren har rukket å gi plassen
+    // videre. Da er «betal innen 0 sekunder» feil — plassen er ute av
+    // medlemmets hender, og det eneste ærlige er å si det.
+    if (props.paymentExpiresInLabel === null) {
+        return "Betalingsfristen er gått ut. Plassen kan ha gått videre til neste på ventelista.";
+    }
+    if (!props.paymentExpiresInLabel) {
+        return `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}, ellers gis plassen videre.`;
+    }
+    return `${props.paymentExpiresInLabel} igjen å betale (innen kl. ${props.paymentDeadline.time}), ellers gis plassen videre.`;
 }
 
 type TimelinePoint = {

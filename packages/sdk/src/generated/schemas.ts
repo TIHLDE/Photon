@@ -34,6 +34,7 @@ export type BatchUpdateUserFines = Schemas["BatchUpdateUserFines"];
 export type CalendarSubscription = Schemas["CalendarSubscription"];
 export type CompanyContact = Schemas["CompanyContact"];
 export type CompanyContactResponse = Schemas["CompanyContactResponse"];
+export type ConfirmPaymentResponse = Schemas["ConfirmPaymentResponse"];
 export type Contract = Schemas["Contract"];
 export type ContractList = Schemas["ContractList"];
 export type CreateApiKey = Schemas["CreateApiKey"];

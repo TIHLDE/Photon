@@ -266,6 +266,33 @@ export function formatTimeUntil(iso: string, now: Date = new Date()): string {
 }
 
 /**
+ * "9:32", "0:14" — tida igjen på en frist som løper mens medlemmet ser på.
+ *
+ * `formatTimeUntil` runder til nærmeste enhet, så «2 minutter» blir stående i
+ * et helt minutt. Det duger til påmeldinger som åpner om dager, men en
+ * betalingsfrist på et kvarter må synlig løpe: sekundene er hele poenget med
+ * at den teller ned. Over en time faller vi tilbake på den grove teksten —
+ * «58:12» sier mindre enn «en time».
+ *
+ * Returnerer `null` når fristen er passert.
+ */
+export function formatCountdown(
+    iso: string,
+    now: Date = new Date(),
+): string | null {
+    const remainingMs = new Date(iso).getTime() - now.getTime();
+    if (Number.isNaN(remainingMs) || remainingMs <= 0) return null;
+    if (remainingMs >= 60 * 60 * 1000) return formatTimeUntil(iso, now);
+
+    // Rundes opp: med 200 ms igjen står det «0:01» og ikke «0:00», som ville
+    // sagt at fristen var ute mens den fortsatt løp.
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+/**
  * Combined date + time label for cards, e.g. "tor. 30. apr. 2026, 12:00".
  */
 export function formatEventDateTime(iso: string): string {

@@ -878,6 +878,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/{eventId}/payment/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm own payment for event
+         * @description Asks the payment provider what happened to the caller's outstanding checkout for this event, and records a completed payment. Meant for the moment the member returns from Vipps, before the webhook has arrived.
+         */
+        post: operations["confirmEventPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/payments": {
         parameters: {
             query?: never;
@@ -4054,6 +4074,13 @@ export interface components {
              * @enum {string}
              */
             userFlow: "WEB_REDIRECT" | "NATIVE_REDIRECT";
+        };
+        ConfirmPaymentResponse: {
+            /**
+             * @description What the payment provider says about the caller's outstanding checkout. 'pending' means the checkout is still open or the provider could not be reached — ask again shortly. 'none' means there is nothing outstanding to confirm.
+             * @enum {string}
+             */
+            status: "paid" | "pending" | "failed" | "none";
         };
         EventPaymentAdmin: {
             /** Format: uuid */
@@ -8477,6 +8504,53 @@ export interface operations {
             };
             /** @description Payment already exists for this user and event */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    confirmEventPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The provider's answer for the caller's checkout */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmPaymentResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Event not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

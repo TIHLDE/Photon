@@ -486,6 +486,62 @@ async function reconcileWithProvider(
 }
 
 /**
+ * What a member's own "did my payment go through?" check found.
+ *
+ * `none` means there is nothing outstanding to confirm — either the member
+ * never started a checkout, or the payment is already settled in our own rows.
+ */
+export type PaymentConfirmation = "paid" | "pending" | "failed" | "none";
+
+/**
+ * Ask Vipps about *this* member's outstanding checkout, and record the payment
+ * if it went through.
+ *
+ * The webhook is the normal path to `paid`, but Vipps sends the member back to
+ * us the instant they confirm in the app — often before the webhook has landed.
+ * Without this the page they return to still says "venter på betaling", and the
+ * only way out was to reload until the webhook happened to arrive.
+ *
+ * Reads from the provider rather than our own row, for the same reason
+ * [reconcileWithProvider] does: a late or lost webhook must not decide whether
+ * a member has their spot.
+ *
+ * **Never call this inside a transaction** — it talks to Vipps.
+ */
+export async function confirmPaymentForUser(
+    ctx: AppContext,
+    { eventId, userId }: { eventId: string; userId: string },
+): Promise<PaymentConfirmation> {
+    const payments = await ctx.db.query.eventPayment.findMany({
+        where: (payment, { and, eq }) =>
+            and(eq(payment.eventId, eventId), eq(payment.userId, userId)),
+    });
+
+    // The webhook may already have settled it while the member was on their way
+    // back. Then there is nothing to ask about — our own row is the answer.
+    if (payments.some((payment) => payment.status === "paid")) return "paid";
+
+    const started = payments.find(
+        (payment) => payment.status === "pending" && payment.providerPaymentId,
+    );
+    if (!started) return "none";
+
+    const verdict = await reconcileWithProvider(ctx, started);
+
+    switch (verdict) {
+        case "paid":
+            return "paid";
+        case "dead":
+            return "failed";
+        // A checkout that is still open, or a Vipps we could not reach. Both
+        // mean "ask again in a moment" — neither is a verdict to show a member.
+        case "live":
+        case "unknown":
+            return "pending";
+    }
+}
+
+/**
  * Grant this registration its single deadline extension: push the obligation's
  * deadline out and re-arm the countdown.
  *
