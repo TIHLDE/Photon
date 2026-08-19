@@ -23,7 +23,11 @@ import {
     userRole,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
-import { currentAcademicYear, isMasterStudySlug } from "./academic-year";
+import {
+    currentAcademicYear,
+    isMasterStudySlug,
+    programmeLength,
+} from "./academic-year";
 
 /**
  * Database access required by the Feide sync hook.
@@ -602,6 +606,15 @@ export async function applyFeideStudyPrograms(
                 programSlug,
                 effectiveStartYear,
             );
+
+            await syncProgrammeLinkedGroups(tx, {
+                userId,
+                studyProgramId,
+                programSlug,
+                active: feideGroup.active,
+                startYear: effectiveStartYear,
+                now,
+            });
         }
 
         /**
@@ -928,6 +941,240 @@ async function removeCohortMembership(
                 eq(groupMembership.groupSlug, String(year)),
             ),
         );
+}
+
+/**
+ * Semester registration windows, when `feideActive = false` says nothing.
+ *
+ * NTNU flips the flag off for a student who has not registered for the term
+ * yet, and the deadline falls around 1 September and 1 February. In those weeks
+ * "inactive" is indistinguishable from "registers next week", so nothing is
+ * taken away from anyone inside them.
+ *
+ * Month is zero-indexed.
+ */
+function inRegistrationWindow(now: Date): boolean {
+    const month = now.getMonth();
+    const day = now.getDate();
+    const autumn = month === 7 || (month === 8 && day <= 15);
+    const spring = month === 0 || (month === 1 && day <= 15);
+    return autumn || spring;
+}
+
+/**
+ * Whether Feide's "not enrolled" is safe to act on.
+ *
+ * `membership.active = false` carries at least four meanings: finished, quit,
+ * on leave, on exchange, and — most often in August — simply not registered for
+ * the term yet. Feide offers nothing that tells them apart, and three of those
+ * people keep their study right and should keep their place.
+ *
+ * What does tell them apart is where the member is in the programme. Of the 30
+ * inactive rows in production, 26 are past the length of their degree and 4 are
+ * in their second or third year of a three-year bachelor. The 26 read as
+ * finished; the 4 read as anything but. So the flag is only acted on once the
+ * member is past the programme's own length, which leaves exchange, leave and
+ * late registration untouched — they are all, by definition, still inside it.
+ *
+ * The cost is that someone who genuinely drops out mid-degree keeps their place
+ * until their nominal end year. For a private group with a roster its leader can
+ * edit, that is the forgiving direction, and the forgiving direction is the
+ * right one when the alternative is throwing out students who never left.
+ */
+function hasFinishedProgramme(
+    programSlug: string,
+    startYear: number | null,
+    now: Date,
+): boolean {
+    // No year, no verdict: we cannot place them in the programme at all.
+    if (startYear === null) return false;
+    if (inRegistrationWindow(now)) return false;
+
+    return (
+        currentAcademicYear(now) - startYear + 1 > programmeLength(programSlug)
+    );
+}
+
+/**
+ * Keep the roster of a programme's own private group in step with enrolment.
+ *
+ * A study programme may run one private group for its students — today only
+ * Digital transformasjon does, and `org_group.study_program_id` is what links
+ * them. Membership follows enrolment in both directions: an active student is
+ * enrolled on login regardless of cohort, and a member Feide reports as
+ * finished is removed.
+ *
+ * Removal is deliberately hard to trigger; see {@link hasFinishedProgramme}.
+ * Being reported inactive is not enough on its own, because most of the people
+ * that describes have not gone anywhere.
+ */
+async function syncProgrammeLinkedGroups(
+    tx: Transaction,
+    params: {
+        userId: string;
+        studyProgramId: number;
+        programSlug: string;
+        active: boolean;
+        startYear: number | null;
+        now: Date;
+    },
+): Promise<void> {
+    const { userId, studyProgramId, programSlug, active, startYear, now } =
+        params;
+
+    const linked = await tx
+        .select({ slug: group.slug, finesAdminId: group.finesAdminId })
+        .from(group)
+        .where(eq(group.studyProgramId, studyProgramId));
+
+    if (linked.length === 0) return;
+
+    for (const linkedGroup of linked) {
+        if (active) {
+            await tx
+                .insert(groupMembership)
+                .values({
+                    userId,
+                    groupSlug: linkedGroup.slug,
+                    role: "member",
+                })
+                .onConflictDoNothing();
+            continue;
+        }
+
+        if (!hasFinishedProgramme(programSlug, startYear, now)) continue;
+
+        await removeFromProgrammeGroup(tx, {
+            userId,
+            groupSlug: linkedGroup.slug,
+            finesAdminId: linkedGroup.finesAdminId,
+            studyProgramId,
+        });
+    }
+}
+
+/**
+ * Take a member out of a programme's private group, and hand on what they held.
+ *
+ * A group without a leader has nobody who can edit its roster, which for a
+ * private group means nobody can let anyone back in. So the roles do not simply
+ * vanish with the person: the leadership passes to an active student, and the
+ * botsjef role follows the leadership.
+ *
+ * The successor is the most senior active student left — the earliest intake,
+ * which is the highest class level. Ties go to whoever has been in the group
+ * longest, then to the lowest user id so the outcome never depends on the order
+ * Postgres returns rows in. Only active students are eligible: handing the group
+ * to someone who has also finished would just move the problem.
+ *
+ * Nothing is handed on when no active student remains. The group keeps the
+ * leader and botsjef it has, stale as they are, because an empty leadership is
+ * strictly worse than an absent one — and a human can still fix it.
+ */
+async function removeFromProgrammeGroup(
+    tx: Transaction,
+    params: {
+        userId: string;
+        groupSlug: string;
+        finesAdminId: string | null;
+        studyProgramId: number;
+    },
+): Promise<void> {
+    const { userId, groupSlug, finesAdminId, studyProgramId } = params;
+
+    const [leaving] = await tx
+        .select({ role: groupMembership.role })
+        .from(groupMembership)
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.groupSlug, groupSlug),
+            ),
+        )
+        .limit(1);
+
+    // Not a member of this group, so there is nothing to remove or hand on.
+    if (!leaving) return;
+
+    const wasLeader = leaving.role === "leader";
+    const wasFinesAdmin = finesAdminId === userId;
+
+    await tx
+        .delete(groupMembership)
+        .where(
+            and(
+                eq(groupMembership.userId, userId),
+                eq(groupMembership.groupSlug, groupSlug),
+            ),
+        );
+
+    if (!wasLeader && !wasFinesAdmin) return;
+
+    /**
+     * The leader as it stands after the removal: unchanged when someone else
+     * holds it, and about to be filled when the person leaving held it.
+     */
+    let leaderId: string | null = null;
+
+    if (wasLeader) {
+        const [successor] = await tx
+            .select({ userId: groupMembership.userId })
+            .from(groupMembership)
+            .innerJoin(
+                studyProgramMembership,
+                and(
+                    eq(studyProgramMembership.userId, groupMembership.userId),
+                    eq(studyProgramMembership.studyProgramId, studyProgramId),
+                ),
+            )
+            .where(
+                and(
+                    eq(groupMembership.groupSlug, groupSlug),
+                    eq(studyProgramMembership.feideActive, true),
+                ),
+            )
+            .orderBy(
+                sql`${studyProgramMembership.startYear} asc nulls last`,
+                groupMembership.createdAt,
+                groupMembership.userId,
+            )
+            .limit(1);
+
+        if (successor) {
+            await tx
+                .update(groupMembership)
+                .set({ role: "leader" })
+                .where(
+                    and(
+                        eq(groupMembership.userId, successor.userId),
+                        eq(groupMembership.groupSlug, groupSlug),
+                    ),
+                );
+            leaderId = successor.userId;
+        }
+    } else {
+        const [current] = await tx
+            .select({ userId: groupMembership.userId })
+            .from(groupMembership)
+            .where(
+                and(
+                    eq(groupMembership.groupSlug, groupSlug),
+                    eq(groupMembership.role, "leader"),
+                ),
+            )
+            .limit(1);
+        leaderId = current?.userId ?? null;
+    }
+
+    // The botsjef role follows the leadership, but only where there is one to
+    // follow: leaving a group with no botsjef at all would take its fines with
+    // it, and those are the members' own.
+    if (wasFinesAdmin && leaderId) {
+        await tx
+            .update(group)
+            .set({ finesAdminId: leaderId })
+            .where(eq(group.slug, groupSlug));
+    }
 }
 
 /**

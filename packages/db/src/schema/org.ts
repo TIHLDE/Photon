@@ -217,6 +217,26 @@ export const group = pgTable("group", {
     finesActivated: boolean("fines_activated").notNull(),
     finesAdminId: text("fines_admin_id").references(() => user.id),
     /**
+     * The study programme whose active students belong in this group.
+     *
+     * Set on the private group a programme runs for itself — today only
+     * Digital transformasjon has one. While it is set, the Feide sync keeps
+     * the roster in step with enrolment: an active student is enrolled on
+     * login, and someone Feide reports as finished is removed.
+     *
+     * A column rather than a slug in the code, so the next programme that
+     * wants one is a row to write instead of a deploy.
+     *
+     * Null for every other group, which is almost all of them — including the
+     * `STUDY` groups themselves. Those already mirror a programme by sharing
+     * its slug, and pointing them here too would give the sync two ways to
+     * manage the same roster.
+     */
+    studyProgramId: integer("study_program_id").references(
+        () => studyProgram.id,
+        { onDelete: "set null" },
+    ),
+    /**
      * Permissions held by whoever is currently the group's leader, granted
      * scoped to this group ("permission@group:<slug>").
      *

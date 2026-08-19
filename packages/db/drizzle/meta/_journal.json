@@ -477,6 +477,13 @@
       "when": 1787145564257,
       "tag": "0067_useful_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1787169750030,
+      "tag": "0068_quick_guardian",
+      "breakpoints": true
     }
   ]
 }
