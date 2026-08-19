@@ -55,26 +55,20 @@ export function programmeLength(programme: string | undefined): number {
 }
 
 /**
- * «Dataingeniør · 3. klasse» mens man studerer, «Dataingeniør · kull 2022»
- * etterpå. Returnerer undefined når vi ikke vet noe om studiet.
+ * «Dataingeniør · 3. klasse». Returnerer undefined når vi ikke vet noe om
+ * studiet.
  *
- * Tar verdiene som de kommer fra API-et. Siden brukes til å utlede dem selv fra
- * gruppelista, og det gikk galt på to måter samtidig: den plukket den første
- * studiegruppa i den rekkefølgen serveren tilfeldigvis sendte dem, så et medlem
- * som hadde byttet studium fikk vist det gamle — og klassetrinnet manglet
- * master-offsetten, så første år på master ville lest som 1. klasse i stedet for
- * 4. Begge deler er regler serveren allerede kan, og de hører hjemme ett sted.
+ * Bare klassetrinn, aldri kull. Kullet er et internt anker — det er slik
+ * klassetrinnet regnes ut, og slik prioriteringspoolene er skrudd sammen — men
+ * på en profil sier «kull 2023» lite om hvor noen er i løpet, og det er det
+ * folk leser etter. Har vi ikke klassetrinn, står studiet alene: den som er
+ * ferdig får ikke et årstall som antyder at de fortsatt går der.
  */
 export function formatStudyLabel(study: {
     programme?: string | null;
     classYear?: number | null;
-    startYear?: number | null;
 }): string | undefined {
-    const detail = study.classYear
-        ? `${study.classYear}. klasse`
-        : study.startYear
-          ? `kull ${study.startYear}`
-          : null;
+    const detail = study.classYear ? `${study.classYear}. klasse` : null;
     return [study.programme, detail].filter(Boolean).join(" · ") || undefined;
 }
 
