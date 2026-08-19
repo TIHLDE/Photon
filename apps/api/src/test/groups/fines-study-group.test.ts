@@ -114,6 +114,64 @@ describe("fines in a study group", () => {
     );
 
     integrationTest(
+        "an alumnus in an ordinary group is a member like any other",
+        async ({ ctx }) => {
+            // Poenget: Feide-sperren gjelder studiegruppene, ikke gruppene folk
+            // faktisk melder seg inn i. En ferdig utdannet som fortsatt sitter
+            // i en undergruppe eller interessegruppe er medlem der på ordinært
+            // vis, og botsystemet skal behandle hen som det.
+            const { program } = await createStudyProgramGroup(
+                ctx,
+                "digtrans-ordinary",
+            );
+            const committee = await ctx.utils.createTestGroup({
+                slug: "alumni-i-komiteen",
+                type: "COMMITTEE",
+                finesActivated: true,
+            });
+
+            const alumnus = await ctx.utils.createTestUser();
+            const member = await ctx.utils.createTestUser();
+            // Ferdig med studiet, men fortsatt med i komiteen.
+            await enrol(ctx, alumnus.id, "digtrans-ordinary", program.id, false);
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: alumnus.id, groupSlug: committee.slug },
+                { userId: member.id, groupSlug: committee.slug },
+            ]);
+
+            const client = await ctx.utils.clientForUser(alumnus);
+
+            const given = await client.api.groups[":groupSlug"].fines.$post({
+                param: { groupSlug: committee.slug },
+                json: {
+                    userId: member.id,
+                    groupSlug: committee.slug,
+                    reason: "Møtte ikke opp",
+                    amount: 1,
+                },
+            });
+            expect(given.status).toBe(201);
+
+            // Og hele komiteens botliste, ikke bare sine egne.
+            await ctx.db.insert(schema.fine).values({
+                userId: member.id,
+                groupSlug: committee.slug,
+                reason: "Bot mellom to andre",
+                amount: 1,
+                createdByUserId: member.id,
+            });
+            const listed = await client.api.groups[":groupSlug"].fines.$get({
+                param: { groupSlug: committee.slug },
+                query: {},
+            });
+
+            expect(listed.status).toBe(200);
+            expect((await listed.json()).fines).toHaveLength(2);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "an alumnus in the group may not give fines",
         async ({ ctx }) => {
             const { group, program } = await createStudyProgramGroup(
