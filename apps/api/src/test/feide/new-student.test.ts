@@ -198,7 +198,7 @@ describe("a student with no prior TIHLDE account", () => {
     );
 
     integrationTest(
-        "is assumed into the current intake when Feide omits the kull",
+        "falls back to the current intake when Feide omits the kull",
         async ({ ctx }) => {
             await seedProgramme(ctx.db);
             const user = await ctx.utils.createTestUser();
@@ -237,14 +237,14 @@ describe("a student with no prior TIHLDE account", () => {
                 .where(eq(schema.studyProgramMembership.userId, user.id));
 
             expect(membership?.startYear).toBe(2026);
-            // Recorded as a guess, so a real year from Feide can replace it
-            // later and a manual correction can outrank it.
-            expect(membership?.source).toBe("assumed");
+            // Recorded as derived, the lowest rank, so a real year from Feide
+            // can replace it later and a manual correction outranks both.
+            expect(membership?.source).toBe("derived");
         },
     );
 
     integrationTest(
-        "is not assumed into an intake when the membership has lapsed",
+        "is given no intake at all when the membership has lapsed",
         async ({ ctx }) => {
             await seedProgramme(ctx.db);
             const user = await ctx.utils.createTestUser();

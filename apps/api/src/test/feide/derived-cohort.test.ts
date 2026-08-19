@@ -14,17 +14,17 @@ import { integrationTest } from "~/test/config/integration";
 /**
  * What happens to a member whose programme Feide gives no cohort for.
  *
- * NTNU issues no `fc:fs:kull` for ITBAITBEDR — every one of the four such
- * logins in a month of production logs came back with `Cohort ids: (none)` or a
- * cohort belonging to a programme the member had left, and all five ITBAITBEDR
- * rows in production have a null start year. Because 172 of the 258 priority
- * pools select on a cohort group, a member without one loses priority on
- * everything aimed at their own intake.
+ * NTNU issues no `fc:fs:kull` for ITBAITBEDR, and none for the master either —
+ * 0 of 217 rows in production between them. Because the inherited priority
+ * pools select on cohort groups and class level, a member without a year loses
+ * priority on everything aimed at their own intake.
  *
- * So we assume the current intake, and record that it was a guess. These tests
- * pin down the three rules that make the guess safe: only for active students,
- * only when we do not already know a cohort, and only until Feide tells us
- * otherwise.
+ * So we work the year out ourselves and record it as `derived`, the lowest
+ * rank, which anything better may overwrite. These tests pin down the rules
+ * that make that safe: the member's own cohort group is preferred over any
+ * inference, the current intake is a last resort reserved for active
+ * memberships, and the result never depends on the order Feide listed the
+ * programmes in.
  */
 
 const kull = (code: string, year: string) => ({
@@ -193,9 +193,9 @@ describe("currentAcademicYear", () => {
     });
 });
 
-describe("assuming a cohort", () => {
+describe("deriving a cohort", () => {
     integrationTest(
-        "does not overwrite a cohort the member already has",
+        "takes the year from the cohort the member already has",
         async ({ ctx }) => {
             await seedProgrammes(ctx.db);
             const user = await ctx.utils.createTestUser();
@@ -203,9 +203,15 @@ describe("assuming a cohort", () => {
             /**
              * The production case that makes this rule non-negotiable: every
              * ITBAITBEDR member carries a correct cohort from Lepton and gets
-             * none from Feide. Guessing on top would add a second, higher year,
-             * and `Math.max()` in `deriveStudyFromGroups` would pick it — the
-             * whole cohort demoted to first-years on their next login.
+             * none from Feide. Inventing this year's intake on top would add a
+             * second, higher year, and `Math.max()` in `deriveStudyFromGroups`
+             * would pick it — the whole cohort demoted to first-years on their
+             * next login.
+             *
+             * The cohort group is not merely a veto, it is the answer: it holds
+             * the member's real intake, so the programme row is filled from it
+             * rather than left empty. That is what the older `assumed` rule got
+             * wrong, and why 118 ITBAITBEDR rows sat permanently without a year.
              */
             await ctx.db
                 .insert(schema.group)
@@ -226,6 +232,7 @@ describe("assuming a cohort", () => {
                 ...trondheimCourses.map(emne),
             ]);
 
+            // Still exactly one intake — no second cohort group invented.
             expect(await cohortGroupsOf(ctx.db, user.id)).toEqual(["2025"]);
 
             const membership = await membershipFor(
@@ -233,8 +240,8 @@ describe("assuming a cohort", () => {
                 user.id,
                 "ITBAITBEDR",
             );
-            expect(membership?.startYear).toBeNull();
-            expect(membership?.source).toBeNull();
+            expect(membership?.startYear).toBe(2025);
+            expect(membership?.source).toBe("derived");
         },
     );
 
@@ -378,6 +385,48 @@ describe("assuming a cohort", () => {
 
             // Still a first-year: they started the previous August.
             expect(await cohortGroupsOf(ctx.db, user.id)).toEqual(["2026"]);
+        },
+    );
+
+    integrationTest(
+        "fills a row that already exists without a year",
+        async ({ ctx }) => {
+            await seedProgrammes(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            /**
+             * The shape 153 rows in production were stuck in: the membership
+             * exists, but both the year and its source are NULL. The old guard
+             * only ever let `feide` replace `assumed`, so such a row could
+             * never be filled no matter what a later login learned — including
+             * both rows belonging to every member who had gone on to the
+             * master.
+             */
+            const [programme] = await ctx.db
+                .select({ id: schema.studyProgram.id })
+                .from(schema.studyProgram)
+                .where(eq(schema.studyProgram.feideCode, "ITBAITBEDR"))
+                .limit(1);
+
+            await ctx.db.insert(schema.studyProgramMembership).values({
+                userId: user.id,
+                studyProgramId: programme?.id as number,
+                startYear: null,
+                startYearSource: null,
+            });
+
+            await signInWithFeide(ctx.db, user.id, [
+                prg("ITBAITBEDR"),
+                ...trondheimCourses.map(emne),
+            ]);
+
+            const membership = await membershipFor(
+                ctx.db,
+                user.id,
+                "ITBAITBEDR",
+            );
+            expect(membership?.startYear).toBe(2026);
+            expect(membership?.source).toBe("derived");
         },
     );
 });
