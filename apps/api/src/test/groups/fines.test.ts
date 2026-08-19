@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
+import { removeUserFromGroup } from "~/lib/group";
 import { integrationTest } from "~/test/config/integration";
 
 /**
@@ -1435,6 +1436,10 @@ describe("fines", () => {
                         password: "test123!",
                     },
                 });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: target.user.id,
+                    groupSlug: group.slug,
+                });
 
                 await ctx.db.insert(schema.fine).values([
                     {
@@ -1478,6 +1483,74 @@ describe("fines", () => {
                 expect(json.notApproved).toBe(3);
                 expect(json.approvedNotPaid).toBe(4);
                 expect(json.paid).toBe(5);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "leaves a removed member's unpaid fines out, but keeps their paid ones",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fine-stats-removed",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+
+                const former = await ctx.auth.api.createUser({
+                    body: {
+                        email: "stats-former@test.com",
+                        name: "Stats Former",
+                        password: "test123!",
+                    },
+                });
+
+                // Ble med, fikk bøter, og ble så fjernet fra gruppen.
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: former.user.id,
+                    groupSlug: group.slug,
+                });
+                await ctx.db.insert(schema.fine).values([
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "ubetalt ved exit",
+                        amount: 7,
+                        status: "pending",
+                    },
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "godkjent, men ubetalt",
+                        amount: 11,
+                        status: "approved",
+                    },
+                    {
+                        userId: former.user.id,
+                        groupSlug: group.slug,
+                        reason: "gjort opp for",
+                        amount: 13,
+                        status: "paid",
+                    },
+                ]);
+                await removeUserFromGroup(ctx, former.user.id, group.slug);
+
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.statistics.$get({
+                    param: { groupSlug: group.slug },
+                });
+
+                expect(response.status).toBe(200);
+                const json = await response.json();
+                expect(json.notApproved).toBe(0);
+                expect(json.approvedNotPaid).toBe(0);
+                expect(json.paid).toBe(13);
             },
             500_000,
         );

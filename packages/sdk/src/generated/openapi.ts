@@ -1519,7 +1519,7 @@ export interface paths {
         };
         /**
          * Fine totals for a group
-         * @description Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. Same audience as the fine list.
+         * @description Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. The unpaid totals only count the group's current members — a fine follows the person out of the group, but the debt does not. 'paid' is history and counts everyone. Same audience as the fine list.
          */
         get: operations["getFineStatistics"];
         put?: never;

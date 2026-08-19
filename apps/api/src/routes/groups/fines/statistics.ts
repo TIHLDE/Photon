@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -14,7 +14,7 @@ export const fineStatisticsRoute = route().get(
         summary: "Fine totals for a group",
         operationId: "getFineStatistics",
         description:
-            "Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. Same audience as the fine list.",
+            "Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. The unpaid totals only count the group's current members — a fine follows the person out of the group, but the debt does not. 'paid' is history and counts everyone. Same audience as the fine list.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -43,14 +43,35 @@ export const fineStatisticsRoute = route().get(
             });
         }
 
+        /**
+         * The unpaid totals are the group's outstanding debt right now, and
+         * that has to be the same number the per-member list adds up to. That
+         * list is driven by the membership table, so someone removed from the
+         * group drops out of it — leaving the group ends their bøter there.
+         * Summing the fine table alone kept counting them and made the two
+         * views disagree, so the membership row gates the unpaid sums here as
+         * well.
+         *
+         * 'paid' is left alone: it is history, and a settled fine stays part
+         * of what the group has collected no matter who has left since.
+         */
+        const isMember = sql`${schema.groupMembership.userId} is not null`;
+
         // One pass over the group's fines rather than three counting queries.
         const [totals] = await db
             .select({
-                notApproved: sql<number>`coalesce(sum(case when ${schema.fine.status} = 'pending' then ${schema.fine.amount} else 0 end), 0)::int`,
-                approvedNotPaid: sql<number>`coalesce(sum(case when ${schema.fine.status} = 'approved' then ${schema.fine.amount} else 0 end), 0)::int`,
+                notApproved: sql<number>`coalesce(sum(case when ${schema.fine.status} = 'pending' and ${isMember} then ${schema.fine.amount} else 0 end), 0)::int`,
+                approvedNotPaid: sql<number>`coalesce(sum(case when ${schema.fine.status} = 'approved' and ${isMember} then ${schema.fine.amount} else 0 end), 0)::int`,
                 paid: sql<number>`coalesce(sum(case when ${schema.fine.status} = 'paid' then ${schema.fine.amount} else 0 end), 0)::int`,
             })
             .from(schema.fine)
+            .leftJoin(
+                schema.groupMembership,
+                and(
+                    eq(schema.groupMembership.userId, schema.fine.userId),
+                    eq(schema.groupMembership.groupSlug, schema.fine.groupSlug),
+                ),
+            )
             .where(eq(schema.fine.groupSlug, groupSlug));
 
         return c.json({
