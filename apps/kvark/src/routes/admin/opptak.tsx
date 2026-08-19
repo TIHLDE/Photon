@@ -11,6 +11,14 @@ import {
     CardTitle,
 } from "@tihlde/ui/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@tihlde/ui/ui/dialog";
 import { Input } from "@tihlde/ui/ui/input";
 import {
     Table,
@@ -30,6 +38,7 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
+import { assetPublicUrl } from "#/lib/assets";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import {
@@ -310,7 +319,9 @@ function ContractRow({
 }) {
     return (
         <TableRow>
-            <TableCell>{contract.title}</TableCell>
+            <TableCell>
+                <ContractPreviewDialog contract={contract} />
+            </TableCell>
             <TableCell>{contract.version}</TableCell>
             <TableCell>
                 {contract.isActive ? (
@@ -335,5 +346,37 @@ function ContractRow({
                 )}
             </TableCell>
         </TableRow>
+    );
+}
+
+/** Opens the uploaded PDF so an admin can read the contract before activating it. */
+function ContractPreviewDialog({ contract }: { contract: Contract }) {
+    return (
+        <Dialog>
+            <DialogTrigger
+                render={
+                    <Button
+                        variant="link"
+                        className="h-auto p-0 text-left font-normal text-foreground"
+                    >
+                        {contract.title}
+                    </Button>
+                }
+            />
+            <DialogContent className="flex max-w-[95vw] flex-col sm:max-w-4xl">
+                <DialogHeader>
+                    <DialogTitle>{contract.title}</DialogTitle>
+                    <DialogDescription>
+                        Versjon {contract.version}
+                    </DialogDescription>
+                </DialogHeader>
+                {/* Høy nok til at en A4-side er lesbar uten å zoome. */}
+                <iframe
+                    src={assetPublicUrl(contract.fileKey)}
+                    title={contract.title}
+                    className="h-[75vh] w-full rounded-md border"
+                />
+            </DialogContent>
+        </Dialog>
     );
 }
