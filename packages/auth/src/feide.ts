@@ -22,7 +22,7 @@ import {
     userRole,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
-import { currentAcademicYear } from "./academic-year";
+import { currentAcademicYear, isMasterStudySlug } from "./academic-year";
 
 /**
  * Database access required by the Feide sync hook.
@@ -535,10 +535,16 @@ export async function applyFeideStudyPrograms(
             const stored = written ?? before;
             const effectiveStartYear = stored?.startYear ?? null;
 
+            /**
+             * Never for a master: masters own no cohort group, so the only
+             * group slugged with that year belongs to the member's bachelor,
+             * and deleting it would take their real intake with it.
+             */
             if (
                 before?.startYearSource === "assumed" &&
                 before.startYear !== null &&
-                before.startYear !== effectiveStartYear
+                before.startYear !== effectiveStartYear &&
+                !isMasterStudySlug(programSlug)
             ) {
                 await removeCohortMembership(tx, userId, before.startYear);
             }
@@ -883,8 +889,20 @@ export async function syncDerivedStudyGroups(
      * `fc:fs:kull`, and a member can have the programme without ever having
      * had a cohort — inventing a year would put them in the wrong intake, and
      * the cohort groups are what the inherited priority pools select on.
+     *
+     * And none for a master either, whatever year we hold. A cohort group is
+     * programme-less — it is slugged as a bare year and says nothing about
+     * *which* studies started then — so putting a master's intake in one mixes
+     * master students into the inherited pools aimed at that year's bachelor
+     * intake. The master's own start year lives on the programme row instead,
+     * which is where {@link computeUserClassYear} now reads it, and the
+     * bachelor cohort group the member already carries stays untouched as
+     * history.
      */
-    const studyYearSlug = startYear === null ? null : String(startYear);
+    const studyYearSlug =
+        startYear === null || isMasterStudySlug(programSlug)
+            ? null
+            : String(startYear);
 
     if (studyYearSlug !== null) {
         /**
