@@ -20,7 +20,14 @@ Kjør skriptet — ikke lag taggen for hånd:
 bun run cut-release
 ```
 
-Det gjør alle sjekkene selv: at du står på `main`, at treet er rent, at `main` er i synk med `origin/main`, og at CI faktisk er grønn på commiten som tagges. Det regner ut neste nummer for dagen, viser hvilke commits som slippes siden forrige release, og spør før det pusher.
+Det sjekker at du står på `main`, at treet er rent, og at `main` er i synk med `origin/main`. Det regner ut neste nummer for dagen, viser hvilke commits som slippes siden forrige release, og spør før det pusher.
+
+**Skriptet sjekker ikke CI.** Det må du gjøre selv før du tagger. Merge-commiten på `main` har typisk fortsatt testene kjørende i flere minutter etter at PR-en gikk inn, og det er den commiten taggen peker på:
+
+```bash
+gh api "repos/TIHLDE/Photon/commits/<sha>/check-runs" \
+  --jq '[.check_runs[] | "\(.name): \(.conclusion // .status)"] | join("\n")'
+```
 
 For å se hva som ville skjedd uten å slippe noe:
 
@@ -34,9 +41,21 @@ Etterpå: følg kjøringen og **rapporter faktisk status**, ikke bare «deployet
 gh run list --limit 3
 ```
 
+### «Deploy: success» betyr ikke at migrasjonen har kjørt
+
+`deploy.yml` har tre jobber — `build`, `release_notes`, `notify` — og ingen av dem rører databasen. Migrasjonen ligger i containerens entrypoint:
+
+```
+ENTRYPOINT ["sh", "-c", "bun run ./apps/api/dist/migrate.js && bun run ./apps/api/dist/index.js"]
+```
+
+Skjemaet endrer seg altså først når Drift har byttet container, som er minutter etter at workflowen melder `success`. Venter du på en migrasjon, poll databasen — ikke workflowen. Og `drizzle-kit migrate` velger på journal-tidsstempel, ikke på hash — den kan melde «applied successfully» uten å ha kjørt noe. Verifiser mot databasen, ikke mot loggen.
+
+Rekkefølgen i entrypointet er det som gjør skjemaendringer trygge: migrasjonen er ferdig før ny kode svarer på en eneste forespørsel. Et skript som må kjøre *etter* en migrasjon — en backfill som skriver en ny enum-verdi, for eksempel — kan derfor ikke kjøres før ny container faktisk har startet.
+
 ## Ting å ikke gjøre
 
-- **Ikke lag taggen manuelt** med `git tag`. Skriptet finnes fordi sjekkene (CI grønn, i synk med origin, riktig nummer) er lette å glemme, og en feil tag deployer rett i prod.
+- **Ikke lag taggen manuelt** med `git tag`. Skriptet finnes fordi sjekkene (i synk med origin, rent tre, riktig nummer for dagen) er lette å glemme, og en feil tag deployer rett i prod.
 - **Ikke gjenbruk eller flytt en tag.** En release-tag er en uforanderlig markør — Drift peker på den. Trenger du å fikse noe, lag en ny tag.
 - **Ikke gjenopprett en `dev`-branch.** Den ble bevisst fjernet: dobbel CI-venting (~20 min i stedet for ~10) og en merge-strategi nye i Index måtte lære. Kommer det en «vi burde ha en staging-branch»-diskusjon, er det en egen avgjørelse — ikke noe man gjør i forbifarten.
 
