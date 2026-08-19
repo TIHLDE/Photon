@@ -834,6 +834,10 @@ export const eventListItemSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "Alt text for the event image (nullable)" }),
+        createdById: z.string().nullable().meta({
+            description:
+                "Creator user ID. The creator may update and delete their own event, so an admin listing needs it to tell an event the caller can manage from one they may only look at.",
+        }),
         createdAt: z.iso
             .date()
             .meta({ description: "Event creation time (ISO 8601)" }),
@@ -1135,6 +1139,16 @@ export const refundEventPaymentResponseSchema = Schema(
             description: "The amount that was refunded, in minor units",
         }),
         currency: z.string(),
+    }),
+);
+
+export const confirmPaymentResponseSchema = Schema(
+    "ConfirmPaymentResponse",
+    z.object({
+        status: z.enum(["paid", "pending", "failed", "none"]).meta({
+            description:
+                "What the payment provider says about the caller's outstanding checkout. 'pending' means the checkout is still open or the provider could not be reached — ask again shortly. 'none' means there is nothing outstanding to confirm.",
+        }),
     }),
 );
 

@@ -17,6 +17,7 @@ import { z } from "zod";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { authQueryOptions, sessionHasPermission } from "#/api/auth";
 import {
     type ApplicationType,
@@ -42,6 +43,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/soknader")({
     component: AdminApplicationsPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "soknader");
+    },
     validateSearch: searchSchema,
     loader: () => ({ breadcrumbs: "Søknader" }),
 });

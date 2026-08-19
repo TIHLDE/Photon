@@ -33,6 +33,7 @@ import z from "zod";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createNewsMutation,
@@ -57,6 +58,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/nyheter")({
     component: NewsAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "nyheter");
+    },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getNewsQuery(0));

@@ -43,6 +43,7 @@ import {
 } from "#/api/queries/events";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -57,12 +58,16 @@ import { avatarImageUrl } from "#/lib/assets";
 
 export const Route = createFileRoute("/admin/prikker")({
     component: StrikesAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "prikker");
+    },
     loader: () => ({ breadcrumbs: "Prikker" }),
 });
 
 function StrikesAdminPage() {
     const canCreate = useAnyScopePermission([
         "events:strikes:create",
+        "events:update",
         "events:manage",
     ]);
     const [createOpen, setCreateOpen] = useState(false);
@@ -100,8 +105,12 @@ function StrikesSection() {
     const [page, setPage] = useState(0);
     const { data, isPending } = useQuery(getStrikesQuery(page));
     const remove = useMutation(deleteStrikeMutation);
+    // Arranging a group's events carries its prikker, so the arrangør sees the
+    // delete button too. The API still answers per prikk: the button only
+    // works on prikker from their own groups' arrangementer.
     const canDelete = useAnyScopePermission([
         "events:strikes:delete",
+        "events:update",
         "events:manage",
     ]);
 

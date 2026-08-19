@@ -41,17 +41,46 @@ function under(prefix: string): string[] {
 }
 
 /**
- * Arranging an event is one job, so registrations, feedback, payments and
- * prikker ride with it — whoever put the arrangement up handles who shows up,
- * who paid and who never turned up. Every one of those endpoints narrows to
- * the event's organiser group, so a group-scoped grant reaches that group's
- * own arrangementer and nobody else's.
+ * Arranging an event is one job, so registrations and the payment list ride
+ * with it — whoever put the arrangement up handles who shows up and who paid.
+ * Every one of those endpoints narrows to the event's organiser group, so a
+ * group-scoped grant reaches that group's own arrangementer and nobody else's.
+ *
+ * Prikker for the group's own arrangementer ride with it too, but not as
+ * checkboxes: the API reads `events:update` / `events:manage` for the
+ * organiser group as the right to handle that event's prikker. The boxes below
+ * therefore only have to say something about *other* groups' prikker, which is
+ * what the org-wide "Prikker" box is for.
  *
  * Refunds are the exception, and the only one: moving money back out is a
  * separate decision that stays with whoever holds it explicitly.
  */
 const EVENT_REFUND = "events:payments:refund";
-const EVENT_PERMISSIONS = under("events").filter((p) => p !== EVENT_REFUND);
+const EVENT_STRIKES = under("events:strikes");
+
+/**
+ * Listed one by one rather than derived from the namespace, because the
+ * namespace is wider than the API.
+ *
+ * `under("events")` handed out eighteen strings, and twelve of them are read
+ * by no route at all — `events:feedback:create`, `events:payments:update` and
+ * the rest are registry entries nobody ever wired up, while
+ * `events:registrations:checkin` and friends are covered by `events:update`.
+ * They granted nothing, but the box is atomic and you may only hand out what
+ * you hold, so those dead strings were enough to make the whole box
+ * unsaveable for every group leader whose list predates them. Only what the
+ * API actually checks belongs here; add a line when a route starts reading
+ * one.
+ */
+const EVENT_PERMISSIONS = [
+    "events:create",
+    "events:update",
+    "events:delete",
+    "events:manage",
+    "events:registrations:view",
+    "events:registrations:create",
+    "events:payments:view",
+];
 
 /**
  * Søknader land on four different desks — utlegg with the Finansminister,
@@ -65,6 +94,16 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
         label: "Arrangementer",
         groupScopable: true,
         permissions: EVENT_PERMISSIONS,
+    },
+    {
+        slug: "events-strikes",
+        label: "Prikker",
+        // Prikker on your own group's arrangementer follow from arranging
+        // them, so a group-scoped box here would only repeat access the group
+        // already has. What is left is the cross-group job — the prikkeliste
+        // for all of TIHLDE — and that is global by nature.
+        groupScopable: false,
+        permissions: EVENT_STRIKES,
     },
     {
         slug: "events-refund",

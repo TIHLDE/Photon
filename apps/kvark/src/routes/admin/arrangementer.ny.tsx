@@ -9,6 +9,7 @@ import { XCircle } from "lucide-react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import { createEventMutation } from "#/api/queries/events";
@@ -39,6 +40,11 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/arrangementer/ny")({
     component: NewEventPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "arrangementer", {
+            permission: ["events:create", "events:manage"],
+        });
+    },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
         await Promise.all([

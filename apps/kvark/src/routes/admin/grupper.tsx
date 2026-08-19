@@ -65,6 +65,7 @@ import { useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createGroupMutation,
@@ -99,6 +100,11 @@ import {
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "grupper", {
+            allowGroupLeader: true,
+        });
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
         return { breadcrumbs: "Grupper" };

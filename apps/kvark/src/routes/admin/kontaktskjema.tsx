@@ -22,6 +22,7 @@ import {
     getApplicationsQuery,
     updateApplicationStatusMutation,
 } from "#/api/queries/applications";
+import { requireAdminSection } from "#/lib/admin-access";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminDetailDialog } from "#/components/soknader/admin-detail-dialog";
@@ -35,6 +36,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/kontaktskjema")({
     component: AdminCompanyContactPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "kontaktskjema");
+    },
     validateSearch: searchSchema,
     loader: () => ({ breadcrumbs: "Kontaktskjema" }),
 });
