@@ -133,7 +133,13 @@ describe("fines in a study group", () => {
             const alumnus = await ctx.utils.createTestUser();
             const member = await ctx.utils.createTestUser();
             // Ferdig med studiet, men fortsatt med i komiteen.
-            await enrol(ctx, alumnus.id, "digtrans-ordinary", program.id, false);
+            await enrol(
+                ctx,
+                alumnus.id,
+                "digtrans-ordinary",
+                program.id,
+                false,
+            );
             await ctx.db.insert(schema.groupMembership).values([
                 { userId: alumnus.id, groupSlug: committee.slug },
                 { userId: member.id, groupSlug: committee.slug },
