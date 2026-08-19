@@ -3,7 +3,7 @@ import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
-import { isFinesEligibleMember } from "./fines/permissions";
+import { isFinesEligibleMember, wasEverGroupMember } from "./fines/permissions";
 import { groupDetailSchema } from "./schema";
 
 export const getRoute = route().get(
@@ -59,6 +59,20 @@ export const getRoute = route().get(
                 (await isFinesEligibleMember(ctx, userId, group))),
         );
 
-        return c.json({ ...group, viewerCanUseFines });
+        /**
+         * The read-only half of the same question, for someone who has left:
+         * they no longer take part in the group's bøter, but the ones already
+         * in their name — given and received — stay theirs to look up. Without
+         * this the client has nothing to hang that view on, since every other
+         * field here says "not a member".
+         */
+        const viewerCanSeeOwnFines = Boolean(
+            group.finesActivated &&
+            userId &&
+            !viewerCanUseFines &&
+            (await wasEverGroupMember(ctx, userId, group.slug)),
+        );
+
+        return c.json({ ...group, viewerCanUseFines, viewerCanSeeOwnFines });
     },
 );

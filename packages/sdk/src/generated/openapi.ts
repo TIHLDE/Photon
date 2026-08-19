@@ -1495,7 +1495,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'.
          */
         get: operations["listFines"];
         put?: never;
@@ -1519,7 +1519,7 @@ export interface paths {
         };
         /**
          * Fine totals for a group
-         * @description Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. Same audience as the fine list.
+         * @description Sum of fine amounts per settlement stage for a group: awaiting approval, approved but unpaid, and paid. Rejected fines are excluded. The unpaid totals only count the group's current members — a fine follows the person out of the group, but the debt does not. 'paid' is history and counts everyone. Same audience as the fine list.
          */
         get: operations["getFineStatistics"];
         put?: never;
@@ -1599,7 +1599,7 @@ export interface paths {
         };
         /**
          * Get fine by ID
-         * @description Retrieve detailed information about a specific fine. Group members can view every fine in their own group, users can always view their own, and the fines admin and root can view any.
+         * @description Retrieve detailed information about a specific fine. Group members can view every fine in their own group, and the fines admin and root can view any. Anyone party to a fine — the member who received it and the one who handed it out — can always view it, membership or not.
          */
         get: operations["getFine"];
         put?: never;
@@ -1613,7 +1613,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update fine
-         * @description Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.
+         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.
          */
         patch: operations["updateFine"];
         trace?: never;
@@ -4934,6 +4934,8 @@ export interface components {
             updatedAt: string;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
+            /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
+            viewerCanSeeOwnFines: boolean;
         };
         Fine: {
             /** @description Fine ID */

@@ -188,6 +188,10 @@ export const groupDetailSchema = Schema(
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",
         }),
+        viewerCanSeeOwnFines: z.boolean().meta({
+            description:
+                "Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'.",
+        }),
     }),
 );
 

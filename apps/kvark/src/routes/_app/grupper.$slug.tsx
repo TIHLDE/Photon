@@ -255,6 +255,13 @@ function GroupDetail() {
     // dagens studenter. Root er ikke med i serverens svar (den gjelder én
     // gruppe, ikke tilgang på tvers), så den legges på her.
     const canViewFines = Boolean(apiGroup.viewerCanUseFines) || isRoot;
+    // Den som har gått ut av gruppen tar ikke lenger del i botsystemet, men
+    // bøtene i eget navn — gitt og mottatt — er fortsatt deres å slå opp.
+    // Serveren snevrer botlista til dem av seg selv; her styrer flagget bare
+    // hva som vises, og at ingenting kan endres.
+    const canSeeOwnFines =
+        !canViewFines && Boolean(apiGroup.viewerCanSeeOwnFines);
+    const finesTabVisible = canViewFines || canSeeOwnFines;
 
     // Filtrene går til serveren, ikke gjennom en ferdiglastet liste: en gruppe
     // med noen tusen bøter skal ikke lastes ned i sin helhet for å vise 25.
@@ -273,7 +280,9 @@ function GroupDetail() {
         fetchNextPage: fetchMoreFines,
     } = useInfiniteQuery({
         ...getGroupFinesInfiniteQuery(slug, fineFilters),
-        enabled: canViewFines && botVisning === "alle",
+        // Egen-visningen har bare den flate lista, så den henter uansett hva
+        // `botVisning` skulle stå til fra en gammel URL.
+        enabled: canSeeOwnFines || (canViewFines && botVisning === "alle"),
     });
 
     const {
@@ -432,16 +441,17 @@ function GroupDetail() {
     const navItems = useMemo(
         () =>
             GROUP_NAV_ITEMS.filter((item) => {
-                if (item.key === "boter" || item.key === "lovverk") {
-                    return canViewFines;
-                }
+                if (item.key === "boter") return finesTabVisible;
+                // Lovverket er gruppens regelverk, ikke en del av ens egen
+                // botlogg: det følger medlemskapet.
+                if (item.key === "lovverk") return canViewFines;
                 // Spørreskjemaene ligger bak innlogging i API-et, så en
                 // utlogget besøkende skal ikke se fanen i det hele tatt — den
                 // ville uansett bare stått tom.
                 if (item.key === "sporreskjema") return isLoggedIn;
                 return true;
             }),
-        [canViewFines, isLoggedIn],
+        [canViewFines, finesTabVisible, isLoggedIn],
     );
     // ?tab=boter kan stå i URL-en fra før rettighetene ble sjekket, så en fane
     // som ikke lenger finnes faller tilbake til «Om».
@@ -768,7 +778,7 @@ function GroupDetail() {
                             statistics={apiFineStatistics}
                             memberCount={members.length}
                             finesInfo={group.finesInfo}
-                            grouping={botVisning}
+                            grouping={canSeeOwnFines ? "alle" : botVisning}
                             onGroupingChange={(botVisning) =>
                                 navigate({
                                     search: (prev) => ({
@@ -825,6 +835,7 @@ function GroupDetail() {
                                 }
                             }}
                             canManage={canManageFines}
+                            ownFinesOnly={canSeeOwnFines}
                             currentUserId={session?.user?.id}
                             onApprove={(fine) =>
                                 updateFine.mutate({

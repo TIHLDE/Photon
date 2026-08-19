@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, desc, eq } from "drizzle-orm";
+import { type SQL, and, desc, eq, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -12,7 +12,11 @@ import {
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
-import { canViewFines, requireFinesGroup } from "./permissions";
+import {
+    canViewFines,
+    requireFinesGroup,
+    wasEverGroupMember,
+} from "./permissions";
 import { fineListResponseSchema, fineStatusSchema } from "./schema";
 import { serializeFineLaw } from "./serialize";
 
@@ -23,7 +27,7 @@ export const listFinesRoute = route().get(
         summary: "List fines for a group",
         operationId: "listFines",
         description:
-            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Filter with 'status' and 'userId'.",
+            "Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -31,7 +35,7 @@ export const listFinesRoute = route().get(
             description: "List of fines retrieved successfully",
         })
         .forbidden({
-            description: "Not authorized to view fines for this group",
+            description: "Never belonged to this group",
         })
         .notFound({
             description: "Group not found, or fines not activated for it",
@@ -59,13 +63,41 @@ export const listFinesRoute = route().get(
 
         const group = await requireFinesGroup(ctx, groupSlug);
 
-        if (!(await canViewFines(ctx, user.id, group))) {
-            throw new HTTPException(403, {
-                message: "Not authorized to view fines for this group",
-            });
-        }
+        const conditions: (SQL | undefined)[] = [
+            eq(schema.fine.groupSlug, groupSlug),
+        ];
 
-        const conditions = [eq(schema.fine.groupSlug, groupSlug)];
+        /**
+         * Reading the group's whole botliste is for the group: members, the
+         * botsjef, root. A former member is narrowed to the fines they are
+         * party to rather than turned away.
+         *
+         * That narrowing is what being removed leaves them with, and they need
+         * it. Leaving the group ends their bøter there — the unpaid total
+         * stops counting them — but the ones already handed out stay theirs to
+         * look up: what they were fined for and still owe, and what they
+         * handed out to others while they were in the group. Being removed
+         * should not black out your own record, and a botsjef fielding "hva
+         * var det jeg fikk bot for?" should not be the only way to read it.
+         *
+         * Having belonged to the group is the price of entry, though. Bøter
+         * are internal, so someone who never was a member is refused outright
+         * rather than handed an empty list.
+         */
+        if (!(await canViewFines(ctx, user.id, group))) {
+            if (!(await wasEverGroupMember(ctx, user.id, groupSlug))) {
+                throw new HTTPException(403, {
+                    message: "Not authorized to view fines for this group",
+                });
+            }
+
+            conditions.push(
+                or(
+                    eq(schema.fine.userId, user.id),
+                    eq(schema.fine.createdByUserId, user.id),
+                ),
+            );
+        }
 
         if (userId) {
             conditions.push(eq(schema.fine.userId, userId));

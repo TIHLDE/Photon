@@ -114,6 +114,70 @@ describe("fines in a study group", () => {
     );
 
     integrationTest(
+        "an alumnus in an ordinary group is a member like any other",
+        async ({ ctx }) => {
+            // Poenget: Feide-sperren gjelder studiegruppene, ikke gruppene folk
+            // faktisk melder seg inn i. En ferdig utdannet som fortsatt sitter
+            // i en undergruppe eller interessegruppe er medlem der på ordinært
+            // vis, og botsystemet skal behandle hen som det.
+            const { program } = await createStudyProgramGroup(
+                ctx,
+                "digtrans-ordinary",
+            );
+            const committee = await ctx.utils.createTestGroup({
+                slug: "alumni-i-komiteen",
+                type: "COMMITTEE",
+                finesActivated: true,
+            });
+
+            const alumnus = await ctx.utils.createTestUser();
+            const member = await ctx.utils.createTestUser();
+            // Ferdig med studiet, men fortsatt med i komiteen.
+            await enrol(
+                ctx,
+                alumnus.id,
+                "digtrans-ordinary",
+                program.id,
+                false,
+            );
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: alumnus.id, groupSlug: committee.slug },
+                { userId: member.id, groupSlug: committee.slug },
+            ]);
+
+            const client = await ctx.utils.clientForUser(alumnus);
+
+            const given = await client.api.groups[":groupSlug"].fines.$post({
+                param: { groupSlug: committee.slug },
+                json: {
+                    userId: member.id,
+                    groupSlug: committee.slug,
+                    reason: "Møtte ikke opp",
+                    amount: 1,
+                },
+            });
+            expect(given.status).toBe(201);
+
+            // Og hele komiteens botliste, ikke bare sine egne.
+            await ctx.db.insert(schema.fine).values({
+                userId: member.id,
+                groupSlug: committee.slug,
+                reason: "Bot mellom to andre",
+                amount: 1,
+                createdByUserId: member.id,
+            });
+            const listed = await client.api.groups[":groupSlug"].fines.$get({
+                param: { groupSlug: committee.slug },
+                query: {},
+            });
+
+            expect(listed.status).toBe(200);
+            expect((await listed.json()).fines).toHaveLength(2);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "an alumnus in the group may not give fines",
         async ({ ctx }) => {
             const { group, program } = await createStudyProgramGroup(
@@ -144,7 +208,7 @@ describe("fines in a study group", () => {
     );
 
     integrationTest(
-        "an alumnus in the group may not read the group's fines",
+        "an alumnus in the group reads their own fines, not the students'",
         async ({ ctx }) => {
             const { group, program } = await createStudyProgramGroup(
                 ctx,
@@ -152,7 +216,27 @@ describe("fines in a study group", () => {
             );
 
             const alumnus = await ctx.utils.createTestUser();
+            const student = await ctx.utils.createTestUser();
             await enrol(ctx, alumnus.id, group.slug, program.id, false);
+            await enrol(ctx, student.id, group.slug, program.id, true);
+
+            // En bot fra studietiden, og en som gjelder dagens studenter.
+            await ctx.db.insert(schema.fine).values([
+                {
+                    userId: alumnus.id,
+                    groupSlug: group.slug,
+                    reason: "Fra studietiden",
+                    amount: 1,
+                    createdByUserId: student.id,
+                },
+                {
+                    userId: student.id,
+                    groupSlug: group.slug,
+                    reason: "Dagens kull",
+                    amount: 1,
+                    createdByUserId: student.id,
+                },
+            ]);
 
             const client = await ctx.utils.clientForUser(alumnus);
 
@@ -161,7 +245,11 @@ describe("fines in a study group", () => {
                 query: {},
             });
 
-            expect(response.status).toBe(403);
+            // Kullets botliste er ikke lenger deres, men egen bot består.
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            expect(json.fines).toHaveLength(1);
+            expect(json.fines[0]?.reason).toBe("Fra studietiden");
         },
         500_000,
     );

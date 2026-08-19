@@ -65,6 +65,12 @@ type GroupFinesTabProps = {
     onLoadMore: () => void;
     /** Whether the viewer may approve, settle or delete the group's fines. */
     canManage: boolean;
+    /**
+     * Satt for den som har forlatt gruppen. Da er dette ikke gruppens botliste
+     * lenger, men et oppslag i egne bøter: gruppens summer og medlemsoversikt
+     * hører ikke hjemme her, og ingenting kan endres.
+     */
+    ownFinesOnly?: boolean;
     /** Den innloggede brukeren, som er den eneste som kan skrive forsvar. */
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
@@ -111,6 +117,7 @@ export function GroupFinesTab({
     isLoadingMore,
     onLoadMore,
     canManage,
+    ownFinesOnly = false,
     currentUserId,
     onApprove,
     onMarkPaid,
@@ -126,33 +133,45 @@ export function GroupFinesTab({
 
     return (
         <div className="flex flex-col gap-6">
-            <GroupPageHeader title="Bøter" />
+            <GroupPageHeader title={ownFinesOnly ? "Mine bøter" : "Bøter"} />
 
-            {finesInfo ? (
+            {ownFinesOnly ? (
+                <p className="text-sm text-muted-foreground">
+                    Du er ikke lenger medlem av gruppen. Her står bøtene du fikk
+                    og ga mens du var med.
+                </p>
+            ) : null}
+
+            {/* Botreglene gjelder dem som er med. Har du gått ut, er de ikke
+                lenger dine å følge. */}
+            {finesInfo && !ownFinesOnly ? (
                 <Card size="sm" className="p-4">
                     <MarkdownView registry={richRegistry} source={finesInfo} />
                 </Card>
             ) : null}
 
             {/* Summene gjelder hele gruppa, ikke det som er filtrert fram —
-                ellers ville «Betalt» falt til 0 så snart du så på ubetalte. */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <GroupFineStatCard
-                    label="Ikke godkjent"
-                    value={notApproved}
-                    perMember={perMember(notApproved, memberCount)}
-                />
-                <GroupFineStatCard
-                    label="Godkjent, ikke betalt"
-                    value={approvedNotPaid}
-                    perMember={perMember(approvedNotPaid, memberCount)}
-                />
-                <GroupFineStatCard
-                    label="Betalt"
-                    value={paid}
-                    perMember={perMember(paid, memberCount)}
-                />
-            </div>
+                ellers ville «Betalt» falt til 0 så snart du så på ubetalte.
+                De er gruppens regnskap, og vises ikke for den som har gått ut. */}
+            {ownFinesOnly ? null : (
+                <div className="grid gap-4 md:grid-cols-3">
+                    <GroupFineStatCard
+                        label="Ikke godkjent"
+                        value={notApproved}
+                        perMember={perMember(notApproved, memberCount)}
+                    />
+                    <GroupFineStatCard
+                        label="Godkjent, ikke betalt"
+                        value={approvedNotPaid}
+                        perMember={perMember(approvedNotPaid, memberCount)}
+                    />
+                    <GroupFineStatCard
+                        label="Betalt"
+                        value={paid}
+                        perMember={perMember(paid, memberCount)}
+                    />
+                </div>
+            )}
 
             <div className="flex flex-col gap-3">
                 <Tabs
@@ -160,12 +179,18 @@ export function GroupFinesTab({
                     onValueChange={(v) => onGroupingChange(v as FineGrouping)}
                 >
                     <div className="flex flex-wrap items-center gap-3">
-                        <TabsList>
-                            <TabsTrigger value="alle">Alle bøter</TabsTrigger>
-                            <TabsTrigger value="per-medlem">
-                                Per medlem
-                            </TabsTrigger>
-                        </TabsList>
+                        {/* «Per medlem» er gruppens medlemsliste, og den står
+                            ikke åpen for en som har gått ut. */}
+                        {ownFinesOnly ? null : (
+                            <TabsList>
+                                <TabsTrigger value="alle">
+                                    Alle bøter
+                                </TabsTrigger>
+                                <TabsTrigger value="per-medlem">
+                                    Per medlem
+                                </TabsTrigger>
+                            </TabsList>
+                        )}
                         <div className="ml-auto flex flex-wrap items-center gap-2">
                             <Select
                                 value={status}
@@ -232,7 +257,8 @@ export function GroupFinesTab({
                 fines={fines}
                 openIndex={openIndex}
                 onOpenChange={setOpenIndex}
-                canManage={canManage}
+                canManage={canManage && !ownFinesOnly}
+                readOnly={ownFinesOnly}
                 currentUserId={currentUserId}
                 onApprove={onApprove}
                 onMarkPaid={onMarkPaid}

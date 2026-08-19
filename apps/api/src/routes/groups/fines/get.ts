@@ -16,7 +16,7 @@ export const getFineRoute = route().get(
         summary: "Get fine by ID",
         operationId: "getFine",
         description:
-            "Retrieve detailed information about a specific fine. Group members can view every fine in their own group, users can always view their own, and the fines admin and root can view any.",
+            "Retrieve detailed information about a specific fine. Group members can view every fine in their own group, and the fines admin and root can view any. Anyone party to a fine — the member who received it and the one who handed it out — can always view it, membership or not.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -83,11 +83,18 @@ export const getFineRoute = route().get(
             });
         }
 
-        // Check authorization: own fine, membership in the group (Lepton
-        // parity), the fines admin, or root.
-        const isOwner = fine.userId === user.id;
+        /**
+         * Check authorization: a fine you are party to, membership in the
+         * group (Lepton parity), the fines admin, or root.
+         *
+         * Party is both ends of the bot — the member who got it and the one
+         * who wrote it. Neither loses sight of it by leaving the group: the
+         * receiver still owes it, and the giver still has to answer for it.
+         */
+        const isParty =
+            fine.userId === user.id || fine.createdByUserId === user.id;
 
-        if (!isOwner && !(await canViewFines(ctx, user.id, group))) {
+        if (!isParty && !(await canViewFines(ctx, user.id, group))) {
             throw new HTTPException(403, {
                 message: "Not authorized to view this fine",
             });
