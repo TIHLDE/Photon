@@ -53,6 +53,7 @@ import { useEffect, useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { getEventsQuery } from "#/api/queries/events";
 import {
@@ -84,6 +85,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/galleri")({
     component: GalleryAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "galleri");
+    },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
         await Promise.all([

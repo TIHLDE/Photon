@@ -1,6 +1,9 @@
 import { Field, FieldDescription, FieldLabel } from "@tihlde/ui/ui/field";
 import { ImageDropzone } from "@tihlde/ui/ui/image-dropzone";
-import type { ImagePresetName } from "@tihlde/ui/ui/image-preset";
+import {
+    ImagePresetFrame,
+    type ImagePresetName,
+} from "@tihlde/ui/ui/image-preset";
 
 import { imageDropzoneLabels } from "#/lib/image";
 
@@ -18,6 +21,11 @@ type AdminImageFieldProps = {
     /** Image already saved on the resource, shown until a new one is picked. */
     existingImageUrl?: string | null;
     disabled?: boolean;
+    /**
+     * Vis bildet uten opplastingsflate. `disabled` alene holder ikke: sonen
+     * blir inert, men fortsetter å be om en fil den ikke tar imot.
+     */
+    readOnly?: boolean;
     /** Layout-only classes for the field wrapper, e.g. a grid column span. */
     className?: string;
 };
@@ -37,6 +45,7 @@ export function AdminImageField({
     onChange,
     existingImageUrl,
     disabled,
+    readOnly,
     className,
 }: AdminImageFieldProps) {
     return (
@@ -45,15 +54,24 @@ export function AdminImageField({
             {description ? (
                 <FieldDescription>{description}</FieldDescription>
             ) : null}
-            <ImageDropzone
-                preset={preset}
-                value={value ? [value] : []}
-                onValueChange={(next) => onChange(next[0] ?? null)}
-                existingImageUrl={existingImageUrl}
-                accept={{ "image/*": [] }}
-                disabled={disabled}
-                labels={imageDropzoneLabels}
-            />
+            {readOnly ? (
+                <ImagePresetFrame
+                    preset={preset}
+                    src={existingImageUrl ?? undefined}
+                    alt=""
+                    fallback={<span>Ingen bilde</span>}
+                />
+            ) : (
+                <ImageDropzone
+                    preset={preset}
+                    value={value ? [value] : []}
+                    onValueChange={(next) => onChange(next[0] ?? null)}
+                    existingImageUrl={existingImageUrl}
+                    accept={{ "image/*": [] }}
+                    disabled={disabled}
+                    labels={imageDropzoneLabels}
+                />
+            )}
         </Field>
     );
 }

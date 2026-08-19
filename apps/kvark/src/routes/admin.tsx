@@ -41,11 +41,8 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import {
-    authClientWithRedirect,
-    authQueryOptions,
-    sessionHasPermissionInAnyScope,
-} from "#/api/auth";
+import { authQueryOptions, sessionHasPermissionInAnyScope } from "#/api/auth";
+import { requireAdminPanel } from "#/lib/admin-access";
 import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 import { TihldeLogo } from "#/components/icons/tihlde";
@@ -53,9 +50,11 @@ import { TihldeLogo } from "#/components/icons/tihlde";
 export const Route = createFileRoute("/admin")({
     component: AdminLayout,
     async beforeLoad({ location }) {
-        // Baseline: you must be signed in to reach the admin shell at all.
-        // Each section still relies on the API enforcing its own permission.
-        const auth = await authClientWithRedirect(location.href);
+        // Signed in AND holding something that opens a section — otherwise the
+        // shell is an empty sidebar and a dashboard of public numbers. Each
+        // section guards itself on top of this, and the API remains the thing
+        // that actually enforces access.
+        const auth = await requireAdminPanel(location.href);
         return { auth };
     },
 });

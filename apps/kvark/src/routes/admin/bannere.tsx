@@ -39,12 +39,16 @@ import {
 } from "#/api/queries/banners";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/admin/bannere")({
     component: BannersAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "bannere");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getBannersQuery());
         return { breadcrumbs: "Bannere" };

@@ -28,6 +28,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -45,6 +46,9 @@ const PdfPlacement = lazy(async () => ({
 
 export const Route = createFileRoute("/admin/opptak")({
     component: OpptakAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "opptak");
+    },
     loader: ({ context }) =>
         context.queryClient.ensureQueryData(getContractListQuery()),
 });

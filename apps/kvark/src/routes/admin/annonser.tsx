@@ -49,6 +49,7 @@ import { RichEditor } from "@tihlde/ui/complex/markdown";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { useImageUploader } from "#/api/queries/assets";
 import {
     createJobMutation,
@@ -106,6 +107,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/annonser")({
     component: JobsAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "annonser");
+    },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(

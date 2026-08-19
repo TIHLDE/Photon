@@ -19,6 +19,7 @@ import {
     CheckCircle2,
     CircleCheckBigIcon,
     ExternalLink,
+    EyeIcon,
     PlusIcon,
     TriangleAlertIcon,
     UsersIcon,
@@ -61,6 +62,7 @@ import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import {
@@ -94,7 +96,7 @@ import { NewFormDialog } from "#/components/new-form-dialog";
 import {
     useAnyScopePermission,
     useCanActForGroup,
-    useCanActOnResource,
+    useCanActOnGroupResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
 import { cn } from "#/lib/utils";
@@ -111,8 +113,14 @@ const TABS = [
 ] as const;
 type TabValue = (typeof TABS)[number];
 
-/** Module-level so the permission predicate keeps a stable identity. */
+/** Module-level so the permission predicates keep a stable identity. */
 const EVENT_UPDATE_PERMISSIONS = ["events:update", "events:manage"] as const;
+const EVENT_DELETE_PERMISSIONS = ["events:delete", "events:manage"] as const;
+const EVENT_PAYMENT_VIEW_PERMISSIONS = [
+    "events:payments:view",
+    "events:manage",
+    "events:update",
+] as const;
 
 // Defaulted (not required) so plain links to the page need no search param,
 // while the tab stays deep-linkable and survives a bad value.
@@ -122,6 +130,9 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/admin/arrangementer/$eventId")({
     component: EventAdminDetailPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "arrangementer");
+    },
     validateSearch: searchSchema,
     loader: async ({ context, params }) => {
         const event = await context.queryClient.ensureQueryData(
@@ -147,23 +158,37 @@ function EventAdminDetailPage() {
     const navigate = useNavigate({ from: Route.fullPath });
     const { data: event } = useSuspenseQuery(getEventByIdQuery(eventId));
 
-    const canSeePayments = useAnyScopePermission([
-        "events:payments:view",
-        "events:manage",
-        "events:update",
-    ]);
+    const organizerSlug = event.organizer?.slug ?? null;
 
+    // Rettigheten må gjelde arrangørgruppa — det er det API-et spør om. Uten
+    // den er sida en lesevisning: du ser hva som står i feltene, ingenting
+    // mer. Se `useCanActOnGroupResource`.
+    const canManage = useCanActOnGroupResource(EVENT_UPDATE_PERMISSIONS)(
+        organizerSlug,
+        event.createdById,
+    );
+    const canSeePayments = useCanActOnGroupResource(
+        EVENT_PAYMENT_VIEW_PERMISSIONS,
+    )(organizerSlug, event.createdById);
+
+    // Påmeldte, oppmøte og skjemaer er administrasjon av arrangementet, og
+    // endepunktene bak dem svarer bare den som kan det. Uten tilgang står
+    // detaljfanen igjen alene, i lesemodus.
     const visibleTabs = useMemo(
         () => [
             { value: "detaljer" as const, label: "Detaljer" },
-            { value: "pameldte" as const, label: "Påmeldte" },
-            { value: "oppmote" as const, label: "Oppmøte" },
-            { value: "skjemaer" as const, label: "Skjemaer" },
+            ...(canManage
+                ? [
+                      { value: "pameldte" as const, label: "Påmeldte" },
+                      { value: "oppmote" as const, label: "Oppmøte" },
+                      { value: "skjemaer" as const, label: "Skjemaer" },
+                  ]
+                : []),
             ...(canSeePayments
                 ? [{ value: "betalinger" as const, label: "Betalinger" }]
                 : []),
         ],
-        [canSeePayments],
+        [canManage, canSeePayments],
     );
 
     // A tab the user cannot see falls back to the first one they can.
@@ -317,12 +342,15 @@ function DetailsTab({ eventId }: { eventId: string }) {
         [allGroups, canArrangeFor, event.organizer?.slug],
     );
 
-    // Samme regel som API-et: rettigheten (også gruppescopet), eller å ha
-    // opprettet arrangementet selv.
-    const canEdit = useCanActOnResource(["events:update", "events:manage"])(
+    // Samme regel som API-et: rettigheten for arrangørgruppa, eller å ha
+    // opprettet arrangementet selv. Any-scope holdt ikke — den ga
+    // redigeringsskjemaet for andre gruppers arrangementer også.
+    const canEdit = useCanActOnGroupResource(EVENT_UPDATE_PERMISSIONS)(
+        event.organizer?.slug ?? null,
         event.createdById,
     );
-    const canDelete = useCanActOnResource(["events:delete", "events:manage"])(
+    const canDelete = useCanActOnGroupResource(EVENT_DELETE_PERMISSIONS)(
+        event.organizer?.slug ?? null,
         event.createdById,
     );
 
@@ -487,23 +515,25 @@ function DetailsTab({ eventId }: { eventId: string }) {
         );
     }
 
-    if (!canEdit) {
-        return (
-            <Card>
-                <CardContent>
-                    <AdminEmptyState
-                        icon={UsersIcon}
-                        title="Ingen tilgang"
-                        description="Du har ikke tilgang til å redigere dette arrangementet."
-                    />
-                </CardContent>
-            </Card>
-        );
-    }
-
     return (
         <div className="flex flex-col gap-4">
-            {droppedPoolCount > 0 ? (
+            {/*
+             * Lesevisning: du kom hit fra øyeikonet i lista, på et arrangement
+             * en annen gruppe eier. Skjemaet vises som det er, låst — så man
+             * kan se hvordan arrangementet er satt opp uten å kunne endre det.
+             */}
+            {canEdit ? null : (
+                <Alert>
+                    <EyeIcon className="size-4" />
+                    <AlertTitle>Lesevisning</AlertTitle>
+                    <AlertDescription>
+                        {event.organizer
+                            ? `Arrangementet eies av ${event.organizer.name}. Du kan se hvordan det er satt opp, men ikke endre det.`
+                            : "Du kan se hvordan arrangementet er satt opp, men ikke endre det."}
+                    </AlertDescription>
+                </Alert>
+            )}
+            {canEdit && droppedPoolCount > 0 ? (
                 <Alert variant="destructive">
                     <AlertTitle>
                         {droppedPoolCount === 1
@@ -528,6 +558,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 addressSuggestions={addressSuggestions ?? []}
                 isSearchingAddress={isSearchingAddress}
                 onSubmit={handleSubmit}
+                readOnly={!canEdit}
                 submitLabel={
                     isUploading ? "Laster opp bilde …" : "Lagre endringer"
                 }
