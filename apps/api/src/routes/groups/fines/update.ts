@@ -6,7 +6,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
 import { requireAuth } from "~/middleware/auth";
-import { canUpdateFines, requireFinesGroup } from "./permissions";
+import { canUpdateFines, canViewFines, requireFinesGroup } from "./permissions";
 import { updateFineResponseSchema, updateFineSchema } from "./schema";
 
 export const updateFineRoute = route().patch(
@@ -16,7 +16,7 @@ export const updateFineRoute = route().patch(
         summary: "Partially update fine",
         operationId: "updateFine",
         description:
-            "Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.",
+            "Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -86,6 +86,19 @@ export const updateFineRoute = route().patch(
             if (!isOwner) {
                 throw new HTTPException(403, {
                     message: "Only the fine recipient can add a defense",
+                });
+            }
+
+            /**
+             * A defense is an argument put to the group, and it only means
+             * something while you are in it. Someone who has left keeps
+             * reading their old bøter, but the record closes: they cannot
+             * write into a case the group is still settling among itself.
+             */
+            if (!(await canViewFines(ctx, user.id, group))) {
+                throw new HTTPException(403, {
+                    message:
+                        "Only a current member can write a defense for their fine",
                 });
             }
         }

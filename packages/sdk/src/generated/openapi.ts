@@ -1495,7 +1495,7 @@ export interface paths {
         };
         /**
          * List fines for a group
-         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. Everyone else sees only the fines they are party to: the ones they received and the ones they handed out. Filter with 'status' and 'userId'.
+         * @description Retrieve a paginated list of fines for a group, newest first. Group members can view all fines in their own group (Lepton parity), as can the fines admin and root. A former member sees only the fines they are party to: the ones they received and the ones they handed out. Anyone who never belonged to the group is refused. Filter with 'status' and 'userId'.
          */
         get: operations["listFines"];
         put?: never;
@@ -1613,7 +1613,7 @@ export interface paths {
         head?: never;
         /**
          * Partially update fine
-         * @description Partially update a fine. Only provided fields will be updated. Users can add defense to their own fines. Fines admins can update status and approve/reject fines.
+         * @description Partially update a fine. Only provided fields will be updated. Current members can add a defense to their own fines; someone who has left the group can read their fines but no longer write to them. Fines admins can update status and approve/reject fines.
          */
         patch: operations["updateFine"];
         trace?: never;
@@ -4934,6 +4934,8 @@ export interface components {
             updatedAt: string;
             /** @description Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student. */
             viewerCanUseFines: boolean;
+            /** @description Whether the caller may read the fines they are party to here without taking part in the group's fine system: true for someone who has left the group but was once a member. Never true together with 'viewerCanUseFines'. */
+            viewerCanSeeOwnFines: boolean;
         };
         Fine: {
             /** @description Fine ID */

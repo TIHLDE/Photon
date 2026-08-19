@@ -1,6 +1,6 @@
 import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { AppContext } from "~/lib/ctx";
 import { isDerivedGroupType, isGroupLeader, isGroupMember } from "~/lib/group";
@@ -112,6 +112,48 @@ export async function canViewFines(
     }
 
     return await hasPermission(ctx, userId, "root");
+}
+
+/**
+ * Whether a user ever belonged to the group — currently, or in a stint the
+ * membership history recorded.
+ *
+ * This is what separates "may read my own bøter here" from "is a stranger to
+ * this group". Bøter are internal to a group, so the door only opens for
+ * someone who was on the inside; an outsider who never was gets nothing,
+ * whatever the fine table happens to say.
+ *
+ * A study group's alumni pass on the current membership alone: the Feide
+ * projection never removes anyone, so their row is still there even though
+ * {@link isFinesEligibleMember} stopped counting them once they graduated.
+ * That is the intended reading — they were members, and their bøter from
+ * those years stay theirs.
+ *
+ * Note the history table only knows removals it has seen: a stint that ended
+ * before Photon started recording them leaves no row, and that person reads
+ * as a stranger here.
+ */
+export async function wasEverGroupMember(
+    ctx: AppContext,
+    userId: string,
+    groupSlug: string,
+): Promise<boolean> {
+    if (await isGroupMember(ctx, userId, groupSlug)) {
+        return true;
+    }
+
+    const stint = await ctx.db
+        .select({ id: schema.groupMembershipHistory.id })
+        .from(schema.groupMembershipHistory)
+        .where(
+            and(
+                eq(schema.groupMembershipHistory.userId, userId),
+                eq(schema.groupMembershipHistory.groupSlug, groupSlug),
+            ),
+        )
+        .limit(1);
+
+    return stint.length > 0;
 }
 
 /**

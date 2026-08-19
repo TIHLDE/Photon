@@ -995,32 +995,73 @@ describe("fines", () => {
         );
 
         integrationTest(
-            "hides the group's fines from a non-member with none of their own",
+            "refuses a removed member's defense, and flags the read-only view",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-removed-readonly",
+                    finesActivated: true,
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                });
+
+                const [fine] = await ctx.db
+                    .insert(schema.fine)
+                    .values({
+                        userId: user.id,
+                        groupSlug: group.slug,
+                        reason: "Sak til forsvar",
+                        amount: 50,
+                    })
+                    .returning();
+                if (!fine) {
+                    throw new Error("Failed to create fine");
+                }
+
+                // Som medlem står saken åpen.
+                const asMember = await client.api.groups[":groupSlug"].fines[
+                    ":fineId"
+                ].$patch({
+                    param: { groupSlug: group.slug, fineId: fine.id },
+                    json: { defense: "Jeg var syk" },
+                });
+                expect(asMember.status).toBe(200);
+
+                await removeUserFromGroup(ctx, user.id, group.slug);
+
+                // Etterpå er den bare til å lese.
+                const afterRemoval = await client.api.groups[
+                    ":groupSlug"
+                ].fines[":fineId"].$patch({
+                    param: { groupSlug: group.slug, fineId: fine.id },
+                    json: { defense: "Ny forklaring" },
+                });
+                expect(afterRemoval.status).toBe(403);
+
+                // Og gruppesiden sier at visningen er lesevisningen.
+                const detail = await client.api.groups[":slug"].$get({
+                    param: { slug: group.slug },
+                });
+                expect(detail.status).toBe(200);
+                const json = await detail.json();
+                expect(json.viewerCanUseFines).toBe(false);
+                expect(json.viewerCanSeeOwnFines).toBe(true);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "fails to list fines as someone who never belonged to the group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(user);
 
                 const group = await ctx.utils.createTestGroup({
                     finesActivated: true,
-                });
-
-                const member = await ctx.auth.api.createUser({
-                    body: {
-                        email: "list-outsider-member@test.com",
-                        name: "List Outsider Member",
-                        password: "test123!",
-                    },
-                });
-                await ctx.db.insert(schema.groupMembership).values({
-                    userId: member.user.id,
-                    groupSlug: group.slug,
-                });
-                await ctx.db.insert(schema.fine).values({
-                    userId: member.user.id,
-                    groupSlug: group.slug,
-                    reason: "Ikke utenforståendes bord",
-                    amount: 50,
-                    createdByUserId: member.user.id,
                 });
 
                 const response = await client.api.groups[
@@ -1030,12 +1071,9 @@ describe("fines", () => {
                     query: {},
                 });
 
-                // Botlista er gruppens; den som står utenfor ser bare sine
-                // egne bøter, og har ingen her.
-                expect(response.status).toBe(200);
-                const json = await response.json();
-                expect(json.fines).toHaveLength(0);
-                expect(json.totalCount).toBe(0);
+                // Bøter er gruppens indre anliggende: har du aldri vært med,
+                // får du ikke engang en tom liste å lese av.
+                expect(response.status).toBe(403);
             },
             500_000,
         );

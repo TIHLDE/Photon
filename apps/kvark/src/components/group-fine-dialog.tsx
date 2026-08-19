@@ -43,6 +43,11 @@ type GroupFineDialogProps = {
      * dette vet dialogen ikke om feltet skal vises eller bare leses.
      */
     currentUserId?: string;
+    /**
+     * Satt for den som har forlatt gruppen: boten er fortsatt deres å lese,
+     * men saken er ute av hendene deres, så forsvaret vises som tekst.
+     */
+    readOnly?: boolean;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
@@ -55,6 +60,7 @@ export function GroupFineDialog({
     onOpenChange,
     canManage,
     currentUserId,
+    readOnly = false,
     onApprove,
     onMarkPaid,
     onDelete,
@@ -74,6 +80,7 @@ export function GroupFineDialog({
     const isOwnFine = Boolean(
         fine && currentUserId && fine.userId === currentUserId,
     );
+    const canWriteDefense = isOwnFine && !readOnly;
     const defenseValue = defenseDraft ?? fine?.defense ?? "";
     const defenseChanged =
         defenseDraft !== null && defenseDraft !== fine?.defense;
@@ -197,7 +204,7 @@ export function GroupFineDialog({
                                         className="max-h-80 w-full rounded-md object-contain"
                                     />
                                 ) : null}
-                                {isOwnFine ? (
+                                {canWriteDefense ? (
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="fine-defense">
                                             Ditt forsvar
