@@ -54,6 +54,7 @@ import {
 } from "#/api/queries/groups";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
 import {
     approveUserMutation,
@@ -118,6 +119,9 @@ function formatStudy(
 
 export const Route = createFileRoute("/admin/brukere")({
     component: UsersAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "brukere");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
         return { breadcrumbs: "Brukere" };

@@ -3689,6 +3689,8 @@ export interface components {
             image: string | null;
             /** @description Alt text for the event image (nullable) */
             imageAlt: string | null;
+            /** @description Creator user ID. The creator may update and delete their own event, so an admin listing needs it to tell an event the caller can manage from one they may only look at. */
+            createdById: string | null;
             /**
              * Format: date
              * @description Event creation time (ISO 8601)

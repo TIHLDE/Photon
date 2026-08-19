@@ -28,6 +28,7 @@ import {
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
 import {
     createToddelMutation,
@@ -42,6 +43,9 @@ import { useAnyScopePermission } from "#/hooks/use-permission";
 
 export const Route = createFileRoute("/admin/toddel")({
     component: ToddelAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "toddel");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getToddelIssuesQuery());
         return { breadcrumbs: "TÖDDEL" };

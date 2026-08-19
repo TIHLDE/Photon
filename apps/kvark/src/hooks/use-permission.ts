@@ -100,6 +100,46 @@ export function useCanActOnResource(
 }
 
 /**
+ * Returns a predicate for "may act on this one resource, which belongs to a
+ * group".
+ *
+ * The scoped counterpart to {@link useCanActOnResource}, and what the API
+ * actually asks for an event: `requireEventAccess` checks the permission
+ * against the *arranging group*, lets the creator through, and falls back to
+ * the global check when the resource has no group (events migrated from
+ * Lepton have no organiser). Using the any-scope check here instead offered
+ * Sosialen's members the edit form on Index' arrangementer, where saving
+ * could only ever answer 403.
+ *
+ * Pass a module-level constant as `required` — the predicate's identity
+ * depends on it.
+ */
+export function useCanActOnGroupResource(
+    required: string | readonly string[],
+): (
+    groupSlug: string | null | undefined,
+    createdById?: string | null,
+) => boolean {
+    const { data: session } = useQuery(authQueryOptions);
+    const permissions = session?.permissions;
+    const userId = session?.user?.id;
+
+    return useCallback(
+        (groupSlug: string | null | undefined, createdById?: string | null) => {
+            if (createdById && createdById === userId) return true;
+            return groupSlug
+                ? sessionHasScopedPermission(
+                      permissions,
+                      required,
+                      `group:${groupSlug}`,
+                  )
+                : sessionHasPermission(permissions, required);
+        },
+        [permissions, userId, required],
+    );
+}
+
+/**
  * Permissions that grant access to at least one section of the admin panel.
  * Holding any of these (or `"root"`) makes a user an "admin" for the purpose
  * of showing admin entry points that live outside the panel (e.g. the "Admin"

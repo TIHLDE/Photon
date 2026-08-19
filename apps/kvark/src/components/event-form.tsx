@@ -1,4 +1,4 @@
-import { RichEditor } from "@tihlde/ui/complex/markdown";
+import { MarkdownView, RichEditor } from "@tihlde/ui/complex/markdown";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import {
@@ -118,6 +118,17 @@ type EventFormProps = {
     secondaryAction?: ReactNode;
     /** Statusmeldinger som vises rett over knappen. */
     children?: ReactNode;
+    /**
+     * Vis skjemaet, men la det ikke røres. Brukes av dem som kan se et
+     * arrangement i adminlista uten å kunne redigere det: de skal få se hva
+     * som står i feltene, ikke et skjema som svarer 403 når de lagrer.
+     *
+     * Feltene låses av `fieldset[disabled]`, som slår av alle skjemakontroller
+     * under seg. De to unntakene er tekstredigereren, som er en
+     * contenteditable og ikke en skjemakontroll, og bildefeltet, som tar imot
+     * filer som slippes på det — de får hver sin behandling nedenfor.
+     */
+    readOnly?: boolean;
 };
 
 /**
@@ -141,6 +152,7 @@ export function EventForm({
     isSubmitting,
     secondaryAction,
     children,
+    readOnly = false,
 }: EventFormProps) {
     /** Sist valgte adresse, se `handleLocationChange`. */
     const selectedAddressRef = useRef<EventFormValues["locationCoords"]>(null);
@@ -256,508 +268,571 @@ export function EventForm({
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Detaljer</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <FieldGroup>
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <Field>
-                                <FieldLabel htmlFor="event-title">
-                                    Tittel
-                                </FieldLabel>
-                                <Input
-                                    id="event-title"
-                                    type="text"
-                                    required
-                                    value={values.title}
-                                    onChange={(event) =>
-                                        onChange({ title: event.target.value })
-                                    }
-                                />
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="event-category">
-                                    Kategori
-                                </FieldLabel>
-                                <Select
-                                    items={ALL_EVENT_CATEGORIES}
-                                    value={values.categorySlug}
-                                    onValueChange={(value) =>
-                                        onChange({ categorySlug: value ?? "" })
-                                    }
-                                >
-                                    <SelectTrigger id="event-category">
-                                        <SelectValue placeholder="Velg kategori" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {ALL_EVENT_CATEGORIES.map(
-                                            (category) => (
-                                                <SelectItem
-                                                    key={category.value}
-                                                    value={category.value}
-                                                >
-                                                    {category.label}
-                                                </SelectItem>
-                                            ),
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        </div>
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <Field>
-                                <FieldLabel htmlFor="event-organizer">
-                                    Arrangørgruppe
-                                </FieldLabel>
-                                <Select
-                                    items={groups.map((group) => ({
-                                        value: group.slug,
-                                        label: group.name,
-                                    }))}
-                                    value={values.organizerGroupSlug}
-                                    onValueChange={(value) => {
-                                        const organizerGroupSlug = value ?? "";
-
-                                        // Arrangøren avgjør hvilke valg som
-                                        // finnes: en interessegruppe kan bare
-                                        // prioriteres på sitt eget arrangement.
-                                        // Bytter man arrangør bort fra den,
-                                        // må kriteriet gå med — ellers gir
-                                        // lagring en 400 om et felt brukeren
-                                        // ikke lenger kan se.
-                                        const allowed = new Set(
-                                            buildPoolItems(
-                                                poolGroups,
-                                                organizerGroupSlug,
-                                            ).map(
-                                                (item) => item.pool.groupSlug,
-                                            ),
-                                        );
-
-                                        onChange({
-                                            organizerGroupSlug,
-                                            priorityPools:
-                                                values.priorityPools.filter(
-                                                    (pool) =>
-                                                        pool.groupSlug ===
-                                                            null ||
-                                                        allowed.has(
-                                                            pool.groupSlug,
-                                                        ),
-                                                ),
-                                        });
-                                    }}
-                                >
-                                    <SelectTrigger id="event-organizer">
-                                        <SelectValue placeholder="Velg gruppe" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {groups.map((group) => (
-                                            <SelectItem
-                                                key={group.slug}
-                                                value={group.slug}
-                                            >
-                                                {group.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="event-contact">
-                                    Kontaktperson (valgfritt)
-                                </FieldLabel>
-                                <Select
-                                    items={contactPersonOptions}
-                                    value={
-                                        values.contactPersonUserId || NO_CONTACT
-                                    }
-                                    onValueChange={(value) =>
-                                        onChange({
-                                            contactPersonUserId:
-                                                !value || value === NO_CONTACT
-                                                    ? ""
-                                                    : value,
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="event-contact">
-                                        <SelectValue placeholder="Ingen kontaktperson" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {contactPersonOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FieldDescription>
-                                    Velg blant medlemmene i arrangørgruppen.
-                                </FieldDescription>
-                            </Field>
-                        </div>
-                        <Field>
-                            <FieldLabel htmlFor="event-location">
-                                Sted
-                            </FieldLabel>
-                            <AddressCombobox
-                                id="event-location"
-                                required
-                                value={values.location}
-                                onValueChange={handleLocationChange}
-                                suggestions={addressSuggestions}
-                                isSearching={isSearchingAddress}
-                                onSelectSuggestion={handleSelectAddress}
-                            />
-                            <FieldDescription>
-                                {values.locationCoords
-                                    ? "Adressen er lenket til kart på arrangementssiden."
-                                    : "Søk opp en adresse for å legge ved kartlenke, eller skriv fritt (f.eks. «Digitalt»)."}
-                            </FieldDescription>
-                        </Field>
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <Field>
-                                <FieldLabel htmlFor="event-start">
-                                    Starttidspunkt
-                                </FieldLabel>
-                                <DateTimePicker
-                                    id="event-start"
-                                    locale={nb}
-                                    placeholder="Velg startdato"
-                                    value={values.start}
-                                    onValueChange={handleStartChange}
-                                />
-                            </Field>
-                            <Field>
-                                <FieldLabel htmlFor="event-end">
-                                    Sluttidspunkt
-                                </FieldLabel>
-                                <DateTimePicker
-                                    id="event-end"
-                                    locale={nb}
-                                    placeholder="Velg sluttdato"
-                                    minDate={values.start ?? undefined}
-                                    value={values.end}
-                                    onValueChange={(end) => onChange({ end })}
-                                />
-                            </Field>
-                        </div>
-                        <Field orientation="horizontal" className="w-fit gap-3">
-                            <Checkbox
-                                id="event-requires-signup"
-                                checked={values.requiresSigningUp}
-                                onCheckedChange={(checked) =>
-                                    onChange({
-                                        requiresSigningUp: Boolean(checked),
-                                    })
-                                }
-                            />
-                            <FieldLabel htmlFor="event-requires-signup">
-                                Arrangementet har påmelding
-                            </FieldLabel>
-                        </Field>
-                        {values.requiresSigningUp ? (
+            {/* `contents` gjør at låsen ikke koster oss layouten: fieldset
+                slutter å være en boks, og kortene under står som før. */}
+            <fieldset disabled={readOnly} className="contents">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Detaljer</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <Field>
-                                    <FieldLabel htmlFor="event-reg-start">
-                                        Påmelding åpner
-                                    </FieldLabel>
-                                    <DateTimePicker
-                                        id="event-reg-start"
-                                        locale={nb}
-                                        placeholder="Velg dato"
-                                        value={values.registrationStart}
-                                        onValueChange={(registrationStart) =>
-                                            onChange({ registrationStart })
-                                        }
-                                        aria-invalid={registrationOrderInvalid}
-                                    />
-                                    {registrationOrderInvalid ? (
-                                        <FieldError>
-                                            Påmeldingen må åpne før
-                                            påmeldingsfristen.
-                                        </FieldError>
-                                    ) : null}
-                                </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="event-reg-end">
-                                        Påmeldingsfrist
-                                    </FieldLabel>
-                                    <DateTimePicker
-                                        id="event-reg-end"
-                                        locale={nb}
-                                        placeholder="Velg dato"
-                                        maxDate={values.start ?? undefined}
-                                        value={values.registrationEnd}
-                                        onValueChange={(registrationEnd) =>
-                                            onChange({ registrationEnd })
-                                        }
-                                        aria-invalid={registrationOrderInvalid}
-                                    />
-                                </Field>
-                                {!values.isPaidEvent ? (
-                                    <Field>
-                                        <FieldLabel htmlFor="event-cancel-deadline">
-                                            Avmeldingsfrist (valgfritt)
-                                        </FieldLabel>
-                                        <DateTimePicker
-                                            id="event-cancel-deadline"
-                                            locale={nb}
-                                            placeholder="Velg dato"
-                                            maxDate={values.start ?? undefined}
-                                            value={values.cancellationDeadline}
-                                            onValueChange={(
-                                                cancellationDeadline,
-                                            ) =>
-                                                onChange({
-                                                    cancellationDeadline,
-                                                })
-                                            }
-                                        />
-                                        <FieldDescription>
-                                            Avmelding etter denne fristen gir
-                                            prikk, forutsatt at «Kan gi prikker»
-                                            er huket av.
-                                        </FieldDescription>
-                                    </Field>
-                                ) : null}
-                            </div>
-                        ) : null}
-                        <div className="grid gap-4 lg:grid-cols-4">
-                            {values.requiresSigningUp ? (
-                                <Field className="lg:col-span-2">
-                                    <FieldLabel htmlFor="event-capacity">
-                                        Kapasitet (valgfritt)
+                                    <FieldLabel htmlFor="event-title">
+                                        Tittel
                                     </FieldLabel>
                                     <Input
-                                        id="event-capacity"
-                                        type="number"
-                                        min={1}
-                                        value={values.capacity}
+                                        id="event-title"
+                                        type="text"
+                                        required
+                                        value={values.title}
                                         onChange={(event) =>
                                             onChange({
-                                                capacity: event.target.value,
+                                                title: event.target.value,
                                             })
                                         }
                                     />
                                 </Field>
-                            ) : null}
-                            <Field className={wideWhenNoCapacity}>
-                                <FieldLabel htmlFor="event-visibility">
-                                    Synlighet
+                                <Field>
+                                    <FieldLabel htmlFor="event-category">
+                                        Kategori
+                                    </FieldLabel>
+                                    <Select
+                                        items={ALL_EVENT_CATEGORIES}
+                                        value={values.categorySlug}
+                                        onValueChange={(value) =>
+                                            onChange({
+                                                categorySlug: value ?? "",
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger id="event-category">
+                                            <SelectValue placeholder="Velg kategori" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {ALL_EVENT_CATEGORIES.map(
+                                                (category) => (
+                                                    <SelectItem
+                                                        key={category.value}
+                                                        value={category.value}
+                                                    >
+                                                        {category.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            </div>
+                            <div className="grid gap-4 lg:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="event-organizer">
+                                        Arrangørgruppe
+                                    </FieldLabel>
+                                    <Select
+                                        items={groups.map((group) => ({
+                                            value: group.slug,
+                                            label: group.name,
+                                        }))}
+                                        value={values.organizerGroupSlug}
+                                        onValueChange={(value) => {
+                                            const organizerGroupSlug =
+                                                value ?? "";
+
+                                            // Arrangøren avgjør hvilke valg som
+                                            // finnes: en interessegruppe kan bare
+                                            // prioriteres på sitt eget arrangement.
+                                            // Bytter man arrangør bort fra den,
+                                            // må kriteriet gå med — ellers gir
+                                            // lagring en 400 om et felt brukeren
+                                            // ikke lenger kan se.
+                                            const allowed = new Set(
+                                                buildPoolItems(
+                                                    poolGroups,
+                                                    organizerGroupSlug,
+                                                ).map(
+                                                    (item) =>
+                                                        item.pool.groupSlug,
+                                                ),
+                                            );
+
+                                            onChange({
+                                                organizerGroupSlug,
+                                                priorityPools:
+                                                    values.priorityPools.filter(
+                                                        (pool) =>
+                                                            pool.groupSlug ===
+                                                                null ||
+                                                            allowed.has(
+                                                                pool.groupSlug,
+                                                            ),
+                                                    ),
+                                            });
+                                        }}
+                                    >
+                                        <SelectTrigger id="event-organizer">
+                                            <SelectValue placeholder="Velg gruppe" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {groups.map((group) => (
+                                                <SelectItem
+                                                    key={group.slug}
+                                                    value={group.slug}
+                                                >
+                                                    {group.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="event-contact">
+                                        Kontaktperson (valgfritt)
+                                    </FieldLabel>
+                                    <Select
+                                        items={contactPersonOptions}
+                                        value={
+                                            values.contactPersonUserId ||
+                                            NO_CONTACT
+                                        }
+                                        onValueChange={(value) =>
+                                            onChange({
+                                                contactPersonUserId:
+                                                    !value ||
+                                                    value === NO_CONTACT
+                                                        ? ""
+                                                        : value,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger id="event-contact">
+                                            <SelectValue placeholder="Ingen kontaktperson" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {contactPersonOptions.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FieldDescription>
+                                        Velg blant medlemmene i arrangørgruppen.
+                                    </FieldDescription>
+                                </Field>
+                            </div>
+                            <Field>
+                                <FieldLabel htmlFor="event-location">
+                                    Sted
                                 </FieldLabel>
-                                <Select
-                                    items={[
-                                        { value: "public", label: "Offentlig" },
-                                        {
-                                            value: "members",
-                                            label: "Kun for medlemmer",
-                                        },
-                                    ]}
-                                    value={values.visibility}
-                                    onValueChange={(value) =>
-                                        onChange({
-                                            visibility:
-                                                value === "members"
-                                                    ? "members"
-                                                    : "public",
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="event-visibility">
-                                        <SelectValue placeholder="Velg synlighet" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="public">
-                                            Offentlig
-                                        </SelectItem>
-                                        <SelectItem value="members">
-                                            Kun for medlemmer
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field className={wideWhenNoCapacity}>
-                                <FieldLabel htmlFor="event-institute">
-                                    Institutt
-                                </FieldLabel>
-                                <Select
-                                    items={[
-                                        {
-                                            value: ALL_INSTITUTES,
-                                            label: "Alle institutt",
-                                        },
-                                        ...institutes.map((institute) => ({
-                                            value: institute.slug,
-                                            label: institute.shortName,
-                                        })),
-                                    ]}
-                                    value={values.instituteSlug}
-                                    onValueChange={(value) =>
-                                        onChange({
-                                            instituteSlug:
-                                                value ?? ALL_INSTITUTES,
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger id="event-institute">
-                                        <SelectValue placeholder="Velg institutt" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ALL_INSTITUTES}>
-                                            Alle institutt
-                                        </SelectItem>
-                                        {institutes.map((institute) => (
-                                            <SelectItem
-                                                key={institute.slug}
-                                                value={institute.slug}
-                                            >
-                                                {institute.shortName} –{" "}
-                                                {institute.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <AddressCombobox
+                                    id="event-location"
+                                    required
+                                    value={values.location}
+                                    onValueChange={handleLocationChange}
+                                    suggestions={addressSuggestions}
+                                    isSearching={isSearchingAddress}
+                                    onSelectSuggestion={handleSelectAddress}
+                                />
                                 <FieldDescription>
-                                    Begrenser påmelding til studenter ved dette
-                                    instituttet.
+                                    {values.locationCoords
+                                        ? "Adressen er lenket til kart på arrangementssiden."
+                                        : "Søk opp en adresse for å legge ved kartlenke, eller skriv fritt (f.eks. «Digitalt»)."}
                                 </FieldDescription>
                             </Field>
-                        </div>
-                        <Field orientation="horizontal" className="w-fit gap-3">
-                            <Checkbox
-                                id="event-paid"
-                                checked={values.isPaidEvent}
-                                onCheckedChange={(checked) =>
-                                    handlePaidChange(Boolean(checked))
-                                }
-                            />
-                            <FieldLabel htmlFor="event-paid">
-                                Betalt arrangement
-                            </FieldLabel>
-                        </Field>
-                        {values.isPaidEvent && (
-                            <Field>
-                                <FieldLabel htmlFor="event-price">
-                                    Pris (NOK)
-                                </FieldLabel>
-                                <Input
-                                    id="event-price"
-                                    type="number"
-                                    min={0}
-                                    value={values.price}
-                                    onChange={(event) =>
-                                        onChange({ price: event.target.value })
-                                    }
-                                />
-                            </Field>
-                        )}
-                        {!values.isPaidEvent ? (
+                            <div className="grid gap-4 lg:grid-cols-2">
+                                <Field>
+                                    <FieldLabel htmlFor="event-start">
+                                        Starttidspunkt
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="event-start"
+                                        locale={nb}
+                                        placeholder="Velg startdato"
+                                        value={values.start}
+                                        onValueChange={handleStartChange}
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="event-end">
+                                        Sluttidspunkt
+                                    </FieldLabel>
+                                    <DateTimePicker
+                                        id="event-end"
+                                        locale={nb}
+                                        placeholder="Velg sluttdato"
+                                        minDate={values.start ?? undefined}
+                                        value={values.end}
+                                        onValueChange={(end) =>
+                                            onChange({ end })
+                                        }
+                                    />
+                                </Field>
+                            </div>
                             <Field
                                 orientation="horizontal"
                                 className="w-fit gap-3"
                             >
                                 <Checkbox
-                                    id="event-strikes"
-                                    checked={values.canCauseStrikes}
+                                    id="event-requires-signup"
+                                    checked={values.requiresSigningUp}
                                     onCheckedChange={(checked) =>
                                         onChange({
-                                            canCauseStrikes: Boolean(checked),
+                                            requiresSigningUp: Boolean(checked),
                                         })
                                     }
                                 />
-                                <FieldLabel htmlFor="event-strikes">
-                                    Kan gi prikker (avmelding etter frist og
-                                    no-show)
+                                <FieldLabel htmlFor="event-requires-signup">
+                                    Arrangementet har påmelding
                                 </FieldLabel>
                             </Field>
-                        ) : null}
-                        <Field>
-                            <FieldLabel>Beskrivelse</FieldLabel>
-                            <RichEditor
-                                registry={richRegistry}
-                                value={values.description}
-                                onChange={(description) =>
-                                    onChange({ description })
-                                }
-                            />
-                        </Field>
-                    </FieldGroup>
-                </CardContent>
-            </Card>
+                            {values.requiresSigningUp ? (
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel htmlFor="event-reg-start">
+                                            Påmelding åpner
+                                        </FieldLabel>
+                                        <DateTimePicker
+                                            id="event-reg-start"
+                                            locale={nb}
+                                            placeholder="Velg dato"
+                                            value={values.registrationStart}
+                                            onValueChange={(
+                                                registrationStart,
+                                            ) =>
+                                                onChange({ registrationStart })
+                                            }
+                                            aria-invalid={
+                                                registrationOrderInvalid
+                                            }
+                                        />
+                                        {registrationOrderInvalid ? (
+                                            <FieldError>
+                                                Påmeldingen må åpne før
+                                                påmeldingsfristen.
+                                            </FieldError>
+                                        ) : null}
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="event-reg-end">
+                                            Påmeldingsfrist
+                                        </FieldLabel>
+                                        <DateTimePicker
+                                            id="event-reg-end"
+                                            locale={nb}
+                                            placeholder="Velg dato"
+                                            maxDate={values.start ?? undefined}
+                                            value={values.registrationEnd}
+                                            onValueChange={(registrationEnd) =>
+                                                onChange({ registrationEnd })
+                                            }
+                                            aria-invalid={
+                                                registrationOrderInvalid
+                                            }
+                                        />
+                                    </Field>
+                                    {!values.isPaidEvent ? (
+                                        <Field>
+                                            <FieldLabel htmlFor="event-cancel-deadline">
+                                                Avmeldingsfrist (valgfritt)
+                                            </FieldLabel>
+                                            <DateTimePicker
+                                                id="event-cancel-deadline"
+                                                locale={nb}
+                                                placeholder="Velg dato"
+                                                maxDate={
+                                                    values.start ?? undefined
+                                                }
+                                                value={
+                                                    values.cancellationDeadline
+                                                }
+                                                onValueChange={(
+                                                    cancellationDeadline,
+                                                ) =>
+                                                    onChange({
+                                                        cancellationDeadline,
+                                                    })
+                                                }
+                                            />
+                                            <FieldDescription>
+                                                Avmelding etter denne fristen
+                                                gir prikk, forutsatt at «Kan gi
+                                                prikker» er huket av.
+                                            </FieldDescription>
+                                        </Field>
+                                    ) : null}
+                                </div>
+                            ) : null}
+                            <div className="grid gap-4 lg:grid-cols-4">
+                                {values.requiresSigningUp ? (
+                                    <Field className="lg:col-span-2">
+                                        <FieldLabel htmlFor="event-capacity">
+                                            Kapasitet (valgfritt)
+                                        </FieldLabel>
+                                        <Input
+                                            id="event-capacity"
+                                            type="number"
+                                            min={1}
+                                            value={values.capacity}
+                                            onChange={(event) =>
+                                                onChange({
+                                                    capacity:
+                                                        event.target.value,
+                                                })
+                                            }
+                                        />
+                                    </Field>
+                                ) : null}
+                                <Field className={wideWhenNoCapacity}>
+                                    <FieldLabel htmlFor="event-visibility">
+                                        Synlighet
+                                    </FieldLabel>
+                                    <Select
+                                        items={[
+                                            {
+                                                value: "public",
+                                                label: "Offentlig",
+                                            },
+                                            {
+                                                value: "members",
+                                                label: "Kun for medlemmer",
+                                            },
+                                        ]}
+                                        value={values.visibility}
+                                        onValueChange={(value) =>
+                                            onChange({
+                                                visibility:
+                                                    value === "members"
+                                                        ? "members"
+                                                        : "public",
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger id="event-visibility">
+                                            <SelectValue placeholder="Velg synlighet" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="public">
+                                                Offentlig
+                                            </SelectItem>
+                                            <SelectItem value="members">
+                                                Kun for medlemmer
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field className={wideWhenNoCapacity}>
+                                    <FieldLabel htmlFor="event-institute">
+                                        Institutt
+                                    </FieldLabel>
+                                    <Select
+                                        items={[
+                                            {
+                                                value: ALL_INSTITUTES,
+                                                label: "Alle institutt",
+                                            },
+                                            ...institutes.map((institute) => ({
+                                                value: institute.slug,
+                                                label: institute.shortName,
+                                            })),
+                                        ]}
+                                        value={values.instituteSlug}
+                                        onValueChange={(value) =>
+                                            onChange({
+                                                instituteSlug:
+                                                    value ?? ALL_INSTITUTES,
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger id="event-institute">
+                                            <SelectValue placeholder="Velg institutt" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={ALL_INSTITUTES}>
+                                                Alle institutt
+                                            </SelectItem>
+                                            {institutes.map((institute) => (
+                                                <SelectItem
+                                                    key={institute.slug}
+                                                    value={institute.slug}
+                                                >
+                                                    {institute.shortName} –{" "}
+                                                    {institute.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FieldDescription>
+                                        Begrenser påmelding til studenter ved
+                                        dette instituttet.
+                                    </FieldDescription>
+                                </Field>
+                            </div>
+                            <Field
+                                orientation="horizontal"
+                                className="w-fit gap-3"
+                            >
+                                <Checkbox
+                                    id="event-paid"
+                                    checked={values.isPaidEvent}
+                                    onCheckedChange={(checked) =>
+                                        handlePaidChange(Boolean(checked))
+                                    }
+                                />
+                                <FieldLabel htmlFor="event-paid">
+                                    Betalt arrangement
+                                </FieldLabel>
+                            </Field>
+                            {values.isPaidEvent && (
+                                <Field>
+                                    <FieldLabel htmlFor="event-price">
+                                        Pris (NOK)
+                                    </FieldLabel>
+                                    <Input
+                                        id="event-price"
+                                        type="number"
+                                        min={0}
+                                        value={values.price}
+                                        onChange={(event) =>
+                                            onChange({
+                                                price: event.target.value,
+                                            })
+                                        }
+                                    />
+                                </Field>
+                            )}
+                            {!values.isPaidEvent ? (
+                                <Field
+                                    orientation="horizontal"
+                                    className="w-fit gap-3"
+                                >
+                                    <Checkbox
+                                        id="event-strikes"
+                                        checked={values.canCauseStrikes}
+                                        onCheckedChange={(checked) =>
+                                            onChange({
+                                                canCauseStrikes:
+                                                    Boolean(checked),
+                                            })
+                                        }
+                                    />
+                                    <FieldLabel htmlFor="event-strikes">
+                                        Kan gi prikker (avmelding etter frist og
+                                        no-show)
+                                    </FieldLabel>
+                                </Field>
+                            ) : null}
+                            <Field>
+                                <FieldLabel>Beskrivelse</FieldLabel>
+                                {/* Editoren er en contenteditable, og den bryr
+                                seg ikke om at et fieldset over den er
+                                disabled. Uten tilgang vises teksten ferdig
+                                rendret i stedet — samme innhold, ingen
+                                markør. */}
+                                {readOnly ? (
+                                    <MarkdownView
+                                        registry={richRegistry}
+                                        source={values.description}
+                                        className="rounded-md border p-4"
+                                    />
+                                ) : (
+                                    <RichEditor
+                                        registry={richRegistry}
+                                        value={values.description}
+                                        onChange={(description) =>
+                                            onChange({ description })
+                                        }
+                                    />
+                                )}
+                            </Field>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
 
-            {/*
-             * Bare relevant når arrangementet har påmelding i det hele tatt —
-             * prioritering uten påmelding er ingenting å prioritere.
-             */}
-            {values.requiresSigningUp ? (
-                <PriorityPoolEditor
-                    pools={values.priorityPools}
-                    groups={poolGroups}
-                    organizerGroupSlug={values.organizerGroupSlug || null}
-                    onChange={(priorityPools) => onChange({ priorityPools })}
-                    users={values.priorityUsers}
-                    userSearch={priorityUserSearch}
-                    onUsersChange={(priorityUsers) =>
-                        onChange({ priorityUsers })
-                    }
-                    onlyAllowPrioritized={values.onlyAllowPrioritized}
-                    onOnlyAllowPrioritizedChange={(onlyAllowPrioritized) =>
-                        onChange({ onlyAllowPrioritized })
-                    }
-                />
-            ) : null}
+                {/*
+                 * Bare relevant når arrangementet har påmelding i det hele tatt —
+                 * prioritering uten påmelding er ingenting å prioritere.
+                 */}
+                {values.requiresSigningUp ? (
+                    <PriorityPoolEditor
+                        pools={values.priorityPools}
+                        groups={poolGroups}
+                        organizerGroupSlug={values.organizerGroupSlug || null}
+                        onChange={(priorityPools) =>
+                            onChange({ priorityPools })
+                        }
+                        users={values.priorityUsers}
+                        userSearch={priorityUserSearch}
+                        onUsersChange={(priorityUsers) =>
+                            onChange({ priorityUsers })
+                        }
+                        onlyAllowPrioritized={values.onlyAllowPrioritized}
+                        onOnlyAllowPrioritizedChange={(onlyAllowPrioritized) =>
+                            onChange({ onlyAllowPrioritized })
+                        }
+                    />
+                ) : null}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Forsidebilde</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <FieldGroup>
-                        <AdminImageField
-                            label="Bilde"
-                            description="Vises på arrangementskortet og øverst på arrangementssiden. Forhåndsvisningen er samme utsnitt som besøkende ser."
-                            preset="cover-wide"
-                            value={values.image}
-                            onChange={(image) => onChange({ image })}
-                            existingImageUrl={existingImageUrl}
-                        />
-                        <Field>
-                            <FieldLabel htmlFor="event-image-alt">
-                                Bildebeskrivelse
-                            </FieldLabel>
-                            <Input
-                                id="event-image-alt"
-                                type="text"
-                                maxLength={255}
-                                placeholder="Kort beskrivelse for skjermlesere"
-                                value={values.imageAlt}
-                                onChange={(event) =>
-                                    onChange({ imageAlt: event.target.value })
-                                }
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Forsidebilde</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FieldGroup>
+                            <AdminImageField
+                                label="Bilde"
+                                description="Vises på arrangementskortet og øverst på arrangementssiden. Forhåndsvisningen er samme utsnitt som besøkende ser."
+                                preset="cover-wide"
+                                value={values.image}
+                                onChange={(image) => onChange({ image })}
+                                existingImageUrl={existingImageUrl}
+                                // Dropsonen tar imot filer som slippes på den
+                                // uansett hva fieldsettet over sier, og ber om
+                                // et bilde den ikke kan ta imot.
+                                disabled={readOnly}
+                                readOnly={readOnly}
                             />
-                        </Field>
-                    </FieldGroup>
-                </CardContent>
-            </Card>
+                            <Field>
+                                <FieldLabel htmlFor="event-image-alt">
+                                    Bildebeskrivelse
+                                </FieldLabel>
+                                <Input
+                                    id="event-image-alt"
+                                    type="text"
+                                    maxLength={255}
+                                    placeholder="Kort beskrivelse for skjermlesere"
+                                    value={values.imageAlt}
+                                    onChange={(event) =>
+                                        onChange({
+                                            imageAlt: event.target.value,
+                                        })
+                                    }
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </CardContent>
+                </Card>
+            </fieldset>
 
             {children}
 
-            <div className="flex justify-end gap-2">
-                {secondaryAction}
-                <Button
-                    type="submit"
-                    disabled={isSubmitting || !values.organizerGroupSlug}
-                >
-                    {submitLabel}
-                </Button>
-            </div>
+            {readOnly ? null : (
+                <div className="flex justify-end gap-2">
+                    {secondaryAction}
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || !values.organizerGroupSlug}
+                    >
+                        {submitLabel}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

@@ -43,6 +43,7 @@ import {
 } from "#/api/queries/events";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
@@ -57,6 +58,9 @@ import { avatarImageUrl } from "#/lib/assets";
 
 export const Route = createFileRoute("/admin/prikker")({
     component: StrikesAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "prikker");
+    },
     loader: () => ({ breadcrumbs: "Prikker" }),
 });
 

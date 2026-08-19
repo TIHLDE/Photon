@@ -42,6 +42,7 @@ import { useMemo, useState } from "react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import {
     assignPositionMutation,
@@ -81,6 +82,11 @@ import { avatarImageUrl } from "#/lib/assets";
 
 export const Route = createFileRoute("/admin/roller")({
     component: RolesAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "roller", {
+            allowGroupLeader: true,
+        });
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getGroupsQuery(0));
         return { breadcrumbs: "Tilganger" };

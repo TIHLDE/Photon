@@ -2,7 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
-import { CalendarDaysIcon, PlusIcon } from "lucide-react";
+import { CalendarDaysIcon, EyeIcon, PlusIcon } from "lucide-react";
 import { Suspense, startTransition, useState } from "react";
 
 import { Badge } from "@tihlde/ui/ui/badge";
@@ -30,11 +30,16 @@ import {
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { requireAdminSection } from "#/lib/admin-access";
 import { getEventsQuery } from "#/api/queries/events";
 import { AdminEmptyState } from "#/components/admin-empty-state";
+import { IconActionButton } from "#/components/icon-action-button";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
-import { useAnyScopePermission } from "#/hooks/use-permission";
+import {
+    useAnyScopePermission,
+    useCanActOnGroupResource,
+} from "#/hooks/use-permission";
 
 const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -49,6 +54,9 @@ const SORT_OPTIONS: { value: EventSort; label: string }[] = [
 
 const DEFAULT_SORT: EventSort = "upcoming";
 
+/** Module-level so the permission predicate keeps a stable identity. */
+const EVENT_UPDATE_PERMISSIONS = ["events:update", "events:manage"] as const;
+
 /**
  * Søk, tidsrom og rekkefølge avgjøres server-side. Listen er paginert, så et
  * klientfilter ville bare skjult treff på siden du står på — og «eldste først»
@@ -62,6 +70,9 @@ const toFilters = (search: string, showPast: boolean, sort: EventSort) => ({
 
 export const Route = createFileRoute("/admin/arrangementer/")({
     component: EventsAdminPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "arrangementer");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(
             getEventsQuery(0, toFilters("", false, DEFAULT_SORT), PAGE_SIZE),
@@ -187,6 +198,9 @@ function EventsTable({
     const { data } = useSuspenseQuery(
         getEventsQuery(page, toFilters(search, showPast, sort), PAGE_SIZE),
     );
+    // Lista viser alle arrangementer — det er poenget med en oversikt — men
+    // bare de du kan arrangere for lar seg redigere. Resten får øyeikonet.
+    const canManage = useCanActOnGroupResource(EVENT_UPDATE_PERMISSIONS);
 
     const events = data.items;
 
@@ -243,20 +257,13 @@ function EventsTable({
                                         />
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            render={
-                                                <Link
-                                                    to="/admin/arrangementer/$eventId"
-                                                    params={{
-                                                        eventId: event.id,
-                                                    }}
-                                                />
-                                            }
-                                        >
-                                            Administrer
-                                        </Button>
+                                        <EventRowAction
+                                            eventId={event.id}
+                                            canManage={canManage(
+                                                event.organizer?.slug ?? null,
+                                                event.createdById,
+                                            )}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -289,6 +296,39 @@ function EventsTable({
                 </div>
             ) : null}
         </>
+    );
+}
+
+/**
+ * Handlingen på en rad. «Administrer» for arrangementene du kan redigere;
+ * for de andre et øyeikon som åpner samme side i lesevisning, slik at man kan
+ * se hvordan et arrangement er satt opp uten å kunne endre det.
+ */
+function EventRowAction({
+    eventId,
+    canManage,
+}: {
+    eventId: string;
+    canManage: boolean;
+}) {
+    const link = (
+        <Link to="/admin/arrangementer/$eventId" params={{ eventId }} />
+    );
+
+    if (!canManage) {
+        return (
+            <IconActionButton
+                icon={EyeIcon}
+                label="Se oppsettet – du kan ikke redigere dette arrangementet"
+                render={link}
+            />
+        );
+    }
+
+    return (
+        <Button variant="outline" size="sm" render={link}>
+            Administrer
+        </Button>
     );
 }
 
