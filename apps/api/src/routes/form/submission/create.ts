@@ -95,7 +95,7 @@ export const createSubmissionRoute = route().post(
                     {
                         formTitle: form.title,
                         submitterName: submitter.name,
-                        formUrl: `${env.ROOT_URL}/grupper/${groupForm.groupSlug}/`,
+                        formUrl: `${env.WEBSITE_URL}/sporreskjema/${formId}/svar`,
                         logoUrl: `${env.WEBSITE_URL}/logo512.png`,
                     },
                 );

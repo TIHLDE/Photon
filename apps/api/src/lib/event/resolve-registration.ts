@@ -141,7 +141,7 @@ export async function resolveRegistrationsForEvent(
                     userId,
                     title: "Påmelding ikke godkjent",
                     description: `Din påmelding til ${event.title} ble ikke godkjent: ${reason}`,
-                    link: `${env.ROOT_URL}/arrangementer/${event.slug}`,
+                    link: `${env.WEBSITE_URL}/arrangementer/${event.slug}`,
                     emailTemplate: {
                         name: "RegistrationBlockedEmail",
                         props: {
@@ -262,7 +262,7 @@ export async function resolveRegistrationsForEvent(
             }
 
             // Send notification to user based on finalStatus
-            const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
+            const eventUrl = `${env.WEBSITE_URL}/arrangementer/${event.slug}`;
 
             if (finalStatus === "registered") {
                 notifications.add({
@@ -333,7 +333,7 @@ export async function resolveRegistrationsForEvent(
 
                     // Send email to swapped user
                     if (waitlistedUserId === swappedUserId) {
-                        const eventUrl = `${env.ROOT_URL}/arrangementer/${event.slug}`;
+                        const eventUrl = `${env.WEBSITE_URL}/arrangementer/${event.slug}`;
                         notifications.add({
                             userId: waitlistedUserId,
                             title: `Endring i din påmelding til ${event.title}`,
