@@ -63,6 +63,7 @@ export const Route = createFileRoute("/admin/prikker")({
 function StrikesAdminPage() {
     const canCreate = useAnyScopePermission([
         "events:strikes:create",
+        "events:update",
         "events:manage",
     ]);
     const [createOpen, setCreateOpen] = useState(false);
@@ -100,8 +101,12 @@ function StrikesSection() {
     const [page, setPage] = useState(0);
     const { data, isPending } = useQuery(getStrikesQuery(page));
     const remove = useMutation(deleteStrikeMutation);
+    // Arranging a group's events carries its prikker, so the arrangør sees the
+    // delete button too. The API still answers per prikk: the button only
+    // works on prikker from their own groups' arrangementer.
     const canDelete = useAnyScopePermission([
         "events:strikes:delete",
+        "events:update",
         "events:manage",
     ]);
 

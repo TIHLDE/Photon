@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { canActOnEvent } from "~/lib/event/access";
+import { canActOnEvent, strikePermissions } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -15,7 +15,7 @@ export const deleteStrikeRoute = route().delete(
         summary: "Delete strike",
         operationId: "deleteStrike",
         description:
-            "Delete a strike (prikk) by its ID. Requires 'events:strikes:delete' or 'events:manage', globally or for the group arranging the strike's event.",
+            "Delete a strike (prikk) by its ID. Requires 'events:strikes:delete', or the right to arrange the event ('events:update' / 'events:manage') — globally or for the group arranging it.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -24,7 +24,7 @@ export const deleteStrikeRoute = route().delete(
         })
         .forbidden({
             description:
-                "Requires events:strikes:delete or events:manage permission",
+                "Requires events:strikes:delete, or the right to arrange the event",
         })
         .notFound({ description: "Strike not found" })
         .build(),
@@ -32,7 +32,7 @@ export const deleteStrikeRoute = route().delete(
     // Coarse gate: the strike's event decides the scope, so the group-level
     // check happens in the handler once the strike is loaded.
     requireAccess({
-        permission: ["events:strikes:delete", "events:manage"],
+        permission: strikePermissions("delete"),
         anyGroupScope: true,
     }),
     async (c) => {
@@ -52,12 +52,12 @@ export const deleteStrikeRoute = route().delete(
                 c.get("ctx"),
                 c.get("user").id,
                 strike.eventId,
-                ["events:strikes:delete", "events:manage"],
+                strikePermissions("delete"),
             ))
         ) {
             throw new HTTPException(403, {
                 message:
-                    "Forbidden - requires events:strikes:delete or events:manage for the group arranging this event",
+                    "Forbidden - requires events:strikes:delete, or the right to arrange events for the group behind this event",
             });
         }
 

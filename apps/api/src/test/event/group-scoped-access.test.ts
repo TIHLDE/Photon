@@ -199,7 +199,7 @@ describe("group-scoped event access", () => {
      * quietly add them back.
      */
     integrationTest(
-        "a leader set with payments:view and check-in still cannot refund or strike",
+        "a leader set with payments:view and check-in may strike, but still cannot refund",
         async ({ ctx }) => {
             const leader = await ctx.utils.createTestUser();
             const client = await ctx.utils.clientForUser(leader);
@@ -267,6 +267,9 @@ describe("group-scoped event access", () => {
             });
             expect(refund.status).toBe(403);
 
+            // Prikker ride with the arrangement: `events:update` for the
+            // organiser group is the right to deal with its no-shows, so no
+            // separate `events:strikes:create` is needed.
             const strike = await client.api.event.strikes.$post({
                 json: {
                     userId: attendee.id,
@@ -275,7 +278,7 @@ describe("group-scoped event access", () => {
                     reason: "Møtte ikke opp",
                 },
             });
-            expect(strike.status).toBe(403);
+            expect(strike.status).toBe(201);
         },
         500_000,
     );

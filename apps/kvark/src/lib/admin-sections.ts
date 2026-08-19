@@ -56,10 +56,13 @@ export const ADMIN_SECTION_PERMISSIONS = {
         "groups:update",
         "groups:manage",
     ],
+    // Arranging a group's events carries its prikker, so the section opens for
+    // the arrangør too — the list itself only shows their own groups' prikker.
     prikker: [
         "events:strikes:view",
         "events:strikes:create",
         "events:strikes:delete",
+        "events:update",
         "events:manage",
     ],
     roller: [

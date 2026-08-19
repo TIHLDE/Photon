@@ -338,6 +338,47 @@ export async function hasPermissionInAnyGroupScope(
     );
 }
 
+/**
+ * Which groups the user holds one of `permissionName` for.
+ *
+ * Answers "whose events may you touch?" in one go, for the listing endpoints
+ * that have no single resource to scope against and would otherwise have to
+ * ask per row. Returns `"*"` when the permission is held globally (or via
+ * root) — the caller then filters nothing, because a global grant reaches
+ * every group.
+ *
+ * Only `group:<slug>` grants are collected. A grant scoped to one specific
+ * resource says nothing about the group and must not widen a listing.
+ */
+export async function getPermissionGroupScopes(
+    ctx: DbCtx,
+    userId: string,
+    permissionName: string | string[],
+): Promise<string[] | "*"> {
+    const permissionNames = Array.isArray(permissionName)
+        ? permissionName
+        : [permissionName];
+
+    if (permissionNames.length === 0) return [];
+
+    const permissions = await getUserPermissions(ctx, userId);
+
+    if (hasRoot(permissions)) return "*";
+
+    const slugs = new Set<string>();
+
+    for (const granted of permissions) {
+        const parsed = parsePermission(granted);
+        if (!permissionNames.includes(parsed.permission)) continue;
+        if (parsed.scope === GLOBAL_SCOPE) return "*";
+        if (parsed.scope.startsWith("group:")) {
+            slugs.add(parsed.scope.slice("group:".length));
+        }
+    }
+
+    return [...slugs];
+}
+
 export async function hasScopedPermission(
     ctx: DbCtx,
     userId: string,
