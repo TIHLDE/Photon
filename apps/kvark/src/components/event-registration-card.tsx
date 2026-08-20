@@ -390,9 +390,9 @@ function paymentDeadlineText(props: EventRegistrationCardProps): string | null {
         return "Betalingsfristen er gått ut. Plassen kan ha gått videre til neste på ventelista.";
     }
     if (!props.paymentExpiresInLabel) {
-        return `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}, ellers gis plassen videre.`;
+        return `Betal innen ${props.paymentDeadline.day} kl. ${props.paymentDeadline.time}.`;
     }
-    return `${props.paymentExpiresInLabel} igjen å betale (innen kl. ${props.paymentDeadline.time}), ellers gis plassen videre.`;
+    return `${props.paymentExpiresInLabel} igjen å betale (innen kl. ${props.paymentDeadline.time}).`;
 }
 
 type TimelinePoint = {
