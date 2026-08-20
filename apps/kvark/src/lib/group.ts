@@ -1,6 +1,3 @@
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-
 import type {
     Group as ApiGroup,
     GroupMember as ApiGroupMember,
@@ -10,6 +7,7 @@ import type {
     Law as ApiLaw,
     GroupFormList,
 } from "@tihlde/sdk";
+import { formatInOslo } from "#/lib/date";
 
 type ApiFineUser = FineUserList["users"][number];
 
@@ -291,7 +289,7 @@ export function compareGroupHierarchy(
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 30. apr. 2026".
  */
 export function formatGroupDate(iso: string): string {
-    return format(new Date(iso), "EEE d. MMM yyyy", { locale: nb });
+    return formatInOslo(iso, "EEE d. MMM yyyy");
 }
 
 /**

@@ -23,6 +23,7 @@ import {
     getMySignatureQuery,
     signContractMutation,
 } from "#/api/queries/contracts";
+import { OSLO_TIME_ZONE } from "#/lib/date";
 
 // The signed PDF is a private asset streamed by the API, so it is linked
 // directly rather than fetched through the SDK. A top-level navigation carries
@@ -95,6 +96,7 @@ function KontraktViewer({ contract }: { contract: ActiveContract }) {
     if (signature?.hasSigned) {
         const signedAt = signature.signedAt
             ? new Date(signature.signedAt).toLocaleDateString("nb-NO", {
+                  timeZone: OSLO_TIME_ZONE,
                   day: "numeric",
                   month: "long",
                   year: "numeric",

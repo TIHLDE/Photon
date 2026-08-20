@@ -45,6 +45,7 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { OSLO_DATE_OPTIONS } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/_super-admin/api-keys")({
     component: ApiKeysPage,
@@ -207,7 +208,10 @@ function ApiKeysTable({
                                     {apiKey.lastUsedAt
                                         ? new Date(
                                               apiKey.lastUsedAt,
-                                          ).toLocaleDateString("nb-NO")
+                                          ).toLocaleDateString(
+                                              "nb-NO",
+                                              OSLO_DATE_OPTIONS,
+                                          )
                                         : "Aldri"}
                                 </TableCell>
                                 <TableCell>

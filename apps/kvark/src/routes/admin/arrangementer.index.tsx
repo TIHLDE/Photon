@@ -1,7 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
 import { CalendarDaysIcon, EyeIcon, PlusIcon } from "lucide-react";
 import { Suspense, startTransition, useState } from "react";
 
@@ -40,6 +38,7 @@ import {
     useAnyScopePermission,
     useCanActOnGroupResource,
 } from "#/hooks/use-permission";
+import { formatInOslo } from "#/lib/date";
 
 const PAGE_SIZE = 25;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -357,7 +356,7 @@ function EventStatusBadge({
 }
 
 function formatDateTime(iso: string) {
-    return format(new Date(iso), "d. MMM yyyy 'kl.' HH:mm", { locale: nb });
+    return formatInOslo(iso, "d. MMM yyyy 'kl.' HH:mm");
 }
 
 function TableSkeleton() {

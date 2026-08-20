@@ -1,6 +1,7 @@
-import { addMilliseconds, format, formatDistanceStrict, set } from "date-fns";
+import { addMilliseconds, formatDistanceStrict, set } from "date-fns";
 import { nb } from "date-fns/locale";
 import { MAX_CLASS_YEAR, computeClassYear } from "@photon/auth/academic-year";
+import { formatInOslo } from "#/lib/date";
 
 // -- Shared display types (previously in mock/events) --
 
@@ -236,14 +237,14 @@ export function formatEventPrice(
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 30. apr. 2026".
  */
 export function formatEventDate(iso: string): string {
-    return format(new Date(iso), "EEE d. MMM yyyy", { locale: nb });
+    return formatInOslo(iso, "EEE d. MMM yyyy");
 }
 
 /**
  * Format an ISO timestamp as a time of day, e.g. "12:00".
  */
 export function formatEventTime(iso: string): string {
-    return format(new Date(iso), "HH:mm", { locale: nb });
+    return formatInOslo(iso, "HH:mm");
 }
 
 /**

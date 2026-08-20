@@ -1,5 +1,6 @@
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
+import { formatInOslo } from "#/lib/date";
 
 // -- Shared display types (previously in mock/news) --
 
@@ -18,7 +19,7 @@ export type NewsItem = {
  * e.g. "tor. 24. apr. 2026, 14:30".
  */
 export function formatNewsDate(iso: string): string {
-    return format(new Date(iso), "EEE d. MMM yyyy, HH:mm", { locale: nb });
+    return formatInOslo(iso, "EEE d. MMM yyyy, HH:mm");
 }
 
 /**

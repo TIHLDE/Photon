@@ -11,6 +11,7 @@ import { useStore } from "@tanstack/react-form";
 import { z } from "zod";
 import type { ApplicationOptions } from "#/api/queries/applications";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { usePrefillContact } from "./shared";
 import type { DefaultContact, SubmitHelpers } from "./shared";
 
 const schema = z
@@ -76,6 +77,8 @@ export function HsCaseForm({
             });
         },
     });
+
+    usePrefillContact(form, defaultContact);
 
     const caseType = useStore(form.store, (state) => state.values.caseType);
     const isDecision = caseType === "decision";

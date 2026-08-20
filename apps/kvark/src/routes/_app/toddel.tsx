@@ -5,6 +5,7 @@ import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
 import { getToddelIssuesQuery } from "#/api/queries/toddel";
 import { IssueCard } from "#/components/issue-card";
+import { OSLO_TIME_ZONE } from "#/lib/date";
 
 export const Route = createFileRoute("/_app/toddel")({
     component: ToddelPage,
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_app/toddel")({
  */
 function publishedLabel(publishedAt: string): string {
     const label = new Date(publishedAt).toLocaleDateString("nb-NO", {
+        timeZone: OSLO_TIME_ZONE,
         month: "long",
         year: "numeric",
     });

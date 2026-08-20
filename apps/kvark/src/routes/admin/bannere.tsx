@@ -44,6 +44,7 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+import { OSLO_TIME_ZONE } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/bannere")({
     component: BannersAdminPage,
@@ -435,6 +436,7 @@ function BannerDialog({
 
 function formatDateTime(iso: string): string {
     return new Date(iso).toLocaleString("nb-NO", {
+        timeZone: OSLO_TIME_ZONE,
         dateStyle: "short",
         timeStyle: "short",
     });
