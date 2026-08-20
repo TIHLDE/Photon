@@ -12,6 +12,7 @@ import { Download, ListChecks } from "lucide-react";
 import type { ApplicationSummary } from "#/api/queries/applications";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { ApplicationStatusBadge } from "./status-badge";
+import { OSLO_DATE_OPTIONS } from "#/lib/date";
 
 type MyApplicationsProps = {
     applications: ApplicationSummary[];
@@ -56,7 +57,10 @@ export function MyApplications({
                                 <TableCell>
                                     {new Date(
                                         application.createdAt,
-                                    ).toLocaleDateString("nb-NO")}
+                                    ).toLocaleDateString(
+                                        "nb-NO",
+                                        OSLO_DATE_OPTIONS,
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     <ApplicationStatusBadge

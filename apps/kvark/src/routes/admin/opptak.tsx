@@ -46,6 +46,7 @@ import {
     createContractMutation,
     getContractListQuery,
 } from "#/api/queries/contracts";
+import { OSLO_DATE_OPTIONS } from "#/lib/date";
 
 // react-pdf needs canvas and a worker, so it must never load during SSR. It is
 // only rendered once a file is picked, which is necessarily client-side.
@@ -331,7 +332,10 @@ function ContractRow({
                 )}
             </TableCell>
             <TableCell>
-                {new Date(contract.createdAt).toLocaleDateString("nb-NO")}
+                {new Date(contract.createdAt).toLocaleDateString(
+                    "nb-NO",
+                    OSLO_DATE_OPTIONS,
+                )}
             </TableCell>
             <TableCell>
                 {!contract.isActive && onActivate && (

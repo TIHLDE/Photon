@@ -1,5 +1,4 @@
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
+import { formatInOslo } from "#/lib/date";
 
 // -- Shared display types & helpers (previously in mock/jobs) --
 
@@ -61,12 +60,12 @@ export function formatJobDeadline(
     if (isContinuouslyHiring || !deadline) {
         return "Fortløpende";
     }
-    return format(new Date(deadline), "EEE d. MMM yyyy, HH:mm", { locale: nb });
+    return formatInOslo(deadline, "EEE d. MMM yyyy, HH:mm");
 }
 
 /**
  * Format an ISO timestamp as a Norwegian long date, e.g. "tor. 24. apr. 2026".
  */
 export function formatJobDate(iso: string): string {
-    return format(new Date(iso), "EEE d. MMM yyyy", { locale: nb });
+    return formatInOslo(iso, "EEE d. MMM yyyy");
 }

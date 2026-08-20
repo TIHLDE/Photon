@@ -1,7 +1,5 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
 import { NewspaperIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 
@@ -46,6 +44,7 @@ import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+import { formatInOslo } from "#/lib/date";
 
 // `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
 // nyhet» på nyhetssiden kan lenke rett til riktig artikkel i stedet for å
@@ -400,7 +399,7 @@ function NewsDialog({
 }
 
 function formatDate(iso: string) {
-    return format(new Date(iso), "d. MMM yyyy", { locale: nb });
+    return formatInOslo(iso, "d. MMM yyyy");
 }
 
 function TableSkeleton() {

@@ -10,6 +10,7 @@ import { Spinner } from "@tihlde/ui/ui/spinner";
 import { z } from "zod";
 import type { ApplicationOptions } from "#/api/queries/applications";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { usePrefillContact } from "./shared";
 import type { DefaultContact, GroupOption, SubmitHelpers } from "./shared";
 
 const schema = z.object({
@@ -96,6 +97,8 @@ export function SupportForm({
             });
         },
     });
+
+    usePrefillContact(form, defaultContact);
 
     return (
         <Card>

@@ -11,8 +11,6 @@ import {
     useNavigate,
     useSearch,
 } from "@tanstack/react-router";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
 import {
     BanknoteArrowDownIcon,
     BanknoteIcon,
@@ -103,6 +101,7 @@ import { cn } from "#/lib/utils";
 import { EVENT_FORM_ERRORS } from "#/lib/event";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
+import { formatInOslo } from "#/lib/date";
 
 const TABS = [
     "detaljer",
@@ -1693,7 +1692,7 @@ function matchesQuery(fields: (string | null | undefined)[], query: string) {
 }
 
 function formatDateTime(iso: string) {
-    return format(new Date(iso), "d. MMM yyyy 'kl.' HH:mm", { locale: nb });
+    return formatInOslo(iso, "d. MMM yyyy 'kl.' HH:mm");
 }
 
 /** Minor units (øre) -> "1 234 kr" */

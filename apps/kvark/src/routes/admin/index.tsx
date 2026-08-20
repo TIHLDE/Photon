@@ -1,7 +1,5 @@
 import { CatchBoundary, createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
 import {
     BriefcaseBusinessIcon,
     CalendarIcon,
@@ -29,6 +27,7 @@ import { getNewsQuery } from "#/api/queries/news";
 import { SectionError } from "#/components/section-error";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
+import { formatInOslo } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/")({
     component: DashboardPage,
@@ -356,7 +355,7 @@ function RecentNews() {
 }
 
 function formatDate(iso: string): string {
-    return format(new Date(iso), "d. MMM yyyy", { locale: nb });
+    return formatInOslo(iso, "d. MMM yyyy");
 }
 
 function StatsSkeleton() {

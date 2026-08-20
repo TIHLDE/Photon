@@ -17,6 +17,7 @@ import { nb } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { formatInOslo } from "#/lib/date";
 import { cn } from "#/lib/utils";
 
 export type CalendarEvent = {
@@ -50,7 +51,10 @@ export function EventCalendar({ events }: EventCalendarProps) {
     const eventsByDay = useMemo(() => {
         const map = new Map<string, CalendarEvent[]>();
         for (const event of events) {
-            const key = format(new Date(event.startTime), "yyyy-MM-dd");
+            // Datoen et arrangement havner på er den norske datoen. Rutenettet
+            // under bygges av lokale midnatter, som gir samme «yyyy-MM-dd»
+            // uansett tidssone, så de to nøklene møtes.
+            const key = formatInOslo(event.startTime, "yyyy-MM-dd");
             const list = map.get(key) ?? [];
             list.push(event);
             map.set(key, list);

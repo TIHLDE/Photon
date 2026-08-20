@@ -5,6 +5,8 @@ import { Spinner } from "@tihlde/ui/ui/spinner";
 import { z } from "zod";
 import type { ApplicationOptions } from "#/api/queries/applications";
 import { formHandlers, useAppForm } from "#/hooks/form";
+import { todayInOslo } from "#/lib/date";
+import { usePrefillContact } from "./shared";
 import type {
     CcOption,
     DefaultContact,
@@ -57,7 +59,7 @@ export function ExpenseForm({
             contactEmail: defaultContact.email,
             cc: null as CcOption | null,
             amountNok: null as unknown as number,
-            date: new Date(),
+            date: todayInOslo(),
             group: null as unknown as GroupOption,
             budgetType: "",
             description: "",
@@ -71,6 +73,8 @@ export function ExpenseForm({
             });
         },
     });
+
+    usePrefillContact(form, defaultContact);
 
     return (
         <Card>
@@ -136,7 +140,7 @@ export function ExpenseForm({
                             {(field) => (
                                 <field.Field required>
                                     <field.Label>Kontonummer</field.Label>
-                                    <field.Input placeholder="1234.56.78901" />
+                                    <field.AccountNumber placeholder="1234.56.78901" />
                                     <field.Description>
                                         Formatet er xxxx.xx.xxxxx
                                     </field.Description>

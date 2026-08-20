@@ -1,12 +1,10 @@
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-
 import type {
     FormDetail,
     FormStatistics,
     SubmissionList,
     UpdateForm,
 } from "@tihlde/sdk";
+import { formatInOslo } from "#/lib/date";
 
 export type FormQuestionType =
     | "text_answer"
@@ -67,7 +65,7 @@ export function toFormFieldsPayload(
  * Tidspunktet et planlagt skjema åpner, f.eks. «tor. 30. apr. 2026 kl. 12:00».
  */
 export function formatFormOpensAt(iso: string): string {
-    return format(new Date(iso), "EEE d. MMM yyyy 'kl.' HH:mm", { locale: nb });
+    return formatInOslo(iso, "EEE d. MMM yyyy 'kl.' HH:mm");
 }
 
 // -- Svar --
@@ -94,9 +92,7 @@ export function mapSubmission(
         id: submission.id,
         userName: submission.user.name,
         userEmail: submission.user.email,
-        submittedAt: format(new Date(submission.created_at), "d. MMM yyyy", {
-            locale: nb,
-        }),
+        submittedAt: formatInOslo(submission.created_at, "d. MMM yyyy"),
         answers: submission.answers.map((answer) => ({
             fieldId: answer.field_id,
             text:
