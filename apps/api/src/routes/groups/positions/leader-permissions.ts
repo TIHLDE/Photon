@@ -27,7 +27,9 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    addedBeyond,
     mirrorIntoLinkedPosition,
+    permissionsFromLinkedPosition,
     readLeaderGlobalPermissions,
 } from "~/lib/group/linked-leader";
 import {
@@ -171,20 +173,32 @@ export const updateLeaderPermissionsRoute = route().patch(
         // The org-wide list is checked globally, so holding a permission for
         // this group is not enough to hand it out for every other one. A group
         // leader holds nothing globally and is stopped here.
-        if (
-            body.globalPermissions !== undefined &&
-            !(await canGrantPositionPermissions(
-                ctx,
-                user.id,
-                groupSlug,
+        //
+        // Measured against what the linked HS verv already grants this same
+        // leader: this page shows the union of the two halves, so a save that
+        // leaves the verv's half untouched must not be read as handing it out
+        // afresh. Only what goes beyond it is a new grant.
+        if (body.globalPermissions !== undefined) {
+            const added = addedBeyond(
                 body.globalPermissions,
-                "global",
-            ))
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "You can only grant permissions you hold yourself across all of TIHLDE",
-            });
+                await permissionsFromLinkedPosition(ctx, groupSlug),
+            );
+
+            if (
+                added.length > 0 &&
+                !(await canGrantPositionPermissions(
+                    ctx,
+                    user.id,
+                    groupSlug,
+                    added,
+                    "global",
+                ))
+            ) {
+                throw new HTTPException(403, {
+                    message:
+                        "You can only grant permissions you hold yourself across all of TIHLDE",
+                });
+            }
         }
 
         const [updated] = await ctx.db

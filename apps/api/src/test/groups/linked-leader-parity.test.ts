@@ -59,6 +59,20 @@ async function setup(ctx: IntegrationTestContext, name: string) {
     return { leader, client, subgroup };
 }
 
+/**
+ * {@link setup} with an editor who may grant org-wide (`roles:create`) but
+ * does not hold `root` — the case where showing the union could otherwise
+ * lock them out of saving.
+ */
+async function setupWithEditor(ctx: IntegrationTestContext, name: string) {
+    const { subgroup } = await setup(ctx, name);
+    const editor = await ctx.utils.createTestUser();
+    await ctx.utils.giveUserPermissions(editor, ["roles:create"]);
+    const client = await ctx.utils.clientForUser(editor);
+    const position = await linkedPosition(ctx, subgroup.slug);
+    return { client, subgroup, position };
+}
+
 describe("subgroup leader / linked HS verv parity", () => {
     integrationTest(
         "editing the subgroup's leader list writes the linked verv too",
@@ -226,6 +240,123 @@ describe("subgroup leader / linked HS verv parity", () => {
                 .from(schema.group)
                 .where(eq(schema.group.slug, group.slug));
             expect(row?.globalPermissions).toEqual([]);
+        },
+        500_000,
+    );
+
+    /**
+     * Showing the union must not cost anyone the ability to save. The two
+     * halves grant the same person, so echoing the other half back unchanged
+     * hands out nothing — but a naive guard reads it as a fresh grant and
+     * refuses, taking the half the editor may legitimately edit with it. In
+     * production this bites immediately: Index's linked verv holds `root`.
+     */
+    describe("saving without holding the other half", () => {
+        integrationTest(
+            "the group's page saves when the verv grants what the editor lacks",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Rotgruppen",
+                );
+
+                await ctx.db
+                    .update(schema.groupPosition)
+                    .set({ permissions: ["root"] })
+                    .where(eq(schema.groupPosition.id, position!.id));
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: subgroup.slug } });
+                const shown = (await read.json()).globalPermissions;
+                expect(shown).toEqual(["root"]);
+
+                // The admin UI sends the list it was shown straight back.
+                const write = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: subgroup.slug },
+                    json: { permissions: [], globalPermissions: shown },
+                });
+                expect(write.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "HS's verv page saves when the group grants what the editor lacks",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Speilrot",
+                );
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderGlobalPermissions: ["root"] })
+                    .where(eq(schema.group.slug, subgroup.slug));
+
+                const write = await client.api.groups[":groupSlug"].positions[
+                    ":positionId"
+                ].$patch({
+                    param: { groupSlug: "hs", positionId: position!.id },
+                    json: { permissions: ["root"] },
+                });
+                expect(write.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "but a genuinely new permission is still refused",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Nyrot",
+                );
+
+                await ctx.db
+                    .update(schema.groupPosition)
+                    .set({ permissions: ["root"] })
+                    .where(eq(schema.groupPosition.id, position!.id));
+
+                const write = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: subgroup.slug },
+                    json: {
+                        permissions: [],
+                        // "root" is already granted by the verv; the refund
+                        // right is not, and the editor does not hold it.
+                        globalPermissions: ["root", "events:payments:refund"],
+                    },
+                });
+                expect(write.status).toBe(403);
+            },
+            500_000,
+        );
+    });
+
+    integrationTest(
+        "a linked verv cannot be moved off org-wide scope",
+        async ({ ctx }) => {
+            const { subgroup } = await setup(ctx, "Scopegruppen");
+            const position = await linkedPosition(ctx, subgroup.slug);
+
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["root"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            const response = await client.api.groups[":groupSlug"].positions[
+                ":positionId"
+            ].$patch({
+                param: { groupSlug: "hs", positionId: position!.id },
+                json: { scope: "group" },
+            });
+            expect(response.status).toBe(409);
+
+            const after = await linkedPosition(ctx, subgroup.slug);
+            expect(after?.scope).toBe("global");
         },
         500_000,
     );

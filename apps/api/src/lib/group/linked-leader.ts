@@ -66,6 +66,54 @@ function mirrors(position: { scope: string; linkedGroupSlug: string | null }) {
 }
 
 /**
+ * What the linked HS verv already grants the leader of `groupSlug`. Empty
+ * when the subgroup has no linked verv, or the verv no longer mirrors.
+ *
+ * This is also the baseline the escalation guard measures against on the
+ * group's page: these permissions are already held by the very person the
+ * page is about, so re-saving them hands out nothing. Only what goes beyond
+ * this list is a new grant. Without that, showing the union would brick the
+ * page — an admin with `roles:create` but not `root` would open Index, be
+ * shown the `root` its linked verv holds, send it back untouched and be
+ * refused, taking the group-scoped half they may edit down with it.
+ */
+export async function permissionsFromLinkedPosition(
+    ctx: AppContext,
+    groupSlug: string,
+): Promise<string[]> {
+    const position = await getLinkedLeaderPosition(ctx, groupSlug);
+    if (!position || !mirrors(position)) return [];
+    return position.permissions ?? [];
+}
+
+/**
+ * The same baseline seen from HS's verv page: what the subgroup this verv
+ * follows already grants its leader.
+ */
+export async function permissionsFromLinkedGroup(
+    ctx: AppContext,
+    position: { scope: string; linkedGroupSlug: string | null },
+): Promise<string[]> {
+    if (!mirrors(position) || !position.linkedGroupSlug) return [];
+    const [group] = await ctx.db
+        .select({ permissions: schema.group.leaderGlobalPermissions })
+        .from(schema.group)
+        .where(eq(schema.group.slug, position.linkedGroupSlug))
+        .limit(1);
+    return group?.permissions ?? [];
+}
+
+/**
+ * The permissions in `next` that are genuinely new — the only ones the
+ * escalation guard has anything to say about. See
+ * {@link permissionsFromLinkedPosition} for why the rest are exempt.
+ */
+export function addedBeyond(next: string[], baseline: string[]): string[] {
+    const already = new Set(baseline);
+    return next.filter((p) => !already.has(p));
+}
+
+/**
  * What the subgroup's leader actually holds org-wide: the stored list plus
  * whatever the linked verv adds. Both are live grants, so this is the honest
  * answer to "what can the leader of this group do across TIHLDE".
@@ -75,9 +123,7 @@ export async function readLeaderGlobalPermissions(
     groupSlug: string,
     stored: string[] | null,
 ): Promise<string[]> {
-    const position = await getLinkedLeaderPosition(ctx, groupSlug);
-    if (!position || !mirrors(position)) return stored ?? [];
-    return union(stored, position.permissions);
+    return union(stored, await permissionsFromLinkedPosition(ctx, groupSlug));
 }
 
 /**
@@ -92,15 +138,10 @@ export async function readLinkedPositionPermissions(
         linkedGroupSlug: string | null;
     },
 ): Promise<string[]> {
-    if (!mirrors(position) || !position.linkedGroupSlug) {
-        return position.permissions ?? [];
-    }
-    const [group] = await ctx.db
-        .select({ permissions: schema.group.leaderGlobalPermissions })
-        .from(schema.group)
-        .where(eq(schema.group.slug, position.linkedGroupSlug))
-        .limit(1);
-    return union(position.permissions, group?.permissions ?? []);
+    return union(
+        position.permissions,
+        await permissionsFromLinkedGroup(ctx, position),
+    );
 }
 
 /**

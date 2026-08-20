@@ -3,7 +3,9 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    addedBeyond,
     mirrorIntoLinkedGroup,
+    permissionsFromLinkedGroup,
     readLinkedPositionPermissions,
 } from "~/lib/group/linked-leader";
 import {
@@ -65,16 +67,42 @@ export const updatePositionRoute = route().patch(
             });
         }
 
-        // Permission/scope changes re-run the grant guardrail on the FULL
-        // resulting permission list at the resulting scope.
+        // A linked verv only mirrors the subgroup's leader list while it is
+        // org-wide — scoped to "group" it would grant inside HS instead, which
+        // is a different claim about a different set of people. Rejected
+        // rather than silently letting the two halves drift apart again.
+        if (
+            position.linkedGroupSlug !== null &&
+            body.scope !== undefined &&
+            body.scope !== position.scope
+        ) {
+            throw new HTTPException(409, {
+                message:
+                    "A verv linked to a subgroup follows that group's leader across all of TIHLDE and cannot change scope",
+            });
+        }
+
+        // Permission/scope changes re-run the grant guardrail on the resulting
+        // permission list at the resulting scope.
+        //
+        // For a linked verv, what the subgroup's leader list already grants is
+        // exempt: this page shows the union of the two halves (see
+        // lib/group/linked-leader.ts), so leaving the other half untouched is
+        // not the same as handing it out. Only genuinely new permissions are
+        // measured — everything else is already held by this very holder.
         const nextPermissions = body.permissions ?? position.permissions;
         const nextScope = body.scope ?? position.scope;
+        const added = addedBeyond(
+            nextPermissions,
+            await permissionsFromLinkedGroup(ctx, position),
+        );
         if (
+            added.length > 0 &&
             !(await canGrantPositionPermissions(
                 ctx,
                 user.id,
                 groupSlug,
-                nextPermissions,
+                added,
                 nextScope,
             ))
         ) {
