@@ -156,14 +156,19 @@ function AllergiesCard() {
     }, [savedKey]);
 
     async function handleSave(next: AllergySelection) {
-        await updateSettings.mutateAsync({
-            data: {
-                allergies: next.allergies,
-                customAllergies: next.customAllergies,
-            },
-        });
-        // Allergiene leses av sesjonen, ikke av en egen spørring.
-        await invalidateAuth();
+        try {
+            await updateSettings.mutateAsync({
+                data: {
+                    allergies: next.allergies,
+                    customAllergies: next.customAllergies,
+                },
+            });
+            // Allergiene leses av sesjonen, ikke av en egen spørring.
+            await invalidateAuth();
+        } catch {
+            // Feilen vises fra `updateSettings.isError`. Fanges likevel, ellers
+            // blir et mislykket lagringsforsøk en ubehandlet rejection.
+        }
     }
 
     return (

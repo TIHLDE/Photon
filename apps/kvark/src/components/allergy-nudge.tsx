@@ -60,8 +60,15 @@ export function AllergyNudge({ eventId, hasPaid }: AllergyNudgeProps) {
     if (!showAllergyPrompt) return null;
 
     async function save(next: AllergySelection) {
-        await saveAllergies.save(next);
-        setIsPickerOpen(false);
+        try {
+            await saveAllergies.save(next);
+            setIsPickerOpen(false);
+        } catch {
+            // Feilen vises fra `saveAllergies.isError`, så det er ingenting å
+            // gjøre her. Fanges likevel: `mutateAsync` kaster, og uten dette
+            // blir hvert mislykket forsøk en ubehandlet promise-rejection.
+            // Velgeren blir stående åpen, så svaret kan sendes på nytt.
+        }
     }
 
     return (
