@@ -87,6 +87,7 @@ import {
     useCanActForGroup,
     useIsGroupLeaderOf,
     useLedGroupSlugs,
+    usePermission,
     useScopedPermission,
 } from "#/hooks/use-permission";
 import {
@@ -113,7 +114,8 @@ export const Route = createFileRoute("/admin/grupper")({
 
 // Kontraktsignering gjelder kun verv (undergrupper, komiteer, styrer,
 // interessegrupper, idrettslag). Automatisk genererte grupper (klassetrinn,
-// studier, TIHLDE) og private bøtelag skal ikke administreres her.
+// studier, TIHLDE) administreres ikke her; private bøtelag har en egen fane
+// bare teknologiministeren ser ({@link PRIVATE_TAB}).
 //
 // Fanene dekker de samme typene som kan velges i redigeringen
 // (EDITABLE_GROUP_TYPES), slik at en gruppe som bytter type fortsatt står i
@@ -126,7 +128,16 @@ const GROUP_TYPE_TABS = [
     { type: "SPORTSTEAM", label: "Idrettslag" },
 ] as const;
 
-type TabType = (typeof GROUP_TYPE_TABS)[number]["type"];
+type EditableTabType = (typeof GROUP_TYPE_TABS)[number]["type"];
+
+/**
+ * Private bøtelag lages av medlemmene selv og hører ikke hjemme sammen med
+ * vervene, men teknologiministeren trenger likevel et sted å se og rydde i
+ * dem. Fanen vises derfor bare for `root`.
+ */
+const PRIVATE_TAB = { type: "PRIVATE", label: "Private" } as const;
+
+type TabType = EditableTabType | (typeof PRIVATE_TAB)["type"];
 
 /**
  * Everything this page lets you do to a single group. Holding one of these for
@@ -142,6 +153,11 @@ const GROUP_ADMIN_PERMISSIONS = [
 function GrupperAdminPage() {
     const { data: allGroups } = useSuspenseQuery(getGroupsQuery(0));
     const [tab, setTab] = useState<TabType>("SUBGROUP");
+    // Kun teknologiministeren (root) ser de private bøtelagene.
+    const canSeePrivate = usePermission("root");
+    const tabs = canSeePrivate
+        ? [...GROUP_TYPE_TABS, PRIVATE_TAB]
+        : GROUP_TYPE_TABS;
     const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const canCreate = useAnyScopePermission(["groups:create", "groups:manage"]);
@@ -177,12 +193,14 @@ function GrupperAdminPage() {
             />
             <CreateGroupDialog
                 open={createOpen}
-                defaultType={tab}
+                // Private bøtelag opprettes ikke herfra — skjemaet tilbyr bare
+                // vervtypene, så fanen faller tilbake til undergruppe.
+                defaultType={tab === "PRIVATE" ? "SUBGROUP" : tab}
                 onOpenChange={setCreateOpen}
             />
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabType)}>
                 <TabsList>
-                    {GROUP_TYPE_TABS.map(({ type, label }) => (
+                    {tabs.map(({ type, label }) => (
                         <TabsTrigger key={type} value={type}>
                             {label}
                         </TabsTrigger>
@@ -238,14 +256,14 @@ function CreateGroupDialog({
     onOpenChange,
 }: {
     open: boolean;
-    defaultType: TabType;
+    defaultType: EditableTabType;
     onOpenChange: (open: boolean) => void;
 }) {
     const [name, setName] = useState("");
     const [slug, setSlug] = useState("");
     const [slugTouched, setSlugTouched] = useState(false);
     const [description, setDescription] = useState("");
-    const [type, setType] = useState<TabType>(defaultType);
+    const [type, setType] = useState<EditableTabType>(defaultType);
     const [subtype, setSubtype] = useState<string>("GRUPPE");
     const [error, setError] = useState<string | null>(null);
 
@@ -335,7 +353,8 @@ function CreateGroupDialog({
                                     value={type}
                                     onValueChange={(value) =>
                                         setType(
-                                            (value as TabType) ?? defaultType,
+                                            (value as EditableTabType) ??
+                                                defaultType,
                                         )
                                     }
                                 >
