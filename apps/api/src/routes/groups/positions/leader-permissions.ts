@@ -27,6 +27,10 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    mirrorIntoLinkedPosition,
+    readLeaderGlobalPermissions,
+} from "~/lib/group/linked-leader";
+import {
     canGrantPositionPermissions,
     canManagePositions,
     knownPermissions,
@@ -84,9 +88,18 @@ export const getLeaderPermissionsRoute = route().get(
             });
         }
 
+        // A subgroup's leader is also the holder of the linked HS verv, and
+        // both grants are live. Reporting their union is what makes this page
+        // and HS's verv page say the same thing about the same person.
+        const globalPermissions = await readLeaderGlobalPermissions(
+            ctx,
+            groupSlug,
+            group.globalPermissions,
+        );
+
         return c.json({
             permissions: knownPermissions(group.permissions),
-            globalPermissions: knownPermissions(group.globalPermissions),
+            globalPermissions: knownPermissions(globalPermissions),
             title: group.title,
         });
     },
@@ -194,6 +207,16 @@ export const updateLeaderPermissionsRoute = route().patch(
                 globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
             });
+
+        // Keep the linked HS verv identical, so editing the leader here and
+        // editing «Innovasjonsminister» in HS cannot disagree.
+        if (body.globalPermissions !== undefined) {
+            await mirrorIntoLinkedPosition(
+                ctx,
+                groupSlug,
+                body.globalPermissions,
+            );
+        }
 
         return c.json({
             permissions: updated?.permissions ?? [],

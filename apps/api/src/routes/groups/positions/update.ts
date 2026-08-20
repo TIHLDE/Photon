@@ -3,6 +3,10 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    mirrorIntoLinkedGroup,
+    readLinkedPositionPermissions,
+} from "~/lib/group/linked-leader";
+import {
     canGrantPositionPermissions,
     canManagePositions,
     getPosition,
@@ -95,6 +99,13 @@ export const updatePositionRoute = route().patch(
             .where(eq(schema.groupPosition.id, positionId))
             .returning();
 
+        // A verv linked to a subgroup is the same grant as that subgroup's
+        // org-wide leader permissions (see lib/group/linked-leader.ts) —
+        // write both halves so the two admin pages stay in step.
+        if (body.permissions !== undefined && updated) {
+            await mirrorIntoLinkedGroup(ctx, updated, body.permissions);
+        }
+
         const holder = await db.query.groupPositionHolder.findFirst({
             where: eq(schema.groupPositionHolder.positionId, positionId),
             with: {
@@ -104,6 +115,9 @@ export const updatePositionRoute = route().patch(
 
         return c.json({
             ...updated,
+            permissions: updated
+                ? await readLinkedPositionPermissions(ctx, updated)
+                : [],
             holder: holder
                 ? {
                       userId: holder.user.id,
