@@ -30,6 +30,7 @@ import {
     revokeUnprovenCredentials,
     syncFeideHook,
 } from "./feide";
+import { syncDeEldstesRaas } from "./de-eldstes-raas";
 
 /**
  * Feide is a genuine third-party identity provider: it only works once a Feide
@@ -552,6 +553,36 @@ export function createAuth(options: CreateAuthOptions) {
                             options.services.db,
                             data.userId,
                         );
+                    },
+                },
+            },
+
+            /**
+             * Every sign-in, whatever proved it. Unlike the Feide sync in
+             * `hooks.after`, which can only run where a Feide token exists,
+             * this reads nothing but our own tables — and the people it is for
+             * are precisely the ones who have stopped being students and sign
+             * in with a password.
+             *
+             * `after` and not `before`: the work belongs to no session row in
+             * particular, and a failure must not cost anyone their login. So it
+             * is logged and swallowed — the next sign-in tries again, and the
+             * only thing lost meanwhile is a group membership.
+             */
+            session: {
+                create: {
+                    after: async (session) => {
+                        try {
+                            await syncDeEldstesRaas(
+                                options.services.db,
+                                session.userId,
+                            );
+                        } catch (error) {
+                            console.error(
+                                "Failed to sync De Eldstes Raas membership",
+                                error,
+                            );
+                        }
                     },
                 },
             },

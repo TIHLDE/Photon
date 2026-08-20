@@ -382,6 +382,23 @@ export default async ({ db }: AppContext) => {
             fine_info: "",
             fines_activated: 0,
         },
+        {
+            // Created in production by migration 0070, since production never
+            // runs this seed. Listed here so a `db:push`-ed development
+            // database — which applies no migrations at all — has the group
+            // the login hook enrols former HS members into.
+            created_at: "2026-08-20 00:00:00.000000",
+            updated_at: "2026-08-20 00:00:00.000000",
+            image: null,
+            name: "De Eldstes Raas",
+            slug: "de-eldstes-raas",
+            description:
+                "De Eldstes Raas samler alle som har sittet i Hovedstyret. Du blir med automatisk når du har vært HS-medlem, uansett hva du studerer i dag eller om du er ferdig.",
+            contact_email: "hs@tihlde.org",
+            type: "PRIVATE",
+            fine_info: "",
+            fines_activated: 0,
+        },
     ] as const;
 
     for (const group of groups) {
