@@ -4,7 +4,8 @@ import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Label } from "@tihlde/ui/ui/label";
 import { ScrollText } from "lucide-react";
 
-export const EVENT_RULES_URL = "https://wiki.tihlde.org/arrangementer";
+export const EVENT_RULES_URL =
+    "https://wiki.tihlde.org/retningslinjer/arrangementer";
 
 type EventRulesConsentProps = {
     /** Kalles når medlemmet huker av. Én handling — det finnes ingen angre. */
