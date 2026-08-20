@@ -1242,7 +1242,7 @@ export interface paths {
         post?: never;
         /**
          * Delete submission with reason
-         * @description Delete a submission and notify the user with a reason. Admin only.
+         * @description Delete a submission and notify the user with a reason. Requires permission to manage the form.
          */
         delete: operations["deleteFormSubmission"];
         options?: never;
@@ -1861,7 +1861,7 @@ export interface paths {
         head?: never;
         /**
          * Set the group leader's permissions
-         * @description Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.
+         * @description Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. Requires "Tilganger" (roles:create/groups:manage) for this group — the group's own leader may not edit their own access. You can only grant permissions you hold yourself for this group.
          */
         patch: operations["updateGroupLeaderPermissions"];
         trace?: never;

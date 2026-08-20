@@ -1,4 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -57,17 +56,7 @@ export const updateRoute = route().patch(
         }
 
         // Check permissions
-        const hasAdminPermission = await hasPermission(
-            { db, ...ctx },
-            user.id,
-            "forms:manage",
-        );
-        const canManage = await canManageForm(
-            db,
-            formId,
-            user.id,
-            hasAdminPermission,
-        );
+        const canManage = await canManageForm({ db, ...ctx }, formId, user.id);
 
         if (!canManage) {
             throw new HTTPException(403, {

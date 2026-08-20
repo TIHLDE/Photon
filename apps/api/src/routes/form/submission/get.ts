@@ -1,4 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -66,17 +65,7 @@ export const getSubmissionRoute = route().get(
 
         // Check permissions: own submission OR can manage form
         const isOwnSubmission = submission.userId === user.id;
-        const hasAdminPermission = await hasPermission(
-            { db, ...ctx },
-            user.id,
-            "forms:manage",
-        );
-        const canManage = await canManageForm(
-            db,
-            formId,
-            user.id,
-            hasAdminPermission,
-        );
+        const canManage = await canManageForm({ db, ...ctx }, formId, user.id);
 
         if (!isOwnSubmission && !canManage) {
             throw new HTTPException(403, {

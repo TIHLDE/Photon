@@ -121,6 +121,24 @@ function useCanGrantGlobally(): boolean {
     return usePermission(["root", "roles:create"]);
 }
 
+/**
+ * Whether the viewer may change the group leader's own permissions.
+ *
+ * Mirrors `canManageLeaderPermissions` server-side, and is deliberately
+ * stricter than {@link useCanManagePositions}: leading a group does not put
+ * your own access in your own hands. A leader manages the group's verv and
+ * what every member holds; the leader row is moved for them by someone holding
+ * «Tilganger». That is what keeps the two lists independent — trimming what
+ * members get can no longer trim the leader, and no leader can lock themselves
+ * out of their own group mid-opptak.
+ */
+function useCanManageLeaderPermissions(groupSlug: string): boolean {
+    return useScopedPermission(
+        ["groups:manage", "roles:create"],
+        `group:${groupSlug}`,
+    );
+}
+
 function RolesAdminPage() {
     return (
         <Stagger
@@ -141,6 +159,9 @@ function RolesAdminPage() {
 // =============================================================================
 // Shared: domain-level permission checkboxes
 // =============================================================================
+
+/** No domains covered — the leader row subtracts nothing. */
+const EMPTY_DOMAINS: Set<string> = new Set();
 
 function PermissionDomainCheckboxes({
     value,
@@ -425,8 +446,6 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                     <LeaderRow
                         groupSlug={groupSlug}
                         canManage={canManage}
-                        covered={coveredForGroupScope}
-                        coveredGlobally={coveredForGlobalScope}
                         leaders={leaders.map((leader) => ({
                             userId: leader.userId,
                             name: leader.user?.name ?? leader.userId,
@@ -857,21 +876,14 @@ function useGroupCoveredDomains(
 function LeaderRow({
     groupSlug,
     canManage,
-    covered,
-    coveredGlobally,
     leaders,
 }: {
     groupSlug: string;
     canManage: boolean;
-    /** Domains the group already gives every member, and which the leader
-     *  therefore does not get listed for a second time. */
-    covered: Set<string>;
-    /** The same, but only what the group gives org-wide — the org-wide half of
-     *  the leader's set is not covered by a group-scoped member grant. */
-    coveredGlobally: Set<string>;
     leaders: { userId: string; name: string; image: string | null }[];
 }) {
     const [editing, setEditing] = useState(false);
+    const canEdit = useCanManageLeaderPermissions(groupSlug);
     // Only managers may read this — asking as anyone else is a guaranteed 403.
     const { data } = useQuery({
         ...getLeaderPermissionsQuery(groupSlug),
@@ -915,17 +927,21 @@ function LeaderRow({
             </TableCell>
             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
-                    ? summarizeExtraPermissionsByScope([
-                          { permissions, covered },
+                    ? // Nothing subtracted for what the group also gives every
+                      // member: the leader's set stands on its own now, and
+                      // «Ingen egne tilganger» is exactly the warning that was
+                      // missing when a leader's access rode on the member list.
+                      summarizeExtraPermissionsByScope([
+                          { permissions, covered: EMPTY_DOMAINS },
                           {
                               permissions: globalPermissions,
-                              covered: coveredGlobally,
+                              covered: EMPTY_DOMAINS,
                           },
                       ])
                     : "Gruppens ledertilganger"}
             </TableCell>
             <TableCell>
-                {canManage ? (
+                {canEdit ? (
                     <DropdownMenu>
                         <DropdownMenuTrigger
                             aria-label="Handlinger"
@@ -978,14 +994,16 @@ function LeaderPermissionsDialog({
     const [global, setGlobal] = useState<string[]>(initialGlobal);
     const [title, setTitle] = useState(initialTitle ?? "");
     const [error, setError] = useState<string | null>(null);
-    // The group-scoped list is covered both by what the group gives every
-    // member and by anything the leader already holds org-wide.
-    const coveredByGroup = useGroupCoveredDomains(groupSlug, true, "group");
-    const covered = useMemo(() => {
-        const all = new Set(coveredByGroup);
-        for (const domain of domainsOf(global)) all.add(domain);
-        return all;
-    }, [coveredByGroup, global]);
+    // Only the leader's own org-wide list locks a box here: ticking a domain
+    // for all of TIHLDE already covers this group, so two switches for it
+    // could only disagree.
+    //
+    // What the group gives every member deliberately does NOT lock anything.
+    // It used to, and that is how a leader ended up with an empty row that
+    // looked full: the access was real but rode on the member list, and
+    // trimming that list took it away. Giving the leader their own copy has to
+    // be possible even when members happen to hold the same thing.
+    const covered = useMemo(() => domainsOf(global), [global]);
 
     async function handleSubmit() {
         setError(null);
@@ -1036,11 +1054,13 @@ function LeaderPermissionsDialog({
                                 value={permissions}
                                 onChange={setPermissions}
                                 lockedDomains={covered}
-                                lockedHint="Avhukede felt er allerede gitt til alle medlemmer, eller for hele TIHLDE nedenfor."
+                                lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
                             <p className="text-sm text-muted-foreground">
                                 Gjelder bare gruppens eget innhold, og følger
-                                den som til enhver tid er leder.
+                                den som til enhver tid er leder. Står for seg
+                                selv: lederen beholder dette selv om gruppen
+                                endrer hva alle medlemmer får.
                             </p>
                         </Field>
 

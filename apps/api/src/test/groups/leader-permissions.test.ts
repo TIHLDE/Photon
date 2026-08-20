@@ -79,18 +79,16 @@ describe("group leader permissions", () => {
 
     describe("editing", () => {
         integrationTest(
-            "a leader can set permissions they hold for the group",
+            "a «Tilganger» holder sets them, and can read them back",
             async ({ ctx }) => {
-                const leader = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(leader);
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
                 const group = await ctx.utils.createTestGroup();
 
-                await ctx.db.insert(schema.groupMembership).values({
-                    userId: leader.id,
-                    groupSlug: group.slug,
-                    role: "leader",
-                });
-                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "roles:create",
+                    "news:manage",
+                ]);
 
                 const response = await client.api.groups[":groupSlug"][
                     "leader-permissions"
@@ -106,8 +104,17 @@ describe("group leader permissions", () => {
             500_000,
         );
 
+        /**
+         * Leading a group does not put your own access in your own hands.
+         *
+         * A leader whose row is empty holds everything through membership, so
+         * when the row was theirs to edit, trimming what the group gave every
+         * member trimmed the leader too — and the escalation guard then
+         * refused to let them put it back. Reading stays open: they can see
+         * what they hold, they just cannot move it.
+         */
         integrationTest(
-            "a leader cannot hand out permissions they do not hold",
+            "the group's own leader may read their row but not write it",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
                 const client = await ctx.utils.clientForUser(leader);
@@ -118,6 +125,32 @@ describe("group leader permissions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
+                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: group.slug } });
+                expect(read.status).toBe(200);
+
+                const write = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: { permissions: ["news:manage"] },
+                });
+                expect(write.status).toBe(403);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "an editor cannot hand out permissions they do not hold",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
+                const group = await ctx.utils.createTestGroup();
+
+                await ctx.utils.giveUserPermissions(admin, ["roles:create"]);
 
                 const response = await client.api.groups[":groupSlug"][
                     "leader-permissions"
@@ -196,20 +229,23 @@ describe("group leader permissions", () => {
         );
 
         integrationTest(
-            "a group leader cannot grant them from a right they only hold for their group",
+            "an editor cannot grant them from a right they only hold for the group",
             async ({ ctx }) => {
-                const leader = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(leader);
+                const editor = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(editor);
                 const group = await ctx.utils.createTestGroup();
 
+                // May edit the row, but holds news:manage only for this group
+                // — through the group's own member permissions.
+                await ctx.utils.giveUserPermissions(editor, ["roles:create"]);
                 await ctx.db
                     .update(schema.group)
-                    .set({ leaderPermissions: ["news:manage"] })
+                    .set({ memberPermissions: ["news:manage"] })
                     .where(eq(schema.group.slug, group.slug));
                 await ctx.db.insert(schema.groupMembership).values({
-                    userId: leader.id,
+                    userId: editor.id,
                     groupSlug: group.slug,
-                    role: "leader",
+                    role: "member",
                 });
 
                 // Holds news:manage@group:<slug>, so the group list is fine…
@@ -282,17 +318,15 @@ describe("group leader permissions", () => {
      */
     describe("title", () => {
         integrationTest(
-            "a leader can name the role, clear it, and leave it untouched",
+            "it can be named, cleared, and left untouched",
             async ({ ctx }) => {
-                const leader = await ctx.utils.createTestUser();
-                const client = await ctx.utils.clientForUser(leader);
+                const admin = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(admin);
                 const group = await ctx.utils.createTestGroup();
 
-                await ctx.db.insert(schema.groupMembership).values({
-                    userId: leader.id,
-                    groupSlug: group.slug,
-                    role: "leader",
-                });
+                // The title rides on the leader row, so it follows the row's
+                // rule: set by «Tilganger», not by the leader themselves.
+                await ctx.utils.giveUserPermissions(admin, ["roles:create"]);
 
                 const patch = (json: {
                     permissions: string[];

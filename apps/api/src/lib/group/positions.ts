@@ -78,6 +78,39 @@ export async function canManagePositions(
 }
 
 /**
+ * Can the user edit the group leader's own permission set?
+ *
+ * Stricter than {@link canManagePositions} on purpose: being the leader is not
+ * enough. A leader manages their group — its verv and what every member holds
+ * — but their own access is not theirs to change, and is only moved by someone
+ * holding "Tilganger" ("roles:create"/"groups:manage", for this group or
+ * org-wide).
+ *
+ * The reason is a trap that cost a leader their access mid-opptak. The leader
+ * row and the member list are separate grants, but a leader whose row is empty
+ * holds everything through membership — so trimming what the group gives every
+ * member silently trimmed the leader too. Worse, it was a one-way door: the
+ * escalation guard ("you may only grant what you hold") then refused to let
+ * them put it back. Taking the row out of the leader's hands makes the two
+ * lists independent in practice and not just in the schema.
+ *
+ * Reading stays open to anyone who may manage the group's verv — a leader
+ * should be able to see what they hold, they just cannot edit it.
+ */
+export async function canManageLeaderPermissions(
+    ctx: AppContext,
+    userId: string,
+    groupSlug: string,
+): Promise<boolean> {
+    return await hasScopedPermission(
+        ctx,
+        userId,
+        ["root", "groups:manage", "roles:create"],
+        `group:${groupSlug}`,
+    );
+}
+
+/**
  * Guardrail: does the user hold every permission in the list at the
  * position's effective scope?
  *

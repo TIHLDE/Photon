@@ -3,9 +3,9 @@ import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { env } from "~/lib/env";
+import { canManageForm } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import {
     deleteSubmissionResponseSchema,
@@ -19,23 +19,41 @@ export const deleteSubmissionWithReasonRoute = route().delete(
         summary: "Delete submission with reason",
         operationId: "deleteFormSubmission",
         description:
-            "Delete a submission and notify the user with a reason. Admin only.",
+            "Delete a submission and notify the user with a reason. Requires permission to manage the form.",
     })
         .schemaResponse({
             statusCode: 200,
             schema: deleteSubmissionResponseSchema,
             description: "Success",
         })
+        .forbidden({ description: "Insufficient permissions" })
         .notFound({ description: "Submission not found" })
         .build(),
     requireAuth,
-    requireAccess({ permission: "forms:manage" }),
     validator("json", deleteSubmissionWithReasonSchema),
     async (c) => {
         const body = c.req.valid("json");
         const { db, ...ctx } = c.get("ctx");
+        const user = c.get("user");
         const formId = c.req.param("formId");
         const submissionId = c.req.param("id");
+
+        if (!user) {
+            throw new HTTPException(401, {
+                message: "Authentication required",
+            });
+        }
+
+        // Deleting someone's answer is a managing action on the form, so it
+        // follows the same rule as reading them: the owning group's grant, or
+        // an org-wide one. It used to demand the org-wide one alone, which
+        // left the group that owns the form unable to clean up its own.
+        if (!(await canManageForm({ db, ...ctx }, formId, user.id))) {
+            throw new HTTPException(403, {
+                message:
+                    "You do not have permission to delete submissions for this form",
+            });
+        }
 
         // Get submission with form and user details
         const submission = await db.query.formSubmission.findFirst({

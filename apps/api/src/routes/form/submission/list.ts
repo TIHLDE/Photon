@@ -1,4 +1,3 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -49,17 +48,7 @@ export const listSubmissionsRoute = route().get(
         }
 
         // Check permissions
-        const hasAdminPermission = await hasPermission(
-            { db, ...ctx },
-            user.id,
-            "forms:manage",
-        );
-        const canManage = await canManageForm(
-            db,
-            formId,
-            user.id,
-            hasAdminPermission,
-        );
+        const canManage = await canManageForm({ db, ...ctx }, formId, user.id);
 
         if (!canManage) {
             throw new HTTPException(403, {
