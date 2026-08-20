@@ -21,8 +21,14 @@ describe("group-scoped forms access", () => {
             const helper = await ctx.utils.createTestUser();
             const outsider = await ctx.utils.createTestUser();
 
-            const group = await ctx.utils.createTestGroup();
-            const otherGroup = await ctx.utils.createTestGroup();
+            // Eksplisitte slugs: createTestGroup lager sin egen av
+            // Date.now(), og to grupper på rad lander i samme millisekund.
+            const group = await ctx.utils.createTestGroup({
+                slug: "forms-scope-eier",
+            });
+            const otherGroup = await ctx.utils.createTestGroup({
+                slug: "forms-scope-andre",
+            });
 
             // The group gives every member the forms domain, scoped to itself.
             await ctx.db
@@ -104,6 +110,89 @@ describe("group-scoped forms access", () => {
             const denied = await outsiderClient.api.forms[
                 ":formId"
             ].submissions.$get({ param: { formId } });
+            expect(denied.status).toBe(403);
+        },
+        500_000,
+    );
+
+    /**
+     * Evalueringsskjemaet spurte etter `events:manage` org-vidt, så gruppa som
+     * faktisk arrangerte kunne ikke åpne evalueringen av sitt eget
+     * arrangement — samme form som feilen over, i arrangementsdomenet.
+     */
+    integrationTest(
+        "the arranging group can open the evaluation of its own event",
+        async ({ ctx }) => {
+            const arranger = await ctx.utils.createTestUser();
+            const outsider = await ctx.utils.createTestUser();
+
+            const group = await ctx.utils.createTestGroup({
+                slug: "eval-scope-arrangor",
+            });
+            const otherGroup = await ctx.utils.createTestGroup({
+                slug: "eval-scope-andre",
+            });
+
+            // «Arrangementer» for gruppa, scopet til gruppa selv.
+            await ctx.db
+                .update(schema.group)
+                .set({ memberPermissions: ["events:update", "events:manage"] })
+                .where(eq(schema.group.slug, group.slug));
+            await ctx.db
+                .update(schema.group)
+                .set({ memberPermissions: ["events:update", "events:manage"] })
+                .where(eq(schema.group.slug, otherGroup.slug));
+
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: arranger.id, groupSlug: group.slug, role: "member" },
+                {
+                    userId: outsider.id,
+                    groupSlug: otherGroup.slug,
+                    role: "member",
+                },
+            ]);
+
+            await ctx.utils.setupEventCategories();
+            const event = await ctx.utils.createTestEvent({
+                organizerGroupSlug: group.slug,
+            });
+
+            const arrangerClient = await ctx.utils.clientForUser(arranger);
+            const outsiderClient = await ctx.utils.clientForUser(outsider);
+
+            const created = await arrangerClient.api.event[
+                ":eventId"
+            ].forms.$post({
+                param: { eventId: event.id },
+                json: {
+                    title: "Evaluering",
+                    description: "Etter arrangementet",
+                    type: "evaluation",
+                    event: event.id,
+                    template: false,
+                    fields: [
+                        {
+                            title: "Hvordan var det?",
+                            type: "text_answer",
+                            required: true,
+                            order: 0,
+                        },
+                    ],
+                },
+            });
+            expect(created.status).toBe(201);
+
+            // Arrangøren har aldri deltatt på sitt eget arrangement, så dette
+            // er tilgangen — ikke oppmøtet — som åpner skjemaet.
+            const opened = await arrangerClient.api.event[":eventId"].forms[
+                ":type"
+            ].$get({ param: { eventId: event.id, type: "evaluation" } });
+            expect(opened.status).toBe(200);
+
+            // Og «Arrangementer» for en annen gruppe når ikke hit.
+            const denied = await outsiderClient.api.event[":eventId"].forms[
+                ":type"
+            ].$get({ param: { eventId: event.id, type: "evaluation" } });
             expect(denied.status).toBe(403);
         },
         500_000,
