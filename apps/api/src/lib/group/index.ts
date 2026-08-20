@@ -7,6 +7,7 @@
  * - Keeping HS in sync with subgroup leadership
  */
 
+import { syncDeEldstesRaad } from "@photon/auth/de-eldstes-raad";
 import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray, ne } from "drizzle-orm";
@@ -210,6 +211,15 @@ export async function addUserToGroup(
         await syncSubgroupLeaderIntoHs(ctx, userId, group);
     }
 
+    /**
+     * A seat in HS — or the leadership of Forvaltningsgruppen — carries a seat
+     * in De Eldstes Raad, and «med en gang» means here rather than at the
+     * member's next sign-in. Called unconditionally instead of matching the
+     * slug first: this is also the path a subgroup leader takes into HS just
+     * above, and the sync is a no-op for everyone it does not concern.
+     */
+    await syncDeEldstesRaad(db, userId);
+
     return membership;
 }
 
@@ -396,6 +406,12 @@ export async function updateGroupMemberRole(
             await syncSubgroupLeaderOutOfHs(ctx, userId, groupSlug);
         }
     }
+
+    // Being handed the leadership of Forvaltningsgruppen is the fondsforvalter
+    // taking over, and that seat is granted here rather than on a later login.
+    // Losing it takes nothing back: De Eldstes Raad is for those who have held
+    // the position, not only those holding it now.
+    await syncDeEldstesRaad(db, userId);
 }
 
 // =============================================================================

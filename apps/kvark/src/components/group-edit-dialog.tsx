@@ -46,7 +46,13 @@ import {
 export type GroupEditValues = {
     name: string;
     description: string;
-    contactEmail: string;
+    /**
+     * Null når feltet står tomt, ikke tom streng: API-et validerer adressen
+     * med `z.string().email()`, og «» er ikke en gyldig e-post. En gruppe uten
+     * kontaktadresse kunne derfor ikke redigeres i det hele tatt — hele
+     * lagringen ble avvist med «Validation failed», uansett hva du endret.
+     */
+    contactEmail: string | null;
     /** Utelatt for automatisk genererte grupper, som ikke kan bytte type. */
     type?: string;
     /** Bare satt når typen har en underkategori (interessegrupper). */
@@ -108,7 +114,7 @@ export function GroupEditDialog({
         onSubmit({
             name: name.trim(),
             description,
-            contactEmail: contactEmail.trim(),
+            contactEmail: contactEmail.trim() || null,
             ...(typeEditable
                 ? {
                       type,

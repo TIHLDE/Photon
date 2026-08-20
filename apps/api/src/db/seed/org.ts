@@ -383,17 +383,17 @@ export default async ({ db }: AppContext) => {
             fines_activated: 0,
         },
         {
-            // Created in production by migration 0070, since production never
-            // runs this seed. Listed here so a `db:push`-ed development
+            // Created in production by migrations 0070/0071, since production
+            // never runs this seed. Listed here so a `db:push`-ed development
             // database — which applies no migrations at all — has the group
-            // the login hook enrols former HS members into.
+            // the sync enrols HS and the fondsforvalter into.
             created_at: "2026-08-20 00:00:00.000000",
             updated_at: "2026-08-20 00:00:00.000000",
             image: null,
-            name: "De Eldstes Raas",
-            slug: "de-eldstes-raas",
+            name: "De Eldstes Raad",
+            slug: "de-eldstes-raad",
             description:
-                "De Eldstes Raas samler alle som har sittet i Hovedstyret. Du blir med automatisk når du har vært HS-medlem, uansett hva du studerer i dag eller om du er ferdig.",
+                "De Eldstes Raad samler dem som har båret et av TIHLDEs tillitsverv: Hovedstyret, fondsforvalteren, og ridderne. Du blir med automatisk når du får vervet, og blir stående etterpå — uansett hva du studerer i dag eller om du er ferdig.",
             contact_email: "hs@tihlde.org",
             type: "PRIVATE",
             fine_info: "",
