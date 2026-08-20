@@ -73,7 +73,13 @@ export function AllergyPicker({
                 (option) =>
                     !chosen.has(option.slug) &&
                     (needle === "" ||
-                        option.label.toLowerCase().includes(needle)),
+                        option.label.toLowerCase().includes(needle) ||
+                        // Søk i eksemplene også: skriver du «laktose» eller
+                        // «hasselnøtt», er det Melk og Nøtter du er ute etter,
+                        // men ingen av ordene står i etiketten.
+                        (option.description ?? "")
+                            .toLowerCase()
+                            .includes(needle)),
             )
             .slice(0, MAX_SUGGESTIONS);
     }, [options, allergies, trimmed]);
@@ -222,7 +228,7 @@ export function AllergyPicker({
                         <button
                             type="button"
                             disabled={disabled}
-                            className="w-full p-1 text-left text-sm"
+                            className="flex w-full flex-col gap-0.5 p-1 text-left text-sm"
                             onClick={() => {
                                 onChange({
                                     allergies: [...allergies, option.slug],
@@ -231,7 +237,15 @@ export function AllergyPicker({
                                 setQuery("");
                             }}
                         >
-                            {option.label}
+                            <span>{option.label}</span>
+                            {/* Mattilsynets egne eksempler. De færreste vet at
+                                worcestersaus inneholder fisk, så det er dette
+                                som gjør at folk kjenner igjen sitt eget. */}
+                            {option.description ? (
+                                <span className="text-xs text-muted-foreground">
+                                    {option.description}
+                                </span>
+                            ) : null}
                         </button>
                     </li>
                 ))}

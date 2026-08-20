@@ -11,24 +11,24 @@ describe("user endpoints", () => {
         async ({ ctx }) => {
             const { db } = ctx;
 
-            // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "lactose",
-                    label: "Lactose Intolerance",
-                    description: "Cannot digest lactose",
-                },
-                {
-                    slug: "gluten",
-                    label: "Gluten Intolerance",
-                    description: "Cannot digest gluten",
-                },
-                {
-                    slug: "nuts",
-                    label: "Nut Allergy",
-                    description: "Allergic to nuts",
-                },
-            ]);
+            // Egne slugs: katalogen er ikke tom lenger — migrasjon 0074 setter
+            // inn Mattilsynets 14 pluss kostholdskravene — så «gluten» og
+            // «nuts» ville kollidert på primærnøkkelen.
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "test-lactose",
+                        label: "Lactose Intolerance",
+                        description: "Cannot digest lactose",
+                    },
+                    {
+                        slug: "test-nuts",
+                        label: "Nut Allergy",
+                        description: "Allergic to nuts",
+                    },
+                ])
+                .onConflictDoNothing();
 
             const client = ctx.utils.client();
 
@@ -38,7 +38,9 @@ describe("user endpoints", () => {
 
             const json = await response.json();
             expect(Array.isArray(json)).toBe(true);
-            expect(json.length).toBe(3);
+            expect(json.map((a) => a.slug)).toEqual(
+                expect.arrayContaining(["test-lactose", "test-nuts"]),
+            );
             expect(json[0]).toHaveProperty("slug");
             expect(json[0]).toHaveProperty("label");
             expect(json[0]).toHaveProperty("description");
@@ -47,17 +49,42 @@ describe("user endpoints", () => {
     );
 
     integrationTest(
-        "returns empty array when no allergies exist",
+        "ships the curated baseline every environment gets",
         async ({ ctx }) => {
             const client = ctx.utils.client();
 
-            const response = await client.api.user.allergy.$get({ query: {} });
+            const response = await client.api.user.allergy.$get({
+                query: { curated: "true" },
+            });
 
             expect(response.status).toBe(200);
 
+            // Erstatter en gammel «tom katalog»-test: katalogen er ikke tom
+            // etter migrasjon 0074, og det er nettopp poenget — prod hadde
+            // bare Lepton-fritekst, så nedtrekkslista sto med to valg.
             const json = await response.json();
-            expect(Array.isArray(json)).toBe(true);
-            expect(json.length).toBe(0);
+            expect(json.map((a) => a.slug)).toEqual(
+                expect.arrayContaining([
+                    "gluten",
+                    "shellfish",
+                    "molluscs",
+                    "eggs",
+                    "fish",
+                    "peanuts",
+                    "soy",
+                    "milk",
+                    "nuts",
+                    "celery",
+                    "mustard",
+                    "sesame",
+                    "sulfites",
+                    "lupin",
+                ]),
+            );
+            // Mattilsynets eksempler er det som gjør at folk kjenner igjen
+            // sitt eget, så de skal faktisk følge med.
+            const fish = json.find((a) => a.slug === "fish");
+            expect(fish?.description).toContain("worcestersaus");
         },
         500_000,
     );
@@ -72,13 +99,16 @@ describe("user endpoints", () => {
             const client = await ctx.utils.clientForUser(user);
 
             // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "lactose",
-                    label: "Lactose Intolerance",
-                    description: "Cannot digest lactose",
-                },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "lactose",
+                        label: "Lactose Intolerance",
+                        description: "Cannot digest lactose",
+                    },
+                ])
+                .onConflictDoNothing();
 
             // Create user settings
             await db.insert(schema.userSettings).values({
@@ -188,13 +218,16 @@ describe("user endpoints", () => {
             const client = await ctx.utils.clientForUser(user);
 
             // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "gluten",
-                    label: "Gluten Intolerance",
-                    description: "Cannot digest gluten",
-                },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "gluten",
+                        label: "Gluten Intolerance",
+                        description: "Cannot digest gluten",
+                    },
+                ])
+                .onConflictDoNothing();
 
             const response = await client.api.user.me.settings.$post({
                 json: {
@@ -391,18 +424,21 @@ describe("user endpoints", () => {
             const client = await ctx.utils.clientForUser(user);
 
             // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "lactose",
-                    label: "Lactose Intolerance",
-                    description: "Cannot digest lactose",
-                },
-                {
-                    slug: "nuts",
-                    label: "Nut Allergy",
-                    description: "Allergic to nuts",
-                },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "lactose",
+                        label: "Lactose Intolerance",
+                        description: "Cannot digest lactose",
+                    },
+                    {
+                        slug: "nuts",
+                        label: "Nut Allergy",
+                        description: "Allergic to nuts",
+                    },
+                ])
+                .onConflictDoNothing();
 
             const response = await client.api.user.me.settings.$post({
                 json: {
@@ -584,23 +620,26 @@ describe("user endpoints", () => {
             const client = await ctx.utils.clientForUser(user);
 
             // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "lactose",
-                    label: "Lactose Intolerance",
-                    description: "Cannot digest lactose",
-                },
-                {
-                    slug: "gluten",
-                    label: "Gluten Intolerance",
-                    description: "Cannot digest gluten",
-                },
-                {
-                    slug: "nuts",
-                    label: "Nut Allergy",
-                    description: "Allergic to nuts",
-                },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "lactose",
+                        label: "Lactose Intolerance",
+                        description: "Cannot digest lactose",
+                    },
+                    {
+                        slug: "gluten",
+                        label: "Gluten Intolerance",
+                        description: "Cannot digest gluten",
+                    },
+                    {
+                        slug: "nuts",
+                        label: "Nut Allergy",
+                        description: "Allergic to nuts",
+                    },
+                ])
+                .onConflictDoNothing();
 
             // Create existing settings with lactose allergy
             await db.insert(schema.userSettings).values({
@@ -747,13 +786,16 @@ describe("user endpoints", () => {
             const client = await ctx.utils.clientForUser(user);
 
             // Create test allergies
-            await db.insert(schema.allergy).values([
-                {
-                    slug: "lactose",
-                    label: "Lactose Intolerance",
-                    description: "Cannot digest lactose",
-                },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values([
+                    {
+                        slug: "lactose",
+                        label: "Lactose Intolerance",
+                        description: "Cannot digest lactose",
+                    },
+                ])
+                .onConflictDoNothing();
 
             // Create existing settings
             await db.insert(schema.userSettings).values({
@@ -910,10 +952,13 @@ describe("user endpoints", () => {
         "an admin filling in allergies is not a confirmation from the member",
         async ({ ctx }) => {
             const { db } = ctx;
-            await db.insert(schema.allergy).values({
-                slug: "lactose",
-                label: "Laktose",
-            });
+            await db
+                .insert(schema.allergy)
+                .values({
+                    slug: "lactose",
+                    label: "Laktose",
+                })
+                .onConflictDoNothing();
 
             const member = await ctx.utils.createTestUser();
             const admin = await ctx.utils.createTestUser();
@@ -940,20 +985,27 @@ describe("user endpoints", () => {
         "curated=true excludes the free-text rows the migration imported",
         async ({ ctx }) => {
             const { db } = ctx;
-            await db.insert(schema.allergy).values([
-                { slug: "gluten", label: "Gluten", curated: true },
-                { slug: "reagerer-pa-alt", label: "reagerer på alt" },
-            ]);
+            await db
+                .insert(schema.allergy)
+                .values({ slug: "reagerer-pa-alt", label: "reagerer på alt" })
+                .onConflictDoNothing();
 
             const client = ctx.utils.client();
 
-            const response = await client.api.user.allergy.$get({
+            const all = await client.api.user.allergy.$get({ query: {} });
+            const curated = await client.api.user.allergy.$get({
                 query: { curated: "true" },
             });
 
-            expect(response.status).toBe(200);
-            const json = await response.json();
-            expect(json.map((a) => a.slug)).toEqual(["gluten"]);
+            expect(curated.status).toBe(200);
+            const allSlugs = (await all.json()).map((a) => a.slug);
+            const curatedSlugs = (await curated.json()).map((a) => a.slug);
+
+            // Fritekstraden er med i hele katalogen, men ikke i lista et
+            // medlem velger fra — det er hele grunnen til flagget.
+            expect(allSlugs).toContain("reagerer-pa-alt");
+            expect(curatedSlugs).not.toContain("reagerer-pa-alt");
+            expect(curatedSlugs).toContain("gluten");
         },
         500_000,
     );

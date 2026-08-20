@@ -7,23 +7,26 @@
 -- var tilfeldig — noen hadde skrevet nøyaktig de ordene. Resultatet var en
 -- nedtrekksliste med to valg.
 --
--- Upsert framfor insert, slik at de to som finnes får riktig etikett og
--- beskrivelse i stedet for fritekstversjonen sin.
+-- Allergenene er Mattilsynets 14, med deres egne eksempler:
+-- https://www.mattilsynet.no/mat-og-drikke/merking-av-mat/slik-skal-allergenene-merkes/de-14-allergenene
+--
+-- Upsert framfor insert, slik at radene som finnes får den kuraterte
+-- etiketten og beskrivelsen sin i stedet for fritekstversjonen.
 INSERT INTO "user_allergy" ("slug", "label", "description", "curated") VALUES
-    ('gluten', 'Glutenholdig korn', 'Hvete, rug, bygg, havre, spelt, kamut/egyptisk hvete eller hybrider av disse', true),
-    ('shellfish', 'Skalldyr', 'Skalldyr (for eksempel reker, krabbe, hummer)', true),
-    ('molluscs', 'Bløtdyr', 'Bløtdyr (for eksempel muslinger, blekksprut, østers)', true),
-    ('eggs', 'Egg', NULL, true),
-    ('fish', 'Fisk', NULL, true),
-    ('peanuts', 'Peanøtter', NULL, true),
-    ('soy', 'Soya', NULL, true),
-    ('milk', 'Melk', 'Melk (herunder laktose)', true),
-    ('nuts', 'Nøtter', 'Nøtter (mandel, hasselnøtt, valnøtt, cashewnøtt, pekannøtt, paranøtt, pistasjnøtt, macadamianøtt/australianøtt)', true),
-    ('celery', 'Selleri', NULL, true),
-    ('mustard', 'Sennep', NULL, true),
-    ('sesame', 'Sesamfrø', NULL, true),
-    ('sulfites', 'Svoveldioksid og sulfitt', NULL, true),
-    ('lupin', 'Lupin', NULL, true),
+    ('gluten', 'Glutenholdig korn', 'Hvete, rug, bygg, havre, spelt, korasanhvete og lignende', true),
+    ('shellfish', 'Skalldyr', 'Krabbe, hummer, reker, krill, kreps og scampi', true),
+    ('eggs', 'Egg', 'Egg og produkter framstilt av egg', true),
+    ('fish', 'Fisk', 'Også skjult i for eksempel leverpostei og worcestersaus', true),
+    ('peanuts', 'Peanøtter', 'Også i kjeks, kaker, desserter, sjokolade, iskrem, peanøttolje og peanøttsmør', true),
+    ('soy', 'Soya', 'Tofu, miso, tempeh, soyasaus, soyadrikker og soyamel', true),
+    ('milk', 'Melk', 'Smør, ost, fløte, iskrem, desserter, melkepulver og yoghurt. Herunder laktose', true),
+    ('nuts', 'Nøtter', 'Mandler, hasselnøtter, valnøtter, kasjunøtter, pekannøtter, pistasienøtter, paranøtter og macadamianøtter', true),
+    ('celery', 'Selleri', 'Stangselleri, i tillegg til blader, frø og rot', true),
+    ('mustard', 'Sennep', 'Sennep, sennepspulver og sennepsfrø', true),
+    ('sesame', 'Sesamfrø', 'Også i brød, knekkebrød, kjeks, hummus, vegetarretter og godteri', true),
+    ('sulfites', 'Svoveldioksid og sulfitter', 'Brukes til konservering av frukt og grønnsaker', true),
+    ('lupin', 'Lupin', 'Lupinfrø og lupinmel', true),
+    ('molluscs', 'Bløtdyr', 'Muslinger, snegler, blekksprut, blåskjell, kamskjell, østers og hjerteskjell', true),
     ('vegetarian', 'Vegetar', 'Vegetarisk kostholdspreferanse', true),
     ('vegan', 'Vegan', 'Vegansk kostholdspreferanse', true),
     ('halal', 'Halal', 'Halal kostholdskrav', true),
