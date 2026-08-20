@@ -5,6 +5,7 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@tihlde/ui/ui/accordion";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { BottomBar, BottomBarItem } from "@tihlde/ui/ui/bottom-bar";
 import {
     Drawer,
@@ -27,11 +28,18 @@ import type { NavItem, NavLink } from "./site-header";
 type SiteBottomBarProps = {
     navItems: NavItem[];
     isAuthenticated: boolean;
+    /**
+     * Setter en prikk på menyen og på «Min profil». Headeren merker avataren
+     * på samme grunnlag, men den er skjult under lg — uten dette ville
+     * påminnelsen forsvunnet for alle på mobil.
+     */
+    hasProfileTodo?: boolean;
 };
 
 export function SiteBottomBar({
     navItems,
     isAuthenticated,
+    hasProfileTodo = false,
 }: SiteBottomBarProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const closeMenu = () => setMenuOpen(false);
@@ -60,7 +68,16 @@ export function SiteBottomBar({
 
                 <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
                     <DrawerTrigger asChild>
-                        <BottomBarItem aria-label="Åpne meny">
+                        <BottomBarItem
+                            aria-label="Åpne meny"
+                            className="relative"
+                        >
+                            {hasProfileTodo ? (
+                                <Badge
+                                    className="absolute top-1 right-2 size-2.5 p-0"
+                                    aria-hidden
+                                />
+                            ) : null}
                             <Menu />
                             Meny
                         </BottomBarItem>
@@ -121,6 +138,7 @@ export function SiteBottomBar({
                                         },
                                     }}
                                     onNavigate={closeMenu}
+                                    hasTodo={hasProfileTodo}
                                 />
                             ) : (
                                 <MenuLink
@@ -143,9 +161,11 @@ export function SiteBottomBar({
 function MenuLink({
     link,
     onNavigate,
+    hasTodo = false,
 }: {
     link: NavLink;
     onNavigate: () => void;
+    hasTodo?: boolean;
 }) {
     if (link.kind === "external") {
         return (
@@ -163,8 +183,13 @@ function MenuLink({
     }
 
     return (
-        <Link {...link.link} className="py-2" onClick={onNavigate}>
+        <Link
+            {...link.link}
+            className="flex items-center gap-2 py-2"
+            onClick={onNavigate}
+        >
             {link.label}
+            {hasTodo ? <Badge className="size-2.5 p-0" aria-hidden /> : null}
         </Link>
     );
 }

@@ -43,8 +43,7 @@ import { DetailPage } from "#/components/detail-page";
 import { DetailsCard } from "#/components/details-card";
 import { EventQrDialog } from "#/components/event-qr-dialog";
 import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
-import { useAllergyPrompt } from "#/hooks/use-allergy-prompt";
-import { AllergyPrompt } from "#/components/allergy-prompt";
+import { AllergyNudge } from "#/components/allergy-nudge";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
@@ -145,9 +144,6 @@ function EventDetailPage() {
         refetchIntervalInBackground: true,
     });
     const { data: session } = useQuery(authQueryOptions);
-    const { showAllergyPrompt, dismissAllergyPrompt } = useAllergyPrompt(
-        event.id,
-    );
 
     // Same rule as the API: the permission (a group-scoped one counts), or
     // having created the event.
@@ -652,11 +648,10 @@ function EventDetailPage() {
                                 : undefined
                         }
                         postJoinSlot={
-                            showAllergyPrompt ? (
-                                <AllergyPrompt
-                                    onDismiss={dismissAllergyPrompt}
-                                />
-                            ) : null
+                            <AllergyNudge
+                                eventId={event.id}
+                                hasPaid={event.registration?.hasPaid ?? false}
+                            />
                         }
                         requiresEventRulesConsent={eventRules.mustAccept}
                         eventRulesSlot={

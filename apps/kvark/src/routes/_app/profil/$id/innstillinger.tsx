@@ -232,15 +232,20 @@ function AllergiesCard() {
         });
     }, [savedKey]);
 
-    async function handleSave() {
-        await updateSettings.mutateAsync({
-            data: {
-                allergies: selection.allergies,
-                customAllergies: selection.customAllergies,
-            },
-        });
-        // Allergiene leses av sesjonen, ikke av en egen spørring.
-        await invalidateAuth();
+    async function handleSave(next: AllergySelection) {
+        try {
+            await updateSettings.mutateAsync({
+                data: {
+                    allergies: next.allergies,
+                    customAllergies: next.customAllergies,
+                },
+            });
+            // Allergiene leses av sesjonen, ikke av en egen spørring.
+            await invalidateAuth();
+        } catch {
+            // Feilen vises fra `updateSettings.isError`. Fanges likevel, ellers
+            // blir et mislykket lagringsforsøk en ubehandlet rejection.
+        }
     }
 
     return (
@@ -267,21 +272,32 @@ function AllergiesCard() {
                     disabled={updateSettings.isPending}
                 />
 
-                {!hasAnswered ? (
-                    <p className="text-sm text-muted-foreground">
-                        Om du ikke har noen allergier, lagrer du bare med tomt
-                        felt.
-                    </p>
-                ) : null}
-
-                <div>
+                <div className="flex flex-wrap gap-2">
                     <Button
                         type="button"
                         disabled={updateSettings.isPending}
-                        onClick={handleSave}
+                        onClick={() => handleSave(selection)}
                     >
                         Lagre allergier
                     </Button>
+                    {/* «Ingen allergier» var å lagre et tomt felt — et svar
+                        ingen gjettet at de kunne gi. Nå er det en knapp, og
+                        den forsvinner så snart spørsmålet er besvart. */}
+                    {!hasAnswered ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={updateSettings.isPending}
+                            onClick={() =>
+                                handleSave({
+                                    allergies: [],
+                                    customAllergies: [],
+                                })
+                            }
+                        >
+                            Jeg har ingen
+                        </Button>
+                    ) : null}
                 </div>
 
                 {updateSettings.isError ? (
