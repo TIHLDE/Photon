@@ -15,7 +15,7 @@ export function SiteFooter() {
                         E-post: <a href="mailto:hs@tihlde.org">hs@tihlde.org</a>
                     </p>
                     <p>Lokasjon: c/o IDI, NTNU</p>
-                    <p>Org.nr: 998 952 183</p>
+                    <p>Org.nr: 989 684 183</p>
                 </div>
 
                 <div className="flex flex-col items-center gap-3 text-center">
