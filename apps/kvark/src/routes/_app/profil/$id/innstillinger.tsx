@@ -155,17 +155,6 @@ function AllergiesCard() {
         });
     }, [savedKey]);
 
-    const isDirty =
-        savedKey !==
-        `${selection.allergies.join(",")}|${selection.customAllergies.join(",")}`;
-
-    /**
-     * Den som aldri har svart må kunne lagre selv om ingenting er endret —
-     * ellers er «ingen allergier» umulig å registrere: utvalget er tomt fra
-     * før, så knappen ville stått grå for nettopp de brukerne svaret gjelder.
-     */
-    const canSave = isDirty || !hasAnswered;
-
     async function handleSave() {
         await updateSettings.mutateAsync({
             data: {
@@ -211,7 +200,7 @@ function AllergiesCard() {
                 <div>
                     <Button
                         type="button"
-                        disabled={!canSave || updateSettings.isPending}
+                        disabled={updateSettings.isPending}
                         onClick={handleSave}
                     >
                         Lagre allergier

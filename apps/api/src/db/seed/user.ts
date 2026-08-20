@@ -112,11 +112,6 @@ export default async ({ db }: AppContext) => {
             label: "Kosher",
             description: "Kosher kostholdskrav",
         },
-        {
-            slug: "other",
-            label: "Annet",
-            description: "Andre kostholdsrestriksjoner eller allergier",
-        },
     ];
 
     // Upsert framfor «hopp over hvis den finnes»: radene her fantes allerede

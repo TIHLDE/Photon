@@ -30,9 +30,14 @@ INSERT INTO "user_allergy" ("slug", "label", "description", "curated") VALUES
     ('vegetarian', 'Vegetar', 'Vegetarisk kostholdspreferanse', true),
     ('vegan', 'Vegan', 'Vegansk kostholdspreferanse', true),
     ('halal', 'Halal', 'Halal kostholdskrav', true),
-    ('kosher', 'Kosher', 'Kosher kostholdskrav', true),
-    ('other', 'Annet', 'Andre kostholdsrestriksjoner eller allergier', true)
+    ('kosher', 'Kosher', 'Kosher kostholdskrav', true)
 ON CONFLICT ("slug") DO UPDATE SET
     "label" = EXCLUDED."label",
     "description" = EXCLUDED."description",
     "curated" = true;
+--> statement-breakpoint
+-- «Annet» er tatt ut av valgene: det forteller kjøkkenet ingenting, og med
+-- fritekst tilgjengelig er det bedre at folk skriver hva det faktisk er.
+-- Raden beholdes, så de som allerede har den valgt mister den ikke — den
+-- tilbys bare ikke lenger.
+UPDATE "user_allergy" SET "curated" = false WHERE "slug" = 'other';
