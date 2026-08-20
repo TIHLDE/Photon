@@ -27,6 +27,14 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    addedBeyond,
+    mirrorIntoLinkedPosition,
+    mirrorTitleIntoLinkedPosition,
+    permissionsFromLinkedPosition,
+    readLeaderGlobalPermissions,
+    readLeaderTitle,
+} from "~/lib/group/linked-leader";
+import {
     canGrantPositionPermissions,
     canManagePositions,
     knownPermissions,
@@ -64,6 +72,7 @@ export const getLeaderPermissionsRoute = route().get(
 
         const [group] = await ctx.db
             .select({
+                name: schema.group.name,
                 permissions: schema.group.leaderPermissions,
                 globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
@@ -84,10 +93,25 @@ export const getLeaderPermissionsRoute = route().get(
             });
         }
 
+        // A subgroup's leader is also the holder of the linked HS verv, and
+        // both grants are live. Reporting their union is what makes this page
+        // and HS's verv page say the same thing about the same person.
+        const globalPermissions = await readLeaderGlobalPermissions(
+            ctx,
+            groupSlug,
+            group.globalPermissions,
+        );
+
+        const title = await readLeaderTitle(ctx, {
+            slug: groupSlug,
+            name: group.name,
+            leaderTitle: group.title,
+        });
+
         return c.json({
             permissions: knownPermissions(group.permissions),
-            globalPermissions: knownPermissions(group.globalPermissions),
-            title: group.title,
+            globalPermissions: knownPermissions(globalPermissions),
+            title,
         });
     },
 );
@@ -121,7 +145,7 @@ export const updateLeaderPermissionsRoute = route().patch(
         const body = c.req.valid("json");
 
         const [group] = await ctx.db
-            .select({ slug: schema.group.slug })
+            .select({ slug: schema.group.slug, name: schema.group.name })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);
@@ -158,20 +182,32 @@ export const updateLeaderPermissionsRoute = route().patch(
         // The org-wide list is checked globally, so holding a permission for
         // this group is not enough to hand it out for every other one. A group
         // leader holds nothing globally and is stopped here.
-        if (
-            body.globalPermissions !== undefined &&
-            !(await canGrantPositionPermissions(
-                ctx,
-                user.id,
-                groupSlug,
+        //
+        // Measured against what the linked HS verv already grants this same
+        // leader: this page shows the union of the two halves, so a save that
+        // leaves the verv's half untouched must not be read as handing it out
+        // afresh. Only what goes beyond it is a new grant.
+        if (body.globalPermissions !== undefined) {
+            const added = addedBeyond(
                 body.globalPermissions,
-                "global",
-            ))
-        ) {
-            throw new HTTPException(403, {
-                message:
-                    "You can only grant permissions you hold yourself across all of TIHLDE",
-            });
+                await permissionsFromLinkedPosition(ctx, groupSlug),
+            );
+
+            if (
+                added.length > 0 &&
+                !(await canGrantPositionPermissions(
+                    ctx,
+                    user.id,
+                    groupSlug,
+                    added,
+                    "global",
+                ))
+            ) {
+                throw new HTTPException(403, {
+                    message:
+                        "You can only grant permissions you hold yourself across all of TIHLDE",
+                });
+            }
         }
 
         const [updated] = await ctx.db
@@ -194,6 +230,25 @@ export const updateLeaderPermissionsRoute = route().patch(
                 globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
             });
+
+        // Keep the linked HS verv identical, so editing the leader here and
+        // editing «Innovasjonsminister» in HS cannot disagree.
+        if (body.globalPermissions !== undefined) {
+            await mirrorIntoLinkedPosition(
+                ctx,
+                groupSlug,
+                body.globalPermissions,
+            );
+        }
+
+        // The title travels with them: one person, one name on both pages.
+        if (body.title !== undefined) {
+            await mirrorTitleIntoLinkedPosition(
+                ctx,
+                group,
+                body.title?.trim() || null,
+            );
+        }
 
         return c.json({
             permissions: updated?.permissions ?? [],

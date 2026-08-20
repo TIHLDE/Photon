@@ -75,7 +75,9 @@ export function GroupDetailHeader({
                             className="hidden gap-1.5 md:flex"
                         >
                             <Crown />
-                            <span className="font-medium">Leder</span>
+                            <span className="font-medium">
+                                {group.leaderTitle ?? "Leder"}
+                            </span>
                             <span className="text-muted-foreground">·</span>
                             {group.leader}
                         </Badge>

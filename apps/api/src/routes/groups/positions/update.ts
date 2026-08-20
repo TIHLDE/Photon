@@ -3,6 +3,13 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import {
+    addedBeyond,
+    mirrorIntoLinkedGroup,
+    mirrorTitleIntoLinkedGroup,
+    permissionsFromLinkedGroup,
+    readLinkedPositionPermissions,
+} from "~/lib/group/linked-leader";
+import {
     canGrantPositionPermissions,
     canManagePositions,
     getPosition,
@@ -61,16 +68,42 @@ export const updatePositionRoute = route().patch(
             });
         }
 
-        // Permission/scope changes re-run the grant guardrail on the FULL
-        // resulting permission list at the resulting scope.
+        // A linked verv only mirrors the subgroup's leader list while it is
+        // org-wide — scoped to "group" it would grant inside HS instead, which
+        // is a different claim about a different set of people. Rejected
+        // rather than silently letting the two halves drift apart again.
+        if (
+            position.linkedGroupSlug !== null &&
+            body.scope !== undefined &&
+            body.scope !== position.scope
+        ) {
+            throw new HTTPException(409, {
+                message:
+                    "A verv linked to a subgroup follows that group's leader across all of TIHLDE and cannot change scope",
+            });
+        }
+
+        // Permission/scope changes re-run the grant guardrail on the resulting
+        // permission list at the resulting scope.
+        //
+        // For a linked verv, what the subgroup's leader list already grants is
+        // exempt: this page shows the union of the two halves (see
+        // lib/group/linked-leader.ts), so leaving the other half untouched is
+        // not the same as handing it out. Only genuinely new permissions are
+        // measured — everything else is already held by this very holder.
         const nextPermissions = body.permissions ?? position.permissions;
         const nextScope = body.scope ?? position.scope;
+        const added = addedBeyond(
+            nextPermissions,
+            await permissionsFromLinkedGroup(ctx, position),
+        );
         if (
+            added.length > 0 &&
             !(await canGrantPositionPermissions(
                 ctx,
                 user.id,
                 groupSlug,
-                nextPermissions,
+                added,
                 nextScope,
             ))
         ) {
@@ -95,6 +128,19 @@ export const updatePositionRoute = route().patch(
             .where(eq(schema.groupPosition.id, positionId))
             .returning();
 
+        // A verv linked to a subgroup is the same grant as that subgroup's
+        // org-wide leader permissions (see lib/group/linked-leader.ts) —
+        // write both halves so the two admin pages stay in step.
+        if (body.permissions !== undefined && updated) {
+            await mirrorIntoLinkedGroup(ctx, updated, body.permissions);
+        }
+
+        // Renaming «Innovasjonsminister» renames the leader of Beta — they are
+        // the same person, and the two pages should not call them two things.
+        if (body.name !== undefined && updated) {
+            await mirrorTitleIntoLinkedGroup(ctx, updated, body.name);
+        }
+
         const holder = await db.query.groupPositionHolder.findFirst({
             where: eq(schema.groupPositionHolder.positionId, positionId),
             with: {
@@ -104,6 +150,9 @@ export const updatePositionRoute = route().patch(
 
         return c.json({
             ...updated,
+            permissions: updated
+                ? await readLinkedPositionPermissions(ctx, updated)
+                : [],
             holder: holder
                 ? {
                       userId: holder.user.id,

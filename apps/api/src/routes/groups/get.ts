@@ -1,5 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { assertGroupVisible } from "~/lib/group";
+import { readLeaderTitle } from "~/lib/group/linked-leader";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { captureAuth } from "~/middleware/auth";
@@ -73,6 +74,18 @@ export const getRoute = route().get(
             (await wasEverGroupMember(ctx, userId, group.slug)),
         );
 
-        return c.json({ ...group, viewerCanUseFines, viewerCanSeeOwnFines });
+        /**
+         * What this group calls its leader. Reconciled with the linked HS
+         * verv, so a subgroup whose leader is «Innovasjonsminister» in
+         * Hovedstyret is not «Leder» on its own page.
+         */
+        const leaderTitle = await readLeaderTitle(ctx, group);
+
+        return c.json({
+            ...group,
+            leaderTitle,
+            viewerCanUseFines,
+            viewerCanSeeOwnFines,
+        });
     },
 );

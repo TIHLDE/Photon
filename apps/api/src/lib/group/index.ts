@@ -13,6 +13,10 @@ import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray, ne } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
+import {
+    autoVervName,
+    getLinkedLeaderPosition,
+} from "~/lib/group/linked-leader";
 
 /**
  * Group types whose membership is a projection of Feide, not an editable list.
@@ -448,18 +452,6 @@ export function allowsNonMemberLeader(group: { slug: string }): boolean {
 }
 
 /**
- * Get the leader-verv linked to a subgroup (in any group, normally hs).
- */
-async function getLinkedLeaderPosition(ctx: AppContext, groupSlug: string) {
-    const [position] = await ctx.db
-        .select()
-        .from(schema.groupPosition)
-        .where(eq(schema.groupPosition.linkedGroupSlug, groupSlug))
-        .limit(1);
-    return position ?? null;
-}
-
-/**
  * Called when `userId` BECOMES leader of `group`. No-op unless the group is
  * a subgroup and the hs group exists. Adds the leader to hs and hands them
  * the linked leader-verv (replacing any previous holder — a verv has exactly
@@ -482,9 +474,14 @@ export async function syncSubgroupLeaderIntoHs(
             .insert(schema.groupPosition)
             .values({
                 groupSlug: HS_GROUP_SLUG,
-                name: `Leder av ${group.name}`,
+                // The group's own name for its leader when it has one —
+                // the two are one title (see lib/group/linked-leader.ts).
+                name: group.leaderTitle ?? autoVervName(group.name),
                 description: `Leder av ${group.name} — automatisk verv, følger ledervervet i gruppen`,
-                permissions: [],
+                // The verv and the group's leader list are two views of one
+                // thing (see lib/group/linked-leader.ts), so a verv created
+                // now starts out agreeing with the group rather than empty.
+                permissions: group.leaderGlobalPermissions ?? [],
                 scope: "global",
                 linkedGroupSlug: group.slug,
             })

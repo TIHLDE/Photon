@@ -184,6 +184,10 @@ export const groupSchema = Schema(
 export const groupDetailSchema = Schema(
     "GroupDetail",
     groupSchema.extend({
+        leaderTitle: z.string().nullable().meta({
+            description:
+                "What this group calls its leader, e.g. «President» or «Innovasjonsminister». Reconciled with the linked Hovedstyret verv, so both pages name the leader the same. Null means the plain «Leder».",
+        }),
         viewerCanUseFines: z.boolean().meta({
             description:
                 "Whether the authenticated caller may see and give fines in this group. False when fines are off, when signed out, or when the caller is a study-group member who is no longer an enrolled student.",

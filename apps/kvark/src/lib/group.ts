@@ -1,5 +1,5 @@
 import type {
-    Group as ApiGroup,
+    GroupDetail as ApiGroup,
     GroupMember as ApiGroupMember,
     GroupFormerMember as ApiGroupFormerMember,
     Fine as ApiFine,
@@ -26,6 +26,8 @@ export type Group = {
     /** Underkategori under `type`. I dag bare for interessegrupper. */
     subtype?: string | null;
     leader?: string;
+    /** Hva gruppa kaller lederen sin. Null/undefined gir «Leder». */
+    leaderTitle?: string | null;
     finesInfo?: string;
     finesActivated?: boolean;
     /** Botsjefen. Null når gruppen ikke har utpekt noen. */
@@ -308,6 +310,7 @@ export function mapGroup(group: ApiGroup, leader?: string): Group {
         type: group.type,
         subtype: group.subtype ?? null,
         leader,
+        leaderTitle: group.leaderTitle,
         finesInfo: group.finesInfo,
         finesActivated: group.finesActivated,
         finesAdminId: group.finesAdminId ?? null,
