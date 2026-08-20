@@ -11,6 +11,7 @@ import {
     AllergyPicker,
     type AllergySelection,
 } from "#/components/allergy-picker";
+import { EVENT_RULES_URL } from "#/components/event-rules-consent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
@@ -115,8 +116,84 @@ function RouteComponent() {
                     ) : null}
                 </CardContent>
             </Card>
+            <EventRulesCard />
             <AllergiesCard />
         </div>
+    );
+}
+
+/**
+ * Godkjenningen av arrangementsreglene — samme felt som varselet på
+ * arrangementssiden skriver til. Her kan medlemmet ta den unna i forkant, og
+ * også trekke den igjen; varselet dukker da opp neste gang de skal melde seg
+ * på. Egen mutasjon slik at en feil her ikke slår ut i Personvern-kortet.
+ */
+function EventRulesCard() {
+    const { data: session } = useQuery(authQueryOptions);
+    const updateSettings = useMutation(updateUserSettingsMutation);
+
+    const acceptsEventRules =
+        session?.user.settings?.acceptsEventRules ?? false;
+
+    async function handleChange(checked: boolean) {
+        await updateSettings.mutateAsync({
+            data: { acceptsEventRules: checked },
+        });
+        // Godkjenningen leses fra sesjonen, både her og på arrangementssiden.
+        await invalidateAuth();
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Arrangementer</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+                <Field orientation="horizontal">
+                    <FieldContent>
+                        <FieldLabel htmlFor="accepts-event-rules">
+                            Arrangementsreglene
+                        </FieldLabel>
+                        <FieldDescription>
+                            Må være godkjent før du kan melde deg på
+                            arrangementer. Gjør du det her, er du klar når
+                            påmeldingen åpner.
+                        </FieldDescription>
+                        <div>
+                            <Button
+                                size="sm"
+                                variant="link"
+                                render={
+                                    <a
+                                        href={EVENT_RULES_URL}
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                    />
+                                }
+                            >
+                                Les reglene
+                            </Button>
+                        </div>
+                    </FieldContent>
+                    <Switch
+                        id="accepts-event-rules"
+                        checked={acceptsEventRules}
+                        disabled={updateSettings.isPending}
+                        onCheckedChange={handleChange}
+                    />
+                </Field>
+
+                {updateSettings.isError ? (
+                    <Alert variant="destructive">
+                        <AlertCircle className="size-4" />
+                        <AlertTitle>Innstillingen ble ikke lagret</AlertTitle>
+                        <AlertDescription>
+                            Prøv på nytt. Står det seg, gi beskjed til TIHLDE.
+                        </AlertDescription>
+                    </Alert>
+                ) : null}
+            </CardContent>
+        </Card>
     );
 }
 
