@@ -13,7 +13,10 @@ import { type DbSchema, schema } from "@photon/db";
 import { type InferSelectModel, and, eq, inArray, ne } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 import { HTTPAppException } from "~/lib/errors";
-import { getLinkedLeaderPosition } from "~/lib/group/linked-leader";
+import {
+    autoVervName,
+    getLinkedLeaderPosition,
+} from "~/lib/group/linked-leader";
 
 /**
  * Group types whose membership is a projection of Feide, not an editable list.
@@ -471,7 +474,9 @@ export async function syncSubgroupLeaderIntoHs(
             .insert(schema.groupPosition)
             .values({
                 groupSlug: HS_GROUP_SLUG,
-                name: `Leder av ${group.name}`,
+                // The group's own name for its leader when it has one —
+                // the two are one title (see lib/group/linked-leader.ts).
+                name: group.leaderTitle ?? autoVervName(group.name),
                 description: `Leder av ${group.name} — automatisk verv, følger ledervervet i gruppen`,
                 // The verv and the group's leader list are two views of one
                 // thing (see lib/group/linked-leader.ts), so a verv created

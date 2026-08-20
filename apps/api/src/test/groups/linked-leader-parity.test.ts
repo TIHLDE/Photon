@@ -360,4 +360,191 @@ describe("subgroup leader / linked HS verv parity", () => {
         },
         500_000,
     );
+
+    /**
+     * The title is the same field one over: the group's `leaderTitle` and the
+     * linked verv's name both say what the person is called. Production had
+     * every subgroup at NULL — «Leder» on its own page, «Innovasjonsminister»
+     * in HS, for one and the same person.
+     */
+    describe("the title", () => {
+        integrationTest(
+            "the group's page reports the verv's title instead of plain «Leder»",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Tittelgruppen",
+                );
+
+                // Exactly the production shape: a real title on the verv, and
+                // nothing on the group.
+                await ctx.db
+                    .update(schema.groupPosition)
+                    .set({ name: "Innovasjonsminister" })
+                    .where(eq(schema.groupPosition.id, position!.id));
+
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: subgroup.slug } });
+                expect((await read.json()).title).toBe("Innovasjonsminister");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "the auto-created placeholder is not mistaken for a title",
+            async ({ ctx }) => {
+                const { client, subgroup } = await setupWithEditor(
+                    ctx,
+                    "Vanliggruppen",
+                );
+
+                // The verv is still «Leder av Vanliggruppen» — a placeholder,
+                // so the leader is plain «Leder», not «Leder av Vanliggruppen».
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: subgroup.slug } });
+                expect((await read.json()).title).toBeNull();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "naming the leader on the group's page renames the verv",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Navngruppen",
+                );
+
+                const write = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: subgroup.slug },
+                    json: { permissions: [], title: "Kulturminister" },
+                });
+                expect(write.status).toBe(200);
+
+                const after = await ctx.db.query.groupPosition.findFirst({
+                    where: eq(schema.groupPosition.id, position!.id),
+                });
+                expect(after?.name).toBe("Kulturminister");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "renaming the verv names the group's leader",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Vervnavn",
+                );
+
+                const write = await client.api.groups[":groupSlug"].positions[
+                    ":positionId"
+                ].$patch({
+                    param: { groupSlug: "hs", positionId: position!.id },
+                    json: { name: "Innovasjonsminister" },
+                });
+                expect(write.status).toBe(200);
+
+                const [group] = await ctx.db
+                    .select({ title: schema.group.leaderTitle })
+                    .from(schema.group)
+                    .where(eq(schema.group.slug, subgroup.slug));
+                expect(group?.title).toBe("Innovasjonsminister");
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "clearing the title puts the placeholder back, not «Leder av»",
+            async ({ ctx }) => {
+                const { client, subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Tømgruppen",
+                );
+
+                await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: subgroup.slug },
+                    json: { permissions: [], title: "Kulturminister" },
+                });
+
+                await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$patch({
+                    param: { groupSlug: subgroup.slug },
+                    json: { permissions: [], title: null },
+                });
+
+                const after = await ctx.db.query.groupPosition.findFirst({
+                    where: eq(schema.groupPosition.id, position!.id),
+                });
+                expect(after?.name).toBe("Leder av Tømgruppen");
+
+                // And the group is back to plain «Leder».
+                const read = await client.api.groups[":groupSlug"][
+                    "leader-permissions"
+                ].$get({ param: { groupSlug: subgroup.slug } });
+                expect((await read.json()).title).toBeNull();
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "the group's own page names the leader by the verv's title",
+            async ({ ctx }) => {
+                const { subgroup, position } = await setupWithEditor(
+                    ctx,
+                    "Forsidegruppen",
+                );
+                const viewer = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(viewer);
+
+                await ctx.db
+                    .update(schema.groupPosition)
+                    .set({ name: "Innovasjonsminister" })
+                    .where(eq(schema.groupPosition.id, position!.id));
+
+                const response = await client.api.groups[":slug"].$get({
+                    param: { slug: subgroup.slug },
+                });
+                expect(response.status).toBe(200);
+                expect((await response.json()).leaderTitle).toBe(
+                    "Innovasjonsminister",
+                );
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "a verv created for a new leader takes the group's title",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                await ctx.utils.createTestGroup({
+                    slug: "hs",
+                    name: "Hovedstyret",
+                    type: "board",
+                });
+                const subgroup = await ctx.utils.createTestGroup({
+                    type: "subgroup",
+                    name: "Arvegruppen",
+                });
+
+                await ctx.db
+                    .update(schema.group)
+                    .set({ leaderTitle: "Kulturminister" })
+                    .where(eq(schema.group.slug, subgroup.slug));
+
+                await addUserToGroup(ctx, leader.id, subgroup.slug, "leader");
+
+                const position = await linkedPosition(ctx, subgroup.slug);
+                expect(position?.name).toBe("Kulturminister");
+            },
+            500_000,
+        );
+    });
 });

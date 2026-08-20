@@ -29,8 +29,10 @@ import { HTTPException } from "hono/http-exception";
 import {
     addedBeyond,
     mirrorIntoLinkedPosition,
+    mirrorTitleIntoLinkedPosition,
     permissionsFromLinkedPosition,
     readLeaderGlobalPermissions,
+    readLeaderTitle,
 } from "~/lib/group/linked-leader";
 import {
     canGrantPositionPermissions,
@@ -70,6 +72,7 @@ export const getLeaderPermissionsRoute = route().get(
 
         const [group] = await ctx.db
             .select({
+                name: schema.group.name,
                 permissions: schema.group.leaderPermissions,
                 globalPermissions: schema.group.leaderGlobalPermissions,
                 title: schema.group.leaderTitle,
@@ -99,10 +102,16 @@ export const getLeaderPermissionsRoute = route().get(
             group.globalPermissions,
         );
 
+        const title = await readLeaderTitle(ctx, {
+            slug: groupSlug,
+            name: group.name,
+            leaderTitle: group.title,
+        });
+
         return c.json({
             permissions: knownPermissions(group.permissions),
             globalPermissions: knownPermissions(globalPermissions),
-            title: group.title,
+            title,
         });
     },
 );
@@ -136,7 +145,7 @@ export const updateLeaderPermissionsRoute = route().patch(
         const body = c.req.valid("json");
 
         const [group] = await ctx.db
-            .select({ slug: schema.group.slug })
+            .select({ slug: schema.group.slug, name: schema.group.name })
             .from(schema.group)
             .where(eq(schema.group.slug, groupSlug))
             .limit(1);
@@ -229,6 +238,15 @@ export const updateLeaderPermissionsRoute = route().patch(
                 ctx,
                 groupSlug,
                 body.globalPermissions,
+            );
+        }
+
+        // The title travels with them: one person, one name on both pages.
+        if (body.title !== undefined) {
+            await mirrorTitleIntoLinkedPosition(
+                ctx,
+                group,
+                body.title?.trim() || null,
             );
         }
 

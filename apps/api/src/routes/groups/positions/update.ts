@@ -5,6 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import {
     addedBeyond,
     mirrorIntoLinkedGroup,
+    mirrorTitleIntoLinkedGroup,
     permissionsFromLinkedGroup,
     readLinkedPositionPermissions,
 } from "~/lib/group/linked-leader";
@@ -132,6 +133,12 @@ export const updatePositionRoute = route().patch(
         // write both halves so the two admin pages stay in step.
         if (body.permissions !== undefined && updated) {
             await mirrorIntoLinkedGroup(ctx, updated, body.permissions);
+        }
+
+        // Renaming «Innovasjonsminister» renames the leader of Beta — they are
+        // the same person, and the two pages should not call them two things.
+        if (body.name !== undefined && updated) {
+            await mirrorTitleIntoLinkedGroup(ctx, updated, body.name);
         }
 
         const holder = await db.query.groupPositionHolder.findFirst({

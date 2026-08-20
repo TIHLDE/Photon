@@ -224,3 +224,94 @@ export async function readLinkedPositionPermissionsBatch(
 
     return result;
 }
+
+// =============================================================================
+// The title
+//
+// The same two-places problem as the permissions, one field over: the group's
+// `leaderTitle` and the linked verv's `name` both answer "what is this person
+// called". In production every subgroup left the first at NULL — so its own
+// page called the leader «Leder» while HS called the very same person
+// «Innovasjonsminister».
+//
+// A title is a single value rather than a set, so there is no union to fall
+// back on; the two are reconciled by precedence instead. The group's own title
+// wins when it has one, because that is the group deliberately naming itself.
+// Otherwise the verv's name answers — which is what heals the production rows,
+// where the verv is the only side that ever held a real title.
+// =============================================================================
+
+/**
+ * What an auto-created linked verv is called when the group has no title of
+ * its own. A placeholder, not a title anyone chose: promoting it into
+ * `leaderTitle` would rename every subgroup's leader from «Leder» to «Leder av
+ * Beta».
+ */
+export function autoVervName(groupName: string): string {
+    return `Leder av ${groupName}`;
+}
+
+/** The verv's name as a title, or null when it is only the placeholder. */
+function titleFromVervName(name: string, groupName: string): string | null {
+    return name === autoVervName(groupName) ? null : name;
+}
+
+/**
+ * What the group's leader is actually called: its own title when set,
+ * otherwise whatever the linked verv calls them. Null means «Leder».
+ */
+export async function readLeaderTitle(
+    ctx: AppContext,
+    group: { slug: string; name: string; leaderTitle: string | null },
+): Promise<string | null> {
+    if (group.leaderTitle) return group.leaderTitle;
+
+    const position = await getLinkedLeaderPosition(ctx, group.slug);
+    if (!position || !mirrors(position)) return null;
+
+    return titleFromVervName(position.name, group.name);
+}
+
+/**
+ * Write the group's title through to the linked verv. Clearing the title back
+ * to «Leder» puts the placeholder name back, so the verv never keeps a title
+ * the group has dropped.
+ */
+export async function mirrorTitleIntoLinkedPosition(
+    ctx: AppContext,
+    group: { slug: string; name: string },
+    title: string | null,
+): Promise<void> {
+    const position = await getLinkedLeaderPosition(ctx, group.slug);
+    if (!position || !mirrors(position)) return;
+
+    await ctx.db
+        .update(schema.groupPosition)
+        .set({ name: title ?? autoVervName(group.name) })
+        .where(eq(schema.groupPosition.id, position.id));
+}
+
+/**
+ * Write a linked verv's name through to the group it follows. The placeholder
+ * stores as null — the group is back to plain «Leder», not to a leader called
+ * «Leder av Beta».
+ */
+export async function mirrorTitleIntoLinkedGroup(
+    ctx: AppContext,
+    position: { scope: string; linkedGroupSlug: string | null },
+    name: string,
+): Promise<void> {
+    if (!mirrors(position) || !position.linkedGroupSlug) return;
+
+    const [group] = await ctx.db
+        .select({ name: schema.group.name })
+        .from(schema.group)
+        .where(eq(schema.group.slug, position.linkedGroupSlug))
+        .limit(1);
+    if (!group) return;
+
+    await ctx.db
+        .update(schema.group)
+        .set({ leaderTitle: titleFromVervName(name, group.name) })
+        .where(eq(schema.group.slug, position.linkedGroupSlug));
+}
