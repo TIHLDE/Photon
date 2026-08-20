@@ -30,7 +30,7 @@ import {
     revokeUnprovenCredentials,
     syncFeideHook,
 } from "./feide";
-import { syncDeEldstesRaas } from "./de-eldstes-raas";
+import { syncDeEldstesRaad } from "./de-eldstes-raad";
 
 /**
  * Feide is a genuine third-party identity provider: it only works once a Feide
@@ -573,13 +573,13 @@ export function createAuth(options: CreateAuthOptions) {
                 create: {
                     after: async (session) => {
                         try {
-                            await syncDeEldstesRaas(
+                            await syncDeEldstesRaad(
                                 options.services.db,
                                 session.userId,
                             );
                         } catch (error) {
                             console.error(
-                                "Failed to sync De Eldstes Raas membership",
+                                "Failed to sync De Eldstes Raad membership",
                                 error,
                             );
                         }
