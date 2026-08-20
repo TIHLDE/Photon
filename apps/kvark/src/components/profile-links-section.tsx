@@ -12,7 +12,7 @@ export function ProfileLinksSection({ links }: ProfileLinksSectionProps) {
 
     return (
         <div className="flex flex-col gap-3 md:hidden">
-            <h3 className="text-xs text-muted-foreground">LENKER</h3>
+            <h3 className="text-xs text-muted-foreground">Lenker</h3>
             <div className="flex flex-wrap items-center gap-2">
                 {links.map((link) => (
                     <Badge
