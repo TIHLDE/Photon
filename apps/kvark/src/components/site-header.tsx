@@ -1,5 +1,6 @@
 import { Link, type LinkOptions } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import { Badge } from "@tihlde/ui/ui/badge";
 import {
     NavigationMenu,
     NavigationMenuContent,
@@ -49,9 +50,20 @@ type SiteHeaderProps = {
      * layout-ruten.
      */
     actions?: ReactNode;
+    /**
+     * Setter en prikk på avataren. Brukes til allergispørsmålet, som blir
+     * stående ubesvart til noen svarer — og et lite merke på profilen er den
+     * eneste påminnelsen som ikke krever at man er inne på et arrangement.
+     */
+    hasProfileTodo?: boolean;
 };
 
-export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
+export function SiteHeader({
+    navItems,
+    user,
+    actions,
+    hasProfileTodo = false,
+}: SiteHeaderProps) {
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
@@ -132,8 +144,21 @@ export function SiteHeader({ navItems, user, actions }: SiteHeaderProps) {
                         {...(user
                             ? { to: "/profil/$id", params: { id: "me" } }
                             : { to: "/login" })}
-                        aria-label={user ? "Gå til profil" : "Logg inn"}
+                        aria-label={
+                            user
+                                ? hasProfileTodo
+                                    ? "Gå til profil. Du mangler å svare på om du har allergier."
+                                    : "Gå til profil"
+                                : "Logg inn"
+                        }
+                        className="relative flex items-center"
                     >
+                        {hasProfileTodo ? (
+                            <Badge
+                                className="absolute -top-0.5 -right-0.5 z-10 size-2.5 p-0"
+                                aria-hidden
+                            />
+                        ) : null}
                         <Avatar className="size-8">
                             {user?.avatarUrl ? (
                                 <AvatarImage

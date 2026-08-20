@@ -23,7 +23,7 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
-import { FileSignature, ListTodo } from "lucide-react";
+import { FileSignature, ListTodo, UtensilsCrossed } from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/")({
     component: RouteComponent,
@@ -106,10 +106,17 @@ function RouteComponent() {
             ) : null}
             <ProfileLinksSection links={links} />
             {isOwnProfile ? (
-                <ContractBanner
-                    hasActiveContract={Boolean(activeContract)}
-                    signature={mySignature}
-                />
+                <>
+                    <ContractBanner
+                        hasActiveContract={Boolean(activeContract)}
+                        signature={mySignature}
+                    />
+                    <AllergyBanner
+                        hasAnswered={
+                            session?.user.settings?.allergiesConfirmedAt != null
+                        }
+                    />
+                </>
             ) : null}
 
             {/* Gruppene vises direkte i stedet for et telle-kort. Kortet så
@@ -162,6 +169,42 @@ function RouteComponent() {
                 </>
             ) : null}
         </>
+    );
+}
+
+/**
+ * Vises til allergispørsmålet er besvart.
+ *
+ * Prikken i headeren peker hit, og et merke uten forklaring er bare irritasjon
+ * — så det er her det står hva som mangler og hvor man svarer. Forsvinner også
+ * når svaret er «jeg har ingen»: det er et svar, ikke en tom liste.
+ */
+function AllergyBanner({ hasAnswered }: { hasAnswered: boolean }) {
+    if (hasAnswered) return null;
+
+    return (
+        <Alert>
+            <UtensilsCrossed className="size-4" />
+            <AlertTitle>Du har ikke sagt om du har allergier</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4">
+                <span>
+                    Arrangørene bruker svaret når de bestiller mat. Har du
+                    ingen, tar det ett trykk.
+                </span>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    render={
+                        <Link
+                            to="/profil/$id/innstillinger"
+                            params={{ id: "me" }}
+                        />
+                    }
+                >
+                    Svar nå
+                </Button>
+            </AlertDescription>
+        </Alert>
     );
 }
 

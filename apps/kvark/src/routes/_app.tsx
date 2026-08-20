@@ -38,6 +38,14 @@ function AppLayout() {
     // før noen har sagt ja. Det må stå et sted de faktisk ser det — og
     // medlemsmenyen skjules, siden hver side der svarer 403 for dem.
     const isPendingApproval = session?.user?.isPendingApproval === true;
+    // Allergispørsmålet er det eneste medlemmet kan bli sittende med ubesvart
+    // uten å merke det, og arrangørene bestiller mat etter svarene. Prikken
+    // blir stående til de har svart — også når svaret er «jeg har ingen».
+    // Ingen ekstra kall: bekreftelsen ligger i sesjonen fra før.
+    const hasProfileTodo =
+        isAuthenticated &&
+        !isPendingApproval &&
+        session?.user.settings?.allergiesConfirmedAt == null;
     const navItems = useSiteNavItems(isAuthenticated, !isPendingApproval);
 
     return (
@@ -47,6 +55,7 @@ function AppLayout() {
             <SiteHeader
                 navItems={navItems}
                 user={currentUser}
+                hasProfileTodo={hasProfileTodo}
                 // Bjella spør etter uleste varsler, så den vises bare for
                 // innloggede — ellers ville hver besøkende få en 401. Den som
                 // venter på godkjenning får 403 på samme kall, og har uansett
@@ -86,6 +95,7 @@ function AppLayout() {
             <SiteBottomBar
                 navItems={navItems}
                 isAuthenticated={isAuthenticated}
+                hasProfileTodo={hasProfileTodo}
             />
         </div>
     );
