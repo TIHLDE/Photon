@@ -59,7 +59,6 @@ function RouteComponent() {
 
     return (
         <div className="flex flex-col gap-6">
-            <AllergiesCard />
             <Card>
                 <CardHeader>
                     <CardTitle>Personvern</CardTitle>
@@ -116,6 +115,7 @@ function RouteComponent() {
                     ) : null}
                 </CardContent>
             </Card>
+            <AllergiesCard />
         </div>
     );
 }
@@ -159,6 +159,13 @@ function AllergiesCard() {
         savedKey !==
         `${selection.allergies.join(",")}|${selection.customAllergies.join(",")}`;
 
+    /**
+     * Den som aldri har svart må kunne lagre selv om ingenting er endret —
+     * ellers er «ingen allergier» umulig å registrere: utvalget er tomt fra
+     * før, så knappen ville stått grå for nettopp de brukerne svaret gjelder.
+     */
+    const canSave = isDirty || !hasAnswered;
+
     async function handleSave() {
         await updateSettings.mutateAsync({
             data: {
@@ -173,12 +180,12 @@ function AllergiesCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Allergier og kosthold</CardTitle>
+                <CardTitle>Allergier</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <Field>
                     <FieldContent>
-                        <FieldLabel>Dine allergier</FieldLabel>
+                        <FieldLabel>Mine allergier</FieldLabel>
                         <FieldDescription>
                             Velg fra lista, eller skriv inn dine egne. Deles med
                             arrangøren for arrangementer du melder deg på, slik
@@ -196,16 +203,15 @@ function AllergiesCard() {
 
                 {!hasAnswered ? (
                     <p className="text-sm text-muted-foreground">
-                        Du har ikke svart ennå. Har du ingen allergier, lagrer
-                        du bare med tom liste — da vet arrangøren at du er
-                        spurt.
+                        Om du ikke har noen allergier, lagrer du bare med tomt
+                        felt.
                     </p>
                 ) : null}
 
                 <div>
                     <Button
                         type="button"
-                        disabled={!isDirty || updateSettings.isPending}
+                        disabled={!canSave || updateSettings.isPending}
                         onClick={handleSave}
                     >
                         Lagre allergier
