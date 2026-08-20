@@ -526,6 +526,13 @@
       "when": 1787235132464,
       "tag": "0074_seed_curated_allergies",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1787248250687,
+      "tag": "0075_oauth_client_scopes_inherit",
+      "breakpoints": true
     }
   ]
 }
