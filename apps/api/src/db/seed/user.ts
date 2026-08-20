@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -97,19 +96,20 @@ export default async ({ db }: AppContext) => {
         },
     ];
 
+    // Upsert framfor «hopp over hvis den finnes»: radene her fantes allerede
+    // før `curated` ble innført, så en ren insert ville aldri fått flagget satt
+    // på et miljø som er seedet tidligere — og da ville nedtrekkslista i
+    // innstillingene stått tom.
     for (const allergy of allergies) {
-        const exists = await db
-            .select()
-            .from(schema.allergy)
-            .where(eq(schema.allergy.slug, allergy.slug))
-            .limit(1);
+        const values = {
+            label: allergy.label,
+            description: allergy.description ?? null,
+            curated: true,
+        };
 
-        if (!exists.length) {
-            await db.insert(schema.allergy).values({
-                slug: allergy.slug,
-                label: allergy.label,
-                description: allergy.description,
-            });
-        }
+        await db
+            .insert(schema.allergy)
+            .values({ slug: allergy.slug, ...values })
+            .onConflictDoUpdate({ target: schema.allergy.slug, set: values });
     }
 };

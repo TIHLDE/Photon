@@ -22,6 +22,8 @@ export type ExtendedSession = {
             receiveMailCommunication: boolean;
             publicEventRegistrations: boolean;
             isOnboarded: boolean;
+            customAllergies: string[];
+            allergiesConfirmedAt: Date | null;
 
         } | null;
         id: string;

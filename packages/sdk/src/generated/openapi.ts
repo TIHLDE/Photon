@@ -858,6 +858,26 @@ export interface paths {
         patch: operations["setRegistrationAttendance"];
         trace?: never;
     };
+    "/api/event/{eventId}/allergies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get allergies for event participants
+         * @description The allergies among everyone holding a spot on the event, for the arrangør who orders the food. Returns totals per allergy alongside the per-person detail, and counts how many have never answered — which is not the same as having none. Restricted to the people who run this event; allergies are health data, so the access follows the arrangement rather than a global permission.
+         */
+        get: operations["getEventAllergies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/{eventId}/payment": {
         parameters: {
             query?: never;
@@ -2659,7 +2679,7 @@ export interface paths {
         };
         /**
          * List all allergies
-         * @description Retrieve a list of all possible allergies that users can have.
+         * @description Retrieve a list of all possible allergies that users can have. Pass `curated=true` to get only the maintained list suitable for a picker.
          */
         get: operations["listAllergies"];
         put?: never;
@@ -4064,6 +4084,46 @@ export interface components {
         SetAttendance: {
             /** @description True marks the user as attended (checked in); false reverts them to registered. */
             attended: boolean;
+        };
+        EventAllergySummaryEntry: {
+            /** @description Display name, as shown to the caterer. */
+            label: string;
+            /** @description How many participants have this one. */
+            count: number;
+            /** @description True when this came from free text rather than the curated catalogue. */
+            custom: boolean;
+        };
+        Allergy: {
+            /** @description Unique identifier for the allergy */
+            slug: string;
+            /** @description Display name of the allergy */
+            label: string;
+            /** @description Detailed description of the allergy */
+            description: string | null;
+        };
+        EventParticipantAllergies: {
+            /** @description User id */
+            userId: string;
+            /** @description User name */
+            name: string;
+            /** @description The curated allergies the member has selected. */
+            allergies: components["schemas"]["Allergy"][];
+            /** @description Free-text allergies the member wrote themselves. */
+            customAllergies: string[];
+        };
+        EventAllergies: {
+            /** @description Participants counted, i.e. everyone holding a spot. The three tallies below add up to this. */
+            totalParticipants: number;
+            /** @description Participants who have registered at least one. */
+            withAllergies: number;
+            /** @description Participants who answered the allergy question and have none. */
+            confirmedNone: number;
+            /** @description Participants who have never answered. These are the ones an arrangør has to chase — not the same as having no allergies. */
+            notAnswered: number;
+            /** @description Totals per allergy, most common first. This is what gets handed to the kitchen. */
+            summary: components["schemas"]["EventAllergySummaryEntry"][];
+            /** @description Only the participants who registered something, so the list stays readable. */
+            participants: components["schemas"]["EventParticipantAllergies"][];
         };
         CreatePaymentResponse: {
             /** Format: uuid */
@@ -6109,8 +6169,12 @@ export interface components {
             publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
+            /** @default [] */
+            customAllergies: string[];
             /** @description Whether the user has completed onboarding */
             isOnboarded: boolean;
+            /** @description When the member last answered the allergy question, including when the answer was «none». Null means they have never answered. */
+            allergiesConfirmedAt: string | null;
         };
         UserSettingsBase: {
             /** @enum {string} */
@@ -6127,6 +6191,8 @@ export interface components {
             publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
+            /** @default [] */
+            customAllergies: string[];
         };
         OnboardUserInput: {
             /** @enum {string} */
@@ -6143,20 +6209,28 @@ export interface components {
             publicEventRegistrations: boolean;
             /** @default [] */
             allergies: string[];
+            /** @default [] */
+            customAllergies: string[];
         };
         UpdateUserSettings: {
             /** @enum {string} */
-            gender?: "male" | "female" | "other";
-            allowsPhotosByDefault?: boolean;
-            acceptsEventRules?: boolean;
+            gender: "male" | "female" | "other";
+            allowsPhotosByDefault: boolean;
+            acceptsEventRules: boolean;
             /** Format: uri */
             imageUrl?: string;
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
-            receiveMailCommunication?: boolean;
-            publicEventRegistrations?: boolean;
-            allergies?: string[];
+            receiveMailCommunication: boolean;
+            /** @default true */
+            publicEventRegistrations: boolean;
+            /** @default [] */
+            allergies: string[];
+            /** @default [] */
+            customAllergies: string[];
+            /** @description When the member last answered the allergy question, including when the answer was «none». Null means they have never answered. */
+            allergiesConfirmedAt: string | null;
         };
         UpdateUserSettingsInput: {
             /** @enum {string} */
@@ -6171,6 +6245,7 @@ export interface components {
             receiveMailCommunication?: boolean;
             publicEventRegistrations?: boolean;
             allergies?: string[];
+            customAllergies?: string[];
         };
         SetPasswordResponse: {
             success: boolean;
@@ -6188,14 +6263,6 @@ export interface components {
             /** @description When the event ended */
             eventEndTime: string;
         }[];
-        Allergy: {
-            /** @description Unique identifier for the allergy */
-            slug: string;
-            /** @description Display name of the allergy */
-            label: string;
-            /** @description Detailed description of the allergy */
-            description: string | null;
-        };
         AllergyList: components["schemas"]["Allergy"][];
         RegisterUser: {
             /** @description The new user's id */
@@ -8463,6 +8530,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getEventAllergies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventAllergies"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
@@ -14358,7 +14465,10 @@ export interface operations {
     };
     listAllergies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only return the curated allergies we maintain ourselves. Use this for anything a member picks from: the full catalogue also holds the free-text answers the Lepton migration imported, which is hundreds of near-duplicate rows. */
+                curated?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

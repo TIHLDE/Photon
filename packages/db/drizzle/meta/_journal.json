@@ -512,6 +512,13 @@
       "when": 1787228616715,
       "tag": "0072_drop_fondsforvalter_stub",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1787235131464,
+      "tag": "0073_happy_abomination",
+      "breakpoints": true
     }
   ]
 }

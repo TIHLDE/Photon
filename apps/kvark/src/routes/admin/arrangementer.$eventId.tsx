@@ -20,7 +20,11 @@ import {
     EyeIcon,
     PlusIcon,
     TriangleAlertIcon,
+    CheckIcon,
+    CircleHelpIcon,
+    CopyIcon,
     UsersIcon,
+    UtensilsCrossedIcon,
     WalletIcon,
     XCircle,
 } from "lucide-react";
@@ -68,6 +72,7 @@ import {
     deleteEventMutation,
     getEventByIdQuery,
     getEventFormsQuery,
+    getEventAllergiesQuery,
     getEventPaymentsInfiniteQuery,
     getEventRegistrationsInfiniteQuery,
     refundEventPaymentMutation,
@@ -109,6 +114,7 @@ const TABS = [
     "oppmote",
     "skjemaer",
     "betalinger",
+    "allergier",
 ] as const;
 type TabValue = (typeof TABS)[number];
 
@@ -186,6 +192,9 @@ function EventAdminDetailPage() {
             ...(canSeePayments
                 ? [{ value: "betalinger" as const, label: "Betalinger" }]
                 : []),
+            ...(canManage
+                ? [{ value: "allergier" as const, label: "Allergier" }]
+                : []),
         ],
         [canManage, canSeePayments],
     );
@@ -245,6 +254,11 @@ function EventAdminDetailPage() {
             {activeTab === "betalinger" && canSeePayments && (
                 <Suspense fallback={<TableSkeleton />}>
                     <PaymentsTab eventId={eventId} />
+                </Suspense>
+            )}
+            {activeTab === "allergier" && canManage && (
+                <Suspense fallback={<TableSkeleton />}>
+                    <AllergiesTab eventId={eventId} />
                 </Suspense>
             )}
         </Stagger>
@@ -1698,6 +1712,202 @@ function formatDateTime(iso: string) {
 /** Minor units (øre) -> "1 234 kr" */
 function formatAmount(minor: number) {
     return `${(minor / 100).toLocaleString("nb-NO")} kr`;
+}
+
+/* ------------------------------- Allergier ------------------------------ */
+
+/**
+ * Allergiene blant de påmeldte, satt opp for den som skal bestille maten.
+ *
+ * Summen øverst er det som faktisk sendes videre til kjøkkenet; personlista
+ * under er for å slå opp hvem det gjelder. Egen fane framfor en kolonne i
+ * Påmeldte, fordi fritekst ikke får plass i en tabellcelle — og fordi
+ * helseopplysninger ikke bør stå framme for alle som blar i deltakerlista.
+ */
+function AllergiesTab({ eventId }: { eventId: string }) {
+    const { data } = useSuspenseQuery(getEventAllergiesQuery(eventId));
+    const [search, setSearch] = useState("");
+    const [hasCopied, setHasCopied] = useState(false);
+
+    const query = search.trim().toLowerCase();
+    const visibleParticipants = useMemo(
+        () =>
+            data.participants.filter((participant) =>
+                matchesQuery(
+                    [participant.name, ...participant.customAllergies],
+                    query,
+                ),
+            ),
+        [data.participants, query],
+    );
+
+    async function handleCopy() {
+        const lines = [
+            ...data.summary.map((entry) => `${entry.label}: ${entry.count}`),
+            "",
+            ...data.participants.map((participant) => {
+                const all = [
+                    ...participant.allergies.map((a) => a.label),
+                    ...participant.customAllergies,
+                ];
+                return `${participant.name}: ${all.join(", ")}`;
+            }),
+        ];
+
+        await navigator.clipboard.writeText(lines.join("\n"));
+        setHasCopied(true);
+        window.setTimeout(() => setHasCopied(false), 2000);
+    }
+
+    return (
+        <div className="flex flex-col gap-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+                <AdminStatCard
+                    label="Har oppgitt allergier"
+                    value={data.withAllergies}
+                    icon={UtensilsCrossedIcon}
+                />
+                <AdminStatCard
+                    label="Bekreftet ingen"
+                    value={data.confirmedNone}
+                    icon={CheckIcon}
+                />
+                <AdminStatCard
+                    label="Har ikke svart"
+                    value={data.notAnswered}
+                    icon={CircleHelpIcon}
+                    hint={
+                        data.notAnswered > 0
+                            ? "Vi vet ikke om disse har allergier."
+                            : undefined
+                    }
+                />
+            </div>
+
+            {data.summary.length > 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Til kjøkkenet</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        <ul className="flex flex-wrap gap-2">
+                            {data.summary.map((entry) => (
+                                <li key={`${entry.custom}-${entry.label}`}>
+                                    <Badge
+                                        variant={
+                                            entry.custom
+                                                ? "outline"
+                                                : "secondary"
+                                        }
+                                    >
+                                        {entry.label} × {entry.count}
+                                    </Badge>
+                                </li>
+                            ))}
+                        </ul>
+                        <div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCopy}
+                            >
+                                <CopyIcon />
+                                {hasCopied ? "Kopiert" : "Kopier oversikten"}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : null}
+
+            {data.participants.length > 0 ? (
+                <SearchField
+                    id="allergies-search"
+                    value={search}
+                    onChange={setSearch}
+                />
+            ) : null}
+
+            {data.participants.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen registrerte allergier"
+                            description={
+                                data.notAnswered > 0
+                                    ? `Ingen av de ${data.totalParticipants} påmeldte har oppgitt allergier, men ${data.notAnswered} har ikke svart på spørsmålet.`
+                                    : "Alle påmeldte har bekreftet at de ikke har allergier."
+                            }
+                        />
+                    </CardContent>
+                </Card>
+            ) : visibleParticipants.length === 0 ? (
+                <Card>
+                    <CardContent>
+                        <AdminEmptyState
+                            icon={UsersIcon}
+                            title="Ingen treff"
+                            description={`Ingen påmeldte matcher «${search.trim()}».`}
+                        />
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Navn</TableHead>
+                                    <TableHead>Allergier</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {visibleParticipants.map((participant) => (
+                                    <TableRow key={participant.userId}>
+                                        <TableCell>
+                                            {participant.name}
+                                        </TableCell>
+                                        <TableCell>
+                                            <ul className="flex flex-wrap gap-1">
+                                                {participant.allergies.map(
+                                                    (allergy) => (
+                                                        <li key={allergy.slug}>
+                                                            <Badge variant="secondary">
+                                                                {allergy.label}
+                                                            </Badge>
+                                                        </li>
+                                                    ),
+                                                )}
+                                                {participant.customAllergies.map(
+                                                    (entry) => (
+                                                        <li key={entry}>
+                                                            <Badge variant="outline">
+                                                                {entry}
+                                                            </Badge>
+                                                        </li>
+                                                    ),
+                                                )}
+                                            </ul>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* «Ikke svart» er ikke det samme som «ingen allergier», og den
+                forskjellen må stå tydelig: kjøkkenet skal ikke lese en tom
+                rad som en garanti. */}
+            <p className="text-sm text-muted-foreground">
+                {data.totalParticipants} påmeldte totalt.{" "}
+                {data.notAnswered > 0
+                    ? `${data.notAnswered} har ikke svart på allergispørsmålet ennå — det er ikke det samme som at de ikke har allergier.`
+                    : "Alle har svart på allergispørsmålet."}
+            </p>
+        </div>
+    );
 }
 
 function TableSkeleton() {
