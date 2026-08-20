@@ -43,6 +43,7 @@ import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
     Card,
+    CardAction,
     CardContent,
     CardDescription,
     CardHeader,
@@ -1784,41 +1785,6 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                 />
             </div>
 
-            {data.summary.length > 0 ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Til kjøkkenet</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                        <ul className="flex flex-wrap gap-2">
-                            {data.summary.map((entry) => (
-                                <li key={`${entry.custom}-${entry.label}`}>
-                                    <Badge
-                                        variant={
-                                            entry.custom
-                                                ? "outline"
-                                                : "secondary"
-                                        }
-                                    >
-                                        {entry.label} × {entry.count}
-                                    </Badge>
-                                </li>
-                            ))}
-                        </ul>
-                        <div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleCopy}
-                            >
-                                <CopyIcon />
-                                {hasCopied ? "Kopiert" : "Kopier oversikten"}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            ) : null}
-
             {data.participants.length > 0 ? (
                 <SearchField
                     id="allergies-search"
@@ -1853,6 +1819,22 @@ function AllergiesTab({ eventId }: { eventId: string }) {
                 </Card>
             ) : (
                 <Card>
+                    <CardHeader>
+                        <CardTitle>Deltakere med allergier</CardTitle>
+                        <CardAction>
+                            {/* Sammendraget per allergi ligger fortsatt i
+                                teksten som kopieres — det er det kjøkkenet
+                                trenger — men det tar ikke plass på skjermen. */}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCopy}
+                            >
+                                <CopyIcon />
+                                {hasCopied ? "Kopiert" : "Kopier oversikten"}
+                            </Button>
+                        </CardAction>
+                    </CardHeader>
                     <CardContent className="p-0">
                         <Table>
                             <TableHeader>

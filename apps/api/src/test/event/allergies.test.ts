@@ -60,11 +60,8 @@ describe("event allergies", () => {
     integrationTest(
         "counts answered, unanswered and allergic participants separately",
         async ({ ctx }) => {
-            await ctx.db.insert(schema.allergy).values([
-                { slug: "gluten", label: "Gluten", curated: true },
-                { slug: "nuts", label: "Nøtter", curated: true },
-            ]);
-
+            // `gluten` og `nuts` kommer fra migrasjonen som seeder Mattilsynets
+            // 14, så de skal ikke settes inn her.
             const event = await createEvent(ctx, "immeball-tellinger");
 
             const admin = await ctx.utils.createTestUser();
@@ -109,7 +106,7 @@ describe("event allergies", () => {
 
             // Gluten står øverst fordi to har det. Fritekst telles ved siden av.
             expect(body.summary[0]).toEqual({
-                label: "Gluten",
+                label: "Glutenholdig korn",
                 count: 2,
                 custom: false,
             });
@@ -207,12 +204,7 @@ describe("event allergies", () => {
     integrationTest(
         "counts a catalogue pick and the same word typed by hand as one",
         async ({ ctx }) => {
-            await ctx.db.insert(schema.allergy).values({
-                slug: "nuts",
-                label: "Nøtter",
-                curated: true,
-            });
-
+            // `nuts` har etiketten «Nøtter» fra migrasjonen.
             const event = await createEvent(ctx, "immeball-blandet");
 
             const admin = await ctx.utils.createTestUser();

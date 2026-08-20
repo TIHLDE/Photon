@@ -5,70 +5,93 @@ import type { AppContext } from "~/lib/ctx";
  * Seed user-related tables (allergy, etc.)
  */
 export default async ({ db }: AppContext) => {
+    // Allergenene er Mattilsynets 14, med deres egne eksempler:
+    // https://www.mattilsynet.no/mat-og-drikke/merking-av-mat/slik-skal-allergenene-merkes/de-14-allergenene
+    //
+    // Etikettene er kortet ned der Mattilsynets overskrift er for lang til
+    // en chip («Kornslag som inneholder gluten»), mens beskrivelsen bærer
+    // ordlyden deres. Det er eksemplene som gjør at folk kjenner igjen sitt
+    // eget — de færreste vet at worcestersaus inneholder fisk.
     const allergies = [
         {
             slug: "gluten",
             label: "Glutenholdig korn",
             description:
-                "Hvete, rug, bygg, havre, spelt, kamut/egyptisk hvete eller hybrider av disse",
+                "Hvete, rug, bygg, havre, spelt, korasanhvete og lignende",
         },
         {
             slug: "shellfish",
             label: "Skalldyr",
-            description: "Skalldyr (for eksempel reker, krabbe, hummer)",
-        },
-        {
-            slug: "molluscs",
-            label: "Bløtdyr",
-            description: "Bløtdyr (for eksempel muslinger, blekksprut, østers)",
+            description: "Krabbe, hummer, reker, krill, kreps og scampi",
         },
         {
             slug: "eggs",
             label: "Egg",
+            description: "Egg og produkter framstilt av egg",
         },
         {
             slug: "fish",
             label: "Fisk",
+            description:
+                "Også skjult i for eksempel leverpostei og worcestersaus",
         },
         {
             slug: "peanuts",
             label: "Peanøtter",
+            description:
+                "Også i kjeks, kaker, desserter, sjokolade, iskrem, peanøttolje og peanøttsmør",
         },
         {
             slug: "soy",
             label: "Soya",
+            description: "Tofu, miso, tempeh, soyasaus, soyadrikker og soyamel",
         },
         {
             slug: "milk",
             label: "Melk",
-            description: "Melk (herunder laktose)",
+            description:
+                "Smør, ost, fløte, iskrem, desserter, melkepulver og yoghurt. Herunder laktose",
         },
         {
             slug: "nuts",
             label: "Nøtter",
             description:
-                "Nøtter (mandel, hasselnøtt, valnøtt, cashewnøtt, pekannøtt, paranøtt, pistasjnøtt, macadamianøtt/australianøtt)",
+                "Mandler, hasselnøtter, valnøtter, kasjunøtter, pekannøtter, pistasienøtter, paranøtter og macadamianøtter",
         },
         {
             slug: "celery",
             label: "Selleri",
+            description: "Stangselleri, i tillegg til blader, frø og rot",
         },
         {
             slug: "mustard",
             label: "Sennep",
+            description: "Sennep, sennepspulver og sennepsfrø",
         },
         {
             slug: "sesame",
             label: "Sesamfrø",
+            description:
+                "Også i brød, knekkebrød, kjeks, hummus, vegetarretter og godteri",
         },
         {
             slug: "sulfites",
-            label: "Svoveldioksid og sulfitt",
+            label: "Svoveldioksid og sulfitter",
+            description: "Brukes til konservering av frukt og grønnsaker",
         },
         {
             slug: "lupin",
             label: "Lupin",
+            description: "Lupinfrø og lupinmel",
         },
+        {
+            slug: "molluscs",
+            label: "Bløtdyr",
+            description:
+                "Muslinger, snegler, blekksprut, blåskjell, kamskjell, østers og hjerteskjell",
+        },
+
+        // Ikke allergener, men kostholdskrav kjøkkenet må planlegge for.
         {
             slug: "vegetarian",
             label: "Vegetar",
@@ -88,11 +111,6 @@ export default async ({ db }: AppContext) => {
             slug: "kosher",
             label: "Kosher",
             description: "Kosher kostholdskrav",
-        },
-        {
-            slug: "other",
-            label: "Annet",
-            description: "Andre kostholdsrestriksjoner eller allergier",
         },
     ];
 
