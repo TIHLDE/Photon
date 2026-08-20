@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+    boolean,
     pgTableCreator,
     text,
     timestamp,
@@ -24,6 +25,7 @@ export const banner = pgTable("banner", {
     description: varchar("description", { length: 500 }).notNull(),
     url: text("url"),
     linkText: varchar("link_text", { length: 100 }),
+    openInNewTab: boolean("open_in_new_tab").notNull().default(true),
     visibleFrom: timestamp("visible_from").notNull(),
     visibleUntil: timestamp("visible_until").notNull(),
     createdById: text("created_by_user_id").references(() => user.id, {

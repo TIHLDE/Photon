@@ -3266,6 +3266,8 @@ export interface components {
             url: string | null;
             /** @description Optional label for the banner link */
             linkText: string | null;
+            /** @description Whether the banner link opens in a new tab */
+            openInNewTab: boolean;
             /** @description Visibility window end (ISO 8601) */
             visibleUntil: string;
         };
@@ -3285,6 +3287,8 @@ export interface components {
             url: string | null;
             /** @description Optional label for the banner link */
             linkText: string | null;
+            /** @description Whether the banner link opens in a new tab */
+            openInNewTab: boolean;
             /** @description Visibility window start (ISO 8601) */
             visibleFrom: string;
             /** @description Visibility window end (ISO 8601) */
@@ -3313,6 +3317,11 @@ export interface components {
             /** @description Optional label for the banner link; an arrow is always shown */
             linkText?: string;
             /**
+             * @description Whether the banner link opens in a new tab. Defaults to true.
+             * @default true
+             */
+            openInNewTab: boolean;
+            /**
              * Format: date-time
              * @description When the banner becomes visible
              */
@@ -3328,6 +3337,7 @@ export interface components {
             description?: string;
             url?: string | null;
             linkText?: string | null;
+            openInNewTab?: boolean;
             /** Format: date-time */
             visibleFrom?: string;
             /** Format: date-time */

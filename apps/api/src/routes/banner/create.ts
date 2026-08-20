@@ -41,6 +41,7 @@ export const createRoute = route().post(
                 description: body.description,
                 url: body.url,
                 linkText: body.linkText,
+                openInNewTab: body.openInNewTab,
                 visibleFrom: new Date(body.visibleFrom),
                 visibleUntil: new Date(body.visibleUntil),
                 createdById: userId,

@@ -121,6 +121,7 @@ function BannersSection() {
                     description={banner.description}
                     url={banner.url}
                     linkText={banner.linkText}
+                    openInNewTab={banner.openInNewTab}
                 />
             ))}
         </div>

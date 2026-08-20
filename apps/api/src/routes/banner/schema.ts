@@ -25,6 +25,10 @@ export const createBannerSchema = Schema(
                 description:
                     "Optional label for the banner link; an arrow is always shown",
             }),
+            openInNewTab: z.boolean().default(true).meta({
+                description:
+                    "Whether the banner link opens in a new tab. Defaults to true.",
+            }),
             visibleFrom: z.iso
                 .datetime()
                 .meta({ description: "When the banner becomes visible" }),
@@ -50,6 +54,7 @@ export const updateBannerSchema = Schema(
         description: z.string().min(1).max(500).optional(),
         url: z.url().optional().nullable(),
         linkText: z.string().max(100).optional().nullable(),
+        openInNewTab: z.boolean().optional(),
         visibleFrom: z.iso.datetime().optional(),
         visibleUntil: z.iso.datetime().optional(),
     }),
@@ -73,6 +78,9 @@ export const bannerSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "Optional label for the banner link" }),
+        openInNewTab: z.boolean().meta({
+            description: "Whether the banner link opens in a new tab",
+        }),
         visibleFrom: z
             .string()
             .meta({ description: "Visibility window start (ISO 8601)" }),
@@ -114,6 +122,9 @@ export const visibleBannerSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "Optional label for the banner link" }),
+        openInNewTab: z.boolean().meta({
+            description: "Whether the banner link opens in a new tab",
+        }),
         visibleUntil: z
             .string()
             .meta({ description: "Visibility window end (ISO 8601)" }),
