@@ -100,7 +100,7 @@ function RouteComponent() {
             />
             {profile.bio ? (
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-xs text-muted-foreground">OM</h3>
+                    <h3 className="text-xs text-muted-foreground">Om</h3>
                     <p className="whitespace-pre-line text-sm">{profile.bio}</p>
                 </div>
             ) : null}
@@ -116,7 +116,7 @@ function RouteComponent() {
                 klikkbart ut uten å være det, og på andres profil var det alt
                 sidens innhold besto av. */}
             <div className="flex flex-col gap-3">
-                <h3>MEDLEMSKAP</h3>
+                <h3>Medlemskap</h3>
                 {memberships.length > 0 ? (
                     <ProfileMembershipChips
                         groups={memberships.map((group) => ({
@@ -137,7 +137,7 @@ function RouteComponent() {
             {isOwnProfile ? (
                 <>
                     <div className="flex flex-col gap-3">
-                        <h3>KOMMENDE</h3>
+                        <h3>Kommende</h3>
                         <ProfileUpcomingEvents
                             events={upcomingEvents ?? []}
                             isPending={isUpcomingPending}
@@ -145,7 +145,7 @@ function RouteComponent() {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <h3>MÅ GJØRES</h3>
+                        <h3>Må gjøres</h3>
                         <Empty>
                             <EmptyHeader>
                                 <EmptyMedia variant="icon">
