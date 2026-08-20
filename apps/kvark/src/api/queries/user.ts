@@ -123,10 +123,20 @@ export const getUnansweredEvaluationsQuery = () =>
         queryFn: () => apiClient.get("/api/user/me/unanswered-evaluations"),
     });
 
-export const getAllergiesQuery = () =>
+/**
+ * Allergikatalogen.
+ *
+ * Send `curated` for alt et medlem skal velge fra: hele katalogen inneholder
+ * også fritekstsvarene Lepton-importen dro med seg, som er hundrevis av
+ * nesten like rader.
+ */
+export const getAllergiesQuery = (options?: { curated?: boolean }) =>
     queryOptions({
-        queryKey: [...UserQueryKeys.allergies],
-        queryFn: () => apiClient.get("/api/user/allergy"),
+        queryKey: [...UserQueryKeys.allergies, options?.curated ?? false],
+        queryFn: () =>
+            apiClient.get("/api/user/allergy", {
+                searchParams: options?.curated ? { curated: "true" } : {},
+            }),
     });
 
 /**

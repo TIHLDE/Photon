@@ -16,6 +16,7 @@ import type {
 } from "@tihlde/sdk";
 
 const EventQueryKeys = {
+    allergies: ["events", "allergies"] as const,
     listInfinite: ["events", "list-infinite"] as const,
     list: ["events", "list-paged"] as const,
     detail: ["events", "detail"] as const,
@@ -535,3 +536,18 @@ export const deleteStrikeMutation = mutationOptions({
         });
     },
 });
+
+/**
+ * Allergiene blant de påmeldte, for arrangøren som bestiller maten.
+ *
+ * Ikke paginert: tallene gir bare mening samlet, og det er summen kjøkkenet
+ * får — ikke én side om gangen.
+ */
+export const getEventAllergiesQuery = (eventId: string) =>
+    queryOptions({
+        queryKey: [...EventQueryKeys.allergies, eventId],
+        queryFn: () =>
+            apiClient.get("/api/event/{eventId}/allergies", {
+                params: { eventId },
+            }),
+    });

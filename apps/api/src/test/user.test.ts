@@ -32,7 +32,7 @@ describe("user endpoints", () => {
 
             const client = ctx.utils.client();
 
-            const response = await client.api.user.allergy.$get();
+            const response = await client.api.user.allergy.$get({ query: {} });
 
             expect(response.status).toBe(200);
 
@@ -51,7 +51,7 @@ describe("user endpoints", () => {
         async ({ ctx }) => {
             const client = ctx.utils.client();
 
-            const response = await client.api.user.allergy.$get();
+            const response = await client.api.user.allergy.$get({ query: {} });
 
             expect(response.status).toBe(200);
 
@@ -783,6 +783,177 @@ describe("user endpoints", () => {
             expect(json.bioDescription).toBe("Multi-field update");
             expect(json.githubUrl).toBe("https://github.com/multiupdate");
             expect(json.allergies).toEqual(["lactose"]);
+        },
+        500_000,
+    );
+
+    // ===== Allergier: fritekst og bekreftelse =====
+
+    integrationTest(
+        "stores free-text allergies without adding catalogue rows",
+        async ({ ctx }) => {
+            const { db } = ctx;
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const before = await db.select().from(schema.allergy);
+
+            const response = await client.api.user.me.settings.$patch({
+                json: {
+                    customAllergies: ["Reagerer på sennep", "Bringebær"],
+                },
+            });
+
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            expect(json.customAllergies).toEqual([
+                "Reagerer på sennep",
+                "Bringebær",
+            ]);
+
+            // Dette er hele poenget med å lagre fritekst på brukeren: katalogen
+            // skal ikke vokse med én rad per svar, slik Lepton-importen gjorde.
+            const after = await db.select().from(schema.allergy);
+            expect(after.length).toBe(before.length);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "normalises free-text allergies before storing them",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const response = await client.api.user.me.settings.$patch({
+                json: {
+                    customAllergies: ["  Nøtter  ", "nøtter", "Sterk    mat"],
+                },
+            });
+
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            // Duplikatet forsvinner uansett skrivemåte, og mellomrom kollapser
+            // — ellers ville arrangørens opptelling splittet dem i to linjer.
+            expect(json.customAllergies).toEqual(["Nøtter", "Sterk mat"]);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "rejects more than 15 free-text allergies",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const response = await client.api.user.me.settings.$patch({
+                json: {
+                    customAllergies: Array.from(
+                        { length: 16 },
+                        (_, i) => `Allergi ${i}`,
+                    ),
+                },
+            });
+
+            expect(response.status).toBe(400);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "saving an empty allergy list counts as an answer",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { allergies: [], customAllergies: [] },
+            });
+
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            // «Jeg har ingen allergier» er et svar. Uten dette kan ikke en
+            // arrangør skille de allergifrie fra dem som aldri har sett
+            // spørsmålet.
+            expect(json.allergiesConfirmedAt).not.toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "an update without allergy fields leaves the confirmation alone",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            const untouched = await client.api.user.me.settings.$patch({
+                json: { bioDescription: "Har ikke svart ennå" },
+            });
+
+            expect(untouched.status).toBe(200);
+            expect((await untouched.json()).allergiesConfirmedAt).toBeNull();
+
+            await client.api.user.me.settings.$patch({
+                json: { allergies: [] },
+            });
+
+            const later = await client.api.user.me.settings.$patch({
+                json: { bioDescription: "Har svart nå" },
+            });
+
+            expect((await later.json()).allergiesConfirmedAt).not.toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "an admin filling in allergies is not a confirmation from the member",
+        async ({ ctx }) => {
+            const { db } = ctx;
+            await db.insert(schema.allergy).values({
+                slug: "lactose",
+                label: "Laktose",
+            });
+
+            const member = await ctx.utils.createTestUser();
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:manage"]);
+            const adminClient = await ctx.utils.clientForUser(admin);
+
+            const response = await adminClient.api.user[":id"].allergies.$put({
+                param: { id: member.id },
+                json: { allergies: ["lactose"] },
+            });
+
+            expect(response.status).toBe(200);
+
+            // Arrangøren skal fortsatt se at medlemmet ikke har svart selv.
+            const settings = await db.query.userSettings.findFirst({
+                where: eq(schema.userSettings.userId, member.id),
+            });
+            expect(settings?.allergiesConfirmedAt).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "curated=true excludes the free-text rows the migration imported",
+        async ({ ctx }) => {
+            const { db } = ctx;
+            await db.insert(schema.allergy).values([
+                { slug: "gluten", label: "Gluten", curated: true },
+                { slug: "reagerer-pa-alt", label: "reagerer på alt" },
+            ]);
+
+            const client = ctx.utils.client();
+
+            const response = await client.api.user.allergy.$get({
+                query: { curated: "true" },
+            });
+
+            expect(response.status).toBe(200);
+            const json = await response.json();
+            expect(json.map((a) => a.slug)).toEqual(["gluten"]);
         },
         500_000,
     );

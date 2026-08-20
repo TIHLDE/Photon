@@ -5,6 +5,7 @@ import {
     pgTableCreator,
     primaryKey,
     text,
+    timestamp,
     varchar,
 } from "drizzle-orm/pg-core";
 import { timestamps } from "../timestamps";
@@ -45,6 +46,24 @@ export const userSettings = pgTable("settings", {
         .default(true)
         .notNull(),
     isOnboarded: boolean("is_onboarded").default(false).notNull(),
+    /**
+     * Allergier medlemmet har skrevet inn selv, i tillegg til avhukingene i
+     * `user_allergy`. De ligger her og ikke i katalogen fordi Lepton-importen
+     * la hvert eneste fritekstsvar inn som sin egen katalograd — det ga oss
+     * ~200 nesten like rader, og katalogen ville blitt ubrukelig som liste å
+     * velge fra hvis alle nye fritekstsvar havnet der også.
+     */
+    customAllergies: text("custom_allergies").array().default([]).notNull(),
+    /**
+     * Når medlemmet sist svarte på allergispørsmålet — også når svaret var
+     * «ingen». NULL betyr «har aldri svart», og det er hele poenget: uten
+     * dette kan ikke en arrangør skille de allergifrie fra de som bare ikke
+     * har sett spørsmålet, og kjøkkenet ender med å gjette.
+     *
+     * Settes kun når medlemmet lagrer selv. En admin som fyller inn på vegne
+     * av noen er ikke en bekreftelse fra medlemmet.
+     */
+    allergiesConfirmedAt: timestamp("allergies_confirmed_at"),
     ...timestamps,
 });
 
@@ -72,6 +91,13 @@ export const allergy = pgTable("allergy", {
     slug: varchar("slug", { length: 64 }).primaryKey(),
     label: varchar("label", { length: 128 }).notNull(),
     description: text("description"),
+    /**
+     * Om raden er en av de kuraterte vi selv har seedet, og dermed noe vi vil
+     * tilby i nedtrekkslista. Radene Lepton-importen laget står som `false`:
+     * de vises fortsatt der de allerede er koblet til et medlem, men de skal
+     * ikke fylle opp lista for alle andre.
+     */
+    curated: boolean("curated").default(false).notNull(),
 });
 
 export const allergyRelations = relations(allergy, ({ many }) => ({

@@ -8,6 +8,7 @@ import {
     PaginationSchema,
     PagniationResponseSchema,
 } from "~/middleware/pagination";
+import { allergySchema } from "../user/schema";
 
 // ===== INPUT SCHEMAS (from lib/event/schema.ts) =====
 
@@ -1070,6 +1071,67 @@ export const eventRegistrationListResponseSchema = Schema(
         registeredUsers: z
             .array(registeredUserSchema)
             .describe("List of registered users (paginated)"),
+    }),
+);
+
+// ===== ALLERGIER =====
+
+const eventParticipantAllergySchema = Schema(
+    "EventParticipantAllergies",
+    z.object({
+        userId: z.string().meta({ description: "User id" }),
+        name: z.string().meta({ description: "User name" }),
+        allergies: z.array(allergySchema).meta({
+            description: "The curated allergies the member has selected.",
+        }),
+        customAllergies: z.array(z.string()).meta({
+            description: "Free-text allergies the member wrote themselves.",
+        }),
+    }),
+);
+
+const eventAllergySummaryEntrySchema = Schema(
+    "EventAllergySummaryEntry",
+    z.object({
+        label: z.string().meta({
+            description: "Display name, as shown to the caterer.",
+        }),
+        count: z.number().meta({
+            description: "How many participants have this one.",
+        }),
+        custom: z.boolean().meta({
+            description:
+                "True when this came from free text rather than the curated catalogue.",
+        }),
+    }),
+);
+
+export const eventAllergiesResponseSchema = Schema(
+    "EventAllergies",
+    z.object({
+        totalParticipants: z.number().meta({
+            description:
+                "Participants counted, i.e. everyone holding a spot. The three tallies below add up to this.",
+        }),
+        withAllergies: z.number().meta({
+            description: "Participants who have registered at least one.",
+        }),
+        confirmedNone: z.number().meta({
+            description:
+                "Participants who answered the allergy question and have none.",
+        }),
+        notAnswered: z.number().meta({
+            description:
+                "Participants who have never answered. These are the ones an arrangør has to chase — not the same as having no allergies.",
+        }),
+        summary: z.array(eventAllergySummaryEntrySchema).meta({
+            description:
+                "Totals per allergy, most common first. This is what gets handed to the kitchen.",
+        }),
+        participants: z.array(eventParticipantAllergySchema).meta({
+            description:
+                "Only the participants who registered something, so the list stays readable.",
+        }),
     }),
 );
 

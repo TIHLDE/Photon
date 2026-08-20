@@ -67,6 +67,12 @@ type EventRegistrationCardProps = {
     qrSlot?: ReactNode;
     headerSlot?: ReactNode;
     /**
+     * Vises når medlemmet har fått plassen sin — brukt til å be dem oppgi
+     * allergier. Settes bare av forelderen når det faktisk er noe å be om, så
+     * kortet trenger ikke vite noe om hverken sesjon eller innstillinger.
+     */
+    postJoinSlot?: ReactNode;
+    /**
      * Lenka til Facebook-gruppa for billettsalg. Settes bare når medlemmet har
      * betalt for plassen sin, så tilbudet om å selge billetten videre kun
      * dukker opp for dem som faktisk har en billett å selge.
@@ -213,6 +219,7 @@ function getStateRendering(
                     : null,
                 actions: (
                     <>
+                        {props.postJoinSlot}
                         {props.qrSlot ?? (
                             <Button className="w-full">
                                 <QrCode />

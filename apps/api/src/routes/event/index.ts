@@ -1,4 +1,5 @@
 import { route } from "../../lib/route";
+import { getEventAllergiesRoute } from "./allergy/list";
 import { getCalendarFeedRoute } from "./calendar/feed";
 import { createRoute } from "./create";
 import { deleteRoute } from "./delete";
@@ -55,6 +56,9 @@ export const eventRoutes = route()
     .route("/", getAllRegistrationsForEventsRoute)
     .route("/", deleteEventRegistrationRoute)
     .route("/", setAttendanceRoute)
+
+    // Allergier for arrangøren
+    .route("/", getEventAllergiesRoute)
 
     // Payment
     .route("/", createPaymentRoute)

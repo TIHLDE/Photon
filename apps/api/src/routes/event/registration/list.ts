@@ -21,7 +21,7 @@ import { eventRegistrationListResponseSchema } from "../schema";
  * and must not change: it is what `registeredCount` on the event itself counts,
  * and the two numbers have to agree.
  */
-const DEFAULT_STATUSES = ["registered", "attended", "no_show"] as const;
+export const DEFAULT_STATUSES = ["registered", "attended", "no_show"] as const;
 
 const querySchema = PaginationSchema.extend({
     status: z

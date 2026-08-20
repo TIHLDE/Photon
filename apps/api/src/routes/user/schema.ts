@@ -28,12 +28,23 @@ export const allergiesListSchema = Schema(
     z.array(allergySchema),
 );
 
+/**
+ * Når medlemmet sist svarte på allergispørsmålet. `null` betyr «har aldri
+ * svart», som ikke er det samme som «har ingen allergier» — det er nettopp den
+ * forskjellen arrangøren trenger.
+ */
+const allergiesConfirmedAtSchema = z.iso.datetime().nullable().meta({
+    description:
+        "When the member last answered the allergy question, including when the answer was «none». Null means they have never answered.",
+});
+
 export const userSettingsResponseSchema = Schema(
     "UserSettings",
     UserSettingsSchema.extend({
         isOnboarded: z.boolean().meta({
             description: "Whether the user has completed onboarding",
         }),
+        allergiesConfirmedAt: allergiesConfirmedAtSchema,
     }),
 );
 
@@ -54,7 +65,12 @@ export const updateUserSettingsInputSchema = Schema(
 
 export const updateUserSettingsResponseSchema = Schema(
     "UpdateUserSettings",
-    UpdateUserSettingsSchema,
+    // Ruta svarer med hele innstillingssettet, ikke et ekko av de feltene som
+    // ble sendt inn — skjemaet sa noe annet, og gjorde alt valgfritt for
+    // klientene uten grunn.
+    UserSettingsSchema.extend({
+        allergiesConfirmedAt: allergiesConfirmedAtSchema,
+    }),
 );
 
 export const setPasswordInputSchema = Schema(

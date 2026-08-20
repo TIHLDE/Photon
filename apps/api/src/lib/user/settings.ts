@@ -33,6 +33,10 @@ export const UserSettingsSchema = z.object({
     // and «vis meg i deltakerlister» is how påmeldinger have always worked.
     publicEventRegistrations: z.boolean().default(true),
     allergies: z.array(z.string()).default([]),
+    customAllergies: z
+        .array(z.string().trim().min(1).max(64))
+        .max(15)
+        .default([]),
 });
 
 /** Tomme strenger lagres som NULL, så «tømt felt» ikke blir en tom verdi i DB. */
@@ -40,17 +44,57 @@ function emptyToNull<T extends string>(value: T | undefined) {
     return value === undefined ? undefined : value === "" ? null : value;
 }
 
+/**
+ * Rydder fritekst-allergier før de lagres: trimmer, slår sammen mellomrom og
+ * fjerner duplikater uavhengig av store og små bokstaver.
+ *
+ * Normaliseringen må skje her og ikke bare i UI-et, fordi arrangørens
+ * sammendrag teller på tvers av medlemmer — uten den blir «Nøtter», «nøtter»
+ * og «nøtter » tre separate linjer i lista kjøkkenet får.
+ *
+ * Første skrivemåte vinner, så teksten medlemmet faktisk skrev er den som
+ * vises.
+ */
+export function normalizeCustomAllergies(values: string[]): string[] {
+    const seen = new Map<string, string>();
+
+    for (const value of values) {
+        const cleaned = value.trim().replace(/\s+/g, " ");
+        if (!cleaned) continue;
+
+        const key = cleaned.toLowerCase();
+        if (!seen.has(key)) {
+            seen.set(key, cleaned.slice(0, 64));
+        }
+    }
+
+    return [...seen.values()].slice(0, 15);
+}
+
 // `allergies` har `.default([])`, som overlever `.partial()` og gjør feltet
 // påkrevd for klientene. Uten dette måtte enhver delvis oppdatering sende
 // allergiene på nytt — glemmer den det, tømmes de.
 export const UpdateUserSettingsSchema = UserSettingsSchema.partial().extend({
     allergies: z.array(z.string()).optional(),
+    customAllergies: z
+        .array(z.string().trim().min(1).max(64))
+        .max(15)
+        .optional(),
     publicEventRegistrations: z.boolean().optional(),
 });
 
 export type UserAllergy = z.infer<typeof UserAllergySchema>;
 export type UserSettings = z.infer<typeof UserSettingsSchema>;
 export type UpdateUserSettings = z.infer<typeof UpdateUserSettingsSchema>;
+
+/**
+ * Det innstillingene ser ut som når de leses ut igjen. Bekreftelsestidspunktet
+ * er med her, men ikke i {@link UserSettingsSchema}, fordi det er noe vi
+ * utleder av at brukeren lagret — ikke noe klienten skal kunne sette selv.
+ */
+export type StoredUserSettings = UserSettings & {
+    allergiesConfirmedAt: string | null;
+};
 
 /**
  * Fallbacks for the columns that are `NOT NULL` but that a partial update need
@@ -97,7 +141,7 @@ export async function hasAcceptedEventRules(
 export async function getUserSettings(
     userId: string,
     ctx: AppContext,
-): Promise<UserSettings | null> {
+): Promise<StoredUserSettings | null> {
     const { db } = ctx;
 
     const settingsWithAllergies = await db.query.userSettings.findFirst({
@@ -128,6 +172,9 @@ export async function getUserSettings(
         publicEventRegistrations:
             settingsWithAllergies.publicEventRegistrations,
         allergies: settingsWithAllergies.allergies.map((ua) => ua.allergySlug),
+        customAllergies: settingsWithAllergies.customAllergies,
+        allergiesConfirmedAt:
+            settingsWithAllergies.allergiesConfirmedAt?.toISOString() ?? null,
     };
 }
 
@@ -135,7 +182,7 @@ export async function createUserSettings(
     userId: string,
     settings: UserSettings,
     ctx: AppContext,
-): Promise<UserSettings> {
+): Promise<StoredUserSettings> {
     const { db } = ctx;
 
     // The profile picture is staged until a row claims it; without this the
@@ -143,6 +190,11 @@ export async function createUserSettings(
     await promoteAssetUrls(ctx.bucket, [settings.imageUrl]);
 
     // Use transaction for atomicity
+    // Onboarding stiller allergispørsmålet, så det å fullføre den er et svar —
+    // også når svaret er «ingen».
+    const confirmedAt = new Date();
+    const customAllergies = normalizeCustomAllergies(settings.customAllergies);
+
     return await db.transaction(async (tx) => {
         const values = {
             gender: settings.gender,
@@ -154,6 +206,8 @@ export async function createUserSettings(
             linkedinUrl: emptyToNull(settings.linkedinUrl) ?? null,
             receiveMailCommunication: settings.receiveMailCommunication,
             publicEventRegistrations: settings.publicEventRegistrations,
+            customAllergies,
+            allergiesConfirmedAt: confirmedAt,
             isOnboarded: true, // Mark as onboarded when creating
         };
 
@@ -178,6 +232,8 @@ export async function createUserSettings(
         return {
             ...settings,
             allergies: settings.allergies,
+            customAllergies,
+            allergiesConfirmedAt: confirmedAt.toISOString(),
         };
     });
 }
@@ -186,23 +242,44 @@ export async function updateUserSettings(
     userId: string,
     updates: UpdateUserSettings,
     ctx: AppContext,
-): Promise<UserSettings> {
+): Promise<StoredUserSettings> {
     const { db } = ctx;
 
     await promoteAssetUrls(ctx.bucket, [updates.imageUrl]);
 
     return await db.transaction(async (tx) => {
         // Separate allergies from other updates
-        const { allergies, ...settingsUpdates } = updates;
+        const { allergies, customAllergies, ...settingsUpdates } = updates;
+
+        /**
+         * Enhver oppdatering som bærer allergifelt kommer fra medlemmet selv —
+         * admin-ruta skriver via `setUserAllergies` og går ikke innom her — så
+         * den teller som et svar. Også når begge listene er tomme: «jeg har
+         * ingen allergier» er nettopp det svaret vi ellers ikke kunne skille
+         * fra «har aldri sett spørsmålet».
+         */
+        const answeredAllergies =
+            allergies !== undefined || customAllergies !== undefined;
+        const confirmedAt = answeredAllergies ? new Date() : undefined;
 
         // Update settings if there are any field updates
-        if (Object.keys(settingsUpdates).length > 0) {
+        if (
+            Object.keys(settingsUpdates).length > 0 ||
+            customAllergies !== undefined ||
+            confirmedAt !== undefined
+        ) {
             const values = {
                 ...settingsUpdates,
                 imageUrl: settingsUpdates.imageUrl ?? undefined,
                 bioDescription: emptyToNull(settingsUpdates.bioDescription),
                 githubUrl: emptyToNull(settingsUpdates.githubUrl),
                 linkedinUrl: emptyToNull(settingsUpdates.linkedinUrl),
+                ...(customAllergies !== undefined && {
+                    customAllergies: normalizeCustomAllergies(customAllergies),
+                }),
+                ...(confirmedAt !== undefined && {
+                    allergiesConfirmedAt: confirmedAt,
+                }),
             };
 
             // Upsert rather than update: members who never onboarded have no
@@ -260,6 +337,9 @@ export async function updateUserSettings(
             receiveMailCommunication: updated.receiveMailCommunication,
             publicEventRegistrations: updated.publicEventRegistrations,
             allergies: updated.allergies.map((ua) => ua.allergySlug),
+            customAllergies: updated.customAllergies,
+            allergiesConfirmedAt:
+                updated.allergiesConfirmedAt?.toISOString() ?? null,
         };
     });
 }
