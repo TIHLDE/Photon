@@ -13,6 +13,7 @@ export function serializeBanner(
         description: row.description,
         url: row.url ?? null,
         linkText: row.linkText ?? null,
+        openInNewTab: row.openInNewTab,
         visibleFrom: row.visibleFrom.toISOString(),
         visibleUntil: row.visibleUntil.toISOString(),
         isVisible: row.visibleFrom <= now && now < row.visibleUntil,

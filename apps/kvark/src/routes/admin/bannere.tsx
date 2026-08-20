@@ -9,6 +9,7 @@ import type { Banner } from "@tihlde/sdk";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
+import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import {
     Dialog,
     DialogBody,
@@ -222,6 +223,9 @@ function BannerDialog({
     const [description, setDescription] = useState(banner?.description ?? "");
     const [url, setUrl] = useState(banner?.url ?? "");
     const [linkText, setLinkText] = useState(banner?.linkText ?? "");
+    const [openInNewTab, setOpenInNewTab] = useState(
+        banner?.openInNewTab ?? true,
+    );
     const [visibleFrom, setVisibleFrom] = useState<Date | null>(
         banner?.visibleFrom ? new Date(banner.visibleFrom) : null,
     );
@@ -267,6 +271,7 @@ function BannerDialog({
                         description,
                         url: url || null,
                         linkText: linkText || null,
+                        openInNewTab,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -278,6 +283,7 @@ function BannerDialog({
                         description,
                         url: url || undefined,
                         linkText: linkText || undefined,
+                        openInNewTab,
                         visibleFrom: fromIso,
                         visibleUntil: untilIso,
                     },
@@ -359,6 +365,18 @@ function BannerDialog({
                                     }
                                     placeholder="Les mer"
                                 />
+                            </Field>
+                            <Field orientation="horizontal">
+                                <Checkbox
+                                    id="banner-open-in-new-tab"
+                                    checked={openInNewTab}
+                                    onCheckedChange={(next) =>
+                                        setOpenInNewTab(next === true)
+                                    }
+                                />
+                                <FieldLabel htmlFor="banner-open-in-new-tab">
+                                    Åpne lenken i ny fane
+                                </FieldLabel>
                             </Field>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <Field>

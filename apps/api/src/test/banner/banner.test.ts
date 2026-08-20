@@ -41,6 +41,8 @@ describe("Banner System", () => {
             expect(liveBanner.title).toBe("Live Banner");
             expect(liveBanner.isVisible).toBe(true);
             expect(liveBanner.createdById).toBe(editor.id);
+            // Lenken åpnes i ny fane med mindre noe annet er valgt
+            expect(liveBanner.openInNewTab).toBe(true);
 
             // 2. Regular user cannot create a banner
             const unauthorizedCreateResponse =
@@ -73,6 +75,7 @@ describe("Banner System", () => {
                     title: "Scheduled Banner",
                     description: "Visible in the future",
                     url: "https://tihlde.org",
+                    openInNewTab: false,
                     visibleFrom: new Date(now + HOUR).toISOString(),
                     visibleUntil: new Date(now + 2 * HOUR).toISOString(),
                 },
@@ -82,6 +85,7 @@ describe("Banner System", () => {
             const scheduledBanner = await scheduledResponse.json();
             expect(scheduledBanner.isVisible).toBe(false);
             expect(scheduledBanner.url).toBe("https://tihlde.org");
+            expect(scheduledBanner.openInNewTab).toBe(false);
 
             // === LIST (admin) ===
 
@@ -106,6 +110,7 @@ describe("Banner System", () => {
             const visibleBanners = await visibleResponse.json();
             expect(visibleBanners.length).toBe(1);
             expect(visibleBanners[0]?.title).toBe("Live Banner");
+            expect(visibleBanners[0]?.openInNewTab).toBe(true);
 
             // === UPDATE ===
 
@@ -120,6 +125,19 @@ describe("Banner System", () => {
             expect(updateResponse.status).toBe(200);
             const updatedBanner = await updateResponse.json();
             expect(updatedBanner.title).toBe("Updated Live Banner");
+            // Ikke oppgitt i patchen — verdien står urørt
+            expect(updatedBanner.openInNewTab).toBe(true);
+
+            // 8b. Editor slår av "åpne i ny fane"
+            const tabToggleResponse = await editorClient.api.banners[
+                ":id"
+            ].$patch({
+                param: { id: liveBanner.id },
+                json: { openInNewTab: false },
+            });
+
+            expect(tabToggleResponse.status).toBe(200);
+            expect((await tabToggleResponse.json()).openInNewTab).toBe(false);
 
             // 9. Update rejects an inverted window against stored values
             const invalidUpdateResponse = await editorClient.api.banners[
