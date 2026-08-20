@@ -12,10 +12,12 @@
  * each group's `leaderPermissions` and removed, so what the admin UI shows is
  * now the whole truth.
  *
- * Guardrails are the position ones, deliberately: managing this is managing a
- * verv, and you still cannot hand out what you do not hold — the group list is
- * checked for this group, the org-wide one globally, so a group leader (who
- * holds nothing globally) can never write the second.
+ * Writing requires "Tilganger" for the group, which the leader themselves does
+ * not hold by virtue of leading it: their own access is set for them, not by
+ * them. Reading is open to anyone who may manage the group's verv, so a leader
+ * can still see what they hold. On top of that sits the usual escalation
+ * guard — you cannot hand out what you do not hold — with the group list
+ * checked for this group and the org-wide one globally.
  *
  * The group's name for the role travels with the permissions here: a group
  * that calls its leader "President" should not have to keep a second, manually
@@ -36,6 +38,7 @@ import {
 } from "~/lib/group/linked-leader";
 import {
     canGrantPositionPermissions,
+    canManageLeaderPermissions,
     canManagePositions,
     knownPermissions,
 } from "~/lib/group/positions";
@@ -123,7 +126,7 @@ export const updateLeaderPermissionsRoute = route().patch(
         summary: "Set the group leader's permissions",
         operationId: "updateGroupLeaderPermissions",
         description:
-            "Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. You can only grant permissions you hold yourself for this group.",
+            "Replace the permissions held by the group's leader. Granted scoped to this group, so they never reach another group's resources. Requires \"Tilganger\" (roles:create/groups:manage) for this group — the group's own leader may not edit their own access. You can only grant permissions you hold yourself for this group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -132,7 +135,8 @@ export const updateLeaderPermissionsRoute = route().patch(
         })
         .badRequest({ description: "Unknown permission" })
         .forbidden({
-            description: "Not authorized, or granting permissions you lack",
+            description:
+                "Not authorized (the group's own leader may not edit this), or granting permissions you lack",
         })
         .notFound({ description: "Group not found" })
         .build(),
@@ -156,14 +160,17 @@ export const updateLeaderPermissionsRoute = route().patch(
             });
         }
 
-        if (!(await canManagePositions(ctx, user.id, groupSlug, "group"))) {
+        // Not canManagePositions: the group's own leader may manage its verv
+        // and its member permissions, but not the row describing their own
+        // access. See canManageLeaderPermissions.
+        if (!(await canManageLeaderPermissions(ctx, user.id, groupSlug))) {
             throw new HTTPException(403, {
-                message: "Not authorized to manage this group's permissions",
+                message: "Not authorized to change this group's leader access",
             });
         }
 
-        // Same escalation guard as verv: a leader editing their own group
-        // cannot grant themselves anything they do not already hold here.
+        // Escalation guard, unchanged: you cannot hand out what you do not
+        // already hold for this group.
         if (
             !(await canGrantPositionPermissions(
                 ctx,

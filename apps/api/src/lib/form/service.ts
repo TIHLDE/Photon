@@ -1,3 +1,4 @@
+import { hasPermission, hasScopedPermission } from "@photon/auth/rbac";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, count, eq, inArray } from "drizzle-orm";
@@ -17,6 +18,9 @@ import {
 } from "./exceptions";
 
 type Database = NodePgDatabase<DbSchema>;
+
+/** Anything carrying a database handle — the Hono app context satisfies it. */
+type DbCtx = { db: Database };
 
 // ===== FORM HELPERS =====
 
@@ -764,60 +768,75 @@ export async function calculateFormStatistics(db: Database, formId: string) {
 // ===== PERMISSIONS =====
 
 /**
- * Check if user can manage a form (edit, delete, view submissions)
+ * Check if user can manage a form (edit, delete, view submissions).
+ *
+ * A form belongs to the group that owns it — the group for a group form, the
+ * organizer for an event form — and a grant scoped to that group is enough.
+ * That is what "Spørreskjema" ticked on a group's member permissions or on a
+ * verv hands out, and it is already what creating the form asks for; without
+ * the same check here, the group could make a form it could never read the
+ * answers to. A global grant still satisfies the scoped check, so `root` and
+ * org-wide `forms:manage` are unaffected.
+ *
+ * The group's leader passes regardless of any permission list, unchanged.
+ *
+ * A form owned by no group — a standalone or template form — has no scope to
+ * check against, so it stays global-only.
  */
 export async function canManageForm(
-    db: Database,
+    ctx: DbCtx,
     formId: string,
     userId: string,
-    hasAdminPermission: boolean,
 ): Promise<boolean> {
-    if (hasAdminPermission) {
+    const { db } = ctx;
+
+    const ownerGroupSlug = await formOwnerGroupSlug(db, formId);
+
+    if (!ownerGroupSlug) {
+        return await hasPermission(ctx, userId, "forms:manage");
+    }
+
+    if (
+        await hasScopedPermission(
+            ctx,
+            userId,
+            ["forms:manage", "forms:update"],
+            `group:${ownerGroupSlug}`,
+        )
+    ) {
         return true;
     }
 
-    // Check if it's an event form
+    const membership = await db.query.groupMembership.findFirst({
+        where: and(
+            eq(schema.groupMembership.groupSlug, ownerGroupSlug),
+            eq(schema.groupMembership.userId, userId),
+            eq(schema.groupMembership.role, "leader"),
+        ),
+    });
+
+    return !!membership;
+}
+
+/**
+ * The slug of the group a form belongs to, or null for a form owned by none.
+ */
+async function formOwnerGroupSlug(
+    db: Database,
+    formId: string,
+): Promise<string | null> {
     const eventForm = await db.query.formEventForm.findFirst({
         where: eq(schema.formEventForm.formId, formId),
-        with: {
-            event: {
-                with: {
-                    organizer: true,
-                },
-            },
-        },
+        with: { event: true },
     });
 
     if (eventForm) {
-        // Check if user is event organizer or has group leadership
-        const organizerSlug = eventForm.event.organizerGroupSlug;
-        if (organizerSlug) {
-            const membership = await db.query.groupMembership.findFirst({
-                where: and(
-                    eq(schema.groupMembership.groupSlug, organizerSlug),
-                    eq(schema.groupMembership.userId, userId),
-                    eq(schema.groupMembership.role, "leader"),
-                ),
-            });
-            return !!membership;
-        }
+        return eventForm.event.organizerGroupSlug ?? null;
     }
 
-    // Check if it's a group form
     const groupForm = await db.query.formGroupForm.findFirst({
         where: eq(schema.formGroupForm.formId, formId),
     });
 
-    if (groupForm) {
-        const membership = await db.query.groupMembership.findFirst({
-            where: and(
-                eq(schema.groupMembership.groupSlug, groupForm.groupSlug),
-                eq(schema.groupMembership.userId, userId),
-                eq(schema.groupMembership.role, "leader"),
-            ),
-        });
-        return !!membership;
-    }
-
-    return false;
+    return groupForm?.groupSlug ?? null;
 }

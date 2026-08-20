@@ -1,6 +1,6 @@
-import { hasPermission } from "@photon/auth/rbac";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { canActOnEvent } from "~/lib/event/access";
 import { getEventFormWithDetails, userHasSubmitted } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -50,12 +50,19 @@ export const getEventFormRoute = route().get(
             });
         }
 
-        // For evaluation forms, check if user attended or is organizer
+        // For evaluation forms, check if user attended or is organizer.
+        //
+        // Asked for the arranging group, not org-wide: a group that holds
+        // "Arrangementer" for itself arranges the event, and could otherwise
+        // not open the evaluation of its own arrangement. A global grant still
+        // satisfies the scoped check, and an event with no organiser group
+        // falls back to it.
         if (formType === "evaluation") {
-            const hasEventsManage = await hasPermission(
+            const mayManageEvent = await canActOnEvent(
                 { db, ...ctx },
                 user.id,
-                "events:manage",
+                eventId,
+                ["events:update", "events:manage"],
             );
 
             const registration = await db.query.eventRegistration.findFirst({
@@ -65,7 +72,7 @@ export const getEventFormRoute = route().get(
 
             const isAttendee = registration?.status === "attended";
 
-            if (!hasEventsManage && !isAttendee) {
+            if (!mayManageEvent && !isAttendee) {
                 throw new HTTPException(403, {
                     message:
                         "You must have attended the event to access the evaluation",
