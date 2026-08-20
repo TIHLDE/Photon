@@ -822,8 +822,26 @@ export function createAuth(options: CreateAuthOptions) {
                 loginPage: options.oauth.pages.login,
                 consentPage: options.oauth.pages.consent,
 
-                // TOOD: Add custom scopes in the future
-                // scopes: []
+                /**
+                 * The one list. Discovery advertises it, `/oauth2/authorize`
+                 * validates against it, and a client with no stored scopes of
+                 * its own inherits it — so the three cannot drift apart.
+                 *
+                 * Written out rather than left to the plugin default (which is
+                 * the same four strings today) because the default is a moving
+                 * target across releases: what a client may ask for is our
+                 * contract with it, not the package's.
+                 *
+                 * `offline_access` is what buys a refresh token. Without it an
+                 * access token dies after an hour with no way to renew, while
+                 * the client's own session runs for months — see #644, where
+                 * Proton lost its group memberships that way.
+                 *
+                 * A client narrows this only by storing its own `scopes`; that
+                 * column is deliberately left NULL, since there is no UI to
+                 * manage it and every client here is a TIHLDE app.
+                 */
+                scopes: ["openid", "profile", "email", "offline_access"],
 
                 // Q9 decision: roles + groups embedded in JWT access tokens.
                 // 15-minute staleness window is accepted; document it for admins.
