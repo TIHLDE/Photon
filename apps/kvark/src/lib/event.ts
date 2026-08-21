@@ -166,6 +166,14 @@ export function registrationErrorMessage(error: unknown): string {
     if (message.includes("not open for registration")) {
         return "Dette arrangementet er ikke åpent for påmelding.";
     }
+    // Klokka på serveren er fasit. Treffer du denne, gikk du enten et sekund
+    // for tidlig eller har en klokke som ligger foran.
+    if (message.includes("Registration has not opened yet")) {
+        return "Påmeldingen har ikke åpnet ennå. Vent til klokkeslettet over og prøv igjen.";
+    }
+    if (message.includes("Registration has closed")) {
+        return "Påmeldingsfristen har gått ut.";
+    }
     if (message.includes("already registered")) {
         return "Du er allerede påmeldt. Last siden på nytt for å se påmeldingen din.";
     }
@@ -181,8 +189,12 @@ export function registrationErrorMessage(error: unknown): string {
             ? `Dette arrangementet er kun for studenter ved ${institute}.`
             : "Dette arrangementet er kun for studenter ved ett bestemt institutt.";
     }
+    // Nesten alltid en medlemsrolle som aldri kom på plass ved innlogging, og
+    // da fikser en ny innlogging det på egen hånd. «Ta kontakt med Index» sto
+    // her før, og sendte folk til en support-kanal for noe de kunne løst selv
+    // på ti sekunder.
     if (message.includes("requires permission")) {
-        return "Kontoen din har ikke tilgang til å melde seg på arrangementer. Ta kontakt med Index hvis dette ser feil ut.";
+        return "Kontoen din mangler tilgang til å melde seg på. Logg ut og inn igjen — det pleier å løse det. Hjelper det ikke, si fra til Index.";
     }
     if (message.includes("Authentication required")) {
         return "Du må være innlogget for å melde deg på.";

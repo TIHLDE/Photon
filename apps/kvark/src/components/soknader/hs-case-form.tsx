@@ -29,7 +29,9 @@ const schema = z
             .min(1, { error: "Feltet er påkrevd" })
             .max(10000),
         recommendation: z.string().max(10000),
-        attachments: z.array(z.instanceof(File)),
+        attachments: z.array(
+            z.instanceof(File, { error: "Ugyldig fil. Last den opp på nytt." }),
+        ),
     })
     // The old portal marked this required in the UI but left it optional in
     // validation, so a Vedtakssak could be submitted without an innstilling.

@@ -32,6 +32,15 @@ export function MarkdownContent({
                 "wrap-anywhere [&_pre]:overflow-x-auto [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto",
                 "[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-32",
                 "[&_.ProseMirror>:first-child]:mt-0 [&_.ProseMirror>:last-child]:mb-0",
+                // Et tomt avsnitt betyr «litt ekstra luft her». Et helt avsnitt
+                // er for mye, så det får en fast, liten høyde uten marger.
+                "[&_p[data-spacer]]:my-0 [&_p[data-spacer]]:h-2",
+                // En overskrift hører til teksten under seg, ikke til
+                // avsnittet over. Elementet rett etter mister toppmarga si, så
+                // det er overskrifta som bestemmer avstanden — og den blir
+                // gradvis mindre jo lavere nivået er.
+                "[&_h1]:mb-3.5 [&_h2]:mb-3 [&_h3]:mb-2.5 [&_h4]:mb-2 [&_h5]:mb-1.5 [&_h6]:mb-1",
+                "[&_h1+*]:mt-0 [&_h2+*]:mt-0 [&_h3+*]:mt-0 [&_h4+*]:mt-0 [&_h5+*]:mt-0 [&_h6+*]:mt-0",
                 // Skrivefeil fra den norske stavekontrollen. Samme rød
                 // bølgestrek som nettleseren selv bruker, så den er kjent
                 // igjen med en gang.

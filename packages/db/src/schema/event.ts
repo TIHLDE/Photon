@@ -271,18 +271,30 @@ export const eventRegistrationRelations = relations(
     }),
 );
 
-export const eventStrike = pgTable("strike", {
-    id: uuid("id").primaryKey().defaultRandom(),
-    eventId: uuid("event_id")
-        .notNull()
-        .references(() => event.id, { onDelete: "cascade" }),
-    userId: text("user_id")
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    count: integer("count").notNull(),
-    reason: varchar("reason", { length: 256 }),
-    ...timestamps,
-});
+export const eventStrike = pgTable(
+    "strike",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        eventId: uuid("event_id")
+            .notNull()
+            .references(() => event.id, { onDelete: "cascade" }),
+        userId: text("user_id")
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        count: integer("count").notNull(),
+        reason: varchar("reason", { length: 256 }),
+        ...timestamps,
+    },
+    (table) => [
+        /**
+         * Everything that reads strikes reads them for one member — the
+         * registration resolver, the prioritisation, the profile page. Without
+         * this the table was scanned in full every time, and the resolver did
+         * that once per member in the batch.
+         */
+        index("strike_user_id_idx").on(table.userId),
+    ],
+);
 
 export const eventStrikeRelations = relations(eventStrike, ({ one }) => ({
     event: one(event, {

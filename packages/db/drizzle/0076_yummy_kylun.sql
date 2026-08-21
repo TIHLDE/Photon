@@ -1,0 +1,1 @@
+CREATE INDEX "strike_user_id_idx" ON "event_strike" USING btree ("user_id");

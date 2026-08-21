@@ -392,6 +392,64 @@ export async function syncFeideForUser(
 }
 
 /**
+ * Run the Feide sync again for a member who came out of a login without a
+ * baseline role.
+ *
+ * The sync in the callback is best-effort by design: it runs after the session
+ * cookie is set, so throwing there would hand a logged-in member a 500 instead
+ * of the website. The cost, spelled out in that comment, is that a failed sync
+ * leaves them without a baseline role "until the next login" — and nothing ever
+ * checked at the next login either. They stay signed in, permission-less, and
+ * find out when they press "Meld deg på": on 2026-08-21 a member hit exactly
+ * that at the immatrikuleringsball, on a session from two weeks earlier, and
+ * the only cure was to guess that logging out and in again would help.
+ *
+ * Every new session is the natural place to notice. The check is one indexed
+ * lookup for the overwhelming majority who already have a role, and the repair
+ * only runs for those who do not.
+ *
+ * Silent for members who simply have no Feide account — a self-registered
+ * account with no role is not broken, it is waiting for approval.
+ */
+export async function recoverMissingBaselineRole(
+    db: AuthCreateContext["db"],
+    userId: string,
+): Promise<void> {
+    const [existing] = await db
+        .select({ roleId: userRole.roleId })
+        .from(userRole)
+        .innerJoin(role, eq(role.id, userRole.roleId))
+        .where(
+            and(
+                eq(userRole.userId, userId),
+                inArray(role.name, ["member", "alumni"]),
+            ),
+        )
+        .limit(1);
+
+    if (existing) return;
+
+    const [feideAccount] = await db
+        .select({ id: account.id })
+        .from(account)
+        .where(
+            and(
+                eq(account.userId, userId),
+                eq(account.providerId, FEIDE_PROVIDER_ID),
+            ),
+        )
+        .limit(1);
+
+    if (!feideAccount) return;
+
+    console.warn(
+        `User ${userId} signed in without a baseline role; retrying the Feide sync.`,
+    );
+
+    await syncFeideForUser(db, userId);
+}
+
+/**
  * Write a parsed Feide result to the database.
  *
  * Split out from {@link syncFeideForUser} so the integration tests can drive

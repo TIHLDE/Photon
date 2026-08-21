@@ -56,6 +56,9 @@ export const listRoute = route().get(
         const totalPages = getTotalPages(totalCount, pageSize);
 
         /**
+         * The author is selected only to answer "did I file this?" — feedback
+         * is shown anonymously, so no name or picture leaves the database.
+         *
          * Vote counts are aggregated in the query rather than by loading every
          * vote row: the page shows a running tally per item and nothing else,
          * and a popular idea can collect hundreds of votes that would then be
@@ -70,9 +73,7 @@ export const listRoute = route().get(
                 description: schema.feedback.description,
                 createdAt: schema.feedback.createdAt,
                 updatedAt: schema.feedback.updatedAt,
-                authorId: schema.user.id,
-                authorName: schema.user.name,
-                authorImage: schema.user.image,
+                authorId: schema.feedback.authorId,
                 upvotes:
                     sql<number>`count(*) filter (where ${schema.feedbackVote.value} = 'up')`.mapWith(
                         Number,
@@ -86,13 +87,12 @@ export const listRoute = route().get(
                 >`max(${schema.feedbackVote.value}::text) filter (where ${schema.feedbackVote.userId} = ${userId})`,
             })
             .from(schema.feedback)
-            .leftJoin(schema.user, eq(schema.feedback.authorId, schema.user.id))
             .leftJoin(
                 schema.feedbackVote,
                 eq(schema.feedbackVote.feedbackId, schema.feedback.id),
             )
             .where(where)
-            .groupBy(schema.feedback.id, schema.user.id)
+            .groupBy(schema.feedback.id)
             .orderBy(desc(schema.feedback.createdAt))
             .limit(pageSize)
             .offset(getPageOffset(page, pageSize));
@@ -103,13 +103,7 @@ export const listRoute = route().get(
             status: row.status,
             title: row.title,
             description: row.description,
-            author: row.authorId
-                ? {
-                      id: row.authorId,
-                      name: row.authorName ?? "",
-                      image: row.authorImage ?? null,
-                  }
-                : null,
+            isAuthor: row.authorId === userId,
             upvotes: row.upvotes,
             downvotes: row.downvotes,
             myVote: row.myVote,

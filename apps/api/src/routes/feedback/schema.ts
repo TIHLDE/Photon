@@ -57,15 +57,6 @@ export const listFeedbackQuerySchema = z.object({
 
 // ===== RESPONSE SCHEMAS =====
 
-const feedbackAuthorSchema = z
-    .object({
-        id: z.string(),
-        name: z.string(),
-        image: z.string().nullable(),
-    })
-    .nullable()
-    .meta({ description: "Author, null if the user has been deleted" });
-
 export const feedbackItemSchema = Schema(
     "FeedbackItem",
     z.object({
@@ -74,7 +65,10 @@ export const feedbackItemSchema = Schema(
         status: z.enum(feedbackStatusVariants),
         title: z.string(),
         description: z.string(),
-        author: feedbackAuthorSchema,
+        isAuthor: z.boolean().meta({
+            description:
+                "Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else.",
+        }),
         upvotes: z.number(),
         downvotes: z.number(),
         myVote: z
