@@ -41,6 +41,9 @@ function convertBlankParagraphs(node: Nodes): void {
             if (!isBlankParagraph(child)) return child;
             // Polstring i kantene bærer ingen mening.
             if (index === 0 || index === last) return null;
+            // En overskrift har allerede sin egen avstand ned til teksten.
+            // Den blanke linja der er en vane fra editorer som ikke ga noen.
+            if (children[index - 1]?.type === "heading") return null;
             return toSpacer(child as Paragraph);
         })
         .filter((child) => child !== null) as Parents["children"];

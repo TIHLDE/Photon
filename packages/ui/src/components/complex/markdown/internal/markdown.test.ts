@@ -355,3 +355,21 @@ describe("enkelt linjeskift", () => {
         expect(parseMarkdown(saved).children[0]?.type).toBe("table");
     });
 });
+
+describe("overskrifter", () => {
+    test("blank linje rett etter en overskrift kastes", () => {
+        const tree = parseMarkdown(
+            "## Tittel\n\n \n\nFørste avsnitt.\n\n \n\nAndre avsnitt.\n",
+        );
+        expect(tree.children.map((c) => c.type)).toEqual([
+            "heading",
+            "paragraph",
+            "paragraph",
+            "paragraph",
+        ]);
+        // Bare mellomrommet mellom de to avsnittene står igjen.
+        const spacer = tree.children[2];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.children).toHaveLength(0);
+    });
+});
