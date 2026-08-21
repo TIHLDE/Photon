@@ -33,6 +33,20 @@ export class QueuedEmailService extends BaseEmailService {
                 content,
             });
     }
+
+    /** The whole batch onto the queue in one round trip. */
+    override async sendRawEmails(
+        emails: Array<{ options: SendOptions; content: ContentOptions }>,
+    ): Promise<void> {
+        if (emails.length === 0) return;
+
+        await this.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME).addBulk(
+            emails.map((email) => ({
+                name: "send-email",
+                data: { options: email.options, content: email.content },
+            })),
+        );
+    }
 }
 
 export function startQueuedEmailWorker(
