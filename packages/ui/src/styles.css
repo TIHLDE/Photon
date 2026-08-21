@@ -336,6 +336,33 @@
     * {
         @apply border-border outline-ring/50;
     }
+    /* Musepekeren skal si at noe er klikkbart. Tailwind v4 fjernet nettleserens
+     * gamle `cursor: pointer` på knapper, så uten denne står markøren som en
+     * pil over knapper, brytere, avkryssingsbokser, menyvalg og faner — og
+     * hvert komponent måtte hatt sin egen `cursor-pointer`-klasse.
+     *
+     * Ligger i base-laget, så en `cursor-*`-verktøyklasse i en komponent
+     * (`cursor-text` i input-group, `cursor-w-resize` i sidebar) overstyrer den
+     * som før. Avslått tilstand kommer sist og vinner over resten. */
+    button,
+    summary,
+    label[for],
+    [role="button"],
+    [role="tab"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="option"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"] {
+        cursor: pointer;
+    }
+    :disabled,
+    [aria-disabled="true"],
+    [data-disabled]:not([data-disabled="false"]) {
+        cursor: default;
+    }
     body {
         background-color: var(--background);
         color: var(--foreground);
