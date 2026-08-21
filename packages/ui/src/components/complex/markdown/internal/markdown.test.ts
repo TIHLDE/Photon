@@ -373,3 +373,34 @@ describe("overskrifter", () => {
         expect(spacer.children).toHaveLength(0);
     });
 });
+
+describe("usynlige tegn i kantene", () => {
+    const NBSP = " ";
+
+    test("nbsp først og sist i et avsnitt fjernes", () => {
+        const tree = parseMarkdown(
+            `${NBSP}**VIKTIG**: legg inn allergier${NBSP}\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children[0]?.type).toBe("strong");
+        const text = paragraph.children.at(-1);
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value.endsWith("allergier")).toBe(true);
+    });
+
+    test("mellomrom inne i avsnittet står urørt", () => {
+        // Slik gammelt Lepton-innhold skriver fet skrift som starter med et
+        // mellomrom: `&#x20;` er et mellomrom CommonMark godtar der.
+        const tree = parseMarkdown(
+            "som vil si a&#x74;**&#x20;man må betale!**\n",
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const strong = paragraph.children[1];
+        if (strong?.type !== "strong") throw new Error("no strong");
+        const inner = strong.children[0];
+        if (inner?.type !== "text") throw new Error("no text");
+        expect(inner.value).toBe(" man må betale!");
+    });
+});
