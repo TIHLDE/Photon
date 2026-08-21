@@ -255,3 +255,340 @@ describe("buildRemarkDirectivePlugin", () => {
         expect(directive.data?.hName).toBe("tihlde-callout");
     });
 });
+
+describe("tomme avsnitt", () => {
+    const NBSP = "\u00a0";
+
+    test("avsnitt med kun nbsp blir et lite mellomrom, ikke et avsnitt", () => {
+        const tree = parseMarkdown(
+            `Første avsnitt.\n\n${NBSP}\n\nAndre avsnitt.\n`,
+        );
+        expect(tree.children).toHaveLength(3);
+        const spacer = tree.children[1];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.children).toHaveLength(0);
+        expect(spacer.data?.hProperties).toEqual({ "data-spacer": "" });
+    });
+
+    test("avsnitt med nbsp og ekte tekst beholdes", () => {
+        const tree = parseMarkdown(`${NBSP}**VIKTIG**: legg inn allergier\n`);
+        expect(tree.children).toHaveLength(1);
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.length).toBeGreaterThan(0);
+    });
+
+    test("polstring i kantene kastes", () => {
+        const tree = parseMarkdown(`${NBSP}\n\nEneste avsnitt.\n\n${NBSP}\n`);
+        expect(tree.children).toHaveLength(1);
+    });
+
+    test("to enter i editoren overlever lagring", () => {
+        const doc = {
+            type: "doc",
+            content: [
+                {
+                    type: "paragraph",
+                    content: [{ type: "text", text: "første" }],
+                },
+                { type: "paragraph" },
+                {
+                    type: "paragraph",
+                    content: [{ type: "text", text: "andre" }],
+                },
+            ],
+        };
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(saved).toBe(`første\n\n${NBSP}\n\nandre\n`);
+
+        // Og tilbake igjen: editoren viser den tomme linja på nytt, og en ny
+        // lagring gir nøyaktig samme tekst.
+        const reloaded = mdastToTiptap(parseMarkdown(saved), minimalRegistry);
+        expect(reloaded.content).toHaveLength(3);
+        expect(reloaded.content?.[1]).toEqual({ type: "paragraph" });
+        expect(stringifyMdast(tiptapToMdast(reloaded, minimalRegistry))).toBe(
+            saved,
+        );
+    });
+
+    test("vanlig avsnittsskift beholdes", () => {
+        const tree = parseMarkdown("Første.\n\nAndre.\n");
+        expect(tree.children).toHaveLength(2);
+    });
+});
+
+describe("enkelt linjeskift", () => {
+    test("blir et linjeskift, ikke et mellomrom", () => {
+        const tree = parseMarkdown("linje en\nlinje to\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+
+    test("overlever turen gjennom editoren", () => {
+        const source = "linje en\nlinje to\n";
+        const doc = mdastToTiptap(parseMarkdown(source), minimalRegistry);
+        const paragraph = doc.content?.[0];
+        expect(paragraph?.content?.map((n) => n.type)).toEqual([
+            "text",
+            "hardBreak",
+            "text",
+        ]);
+
+        // Lagret markdown normaliseres til CommonMark sitt harde linjeskift.
+        // Det parses tilbake til det samme treet, så innholdet er stabilt.
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(saved).toBe("linje en\\\nlinje to\n");
+        expect(mdastToTiptap(parseMarkdown(saved), minimalRegistry)).toEqual(
+            doc,
+        );
+    });
+
+    test("linjeskift i en tabellcelle ødelegger ikke tabellen", () => {
+        const source = "| a | b |\n| - | - |\n| x | y |\n";
+        const doc = mdastToTiptap(parseMarkdown(source), minimalRegistry);
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(parseMarkdown(saved).children[0]?.type).toBe("table");
+    });
+});
+
+describe("overskrifter", () => {
+    test("blank linje rett etter en overskrift kastes", () => {
+        const tree = parseMarkdown(
+            "## Tittel\n\n \n\nFørste avsnitt.\n\n \n\nAndre avsnitt.\n",
+        );
+        expect(tree.children.map((c) => c.type)).toEqual([
+            "heading",
+            "paragraph",
+            "paragraph",
+            "paragraph",
+        ]);
+        // Bare mellomrommet mellom de to avsnittene står igjen.
+        const spacer = tree.children[2];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.children).toHaveLength(0);
+    });
+});
+
+describe("usynlige tegn i kantene", () => {
+    const NBSP = " ";
+
+    test("nbsp først og sist i et avsnitt fjernes", () => {
+        const tree = parseMarkdown(
+            `${NBSP}**VIKTIG**: legg inn allergier${NBSP}\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children[0]?.type).toBe("strong");
+        const text = paragraph.children.at(-1);
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value.endsWith("allergier")).toBe(true);
+    });
+
+    test("mellomrom inne i avsnittet står urørt", () => {
+        // Slik gammelt Lepton-innhold skriver fet skrift som starter med et
+        // mellomrom: `&#x20;` er et mellomrom CommonMark godtar der.
+        const tree = parseMarkdown(
+            "som vil si a&#x74;**&#x20;man må betale!**\n",
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const strong = paragraph.children[1];
+        if (strong?.type !== "strong") throw new Error("no strong");
+        const inner = strong.children[0];
+        if (inner?.type !== "text") throw new Error("no text");
+        expect(inner.value).toBe(" man må betale!");
+    });
+});
+
+describe("flere blanke linjer", () => {
+    test("to blanke linjer på rad blir et mellomrom", () => {
+        const tree = parseMarkdown("Første.\n\n\n\nAndre.\n");
+        expect(tree.children).toHaveLength(3);
+        const spacer = tree.children[1];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.data?.hProperties).toEqual({ "data-spacer": "" });
+    });
+
+    test("én blank linje er et vanlig avsnittsskift", () => {
+        expect(parseMarkdown("Første.\n\nAndre.\n").children).toHaveLength(2);
+    });
+
+    test("gir ikke dobbelt mellomrom sammen med en tom linje", () => {
+        const tree = parseMarkdown("Første.\n\n \n\nAndre.\n");
+        expect(tree.children).toHaveLength(3);
+    });
+
+    test("rører ikke listepunkter med luft mellom seg", () => {
+        const tree = parseMarkdown("- ett\n\n\n- to\n");
+        const list = tree.children[0];
+        if (list?.type !== "list") throw new Error("no list");
+        expect(list.children.every((c) => c.type === "listItem")).toBe(true);
+    });
+});
+
+describe("linjeskift i kanten av et avsnitt", () => {
+    const NBSP = " ";
+
+    test("linjeskift og nbsp til slutt skrelles av", () => {
+        const tree = parseMarkdown(
+            `Siste setning!${NBSP}\n${NBSP}\n${NBSP}\n\nNeste avsnitt.\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children).toHaveLength(1);
+        const text = paragraph.children[0];
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value).toBe("Siste setning!");
+    });
+
+    test("linjeskift inne i avsnittet står urørt", () => {
+        const tree = parseMarkdown("linje en\nlinje to\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+});
+
+describe("usynlige tegn bak linjeskift", () => {
+    const NBSP = " ";
+
+    test("nbsp bak en emoji til slutt fjernes også", () => {
+        const tree = parseMarkdown(
+            `Bli med!🤩${NBSP}   \n${NBSP}  \n ${NBSP}    \n\nNeste.\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children).toHaveLength(1);
+        const text = paragraph.children[0];
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value).toBe("Bli med!🤩");
+    });
+});
+
+describe("rå HTML", () => {
+    test("<br> blir et linjeskift", () => {
+        const tree = parseMarkdown("Takk!<br>Neste linje\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+
+    test("<img> i en <div> blir et bilde", () => {
+        const tree = parseMarkdown(
+            'Før.\n\n<div style="display: flex;">\n<img src="https://i.imgur.com/a.jpeg" alt="Bilde" style="width:100%;">\n</div>\n\nEtter.\n',
+        );
+        const bilder = tree.children.filter(
+            (c) => c.type === "paragraph" && c.children[0]?.type === "image",
+        );
+        expect(bilder).toHaveLength(1);
+        const paragraph = bilder[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const image = paragraph.children[0];
+        if (image?.type !== "image") throw new Error("no image");
+        expect(image.url).toBe("https://i.imgur.com/a.jpeg");
+        expect(image.alt).toBe("Bilde");
+    });
+
+    test("<iframe> blir en lenke til dokumentet", () => {
+        const tree = parseMarkdown(
+            '<iframe src="https://drive.google.com/file/d/abc/preview" width="640"></iframe>\n',
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const link = paragraph.children[0];
+        if (link?.type !== "link") throw new Error("no link");
+        expect(link.url).toBe("https://drive.google.com/file/d/abc/preview");
+    });
+
+    test("farlige adresser og ukjente tagger slipper ikke gjennom", () => {
+        const tree = parseMarkdown(
+            '<img src="javascript:alert(1)">\n\n<script>alert(1)</script>\n\n<u>understreket</u>\n',
+        );
+        const typer: string[] = [];
+        for (const node of tree.children) {
+            typer.push(node.type);
+            if (node.type === "paragraph") {
+                for (const child of node.children) typer.push(child.type);
+            }
+        }
+        expect(typer).not.toContain("image");
+        expect(typer).not.toContain("html");
+        // Teksten mellom taggene står igjen.
+        expect(JSON.stringify(tree)).toContain("understreket");
+        expect(JSON.stringify(tree)).not.toContain("alert(1)");
+    });
+});
+
+describe("bildegalleri", () => {
+    const galleryRegistry = makeRegistry([
+        {
+            name: "gallery",
+            kind: "container",
+            schema: z.object({}),
+            label: "Image gallery",
+            Render: noopRender,
+            Edit: noopRender,
+        } as DirectiveDefinition,
+    ]);
+
+    const HTML_GALLERI =
+        '<div style="display: flex; gap: 10px;">\n' +
+        '<img src="https://i.imgur.com/a.jpeg" alt="En">\n' +
+        '<img src="https://i.imgur.com/b.jpeg" alt="To">\n' +
+        "</div>\n";
+
+    test("flere bilder i en <div> blir et galleri", () => {
+        const tree = parseMarkdown(HTML_GALLERI, galleryRegistry);
+        const directive = tree.children[0];
+        expect(directive?.type).toBe("containerDirective");
+        if (directive?.type !== "containerDirective") return;
+        expect(directive.name).toBe("gallery");
+        expect(directive.children).toHaveLength(2);
+    });
+
+    test("ett bilde alene blir ikke et galleri", () => {
+        const tree = parseMarkdown(
+            '<div><img src="https://i.imgur.com/a.jpeg" alt="En"></div>\n',
+            galleryRegistry,
+        );
+        expect(tree.children[0]?.type).toBe("paragraph");
+    });
+
+    test("uten galleri i registeret blir bildene et vanlig avsnitt", () => {
+        const tree = parseMarkdown(HTML_GALLERI, minimalRegistry);
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "image",
+            "image",
+        ]);
+    });
+
+    test("galleriet overlever turen gjennom editoren", () => {
+        const doc = mdastToTiptap(
+            parseMarkdown(HTML_GALLERI, galleryRegistry),
+            galleryRegistry,
+        );
+        const node = doc.content?.[0];
+        expect(node?.type).toBe("directive-gallery");
+        const saved = stringifyMdast(tiptapToMdast(doc, galleryRegistry));
+        expect(saved).toContain(":::gallery");
+        expect(saved).toContain("![En](https://i.imgur.com/a.jpeg)");
+        expect(parseMarkdown(saved, galleryRegistry).children[0]?.type).toBe(
+            "containerDirective",
+        );
+    });
+});

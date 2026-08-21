@@ -3,8 +3,11 @@ export { MarkdownView, type MarkdownViewProps } from "./markdown-view";
 export { RichEditor, type RichEditorProps } from "./rich-editor";
 export { EditorToolbar, type EditorToolbarProps } from "./editor-toolbar";
 
+export { GALLERY_DIRECTIVE } from "./internal/remark-raw-html";
+
 export {
     defineDirective,
+    emptyRegistry,
     type DirectiveDefinition,
     type DirectiveEditProps,
     type DirectiveKind,

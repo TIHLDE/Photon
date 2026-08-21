@@ -100,10 +100,18 @@ function convertBlock(
 }
 
 function convertParagraph(node: JSONContent): Paragraph {
-    return {
-        type: "paragraph",
-        children: convertInlineRun(node.content ?? []),
-    };
+    const children = convertInlineRun(node.content ?? []);
+    // Et tomt avsnitt er to enter på rad, altså et bevisst mellomrom. Markdown
+    // har ingen skrivemåte for det — blanke linjer slås sammen — så det lagres
+    // som et avsnitt med et non-breaking space, slik gammelt Lepton-innhold
+    // også gjør. Parseren gjør det tilbake til et tomt avsnitt.
+    if (children.length === 0) {
+        return {
+            type: "paragraph",
+            children: [{ type: "text", value: "\u00a0" }],
+        };
+    }
+    return { type: "paragraph", children };
 }
 
 function convertHeading(node: JSONContent): Heading {
