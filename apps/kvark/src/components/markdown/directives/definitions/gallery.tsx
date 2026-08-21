@@ -8,19 +8,21 @@ import { z } from "zod";
 
 const gallerySchema = z.object({});
 
-// Bildene ligger hver for seg i et avsnitt, slik markdown krever. `contents`
-// løser avsnittene opp i layouten, så bildene blir liggende side om side og
-// brekker til neste rad når raden er full. Fast høyde og `w-auto` holder
-// bildeformatet, så stående og liggende bilder står pent ved siden av
-// hverandre uten å bli beskåret.
+// Et rutenett med like store ruter, to i bredden på mobil og tre fra og med
+// nettbrett. Bildene beskjæres til samme format, så raden fyller bredden og
+// stående og liggende bilder står like høyt — et galleri som ser bevisst ut,
+// framfor en ujevn rad med dødplass til høyre.
 const GALLERY_LAYOUT = [
-    // I editoren legger TipTap en egen beholder mellom galleriet og
-    // avsnittene. Den løses opp på samme måte, ellers blir alt innholdet
-    // liggende som ett eneste flex-element.
-    "flex flex-wrap gap-2 [&_p]:contents",
+    // Hvert bilde ligger i sitt eget avsnitt, slik markdown krever, og det
+    // avsnittet er ruta i rutenettet. Da slipper vi å slåss med de usynlige
+    // hjelpe-elementene editoren legger inn ved siden av bildet — de bor
+    // inne i ruta og teller ikke som egne ruter.
+    "grid grid-cols-2 gap-2 sm:grid-cols-3",
+    // Editoren legger en egen beholder mellom galleriet og avsnittene.
     "[&>[data-node-view-content-react]]:contents",
-    "[&_img]:my-0 [&_img]:h-40 [&_img]:w-auto [&_img]:max-w-full",
-    "[&_img]:rounded-lg [&_img]:object-cover sm:[&_img]:h-56",
+    "[&_p]:my-0",
+    "[&_img]:my-0 [&_img]:aspect-[4/3] [&_img]:size-full",
+    "[&_img]:rounded-lg [&_img]:object-cover",
 ].join(" ");
 
 export const gallery = defineDirective({
@@ -30,7 +32,11 @@ export const gallery = defineDirective({
     label: "Image gallery",
     icon: <Images className="size-4" />,
     inputRule: /^:::gallery\s$/,
-    Render: ({ children }) => <div className={GALLERY_LAYOUT}>{children}</div>,
+    Render: ({ children }) => (
+        <div data-slot="markdown-gallery" className={GALLERY_LAYOUT}>
+            {children}
+        </div>
+    ),
     Edit: () => (
         <NodeViewWrapper>
             <div className="my-4 rounded-lg border border-dashed p-2">
@@ -38,7 +44,10 @@ export const gallery = defineDirective({
                     <Images className="size-4" />
                     <span>Image gallery</span>
                 </div>
-                <NodeViewContent className={GALLERY_LAYOUT} />
+                <NodeViewContent
+                    data-slot="markdown-gallery"
+                    className={GALLERY_LAYOUT}
+                />
             </div>
         </NodeViewWrapper>
     ),
