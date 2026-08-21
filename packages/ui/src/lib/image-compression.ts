@@ -47,6 +47,36 @@ function inferMimeFromFilename(name: string): string | null {
     }
 }
 
+const EXTENSION_BY_MIME: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "application/pdf": "pdf",
+};
+
+/**
+ * Wrap the compressed data in a real `File`.
+ *
+ * `imageCompression` hands back a `Blob` with a `name` property glued on — it
+ * looks like a `File` in the preview and in FormData, but it fails
+ * `instanceof File`. Schemas that require a `File` then reject the value, and
+ * an upload posted straight from the Blob reaches the server named "blob".
+ *
+ * The original name is kept, with the extension corrected when the compressor
+ * changed the format.
+ */
+function toFile(data: Blob, originalName: string, type: string): File {
+    const extension = EXTENSION_BY_MIME[type];
+    const currentExtension = originalName.toLowerCase().split(".").pop();
+    const name =
+        extension && currentExtension !== extension
+            ? `${originalName.replace(/\.[^.]+$/, "")}.${extension}`
+            : originalName;
+
+    return new File([data], name, { type });
+}
+
 /**
  * Shrink an image file. Non-images, GIFs, and anything that fails to compress
  * are returned untouched — a failed optimization must never cost the user their
@@ -63,15 +93,14 @@ export async function compressImageFile(file: File): Promise<File> {
         // Already-small images can come back larger than they went in.
         if (compressed.size >= file.size) return file;
 
-        if (compressed.type) return compressed as File;
-
-        // Some browsers drop the MIME type on the resulting Blob. Re-wrap it so
-        // the server still receives a recognizable Content-Type.
-        const fallbackType =
+        // Some browsers drop the MIME type on the resulting Blob, so fall back
+        // to the type the file came in with.
+        const type =
+            compressed.type ||
             file.type ||
             inferMimeFromFilename(file.name) ||
             "application/octet-stream";
-        return new File([compressed], file.name, { type: fallbackType });
+        return toFile(compressed, file.name, type);
     } catch {
         return file;
     }
