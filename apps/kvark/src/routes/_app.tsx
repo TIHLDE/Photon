@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { authQueryOptions } from "#/api/auth";
 import { EventRulesConsent } from "#/components/event-rules-consent";
+import { FeedbackButton } from "#/components/feedback-button";
 import { NotificationBell } from "#/components/notification-bell";
 import { PendingApprovalNotice } from "#/components/pending-approval-notice";
 import { SetPasswordNotice } from "#/components/set-password-notice";
@@ -62,7 +63,10 @@ function AppLayout() {
                 // ingen varsler ennå.
                 actions={
                     isAuthenticated && !isPendingApproval ? (
-                        <NotificationBell />
+                        <>
+                            <FeedbackButton />
+                            <NotificationBell />
+                        </>
                     ) : null
                 }
             />

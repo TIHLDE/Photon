@@ -145,15 +145,6 @@ export function useSiteNavItems(
                                           "Send inn utlegg og søknader til TIHLDE",
                                   },
                                   {
-                                      kind: "internal",
-                                      label: "Tilbakemelding",
-                                      link: linkOptions({
-                                          to: "/tilbakemelding",
-                                      }),
-                                      description:
-                                          "Foreslå noe nytt eller meld en feil",
-                                  },
-                                  {
                                       kind: "external",
                                       label: "Kontres",
                                       href: "https://kontres.tihlde.org",
