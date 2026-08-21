@@ -105,6 +105,33 @@ export const registerToEventRoute = route().post(
             });
         }
 
+        /**
+         * The registration window, enforced by the server rather than only by
+         * the button.
+         *
+         * It was only the button. When the immatrikuleringsball opened on
+         * 2026-08-21, nine members were already registered before the opening
+         * second — the earliest by 16 seconds. It cost nobody a spot that time,
+         * because the event did not fill up, but on an event that does, those
+         * are the first spots, handed out by whoever bypassed the frontend or
+         * whose clock ran fast.
+         *
+         * `createdAt` is the server's own timestamp and the resolver decides in
+         * that order, so the only way to make the queue honest is to refuse the
+         * ones that arrive early here.
+         */
+        if (event.registrationStart && now < event.registrationStart) {
+            throw new HTTPException(409, {
+                message: "Registration has not opened yet",
+            });
+        }
+
+        if (event.registrationEnd && now > event.registrationEnd) {
+            throw new HTTPException(409, {
+                message: "Registration has closed",
+            });
+        }
+
         // Checked before every event-specific rule so the message a member
         // gets is the one thing they can act on. The frontend shows the same
         // block ahead of time — hitting it here means they went around it.

@@ -166,6 +166,14 @@ export function registrationErrorMessage(error: unknown): string {
     if (message.includes("not open for registration")) {
         return "Dette arrangementet er ikke åpent for påmelding.";
     }
+    // Klokka på serveren er fasit. Treffer du denne, gikk du enten et sekund
+    // for tidlig eller har en klokke som ligger foran.
+    if (message.includes("Registration has not opened yet")) {
+        return "Påmeldingen har ikke åpnet ennå. Vent til klokkeslettet over og prøv igjen.";
+    }
+    if (message.includes("Registration has closed")) {
+        return "Påmeldingsfristen har gått ut.";
+    }
     if (message.includes("already registered")) {
         return "Du er allerede påmeldt. Last siden på nytt for å se påmeldingen din.";
     }
