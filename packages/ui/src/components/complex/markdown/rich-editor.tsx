@@ -67,7 +67,7 @@ export function RichEditor({
     );
 
     const initialContent = useMemo(
-        () => mdastToTiptap(parseMarkdown(value), registry),
+        () => mdastToTiptap(parseMarkdown(value, registry), registry),
         // Only on first mount — subsequent value changes are handled below.
         // oxlint-disable: react-hooks/exhaustive-deps
         [],
@@ -113,7 +113,7 @@ export function RichEditor({
     useEffect(() => {
         if (!editor) return;
         if (value === lastEmitted.current) return;
-        const json = mdastToTiptap(parseMarkdown(value), registry);
+        const json = mdastToTiptap(parseMarkdown(value, registry), registry);
         editor.commands.setContent(json, { emitUpdate: false });
         lastEmitted.current = value;
     }, [editor, value, registry]);

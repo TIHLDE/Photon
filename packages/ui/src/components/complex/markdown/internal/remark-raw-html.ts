@@ -1,12 +1,9 @@
-import type {
-    Image,
-    Link,
-    Paragraph,
-    PhrasingContent,
-    Root,
-    RootContent,
-} from "mdast";
+import type { Image, Link, PhrasingContent, Root, RootContent } from "mdast";
+import type { ContainerDirective } from "mdast-util-directive";
+import type { Plugin } from "unified";
 import { visit, SKIP } from "unist-util-visit";
+
+import type { DirectiveRegistry } from "../directive";
 
 // Innhold fra Lepton har rå HTML i seg: bildegallerier i `<div>`-er, `<br>`
 // for linjeskift og `<iframe>` med PDF-er fra Google Drive. Ingenting av det
@@ -14,6 +11,9 @@ import { visit, SKIP } from "unist-util-visit";
 // editoren viser det som tekst. Vi plukker ut det som faktisk er innhold og
 // kaster resten. Vilkårlig HTML slipper aldri gjennom, så det er ingen vei
 // inn for skript eller stiler.
+
+/** Navnet på galleridirektivet, delt mellom parseren og registeret. */
+export const GALLERY_DIRECTIVE = "gallery";
 
 const TAG =
     /<(\/?)\s*([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'=<>`]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/g;
@@ -137,11 +137,42 @@ const PHRASING_PARENTS = new Set([
 ]);
 
 /**
+ * Flere bilder i samme HTML-blokk var et galleri hos forfatteren — bildene
+ * lå side om side i en `<div>` med flex. Kan registeret vise et galleri, blir
+ * det et galleri; ellers blir bildene liggende under hverandre i et avsnitt.
+ */
+function toBlock(
+    converted: PhrasingContent[],
+    registry: DirectiveRegistry,
+): RootContent[] {
+    if (converted.length === 0) return [];
+    const images = converted.filter((node) => node.type === "image");
+    if (images.length > 1 && registry.has(GALLERY_DIRECTIVE)) {
+        const gallery: ContainerDirective = {
+            type: "containerDirective",
+            name: GALLERY_DIRECTIVE,
+            attributes: {},
+            children: images.map((image) => ({
+                type: "paragraph",
+                children: [image],
+            })),
+        };
+        const resten = converted.filter((node) => node.type !== "image");
+        return resten.length > 0
+            ? [gallery, { type: "paragraph", children: resten }]
+            : [gallery];
+    }
+    return [{ type: "paragraph", children: converted }];
+}
+
+/**
  * Remark-plugin som bytter ut rå HTML med de nodene innholdet faktisk er:
  * bilder, linjeskift og lenker. Resten kastes, så ingen ser kildekode.
  */
-export function remarkRawHtml() {
-    return (tree: Root) => {
+export function buildRemarkRawHtmlPlugin(
+    registry: DirectiveRegistry,
+): Plugin<[], Root> {
+    return () => (tree: Root) => {
         visit(tree, "html", (node, index, parent) => {
             if (!parent || index === undefined) return;
             const converted = convertHtml(node.value);
@@ -153,12 +184,7 @@ export function remarkRawHtml() {
                     ...converted,
                 );
             } else {
-                // I en blokk må innholdet ligge i et avsnitt, så uansett hvor
-                // mange bilder som kom ut blir det én ny node — eller ingen.
-                const replacement: Paragraph[] =
-                    converted.length > 0
-                        ? [{ type: "paragraph", children: converted }]
-                        : [];
+                const replacement = toBlock(converted, registry);
                 lagtInn = replacement.length;
                 (parent.children as RootContent[]).splice(
                     index,

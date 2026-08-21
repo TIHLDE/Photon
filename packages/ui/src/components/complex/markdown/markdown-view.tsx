@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 
 import type { DirectiveRegistry } from "./directive";
 import { buildComponentsMap } from "./internal/components-map";
-import { remarkRawHtml } from "./internal/remark-raw-html";
+import { buildRemarkRawHtmlPlugin } from "./internal/remark-raw-html";
 import { remarkSpacerParagraphs } from "./internal/remark-spacer-paragraph";
 import { buildRemarkDirectivePlugin } from "./internal/remark-directive-hast";
 import { MarkdownContent } from "./markdown-content";
@@ -30,10 +30,12 @@ export function MarkdownView({
                 // linjeskift, slik forfatteren skrev det.
                 remarkBreaks,
                 remarkDirective,
-                buildRemarkDirectivePlugin(registry),
                 // Rå HTML blir til bilder, linjeskift og lenker — aldri
-                // synlig kildekode. Samme regel som i editorens parser.
-                remarkRawHtml,
+                // synlig kildekode. Samme regel som i editorens parser. Må
+                // kjøre før direktiv-plugin-et under, for flere bilder i
+                // samme HTML-blokk blir et galleridirektiv.
+                buildRemarkRawHtmlPlugin(registry),
+                buildRemarkDirectivePlugin(registry),
                 // Tomme avsnitt blir et lite mellomrom i stedet for et
                 // helt avsnitt. Samme regel som i editorens parser.
                 remarkSpacerParagraphs,

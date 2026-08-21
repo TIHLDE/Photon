@@ -531,3 +531,64 @@ describe("rå HTML", () => {
         expect(JSON.stringify(tree)).not.toContain("alert(1)");
     });
 });
+
+describe("bildegalleri", () => {
+    const galleryRegistry = makeRegistry([
+        {
+            name: "gallery",
+            kind: "container",
+            schema: z.object({}),
+            label: "Image gallery",
+            Render: noopRender,
+            Edit: noopRender,
+        } as DirectiveDefinition,
+    ]);
+
+    const HTML_GALLERI =
+        '<div style="display: flex; gap: 10px;">\n' +
+        '<img src="https://i.imgur.com/a.jpeg" alt="En">\n' +
+        '<img src="https://i.imgur.com/b.jpeg" alt="To">\n' +
+        "</div>\n";
+
+    test("flere bilder i en <div> blir et galleri", () => {
+        const tree = parseMarkdown(HTML_GALLERI, galleryRegistry);
+        const directive = tree.children[0];
+        expect(directive?.type).toBe("containerDirective");
+        if (directive?.type !== "containerDirective") return;
+        expect(directive.name).toBe("gallery");
+        expect(directive.children).toHaveLength(2);
+    });
+
+    test("ett bilde alene blir ikke et galleri", () => {
+        const tree = parseMarkdown(
+            '<div><img src="https://i.imgur.com/a.jpeg" alt="En"></div>\n',
+            galleryRegistry,
+        );
+        expect(tree.children[0]?.type).toBe("paragraph");
+    });
+
+    test("uten galleri i registeret blir bildene et vanlig avsnitt", () => {
+        const tree = parseMarkdown(HTML_GALLERI, minimalRegistry);
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "image",
+            "image",
+        ]);
+    });
+
+    test("galleriet overlever turen gjennom editoren", () => {
+        const doc = mdastToTiptap(
+            parseMarkdown(HTML_GALLERI, galleryRegistry),
+            galleryRegistry,
+        );
+        const node = doc.content?.[0];
+        expect(node?.type).toBe("directive-gallery");
+        const saved = stringifyMdast(tiptapToMdast(doc, galleryRegistry));
+        expect(saved).toContain(":::gallery");
+        expect(saved).toContain("![En](https://i.imgur.com/a.jpeg)");
+        expect(parseMarkdown(saved, galleryRegistry).children[0]?.type).toBe(
+            "containerDirective",
+        );
+    });
+});
