@@ -32,6 +32,9 @@ export function MarkdownContent({
                 "wrap-anywhere [&_pre]:overflow-x-auto [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto",
                 "[&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-32",
                 "[&_.ProseMirror>:first-child]:mt-0 [&_.ProseMirror>:last-child]:mb-0",
+                // Et tomt avsnitt betyr «litt ekstra luft her». Et helt avsnitt
+                // er for mye, så det får en fast, liten høyde uten marger.
+                "[&_p[data-spacer]]:my-0 [&_p[data-spacer]]:h-2",
                 // Skrivefeil fra den norske stavekontrollen. Samme rød
                 // bølgestrek som nettleseren selv bruker, så den er kjent
                 // igjen med en gang.

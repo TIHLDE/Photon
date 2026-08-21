@@ -256,15 +256,18 @@ describe("buildRemarkDirectivePlugin", () => {
     });
 });
 
-describe("blanke avsnitt", () => {
-    const NBSP = " ";
+describe("tomme avsnitt", () => {
+    const NBSP = "\u00a0";
 
-    test("avsnitt med kun nbsp forsvinner", () => {
+    test("avsnitt med kun nbsp blir et lite mellomrom, ikke et avsnitt", () => {
         const tree = parseMarkdown(
             `Første avsnitt.\n\n${NBSP}\n\nAndre avsnitt.\n`,
         );
-        expect(tree.children).toHaveLength(2);
-        expect(tree.children.every((c) => c.type === "paragraph")).toBe(true);
+        expect(tree.children).toHaveLength(3);
+        const spacer = tree.children[1];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.children).toHaveLength(0);
+        expect(spacer.data?.hProperties).toEqual({ "data-spacer": "" });
     });
 
     test("avsnitt med nbsp og ekte tekst beholdes", () => {
@@ -275,28 +278,37 @@ describe("blanke avsnitt", () => {
         expect(paragraph.children.length).toBeGreaterThan(0);
     });
 
-    test("blanke avsnitt fjernes også inne i sitatblokker og lister", () => {
-        const tree = parseMarkdown(
-            `> Sitat.\n>\n> ${NBSP}\n\n- Punkt\n\n  ${NBSP}\n`,
-        );
-        const quote = tree.children[0];
-        if (quote?.type !== "blockquote") throw new Error("no blockquote");
-        expect(quote.children).toHaveLength(1);
-        const list = tree.children[1];
-        if (list?.type !== "list") throw new Error("no list");
-        const item = list.children[0];
-        expect(item?.children).toHaveLength(1);
+    test("polstring i kantene kastes", () => {
+        const tree = parseMarkdown(`${NBSP}\n\nEneste avsnitt.\n\n${NBSP}\n`);
+        expect(tree.children).toHaveLength(1);
     });
 
-    test("editorens TipTap-JSON får ingen tomme avsnitt", () => {
-        const doc = mdastToTiptap(
-            parseMarkdown(
-                `**Dresscode**: studentergalla\n\n${NBSP}\n\nMedbrakt drikke er ikke lov\n`,
-            ),
-            minimalRegistry,
+    test("to enter i editoren overlever lagring", () => {
+        const doc = {
+            type: "doc",
+            content: [
+                {
+                    type: "paragraph",
+                    content: [{ type: "text", text: "første" }],
+                },
+                { type: "paragraph" },
+                {
+                    type: "paragraph",
+                    content: [{ type: "text", text: "andre" }],
+                },
+            ],
+        };
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(saved).toBe(`første\n\n${NBSP}\n\nandre\n`);
+
+        // Og tilbake igjen: editoren viser den tomme linja på nytt, og en ny
+        // lagring gir nøyaktig samme tekst.
+        const reloaded = mdastToTiptap(parseMarkdown(saved), minimalRegistry);
+        expect(reloaded.content).toHaveLength(3);
+        expect(reloaded.content?.[1]).toEqual({ type: "paragraph" });
+        expect(stringifyMdast(tiptapToMdast(reloaded, minimalRegistry))).toBe(
+            saved,
         );
-        expect(doc.content).toHaveLength(2);
-        expect(doc.content?.every((node) => node.content?.length)).toBe(true);
     });
 
     test("vanlig avsnittsskift beholdes", () => {
