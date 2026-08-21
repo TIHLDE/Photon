@@ -35,6 +35,16 @@ export interface QueueLike<TData = unknown> {
         data: TData,
         options?: QueueAddOptions,
     ): Promise<QueueJob<TData>>;
+    /**
+     * Enqueue several jobs in one round trip.
+     *
+     * A caller handing out one job per member — the registration resolver does
+     * exactly that on a paid event — otherwise pays a network round trip each,
+     * inside the transaction whose locks the whole sign-up is waiting on.
+     */
+    addBulk(
+        jobs: Array<{ name: string; data: TData; opts?: QueueAddOptions }>,
+    ): Promise<Array<QueueJob<TData>>>;
     getJobs(states?: QueueJobState[]): Promise<QueueJob<TData>[]>;
 }
 
