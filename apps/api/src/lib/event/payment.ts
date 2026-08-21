@@ -622,6 +622,23 @@ export async function handlePaymentExpiration(
         return;
     }
 
+    // The money is in on another obligation row. Only the timer's own row is
+    // checked above, and a member who signed off a paid event and signed up
+    // again holds two — so an abandoned first attempt could reach the steps
+    // below and cancel the spot the second attempt paid for. That is what
+    // happened to a paid spot on Silent Disco 2026. Nothing is owed, so this
+    // obligation is void rather than failed-to-pay in spirit; `failed` is the
+    // only closed state the column has.
+    if (await hasPaidForEvent(ctx, eventId, userId)) {
+        if (payment.status === "pending") {
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(eq(schema.eventPayment.id, paymentId));
+        }
+        return;
+    }
+
     const registration = await ctx.db.query.eventRegistration.findFirst({
         where: (r, { and, eq }) =>
             and(eq(r.eventId, eventId), eq(r.userId, userId)),
@@ -636,6 +653,41 @@ export async function handlePaymentExpiration(
                 .where(eq(schema.eventPayment.id, paymentId));
         }
         return;
+    }
+
+    // Two *pending* obligations mean this one belongs to a sign-up that is
+    // over. The checkout route attaches a restarted Vipps session to the
+    // pending obligation it finds rather than minting a second one, so the only
+    // way to end up with two is to sign off a paid event — which leaves the
+    // obligation behind with its countdown still running — and sign up again.
+    // The older timer then falls due against the new spot, hours before that
+    // spot's own deadline; that is how a spot on Silent Disco 2026 was
+    // reclaimed while its deadline still had an hour and a half left. The newer
+    // obligation carries the live deadline, so this one has nothing to enforce.
+    //
+    // A chained checkout is the other shape and is deliberately left alone:
+    // there the earlier row is already `failed`, not pending, and its timer is
+    // what stops the member from holding the spot by restarting forever.
+    if (payment.status === "pending") {
+        const liveObligation = await ctx.db.query.eventPayment.findFirst({
+            columns: { id: true },
+            where: (p, { and, eq, gt, ne }) =>
+                and(
+                    eq(p.eventId, eventId),
+                    eq(p.userId, userId),
+                    eq(p.status, "pending"),
+                    ne(p.id, paymentId),
+                    gt(p.createdAt, payment.createdAt),
+                ),
+        });
+
+        if (liveObligation) {
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(eq(schema.eventPayment.id, paymentId));
+            return;
+        }
     }
 
     // A member who aborted one checkout and started another holds a second,

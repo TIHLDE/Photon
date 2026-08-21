@@ -194,6 +194,15 @@ describe("Paid event rules", () => {
             );
 
             expect(res.status).toBe(200);
+
+            // Uten plassen er det ingenting igjen å betale for. Blir kravet
+            // stående som `pending`, lever nedtellingen videre og faller til
+            // forfall mot en påmelding brukeren gjør senere.
+            const payment = await ctx.db.query.eventPayment.findFirst({
+                where: (p, { and, eq }) =>
+                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+            });
+            expect(payment?.status).toBe("failed");
         },
         500_000,
     );

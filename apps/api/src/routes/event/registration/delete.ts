@@ -84,6 +84,23 @@ export const deleteEventRegistrationRoute = route().delete(
             throw new HTTPException(404, { message: "Registration not found" });
         }
 
+        // Uten plassen er det ingenting igjen å betale for. Lar vi kravet stå
+        // som `pending`, lever nedtellingen videre: melder brukeren seg på
+        // igjen, får hen et nytt krav med ny frist, mens den gamle timeren
+        // fortsatt peker på den nye plassen.
+        if (event?.isPaidEvent) {
+            await db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(
+                    and(
+                        eq(schema.eventPayment.userId, userId),
+                        eq(schema.eventPayment.eventId, eventId),
+                        eq(schema.eventPayment.status, "pending"),
+                    ),
+                );
+        }
+
         // Late cancellation: only a confirmed ("registered") spot given up after
         // the cancellation deadline earns a strike — waitlisted users are exempt.
         // `!isPaidEvent` er ikke bare et belte til skjemavalideringens
