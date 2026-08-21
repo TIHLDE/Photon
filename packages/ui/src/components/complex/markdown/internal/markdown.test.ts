@@ -255,3 +255,91 @@ describe("buildRemarkDirectivePlugin", () => {
         expect(directive.data?.hName).toBe("tihlde-callout");
     });
 });
+
+describe("blanke avsnitt", () => {
+    const NBSP = " ";
+
+    test("avsnitt med kun nbsp forsvinner", () => {
+        const tree = parseMarkdown(
+            `Første avsnitt.\n\n${NBSP}\n\nAndre avsnitt.\n`,
+        );
+        expect(tree.children).toHaveLength(2);
+        expect(tree.children.every((c) => c.type === "paragraph")).toBe(true);
+    });
+
+    test("avsnitt med nbsp og ekte tekst beholdes", () => {
+        const tree = parseMarkdown(`${NBSP}**VIKTIG**: legg inn allergier\n`);
+        expect(tree.children).toHaveLength(1);
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.length).toBeGreaterThan(0);
+    });
+
+    test("blanke avsnitt fjernes også inne i sitatblokker og lister", () => {
+        const tree = parseMarkdown(
+            `> Sitat.\n>\n> ${NBSP}\n\n- Punkt\n\n  ${NBSP}\n`,
+        );
+        const quote = tree.children[0];
+        if (quote?.type !== "blockquote") throw new Error("no blockquote");
+        expect(quote.children).toHaveLength(1);
+        const list = tree.children[1];
+        if (list?.type !== "list") throw new Error("no list");
+        const item = list.children[0];
+        expect(item?.children).toHaveLength(1);
+    });
+
+    test("editorens TipTap-JSON får ingen tomme avsnitt", () => {
+        const doc = mdastToTiptap(
+            parseMarkdown(
+                `**Dresscode**: studentergalla\n\n${NBSP}\n\nMedbrakt drikke er ikke lov\n`,
+            ),
+            minimalRegistry,
+        );
+        expect(doc.content).toHaveLength(2);
+        expect(doc.content?.every((node) => node.content?.length)).toBe(true);
+    });
+
+    test("vanlig avsnittsskift beholdes", () => {
+        const tree = parseMarkdown("Første.\n\nAndre.\n");
+        expect(tree.children).toHaveLength(2);
+    });
+});
+
+describe("enkelt linjeskift", () => {
+    test("blir et linjeskift, ikke et mellomrom", () => {
+        const tree = parseMarkdown("linje en\nlinje to\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+
+    test("overlever turen gjennom editoren", () => {
+        const source = "linje en\nlinje to\n";
+        const doc = mdastToTiptap(parseMarkdown(source), minimalRegistry);
+        const paragraph = doc.content?.[0];
+        expect(paragraph?.content?.map((n) => n.type)).toEqual([
+            "text",
+            "hardBreak",
+            "text",
+        ]);
+
+        // Lagret markdown normaliseres til CommonMark sitt harde linjeskift.
+        // Det parses tilbake til det samme treet, så innholdet er stabilt.
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(saved).toBe("linje en\\\nlinje to\n");
+        expect(mdastToTiptap(parseMarkdown(saved), minimalRegistry)).toEqual(
+            doc,
+        );
+    });
+
+    test("linjeskift i en tabellcelle ødelegger ikke tabellen", () => {
+        const source = "| a | b |\n| - | - |\n| x | y |\n";
+        const doc = mdastToTiptap(parseMarkdown(source), minimalRegistry);
+        const saved = stringifyMdast(tiptapToMdast(doc, minimalRegistry));
+        expect(parseMarkdown(saved).children[0]?.type).toBe("table");
+    });
+});

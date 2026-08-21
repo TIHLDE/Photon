@@ -6,6 +6,8 @@ import remarkDirective from "remark-directive";
 import remarkBreaks from "remark-breaks";
 import type { Root } from "mdast";
 
+import { remarkCollapseBlankParagraphs } from "./remark-collapse-blank";
+
 /** A unified processor configured to parse markdown into a directive-aware mdast. */
 export function createParser(): Processor<Root, Root, Root, Root, string> {
     // remarkBreaks: enkelt linjeskift blir et faktisk linjeskift, ikke et
@@ -15,7 +17,8 @@ export function createParser(): Processor<Root, Root, Root, Root, string> {
         .use(remarkParse)
         .use(remarkGfm)
         .use(remarkBreaks)
-        .use(remarkDirective) as unknown as Processor<
+        .use(remarkDirective)
+        .use(remarkCollapseBlankParagraphs) as unknown as Processor<
         Root,
         Root,
         Root,
@@ -51,7 +54,11 @@ export function createStringifier(): Processor<
 }
 
 export function parseMarkdown(markdown: string): Root {
-    return createParser().parse(markdown);
+    const processor = createParser();
+    // `parse()` kjører bare selve parseren. Både remarkBreaks og oppryddingen
+    // av blanke avsnitt er transformer, og de må kjøres med `runSync` — ellers
+    // ser editoren et annet tre enn `<MarkdownView>` gjør av samme tekst.
+    return processor.runSync(processor.parse(markdown));
 }
 
 export function stringifyMdast(tree: Root): string {

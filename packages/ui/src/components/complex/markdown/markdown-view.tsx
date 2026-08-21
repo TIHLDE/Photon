@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 
 import type { DirectiveRegistry } from "./directive";
 import { buildComponentsMap } from "./internal/components-map";
+import { remarkCollapseBlankParagraphs } from "./internal/remark-collapse-blank";
 import { buildRemarkDirectivePlugin } from "./internal/remark-directive-hast";
 import { MarkdownContent } from "./markdown-content";
 
@@ -29,6 +30,9 @@ export function MarkdownView({
                 remarkBreaks,
                 remarkDirective,
                 buildRemarkDirectivePlugin(registry),
+                // Gammelt Lepton-innhold har avsnitt med kun nbsp. De ser ut
+                // som store hull, så de fjernes her og i editorens parser.
+                remarkCollapseBlankParagraphs,
             ],
             components: buildComponentsMap(registry),
         }),
