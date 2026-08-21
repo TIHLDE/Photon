@@ -770,39 +770,44 @@ export async function handlePaymentExpiration(
         return;
     }
 
-    // Two *pending* obligations mean this one belongs to a sign-up that is
-    // over. The checkout route attaches a restarted Vipps session to the
-    // pending obligation it finds rather than minting a second one, so the only
-    // way to end up with two is to sign off a paid event — which leaves the
-    // obligation behind with its countdown still running — and sign up again.
-    // The older timer then falls due against the new spot, hours before that
-    // spot's own deadline; that is how a spot on Silent Disco 2026 was
-    // reclaimed while its deadline still had an hour and a half left. The newer
-    // obligation carries the live deadline, so this one has nothing to enforce.
-    //
-    // A chained checkout is the other shape and is deliberately left alone:
-    // there the earlier row is already `failed`, not pending, and its timer is
-    // what stops the member from holding the spot by restarting forever.
-    if (payment.status === "pending") {
-        const liveObligation = await ctx.db.query.eventPayment.findFirst({
-            columns: { id: true },
-            where: (p, { and, eq, gt, ne }) =>
-                and(
-                    eq(p.eventId, eventId),
-                    eq(p.userId, userId),
-                    eq(p.status, "pending"),
-                    ne(p.id, paymentId),
-                    gt(p.createdAt, payment.createdAt),
-                ),
-        });
+    /**
+     * A newer obligation with a live countdown means this timer belongs to a
+     * sign-up that is over, and has nothing left to enforce.
+     *
+     * Signing off a paid event closes the obligation but the countdown was
+     * already scheduled, and the queue has no way to cancel it. Sign up again
+     * and that older timer falls due against the new spot, hours before the
+     * new spot's own deadline — that is how a spot on Silent Disco 2026 was
+     * reclaimed with 90 minutes still left to pay.
+     *
+     * The discriminator is `expiresAt`, not the status of this timer's own
+     * row. A chained checkout also leaves a newer `pending` row behind, but
+     * that one is a restarted Vipps session with no deadline of its own:
+     * nothing else will ever come to reclaim the spot, so this timer must.
+     * Only a successor that carries a live deadline — and therefore a timer of
+     * its own — is something to stand down for.
+     */
+    const successor = await ctx.db.query.eventPayment.findFirst({
+        columns: { id: true },
+        where: (p, { and, eq, gt, ne }) =>
+            and(
+                eq(p.eventId, eventId),
+                eq(p.userId, userId),
+                eq(p.status, "pending"),
+                ne(p.id, paymentId),
+                gt(p.createdAt, payment.createdAt),
+                gt(p.expiresAt, new Date()),
+            ),
+    });
 
-        if (liveObligation) {
+    if (successor) {
+        if (payment.status === "pending") {
             await ctx.db
                 .update(schema.eventPayment)
                 .set({ status: "failed" })
                 .where(eq(schema.eventPayment.id, paymentId));
-            return;
         }
+        return;
     }
 
     // A member who aborted one checkout and started another holds a second,

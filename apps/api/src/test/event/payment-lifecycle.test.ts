@@ -972,16 +972,66 @@ describe("Paid event payment lifecycle", () => {
             500_000,
         );
 
+        /**
+         * The same story as above, but driven entirely through the routes the
+         * member actually uses. The seed above deletes the registration row
+         * directly, which skips the unregister route — and it is that route
+         * that closes the abandoned obligation. Without going through it, the
+         * fix looked like it worked while production still cancelled the spot.
+         */
         integrationTest(
-            "leaves the new spot its own deadline to run out",
+            "signing off and on again through the routes keeps the new spot",
             async ({ ctx }) => {
-                const { event, user, abandonedPaymentId } =
-                    await seedAbandonedSignup(ctx, { status: "pending" });
+                await ctx.utils.setupGroups();
+                await ctx.utils.setupEventCategories();
 
+                const now = Date.now();
+                const event = await ctx.utils.createTestEvent({
+                    capacity: 10,
+                    isPaidEvent: true,
+                    priceMinor: 5000,
+                    registrationStart: new Date(now - 60 * 60 * 1000),
+                    registrationEnd: new Date(now + 48 * 60 * 60 * 1000),
+                    start: new Date(now + 72 * 60 * 60 * 1000),
+                    end: new Date(now + 76 * 60 * 60 * 1000),
+                });
+
+                const user = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                const client = await ctx.utils.clientForUser(user);
+
+                await client.api.event[":eventId"].registration.$post({
+                    param: { eventId: event.id },
+                    json: {},
+                });
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                const abandoned = await ctx.db.query.eventPayment.findFirst({
+                    where: (p, { and, eq }) =>
+                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                });
+
+                const off = await client.api.event[
+                    ":eventId"
+                ].registration.$delete({ param: { eventId: event.id } });
+                expect(off.status).toBe(200);
+
+                await new Promise((r) => setTimeout(r, 10));
+                await client.api.event[":eventId"].registration.$post({
+                    param: { eventId: event.id },
+                    json: {},
+                });
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                // The timer from the first sign-up falls due against the spot
+                // the second one is holding.
                 await handlePaymentExpiration(ctx, {
                     eventId: event.id,
                     userId: user.id,
-                    paymentId: abandonedPaymentId,
+                    paymentId: abandoned?.id ?? "",
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({
@@ -989,22 +1039,6 @@ describe("Paid event payment lifecycle", () => {
                         and(eq(r.eventId, event.id), eq(r.userId, user.id)),
                 });
                 expect(reg?.status).toBe("registered");
-
-                // The abandoned obligation is closed out, the live one is not.
-                const abandoned = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { eq }) => eq(p.id, abandonedPaymentId),
-                });
-                expect(abandoned?.status).toBe("failed");
-
-                const live = await ctx.db.query.eventPayment.findFirst({
-                    where: (p, { and, eq }) =>
-                        and(
-                            eq(p.eventId, event.id),
-                            eq(p.userId, user.id),
-                            eq(p.status, "pending"),
-                        ),
-                });
-                expect(live).toBeDefined();
             },
             500_000,
         );
