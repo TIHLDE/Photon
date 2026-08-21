@@ -31,7 +31,7 @@ describe("Feedback", () => {
             const idea = await ideaResponse.json();
             expect(idea.type).toBe("idea");
             expect(idea.status).toBe("open");
-            expect(idea.author?.id).toBe(author.id);
+            expect(idea.isAuthor).toBe(true);
             expect(idea.upvotes).toBe(0);
             expect(idea.myVote).toBeNull();
 
@@ -75,6 +75,19 @@ describe("Feedback", () => {
             const found = await searchResponse.json();
             expect(found.totalCount).toBe(1);
             expect(found.items[0]?.id).toBe(idea.id);
+
+            // Feedback is anonymous: nothing in the payload names the author,
+            // and the only trace of them is the flag the author sees on their
+            // own row.
+            expect(found.items[0]).not.toHaveProperty("author");
+            expect(found.items[0]?.isAuthor).toBe(false);
+
+            const ownList = await (
+                await authorClient.api.feedback.$get({
+                    query: { search: "telefonnummer" },
+                })
+            ).json();
+            expect(ownList.items[0]?.isAuthor).toBe(true);
 
             // === VOTES ===
 

@@ -49,11 +49,7 @@ export const createRoute = route().post(
                 status: created.status,
                 title: created.title,
                 description: created.description,
-                author: {
-                    id: user.id,
-                    name: user.name,
-                    image: user.image ?? null,
-                },
+                isAuthor: true,
                 upvotes: 0,
                 downvotes: 0,
                 myVote: null,

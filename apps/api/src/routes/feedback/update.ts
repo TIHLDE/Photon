@@ -109,26 +109,13 @@ export const updateRoute = route().patch(
             ),
         });
 
-        const author = updated.authorId
-            ? await db.query.user.findFirst({
-                  where: eq(schema.user.id, updated.authorId),
-                  columns: { id: true, name: true, image: true },
-              })
-            : null;
-
         return c.json({
             id: updated.id,
             type: updated.type,
             status: updated.status,
             title: updated.title,
             description: updated.description,
-            author: author
-                ? {
-                      id: author.id,
-                      name: author.name,
-                      image: author.image ?? null,
-                  }
-                : null,
+            isAuthor: updated.authorId === userId,
             upvotes: counts?.upvotes ?? 0,
             downvotes: counts?.downvotes ?? 0,
             myVote: myVote?.value ?? null,

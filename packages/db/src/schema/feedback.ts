@@ -55,6 +55,10 @@ export const feedback = pgTable(
         /**
          * Nullable on purpose: a member leaving TIHLDE must not delete the
          * bug reports they filed. Lepton did the same (`SET NULL`).
+         *
+         * Kept private: the API only ever answers whether the caller is the
+         * author, so they can edit or delete their own. Feedback is shown
+         * anonymously — no name reaches other members or moderators.
          */
         authorId: text("author_id").references(() => user.id, {
             onDelete: "set null",
