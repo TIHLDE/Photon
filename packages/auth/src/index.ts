@@ -26,6 +26,7 @@ import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
 import {
     feidePlugin,
+    recoverMissingBaselineRole,
     redirectToPasswordSetupAfterRevoke,
     revokeUnprovenCredentials,
     syncFeideHook,
@@ -580,6 +581,26 @@ export function createAuth(options: CreateAuthOptions) {
                         } catch (error) {
                             console.error(
                                 "Failed to sync De Eldstes Raad membership",
+                                error,
+                            );
+                        }
+
+                        /**
+                         * The callback's own sync may have failed and left
+                         * this member without a baseline role. Every new
+                         * session is a chance to notice — see
+                         * {@link recoverMissingBaselineRole}. Swallowed for
+                         * the same reason as the sync above: a member who is
+                         * already signed in must not be handed a 500.
+                         */
+                        try {
+                            await recoverMissingBaselineRole(
+                                options.services.db,
+                                session.userId,
+                            );
+                        } catch (error) {
+                            console.error(
+                                "Failed to recover a missing baseline role",
                                 error,
                             );
                         }
