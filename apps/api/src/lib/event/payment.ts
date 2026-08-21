@@ -164,6 +164,36 @@ export async function createPaymentObligation(
     }
 
     const now = new Date();
+
+    /**
+     * An obligation that is still running its own countdown covers this member
+     * already, and a second one is actively harmful: its timer judges them on a
+     * row their money never touched.
+     *
+     * That is how it happened. A member unregistered and signed up again while
+     * their Vipps checkout was in the air. {@link hasPaidForEvent} above says
+     * "not paid" — the checkout was still `pending` — so they were handed a
+     * second obligation, Vipps confirmed the first one seconds later, and the
+     * spare row's timer stood ready to cancel a paid seat.
+     *
+     * Only a live obligation is reused. An expired one is spent, and reusing it
+     * would hand out a deadline that has already passed.
+     */
+    const liveObligation = await ctx.db.query.eventPayment.findFirst({
+        columns: { id: true },
+        where: (p, { and, eq, gt }) =>
+            and(
+                eq(p.eventId, event.id),
+                eq(p.userId, userId),
+                eq(p.status, "pending"),
+                gt(p.expiresAt, now),
+            ),
+    });
+
+    if (liveObligation) {
+        return { id: liveObligation.id };
+    }
+
     const expiresAt = paymentDeadline(graceMinutes, event.start, now);
     const delay = Math.max(0, expiresAt.getTime() - now.getTime());
 
@@ -619,6 +649,21 @@ export async function handlePaymentExpiration(
         payment.status === "paid" ||
         payment.status === "refunded"
     ) {
+        return;
+    }
+
+    /**
+     * The member paid — just not on the row this timer points at.
+     *
+     * A second obligation can exist alongside a live checkout (see
+     * {@link createPaymentObligation}), and the reconciliation below only ever
+     * asks Vipps about the *pending* rows. An obligation without a
+     * `providerPaymentId` is judged "dead" without a single call, so a member
+     * whose money was collected on the other row lost their spot — 510 kr paid,
+     * seat given away. Ask the question the verdict actually depends on before
+     * reclaiming anything.
+     */
+    if (await hasPaidForEvent(ctx, eventId, userId)) {
         return;
     }
 
