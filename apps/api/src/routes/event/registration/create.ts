@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -178,8 +179,21 @@ export const registerToEventRoute = route().post(
             }
         }
 
-        // Check if user is already registered
-        if (existingRegistration) {
+        /**
+         * A `cancelled` registration is not a held spot — it is the wreckage of
+         * one. Normal unregistration *deletes* the row, so `cancelled` is a
+         * status only the payment deadline writes, and the notification it
+         * sends ends with "Du kan melde deg på på nytt". Treating that row as
+         * "already registered" made that sentence impossible to act on: the
+         * member was told to sign up again and then refused when they tried.
+         *
+         * Anything else — `registered`, `pending`, `waitlisted` — is a live
+         * claim on the event and still blocks a second registration.
+         */
+        if (
+            existingRegistration &&
+            existingRegistration.status !== "cancelled"
+        ) {
             throw new HTTPException(409, {
                 message: "User is already registered for this event",
             });
@@ -191,13 +205,35 @@ export const registerToEventRoute = route().post(
         const allowPhoto =
             body.allowPhoto ?? userSettings?.allowsPhotosByDefault ?? true;
 
-        // Create pending registration in database
-        await db.insert(schema.eventRegistration).values({
-            eventId,
-            userId,
-            status: "pending",
-            allowPhoto,
-        });
+        /**
+         * The primary key is (userId, eventId), so a member coming back after a
+         * cancellation has to reuse their row rather than insert a second one.
+         * `setWhere` keeps that narrow: only a cancelled row is revived, so a
+         * request that races past the check above cannot overwrite a spot the
+         * member is actively holding.
+         */
+        await db
+            .insert(schema.eventRegistration)
+            .values({
+                eventId,
+                userId,
+                status: "pending",
+                allowPhoto,
+            })
+            .onConflictDoUpdate({
+                target: [
+                    schema.eventRegistration.userId,
+                    schema.eventRegistration.eventId,
+                ],
+                set: {
+                    status: "pending",
+                    allowPhoto,
+                    waitlistPosition: null,
+                    attendedAt: null,
+                    updatedAt: new Date(),
+                },
+                setWhere: eq(schema.eventRegistration.status, "cancelled"),
+            });
 
         /**
          * Be om at plassen avgjøres med én gang, i stedet for å vente på
