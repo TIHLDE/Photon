@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -178,8 +179,17 @@ export const registerToEventRoute = route().post(
             }
         }
 
-        // Check if user is already registered
-        if (existingRegistration) {
+        // Check if user is already registered.
+        //
+        // En kansellert rad er ikke en påmelding — den er sporet etter en som
+        // tok slutt: fristen gikk ut, prikkene sperret, eller påmeldingen ble
+        // stengt. Varselet brukeren får sier rett ut «Du kan melde deg på på
+        // nytt», men raden ble liggende og svarte 409 på forsøket. Sperren
+        // gjelder bare plasser som faktisk står.
+        if (
+            existingRegistration &&
+            existingRegistration.status !== "cancelled"
+        ) {
             throw new HTTPException(409, {
                 message: "User is already registered for this event",
             });
@@ -191,13 +201,38 @@ export const registerToEventRoute = route().post(
         const allowPhoto =
             body.allowPhoto ?? userSettings?.allowsPhotosByDefault ?? true;
 
-        // Create pending registration in database
-        await db.insert(schema.eventRegistration).values({
-            eventId,
-            userId,
-            status: "pending",
-            allowPhoto,
-        });
+        // Create pending registration in database.
+        //
+        // Primærnøkkelen er (bruker, arrangement), så en ny påmelding etter en
+        // kansellert er den samme raden om igjen. Alt som hørte til den forrige
+        // runden nullstilles: ventelisteplassen, og oppmøtet — som ikke kan
+        // stamme fra en påmelding som ble kansellert, men som en gammel
+        // Lepton-importert rad kan bære.
+        await db
+            .insert(schema.eventRegistration)
+            .values({
+                eventId,
+                userId,
+                status: "pending",
+                allowPhoto,
+            })
+            .onConflictDoUpdate({
+                target: [
+                    schema.eventRegistration.userId,
+                    schema.eventRegistration.eventId,
+                ],
+                set: {
+                    status: "pending",
+                    allowPhoto,
+                    waitlistPosition: null,
+                    attendedAt: null,
+                    // Samme klokke som kolonnedefaulten, ikke en JS-Date:
+                    // resolveren køordner på `createdAt`, og to tidskilder
+                    // ville gitt den nye påmeldingen feil plass i køen.
+                    createdAt: sql`now()`,
+                    updatedAt: sql`now()`,
+                },
+            });
 
         /**
          * Be om at plassen avgjøres med én gang, i stedet for å vente på
