@@ -74,6 +74,16 @@ export class InMemoryQueue<TData = unknown> implements QueueLike<TData> {
         return job;
     }
 
+    async addBulk(
+        jobs: Array<{ name: string; data: TData; opts?: QueueAddOptions }>,
+    ): Promise<Array<QueueJob<TData>>> {
+        const added: Array<QueueJob<TData>> = [];
+        for (const job of jobs) {
+            added.push(await this.add(job.name, job.data, job.opts));
+        }
+        return added;
+    }
+
     async getJobs(): Promise<QueueJob<TData>[]> {
         return [...this.jobs];
     }

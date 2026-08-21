@@ -229,6 +229,91 @@ export async function createPaymentObligation(
 }
 
 /**
+ * {@link createPaymentObligation} for a whole batch of members at once.
+ *
+ * Same rules, same deadline, one round trip each instead of four per member:
+ * the resolver hands out obligations to everyone who just secured a spot, and
+ * doing that one at a time is what made a busy sign-up crawl — every one of
+ * those round trips happens while the pass holds its `FOR UPDATE` locks.
+ *
+ * Members who already paid, or who still hold a live obligation, are skipped
+ * for exactly the reasons the single-member version skips them.
+ *
+ * The timers go onto the queue in one `addBulk`, still inside the caller's
+ * transaction. That is deliberate: enqueueing after the commit would be one
+ * fewer thing in the lock, but a process that dies in between would leave spots
+ * that no deadline ever reclaims. A job whose transaction rolled back is
+ * harmless by comparison — the handler finds no payment row and stops.
+ */
+export async function createPaymentObligations(
+    ctx: AppContext,
+    event: Pick<PaidEventLike, "id" | "isPaidEvent" | "priceMinor"> & {
+        start?: Date | null;
+    },
+    userIds: string[],
+    options: { graceMinutes?: number } = {},
+): Promise<void> {
+    if (!event.isPaidEvent || event.priceMinor == null) return;
+    if (userIds.length === 0) return;
+
+    const graceMinutes = options.graceMinutes || DEFAULT_PAYMENT_GRACE_MINUTES;
+    const now = new Date();
+
+    const existing = await ctx.db.query.eventPayment.findMany({
+        columns: { userId: true, status: true, expiresAt: true },
+        where: (p, { and, eq, inArray }) =>
+            and(eq(p.eventId, event.id), inArray(p.userId, userIds)),
+    });
+
+    const covered = new Set(
+        existing
+            .filter(
+                (payment) =>
+                    payment.status === "paid" ||
+                    (payment.status === "pending" &&
+                        payment.expiresAt != null &&
+                        payment.expiresAt > now),
+            )
+            .map((payment) => payment.userId),
+    );
+
+    const owing = userIds.filter((userId) => !covered.has(userId));
+    if (owing.length === 0) return;
+
+    const expiresAt = paymentDeadline(graceMinutes, event.start, now);
+    const delay = Math.max(0, expiresAt.getTime() - now.getTime());
+
+    const payments = await ctx.db
+        .insert(schema.eventPayment)
+        .values(
+            owing.map((userId) => ({
+                eventId: event.id,
+                userId,
+                amountMinor: event.priceMinor as number,
+                currency: "NOK",
+                status: "pending" as const,
+                expiresAt,
+            })),
+        )
+        .returning({
+            id: schema.eventPayment.id,
+            userId: schema.eventPayment.userId,
+        });
+
+    await ctx.queue.getQueue<PaymentTimerJobData>(PAYMENT_QUEUE_NAME).addBulk(
+        payments.map((payment) => ({
+            name: "payment-expiration",
+            data: {
+                eventId: event.id,
+                userId: payment.userId,
+                paymentId: payment.id,
+            },
+            opts: { delay },
+        })),
+    );
+}
+
+/**
  * Raise (or replace) the flag that puts a payment in front of an organiser.
  *
  * Flagging is best-effort bookkeeping around a decision that has already been
