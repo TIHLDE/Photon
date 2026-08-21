@@ -1,3 +1,8 @@
+import {
+    TILDE_BOX,
+    TILDE_PATH,
+    TILDE_TRANSFORM,
+} from "#/components/icons/tihlde";
 import { useMediaQuery } from "#/hooks/use-media-query";
 import { cn } from "#/lib/utils";
 import React from "react";
@@ -40,6 +45,50 @@ const pulseBandMask = `linear-gradient(90deg, ${Array.from(
         return `rgb(0 0 0 / ${opacity.toFixed(3)}) ${(offset * 100).toFixed(1)}%`;
     },
 ).join(", ")})`;
+
+// Tilde-en fra logoen står som et dempet felt i bølgene: linjene inne i den er
+// svakere enn resten, så formen trer fram som negativt rom idet pulsen skyller
+// forbi. `tildeMaskDip` er hvor mye som tas bort — resten av heroen står urørt.
+const tildeMaskDip = 0.75;
+// Mykner kanten. Blur-en ligger inne i maskebildet — en CSS-blur på laget ville
+// også visket ut bølgene. Luften rundt boksen gir blur-en plass å tone ut i.
+const tildeMaskBlur = 4;
+const tildeMaskPadding = 32;
+// Feter opp selve båndet uten å gjøre formen bredere på skjermen: strek langs
+// samme kurve legger halve bredden utenpå omrisset hele veien rundt. viewBox-en
+// står stille, så tilde-en dekker like mye bredde som før — bare tykkere.
+const tildeMaskThickness = 24;
+
+const tildeMaskSvg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${TILDE_BOX.x - tildeMaskPadding} ${TILDE_BOX.y - tildeMaskPadding} ${TILDE_BOX.width + tildeMaskPadding * 2} ${TILDE_BOX.height + tildeMaskPadding * 2}">`,
+    `<filter id="soften" x="-25%" y="-50%" width="150%" height="200%">`,
+    `<feGaussianBlur stdDeviation="${tildeMaskBlur}"/>`,
+    `</filter>`,
+    // Dempingen ligger på gruppa, ikke på strek og fyll hver for seg — ellers
+    // ville overlappet mellom dem lagt seg opp til en mørkere kant.
+    `<g opacity="${tildeMaskDip}" filter="url(#soften)">`,
+    `<path d="${TILDE_PATH}" transform="${TILDE_TRANSFORM}" fill="black" stroke="black" stroke-width="${tildeMaskThickness}" stroke-linejoin="round"/>`,
+    `</g>`,
+    `</svg>`,
+].join("");
+
+// Bredere enn heroen, så formen blir stor nok til å leses: de tynne spissene
+// går ut over kanten, mens selve svingen ligger godt innenfor.
+const tildeMaskWidthPercent = 130;
+
+// Det dekkende laget ligger øverst og trekker tilde-laget fra seg selv, så
+// masken blir full overalt bortsett fra der tilde-en ligger.
+//
+// Tilde-en får beholde sitt eget sideforhold (`auto` leser høyden ut av
+// viewBox-en) i stedet for å strekkes med heroen slik bølgene gjør — strukket
+// over en høy mobilskjerm ble den bare en diagonal klatt.
+const tildeMaskLayers = {
+    maskImage: `linear-gradient(black, black), url("data:image/svg+xml,${encodeURIComponent(tildeMaskSvg)}")`,
+    maskSize: `100% 100%, ${tildeMaskWidthPercent}% auto`,
+    maskPosition: "center, center",
+    maskRepeat: "no-repeat, no-repeat",
+    maskComposite: "subtract, add",
+} as const;
 
 type WaveConfig = {
     yBase: number;
@@ -156,6 +205,7 @@ export function HeroSectionBackground({ className }: { className?: string }) {
             style={
                 {
                     "--hero-waves-loop": `${scrollLoopPercent}%`,
+                    ...tildeMaskLayers,
                 } as React.CSSProperties
             }
             aria-hidden

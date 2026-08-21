@@ -33,7 +33,9 @@ const schema = z.object({
         error: "Kontonummer må være i formatet xxxx.xx.xxxxx",
     }),
     receipts: z
-        .array(z.instanceof(File))
+        .array(
+            z.instanceof(File, { error: "Ugyldig fil. Last den opp på nytt." }),
+        )
         .min(1, { error: "Legg ved minst én kvittering" }),
 });
 

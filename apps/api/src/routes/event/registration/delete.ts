@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { promoteFromWaitlist } from "~/lib/event/payment";
+import { cancelPayment, getPaymentDetails } from "~/lib/vipps";
 import { issueStrike } from "~/lib/event/strikes";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "../../../lib/route";
@@ -67,6 +68,75 @@ export const deleteEventRegistrationRoute = route().delete(
                     message:
                         "Du kan ikke melde deg av et arrangement du har betalt for. Ta kontakt med arrangøren for refusjon.",
                 });
+            }
+
+            /**
+             * A checkout that is still open is a payment on its way in for a
+             * spot the member is giving up this second. Left alone it lands
+             * after the registration is gone — money without a seat — and if
+             * they sign up again in the meantime, they end up holding two
+             * obligations at once.
+             *
+             * Vipps decides which of the two it is, exactly as the checkout
+             * route asks it: money already reserved or drawn settles on its
+             * own and must not be cancelled behind the member's back, while an
+             * untouched session is theirs to close.
+             */
+            const startedPayment = await db.query.eventPayment.findFirst({
+                columns: { id: true, providerPaymentId: true },
+                where: (payment, { eq, and, isNotNull }) =>
+                    and(
+                        eq(payment.userId, userId),
+                        eq(payment.eventId, eventId),
+                        eq(payment.status, "pending"),
+                        isNotNull(payment.providerPaymentId),
+                    ),
+            });
+
+            if (startedPayment?.providerPaymentId) {
+                const reference = startedPayment.providerPaymentId;
+                let details: Awaited<ReturnType<typeof getPaymentDetails>>;
+
+                try {
+                    details = await getPaymentDetails(reference);
+                } catch {
+                    // Without an answer we cannot tell a paid checkout from an
+                    // abandoned one, and deleting the registration is the
+                    // irreversible half. Ask them to try again.
+                    throw new HTTPException(409, {
+                        message:
+                            "Vi får ikke tak i betalingsstatusen din akkurat nå. Prøv igjen om litt.",
+                    });
+                }
+
+                if (
+                    details.state === "AUTHORIZED" ||
+                    details.aggregate.capturedAmount.value > 0 ||
+                    details.aggregate.authorizedAmount.value > 0
+                ) {
+                    throw new HTTPException(400, {
+                        message:
+                            "Betalingen din er under behandling. Vent til den er bekreftet, og ta kontakt med arrangøren for refusjon.",
+                    });
+                }
+
+                if (details.state === "CREATED") {
+                    try {
+                        await cancelPayment(reference);
+                    } catch {
+                        throw new HTTPException(409, {
+                            message:
+                                "Vi fikk ikke avbrutt betalingen din. Prøv igjen om litt.",
+                        });
+                    }
+                }
+
+                // Nothing was paid and nothing is left open: the obligation is
+                // spent, and its timer will find it already dealt with.
+                await db
+                    .update(schema.eventPayment)
+                    .set({ status: "failed" })
+                    .where(eq(schema.eventPayment.id, startedPayment.id));
             }
         }
 

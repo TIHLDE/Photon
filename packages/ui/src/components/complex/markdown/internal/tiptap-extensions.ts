@@ -1,5 +1,6 @@
 import { Node, type Extensions, type NodeConfig } from "@tiptap/core";
 import { ReactNodeViewRenderer, type NodeViewProps } from "@tiptap/react";
+import Image from "@tiptap/extension-image";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -48,6 +49,10 @@ export function buildTiptapExtensions(
             link: false,
             heading: { levels: [1, 2, 3, 4, 5, 6] },
         }),
+        // Bilder finnes både som markdown og som `<img>` i gammelt
+        // Lepton-innhold. Uten denne noden kjenner ikke editoren dem igjen,
+        // og hele innholdet forsvinner når det lastes inn.
+        Image.configure({ allowBase64: false }),
         Link.configure({
             openOnClick: false,
             autolink: true,

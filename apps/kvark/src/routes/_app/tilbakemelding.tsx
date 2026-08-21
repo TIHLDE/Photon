@@ -71,7 +71,7 @@ import {
     voteFeedbackMutation,
 } from "#/api/queries/feedback";
 import { LoadMoreButton } from "#/components/load-more-button";
-import { useCanActOnResource, usePermission } from "#/hooks/use-permission";
+import { usePermission } from "#/hooks/use-permission";
 import { OSLO_TIME_ZONE } from "#/lib/date";
 
 export const Route = createFileRoute("/_app/tilbakemelding")({
@@ -186,8 +186,9 @@ function VoteButtons({ item }: { item: FeedbackItem }) {
 function FeedbackRow({ item }: { item: FeedbackItem }) {
     const [open, setOpen] = useState(false);
     const canModerate = usePermission(MODERATE_PERMISSIONS);
-    const canActOnResource = useCanActOnResource(MODERATE_PERMISSIONS);
-    const canDelete = canActOnResource(item.author?.id);
+    // Feedback is anonymous, so there is no author id to compare against —
+    // the API tells us whether this row is ours.
+    const canDelete = canModerate || item.isAuthor;
 
     const remove = useMutation(deleteFeedbackMutation);
     const update = useMutation(updateFeedbackMutation);
@@ -224,7 +225,7 @@ function FeedbackRow({ item }: { item: FeedbackItem }) {
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground">
-                        {item.author?.name ?? "Slettet bruker"} ·{" "}
+                        {item.isAuthor ? "Din" : "Anonym"} ·{" "}
                         {formatDate(item.createdAt)}
                     </p>
 

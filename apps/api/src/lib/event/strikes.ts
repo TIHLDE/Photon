@@ -1,6 +1,6 @@
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 /**
@@ -94,6 +94,39 @@ export async function getUserStrikeCount(
         );
 
     return rows.reduce((total, row) => total + row.count, 0);
+}
+
+/**
+ * The same count as {@link getUserStrikeCount}, for a whole batch of members in
+ * one query.
+ *
+ * The registration resolver needs this for every member it decides, and asking
+ * per member is what made a busy sign-up slow: 121 round trips, each one
+ * scanning `event_strike` in full, while the pass held its `FOR UPDATE` locks.
+ *
+ * Members with no active strikes are absent from the map — read it with `?? 0`.
+ */
+export async function getStrikeCountsForUsers(
+    userIds: string[],
+    db: NodePgDatabase<DbSchema>,
+): Promise<Map<string, number>> {
+    if (userIds.length === 0) return new Map();
+
+    const rows = await db
+        .select({
+            userId: schema.eventStrike.userId,
+            count: sql<number>`sum(${schema.eventStrike.count})::int`,
+        })
+        .from(schema.eventStrike)
+        .where(
+            and(
+                inArray(schema.eventStrike.userId, userIds),
+                gte(schema.eventStrike.createdAt, getStrikeActiveCutoff()),
+            ),
+        )
+        .groupBy(schema.eventStrike.userId);
+
+    return new Map(rows.map((row) => [row.userId, row.count]));
 }
 
 /**

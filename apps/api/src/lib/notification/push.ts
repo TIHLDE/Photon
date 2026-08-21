@@ -60,6 +60,26 @@ export async function enqueuePushNotification(
 }
 
 /**
+ * Queue a whole batch of pushes in one round trip.
+ *
+ * For the caller that notifies everyone in a resolved sign-up wave at once —
+ * one `add` per member is one round trip per member.
+ */
+export async function enqueuePushNotifications(
+    entries: PushJobData[],
+    ctx: AppContext,
+): Promise<void> {
+    if (entries.length === 0) return;
+
+    await ctx.queue.getQueue<PushJobData>(PUSH_QUEUE_NAME).addBulk(
+        entries.map((data) => ({
+            name: "send-push",
+            data,
+        })),
+    );
+}
+
+/**
  * Deliver one queued notification to the user's devices.
  *
  * Exported for the worker and for tests; callers that just want to notify

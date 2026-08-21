@@ -4313,12 +4313,8 @@ export interface components {
             status: "open" | "in_progress" | "closed" | "rejected";
             title: string;
             description: string;
-            /** @description Author, null if the user has been deleted */
-            author: {
-                id: string;
-                name: string;
-                image: string | null;
-            } | null;
+            /** @description Whether the requesting user filed this. Feedback is anonymous: the author is never exposed to anyone else. */
+            isAuthor: boolean;
             upvotes: number;
             downvotes: number;
             /** @description The requesting user's own vote, if any */

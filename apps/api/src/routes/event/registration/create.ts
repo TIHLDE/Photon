@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -105,6 +106,33 @@ export const registerToEventRoute = route().post(
             });
         }
 
+        /**
+         * The registration window, enforced by the server rather than only by
+         * the button.
+         *
+         * It was only the button. When the immatrikuleringsball opened on
+         * 2026-08-21, nine members were already registered before the opening
+         * second — the earliest by 16 seconds. It cost nobody a spot that time,
+         * because the event did not fill up, but on an event that does, those
+         * are the first spots, handed out by whoever bypassed the frontend or
+         * whose clock ran fast.
+         *
+         * `createdAt` is the server's own timestamp and the resolver decides in
+         * that order, so the only way to make the queue honest is to refuse the
+         * ones that arrive early here.
+         */
+        if (event.registrationStart && now < event.registrationStart) {
+            throw new HTTPException(409, {
+                message: "Registration has not opened yet",
+            });
+        }
+
+        if (event.registrationEnd && now > event.registrationEnd) {
+            throw new HTTPException(409, {
+                message: "Registration has closed",
+            });
+        }
+
         // Checked before every event-specific rule so the message a member
         // gets is the one thing they can act on. The frontend shows the same
         // block ahead of time — hitting it here means they went around it.
@@ -178,8 +206,17 @@ export const registerToEventRoute = route().post(
             }
         }
 
-        // Check if user is already registered
-        if (existingRegistration) {
+        // Check if user is already registered.
+        //
+        // En kansellert rad er ikke en påmelding — den er sporet etter en som
+        // tok slutt: fristen gikk ut, prikkene sperret, eller påmeldingen ble
+        // stengt. Varselet brukeren får sier rett ut «Du kan melde deg på på
+        // nytt», men raden ble liggende og svarte 409 på forsøket. Sperren
+        // gjelder bare plasser som faktisk står.
+        if (
+            existingRegistration &&
+            existingRegistration.status !== "cancelled"
+        ) {
             throw new HTTPException(409, {
                 message: "User is already registered for this event",
             });
@@ -191,13 +228,39 @@ export const registerToEventRoute = route().post(
         const allowPhoto =
             body.allowPhoto ?? userSettings?.allowsPhotosByDefault ?? true;
 
-        // Create pending registration in database
-        await db.insert(schema.eventRegistration).values({
-            eventId,
-            userId,
-            status: "pending",
-            allowPhoto,
-        });
+        // Create pending registration in database.
+        //
+        // Primærnøkkelen er (bruker, arrangement), så en ny påmelding etter en
+        // kansellert er den samme raden om igjen. Alt som hørte til den forrige
+        // runden nullstilles: ventelisteplassen, og oppmøtet — som ikke kan
+        // stamme fra en påmelding som ble kansellert, men som en gammel
+        // Lepton-importert rad kan bære.
+        await db
+            .insert(schema.eventRegistration)
+            .values({
+                eventId,
+                userId,
+                status: "pending",
+                allowPhoto,
+            })
+            .onConflictDoUpdate({
+                target: [
+                    schema.eventRegistration.userId,
+                    schema.eventRegistration.eventId,
+                ],
+                set: {
+                    status: "pending",
+                    allowPhoto,
+                    waitlistPosition: null,
+                    attendedAt: null,
+                    // Samme klokke som kolonnedefaulten, ikke en JS-Date:
+                    // resolveren køordner på `createdAt`, og to tidskilder
+                    // ville gitt den nye påmeldingen feil plass i køen.
+                    createdAt: sql`now()`,
+                    updatedAt: sql`now()`,
+                },
+                setWhere: eq(schema.eventRegistration.status, "cancelled"),
+            });
 
         /**
          * Be om at plassen avgjøres med én gang, i stedet for å vente på

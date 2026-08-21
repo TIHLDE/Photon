@@ -39,6 +39,13 @@ export type DirectiveRegistry = {
  * No side effects — the returned value is just stored or composed
  * into a registry by the consumer.
  */
+/** Et register uten direktiver. Brukes når ingen er oppgitt. */
+export const emptyRegistry: DirectiveRegistry = {
+    directives: [],
+    get: () => undefined,
+    has: () => false,
+};
+
 export function defineDirective<TSchema extends z.ZodType>(
     def: DirectiveDefinition<TSchema>,
 ): DirectiveDefinition<TSchema> {

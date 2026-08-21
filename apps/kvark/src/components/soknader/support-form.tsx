@@ -32,7 +32,9 @@ const schema = z.object({
         .positive({ error: "Beløpet må være større enn 0" }),
     budgetLink: z.union([z.literal(""), z.url({ error: "Ugyldig lenke" })]),
     summary: z.string().max(5000),
-    budgetImages: z.array(z.instanceof(File)),
+    budgetImages: z.array(
+        z.instanceof(File, { error: "Ugyldig fil. Last den opp på nytt." }),
+    ),
 });
 
 export type SupportFormValues = z.infer<typeof schema>;

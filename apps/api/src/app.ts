@@ -13,6 +13,7 @@ import {
     createAppContext,
     createAppServices,
 } from "~/lib/ctx";
+import { clearStaleHostOnlySessionCookies } from "~/lib/auth-cookies";
 import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
@@ -70,9 +71,14 @@ export const createApp = async (variables?: Variables) => {
 
     const api = new Hono<{ Variables: Variables }>()
         .basePath("/api")
-        .on(["POST", "GET"], "/auth/*", (c) => {
+        .on(["POST", "GET"], "/auth/*", async (c) => {
             const { auth } = c.get("ctx");
-            return auth.handler(c.req.raw);
+            // Sign-in and sign-out are also where a session cookie left over
+            // from the host-only days gets expired — see
+            // {@link clearStaleHostOnlySessionCookies}.
+            return clearStaleHostOnlySessionCookies(
+                await auth.handler(c.req.raw),
+            );
         })
         .get("/", (c) => {
             return c.text("Healthy!");

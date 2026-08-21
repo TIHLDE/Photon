@@ -29,8 +29,20 @@ export type ContentOptions =
           html: string;
       };
 
+/** One templated email, for the bulk variants below. */
+export type TemplatedEmail<
+    TName extends EmailTemplateName = EmailTemplateName,
+> = {
+    options: SendOptions;
+    templateName: TName;
+    templateProps: EmailTemplateOptions<TName>;
+};
+
 export interface EmailService {
     sendRawEmail(options: SendOptions, content: ContentOptions): Promise<void>;
+    sendRawEmails(
+        emails: Array<{ options: SendOptions; content: ContentOptions }>,
+    ): Promise<void>;
     sendEmail(options: SendOptions, content: ContentOptions): Promise<void>;
 
     sendEmailTemplate<TName extends EmailTemplateName>(
@@ -38,6 +50,15 @@ export interface EmailService {
         templateName: TName,
         templateProps: EmailTemplateOptions<TName>,
     ): Promise<void>;
+
+    /**
+     * Hand over a whole batch at once.
+     *
+     * A caller with one mail per member — the registration resolver, once a
+     * sign-up wave is decided — otherwise pays a round trip each to hand them
+     * over, one after the other.
+     */
+    sendEmailTemplates(emails: TemplatedEmail[]): Promise<void>;
 
     sendPasswordResetMail(options: { to: string; url: string }): Promise<void>;
     sendVerifyEmailMail(options: { to: string; url: string }): Promise<void>;
@@ -48,6 +69,44 @@ export abstract class BaseEmailService implements EmailService {
         options: SendOptions,
         content: ContentOptions,
     ): Promise<void>;
+
+    /**
+     * Hand several emails over in one go. The default is the honest loop —
+     * a transport with no bulk of its own gains nothing from pretending —
+     * and {@link QueuedEmailService} overrides it with a single enqueue.
+     */
+    async sendRawEmails(
+        emails: Array<{ options: SendOptions; content: ContentOptions }>,
+    ): Promise<void> {
+        for (const email of emails) {
+            await this.sendRawEmail(email.options, email.content);
+        }
+    }
+
+    async sendEmailTemplates(emails: TemplatedEmail[]): Promise<void> {
+        const rendered = await Promise.all(
+            emails.map(async (email) => ({
+                options: email.options,
+                content: {
+                    type: "html" as const,
+                    html: await renderEmailTemplate(
+                        email.templateName,
+                        email.templateProps,
+                    ),
+                },
+            })),
+        );
+
+        await this.sendRawEmails(
+            rendered.map((email) => ({
+                options: email.options,
+                content: {
+                    ...email.content,
+                    text: toPlainText(email.content.html),
+                },
+            })),
+        );
+    }
 
     async sendEmail(options: SendOptions, content: ContentOptions) {
         let finalContent = content;
