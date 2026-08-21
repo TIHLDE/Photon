@@ -6,6 +6,7 @@ import remarkDirective from "remark-directive";
 import remarkBreaks from "remark-breaks";
 import type { Root } from "mdast";
 
+import { remarkRawHtml } from "./remark-raw-html";
 import { remarkSpacerParagraphs } from "./remark-spacer-paragraph";
 
 /** A unified processor configured to parse markdown into a directive-aware mdast. */
@@ -18,6 +19,7 @@ export function createParser(): Processor<Root, Root, Root, Root, string> {
         .use(remarkGfm)
         .use(remarkBreaks)
         .use(remarkDirective)
+        .use(remarkRawHtml)
         .use(remarkSpacerParagraphs) as unknown as Processor<
         Root,
         Root,

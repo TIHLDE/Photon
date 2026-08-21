@@ -473,3 +473,61 @@ describe("usynlige tegn bak linjeskift", () => {
         expect(text.value).toBe("Bli med!🤩");
     });
 });
+
+describe("rå HTML", () => {
+    test("<br> blir et linjeskift", () => {
+        const tree = parseMarkdown("Takk!<br>Neste linje\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+
+    test("<img> i en <div> blir et bilde", () => {
+        const tree = parseMarkdown(
+            'Før.\n\n<div style="display: flex;">\n<img src="https://i.imgur.com/a.jpeg" alt="Bilde" style="width:100%;">\n</div>\n\nEtter.\n',
+        );
+        const bilder = tree.children.filter(
+            (c) => c.type === "paragraph" && c.children[0]?.type === "image",
+        );
+        expect(bilder).toHaveLength(1);
+        const paragraph = bilder[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const image = paragraph.children[0];
+        if (image?.type !== "image") throw new Error("no image");
+        expect(image.url).toBe("https://i.imgur.com/a.jpeg");
+        expect(image.alt).toBe("Bilde");
+    });
+
+    test("<iframe> blir en lenke til dokumentet", () => {
+        const tree = parseMarkdown(
+            '<iframe src="https://drive.google.com/file/d/abc/preview" width="640"></iframe>\n',
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        const link = paragraph.children[0];
+        if (link?.type !== "link") throw new Error("no link");
+        expect(link.url).toBe("https://drive.google.com/file/d/abc/preview");
+    });
+
+    test("farlige adresser og ukjente tagger slipper ikke gjennom", () => {
+        const tree = parseMarkdown(
+            '<img src="javascript:alert(1)">\n\n<script>alert(1)</script>\n\n<u>understreket</u>\n',
+        );
+        const typer: string[] = [];
+        for (const node of tree.children) {
+            typer.push(node.type);
+            if (node.type === "paragraph") {
+                for (const child of node.children) typer.push(child.type);
+            }
+        }
+        expect(typer).not.toContain("image");
+        expect(typer).not.toContain("html");
+        // Teksten mellom taggene står igjen.
+        expect(JSON.stringify(tree)).toContain("understreket");
+        expect(JSON.stringify(tree)).not.toContain("alert(1)");
+    });
+});
