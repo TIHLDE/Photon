@@ -404,3 +404,72 @@ describe("usynlige tegn i kantene", () => {
         expect(inner.value).toBe(" man må betale!");
     });
 });
+
+describe("flere blanke linjer", () => {
+    test("to blanke linjer på rad blir et mellomrom", () => {
+        const tree = parseMarkdown("Første.\n\n\n\nAndre.\n");
+        expect(tree.children).toHaveLength(3);
+        const spacer = tree.children[1];
+        if (spacer?.type !== "paragraph") throw new Error("no paragraph");
+        expect(spacer.data?.hProperties).toEqual({ "data-spacer": "" });
+    });
+
+    test("én blank linje er et vanlig avsnittsskift", () => {
+        expect(parseMarkdown("Første.\n\nAndre.\n").children).toHaveLength(2);
+    });
+
+    test("gir ikke dobbelt mellomrom sammen med en tom linje", () => {
+        const tree = parseMarkdown("Første.\n\n \n\nAndre.\n");
+        expect(tree.children).toHaveLength(3);
+    });
+
+    test("rører ikke listepunkter med luft mellom seg", () => {
+        const tree = parseMarkdown("- ett\n\n\n- to\n");
+        const list = tree.children[0];
+        if (list?.type !== "list") throw new Error("no list");
+        expect(list.children.every((c) => c.type === "listItem")).toBe(true);
+    });
+});
+
+describe("linjeskift i kanten av et avsnitt", () => {
+    const NBSP = " ";
+
+    test("linjeskift og nbsp til slutt skrelles av", () => {
+        const tree = parseMarkdown(
+            `Siste setning!${NBSP}\n${NBSP}\n${NBSP}\n\nNeste avsnitt.\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children).toHaveLength(1);
+        const text = paragraph.children[0];
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value).toBe("Siste setning!");
+    });
+
+    test("linjeskift inne i avsnittet står urørt", () => {
+        const tree = parseMarkdown("linje en\nlinje to\n");
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children.map((c) => c.type)).toEqual([
+            "text",
+            "break",
+            "text",
+        ]);
+    });
+});
+
+describe("usynlige tegn bak linjeskift", () => {
+    const NBSP = " ";
+
+    test("nbsp bak en emoji til slutt fjernes også", () => {
+        const tree = parseMarkdown(
+            `Bli med!🤩${NBSP}   \n${NBSP}  \n ${NBSP}    \n\nNeste.\n`,
+        );
+        const paragraph = tree.children[0];
+        if (paragraph?.type !== "paragraph") throw new Error("no paragraph");
+        expect(paragraph.children).toHaveLength(1);
+        const text = paragraph.children[0];
+        if (text?.type !== "text") throw new Error("no text");
+        expect(text.value).toBe("Bli med!🤩");
+    });
+});

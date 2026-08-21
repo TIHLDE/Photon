@@ -39,18 +39,40 @@ function isBlankParagraph(node: RootContent): boolean {
  * rester fra gamle editorer. Bare ytterkantene røres, så et mellomrom mellom
  * to ord eller rett foran fet skrift står trygt.
  */
+function isBlankInline(child: Paragraph["children"][number]): boolean {
+    return (
+        child.type === "break" ||
+        (child.type === "text" && BLANK.test(child.value))
+    );
+}
+
 function trimEdges(node: Paragraph | Heading): void {
-    const first = node.children[0];
+    const children = [...node.children];
+    // Et avsnitt kan slutte med linjeskift og usynlige tegn om hverandre, og
+    // hvert linjeskift blir en tom linje. De må skrelles av lagvis.
+    const peel = () => {
+        while (children.length > 0 && isBlankInline(children[0]!)) {
+            children.shift();
+        }
+        while (
+            children.length > 0 &&
+            isBlankInline(children[children.length - 1]!)
+        ) {
+            children.pop();
+        }
+    };
+    peel();
+    const first = children[0];
     if (first?.type === "text") {
         first.value = first.value.replace(LEADING_BLANK, "");
     }
-    const last = node.children[node.children.length - 1];
+    const last = children[children.length - 1];
     if (last?.type === "text") {
         last.value = last.value.replace(TRAILING_BLANK, "");
     }
-    node.children = node.children.filter(
-        (child) => !(child.type === "text" && child.value === ""),
-    );
+    // Teksten kan ha blitt tom av trimmingen.
+    peel();
+    node.children = children;
 }
 
 function toSpacer(node: Paragraph): Paragraph {
@@ -59,6 +81,58 @@ function toSpacer(node: Paragraph): Paragraph {
         children: [],
         data: { ...node.data, hProperties: { "data-spacer": "" } },
     };
+}
+
+function isSpacer(node: RootContent): boolean {
+    return (
+        node.type === "paragraph" &&
+        node.children.length === 0 &&
+        node.data?.hProperties !== undefined
+    );
+}
+
+/** To blanke linjer eller mer, altså minst tre linjeskift på rad. */
+const SECTION_BREAK_LINES = 3;
+
+/**
+ * Tekst skrevet i et vanlig tekstfelt — som annonsene fra Lepton — ber om
+ * ekstra luft med flere blanke linjer på rad. Markdown slår dem sammen til
+ * ingenting, så avstanden blir den samme som mellom to vanlige avsnitt. Vi
+ * leser den opprinnelige linjeavstanden og setter inn et mellomrom, akkurat
+ * som for det tomme avsnittet editoren lager.
+ */
+function insertGapSpacers(node: Parents): void {
+    if (
+        node.type !== "root" &&
+        node.type !== "blockquote" &&
+        node.type !== "containerDirective"
+    ) {
+        return;
+    }
+    const out: RootContent[] = [];
+    let previous: RootContent | undefined;
+    for (const child of node.children as RootContent[]) {
+        const from = previous?.position?.end.line;
+        const to = child.position?.start.line;
+        if (
+            previous &&
+            previous.type !== "heading" &&
+            !isSpacer(previous) &&
+            !isSpacer(child) &&
+            from !== undefined &&
+            to !== undefined &&
+            to - from >= SECTION_BREAK_LINES
+        ) {
+            out.push({
+                type: "paragraph",
+                children: [],
+                data: { hProperties: { "data-spacer": "" } },
+            });
+        }
+        out.push(child);
+        previous = child;
+    }
+    node.children = out as Parents["children"];
 }
 
 function convertBlankParagraphs(node: Nodes): void {
@@ -81,6 +155,7 @@ function convertBlankParagraphs(node: Nodes): void {
             return toSpacer(child as Paragraph);
         })
         .filter((child) => child !== null) as Parents["children"];
+    insertGapSpacers(node);
     for (const child of node.children) convertBlankParagraphs(child);
 }
 
