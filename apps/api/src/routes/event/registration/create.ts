@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
@@ -259,6 +259,7 @@ export const registerToEventRoute = route().post(
                     createdAt: sql`now()`,
                     updatedAt: sql`now()`,
                 },
+                setWhere: eq(schema.eventRegistration.status, "cancelled"),
             });
 
         /**
