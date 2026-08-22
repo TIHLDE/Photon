@@ -29,7 +29,7 @@ export function InfoBanner({
             <AlertTitle>{title}</AlertTitle>
             <AlertDescription>{description}</AlertDescription>
             {url ? (
-                <AlertAction className="flex items-center gap-1.5">
+                <AlertAction className="top-1/2 flex -translate-y-1/2 items-center gap-1.5">
                     {linkText ? <span>{linkText}</span> : null}
                     <ArrowRightIcon />
                 </AlertAction>
