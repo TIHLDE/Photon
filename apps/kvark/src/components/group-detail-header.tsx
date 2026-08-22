@@ -68,7 +68,10 @@ export function GroupDetailHeader({
                 </div>
             }
             badges={
-                <>
+                /* Lederen og kontakt-e-posten står under hverandre, ikke side
+                   om side: begge er lange nok til at de sammen presset seg
+                   forbi tittelen og så ut som én ordløs rad (issue #670). */
+                <div className="flex flex-col items-start gap-2">
                     {group.leader ? (
                         <Badge
                             variant="secondary"
@@ -91,7 +94,7 @@ export function GroupDetailHeader({
                             {group.contactEmail}
                         </Badge>
                     ) : null}
-                </>
+                </div>
             }
             actions={
                 canGiveFine || isAdmin ? (
