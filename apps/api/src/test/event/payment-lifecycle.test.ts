@@ -12,6 +12,7 @@ import {
 } from "~/lib/event/payment";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import * as vipps from "~/lib/vipps";
+import type { IntegrationTestContext } from "~/test/config/integration";
 import { integrationTest } from "~/test/config/integration";
 
 // The refund path talks to Vipps; stub the whole module so the lifecycle can be
@@ -877,6 +878,160 @@ describe("Paid event payment lifecycle", () => {
                     eventId: event.id,
                     userId: user.id,
                     paymentId: first?.id ?? "",
+                });
+
+                const reg = await ctx.db.query.eventRegistration.findFirst({
+                    where: (r, { and, eq }) =>
+                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                });
+                expect(reg?.status).toBe("registered");
+            },
+            500_000,
+        );
+    });
+
+    describe("Timer left behind by a previous sign-up", () => {
+        /**
+         * Signing off a paid event deletes the registration but the obligation
+         * from that sign-up keeps its countdown. Sign up again and the old
+         * timer falls due against the new spot — which on Silent Disco 2026
+         * cancelled a spot the member had already paid for.
+         */
+        async function seedAbandonedSignup(
+            ctx: IntegrationTestContext,
+            secondAttempt: { status: "pending" | "paid" },
+        ) {
+            await ctx.utils.setupEventCategories();
+
+            const event = await ctx.utils.createTestEvent({
+                capacity: 10,
+                isPaidEvent: true,
+                priceMinor: 5000,
+            });
+            const user = await ctx.utils.createTestUser();
+
+            // First sign-up: registration, obligation, then off again — the
+            // route deletes the registration row.
+            await ctx.utils.createPendingRegistration(event.id, user.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const abandoned = await ctx.db.query.eventPayment.findFirst({
+                where: (p, { and, eq }) =>
+                    and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+            });
+
+            await ctx.db
+                .delete(schema.eventRegistration)
+                .where(
+                    and(
+                        eq(schema.eventRegistration.eventId, event.id),
+                        eq(schema.eventRegistration.userId, user.id),
+                    ),
+                );
+
+            // Second sign-up, a moment later: fresh registration, fresh
+            // obligation, fresh deadline.
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            await ctx.utils.createPendingRegistration(event.id, user.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            if (secondAttempt.status === "paid") {
+                await ctx.db
+                    .update(schema.eventPayment)
+                    .set({ status: "paid", receivedPaymentAt: new Date() })
+                    .where(
+                        and(
+                            eq(schema.eventPayment.eventId, event.id),
+                            eq(schema.eventPayment.userId, user.id),
+                            eq(schema.eventPayment.status, "pending"),
+                        ),
+                    );
+            }
+
+            return { event, user, abandonedPaymentId: abandoned?.id ?? "" };
+        }
+
+        integrationTest(
+            "keeps a spot the member paid for on their second sign-up",
+            async ({ ctx }) => {
+                const { event, user, abandonedPaymentId } =
+                    await seedAbandonedSignup(ctx, { status: "paid" });
+
+                await handlePaymentExpiration(ctx, {
+                    eventId: event.id,
+                    userId: user.id,
+                    paymentId: abandonedPaymentId,
+                });
+
+                const reg = await ctx.db.query.eventRegistration.findFirst({
+                    where: (r, { and, eq }) =>
+                        and(eq(r.eventId, event.id), eq(r.userId, user.id)),
+                });
+                expect(reg?.status).toBe("registered");
+            },
+            500_000,
+        );
+
+        /**
+         * The same story as above, but driven entirely through the routes the
+         * member actually uses. The seed above deletes the registration row
+         * directly, which skips the unregister route — and it is that route
+         * that closes the abandoned obligation. Without going through it, the
+         * fix looked like it worked while production still cancelled the spot.
+         */
+        integrationTest(
+            "signing off and on again through the routes keeps the new spot",
+            async ({ ctx }) => {
+                await ctx.utils.setupGroups();
+                await ctx.utils.setupEventCategories();
+
+                const now = Date.now();
+                const event = await ctx.utils.createTestEvent({
+                    capacity: 10,
+                    isPaidEvent: true,
+                    priceMinor: 5000,
+                    registrationStart: new Date(now - 60 * 60 * 1000),
+                    registrationEnd: new Date(now + 48 * 60 * 60 * 1000),
+                    start: new Date(now + 72 * 60 * 60 * 1000),
+                    end: new Date(now + 76 * 60 * 60 * 1000),
+                });
+
+                const user = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                const client = await ctx.utils.clientForUser(user);
+
+                await client.api.event[":eventId"].registration.$post({
+                    param: { eventId: event.id },
+                    json: {},
+                });
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                const abandoned = await ctx.db.query.eventPayment.findFirst({
+                    where: (p, { and, eq }) =>
+                        and(eq(p.eventId, event.id), eq(p.userId, user.id)),
+                });
+
+                const off = await client.api.event[
+                    ":eventId"
+                ].registration.$delete({ param: { eventId: event.id } });
+                expect(off.status).toBe(200);
+
+                await new Promise((r) => setTimeout(r, 10));
+                await client.api.event[":eventId"].registration.$post({
+                    param: { eventId: event.id },
+                    json: {},
+                });
+                await resolveRegistrationsForEvent(event.id, ctx);
+
+                // The timer from the first sign-up falls due against the spot
+                // the second one is holding.
+                await handlePaymentExpiration(ctx, {
+                    eventId: event.id,
+                    userId: user.id,
+                    paymentId: abandoned?.id ?? "",
                 });
 
                 const reg = await ctx.db.query.eventRegistration.findFirst({

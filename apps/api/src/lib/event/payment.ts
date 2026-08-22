@@ -737,18 +737,20 @@ export async function handlePaymentExpiration(
         return;
     }
 
-    /**
-     * The member paid — just not on the row this timer points at.
-     *
-     * A second obligation can exist alongside a live checkout (see
-     * {@link createPaymentObligation}), and the reconciliation below only ever
-     * asks Vipps about the *pending* rows. An obligation without a
-     * `providerPaymentId` is judged "dead" without a single call, so a member
-     * whose money was collected on the other row lost their spot — 510 kr paid,
-     * seat given away. Ask the question the verdict actually depends on before
-     * reclaiming anything.
-     */
+    // The money is in on another obligation row. Only the timer's own row is
+    // checked above, and a member who signed off a paid event and signed up
+    // again holds two — so an abandoned first attempt could reach the steps
+    // below and cancel the spot the second attempt paid for. That is what
+    // happened to a paid spot on Silent Disco 2026. Nothing is owed, so this
+    // obligation is void rather than failed-to-pay in spirit; `failed` is the
+    // only closed state the column has.
     if (await hasPaidForEvent(ctx, eventId, userId)) {
+        if (payment.status === "pending") {
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(eq(schema.eventPayment.id, paymentId));
+        }
         return;
     }
 
@@ -759,6 +761,46 @@ export async function handlePaymentExpiration(
 
     // Only reclaim a spot that is still actively held by this user.
     if (!registration || registration.status !== "registered") {
+        if (payment.status === "pending") {
+            await ctx.db
+                .update(schema.eventPayment)
+                .set({ status: "failed" })
+                .where(eq(schema.eventPayment.id, paymentId));
+        }
+        return;
+    }
+
+    /**
+     * A newer obligation with a live countdown means this timer belongs to a
+     * sign-up that is over, and has nothing left to enforce.
+     *
+     * Signing off a paid event closes the obligation but the countdown was
+     * already scheduled, and the queue has no way to cancel it. Sign up again
+     * and that older timer falls due against the new spot, hours before the
+     * new spot's own deadline — that is how a spot on Silent Disco 2026 was
+     * reclaimed with 90 minutes still left to pay.
+     *
+     * The discriminator is `expiresAt`, not the status of this timer's own
+     * row. A chained checkout also leaves a newer `pending` row behind, but
+     * that one is a restarted Vipps session with no deadline of its own:
+     * nothing else will ever come to reclaim the spot, so this timer must.
+     * Only a successor that carries a live deadline — and therefore a timer of
+     * its own — is something to stand down for.
+     */
+    const successor = await ctx.db.query.eventPayment.findFirst({
+        columns: { id: true },
+        where: (p, { and, eq, gt, ne }) =>
+            and(
+                eq(p.eventId, eventId),
+                eq(p.userId, userId),
+                eq(p.status, "pending"),
+                ne(p.id, paymentId),
+                gt(p.createdAt, payment.createdAt),
+                gt(p.expiresAt, new Date()),
+            ),
+    });
+
+    if (successor) {
         if (payment.status === "pending") {
             await ctx.db
                 .update(schema.eventPayment)
