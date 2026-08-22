@@ -473,45 +473,46 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 </div>
                             </TableCell>
                             <TableCell>
+                                {/* Et verv kan deles av flere (#646), så
+                                    søkefeltet blir stående selv når noen
+                                    allerede holder det. */}
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {position.linkedGroupSlug ? (
-                                        // Auto-managed: holder follows the
-                                        // linked group's leader — not
-                                        // assignable from here.
-                                        position.holder ? (
-                                            <HolderChip
-                                                key={position.holder.userId}
-                                                name={position.holder.name}
-                                                image={position.holder.image}
-                                            />
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">
-                                                Settes av gruppens leder
-                                            </span>
-                                        )
-                                    ) : position.holder ? (
+                                    {position.holders.map((holder) => (
                                         <HolderChip
-                                            key={position.holder.userId}
-                                            name={position.holder.name}
-                                            image={position.holder.image}
+                                            key={holder.userId}
+                                            name={holder.name}
+                                            image={holder.image}
                                             onRemove={
-                                                canManage
+                                                canManage &&
+                                                !position.linkedGroupSlug
                                                     ? () =>
                                                           unassign.mutate({
                                                               groupSlug,
                                                               positionId:
                                                                   position.id,
-                                                              userId: position
-                                                                  .holder!
-                                                                  .userId,
+                                                              userId: holder.userId,
                                                           })
                                                     : undefined
                                             }
                                         />
+                                    ))}
+                                    {position.linkedGroupSlug ? (
+                                        // Auto-managed: holders follow the
+                                        // linked group's leader — not
+                                        // assignable from here.
+                                        position.holders.length === 0 ? (
+                                            <span className="text-sm text-muted-foreground">
+                                                Settes av gruppens leder
+                                            </span>
+                                        ) : null
                                     ) : canManage ? (
                                         <UserSearchCombobox
                                             holder={null}
-                                            emptyLabel="Ingen tildelt"
+                                            emptyLabel={
+                                                position.holders.length > 0
+                                                    ? "Legg til flere"
+                                                    : "Ingen tildelt"
+                                            }
                                             query={
                                                 assignFor === position.id
                                                     ? assignQuery
@@ -526,7 +527,14 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                             }}
                                             results={
                                                 assignFor === position.id
-                                                    ? filteredOptions
+                                                    ? filteredOptions.filter(
+                                                          (option) =>
+                                                              !position.holders.some(
+                                                                  (holder) =>
+                                                                      holder.userId ===
+                                                                      option.id,
+                                                              ),
+                                                      )
                                                     : []
                                             }
                                             onSelect={(user) =>
@@ -538,11 +546,11 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                             }
                                             placeholder="Søk blant gruppens medlemmer…"
                                         />
-                                    ) : (
+                                    ) : position.holders.length === 0 ? (
                                         <span className="text-sm text-muted-foreground">
                                             Ingen tildelt
                                         </span>
-                                    )}
+                                    ) : null}
                                 </div>
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
@@ -1127,14 +1135,13 @@ function PositionDialog({
     const [permissions, setPermissions] = useState<string[]>(
         position?.permissions ?? [],
     );
-    const [holder, setHolder] = useState<UserSearchOption | null>(
-        position?.holder
-            ? {
-                  id: position.holder.userId,
-                  name: position.holder.name,
-                  image: position.holder.image,
-              }
-            : null,
+    // Flere kan dele ett verv (#646), så dialogen redigerer en liste.
+    const [holders, setHolders] = useState<UserSearchOption[]>(
+        (position?.holders ?? []).map((holder) => ({
+            id: holder.userId,
+            name: holder.name,
+            image: holder.image,
+        })),
     );
     const [holderQuery, setHolderQuery] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -1162,8 +1169,11 @@ function PositionDialog({
                     ? true
                     : (option.name ?? "").toLowerCase().includes(q),
             )
+            .filter(
+                (option) => !holders.some((holder) => holder.id === option.id),
+            )
             .slice(0, 10);
-    }, [members, holderQuery]);
+    }, [members, holderQuery, holders]);
 
     // Linked leader-verv follow the linked group's leader and reject manual
     // assignment server-side, so the field is not offered for them.
@@ -1189,21 +1199,27 @@ function PositionDialog({
             }
 
             if (canAssignHolder) {
-                const previousHolderId = position?.holder?.userId ?? null;
-                if (previousHolderId && previousHolderId !== holder?.id) {
-                    // A position has at most one holder; the old one has to go
-                    // before the new one can be assigned.
+                const previousIds = (position?.holders ?? []).map(
+                    (holder) => holder.userId,
+                );
+                const nextIds = holders.map((holder) => holder.id);
+
+                for (const userId of previousIds.filter(
+                    (id) => !nextIds.includes(id),
+                )) {
                     await unassign.mutateAsync({
                         groupSlug,
                         positionId,
-                        userId: previousHolderId,
+                        userId,
                     });
                 }
-                if (holder && holder.id !== previousHolderId) {
+                for (const userId of nextIds.filter(
+                    (id) => !previousIds.includes(id),
+                )) {
                     await assign.mutateAsync({
                         groupSlug,
                         positionId,
-                        userId: holder.id,
+                        userId,
                     });
                 }
             }
@@ -1212,7 +1228,7 @@ function PositionDialog({
                 setName("");
                 setScope("group");
                 setPermissions([]);
-                setHolder(null);
+                setHolders([]);
             }
             setHolderQuery("");
             onOpenChange(false);
@@ -1245,28 +1261,50 @@ function PositionDialog({
                         </Field>
                         {canAssignHolder ? (
                             <Field>
-                                <FieldLabel>Bruker</FieldLabel>
+                                <FieldLabel>Brukere</FieldLabel>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {holder ? (
+                                    {holders.map((holder) => (
                                         <HolderChip
+                                            key={holder.id}
                                             name={holder.name}
                                             image={holder.image}
-                                            onRemove={() => setHolder(null)}
+                                            onRemove={() =>
+                                                setHolders((current) =>
+                                                    current.filter(
+                                                        (candidate) =>
+                                                            candidate.id !==
+                                                            holder.id,
+                                                    ),
+                                                )
+                                            }
                                         />
-                                    ) : (
-                                        <UserSearchCombobox
-                                            holder={null}
-                                            emptyLabel="Ingen tildelt"
-                                            query={holderQuery}
-                                            onQueryChange={setHolderQuery}
-                                            results={memberOptions}
-                                            onSelect={setHolder}
-                                            onOpenChange={(isOpen) => {
-                                                if (!isOpen) setHolderQuery("");
-                                            }}
-                                            placeholder="Søk blant gruppens medlemmer…"
-                                        />
-                                    )}
+                                    ))}
+                                    <UserSearchCombobox
+                                        holder={null}
+                                        emptyLabel={
+                                            holders.length > 0
+                                                ? "Legg til flere"
+                                                : "Ingen tildelt"
+                                        }
+                                        query={holderQuery}
+                                        onQueryChange={setHolderQuery}
+                                        results={memberOptions}
+                                        onSelect={(user) =>
+                                            setHolders((current) =>
+                                                current.some(
+                                                    (candidate) =>
+                                                        candidate.id ===
+                                                        user.id,
+                                                )
+                                                    ? current
+                                                    : [...current, user],
+                                            )
+                                        }
+                                        onOpenChange={(isOpen) => {
+                                            if (!isOpen) setHolderQuery("");
+                                        }}
+                                        placeholder="Søk blant gruppens medlemmer…"
+                                    />
                                 </div>
                             </Field>
                         ) : null}

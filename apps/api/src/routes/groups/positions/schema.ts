@@ -119,8 +119,9 @@ export const positionSchema = Schema(
             description:
                 "If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually.",
         }),
-        holder: positionHolderSchema.nullable().meta({
-            description: "The single holder of this position, if assigned",
+        holders: z.array(positionHolderSchema).meta({
+            description:
+                "Everyone holding this position. A verv may be shared by several people (issue #646); empty when nobody holds it.",
         }),
         createdAt: z.string(),
         updatedAt: z.string(),

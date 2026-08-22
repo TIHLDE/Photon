@@ -141,11 +141,12 @@ export const updatePositionRoute = route().patch(
             await mirrorTitleIntoLinkedGroup(ctx, updated, body.name);
         }
 
-        const holder = await db.query.groupPositionHolder.findFirst({
+        const holders = await db.query.groupPositionHolder.findMany({
             where: eq(schema.groupPositionHolder.positionId, positionId),
             with: {
                 user: { columns: { id: true, name: true, image: true } },
             },
+            orderBy: (holder, { asc }) => [asc(holder.createdAt)],
         });
 
         return c.json({
@@ -153,13 +154,11 @@ export const updatePositionRoute = route().patch(
             permissions: updated
                 ? await readLinkedPositionPermissions(ctx, updated)
                 : [],
-            holder: holder
-                ? {
-                      userId: holder.user.id,
-                      name: holder.user.name,
-                      image: holder.user.image,
-                  }
-                : null,
+            holders: holders.map((holder) => ({
+                userId: holder.user.id,
+                name: holder.user.name,
+                image: holder.user.image,
+            })),
         });
     },
 );

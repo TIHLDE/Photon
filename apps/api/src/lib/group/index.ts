@@ -211,7 +211,9 @@ export async function addUserToGroup(
 
     // Subgroup leaders sit in HS
     if (membership.role === "leader") {
-        await demoteOtherLeaders(ctx, groupSlug, userId);
+        if (!allowsMultipleLeaders(group.type)) {
+            await demoteOtherLeaders(ctx, groupSlug, userId);
+        }
         await syncSubgroupLeaderIntoHs(ctx, userId, group);
     }
 
@@ -395,12 +397,13 @@ export async function updateGroupMemberRole(
             ),
         );
 
+    const group = await getGroup(ctx, groupSlug);
+
     // Lederbyttet setter den forrige lederen ned — gruppa har én leder.
-    if (newRole === "leader") {
+    // Interessegrupper er unntaket og kan ha flere samtidig (#646).
+    if (newRole === "leader" && !(group && allowsMultipleLeaders(group.type))) {
         await demoteOtherLeaders(ctx, groupSlug, userId);
     }
-
-    const group = await getGroup(ctx, groupSlug);
 
     // Keep HS in sync with subgroup leadership
     if (group && isSubgroupType(group.type)) {
@@ -437,6 +440,18 @@ export const HS_GROUP_SLUG = "hs";
  *  (Lepton rows are upper case), so compare case-insensitively. */
 export function isSubgroupType(type: string): boolean {
     return type.toLowerCase() === "subgroup";
+}
+
+/**
+ * Om gruppa kan ha flere ledere samtidig.
+ *
+ * Interessegrupper startes gjerne av to eller tre sammen, og det finnes ingen
+ * grunn til at den ene skal settes ned når den andre legges til (issue #646).
+ * Alle andre grupper har fortsatt én leder: undergruppelederen er HS-plassen,
+ * og komiteene har ett ledervervnavn hver.
+ */
+export function allowsMultipleLeaders(type: string): boolean {
+    return type.toLowerCase() === "interestgroup";
 }
 
 /**

@@ -1833,7 +1833,7 @@ export interface paths {
         put?: never;
         /**
          * Assign a position to a user
-         * @description Assign a position (verv) to a group member. A position can be held by at most ONE user — assigning an occupied position fails; unassign the current holder first (or create a second position for a second holder). The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
+         * @description Assign a position (verv) to a group member. A position may be held by several people at once, and assigning someone who already holds it is a no-op. The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).
          */
         post: operations["assignGroupPosition"];
         delete?: never;
@@ -5339,8 +5339,8 @@ export interface components {
             scope: "group" | "global";
             /** @description If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually. */
             linkedGroupSlug: string | null;
-            /** @description The single holder of this position, if assigned */
-            holder: components["schemas"]["GroupPositionHolder"] | null;
+            /** @description Everyone holding this position. A verv may be shared by several people (issue #646); empty when nobody holds it. */
+            holders: components["schemas"]["GroupPositionHolder"][];
             createdAt: string;
             updatedAt: string;
         };
@@ -11935,7 +11935,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Position already has a holder */
+            /** @description Position is managed automatically and cannot be assigned by hand */
             409: {
                 headers: {
                     [name: string]: unknown;
