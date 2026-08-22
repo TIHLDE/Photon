@@ -449,6 +449,13 @@ export function isSubgroupType(type: string): boolean {
  * grunn til at den ene skal settes ned når den andre legges til (issue #646).
  * Alle andre grupper har fortsatt én leder: undergruppelederen er HS-plassen,
  * og komiteene har ett ledervervnavn hver.
+ *
+ * Merk at «idrettslag» finnes som to ting, og at bare den ene er dekket her:
+ * idrettsgruppene (TIHLDE Basket, Ski, Klatring …) er INTERESTGROUP med
+ * subtype IDRETTSGRUPPE og får altså flere ledere, mens Pythons-lagene har
+ * SPORTSTEAM som egen type og beholder én. Det er et bevisst valg — issuet
+ * gjelder interessegrupper — men det er ikke åpenbart fra grensesnittet, der
+ * begge leses som idrett. Skal SPORTSTEAM med, er det denne linja.
  */
 export function allowsMultipleLeaders(type: string): boolean {
     return type.toLowerCase() === "interestgroup";
