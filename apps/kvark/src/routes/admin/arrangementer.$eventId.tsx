@@ -758,11 +758,11 @@ function rankStudy(bucket: string, count: number): [number, number, string] {
 }
 
 /**
- * Ett tall i fordelingen. Hele brikken er knappen som slår filteret av og på.
+ * Ett tall i fordelingen. Hele kortet er knappen som slår filteret av og på.
  *
- * Bredden følger etiketten i stedet for en kolonne i et rutenett: bøttene er
- * få og korte, og strukket ut over hele bredden ble «Ukjent studie 1» like
- * stort som studiet 64 går på.
+ * `size="sm"` er hele poenget: `Card` har sin egen `py-4`, og et `CardContent`
+ * med padding oppå ga kortet dobbelt sett luft — fire bøtter dekket to rader
+ * av halve skjermen uten å si mer enn de gjør nå.
  */
 function BreakdownCard({
     label,
@@ -776,30 +776,39 @@ function BreakdownCard({
     onClick: () => void;
 }) {
     return (
-        <button
-            type="button"
+        <Card
+            size="sm"
+            render={<button type="button" />}
             aria-pressed={active}
             onClick={onClick}
             className={cn(
-                "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-lg bg-card px-3 py-1.5 text-sm ring-1 transition-colors",
+                "cursor-pointer text-left transition-colors",
                 active
-                    ? "bg-primary/10 text-primary ring-primary"
-                    : "text-muted-foreground ring-card-border hover:ring-foreground/20",
+                    ? "bg-primary/10 ring-primary"
+                    : "hover:ring-foreground/20",
             )}
         >
-            <span className="truncate">{label}</span>
-            <span
-                className={cn(
-                    "font-semibold tabular-nums",
-                    active ? "text-primary" : "text-foreground",
-                )}
-            >
-                {count}
-            </span>
-            {active ? (
-                <CheckIcon className="size-3.5 shrink-0 text-primary" />
-            ) : null}
-        </button>
+            <CardContent className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <span
+                        className={cn(
+                            "truncate text-sm",
+                            active
+                                ? "font-medium text-primary"
+                                : "text-muted-foreground",
+                        )}
+                    >
+                        {label}
+                    </span>
+                    <span className="text-2xl leading-none tabular-nums">
+                        {count}
+                    </span>
+                </div>
+                {active ? (
+                    <CheckIcon className="size-4 shrink-0 text-primary" />
+                ) : null}
+            </CardContent>
+        </Card>
     );
 }
 
@@ -819,11 +828,11 @@ function BreakdownSection({
     if (buckets.length === 0) return null;
 
     return (
-        <div className="flex flex-col gap-1.5">
-            <h3 className="text-xs font-medium text-muted-foreground">
+        <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
                 {title}
             </h3>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                 {buckets.map(({ bucket, count }) => (
                     <BreakdownCard
                         key={bucket}
