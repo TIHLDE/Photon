@@ -208,7 +208,7 @@ describe("group positions", () => {
         );
 
         integrationTest(
-            "a position can only have one holder — second assignment is rejected",
+            "a position can be shared by several holders",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
                 const first = await ctx.utils.createTestUser();
@@ -260,40 +260,35 @@ describe("group positions", () => {
                 });
                 expect(assignAgain.status).toBe(200);
 
-                // A different user is rejected while the position is held
+                // To økonomiansvarlige deler ett verv i stedet for å tvinge
+                // gruppa til å holde to like rader i sync (issue #646).
                 const assignSecond = await client.api.groups[
                     ":groupSlug"
                 ].positions[":positionId"].holders.$post({
                     param: { groupSlug: group.slug, positionId: position.id },
                     json: { userId: second.id },
                 });
-                expect(assignSecond.status).toBe(409);
+                expect(assignSecond.status).toBe(200);
 
-                // Instead, a second identically-named position can be created
-                // and assigned — "two økonomiansvarlige" = two positions.
-                const createSecond = await client.api.groups[
+                const listResponse = await client.api.groups[
                     ":groupSlug"
-                ].positions.$post({
-                    param: { groupSlug: group.slug },
-                    json: {
-                        name: "Økonomiansvarlig",
-                        permissions: ["news:manage"],
-                        scope: "group",
-                    },
-                });
-                expect(createSecond.status).toBe(201);
-                const secondPosition = await createSecond.json();
+                ].positions.$get({ param: { groupSlug: group.slug } });
+                const positions = await listResponse.json();
+                const shared = positions.find((p) => p.id === position.id);
+                expect(
+                    shared?.holders.map((holder) => holder.userId).sort(),
+                ).toEqual([first.id, second.id].sort());
 
-                const assignToSecond = await client.api.groups[
-                    ":groupSlug"
-                ].positions[":positionId"].holders.$post({
-                    param: {
-                        groupSlug: group.slug,
-                        positionId: secondPosition.id,
-                    },
-                    json: { userId: second.id },
-                });
-                expect(assignToSecond.status).toBe(200);
+                // Og begge har faktisk tilgangen vervet gir.
+                for (const holder of [first, second]) {
+                    const permissions = await getUserPermissions(
+                        ctx,
+                        holder.id,
+                    );
+                    expect(permissions).toContain(
+                        `news:manage@group:${group.slug}`,
+                    );
+                }
             },
             500_000,
         );

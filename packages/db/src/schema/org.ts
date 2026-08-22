@@ -478,9 +478,9 @@ export type GroupPositionScope =
  * "President". Positions carry a permission list that holders receive —
  * scoped to the group or globally depending on `scope`.
  *
- * Names are intentionally NOT unique per group: a position is held by at
- * most ONE user, so a group needing two økonomiansvarlige simply creates
- * two "Økonomiansvarlig" positions.
+ * Names are intentionally NOT unique per group, and a position may be held by
+ * SEVERAL users at once: two økonomiansvarlige share one verv rather than
+ * forcing the group to keep two identical rows in sync (issue #646).
  */
 export const groupPosition = pgTable("group_position", {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -506,33 +506,46 @@ export const groupPosition = pgTable("group_position", {
 });
 
 /**
- * Assignment of a group position to a user. A position has at most ONE
- * holder (positionId is the primary key). Holders must be members of the
- * position's group (enforced in the API layer; membership removal also
- * removes the user's positions in that group).
+ * Assignment of a group position to a user. The primary key is the pair, so a
+ * position may have several holders at once — a group with two
+ * arrangementsansvarlige gives both the same verv instead of maintaining two
+ * identical ones. Holders must be members of the position's group (enforced in
+ * the API layer; membership removal also removes the user's positions in that
+ * group).
  */
-export const groupPositionHolder = pgTable("group_position_holder", {
-    positionId: uuid("position_id")
-        .primaryKey()
-        .references(() => groupPosition.id, { onDelete: "cascade" }),
-    userId: varchar("user_id", { length: 255 })
-        .notNull()
-        .references(() => user.id, { onDelete: "cascade" }),
-    /** User who assigned the position (audit trail) */
-    grantedBy: varchar("granted_by", { length: 255 }).references(
-        () => user.id,
-        { onDelete: "set null" },
-    ),
-    ...timestamps,
-});
+export const groupPositionHolder = pgTable(
+    "group_position_holder",
+    {
+        positionId: uuid("position_id")
+            .notNull()
+            .references(() => groupPosition.id, { onDelete: "cascade" }),
+        userId: varchar("user_id", { length: 255 })
+            .notNull()
+            .references(() => user.id, { onDelete: "cascade" }),
+        /** User who assigned the position (audit trail) */
+        grantedBy: varchar("granted_by", { length: 255 }).references(
+            () => user.id,
+            { onDelete: "set null" },
+        ),
+        ...timestamps,
+    },
+    (table) => [
+        primaryKey({
+            columns: [table.positionId, table.userId],
+        }),
+    ],
+);
 
-export const groupPositionRelations = relations(groupPosition, ({ one }) => ({
-    group: one(group, {
-        fields: [groupPosition.groupSlug],
-        references: [group.slug],
+export const groupPositionRelations = relations(
+    groupPosition,
+    ({ one, many }) => ({
+        group: one(group, {
+            fields: [groupPosition.groupSlug],
+            references: [group.slug],
+        }),
+        holders: many(groupPositionHolder),
     }),
-    holder: one(groupPositionHolder),
-}));
+);
 
 export const groupPositionHolderRelations = relations(
     groupPositionHolder,

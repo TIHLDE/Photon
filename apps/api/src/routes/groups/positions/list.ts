@@ -50,12 +50,13 @@ export const listPositionsRoute = route().get(
         const positions = await db.query.groupPosition.findMany({
             where: eq(schema.groupPosition.groupSlug, groupSlug),
             with: {
-                holder: {
+                holders: {
                     with: {
                         user: {
                             columns: { id: true, name: true, image: true },
                         },
                     },
+                    orderBy: (holder, { asc }) => [asc(holder.createdAt)],
                 },
             },
             orderBy: (position, { asc }) => [asc(position.name)],
@@ -79,13 +80,11 @@ export const listPositionsRoute = route().get(
                     permissionsById.get(position.id) ?? position.permissions,
                 scope: position.scope,
                 linkedGroupSlug: position.linkedGroupSlug,
-                holder: position.holder
-                    ? {
-                          userId: position.holder.user.id,
-                          name: position.holder.user.name,
-                          image: position.holder.user.image,
-                      }
-                    : null,
+                holders: position.holders.map((holder) => ({
+                    userId: holder.user.id,
+                    name: holder.user.name,
+                    image: holder.user.image,
+                })),
                 createdAt: position.createdAt,
                 updatedAt: position.updatedAt,
             })),

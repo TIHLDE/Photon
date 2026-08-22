@@ -1,5 +1,4 @@
 import { schema } from "@photon/db";
-import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isGroupMember } from "~/lib/group";
@@ -16,7 +15,7 @@ export const assignPositionRoute = route().post(
         summary: "Assign a position to a user",
         operationId: "assignGroupPosition",
         description:
-            "Assign a position (verv) to a group member. A position can be held by at most ONE user — assigning an occupied position fails; unassign the current holder first (or create a second position for a second holder). The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).",
+            "Assign a position (verv) to a group member. A position may be held by several people at once, and assigning someone who already holds it is a no-op. The assigner must be able to manage the position AND hold all its permissions — you cannot hand out a title you could not have created (prevents e.g. assigning the root title without holding root).",
     })
         .schemaResponse({
             statusCode: 200,
@@ -28,7 +27,8 @@ export const assignPositionRoute = route().post(
         .notFound({ description: "Position not found" })
         .response({
             statusCode: 409,
-            description: "Position already has a holder",
+            description:
+                "Position is managed automatically and cannot be assigned by hand",
         })
         .build(),
     requireAuth,
@@ -68,28 +68,16 @@ export const assignPositionRoute = route().post(
             });
         }
 
-        // A position has at most one holder. Re-assigning to the same user
-        // is idempotent; anyone else must unassign the current holder first.
-        const [existing] = await db
-            .select({ userId: schema.groupPositionHolder.userId })
-            .from(schema.groupPositionHolder)
-            .where(eq(schema.groupPositionHolder.positionId, positionId))
-            .limit(1);
-
-        if (existing && existing.userId !== body.userId) {
-            throw new HTTPException(409, {
-                message:
-                    "Position already has a holder. Unassign the current holder first, or create a separate position.",
-            });
-        }
-
-        if (!existing) {
-            await db.insert(schema.groupPositionHolder).values({
+        // Flere kan dele ett verv (#646), så en ny holder legges bare til.
+        // Å tildele på nytt til samme person er et null-trekk.
+        await db
+            .insert(schema.groupPositionHolder)
+            .values({
                 positionId,
                 userId: body.userId,
                 grantedBy: user.id,
-            });
-        }
+            })
+            .onConflictDoNothing();
 
         return c.json({ message: "Position assigned" });
     },
