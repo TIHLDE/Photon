@@ -18,3 +18,23 @@ services:
         image: redis:alpine
         pull_policy: always
         restart: unless-stopped
+        # Redis er ikke en cache her: køen er eneste hukommelse om arbeid som
+        # skal skje senere. Mister vi den, blir ingen betalingsfrist håndhevet
+        # — ingenting i basen feier `event_payment.expiresAt`, så en ubetalt
+        # plass blir aldri inndratt og ventelista rykker aldri.
+        #
+        # `--save ""` slår av RDB-øyeblikksbildene til fordel for AOF alene:
+        # AOF-en skrives fortløpende, mens et øyeblikksbilde per definisjon
+        # ligger etter og ville gitt oss en halv kø tilbake. Samme oppsett som
+        # dev har hatt hele tiden.
+        command: ["redis-server", "--save", "", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    redis_data:
