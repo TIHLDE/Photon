@@ -7,6 +7,11 @@ import z from "zod";
 import { canActOnEvent } from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import {
+    type StudyGroupRow,
+    deriveStudyFromGroups,
+    loadStudyGroupRows,
+} from "~/lib/user/study";
 import { requireAuth } from "~/middleware/auth";
 import {
     PaginationSchema,
@@ -186,11 +191,25 @@ export const getAllRegistrationsForEventsRoute = route().get(
             }
         }
 
+        // Study programme and cohort, for the admin-facing breakdown of who
+        // signed up. Loaded for the whole page in one query and derived with
+        // the shared ranking, so the study shown here and the one on the
+        // member's profile can never be two different programmes.
+        const studyByUser = isEventAdmin
+            ? await loadStudyGroupRows(
+                  ctx,
+                  registrations.map((r) => r.userId),
+              )
+            : new Map<string, StudyGroupRow[]>();
+
         const totalPages = getTotalPages(registrationCount, pageSize);
 
         const returnRegistrations = registrations.map((r, index) => {
             const payment = paymentByUserId.get(r.userId);
             const isAnonymous = anonymousUserIds.has(r.userId);
+            const study = deriveStudyFromGroups(
+                studyByUser.get(r.userId) ?? [],
+            );
             return {
                 // The user id is left out for anonymised rows: it identifies
                 // the member just as well as the name does.
@@ -222,6 +241,8 @@ export const getAllRegistrationsForEventsRoute = route().get(
                                         null,
                                 }
                               : null,
+                          studyProgram: study.studyProgram,
+                          studyStartYear: study.studyStartYear,
                       }
                     : {}),
             };

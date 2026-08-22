@@ -1,3 +1,4 @@
+import { computeClassYear } from "@photon/auth/academic-year";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -52,6 +53,35 @@ export function programmeLength(programme: string | undefined): number {
     return MASTER_PROGRAMME_MARKERS.some((marker) => name.includes(marker))
         ? 5
         : 3;
+}
+
+/**
+ * Hvor et medlem står i løpet, som en bøtte det går an å telle på:
+ * `"1"`–`"5"` for klassetrinnet, `"alumni"` for den som er ferdig, og
+ * `"unknown"` når vi ikke vet nok til å plassere dem.
+ *
+ * Samme regel som studielinja ellers i admin: klassetrinnet gjelder så lenge
+ * programmet varer (3 år på bachelor, 5 på master), og den som har passert det
+ * er alumni. Uten kull vet vi ingenting — også når studiet er kjent, for det
+ * er kullet som sier når de begynte.
+ */
+export function classLevelBucket(
+    programme: string | null | undefined,
+    startYear: number | null | undefined,
+): string {
+    if (startYear === null || startYear === undefined) return "unknown";
+    const classYear = computeClassYear(startYear);
+    if (classYear < 1) return "unknown";
+    return classYear <= programmeLength(programme ?? undefined)
+        ? String(classYear)
+        : "alumni";
+}
+
+/** Etiketten som hører til en {@link classLevelBucket}. */
+export function classLevelBucketLabel(bucket: string): string {
+    if (bucket === "alumni") return "Alumni";
+    if (bucket === "unknown") return "Ukjent kull";
+    return `${bucket}. klasse`;
 }
 
 /**

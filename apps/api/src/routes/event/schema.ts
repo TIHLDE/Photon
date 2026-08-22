@@ -1062,6 +1062,14 @@ export const registeredUserSchema = Schema(
             description:
                 "The user's payment for this event, if any. Only included for event admins.",
         }),
+        studyProgram: z.string().nullable().optional().meta({
+            description:
+                "Name of the member's study programme, derived from their STUDY group membership. Null when they have none. Only included for event admins.",
+        }),
+        studyStartYear: z.number().int().nullable().optional().meta({
+            description:
+                "The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins.",
+        }),
     }),
 );
 

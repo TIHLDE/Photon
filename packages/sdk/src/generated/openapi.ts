@@ -4062,6 +4062,10 @@ export interface components {
             waitlistPosition?: number | null;
             /** @description The user's payment for this event, if any. Only included for event admins. */
             payment?: components["schemas"]["EventRegistrationPayment"] | null;
+            /** @description Name of the member's study programme, derived from their STUDY group membership. Null when they have none. Only included for event admins. */
+            studyProgram?: string | null;
+            /** @description The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins. */
+            studyStartYear?: number | null;
         };
         EventRegistrationList: {
             /** @description Total number of items available */
