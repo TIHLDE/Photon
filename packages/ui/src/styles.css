@@ -583,7 +583,13 @@ body:has([data-slot="drawer-content"][data-state="open"])
    med ring-variablene selv så ringen fortsatt tegnes.
 
    Fargen etterligner et vanlig felt: gjennomsiktig over --card i lys modus,
-   `bg-input/30` over --card i mørk. */
+   `bg-input/30` over --card i mørk.
+
+   De to blokkene under er med vilje like. `:autofill` er den standardiserte
+   formen og `:-webkit-autofill` den gamle, og en nettleser som ikke kjenner
+   selektoren forkaster HELE regelen den står i — ikke bare den ene
+   selektoren. Slår vi dem sammen til én liste, mister vi altså regelen i den
+   nettleseren som bare kjenner den andre. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -598,5 +604,20 @@ select:-webkit-autofill {
     caret-color: var(--foreground);
     /* Chrome animerer bakgrunnen tilbake til sin egen etter autofyll; en
        absurd lang transition parkerer den på vår. */
+    transition: background-color 99999s ease-in-out 0s;
+}
+
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active,
+textarea:autofill,
+select:autofill {
+    box-shadow:
+        var(--tw-ring-offset-shadow, 0 0 #0000),
+        var(--tw-ring-shadow, 0 0 #0000),
+        0 0 0 1000px var(--input-autofill) inset;
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
     transition: background-color 99999s ease-in-out 0s;
 }
