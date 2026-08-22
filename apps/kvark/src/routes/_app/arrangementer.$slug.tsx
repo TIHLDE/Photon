@@ -306,6 +306,9 @@ function EventDetailPage() {
 
     const price = formatEventPrice(event.isPaidEvent, event.payInfo?.price);
     const registeredCount = event.registeredCount;
+    // Fullt = ingen ledige plasser igjen. Medlemmet holder selv en av dem, så
+    // dette kan ikke leses av `registrationState`, som står på «joined».
+    const isFull = event.capacity != null && registeredCount >= event.capacity;
     const registrants = (registrationPages?.pages ?? []).flatMap((page) =>
         page.registeredUsers.map((u) => ({
             id: u.id,
@@ -672,9 +675,11 @@ function EventDetailPage() {
                         }
                         // Har man betalt for plassen sin, er billetten noe man
                         // kan bli sittende igjen med. Da tilbyr vi samme utvei
-                        // som før: legg den ut i Facebook-gruppa.
+                        // som før: legg den ut i Facebook-gruppa. Men bare når
+                        // arrangementet er fullt — er det ledige plasser igjen,
+                        // finnes det ingen kjøper, og tilbudet er bare støy.
                         ticketResaleUrl={
-                            event.registration?.hasPaid
+                            event.registration?.hasPaid && isFull
                                 ? TICKET_RESALE_GROUP_URL
                                 : undefined
                         }

@@ -74,8 +74,8 @@ type EventRegistrationCardProps = {
     postJoinSlot?: ReactNode;
     /**
      * Lenka til Facebook-gruppa for billettsalg. Settes bare når medlemmet har
-     * betalt for plassen sin, så tilbudet om å selge billetten videre kun
-     * dukker opp for dem som faktisk har en billett å selge.
+     * betalt for plassen sin og arrangementet er fullt — da finnes det noen
+     * som vil ha billetten. Med ledige plasser igjen er tilbudet bare støy.
      */
     ticketResaleUrl?: string;
     /**
