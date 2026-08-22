@@ -82,6 +82,8 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: var(--logo);
+    /* Flaten et autofylt felt males med; se autofyll-regelen nederst i fila. */
+    --input-autofill: var(--card);
 }
 
 .dark {
@@ -134,6 +136,8 @@
     --sidebar-ring: #1b61e4;
     /* On the dark navy background the logo stays light for contrast */
     --logo: var(--foreground);
+    /* Speiler `dark:bg-input/30` lagt over --card. */
+    --input-autofill: color-mix(in oklab, var(--input) 30%, var(--card));
 }
 
 @theme inline {
@@ -566,4 +570,33 @@ body:has([data-slot="drawer-content"][data-state="open"])
         animation-delay: 0ms !important;
         transition-delay: 0ms !important;
     }
+}
+
+/* Autofyll: Chrome maler sin egen bakgrunn på utfylte felt, og i mørk modus er
+   den en lys blåtone som ikke ligner noe annet i grensesnittet. Den eneste
+   måten å overstyre den på er en `inset box-shadow` som dekker hele feltet.
+
+   Regelen må ligge her, utenfor `@layer`, og ikke som en `autofill:`-utility på
+   selve inputen: fokusringen er også en box-shadow, og med lik spesifisitet
+   vant `focus-visible:ring-3` over autofyll-skyggen — så feltet ble blått i det
+   øyeblikket det fikk fokus (issue #669). Ulagd CSS slår alle lag, og vi tar
+   med ring-variablene selv så ringen fortsatt tegnes.
+
+   Fargen etterligner et vanlig felt: gjennomsiktig over --card i lys modus,
+   `bg-input/30` over --card i mørk. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    box-shadow:
+        var(--tw-ring-offset-shadow, 0 0 #0000),
+        var(--tw-ring-shadow, 0 0 #0000),
+        0 0 0 1000px var(--input-autofill) inset;
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+    /* Chrome animerer bakgrunnen tilbake til sin egen etter autofyll; en
+       absurd lang transition parkerer den på vår. */
+    transition: background-color 99999s ease-in-out 0s;
 }
