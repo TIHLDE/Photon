@@ -163,6 +163,22 @@ export const getFormSubmissionsQuery = (
             }),
     });
 
+/**
+ * Egne svar på ett skjema.
+ *
+ * Skjemasiden viser dem tilbake til den som allerede har svart — også når
+ * skjemaet tar imot flere svar, der man før bare fikk et blankt skjema uten
+ * noe hint om at man hadde svart før (issue #672).
+ */
+export const getOwnFormSubmissionsQuery = (formId: string) =>
+    queryOptions({
+        queryKey: [...FormQueryKeys.submissions, formId, "me"],
+        queryFn: () =>
+            apiClient.get("/api/forms/{formId}/submissions/me", {
+                params: { formId },
+            }),
+    });
+
 export const getFormSubmissionByIdQuery = (
     formId: string,
     submissionId: string,
@@ -204,6 +220,12 @@ export const createSubmissionMutation = mutationOptions({
         });
         ctx.client.invalidateQueries({
             queryKey: [...FormQueryKeys.statistics, vars.formId],
+            exact: false,
+        });
+        // `viewer_has_answered` ligger på selve skjemaet, så uten denne står
+        // siden igjen og tror man ikke har svart.
+        ctx.client.invalidateQueries({
+            queryKey: [...FormQueryKeys.detail, vars.formId],
             exact: false,
         });
         // Svaret kan ha vært evalueringen som sperret for påmelding, så

@@ -81,6 +81,10 @@ export type FormSubmissionRow = {
     id: string;
     userName: string;
     userEmail: string;
+    /** Studieretningen personen går på nå, om vi kjenner den. */
+    studyProgram: string | null;
+    /** Kullet, altså året de startet. */
+    studyStartYear: number | null;
     submittedAt: string;
     answers: FormAnswer[];
 };
@@ -92,6 +96,8 @@ export function mapSubmission(
         id: submission.id,
         userName: submission.user.name,
         userEmail: submission.user.email,
+        studyProgram: submission.user.study_program,
+        studyStartYear: submission.user.study_start_year,
         submittedAt: formatInOslo(submission.created_at, "d. MMM yyyy"),
         answers: submission.answers.map((answer) => ({
             fieldId: answer.field_id,
@@ -130,4 +136,18 @@ export function mapFormStatistics(
             percentage: option.answer_percentage,
         })),
     }));
+}
+
+/**
+ * «BIDATA · kull 2023» — studieretning og kull på én linje, slik det står i
+ * den første kolonnen i svarlista (issue #681). Tom når vi ikke vet noe.
+ */
+export function formatSubmissionStudy(
+    programme: string | null,
+    startYear: number | null,
+): string | null {
+    const parts = [programme, startYear ? `kull ${startYear}` : null].filter(
+        Boolean,
+    );
+    return parts.length > 0 ? parts.join(" · ") : null;
 }

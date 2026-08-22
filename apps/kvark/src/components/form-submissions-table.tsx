@@ -7,7 +7,7 @@ import {
     TableRow,
 } from "@tihlde/ui/ui/table";
 
-import type { FormSubmissionRow } from "#/lib/form";
+import { type FormSubmissionRow, formatSubmissionStudy } from "#/lib/form";
 
 type FormSubmissionsTableProps = {
     /** Spørsmålene, i skjemaets rekkefølge. Én kolonne hver. */
@@ -59,6 +59,20 @@ export function FormSubmissionsTable({
                                 <span className="text-xs text-muted-foreground">
                                     {submission.userEmail}
                                 </span>
+                                {/* Studie og kull hører til personen, ikke til
+                                    et eget spørsmål: skjemaeieren leser svarene
+                                    per kull like ofte som per navn (#681). */}
+                                {formatSubmissionStudy(
+                                    submission.studyProgram,
+                                    submission.studyStartYear,
+                                ) ? (
+                                    <span className="text-xs text-muted-foreground">
+                                        {formatSubmissionStudy(
+                                            submission.studyProgram,
+                                            submission.studyStartYear,
+                                        )}
+                                    </span>
+                                ) : null}
                             </div>
                         </TableCell>
                         <TableCell>{submission.submittedAt}</TableCell>

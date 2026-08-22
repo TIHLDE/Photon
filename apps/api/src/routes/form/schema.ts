@@ -313,6 +313,13 @@ const submissionUserSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
+    /**
+     * Studieretning og kull, utledet på samme måte som på profilen og i
+     * deltakerlista. Skjemaeieren leser svarene per kull like ofte som per
+     * person, og måtte før slå opp hver enkelt manuelt (issue #681).
+     */
+    study_program: z.string().nullable(),
+    study_start_year: z.number().nullable(),
 });
 
 export const submissionDetailSchema = Schema(

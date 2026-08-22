@@ -9,6 +9,7 @@ import { deleteSubmissionWithReasonRoute } from "./submission/delete";
 import { downloadSubmissionsRoute } from "./submission/download";
 import { getSubmissionRoute } from "./submission/get";
 import { listSubmissionsRoute } from "./submission/list";
+import { listOwnSubmissionsRoute } from "./submission/mine";
 import { updateRoute } from "./update";
 
 export const formRoutes = route()
@@ -22,10 +23,12 @@ export const formRoutes = route()
     // Form statistics
     .route("/", statisticsRoute)
 
-    // Submissions. `/submissions/download` må stå før `/submissions/:id`, ellers
-    // matcher id-ruten først og «download» brukes som innsendings-id.
+    // Submissions. `/submissions/download` og `/submissions/me` må stå før
+    // `/submissions/:id`, ellers matcher id-ruten først og ordet brukes som
+    // innsendings-id.
     .route("/", createSubmissionRoute)
     .route("/", listSubmissionsRoute)
     .route("/", downloadSubmissionsRoute)
+    .route("/", listOwnSubmissionsRoute)
     .route("/", getSubmissionRoute)
     .route("/", deleteSubmissionWithReasonRoute);
