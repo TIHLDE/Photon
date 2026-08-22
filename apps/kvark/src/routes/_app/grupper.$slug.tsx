@@ -227,12 +227,27 @@ function GroupDetail() {
         `group:${slug}`,
     );
     const canManageMembers = hasGroupsManage || isLeader;
-    // Creating forms: a global forms:create/manage grant, or leadership of
-    // THIS group — exactly what POST /groups/:slug/form checks. The previous
-    // "in any scope" check let anyone holding forms:create for their own
-    // group manage forms on every other group's page.
-    const hasFormsPermission = usePermission(["forms:create", "forms:manage"]);
-    const canManageForms = hasFormsPermission || isLeader;
+    // Skjemaene til gruppen er scopet hit, akkurat som resten av siden: et
+    // grant for denne gruppen teller, et grant for en annen gruppe gjør ikke.
+    // Det var en global sjekk her, og den er strengere enn API-et — «Spørre-
+    // skjema» huket av på et verv gir `forms:*` scopet til `group:<slug>`, og
+    // da så nestlederen skjemaet uten å komme til «Rediger» og «Se svar»,
+    // enda POST /groups/:slug/form og canManageForm begge slipper hen inn.
+    //
+    // De to spørsmålene stilles hver for seg fordi API-et stiller dem hver for
+    // seg: å opprette krever forms:create, å redigere og lese svar krever
+    // forms:update. Slått sammen ville et grant på den ene vist knappene for
+    // den andre, og de knappene svarer 403.
+    const canCreateForms =
+        useScopedPermission(
+            ["forms:create", "forms:manage"],
+            `group:${slug}`,
+        ) || isLeader;
+    const canManageForms =
+        useScopedPermission(
+            ["forms:update", "forms:manage"],
+            `group:${slug}`,
+        ) || isLeader;
     // Arrangementer er scopet på samme måte: lederskap alene gir ikke
     // events:create — det avhenger av gruppens leaderPermissions — så vi
     // spør om selve tilgangen for nettopp denne gruppen.
@@ -899,7 +914,8 @@ function GroupDetail() {
                     {activeTab === "sporreskjema" ? (
                         <GroupFormsTab
                             forms={forms}
-                            isAdmin={canManageForms}
+                            canCreate={canCreateForms}
+                            canManage={canManageForms}
                             onNewForm={openNewForm}
                             onEditForm={handleEditForm}
                         />
