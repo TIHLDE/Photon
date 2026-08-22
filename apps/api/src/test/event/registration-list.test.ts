@@ -230,6 +230,121 @@ describe("Event registration listing", () => {
     );
 
     integrationTest(
+        // The «Påmeldte»-fanen teller kull og studie fra disse to feltene, og
+        // en master skal telles på sitt eget kull — ikke på kullgruppa, som
+        // for de fleste bærer året bacheloren startet.
+        "serves the member's current programme and cohort to admins",
+        async ({ ctx }) => {
+            const { event, registered } = await seedRegistrations(ctx);
+
+            await ctx.utils.createTestGroup({
+                slug: "digital-forretningsutvikling",
+                name: "Digital forretningsutvikling",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "digital-samhandling",
+                name: "Digital transformasjon",
+                type: "STUDY",
+            });
+            await ctx.utils.createTestGroup({
+                slug: "2023",
+                name: "2023",
+                type: "STUDYYEAR",
+            });
+
+            const [bachelor] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-forretningsutvikling",
+                    feideCode: "ITBAITBEDR",
+                    displayName: "Digital Forretningsutvikling",
+                    type: "bachelor",
+                })
+                .returning({ id: schema.studyProgram.id });
+            const [master] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-samhandling",
+                    feideCode: "ITMAIKTSA",
+                    displayName: "Digital Samhandling",
+                    type: "master",
+                })
+                .returning({ id: schema.studyProgram.id });
+
+            await ctx.db.insert(schema.groupMembership).values([
+                {
+                    userId: registered.id,
+                    groupSlug: "digital-forretningsutvikling",
+                    role: "member",
+                },
+                {
+                    userId: registered.id,
+                    groupSlug: "digital-samhandling",
+                    role: "member",
+                },
+                { userId: registered.id, groupSlug: "2023", role: "member" },
+            ]);
+            await ctx.db.insert(schema.studyProgramMembership).values([
+                {
+                    userId: registered.id,
+                    studyProgramId: bachelor?.id as number,
+                    startYear: 2023,
+                    startYearSource: "derived",
+                    feideActive: false,
+                },
+                {
+                    userId: registered.id,
+                    studyProgramId: master?.id as number,
+                    startYear: 2026,
+                    startYearSource: "derived",
+                    feideActive: true,
+                },
+            ]);
+
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["events:manage"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            const res = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            const row = body.registeredUsers.find(
+                (u) => u.id === registered.id,
+            );
+            expect(row?.studyProgram).toBe("Digital transformasjon");
+            expect(row?.studyStartYear).toBe(2026);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        // Studie og kull sier like mye om et medlem som e-posten gjør, og
+        // hører til samme lås.
+        "keeps programme and cohort out of the ordinary member's view",
+        async ({ ctx }) => {
+            const { event } = await seedRegistrations(ctx);
+
+            const member = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(member);
+            const res = await client.api.event[":eventId"].registration.$get({
+                param: { eventId: event.id },
+                query: {},
+            });
+
+            const body = await res.json();
+            const [user] = body.registeredUsers;
+            expect(user?.studyProgram).toBeUndefined();
+            expect(user?.studyStartYear).toBeUndefined();
+        },
+        500_000,
+    );
+
+    integrationTest(
         "rejects status filtering from non-admins",
         async ({ ctx }) => {
             const { event } = await seedRegistrations(ctx);

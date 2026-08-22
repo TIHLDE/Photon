@@ -18,6 +18,7 @@ import {
     CircleCheckBigIcon,
     ExternalLink,
     EyeIcon,
+    FilterIcon,
     PlusIcon,
     TriangleAlertIcon,
     CheckIcon,
@@ -103,7 +104,12 @@ import {
     useCanActOnGroupResource,
 } from "#/hooks/use-permission";
 import { extractErrorMessage } from "#/lib/api-error";
-import { cn } from "#/lib/utils";
+import {
+    classLevelBucket,
+    classLevelBucketLabel,
+    cn,
+    formatStudyLabel,
+} from "#/lib/utils";
 import { EVENT_FORM_ERRORS } from "#/lib/event";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
@@ -665,11 +671,179 @@ const REGISTRATION_FILTERS = [
     { value: "venteliste", label: "Venteliste", status: "waitlisted" },
 ] as const;
 
+/**
+ * Kullet og studiet til de påmeldte, som klikkbare tall.
+ *
+ * Bøttene regnes ut i nettleseren fra `studyProgram` og `studyStartYear` på
+ * hver påmelding — arrangøren laster allerede hele lista for å kunne søke i
+ * den, så et eget statistikk-endepunkt ville bare telt de samme radene en gang
+ * til.
+ */
+type RegistrationFacets = {
+    /** Klassetrinn-bøtte, se `classLevelBucket`. */
+    classLevel: string | null;
+    /** Studieprogram etter navn, eller `NO_STUDY` for dem uten. */
+    study: string | null;
+};
+
+const NO_FACETS: RegistrationFacets = { classLevel: null, study: null };
+
+/** Bøtte for den som ikke har noe studieprogram registrert. */
+const NO_STUDY = "__none__";
+
+type BreakdownParticipant = {
+    studyProgram?: string | null;
+    studyStartYear?: number | null;
+};
+
+function studyBucket(participant: BreakdownParticipant): string {
+    return participant.studyProgram ?? NO_STUDY;
+}
+
+/**
+ * Klassetrinnet til studielinja i tabellen, eller null for alumni og dem vi
+ * ikke vet nok om — da står studiet alene, uten et årstall som antyder at de
+ * fortsatt går der.
+ */
+function classYearOf(participant: BreakdownParticipant): number | null {
+    const bucket = levelBucket(participant);
+    const year = Number.parseInt(bucket, 10);
+    return Number.isFinite(year) ? year : null;
+}
+
+function levelBucket(participant: BreakdownParticipant): string {
+    return classLevelBucket(
+        participant.studyProgram,
+        participant.studyStartYear,
+    );
+}
+
+/**
+ * Teller opp en bøtte og sorterer den slik den skal leses: klassetrinnene
+ * stigende, så alumni, så de vi ikke vet noe om. Studiene sorteres på antall,
+ * med «ukjent studie» sist uansett hvor mange de er.
+ */
+function countBuckets(
+    participants: BreakdownParticipant[],
+    bucketOf: (participant: BreakdownParticipant) => string,
+    rank: (bucket: string, count: number) => [number, number, string],
+): Array<{ bucket: string; count: number }> {
+    const counts = new Map<string, number>();
+    for (const participant of participants) {
+        const bucket = bucketOf(participant);
+        counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+        .map(([bucket, count]) => ({ bucket, count }))
+        .sort((a, b) => {
+            const rankA = rank(a.bucket, a.count);
+            const rankB = rank(b.bucket, b.count);
+            return (
+                rankA[0] - rankB[0] ||
+                rankA[1] - rankB[1] ||
+                rankA[2].localeCompare(rankB[2], "nb-NO")
+            );
+        });
+}
+
+function rankClassLevel(bucket: string): [number, number, string] {
+    if (bucket === "alumni") return [1, 0, bucket];
+    if (bucket === "unknown") return [2, 0, bucket];
+    return [0, Number.parseInt(bucket, 10), bucket];
+}
+
+function rankStudy(bucket: string, count: number): [number, number, string] {
+    return [bucket === NO_STUDY ? 1 : 0, -count, bucket];
+}
+
+/** Ett tall i fordelingen. Hele kortet er knappen som slår filteret av og på. */
+function BreakdownCard({
+    label,
+    count,
+    active,
+    onClick,
+}: {
+    label: string;
+    count: number;
+    active: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <Card
+            render={<button type="button" />}
+            aria-pressed={active}
+            onClick={onClick}
+            className={cn(
+                "cursor-pointer text-left transition-colors",
+                active
+                    ? "border-primary bg-primary/10 ring-1 ring-primary"
+                    : "hover:border-foreground/20",
+            )}
+        >
+            <CardContent className="flex items-start justify-between gap-2 px-4 py-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                    <span
+                        className={cn(
+                            "truncate text-sm",
+                            active
+                                ? "font-medium text-primary"
+                                : "text-muted-foreground",
+                        )}
+                    >
+                        {label}
+                    </span>
+                    <span className="text-2xl leading-none">{count}</span>
+                </div>
+                {active ? (
+                    <CheckIcon className="size-4 shrink-0 text-primary" />
+                ) : null}
+            </CardContent>
+        </Card>
+    );
+}
+
+function BreakdownSection({
+    title,
+    buckets,
+    active,
+    labelOf,
+    onToggle,
+}: {
+    title: string;
+    buckets: Array<{ bucket: string; count: number }>;
+    active: string | null;
+    labelOf: (bucket: string) => string;
+    onToggle: (bucket: string) => void;
+}) {
+    if (buckets.length === 0) return null;
+
+    return (
+        <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+                {title}
+            </h3>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {buckets.map(({ bucket, count }) => (
+                    <BreakdownCard
+                        key={bucket}
+                        label={labelOf(bucket)}
+                        count={count}
+                        active={active === bucket}
+                        onClick={() => onToggle(bucket)}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function RegistrationsTab({ eventId }: { eventId: string }) {
     const [filter, setFilter] =
         useState<(typeof REGISTRATION_FILTERS)[number]["value"]>("aktive");
     const status = REGISTRATION_FILTERS.find((f) => f.value === filter)?.status;
     const [search, setSearch] = useState("");
+    const [facets, setFacets] = useState<RegistrationFacets>(NO_FACETS);
 
     const registrationsQuery = useInfiniteQuery(
         getEventRegistrationsInfiniteQuery(eventId, status ? { status } : {}),
@@ -685,13 +859,61 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
     );
     const isPending = registrationsQuery.isPending;
 
+    /**
+     * Tallene på kortene teller alle påmeldte, men hver fordeling ser bort fra
+     * sitt eget filter og respekterer det andre: står du på «2. klasse», viser
+     * studiekortene hvor mange andreklassinger som går hvert studie. Ellers
+     * ville kortet sagt 12 og tabellen vist 3.
+     */
+    const classLevelBuckets = useMemo(
+        () =>
+            countBuckets(
+                participants.filter(
+                    (p) =>
+                        facets.study === null ||
+                        studyBucket(p) === facets.study,
+                ),
+                levelBucket,
+                rankClassLevel,
+            ),
+        [participants, facets.study],
+    );
+
+    const studyBuckets = useMemo(
+        () =>
+            countBuckets(
+                participants.filter(
+                    (p) =>
+                        facets.classLevel === null ||
+                        levelBucket(p) === facets.classLevel,
+                ),
+                studyBucket,
+                rankStudy,
+            ),
+        [participants, facets.classLevel],
+    );
+
+    const hasFacet = facets.classLevel !== null || facets.study !== null;
+
+    const facetedParticipants = useMemo(
+        () =>
+            participants.filter(
+                (participant) =>
+                    (facets.classLevel === null ||
+                        levelBucket(participant) === facets.classLevel) &&
+                    (facets.study === null ||
+                        studyBucket(participant) === facets.study),
+            ),
+        [participants, facets.classLevel, facets.study],
+    );
+
     const query = search.trim().toLowerCase();
     const visibleParticipants = useMemo(
         () =>
-            participants.filter((participant) =>
+            facetedParticipants.filter((participant) =>
                 matchesQuery([participant.name, participant.email], query),
             ),
-        [participants, query],
+        [facetedParticipants, query],
     );
 
     return (
@@ -712,6 +934,70 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                     ))}
                 </TabsList>
             </Tabs>
+
+            {participants.length > 0 ? (
+                <div className="flex flex-col gap-4">
+                    <BreakdownSection
+                        title="Kull"
+                        buckets={classLevelBuckets}
+                        active={facets.classLevel}
+                        labelOf={classLevelBucketLabel}
+                        onToggle={(bucket) =>
+                            setFacets((current) => ({
+                                ...current,
+                                classLevel:
+                                    current.classLevel === bucket
+                                        ? null
+                                        : bucket,
+                            }))
+                        }
+                    />
+                    <BreakdownSection
+                        title="Studie"
+                        buckets={studyBuckets}
+                        active={facets.study}
+                        labelOf={(bucket) =>
+                            bucket === NO_STUDY ? "Ukjent studie" : bucket
+                        }
+                        onToggle={(bucket) =>
+                            setFacets((current) => ({
+                                ...current,
+                                study: current.study === bucket ? null : bucket,
+                            }))
+                        }
+                    />
+                </div>
+            ) : null}
+
+            {hasFacet ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary bg-primary/5 px-3 py-2 text-sm">
+                    <FilterIcon className="size-4 shrink-0 text-primary" />
+                    <span>
+                        Viser {facetedParticipants.length} av{" "}
+                        {participants.length} påmeldte:
+                    </span>
+                    {facets.classLevel !== null ? (
+                        <Badge variant="secondary">
+                            {classLevelBucketLabel(facets.classLevel)}
+                        </Badge>
+                    ) : null}
+                    {facets.study !== null ? (
+                        <Badge variant="secondary">
+                            {facets.study === NO_STUDY
+                                ? "Ukjent studie"
+                                : facets.study}
+                        </Badge>
+                    ) : null}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto"
+                        onClick={() => setFacets(NO_FACETS)}
+                    >
+                        Nullstill
+                    </Button>
+                </div>
+            ) : null}
 
             {participants.length > 0 ? (
                 <SearchField
@@ -739,7 +1025,11 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                         <AdminEmptyState
                             icon={UsersIcon}
                             title="Ingen treff"
-                            description={`Ingen påmeldte matcher «${search.trim()}».`}
+                            description={
+                                query
+                                    ? `Ingen påmeldte matcher «${search.trim()}».`
+                                    : "Ingen påmeldte i utvalget du har filtrert på."
+                            }
                         />
                     </CardContent>
                 </Card>
@@ -751,6 +1041,7 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                 <TableRow>
                                     <TableHead>Navn</TableHead>
                                     <TableHead>E-post</TableHead>
+                                    <TableHead>Studie</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Betaling</TableHead>
                                     <TableHead>Påmeldt</TableHead>
@@ -771,6 +1062,16 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                             </TableCell>
                                             <TableCell>
                                                 {participant.email ?? "—"}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatStudyLabel({
+                                                    programme:
+                                                        participant.studyProgram,
+                                                    classYear:
+                                                        classYearOf(
+                                                            participant,
+                                                        ),
+                                                }) ?? "—"}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
