@@ -26,6 +26,13 @@ jobs:
             # Tagger imaget med release-taggen, så Drift kan bruke den som
             # deploy-markør på containeren i tillegg til latest + sha.
             extra_tags: type=ref,event=tag
+            # Bakes inn som ENV og serveres av GET /api/version. Uten dem kan
+            # ingen se utenfra hvilken kode som faktisk kjører — bare at noe
+            # startet på nytt. `ref_name` er release-taggen både når taggen
+            # trigger kjøringen og ved rollback via workflow_dispatch --ref.
+            build_args: |
+                APP_VERSION=${{ github.ref_name }}
+                GIT_SHA=${{ github.sha }}
 
     deploy:
         needs: build
