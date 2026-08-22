@@ -7,14 +7,18 @@ import type { Form } from "#/lib/group";
 
 type GroupFormsTabProps = {
     forms: Form[];
-    isAdmin: boolean;
+    /** Får opprette nye skjema for gruppen — `forms:create` her, eller ledervervet. */
+    canCreate: boolean;
+    /** Får redigere skjemaene og lese svarene — `forms:update`, eller ledervervet. */
+    canManage: boolean;
     onNewForm: () => void;
     onEditForm: (form: Form) => void;
 };
 
 export function GroupFormsTab({
     forms,
-    isAdmin,
+    canCreate,
+    canManage,
     onNewForm,
     onEditForm,
 }: GroupFormsTabProps) {
@@ -23,7 +27,7 @@ export function GroupFormsTab({
             <GroupPageHeader
                 title="Spørreskjema"
                 action={
-                    isAdmin ? (
+                    canCreate ? (
                         <Button onClick={onNewForm}>
                             <Plus />
                             Nytt spørreskjema
@@ -37,7 +41,7 @@ export function GroupFormsTab({
                         <li key={form.id}>
                             <GroupFormRow
                                 form={form}
-                                canManage={isAdmin}
+                                canManage={canManage}
                                 onEdit={() => onEditForm(form)}
                             />
                         </li>

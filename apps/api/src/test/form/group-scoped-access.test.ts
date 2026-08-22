@@ -197,4 +197,84 @@ describe("group-scoped forms access", () => {
         },
         500_000,
     );
+
+    /**
+     * Samme grant, ett steg tidligere: lista over gruppas skjema filtrerte
+     * utelukkende på lederskap og medlemskap, og spurte aldri om tilganger.
+     * Et stengt skjema — et opptak som er ferdig, eller ett som ennå ikke har
+     * åpnet — var derfor usynlig for alle andre enn lederen, enda den som
+     * holder «Spørreskjema» for gruppa slipper inn på selve svarene.
+     */
+    integrationTest(
+        "a scoped «Spørreskjema» grant sees the group's closed forms in the list",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const helper = await ctx.utils.createTestUser();
+            const plainMember = await ctx.utils.createTestUser();
+
+            const group = await ctx.utils.createTestGroup({
+                slug: "forms-liste-eier",
+            });
+
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: leader.id, groupSlug: group.slug, role: "leader" },
+                { userId: helper.id, groupSlug: group.slug, role: "member" },
+                {
+                    userId: plainMember.id,
+                    groupSlug: group.slug,
+                    role: "member",
+                },
+            ]);
+
+            // Grantet ligger på personen, ikke på medlemskapet: da skiller
+            // testen mellom den som har fått «Spørreskjema» og den som bare
+            // er med i gruppa.
+            await ctx.db.insert(schema.userPermission).values({
+                userId: helper.id,
+                permission: "forms:manage",
+                scope: `group:${group.slug}`,
+            });
+
+            const leaderClient = await ctx.utils.clientForUser(leader);
+            const helperClient = await ctx.utils.clientForUser(helper);
+            const memberClient = await ctx.utils.clientForUser(plainMember);
+
+            // Et stengt skjema — opptaket er over.
+            const created = await leaderClient.api.groups[":slug"].forms.$post({
+                param: { slug: group.slug },
+                json: {
+                    title: "Opptak som er stengt",
+                    description: "Ferdig",
+                    template: false,
+                    group: group.slug,
+                    can_submit_multiple: false,
+                    is_open_for_submissions: false,
+                    only_for_group_members: false,
+                    fields: [
+                        {
+                            title: "Hvorfor søker du?",
+                            type: "text_answer",
+                            required: true,
+                            order: 0,
+                        },
+                    ],
+                },
+            });
+            expect(created.status).toBe(201);
+
+            const forHelper = await helperClient.api.groups[":slug"].forms.$get(
+                { param: { slug: group.slug } },
+            );
+            expect(forHelper.status).toBe(200);
+            expect(await forHelper.json()).toHaveLength(1);
+
+            // Medlemskapet alene rekker fortsatt bare til det som er åpent.
+            const forMember = await memberClient.api.groups[":slug"].forms.$get(
+                { param: { slug: group.slug } },
+            );
+            expect(forMember.status).toBe(200);
+            expect(await forMember.json()).toHaveLength(0);
+        },
+        500_000,
+    );
 });

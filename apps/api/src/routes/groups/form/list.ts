@@ -1,3 +1,4 @@
+import { hasScopedPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -58,8 +59,22 @@ export const listGroupFormsRoute = route().get(
                 and(eq(m.groupSlug, groupSlug), eq(m.userId, user.id)),
         });
 
-        const isLeader = membership?.role === "leader";
         const isMember = !!membership;
+
+        // Hvem som ser hele lista, ikke bare det som er åpent nå. Lederskap
+        // var lenge det eneste svaret, men «Spørreskjema» huket av på et verv
+        // gir `forms:*` scopet til gruppen — og den som skal forvalte skjemaene
+        // må se dem før de åpner og etter at de stenger. Uten dette forsvant
+        // et ferdig opptaksskjema ut av lista for alle andre enn lederen,
+        // enda API-et slipper dem inn på selve svarene.
+        const canManageForms =
+            membership?.role === "leader" ||
+            (await hasScopedPermission(
+                ctx,
+                user.id,
+                ["forms:update", "forms:manage"],
+                `group:${groupSlug}`,
+            ));
 
         // Get all group forms
         const groupForms = await db.query.formGroupForm.findMany({
@@ -71,10 +86,10 @@ export const listGroupFormsRoute = route().get(
 
         // Filter forms based on permissions. Et skjema som er planlagt fram i
         // tid teller som stengt her, så det dukker ikke opp for andre enn
-        // lederne før det faktisk har åpnet.
+        // dem som forvalter skjemaene før det faktisk har åpnet.
         const visibleForms = groupForms.filter((gf) => {
-            // Leaders see all forms
-            if (isLeader) return true;
+            // Den som forvalter skjemaene ser alle
+            if (canManageForms) return true;
 
             const isOpenNow = isGroupFormOpen(gf);
 
