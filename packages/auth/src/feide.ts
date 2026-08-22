@@ -366,8 +366,34 @@ export async function syncFeideForUser(
     const username =
         feideAccount.username ?? (await backfillUsername(db, userId, token));
 
-    const { programs, campus } = await fetchValidStudyPrograms(token);
+    const who = `user ${userId} (${username ?? "no username"})`;
+
+    const { programs, campus } = await fetchValidStudyPrograms(token, who);
     const { allowed, campusRejected } = partitionByCampus(programs, campus);
+
+    /**
+     * A login that ends with no programme leaves the member with no study, no
+     * cohort and no groups — the state five members were sitting in when the
+     * immatrikuleringsball registrations went out. Every route into it already
+     * logs, but each logs something different and two of them name nobody, so
+     * finding who it happened to meant correlating timestamps against
+     * `auth_account.created_at` by hand.
+     *
+     * One line, always the same wording, always with the user in it. It is the
+     * query an admin needs: who came out of a Feide login empty, and did their
+     * programme come back from Feide at all or did our own campus gate hold it
+     * back.
+     */
+    if (allowed.length === 0) {
+        console.warn(
+            `Feide login left ${who} without a study programme. Feide sent: ${
+                programs.map((p) => p.code).join(", ") ||
+                "(no TIHLDE programme)"
+            }. Held back by campus: ${
+                campusRejected.map((p) => p.code).join(", ") || "(none)"
+            }. Campus read as: ${campus ?? "unresolved"}.`,
+        );
+    }
 
     if (needsCampusFollowUp(allowed, campus)) {
         /**
@@ -377,7 +403,7 @@ export async function syncFeideForUser(
          * followed up on: the pure parser has no user to point at.
          */
         console.warn(
-            `Could not resolve campus for user ${userId} (${username ?? "no username"}) on ${allowed.map((p) => p.code).join(", ")}; allowing.`,
+            `Could not resolve campus for ${who} on ${allowed.map((p) => p.code).join(", ")}; allowing.`,
         );
     }
 
@@ -1407,6 +1433,7 @@ export function needsCampusFollowUp(
  */
 async function fetchValidStudyPrograms(
     accessToken: string,
+    who: string,
 ): Promise<{ programs: StudyProgram[]; campus: Campus | null }> {
     /**
      * `showAll=true` is what makes cohorts visible at all.
@@ -1442,7 +1469,7 @@ async function fetchValidStudyPrograms(
      */
     if (groups.length === 0) {
         console.warn(
-            "Feide groups API returned no groups at all; is `groups-edu` released to this service?",
+            `Feide groups API returned no groups at all for ${who}; is \`groups-edu\` released to this service?`,
         );
     }
 
@@ -1497,7 +1524,7 @@ async function fetchValidStudyPrograms(
                 : `no cohort year for ${programs.map((p) => p.code).join(", ")}`;
 
         console.warn(
-            `Feide returned ${groups.length} groups but ${problem}. Types: ${typeCounts}. Cohort ids: ${
+            `Feide returned ${groups.length} groups for ${who} but ${problem}. Types: ${typeCounts}. Cohort ids: ${
                 cohorts.map((g) => g.id).join(", ") || "(none)"
             }. Non-course groups: ${
                 JSON.stringify(nonCourse).slice(0, 2000) || "(none)"
@@ -1542,13 +1569,37 @@ export function campusOfCourseCode(courseCode: string): Campus | null {
  * should not move the student. A tie, or no campus-marked courses at all,
  * yields null — see {@link parseValidStudyPrograms} for what that means.
  *
+ * Only *active* course memberships vote. We fetch groups with `showAll=true`,
+ * so the response carries every course the member has ever been enrolled in,
+ * and counting those equally lets a finished semester elsewhere outvote the
+ * one they are in now. On 2026-08-17 that cost a first-year BDIGSEC student in
+ * Trondheim his study programme, cohort and every group on the account: his
+ * lapsed courses read as another campus, the gate held the programme back, and
+ * the result was indistinguishable from Feide never having sent it.
+ *
+ * The activity filter is applied only when Feide actually says something about
+ * activity. `membership.active` is documented as present on the FS groups, but
+ * a response that omits it on courses would otherwise leave every login with
+ * an empty ballot — campus null, gate open — which is the one failure this
+ * function must not have. So: if no course carries the field, every course
+ * votes, exactly as before.
+ *
  * Exported for testing.
  */
 export function resolveCampus(groups: FeideGroup[]): Campus | null {
+    const courses = groups.filter((g) => g.type === "fc:fs:emne");
+
+    const reportsActivity = courses.some(
+        (g) => typeof g.membership?.active === "boolean",
+    );
+
+    const voters = reportsActivity
+        ? courses.filter((g) => g.membership?.active === true)
+        : courses;
+
     const votes = new Map<Campus, number>();
 
-    for (const g of groups) {
-        if (g.type !== "fc:fs:emne") continue;
+    for (const g of voters) {
         // i.e. fc:fs:fs:emne:ntnu.no:IDATT2003:1
         const courseCode = g.id.split(":")[5];
         if (!courseCode) continue;
