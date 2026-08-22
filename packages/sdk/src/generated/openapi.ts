@@ -1230,6 +1230,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forms/{formId}/submissions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List own submissions
+         * @description List the authenticated user's own submissions for a form, newest first. Available to any authenticated user; no form management permission needed.
+         */
+        get: operations["listOwnFormSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/forms/{formId}/submissions/{id}": {
         parameters: {
             query?: never;
@@ -4592,6 +4612,8 @@ export interface components {
                 id: string;
                 name: string;
                 email: string;
+                study_program: string | null;
+                study_start_year: number | null;
             };
             created_at: string;
             updated_at: string;
@@ -4614,6 +4636,8 @@ export interface components {
                 id: string;
                 name: string;
                 email: string;
+                study_program: string | null;
+                study_start_year: number | null;
             };
             created_at: string;
             updated_at: string;
@@ -9748,6 +9772,53 @@ export interface operations {
                 };
             };
             /** @description Form not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listOwnFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Form not found */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -1,4 +1,4 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Alert, AlertDescription, AlertTitle } from "@tihlde/ui/ui/alert";
 import { Button } from "@tihlde/ui/ui/button";
@@ -21,12 +21,14 @@ import { authClientWithRedirect } from "#/api/auth";
 import {
     createSubmissionMutation,
     getFormByIdQuery,
+    getOwnFormSubmissionsQuery,
 } from "#/api/queries/forms";
+import { FormOwnAnswers } from "#/components/form-own-answers";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { formHandlers, useAppForm } from "#/hooks/form";
 import { useGoBack } from "#/hooks/use-go-back";
 import { formatEventDate } from "#/lib/event";
-import { formatFormOpensAt } from "#/lib/form";
+import { formatFormOpensAt, mapSubmission } from "#/lib/form";
 
 export const Route = createFileRoute("/_app/sporreskjema/$id")({
     component: FormPage,
@@ -157,37 +159,84 @@ function FormBody({ form }: { form: FormDetail }) {
     const canAnswerAgain =
         form.resource_type === "GroupForm" && Boolean(form.can_submit_multiple);
 
-    if (form.viewer_has_answered && !canAnswerAgain) {
-        return <AlreadyAnswered />;
+    if (form.viewer_has_answered) {
+        return <AlreadyAnswered form={form} canAnswerAgain={canAnswerAgain} />;
     }
 
     return <AnswerForm form={form} />;
 }
 
-function AlreadyAnswered() {
+/**
+ * Beskjed om at man allerede har svart, sammen med svaret man sendte.
+ *
+ * Skjemaer som tar imot flere svar viste før bare et blankt skjema på nytt, så
+ * man verken visste at man hadde svart eller hva man hadde svart (issue #672).
+ * De får derfor beskjeden og svarene sine først, og skjemaet under.
+ */
+function AlreadyAnswered({
+    form,
+    canAnswerAgain,
+}: {
+    form: FormDetail;
+    canAnswerAgain: boolean;
+}) {
+    const { data: ownSubmissions, isPending } = useQuery(
+        getOwnFormSubmissionsQuery(form.id),
+    );
+    const questions = form.fields.map((field) => ({
+        id: field.id,
+        title: field.title,
+    }));
+    const submissions = (ownSubmissions ?? []).map(mapSubmission);
+
     return (
         <div className="flex flex-col gap-4">
             <Alert>
                 <CheckCircle2 />
                 <AlertTitle>Du har allerede svart på dette skjemaet</AlertTitle>
-                <AlertDescription>Takk for svaret ditt!</AlertDescription>
+                <AlertDescription>
+                    {canAnswerAgain
+                        ? "Skjemaet tar imot flere svar. Under ser du hva du har svart før, og du kan sende inn et nytt svar."
+                        : "Takk for svaret ditt! Under ser du hva du svarte."}
+                </AlertDescription>
             </Alert>
-            <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    render={<Link to="/" />}
-                >
-                    Gå til forsiden
-                </Button>
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    render={<Link to="/profil/$id" params={{ id: "me" }} />}
-                >
-                    Gå til profilen din
-                </Button>
-            </div>
+
+            <FormOwnAnswers
+                questions={questions}
+                submissions={submissions.map((submission) => ({
+                    id: submission.id,
+                    submittedAt: submission.submittedAt,
+                    answers: submission.answers,
+                }))}
+                isLoading={isPending}
+            />
+
+            {canAnswerAgain ? (
+                <>
+                    <Separator />
+                    <h2 className="text-lg font-medium">
+                        Send inn et nytt svar
+                    </h2>
+                    <AnswerForm form={form} />
+                </>
+            ) : (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        render={<Link to="/" />}
+                    >
+                        Gå til forsiden
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        render={<Link to="/profil/$id" params={{ id: "me" }} />}
+                    >
+                        Gå til profilen din
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

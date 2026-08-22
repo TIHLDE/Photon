@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
+import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -26,7 +27,8 @@ export const getSubmissionRoute = route().get(
         .build(),
     requireAuth,
     async (c) => {
-        const { db, ...ctx } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const user = c.get("user");
         const formId = c.req.param("formId");
         const submissionId = c.req.param("id");
@@ -65,7 +67,7 @@ export const getSubmissionRoute = route().get(
 
         // Check permissions: own submission OR can manage form
         const isOwnSubmission = submission.userId === user.id;
-        const canManage = await canManageForm({ db, ...ctx }, formId, user.id);
+        const canManage = await canManageForm(ctx, formId, user.id);
 
         if (!isOwnSubmission && !canManage) {
             throw new HTTPException(403, {
@@ -73,12 +75,20 @@ export const getSubmissionRoute = route().get(
             });
         }
 
+        const study = deriveStudyFromGroups(
+            (await loadStudyGroupRows(ctx, [submission.userId])).get(
+                submission.userId,
+            ) ?? [],
+        );
+
         return c.json({
             id: submission.id,
             user: {
                 id: submission.user.id,
                 name: submission.user.name,
                 email: submission.user.email,
+                study_program: study.studyProgram,
+                study_start_year: study.studyStartYear,
             },
             created_at: submission.createdAt.toISOString(),
             updated_at: submission.updatedAt.toISOString(),

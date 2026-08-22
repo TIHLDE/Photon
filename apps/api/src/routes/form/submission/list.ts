@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
+import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -26,7 +27,8 @@ export const listSubmissionsRoute = route().get(
         .build(),
     requireAuth,
     async (c) => {
-        const { db, ...ctx } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const user = c.get("user");
         const formId = c.req.param("formId");
 
@@ -48,7 +50,7 @@ export const listSubmissionsRoute = route().get(
         }
 
         // Check permissions
-        const canManage = await canManageForm({ db, ...ctx }, formId, user.id);
+        const canManage = await canManageForm(ctx, formId, user.id);
 
         if (!canManage) {
             throw new HTTPException(403, {
@@ -101,26 +103,41 @@ export const listSubmissionsRoute = route().get(
             );
         }
 
+        // Studieretning og kull for hele lista i én spørring, utledet med den
+        // samme rangeringen som profilen bruker — ellers kunne skjemaet og
+        // profilen vist to ulike studier for samme person.
+        const studyByUser = await loadStudyGroupRows(
+            ctx,
+            submissions.map((s) => s.userId),
+        );
+
         return c.json(
-            submissions.map((submission) => ({
-                id: submission.id,
-                user: {
-                    id: submission.user.id,
-                    name: submission.user.name,
-                    email: submission.user.email,
-                },
-                created_at: submission.createdAt.toISOString(),
-                updated_at: submission.updatedAt.toISOString(),
-                answers: submission.answers.map((answer) => ({
-                    id: answer.id,
-                    field_id: answer.fieldId,
-                    answer_text: answer.answerText,
-                    selected_options: answer.selectedOptions.map((so) => ({
-                        id: so.option.id,
-                        title: so.option.title,
+            submissions.map((submission) => {
+                const study = deriveStudyFromGroups(
+                    studyByUser.get(submission.userId) ?? [],
+                );
+                return {
+                    id: submission.id,
+                    user: {
+                        id: submission.user.id,
+                        name: submission.user.name,
+                        email: submission.user.email,
+                        study_program: study.studyProgram,
+                        study_start_year: study.studyStartYear,
+                    },
+                    created_at: submission.createdAt.toISOString(),
+                    updated_at: submission.updatedAt.toISOString(),
+                    answers: submission.answers.map((answer) => ({
+                        id: answer.id,
+                        field_id: answer.fieldId,
+                        answer_text: answer.answerText,
+                        selected_options: answer.selectedOptions.map((so) => ({
+                            id: so.option.id,
+                            title: so.option.title,
+                        })),
                     })),
-                })),
-            })),
+                };
+            }),
         );
     },
 );
