@@ -27,6 +27,17 @@ const emne = (code: string) => ({
 });
 
 /**
+ * A course group as Feide actually sends it under `showAll=true`: with a
+ * `membership.active` that says whether the member is still enrolled in it.
+ * `emne` above deliberately omits the field, which is the other case the
+ * campus reading has to survive.
+ */
+const emneActive = (code: string, active: boolean) => ({
+    ...emne(code),
+    membership: { active },
+});
+
+/**
  * The gate as the login hook composes it: parse the programmes, read the
  * campus off the courses, then split on campus.
  */
@@ -125,6 +136,60 @@ describe("campus gating of multi-campus study programmes", () => {
     });
 });
 
+/**
+ * `showAll=true` brings back every course the member has ever been enrolled
+ * in, so a semester finished at another campus is in the same response as the
+ * one they are in now. Counting both is what stranded a first-year BDIGSEC
+ * student in Trondheim on 2026-08-17: his lapsed courses outvoted the courses
+ * he had yet to be registered for, the gate held BDIGSEC back, and he lost his
+ * study programme, his cohort and every group on the account.
+ */
+describe("lapsed course memberships", () => {
+    test("does not reject a student whose only other-campus courses have lapsed", () => {
+        const { allowed, campusRejected } = gate([
+            kull("BDIGSEC", "2026H"),
+            emneActive("DCSG1001", false),
+            emneActive("IMAG1002", false),
+        ]);
+
+        assert.equal(allowed[0]?.code, "BDIGSEC");
+        assert.deepEqual(campusRejected, []);
+    });
+
+    test("still rejects a student whose other-campus courses are active", () => {
+        const { allowed, campusRejected } = gate([
+            kull("BDIGSEC", "2026H"),
+            emneActive("DCSG1001", true),
+            emneActive("IMAG1002", true),
+        ]);
+
+        assert.deepEqual(allowed, []);
+        assert.equal(campusRejected[0]?.code, "BDIGSEC");
+    });
+
+    test("a lapsed semester elsewhere does not outvote the current one", () => {
+        const { allowed } = gate([
+            kull("BIDATA", "2026H"),
+            ...firstSemester.gjovik.map((c) => emneActive(c, false)),
+            emneActive("IDATT1003", true),
+        ]);
+
+        assert.equal(allowed[0]?.code, "BIDATA");
+    });
+
+    test("keeps counting every course when Feide sends no activity at all", () => {
+        // The gate must not fall open on a response that omits the field:
+        // an empty ballot means campus null, and campus null lets everyone in.
+        const { allowed, campusRejected } = gate([
+            kull("BIDATA", "2026H"),
+            ...firstSemester.gjovik.map(emne),
+        ]);
+
+        assert.deepEqual(allowed, []);
+        assert.equal(campusRejected[0]?.code, "BIDATA");
+    });
+});
+
 describe("campusOfCourseCode", () => {
     test("reads the campus letter of known course families", () => {
         assert.equal(campusOfCourseCode("IDATT2003"), "trondheim");
@@ -198,6 +263,42 @@ describe("resolveCampus", () => {
         assert.equal(
             resolveCampus([emne("IDATT1003"), emne("IDATG1003")]),
             null,
+        );
+    });
+
+    test("returns null when every campus-marked course has lapsed", () => {
+        assert.equal(
+            resolveCampus([
+                emneActive("IDATG1003", false),
+                emneActive("IDATG1004", false),
+            ]),
+            null,
+        );
+    });
+
+    test("an active course outvotes any number of lapsed ones", () => {
+        assert.equal(
+            resolveCampus([
+                emneActive("IDATG1003", false),
+                emneActive("IDATG1004", false),
+                emneActive("INGG1002", false),
+                emneActive("IDATT1003", true),
+            ]),
+            "trondheim",
+        );
+    });
+
+    test("ignores activity on non-course groups when deciding to filter", () => {
+        // The cohort carries `membership.active` too. If its presence were
+        // what switched the filter on, a member with an active cohort and
+        // course groups that omit the field would vote with nothing at all.
+        assert.equal(
+            resolveCampus([
+                { ...kull("BIDATA", "2026H"), membership: { active: true } },
+                emne("IDATG1003"),
+                emne("IDATG1004"),
+            ]),
+            "gjovik",
         );
     });
 });
