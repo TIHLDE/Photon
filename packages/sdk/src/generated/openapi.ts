@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Build and uptime of the running instance
+         * @description What is actually running right now. A deploy is only finished once the host has swapped the container, which is minutes after the workflow reports success — and the workflow reporting success is not evidence that it happened. Before this route, the only way to tell from outside was to find a schema that happened to change in that release; 2026-08-22.release-1 changed none, so its deploy could not be confirmed at all. Public, and carries nothing but build metadata.
+         */
+        get: operations["getVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/api-keys": {
         parameters: {
             query?: never;
@@ -2882,6 +2902,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Version: {
+            /** @description Release tag the image was built from, e.g. '2026-08-22.release-1'. 'unknown' when the image did not come from the release pipeline. */
+            version: string;
+            /** @description Commit the image was built from, or 'unknown' outside the release pipeline. */
+            commit: string;
+            /** @description When this process booted (ISO 8601). */
+            startedAt: string;
+            /** @description Seconds since this process booted. */
+            uptimeSeconds: number;
+        };
         CreateApiKeyResponse: {
             /**
              * Format: uuid
@@ -6427,6 +6457,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+        };
+    };
     listApiKeys: {
         parameters: {
             query?: never;

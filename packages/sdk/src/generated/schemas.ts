@@ -243,6 +243,7 @@ export type UserSettings = Schemas["UserSettings"];
 export type UserSettingsBase = Schemas["UserSettingsBase"];
 export type ValidateApiKeyInput = Schemas["ValidateApiKeyInput"];
 export type ValidateApiKeyResponse = Schemas["ValidateApiKeyResponse"];
+export type Version = Schemas["Version"];
 export type VisibleBanner = Schemas["VisibleBanner"];
 export type VisibleBannerList = Schemas["VisibleBannerList"];
 export type VoteFeedback = Schemas["VoteFeedback"];

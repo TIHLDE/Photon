@@ -51,6 +51,15 @@ COPY --from=build /usr/src/app/packages/db/drizzle ./drizzle
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 
+# Build metadata, served by GET /api/version. Declared last so a new release
+# tag reuses every cached layer above — only this ARG and the ENV below are
+# rebuilt. Both default to "unknown": a local `docker build` has no release to
+# name, and the route says so rather than reporting a version it invented.
+ARG APP_VERSION=unknown
+ARG GIT_SHA=unknown
+ENV APP_VERSION=$APP_VERSION
+ENV GIT_SHA=$GIT_SHA
+
 USER bun
 EXPOSE 4000/tcp
 # Migrate before serving. `&&` aborts the boot when a migration fails instead of
