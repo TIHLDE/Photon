@@ -4,6 +4,7 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
@@ -31,6 +32,7 @@ import {
     getEventByIdQuery,
     getEventRegistrationsInfiniteQuery,
     getFavoriteEventsQuery,
+    invalidateEventRegistrations,
     registerForEventMutation,
     unregisterFromEventMutation,
     updateFavoriteEventMutation,
@@ -171,6 +173,32 @@ function EventDetailPage() {
         ...getEventRegistrationsInfiniteQuery(event.id),
         enabled: canSeeRegistrants,
     });
+
+    // Deltakerlista teller bare avklarte påmeldinger, og en fersk påmelding er
+    // `pending` til køen har gitt den plass eller venteliste. Invalideringen
+    // som skjer i det påmeldingen sendes treffer derfor et svar uten en selv.
+    // Vi spør på nytt i det statusen faktisk lander (#658).
+    //
+    // Utløseren er en hvilken som helst endring i egen status, ikke bare
+    // overgangen fra `pending`: løser køen plassen raskt nok, rekker aldri
+    // arrangementet å bli hentet med `pending`, og en regel som krevde å ha
+    // sett den ville stått over nettopp det tilfellet.
+    const queryClient = useQueryClient();
+    const registrationStatus = event.registration?.status ?? null;
+    const previousStatusRef = useRef<string | null | undefined>(undefined);
+    useEffect(() => {
+        const previous = previousStatusRef.current;
+        previousStatusRef.current = registrationStatus;
+
+        // Første visning: ingen overgang å reagere på, og lista er allerede
+        // fersk. Uten dette hadde hvert sidebesøk kostet en ekstra henting.
+        if (previous === undefined || previous === registrationStatus) return;
+        // «pending» er ikke et svar ennå — lista er uendret til køen har tatt
+        // stilling, og vi venter på neste overgang.
+        if (registrationStatus === "pending") return;
+
+        void invalidateEventRegistrations(queryClient, event.id);
+    }, [registrationStatus, event.id, queryClient]);
 
     const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);
