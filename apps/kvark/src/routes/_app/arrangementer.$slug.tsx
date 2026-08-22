@@ -4,6 +4,7 @@ import {
     useInfiniteQuery,
     useMutation,
     useQuery,
+    useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
@@ -31,6 +32,7 @@ import {
     getEventByIdQuery,
     getEventRegistrationsInfiniteQuery,
     getFavoriteEventsQuery,
+    invalidateEventRegistrations,
     registerForEventMutation,
     unregisterFromEventMutation,
     updateFavoriteEventMutation,
@@ -171,6 +173,23 @@ function EventDetailPage() {
         ...getEventRegistrationsInfiniteQuery(event.id),
         enabled: canSeeRegistrants,
     });
+
+    // Deltakerlista teller bare avklarte påmeldinger, og en fersk påmelding er
+    // `pending` til køen har gitt den plass eller venteliste. Invalideringen
+    // som skjer i det påmeldingen sendes treffer derfor et svar uten en selv.
+    // Vi spør på nytt i det statusen faktisk lander (#658).
+    const queryClient = useQueryClient();
+    const registrationStatus = event.registration?.status ?? null;
+    const wasPendingRef = useRef(false);
+    useEffect(() => {
+        if (registrationStatus === "pending") {
+            wasPendingRef.current = true;
+            return;
+        }
+        if (!wasPendingRef.current) return;
+        wasPendingRef.current = false;
+        void invalidateEventRegistrations(queryClient, event.id);
+    }, [registrationStatus, event.id, queryClient]);
 
     const eventRules = useEventRulesConsent();
     const registerMutation = useMutation(registerForEventMutation);

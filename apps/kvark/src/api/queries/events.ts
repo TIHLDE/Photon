@@ -99,6 +99,24 @@ function invalidateEventDetails(client: QueryClient): Promise<void> {
     });
 }
 
+/**
+ * Frisk opp deltakerlista for ett arrangement.
+ *
+ * En fersk påmelding ligger som `pending` til køen har avgjort plass eller
+ * venteliste, og lista over påmeldte teller bare avklarte statuser. Å
+ * invalidere i det POST-en svarer treffer derfor et svar som ennå ikke har
+ * med brukeren; siden må spørre på nytt når statusen faktisk lander (#658).
+ */
+export function invalidateEventRegistrations(
+    client: QueryClient,
+    eventId: string,
+): Promise<void> {
+    return client.invalidateQueries({
+        queryKey: [...EventQueryKeys.registrations, eventId],
+        exact: false,
+    });
+}
+
 export const updateEventMutation = mutationOptions({
     mutationFn: ({
         eventId,
