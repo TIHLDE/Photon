@@ -17,6 +17,7 @@ import { clearStaleHostOnlySessionCookies } from "~/lib/auth-cookies";
 import { globalErrorHandler, notFoundHandler } from "~/lib/errors";
 import { emailRoutes } from "~/routes/email";
 import { eventRoutes } from "~/routes/event";
+import { versionRoutes } from "~/routes/version";
 import { formRoutes } from "~/routes/form";
 import { pinoLoggerMiddleware } from "./middleware/logger";
 import { apiKeyRoutes } from "./routes/api-key";
@@ -83,6 +84,7 @@ export const createApp = async (variables?: Variables) => {
         .get("/", (c) => {
             return c.text("Healthy!");
         })
+        .route("/version", versionRoutes)
         .route("/api-keys", apiKeyRoutes)
         .route("/applications", applicationRoutes)
         .route("/assets", assetRoutes)

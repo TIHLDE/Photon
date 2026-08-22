@@ -31,6 +31,7 @@ const tags = [
     "gallery",
     "jobs",
     "laws",
+    "meta",
     "motetid",
     "news",
     "notifications",
