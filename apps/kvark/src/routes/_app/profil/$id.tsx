@@ -36,8 +36,9 @@ import {
     getUserProfileQuery,
     updateUserSettingsMutation,
 } from "#/api/queries/user";
+import { useImageUploader } from "#/api/queries/assets";
 import { useIsAdmin } from "#/hooks/use-permission";
-import { EditBioDialog } from "#/components/edit-bio-dialog";
+import { EditProfileDialog } from "#/components/edit-profile-dialog";
 import { MembershipQrDialog } from "#/components/membership-qr-dialog";
 import {
     ProfileHeader,
@@ -104,7 +105,8 @@ function RouteComponent() {
     const isPendingApproval = session?.user?.isPendingApproval === true;
     const isAdmin = useIsAdmin();
     const updateSettings = useMutation(updateUserSettingsMutation);
-    const [bioOpen, setBioOpen] = useState(false);
+    const { uploadImage } = useImageUploader();
+    const [editOpen, setEditOpen] = useState(false);
 
     const settings = session?.user.settings;
     // Fra API-et, ikke utledet her: hvilket studie som er det gjeldende, og
@@ -225,37 +227,68 @@ function RouteComponent() {
                                 name={user.name}
                                 userId={session?.user.id}
                             />
-                            <Button onClick={() => setBioOpen(true)}>
+                            <Button onClick={() => setEditOpen(true)}>
                                 <Pencil />
-                                Rediger bio
+                                Rediger profil
                             </Button>
                         </>
                     ) : null
                 }
             />
-            {/* Dialogen styres herfra slik at «Rediger bio» i headeren kan
+            {/* Dialogen styres herfra slik at «Rediger profil» i headeren kan
                 åpne den. */}
             {isOwnProfile ? (
-                <EditBioDialog
-                    open={bioOpen}
-                    onOpenChange={setBioOpen}
+                <EditProfileDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    name={profile.name}
+                    imageUrl={profile.image ?? null}
+                    // Bare et eget opplastet bilde kan fjernes: uten ett faller
+                    // profilen tilbake på bildet Feide leverer.
+                    hasCustomImage={Boolean(settings?.imageUrl)}
                     defaultValues={{
                         bio: settings?.bioDescription ?? "",
                         github: settings?.githubUrl ?? "",
                         linkedin: settings?.linkedinUrl ?? "",
                     }}
                     onSubmit={async (values) => {
-                        await updateSettings.mutateAsync({
-                            data: {
-                                // Tomme strenger må sendes med — `undefined`
-                                // betyr «ikke endre», så feltene kunne aldri
-                                // tømmes igjen. API-et lagrer tomt som NULL.
-                                bioDescription: values.bio,
-                                githubUrl: values.github,
-                                linkedinUrl: values.linkedin,
-                                allergies: settings?.allergies ?? [],
-                            },
-                        });
+                        // Bildet lastes opp først: feiler det, er ingenting
+                        // lagret, og medlemmet kan prøve på nytt uten at halve
+                        // endringen allerede ligger der.
+                        let imageUrl: string | undefined;
+                        if (values.imageFile) {
+                            imageUrl = await uploadImage(values.imageFile);
+                        } else if (values.removeImage) {
+                            // Tom streng er «fjern bildet»; `undefined` ville
+                            // bare betydd «ikke endre».
+                            imageUrl = "";
+                        }
+
+                        try {
+                            await updateSettings.mutateAsync({
+                                data: {
+                                    // Tomme strenger må sendes med —
+                                    // `undefined` betyr «ikke endre», så
+                                    // feltene kunne aldri tømmes igjen.
+                                    // API-et lagrer tomt som NULL.
+                                    bioDescription: values.bio,
+                                    githubUrl: values.github,
+                                    linkedinUrl: values.linkedin,
+                                    allergies: settings?.allergies ?? [],
+                                    ...(imageUrl === undefined
+                                        ? {}
+                                        : { imageUrl }),
+                                },
+                            });
+                        } catch (error) {
+                            // Dialogen viser denne teksten. HTTP-feilen fra
+                            // klienten sier «Request failed with status code
+                            // 400», som ikke hjelper et medlem.
+                            throw new Error(
+                                "Fikk ikke lagret profilen. Prøv igjen.",
+                                { cause: error },
+                            );
+                        }
                         await invalidateAuth();
                     }}
                 />

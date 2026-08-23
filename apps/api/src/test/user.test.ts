@@ -779,6 +779,40 @@ describe("user endpoints", () => {
     );
 
     integrationTest(
+        "clears the profile picture when an empty string is sent",
+        async ({ ctx }) => {
+            const { db } = ctx;
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await db.insert(schema.userSettings).values({
+                userId: user.id,
+                gender: "male",
+                allowsPhotosByDefault: false,
+                acceptsEventRules: true,
+                receiveMailCommunication: true,
+                isOnboarded: true,
+                imageUrl: "https://example.com/avatar.webp",
+            });
+
+            const response = await client.api.user.me.settings.$patch({
+                json: { imageUrl: "" },
+            });
+
+            expect(response.status).toBe(200);
+
+            const settings = await db.query.userSettings.findFirst({
+                where: eq(schema.userSettings.userId, user.id),
+            });
+
+            // NULL, ikke tom streng: profilen faller da tilbake på bildet fra
+            // Feide, som er hele poenget med å kunne fjerne sitt eget.
+            expect(settings?.imageUrl).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
         "successfully updates multiple fields at once",
         async ({ ctx }) => {
             const { db } = ctx;

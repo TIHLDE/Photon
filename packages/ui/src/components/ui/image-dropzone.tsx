@@ -119,7 +119,9 @@ export function ImageDropzone({
     onValueChange,
     onError,
     onBlur,
-    accept = { "image/*": [] },
+    // iPhone-bilder er HEIC, og filvelgeren skjuler alt som ikke står her:
+    // «image/*» dekker dem ikke i alle nettlesere, så utvidelsene må med.
+    accept = { "image/*": [".heic", ".heif"] },
     minSize,
     maxSize,
     maxFiles,
@@ -180,6 +182,16 @@ export function ImageDropzone({
                     setIsCompressing(true);
                     try {
                         files = await compressImageFiles(accepted);
+                    } catch (error) {
+                        // Et HEIC-bilde som ikke lot seg konvertere ender her.
+                        // Uten dette ble feilen en ubehandlet rejection og
+                        // sonen sto tom, som om ingenting var sluppet.
+                        onError?.([
+                            error instanceof Error
+                                ? error.message
+                                : "Fikk ikke lest bildet. Prøv en annen fil.",
+                        ]);
+                        return;
                     } finally {
                         setIsCompressing(false);
                     }

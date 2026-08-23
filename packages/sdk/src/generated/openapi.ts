@@ -6235,8 +6235,7 @@ export interface components {
             gender: "male" | "female" | "other";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
-            /** Format: uri */
-            imageUrl?: string;
+            imageUrl?: string | "";
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
@@ -6257,8 +6256,7 @@ export interface components {
             gender: "male" | "female" | "other";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
-            /** Format: uri */
-            imageUrl?: string;
+            imageUrl?: string | "";
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
@@ -6275,8 +6273,7 @@ export interface components {
             gender: "male" | "female" | "other";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
-            /** Format: uri */
-            imageUrl?: string;
+            imageUrl?: string | "";
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
@@ -6293,8 +6290,7 @@ export interface components {
             gender: "male" | "female" | "other";
             allowsPhotosByDefault: boolean;
             acceptsEventRules: boolean;
-            /** Format: uri */
-            imageUrl?: string;
+            imageUrl?: string | "";
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
@@ -6313,8 +6309,7 @@ export interface components {
             gender?: "male" | "female" | "other";
             allowsPhotosByDefault?: boolean;
             acceptsEventRules?: boolean;
-            /** Format: uri */
-            imageUrl?: string;
+            imageUrl?: string | "";
             bioDescription?: string;
             githubUrl?: string | "";
             linkedinUrl?: string | "";
