@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { format, parse } from "date-fns";
 import { nb } from "date-fns/locale";
 import { BookOpenIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import type { ToddelIssue } from "@tihlde/sdk";
@@ -332,6 +332,13 @@ function IssueDialog({
     const [cover, setCover] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // Feilmeldingen står nederst i skjemaet, som er lengre enn dialogen er
+    // høy. Uten dette ser et avvist «Publiser» ut som om ingenting skjedde.
+    const errorRef = useRef<HTMLParagraphElement>(null);
+    useEffect(() => {
+        if (error) errorRef.current?.scrollIntoView({ block: "nearest" });
+    }, [error]);
+
     const uploadAsset = useMutation(uploadAssetMutation);
     const create = useMutation(createToddelMutation);
     const update = useMutation(updateToddelMutation);
@@ -433,7 +440,13 @@ function IssueDialog({
                                     id="toddel-edition"
                                     min={1}
                                     step={1}
-                                    required
+                                    // Ikke `required`: kravet ville havnet på
+                                    // det skjulte input-elementet komponenten
+                                    // legger utenfor skjermen, og da stopper
+                                    // nettleseren innsendingen uten at
+                                    // meldingen vises noe sted. Sjekken i
+                                    // `handleSubmit` skriver den i dialogen i
+                                    // stedet.
                                     disabled={isEdit}
                                     value={edition}
                                     onValueChange={setEdition}
@@ -499,7 +512,12 @@ function IssueDialog({
                         </FieldGroup>
 
                         {error && (
-                            <p className="text-destructive text-sm">{error}</p>
+                            <p
+                                ref={errorRef}
+                                className="text-destructive text-sm"
+                            >
+                                {error}
+                            </p>
                         )}
                     </DialogBody>
                     <DialogFooter>
