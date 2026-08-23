@@ -69,10 +69,16 @@ export const updateRoute = route().patch(
                 ...body,
                 // Archiving is a timestamp on the row, not a field the client
                 // sets: `archived` says which way to move it, and leaving the
-                // flag out leaves the current state alone.
+                // flag out leaves the current state alone. Archiving one that
+                // is already archived keeps the original date — nothing moved,
+                // so "off the website since" must not quietly become today.
                 ...(archived === undefined
                     ? {}
-                    : { archivedAt: archived ? new Date() : null }),
+                    : {
+                          archivedAt: archived
+                              ? (newsArticle.archivedAt ?? new Date())
+                              : null,
+                      }),
             })
             .where(eq(schema.news.id, id))
             .returning();

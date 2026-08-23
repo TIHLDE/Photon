@@ -406,6 +406,16 @@ describe("News System", () => {
             });
             expect(reactionResponse.status).toBe(404);
 
+            // Arkivering på nytt flytter ikke datoen: ingenting endret seg,
+            // så «av sidene siden» skal ikke stille seg til i dag.
+            const archivedAgain = await editorClient.api.news[":id"]
+                .$patch({
+                    param: { id: created.id },
+                    json: { archived: true },
+                })
+                .then((r) => r.json());
+            expect(archivedAgain.archivedAt).toBe(archived.archivedAt);
+
             // === ADMIN LISTING ===
 
             const adminList = await editorClient.api.news
