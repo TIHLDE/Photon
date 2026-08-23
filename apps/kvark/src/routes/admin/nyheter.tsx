@@ -1,10 +1,18 @@
-import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { NewspaperIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import {
+    ArchiveIcon,
+    ArchiveRestoreIcon,
+    NewspaperIcon,
+    PencilIcon,
+    PlusIcon,
+    Trash2,
+} from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import type { NewsListItem } from "@tihlde/sdk";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
@@ -36,7 +44,7 @@ import { useImageUploader } from "#/api/queries/assets";
 import {
     createNewsMutation,
     deleteNewsMutation,
-    getNewsQuery,
+    getNewsInfiniteQuery,
     updateNewsMutation,
 } from "#/api/queries/news";
 import { AdminEmptyState } from "#/components/admin-empty-state";
@@ -46,9 +54,25 @@ import {
     ConfirmDeleteDialog,
     usePendingConfirm,
 } from "#/components/confirm-delete-dialog";
+import { LoadMoreButton } from "#/components/load-more-button";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatInOslo } from "#/lib/date";
+
+/**
+ * Adminlisten viser også de arkiverte. Det er hele poenget med arkivering:
+ * nyheten forsvinner fra de offentlige sidene, men den skal fortsatt være
+ * her — med et merke som sier hvorfor den ikke er å se ute.
+ *
+ * Store sider fremfor mange små: `?rediger=<id>` slår opp artikkelen i det
+ * som allerede er lastet, så jo flere som ligger der fra start, jo oftere
+ * lander lenken fra nyhetssiden i riktig dialog. Resten hentes med
+ * «Last inn mer», slik at arkivet ikke stopper ved den første siden.
+ */
+const ADMIN_NEWS_PAGE_SIZE = 100;
+
+const adminNewsQuery = () =>
+    getNewsInfiniteQuery({ archived: "include" }, ADMIN_NEWS_PAGE_SIZE);
 
 // `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
 // nyhet» på nyhetssiden kan lenke rett til riktig artikkel i stedet for å
@@ -66,7 +90,7 @@ export const Route = createFileRoute("/admin/nyheter")({
     },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
-        await context.queryClient.ensureQueryData(getNewsQuery(0));
+        await context.queryClient.ensureInfiniteQueryData(adminNewsQuery());
         return { breadcrumbs: "Nyheter" };
     },
 });
@@ -103,7 +127,7 @@ function NewsAdminPage() {
         >
             <AdminPageHeader
                 title="Nyheter"
-                description="Alle publiserte nyheter. Brødteksten lagres som markdown."
+                description="Alle nyheter, også de arkiverte. Brødteksten lagres som markdown."
                 action={
                     canCreate ? (
                         <Button onClick={() => setDialog({ mode: "create" })}>
@@ -140,8 +164,17 @@ function NewsTable({
     autoEditId?: string;
     onEdit: (news: NewsListItem) => void;
 }) {
-    const { data } = useSuspenseQuery(getNewsQuery(0, {}, 100));
+    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(adminNewsQuery());
+    // Memoisert: `?rediger=<id>`-effekten under har listen som avhengighet,
+    // og en fersk array hver render ville åpnet dialogen på nytt i det
+    // uendelige.
+    const items = useMemo(
+        () => data.pages.flatMap((page) => page.items),
+        [data.pages],
+    );
     const remove = useMutation(deleteNewsMutation);
+    const setArchived = useMutation(updateNewsMutation);
     const canEdit = useAnyScopePermission(["news:update", "news:manage"]);
     const canDelete = useAnyScopePermission(["news:delete", "news:manage"]);
     const confirmDelete = usePendingConfirm<NewsListItem>();
@@ -152,11 +185,11 @@ function NewsTable({
     // biome-ignore lint/correctness/useExhaustiveDependencies: onEdit er ny hver render
     useEffect(() => {
         if (!autoEditId || !canEdit) return;
-        const match = data.items.find((news) => news.id === autoEditId);
+        const match = items.find((news) => news.id === autoEditId);
         if (match) onEdit(match);
-    }, [autoEditId, canEdit, data.items]);
+    }, [autoEditId, canEdit, items]);
 
-    if (data.items.length === 0) {
+    if (items.length === 0) {
         return (
             <Card>
                 <CardContent>
@@ -180,18 +213,29 @@ function NewsTable({
                                 <TableHead>Tittel</TableHead>
                                 <TableHead>Utdrag</TableHead>
                                 <TableHead>Publisert</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">
                                     Handlinger
                                 </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {data.items.map((news) => (
+                            {items.map((news) => (
                                 <TableRow key={news.id}>
                                     <TableCell>{news.title}</TableCell>
                                     <TableCell>{news.header}</TableCell>
                                     <TableCell>
                                         {formatDate(news.createdAt)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {news.archivedAt ? (
+                                            <Badge variant="secondary">
+                                                Arkivert{" "}
+                                                {formatDate(news.archivedAt)}
+                                            </Badge>
+                                        ) : (
+                                            <Badge>Publisert</Badge>
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
@@ -203,6 +247,40 @@ function NewsTable({
                                                 >
                                                     <PencilIcon className="size-4" />
                                                     Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canEdit ? (
+                                                // Ikon uten tekst, som
+                                                // sletteknappen ved siden av:
+                                                // med etikett ble raden bredere
+                                                // enn kortet og handlingene
+                                                // havnet utenfor skjermen.
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    aria-label={
+                                                        news.archivedAt
+                                                            ? `Gjenopprett ${news.title}`
+                                                            : `Arkiver ${news.title}`
+                                                    }
+                                                    disabled={
+                                                        setArchived.isPending
+                                                    }
+                                                    onClick={() =>
+                                                        setArchived.mutate({
+                                                            newsId: news.id,
+                                                            data: {
+                                                                archived:
+                                                                    !news.archivedAt,
+                                                            },
+                                                        })
+                                                    }
+                                                >
+                                                    {news.archivedAt ? (
+                                                        <ArchiveRestoreIcon className="size-4" />
+                                                    ) : (
+                                                        <ArchiveIcon className="size-4" />
+                                                    )}
                                                 </Button>
                                             ) : null}
                                             {canDelete ? (
@@ -228,6 +306,15 @@ function NewsTable({
                     </Table>
                 </CardContent>
             </Card>
+
+            {hasNextPage && (
+                <div className="flex justify-center">
+                    <LoadMoreButton
+                        onClick={() => fetchNextPage()}
+                        isLoading={isFetchingNextPage}
+                    />
+                </div>
+            )}
 
             <ConfirmDeleteDialog
                 open={confirmDelete.open}

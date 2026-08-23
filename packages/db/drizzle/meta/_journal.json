@@ -547,6 +547,13 @@
       "when": 1787421260008,
       "tag": "0077_pink_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1787519182705,
+      "tag": "0078_marvelous_sphinx",
+      "breakpoints": true
     }
   ]
 }

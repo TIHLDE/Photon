@@ -1,5 +1,6 @@
 import { Link, createFileRoute, redirect } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
@@ -67,6 +68,14 @@ function NewsDetailPage() {
                 <>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div className="flex flex-col gap-3">
+                            {/* Bare de med nyhetsrettigheter kommer hit i det
+                                hele tatt når nyheten er arkivert — merket sier
+                                hvorfor de ikke finner den ute på sidene. */}
+                            {news.archivedAt ? (
+                                <div>
+                                    <Badge variant="secondary">Arkivert</Badge>
+                                </div>
+                            ) : null}
                             <h1 className="text-3xl md:text-4xl">
                                 {news.title}
                             </h1>

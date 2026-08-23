@@ -1,6 +1,9 @@
 import z from "zod";
 import { Schema } from "~/lib/openapi";
-import { PagniationResponseSchema } from "~/middleware/pagination";
+import {
+    PaginationSchema,
+    PagniationResponseSchema,
+} from "~/middleware/pagination";
 
 // ===== INPUT SCHEMAS =====
 
@@ -60,8 +63,27 @@ export const updateNewsSchema = Schema(
         imageUrl: z.url().optional().nullable(),
         imageAlt: z.string().max(255).optional().nullable(),
         emojisAllowed: z.boolean().optional(),
+        archived: z.boolean().optional().meta({
+            description:
+                "Archive or restore the article. An archived article disappears from the public news pages but stays in the admin panel.",
+        }),
     }),
 );
+
+/**
+ * Which articles the list should return.
+ *
+ * `exclude` is the default because the list is public: an archived article is
+ * one someone deliberately took off the website, so leaving it out has to be
+ * what a caller gets without asking. `include` and `only` are for the admin
+ * panel and need a news permission.
+ */
+export const newsListFilterSchema = PaginationSchema.extend({
+    archived: z.enum(["exclude", "include", "only"]).default("exclude").meta({
+        description:
+            "Whether to return archived articles. 'exclude' (default) returns only live articles, 'only' returns only archived ones, 'include' returns both. Anything but 'exclude' requires a news permission.",
+    }),
+});
 
 export const createReactionSchema = Schema(
     "CreateNewsReaction",
@@ -90,6 +112,10 @@ export const newsArticleSchema = Schema(
         emojisAllowed: z
             .boolean()
             .meta({ description: "Whether reactions are enabled" }),
+        archivedAt: z.string().nullable().meta({
+            description:
+                "When the article was archived (ISO 8601), or null if it is live",
+        }),
         createdById: z
             .string()
             .nullable()
@@ -133,6 +159,10 @@ export const newsListItemSchema = Schema(
         emojisAllowed: z
             .boolean()
             .meta({ description: "Whether reactions are allowed" }),
+        archivedAt: z.string().nullable().meta({
+            description:
+                "When the article was archived (ISO 8601), or null if it is live",
+        }),
         createdAt: z.iso
             .date()
             .meta({ description: "Creation time (ISO 8601)" }),

@@ -24,6 +24,14 @@ export const news = pgTable("news", {
         onDelete: "set null",
     }),
     emojisAllowed: boolean("emojis_allowed").default(false).notNull(),
+    /**
+     * When the article was taken off the public pages.
+     *
+     * A timestamp rather than a flag: it answers "since when", which is what
+     * anyone looking at an archived article in the admin panel wants to know.
+     * Null means the article is live.
+     */
+    archivedAt: timestamp("archived_at"),
     ...timestamps,
 });
 

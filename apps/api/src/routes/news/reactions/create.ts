@@ -50,6 +50,15 @@ export const createReactionRoute = route().post(
             });
         }
 
+        // Same answer the detail route gives: an archived article is off the
+        // website, so it cannot be reacted to either. Reached only by someone
+        // holding on to a URL from before it was archived.
+        if (newsArticle.archivedAt) {
+            throw new HTTPException(404, {
+                message: "News article not found",
+            });
+        }
+
         if (!newsArticle.emojisAllowed) {
             throw new HTTPException(403, {
                 message: "Reactions are not allowed on this news article",

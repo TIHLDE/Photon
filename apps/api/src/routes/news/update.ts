@@ -21,7 +21,7 @@ export const updateRoute = route().patch(
         summary: "Update news article",
         operationId: "updateNews",
         description:
-            "Update a news article. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.",
+            "Update a news article, including archiving and restoring it via `archived`. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -43,7 +43,7 @@ export const updateRoute = route().patch(
     }),
     validator("json", updateNewsSchema),
     async (c) => {
-        const body = c.req.valid("json");
+        const { archived, ...body } = c.req.valid("json");
         const { db, bucket } = c.get("ctx");
         const { id } = c.req.valid("param");
 
@@ -65,7 +65,21 @@ export const updateRoute = route().patch(
         // Update the news article
         const [updatedNews] = await db
             .update(schema.news)
-            .set(body)
+            .set({
+                ...body,
+                // Archiving is a timestamp on the row, not a field the client
+                // sets: `archived` says which way to move it, and leaving the
+                // flag out leaves the current state alone. Archiving one that
+                // is already archived keeps the original date — nothing moved,
+                // so "off the website since" must not quietly become today.
+                ...(archived === undefined
+                    ? {}
+                    : {
+                          archivedAt: archived
+                              ? (newsArticle.archivedAt ?? new Date())
+                              : null,
+                      }),
+            })
             .where(eq(schema.news.id, id))
             .returning();
 
