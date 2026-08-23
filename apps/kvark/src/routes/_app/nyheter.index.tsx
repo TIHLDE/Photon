@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { PlusIcon } from "lucide-react";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
-import { getNewsQuery } from "#/api/queries/news";
+import { getNewsInfiniteQuery } from "#/api/queries/news";
+import { LoadMoreButton } from "#/components/load-more-button";
 import { NewsCard } from "#/components/news-card";
 import { PageHeader } from "#/components/page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -17,12 +18,14 @@ const NEWS_CREATE_PERMISSIONS = ["news:create", "news:manage"] as const;
 export const Route = createFileRoute("/_app/nyheter/")({
     component: NewsPage,
     loader: ({ context }) =>
-        context.queryClient.ensureQueryData(getNewsQuery(0)),
+        context.queryClient.ensureInfiniteQueryData(getNewsInfiniteQuery()),
 });
 
 function NewsPage() {
-    const { data } = useSuspenseQuery(getNewsQuery(0));
-    const news = data.items;
+    const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+        useSuspenseInfiniteQuery(getNewsInfiniteQuery());
+
+    const news = data.pages.flatMap((page) => page.items);
     // Scopet er ukjent på en offentlig liste, så any-scope er riktig her:
     // et gruppe-scopet news:create er en ekte tilgang, og API-et avviser
     // uansett den enkelte forespørselen som ikke treffer.
@@ -67,6 +70,15 @@ function NewsPage() {
                     </li>
                 ))}
             </Stagger>
+
+            {hasNextPage && (
+                <div className="flex justify-center">
+                    <LoadMoreButton
+                        onClick={() => fetchNextPage()}
+                        isLoading={isFetchingNextPage}
+                    />
+                </div>
+            )}
         </div>
     );
 }
