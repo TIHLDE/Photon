@@ -4,6 +4,7 @@ import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { reviewPaymentsForStartedEvents } from "./event/payment-review";
+import { enforceExpiredPaymentDeadlines } from "./event/payment-sweep";
 import { startPaymentTimerWorker } from "./event/payment";
 import { sendUpcomingRegistrationReminders } from "./event/registration-reminder";
 import {
@@ -110,6 +111,50 @@ function startPaymentReviewCron(ctx: AppContext): void {
 }
 
 /**
+ * Start cron job that enforces payment deadlines the queue never got to.
+ *
+ * The deadline is normally enforced by a delayed job, scheduled when the
+ * obligation is created. That job lives in Redis, which has no durable storage
+ * in production — a restart takes every delayed job with it, and nothing read
+ * `expires_at` back out of the database. An unpaid spot was then never
+ * reclaimed and the waiting list never moved.
+ *
+ * Same safety net the registrations have always had, one floor down: the
+ * database is the source of truth, the queue only a shortcut that enforces the
+ * deadline on the second rather than at the next tick.
+ *
+ * Runs every 5 minutes. The deadline is measured in hours, so arriving a few
+ * minutes late costs nothing — and on a healthy queue this finds nothing.
+ */
+function startPaymentDeadlineSweepCron(ctx: AppContext): void {
+    // node-cron starter neste kjøring uansett om den forrige er ferdig, og en
+    // runde her kan holde på: hver rad koster et kall til betalings-
+    // leverandøren. Uten dette ville to runder kunnet gå løs på samme rader.
+    let running = false;
+
+    cron.schedule("*/5 * * * *", async () => {
+        if (running) return;
+        running = true;
+        try {
+            const handled = await enforceExpiredPaymentDeadlines(ctx);
+            if (handled > 0) {
+                console.log(
+                    `💸 Enforced ${handled} payment deadline(s) the queue missed`,
+                );
+            }
+        } catch (error) {
+            console.error("Error in payment deadline sweep cron:", error);
+        } finally {
+            running = false;
+        }
+    });
+
+    console.log(
+        "⏰ Payment deadline sweep cron started (runs every 5 minutes)",
+    );
+}
+
+/**
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
@@ -140,4 +185,7 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start the payments-without-a-spot review cron
     startPaymentReviewCron(ctx);
+
+    // Start the sweep that enforces deadlines the queue lost
+    startPaymentDeadlineSweepCron(ctx);
 }
