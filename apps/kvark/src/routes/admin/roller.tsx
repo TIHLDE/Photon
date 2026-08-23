@@ -265,35 +265,50 @@ function HolderChip({
 }
 
 /**
- * Holders as bare profile pictures.
+ * Holders in the read-only table: the row shows who holds the verv, while
+ * adding and removing them belongs in the edit dialog.
  *
- * The table is a read-only view of who holds what — names and the remove
- * button belong in the edit dialog, where the change is actually made. Names
- * stay available to screen readers and on hover.
+ * One holder gets their name spelled out — there is room for it, and a lone
+ * face without a name is a riddle. Several stack into overlapping avatars
+ * instead, which keeps the column narrow; the names stay on hover and for
+ * screen readers.
  */
 function HolderAvatars({
     holders,
 }: {
     holders: { userId: string; name: string | null; image: string | null }[];
 }) {
+    const single = holders.length === 1 ? holders[0] : null;
+
+    if (single) {
+        return (
+            <div className="flex items-center gap-2">
+                <HolderAvatar holder={single} />
+                <span className="text-sm">{single.name}</span>
+            </div>
+        );
+    }
+
     return (
         <AvatarGroup>
             {holders.map((holder) => (
-                <Avatar
-                    key={holder.userId}
-                    size="sm"
-                    title={holder.name ?? undefined}
-                >
-                    <AvatarImage
-                        src={avatarImageUrl(holder.image ?? undefined)}
-                    />
-                    <AvatarFallback>
-                        {initials(holder.name ?? "?")}
-                    </AvatarFallback>
-                    <span className="sr-only">{holder.name}</span>
-                </Avatar>
+                <HolderAvatar key={holder.userId} holder={holder} />
             ))}
         </AvatarGroup>
+    );
+}
+
+function HolderAvatar({
+    holder,
+}: {
+    holder: { name: string | null; image: string | null };
+}) {
+    return (
+        <Avatar size="sm" title={holder.name ?? undefined}>
+            <AvatarImage src={avatarImageUrl(holder.image ?? undefined)} />
+            <AvatarFallback>{initials(holder.name ?? "?")}</AvatarFallback>
+            <span className="sr-only">{holder.name}</span>
+        </Avatar>
     );
 }
 
