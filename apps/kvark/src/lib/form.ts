@@ -151,3 +151,125 @@ export function formatSubmissionStudy(
     );
     return parts.length > 0 ? parts.join(" · ") : null;
 }
+
+/** Én andel i et sirkeldiagram, f.eks. ett kull eller én studieretning. */
+export type FormStudySlice = {
+    /**
+     * Nøkkelen diagrammet bruker. Syntetisk, ikke navnet på kullet eller
+     * studiet: den ender som CSS-variabelnavn i `ChartStyle`, som skriver
+     * `<style>` med `dangerouslySetInnerHTML`. Et gruppenavn har mellomrom og
+     * er skrevet av et menneske, og hører ikke hjemme der.
+     */
+    key: string;
+    label: string;
+    count: number;
+    /** Andel av alle svarene, avrundet til hele prosent. */
+    percentage: number;
+    /** Restposten for dem vi ikke kjenner kullet eller studiet til. */
+    unknown: boolean;
+};
+
+export type FormStudyDistribution = {
+    cohorts: FormStudySlice[];
+    programs: FormStudySlice[];
+};
+
+/** Én kategori med antallet svar som faller i den. `value: null` er restposten. */
+type StudyBucket = {
+    value: string | null;
+    label: string;
+    count: number;
+};
+
+function toSlices(
+    buckets: StudyBucket[],
+    total: number,
+    keyPrefix: string,
+    compare: (a: StudyBucket, b: StudyBucket) => number,
+): FormStudySlice[] {
+    return (
+        [...buckets]
+            // Restposten sist uansett hvordan resten sorteres — den er ikke et
+            // kull eller et studieprogram på linje med de andre.
+            .sort((a, b) => {
+                if (a.value === null) return 1;
+                if (b.value === null) return -1;
+                return compare(a, b);
+            })
+            .map((bucket, index) => ({
+                key:
+                    bucket.value === null
+                        ? `${keyPrefix}-ukjent`
+                        : `${keyPrefix}-${index}`,
+                label: bucket.label,
+                count: bucket.count,
+                percentage:
+                    total > 0 ? Math.round((bucket.count / total) * 100) : 0,
+                unknown: bucket.value === null,
+            }))
+    );
+}
+
+/** Teller opp én kategori per svar, med `null` for dem vi ikke vet noe om. */
+function countBy(
+    submissions: FormSubmissionRow[],
+    valueOf: (submission: FormSubmissionRow) => string | null,
+    labelOf: (value: string | null) => string,
+): StudyBucket[] {
+    const counts = new Map<string | null, number>();
+
+    for (const submission of submissions) {
+        const value = valueOf(submission);
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+
+    return [...counts.entries()].map(([value, count]) => ({
+        value,
+        label: labelOf(value),
+        count,
+    }));
+}
+
+/**
+ * Fordelingen av kull og studieretning blant dem som har svart. Regnes ut av
+ * svarlista, som allerede har med studiet til hver enkelt, slik at
+ * statistikken alltid kan vises — også for skjemaer uten valgspørsmål.
+ *
+ * Én andel er ett svar, ikke én person, slik at summen stemmer med antallet
+ * svar som står i fanen ved siden av.
+ */
+export function summarizeFormStudy(
+    submissions: FormSubmissionRow[],
+): FormStudyDistribution {
+    const total = submissions.length;
+
+    const cohorts = countBy(
+        submissions,
+        (submission) =>
+            submission.studyStartYear === null
+                ? null
+                : String(submission.studyStartYear),
+        (value) => (value === null ? "Ukjent kull" : `Kull ${value}`),
+    );
+    const programs = countBy(
+        submissions,
+        (submission) => submission.studyProgram,
+        (value) => value ?? "Ukjent studieretning",
+    );
+
+    return {
+        // Nyeste kull først, mens studieretningene sorteres på størrelse.
+        cohorts: toSlices(
+            cohorts,
+            total,
+            "kull",
+            (a, b) => Number(b.value) - Number(a.value),
+        ),
+        programs: toSlices(
+            programs,
+            total,
+            "studie",
+            (a, b) => b.count - a.count || a.label.localeCompare(b.label, "nb"),
+        ),
+    };
+}
