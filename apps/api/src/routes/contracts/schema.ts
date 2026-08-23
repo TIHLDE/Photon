@@ -101,6 +101,10 @@ export const signatureStatusSchema = Schema(
         hasSigned: z.boolean(),
         signedAt: z.string().nullable(),
         signedName: z.string().nullable(),
+        requiresSigning: z.boolean().meta({
+            description:
+                "Whether the user is in at least one group that requires contract signing",
+        }),
     }),
 );
 

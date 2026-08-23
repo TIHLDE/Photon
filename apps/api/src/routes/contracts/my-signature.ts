@@ -33,13 +33,29 @@ export const mySignatureRoute = route().get(
 
         const { db } = c.get("ctx");
 
+        // Only members of a group that requires signing are actually obliged
+        // to sign, so callers can nag the right people instead of everyone.
+        // Mirrors the groups sign.ts notifies on signing.
+        const memberships = await db.query.groupMembership.findMany({
+            where: eq(schema.groupMembership.userId, user.id),
+            with: { group: true },
+        });
+        const requiresSigning = memberships.some(
+            (m) => m.group.contractSigningRequired,
+        );
+
         const activeContract = await db.query.contract.findFirst({
             where: eq(schema.contract.isActive, true),
         });
 
         if (!activeContract) {
             return c.json(
-                { hasSigned: false, signedAt: null, signedName: null },
+                {
+                    hasSigned: false,
+                    signedAt: null,
+                    signedName: null,
+                    requiresSigning,
+                },
                 200,
             );
         }
@@ -56,6 +72,7 @@ export const mySignatureRoute = route().get(
                 hasSigned: !!signature,
                 signedAt: signature?.signedAt?.toISOString() ?? null,
                 signedName: signature?.signedName ?? null,
+                requiresSigning,
             },
             200,
         );

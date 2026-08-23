@@ -5539,6 +5539,8 @@ export interface components {
             hasSigned: boolean;
             signedAt: string | null;
             signedName: string | null;
+            /** @description Whether the user is in at least one group that requires contract signing */
+            requiresSigning: boolean;
         };
         SignContractResponse: {
             message: string;

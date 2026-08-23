@@ -209,9 +209,10 @@ function AllergyBanner({ hasAnswered }: { hasAnswered: boolean }) {
 }
 
 /**
- * Vises bare når det finnes en aktiv kontrakt som ikke er signert. Uten
- * `signature` er statusen fortsatt ukjent — da sier vi ingenting, framfor å
- * påstå at den ikke er signert.
+ * Vises bare når det finnes en aktiv kontrakt som ikke er signert, og bare til
+ * medlemmer av en gruppe som krever signering — resten har ingenting å signere.
+ * Uten `signature` er statusen fortsatt ukjent — da sier vi ingenting, framfor
+ * å påstå at den ikke er signert.
  */
 function ContractBanner({
     hasActiveContract,
@@ -222,6 +223,7 @@ function ContractBanner({
 }) {
     if (!hasActiveContract) return null;
     if (!signature || signature.hasSigned) return null;
+    if (!signature.requiresSigning) return null;
 
     return (
         <Alert>
