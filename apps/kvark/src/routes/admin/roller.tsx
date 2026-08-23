@@ -7,7 +7,12 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@tihlde/ui/ui/accordion";
-import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarGroup,
+    AvatarImage,
+} from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
@@ -259,6 +264,54 @@ function HolderChip({
     );
 }
 
+/**
+ * Holders in the read-only table: the row shows who holds the verv, while
+ * adding and removing them belongs in the edit dialog.
+ *
+ * One holder gets their name spelled out — there is room for it, and a lone
+ * face without a name is a riddle. Several stack into overlapping avatars
+ * instead, which keeps the column narrow; the names stay on hover and for
+ * screen readers.
+ */
+function HolderAvatars({
+    holders,
+}: {
+    holders: { userId: string; name: string | null; image: string | null }[];
+}) {
+    const single = holders.length === 1 ? holders[0] : null;
+
+    if (single) {
+        return (
+            <div className="flex items-center gap-2">
+                <HolderAvatar holder={single} />
+                <span className="text-sm">{single.name}</span>
+            </div>
+        );
+    }
+
+    return (
+        <AvatarGroup>
+            {holders.map((holder) => (
+                <HolderAvatar key={holder.userId} holder={holder} />
+            ))}
+        </AvatarGroup>
+    );
+}
+
+function HolderAvatar({
+    holder,
+}: {
+    holder: { name: string | null; image: string | null };
+}) {
+    return (
+        <Avatar size="sm" title={holder.name ?? undefined}>
+            <AvatarImage src={avatarImageUrl(holder.image ?? undefined)} />
+            <AvatarFallback>{initials(holder.name ?? "?")}</AvatarFallback>
+            <span className="sr-only">{holder.name}</span>
+        </Avatar>
+    );
+}
+
 // =============================================================================
 // Verv (group positions)
 // =============================================================================
@@ -357,12 +410,8 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
     );
     const { data: members } = useQuery(getGroupMembersQuery(groupSlug, 0));
     const remove = useMutation(deletePositionMutation);
-    const unassign = useMutation(unassignPositionMutation);
-    const assign = useMutation(assignPositionMutation);
     const [editing, setEditing] = useState<GroupPosition | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
-    const [assignQuery, setAssignQuery] = useState("");
-    const [assignFor, setAssignFor] = useState<string | null>(null);
     // The rows below list only what a holder has beyond the group, so they
     // need the group's own two lists. Reading them requires managing the
     // group; without them the column falls back to the full list.
@@ -377,18 +426,6 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
         "global",
     );
 
-    // Holder candidates come from the group's member list (positions require
-    // membership) — filtered client-side on name.
-    const memberOptions: UserSearchOption[] = useMemo(
-        () =>
-            (members ?? []).map((member) => ({
-                id: member.user?.id ?? member.userId,
-                name: member.user?.name ?? member.userId,
-                image: member.user?.image ?? null,
-            })),
-        [members],
-    );
-
     // The group's leader is a membership role, not a verv — shown as a pinned
     // first row so the group's leadership reads together with its verv. It is
     // changed from the group's member list, not here.
@@ -396,14 +433,6 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
         () => (members ?? []).filter((member) => member.role === "leader"),
         [members],
     );
-
-    const filteredOptions = useMemo(() => {
-        const q = assignQuery.trim().toLowerCase();
-        if (q.length < 1) return memberOptions.slice(0, 10);
-        return memberOptions
-            .filter((option) => (option.name ?? "").toLowerCase().includes(q))
-            .slice(0, 10);
-    }, [memberOptions, assignQuery]);
 
     if (isPending) {
         return (
@@ -473,85 +502,18 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 </div>
                             </TableCell>
                             <TableCell>
-                                {/* Et verv kan deles av flere (#646), så
-                                    søkefeltet blir stående selv når noen
-                                    allerede holder det. */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {position.holders.map((holder) => (
-                                        <HolderChip
-                                            key={holder.userId}
-                                            name={holder.name}
-                                            image={holder.image}
-                                            onRemove={
-                                                canManage &&
-                                                !position.linkedGroupSlug
-                                                    ? () =>
-                                                          unassign.mutate({
-                                                              groupSlug,
-                                                              positionId:
-                                                                  position.id,
-                                                              userId: holder.userId,
-                                                          })
-                                                    : undefined
-                                            }
-                                        />
-                                    ))}
-                                    {position.linkedGroupSlug ? (
-                                        // Auto-managed: holders follow the
-                                        // linked group's leader — not
-                                        // assignable from here.
-                                        position.holders.length === 0 ? (
-                                            <span className="text-sm text-muted-foreground">
-                                                Settes av gruppens leder
-                                            </span>
-                                        ) : null
-                                    ) : canManage ? (
-                                        <UserSearchCombobox
-                                            holder={null}
-                                            emptyLabel={
-                                                position.holders.length > 0
-                                                    ? "Legg til flere"
-                                                    : "Ingen tildelt"
-                                            }
-                                            query={
-                                                assignFor === position.id
-                                                    ? assignQuery
-                                                    : ""
-                                            }
-                                            onQueryChange={setAssignQuery}
-                                            onOpenChange={(open) => {
-                                                setAssignFor(
-                                                    open ? position.id : null,
-                                                );
-                                                setAssignQuery("");
-                                            }}
-                                            results={
-                                                assignFor === position.id
-                                                    ? filteredOptions.filter(
-                                                          (option) =>
-                                                              !position.holders.some(
-                                                                  (holder) =>
-                                                                      holder.userId ===
-                                                                      option.id,
-                                                              ),
-                                                      )
-                                                    : []
-                                            }
-                                            onSelect={(user) =>
-                                                assign.mutate({
-                                                    groupSlug,
-                                                    positionId: position.id,
-                                                    userId: user.id,
-                                                })
-                                            }
-                                            placeholder="Søk blant gruppens medlemmer…"
-                                        />
-                                    ) : position.holders.length === 0 ? (
-                                        <span className="text-sm text-muted-foreground">
-                                            Ingen tildelt
-                                        </span>
-                                    ) : null}
-                                </div>
+                                {/* Read-only: holders are added and removed in
+                                    «Rediger», so the row just shows who holds
+                                    the verv. */}
+                                {position.holders.length > 0 ? (
+                                    <HolderAvatars holders={position.holders} />
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                        {position.linkedGroupSlug
+                                            ? "Settes av gruppens leder"
+                                            : "Ingen tildelt"}
+                                    </span>
+                                )}
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                                 {canManage
@@ -917,21 +879,13 @@ function LeaderRow({
                 </div>
             </TableCell>
             <TableCell>
-                <div className="flex flex-wrap items-center gap-2">
-                    {leaders.length === 0 ? (
-                        <span className="text-sm text-muted-foreground">
-                            Ingen tildelt
-                        </span>
-                    ) : (
-                        leaders.map((leader) => (
-                            <HolderChip
-                                key={leader.userId}
-                                name={leader.name}
-                                image={leader.image}
-                            />
-                        ))
-                    )}
-                </div>
+                {leaders.length === 0 ? (
+                    <span className="text-sm text-muted-foreground">
+                        Ingen tildelt
+                    </span>
+                ) : (
+                    <HolderAvatars holders={leaders} />
+                )}
             </TableCell>
             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
                 {canManage
