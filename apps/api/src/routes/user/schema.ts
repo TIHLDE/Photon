@@ -6,6 +6,13 @@ import {
     UserSettingsSchema,
 } from "~/lib/user/settings";
 
+/**
+ * The two baseline roles, which are mutually exclusive: `member` is what an
+ * active student gets, `alumni` what a former one gets. Everything else in the
+ * role table is an admin role and is not this endpoint's business.
+ */
+export const BASELINE_ROLES = ["member", "alumni"] as const;
+
 // ===== RESPONSE SCHEMAS =====
 
 export const allergySchema = Schema(
@@ -319,9 +326,23 @@ export const userListItemSchema = Schema(
             description:
                 "The account's e-mail address. Shown to the admins who hold 'users:view', who need it both to judge a stranger waiting for approval and to get hold of an ordinary member.",
         }),
+        baselineRole: z.enum(["member", "alumni"]).nullable().meta({
+            description:
+                "The member/alumni baseline role the account holds, or null for an account holding neither — a stranger, or someone Feide has never confirmed either way. Only 'member' carries the right to register for events.",
+        }),
         createdAt: z
             .string()
             .meta({ description: "Account creation timestamp" }),
+    }),
+);
+
+export const approveUserInputSchema = Schema(
+    "ApproveUserInput",
+    z.object({
+        role: z.enum(BASELINE_ROLES).optional().meta({
+            description:
+                "Which baseline role the account gets. Defaults to 'member'. Pick 'alumni' for a former member — they keep every kind of access except registering for events.",
+        }),
     }),
 );
 
@@ -330,6 +351,7 @@ export const approveUserResponseSchema = Schema(
     z.object({
         message: z.string(),
         approvalStatus: z.literal("approved"),
+        role: z.enum(BASELINE_ROLES),
     }),
 );
 
@@ -424,5 +446,23 @@ export const calendarSubscriptionSchema = Schema(
             description:
                 "Personal iCalendar (.ics) URL the user subscribes to in their calendar app. Contains a secret token — treat it like a password.",
         }),
+    }),
+);
+
+export const updateUserBaselineRoleInputSchema = Schema(
+    "UpdateUserBaselineRoleInput",
+    z.object({
+        role: z.enum(BASELINE_ROLES).meta({
+            description:
+                "'member' can register for events; 'alumni' keeps everything else but loses that right. Setting one removes the other.",
+        }),
+    }),
+);
+
+export const updateUserBaselineRoleResponseSchema = Schema(
+    "UpdateUserBaselineRole",
+    z.object({
+        message: z.string(),
+        role: z.enum(BASELINE_ROLES),
     }),
 );

@@ -193,6 +193,7 @@ describe("self-registration and approval", () => {
 
             const res = await client.api.user[":id"].approve.$post({
                 param: { id: pending.id },
+                json: {},
             });
             expect(res.status).toBe(200);
 
@@ -208,6 +209,7 @@ describe("self-registration and approval", () => {
             // Approving twice is a mistake worth naming, not a silent no-op.
             const again = await client.api.user[":id"].approve.$post({
                 param: { id: pending.id },
+                json: {},
             });
             expect(again.status).toBe(400);
         },
@@ -226,6 +228,7 @@ describe("self-registration and approval", () => {
 
         const res = await client.api.user[":id"].approve.$post({
             param: { id: pending.id },
+            json: {},
         });
         expect(res.status).toBe(403);
     });
