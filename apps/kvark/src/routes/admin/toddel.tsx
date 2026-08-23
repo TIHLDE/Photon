@@ -40,6 +40,7 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { errorStatus } from "#/lib/utils";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
 // `?ny` gjør opprettelsesdialogen adresserbar, slik at «Ny utgave» på den
@@ -252,6 +253,19 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
     );
 }
 
+/**
+ * API-et svarer på engelsk, og meldingen ble vist rått til brukeren i et
+ * ellers norsk skjema. Den ene feilen en redaktør faktisk treffer på er
+ * duplikat utgavenummer, så den oversettes; resten faller tilbake til
+ * API-teksten, som fortsatt er bedre enn ingenting.
+ */
+function submitErrorMessage(error: unknown, edition: number): string {
+    if (errorStatus(error) === 409) {
+        return `Utgave ${edition} finnes allerede. Rediger den i stedet, eller velg et ledig nummer.`;
+    }
+    return error instanceof Error ? error.message : String(error);
+}
+
 function IssueDialog({
     issue,
     onClose,
@@ -335,7 +349,7 @@ function IssueDialog({
             }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(submitErrorMessage(err, Number(edition)));
         }
     }
 
