@@ -1,7 +1,9 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { format, parse } from "date-fns";
+import { nb } from "date-fns/locale";
 import { BookOpenIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import type { ToddelIssue } from "@tihlde/sdk";
@@ -15,8 +17,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
+import { DatePicker } from "@tihlde/ui/ui/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput,
+} from "@tihlde/ui/ui/number-field";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import {
     Table,
@@ -44,6 +54,7 @@ import {
     ConfirmDeleteDialog,
     usePendingConfirm,
 } from "#/components/confirm-delete-dialog";
+import { todayInOslo } from "#/lib/date";
 import { errorStatus } from "#/lib/utils";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
@@ -269,6 +280,20 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
 }
 
 /**
+ * API-et snakker rene datoer («2026-08-23»), mens datovelgeren jobber med
+ * `Date`. Begge veier går via lokal tid: `new Date("2026-08-23")` tolkes som
+ * UTC-midnatt og blir gårsdagen i vestlige tidssoner, og `toISOString()`
+ * flytter datoen tilsvarende andre veien.
+ */
+function parseDateOnly(value: string): Date {
+    return parse(value, "yyyy-MM-dd", new Date());
+}
+
+function formatDateOnly(value: Date): string {
+    return format(value, "yyyy-MM-dd");
+}
+
+/**
  * API-et svarer på engelsk, og meldingen ble vist rått til brukeren i et
  * ellers norsk skjema. Den ene feilen en redaktør faktisk treffer på er
  * duplikat utgavenummer, så den oversettes; resten faller tilbake til
@@ -296,16 +321,23 @@ function IssueDialog({
     const nextEdition =
         issues.reduce((max, i) => Math.max(max, i.edition), 0) + 1;
 
-    const [edition, setEdition] = useState(
-        String(issue?.edition ?? nextEdition),
+    const [edition, setEdition] = useState<number | null>(
+        issue?.edition ?? nextEdition,
     );
     const [title, setTitle] = useState(issue?.title ?? "Töddel");
-    const [publishedAt, setPublishedAt] = useState(
-        issue?.publishedAt ?? new Date().toISOString().slice(0, 10),
+    const [publishedAt, setPublishedAt] = useState<Date | null>(
+        issue ? parseDateOnly(issue.publishedAt) : todayInOslo(),
     );
     const [pdf, setPdf] = useState<File | null>(null);
     const [cover, setCover] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    // Feilmeldingen står nederst i skjemaet, som er lengre enn dialogen er
+    // høy. Uten dette ser et avvist «Publiser» ut som om ingenting skjedde.
+    const errorRef = useRef<HTMLParagraphElement>(null);
+    useEffect(() => {
+        if (error) errorRef.current?.scrollIntoView({ block: "nearest" });
+    }, [error]);
 
     const uploadAsset = useMutation(uploadAssetMutation);
     const create = useMutation(createToddelMutation);
@@ -323,6 +355,16 @@ function IssueDialog({
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError(null);
+
+        if (!isEdit && edition === null) {
+            setError("Du må fylle inn et utgavenummer.");
+            return;
+        }
+
+        if (!publishedAt) {
+            setError("Du må velge en publiseringsdato.");
+            return;
+        }
 
         if (!isEdit && !pdf) {
             setError("Du må velge en PDF-fil for utgaven.");
@@ -348,14 +390,20 @@ function IssueDialog({
             if (isEdit) {
                 await update.mutateAsync({
                     edition: issue.edition,
-                    data: { title, publishedAt, pdfKey, imageKey },
+                    data: {
+                        title,
+                        publishedAt: formatDateOnly(publishedAt),
+                        pdfKey,
+                        imageKey,
+                    },
                 });
             } else {
                 await create.mutateAsync({
                     data: {
-                        edition: Number(edition),
+                        // Guarded above; a new issue always has a number.
+                        edition: edition as number,
                         title,
-                        publishedAt,
+                        publishedAt: formatDateOnly(publishedAt),
                         // Guarded above; only the edit path may omit the PDF.
                         pdfKey: pdfKey as string,
                         imageKey,
@@ -364,7 +412,7 @@ function IssueDialog({
             }
             onClose();
         } catch (err) {
-            setError(submitErrorMessage(err, Number(edition)));
+            setError(submitErrorMessage(err, edition ?? 0));
         }
     }
 
@@ -388,17 +436,27 @@ function IssueDialog({
                                 <FieldLabel htmlFor="toddel-edition">
                                     Utgavenummer
                                 </FieldLabel>
-                                <Input
+                                <NumberField
                                     id="toddel-edition"
-                                    type="number"
                                     min={1}
-                                    required
+                                    step={1}
+                                    // Ikke `required`: kravet ville havnet på
+                                    // det skjulte input-elementet komponenten
+                                    // legger utenfor skjermen, og da stopper
+                                    // nettleseren innsendingen uten at
+                                    // meldingen vises noe sted. Sjekken i
+                                    // `handleSubmit` skriver den i dialogen i
+                                    // stedet.
                                     disabled={isEdit}
                                     value={edition}
-                                    onChange={(event) =>
-                                        setEdition(event.target.value)
-                                    }
-                                />
+                                    onValueChange={setEdition}
+                                >
+                                    <NumberFieldGroup className="w-32">
+                                        <NumberFieldDecrement />
+                                        <NumberFieldInput />
+                                        <NumberFieldIncrement />
+                                    </NumberFieldGroup>
+                                </NumberField>
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="toddel-title">
@@ -418,14 +476,12 @@ function IssueDialog({
                                 <FieldLabel htmlFor="toddel-published">
                                     Publiseringsdato
                                 </FieldLabel>
-                                <Input
+                                <DatePicker
                                     id="toddel-published"
-                                    type="date"
-                                    required
+                                    locale={nb}
+                                    placeholder="Velg dato"
                                     value={publishedAt}
-                                    onChange={(event) =>
-                                        setPublishedAt(event.target.value)
-                                    }
+                                    onValueChange={setPublishedAt}
                                 />
                             </Field>
                             <Field>
@@ -456,7 +512,12 @@ function IssueDialog({
                         </FieldGroup>
 
                         {error && (
-                            <p className="text-destructive text-sm">{error}</p>
+                            <p
+                                ref={errorRef}
+                                className="text-destructive text-sm"
+                            >
+                                {error}
+                            </p>
                         )}
                     </DialogBody>
                     <DialogFooter>
