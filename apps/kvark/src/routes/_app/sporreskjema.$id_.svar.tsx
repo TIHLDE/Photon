@@ -37,11 +37,7 @@ import { FormStatisticsList } from "#/components/form-statistics-list";
 import { FormStudyCharts } from "#/components/form-study-charts";
 import { FormSubmissionsTable } from "#/components/form-submissions-table";
 import { useGoBack } from "#/hooks/use-go-back";
-import {
-    mapFormStatistics,
-    mapSubmission,
-    summarizeFormStudy,
-} from "#/lib/form";
+import { mapFormStatistics, mapSubmission } from "#/lib/form";
 import { errorStatus } from "#/lib/utils";
 
 const searchSchema = z.object({
@@ -86,10 +82,6 @@ function FormSubmissionsPage() {
         () => mapFormStatistics(apiStatistics?.statistics ?? []),
         [apiStatistics],
     );
-    // Kull og studieretning regnes ut av svarlista, ikke av statistikk-
-    // endepunktet, slik at fordelingen vises også for skjemaer uten
-    // valgspørsmål.
-    const study = useMemo(() => summarizeFormStudy(submissions), [submissions]);
     const questions = useMemo(
         () =>
             form.fields.map((field) => ({ id: field.id, title: field.title })),
@@ -206,10 +198,12 @@ function FormSubmissionsPage() {
                                 />
                             ) : (
                                 <div className="flex flex-col gap-4">
+                                    {/* Kull og studieretning regnes ut av
+                                        svarlista, ikke av statistikk-
+                                        endepunktet, slik at fordelingen vises
+                                        også for skjemaer uten valgspørsmål. */}
                                     <FormStudyCharts
-                                        cohorts={study.cohorts}
-                                        programs={study.programs}
-                                        total={submissions.length}
+                                        submissions={submissions}
                                     />
                                     <FormStatisticsList
                                         statistics={statistics}

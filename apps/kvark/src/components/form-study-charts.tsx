@@ -11,10 +11,23 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@tihlde/ui/ui/chart";
-import { useMemo } from "react";
+import { Label } from "@tihlde/ui/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@tihlde/ui/ui/select";
+import { useMemo, useState } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 
-import type { FormStudySlice } from "#/lib/form";
+import {
+    type FormStudyCountMode,
+    type FormStudySlice,
+    type FormSubmissionRow,
+    summarizeFormStudy,
+} from "#/lib/form";
 
 /**
  * Faste farger med god avstand i fargesirkelen, så nabosektorer er lette å
@@ -119,36 +132,71 @@ function FormStudyDonut({ title, description, slices }: FormStudyDonutProps) {
     );
 }
 
+const COUNT_MODES: { value: FormStudyCountMode; label: string }[] = [
+    { value: "submissions", label: "Per svar" },
+    { value: "people", label: "Per person" },
+];
+
 type FormStudyChartsProps = {
-    cohorts: FormStudySlice[];
-    programs: FormStudySlice[];
-    /** Antall svar fordelingene er regnet ut av. */
-    total: number;
+    submissions: FormSubmissionRow[];
 };
 
-export function FormStudyCharts({
-    cohorts,
-    programs,
-    total,
-}: FormStudyChartsProps) {
-    if (total === 0) {
+export function FormStudyCharts({ submissions }: FormStudyChartsProps) {
+    const [mode, setMode] = useState<FormStudyCountMode>("submissions");
+    const distribution = useMemo(
+        () => summarizeFormStudy(submissions, mode),
+        [submissions, mode],
+    );
+
+    if (submissions.length === 0) {
         return null;
     }
 
-    const description = `${total} svar`;
+    const { total } = distribution;
+    const description =
+        mode === "people"
+            ? `${total} ${total === 1 ? "person" : "personer"}`
+            : `${total} svar`;
 
     return (
-        <div className="grid gap-4 sm:grid-cols-2">
-            <FormStudyDonut
-                title="Kull"
-                description={description}
-                slices={cohorts}
-            />
-            <FormStudyDonut
-                title="Studieretning"
-                description={description}
-                slices={programs}
-            />
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+                <Label htmlFor="form-study-count-mode">Tell</Label>
+                <Select
+                    items={COUNT_MODES}
+                    value={mode}
+                    onValueChange={(value) =>
+                        setMode((value as FormStudyCountMode | null) ?? mode)
+                    }
+                >
+                    <SelectTrigger
+                        id="form-study-count-mode"
+                        className="w-44"
+                        aria-label="Hva én andel teller"
+                    >
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {COUNT_MODES.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <FormStudyDonut
+                    title="Kull"
+                    description={description}
+                    slices={distribution.cohorts}
+                />
+                <FormStudyDonut
+                    title="Studieretning"
+                    description={description}
+                    slices={distribution.programs}
+                />
+            </div>
         </div>
     );
 }

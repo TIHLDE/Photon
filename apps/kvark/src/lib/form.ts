@@ -79,6 +79,8 @@ export type FormAnswer = {
 
 export type FormSubmissionRow = {
     id: string;
+    /** Hvem som svarte. Brukes til å telle personer i stedet for svar. */
+    userId: string;
     userName: string;
     userEmail: string;
     /** Studieretningen personen går på nå, om vi kjenner den. */
@@ -94,6 +96,7 @@ export function mapSubmission(
 ): FormSubmissionRow {
     return {
         id: submission.id,
+        userId: submission.user.id,
         userName: submission.user.name,
         userEmail: submission.user.email,
         studyProgram: submission.user.study_program,
@@ -172,7 +175,16 @@ export type FormStudySlice = {
 export type FormStudyDistribution = {
     cohorts: FormStudySlice[];
     programs: FormStudySlice[];
+    /** Hva andelene er regnet ut av — svar eller personer, alt etter modus. */
+    total: number;
 };
+
+/**
+ * Om hvert svar teller for seg, eller om flere svar fra samme person teller
+ * som én. De skiller lag på skjemaer som tar imot mer enn ett svar per
+ * person, der den ivrigste ellers drar sitt eget kull opp.
+ */
+export type FormStudyCountMode = "submissions" | "people";
 
 /** Én kategori med antallet svar som faller i den. `value: null` er restposten. */
 type StudyBucket = {
@@ -235,16 +247,20 @@ function countBy(
  * svarlista, som allerede har med studiet til hver enkelt, slik at
  * statistikken alltid kan vises — også for skjemaer uten valgspørsmål.
  *
- * Én andel er ett svar, ikke én person, slik at summen stemmer med antallet
- * svar som står i fanen ved siden av.
+ * `mode` bestemmer hva én andel er: ett svar, slik at summen stemmer med
+ * antallet svar i fanen ved siden av, eller én person.
  */
 export function summarizeFormStudy(
     submissions: FormSubmissionRow[],
+    mode: FormStudyCountMode = "submissions",
 ): FormStudyDistribution {
-    const total = submissions.length;
+    // Nyeste svar først fra API-et, så det er det siste svaret fra hver person
+    // som blir stående når vi teller personer.
+    const rows = mode === "people" ? uniqueByUser(submissions) : submissions;
+    const total = rows.length;
 
     const cohorts = countBy(
-        submissions,
+        rows,
         (submission) =>
             submission.studyStartYear === null
                 ? null
@@ -252,12 +268,13 @@ export function summarizeFormStudy(
         (value) => (value === null ? "Ukjent kull" : `Kull ${value}`),
     );
     const programs = countBy(
-        submissions,
+        rows,
         (submission) => submission.studyProgram,
         (value) => value ?? "Ukjent studieretning",
     );
 
     return {
+        total,
         // Nyeste kull først, mens studieretningene sorteres på størrelse.
         cohorts: toSlices(
             cohorts,
@@ -272,4 +289,14 @@ export function summarizeFormStudy(
             (a, b) => b.count - a.count || a.label.localeCompare(b.label, "nb"),
         ),
     };
+}
+
+/** Ett svar per person, det første i lista. */
+function uniqueByUser(submissions: FormSubmissionRow[]): FormSubmissionRow[] {
+    const seen = new Set<string>();
+    return submissions.filter((submission) => {
+        if (seen.has(submission.userId)) return false;
+        seen.add(submission.userId);
+        return true;
+    });
 }
