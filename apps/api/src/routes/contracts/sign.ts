@@ -59,6 +59,7 @@ require contract signing.`,
 
         const body = c.req.valid("json");
         const { db, email, bucket } = c.get("ctx");
+        const logger = c.get("logger");
 
         const activeContract = await db.query.contract.findFirst({
             where: eq(schema.contract.isActive, true),
@@ -211,20 +212,33 @@ require contract signing.`,
                 grp.contactEmail ?? leaderEmailByGroup.get(grp.slug) ?? null;
 
             if (notifyEmail) {
-                await email.sendEmailTemplate(
-                    {
-                        from: env.MAIL_FROM,
-                        to: notifyEmail,
-                        subject: `${user.name} har signert frivillighetskontrakten`,
-                    },
-                    "ContractSignedEmail",
-                    {
-                        memberName: user.name,
-                        groupName: grp.name,
-                        signedAt: signature.signedAt.toISOString(),
-                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
-                    },
-                );
+                // The signature is already committed, so a failing notification
+                // must not fail the request: the member would be shown an error
+                // for a signing that went through, and their retry would come
+                // back as 409 "already signed".
+                try {
+                    await email.sendEmailTemplate(
+                        {
+                            from: env.MAIL_FROM,
+                            to: notifyEmail,
+                            subject: `${user.name} har signert frivillighetskontrakten`,
+                        },
+                        "ContractSignedEmail",
+                        {
+                            memberName: user.name,
+                            groupName: grp.name,
+                            signedAt: signature.signedAt.toISOString(),
+                            logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                        },
+                    );
+                } catch (error) {
+                    // The signer is already bound to the request logger by the
+                    // auth middleware, so only the group is added here.
+                    logger.error(
+                        { err: error, groupSlug: grp.slug },
+                        "Failed to queue contract signed email",
+                    );
+                }
             }
         }
 

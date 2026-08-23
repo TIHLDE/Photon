@@ -240,6 +240,149 @@ describe("contracts", () => {
         );
     });
 
+    describe("notification failures", () => {
+        integrationTest(
+            "keeps the signature when the notification email fails",
+            async ({ ctx }) => {
+                // The signature row is written before the leaders are told.
+                // If a failing email took the request down with it, the member
+                // saw an error for a signing that went through — and their
+                // retry came back as 409 "already signed".
+                const admin = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "contracts:create",
+                    "contracts:update",
+                ]);
+
+                const fileKey = "test/contract-mail.pdf";
+                await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    originalFilename: "contract.pdf",
+                    contentType: "application/pdf",
+                });
+                const created = await adminClient.api.contracts.$post({
+                    json: {
+                        title: "Kontrakt",
+                        version: "1",
+                        fileKey,
+                        signaturePlacement: PLACEMENT,
+                    },
+                });
+                const contract = await created.json();
+                await adminClient.api.contracts[":id"].activate.$patch({
+                    param: { id: contract.id },
+                });
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "mail-failing-group",
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ contractSigningRequired: true })
+                    .where(eq(schema.group.slug, group.slug));
+
+                const member = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                });
+
+                ctx.email.sendEmailTemplate = () => {
+                    throw new Error("SMTP is down");
+                };
+
+                const memberClient = await ctx.utils.clientForUser(member);
+                const signed = await memberClient.api.contracts.sign.$post({
+                    json: {
+                        signedName: "Kari Nordmann",
+                        signatureDataUrl: SIGNATURE_DATA_URL,
+                    },
+                });
+                expect(signed.status).toBe(201);
+
+                const row = await ctx.db.query.contractSignature.findFirst();
+                expect(row?.userId).toBe(member.id);
+
+                const status =
+                    await memberClient.api.contracts["my-signature"].$get();
+                expect(await status.json()).toMatchObject({ hasSigned: true });
+            },
+            500_000,
+        );
+    });
+
+    describe("signature status", () => {
+        integrationTest(
+            "requires signing only from members of a signing group",
+            async ({ ctx }) => {
+                // The profile banner nags on this flag. Without it every user
+                // was told to sign, including those in no group that asks for
+                // a contract.
+                const admin = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "contracts:create",
+                    "contracts:update",
+                ]);
+
+                const fileKey = "test/contract-status.pdf";
+                await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    originalFilename: "contract.pdf",
+                    contentType: "application/pdf",
+                });
+                const created = await adminClient.api.contracts.$post({
+                    json: {
+                        title: "Kontrakt",
+                        version: "1",
+                        fileKey,
+                        signaturePlacement: PLACEMENT,
+                    },
+                });
+                const contract = await created.json();
+                await adminClient.api.contracts[":id"].activate.$patch({
+                    param: { id: contract.id },
+                });
+
+                const signingGroup = await ctx.utils.createTestGroup({
+                    slug: "signing-group",
+                });
+                await ctx.db
+                    .update(schema.group)
+                    .set({ contractSigningRequired: true })
+                    .where(eq(schema.group.slug, signingGroup.slug));
+
+                const plainGroup = await ctx.utils.createTestGroup({
+                    slug: "plain-group",
+                });
+
+                const obliged = await ctx.utils.createTestUser();
+                const bystander = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.groupMembership).values([
+                    { userId: obliged.id, groupSlug: signingGroup.slug },
+                    { userId: bystander.id, groupSlug: plainGroup.slug },
+                ]);
+
+                const obligedStatus = await (
+                    await ctx.utils.clientForUser(obliged)
+                ).api.contracts["my-signature"].$get();
+                expect(obligedStatus.status).toBe(200);
+                expect(await obligedStatus.json()).toMatchObject({
+                    hasSigned: false,
+                    requiresSigning: true,
+                });
+
+                const bystanderStatus = await (
+                    await ctx.utils.clientForUser(bystander)
+                ).api.contracts["my-signature"].$get();
+                expect(await bystanderStatus.json()).toMatchObject({
+                    hasSigned: false,
+                    requiresSigning: false,
+                });
+            },
+            500_000,
+        );
+    });
+
     describe("signed pdf download", () => {
         integrationTest(
             "serves the signer their own PDF but not another member's",
