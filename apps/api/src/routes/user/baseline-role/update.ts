@@ -21,13 +21,11 @@ import {
  * register for events: alumni keep their profile, their groups, their history
  * and every page a member can read, but the påmelding button is not theirs.
  *
- * Exists because the two ways an account gets a baseline role both guess wrong
- * sometimes. Feide only re-decides when the member logs in with it, so someone
- * who graduated years ago and has not been back still carries `member`; and
- * approving a self-registered account hands out `member` flat, which is wrong
- * for the alumni who register with a private address precisely because their
- * NTNU account is gone. Both were fixed by hand against the roles API until
- * now.
+ * Exists because Feide only re-decides when the member logs in with it, so
+ * someone who graduated years ago and has not been back still carries `member`,
+ * and nothing else ever corrects that. An account still waiting in the approval
+ * queue is not this route's case — `approve` takes the role there, so the
+ * membership and the role are decided in one act.
  *
  * A dedicated route rather than the generic `POST /roles/:roleId/users`: the
  * two roles are mutually exclusive, and doing it generically means two calls

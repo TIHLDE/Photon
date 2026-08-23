@@ -206,9 +206,10 @@ export const updateUserStatusMutation = mutationOptions({
  * Forskjellen er én ting: alumni kan ikke melde seg på arrangementer. Alt
  * annet — profil, grupper, historikk, sidene de kan lese — er likt.
  *
- * Trengs fordi ingen av de to stedene rollen settes automatisk treffer alltid:
- * Feide bestemmer på nytt bare når medlemmet logger inn med Feide, og
- * godkjenning av en selvregistrert konto gir alltid `member`.
+ * Trengs fordi Feide bestemmer på nytt bare når medlemmet logger inn med Feide:
+ * en som ble ferdig for år siden og ikke har vært innom sitter fortsatt som
+ * medlem. For en konto som venter i køen velges rollen i godkjenningen i
+ * stedet.
  */
 export const updateUserBaselineRoleMutation = mutationOptions({
     mutationFn: ({

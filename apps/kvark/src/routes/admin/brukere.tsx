@@ -573,25 +573,38 @@ function AllUsersTable({
                                                                 >
                                                                     Allergier
                                                                 </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        setChangingRole(
-                                                                            {
-                                                                                id: user.id,
-                                                                                name: user.name,
-                                                                                baselineRole:
-                                                                                    user.baselineRole,
-                                                                            },
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {user.baselineRole ===
-                                                                    "alumni"
-                                                                        ? "Gjør til medlem"
-                                                                        : "Gjør til alumni"}
-                                                                </Button>
+                                                                {/* Ikke for en
+                                                                som venter:
+                                                                rollen deles ut
+                                                                av godkjenningen,
+                                                                og å sette den
+                                                                her ville sett ut
+                                                                som at kontoen var
+                                                                i orden mens den
+                                                                fortsatt står i
+                                                                køen. */}
+                                                                {user.approvalStatus !==
+                                                                    "pending" && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() =>
+                                                                            setChangingRole(
+                                                                                {
+                                                                                    id: user.id,
+                                                                                    name: user.name,
+                                                                                    baselineRole:
+                                                                                        user.baselineRole,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {user.baselineRole ===
+                                                                        "alumni"
+                                                                            ? "Gjør til medlem"
+                                                                            : "Gjør til alumni"}
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -1194,10 +1207,10 @@ function ChangeStatusDialog({
 /**
  * Flytt et medlem mellom «medlem» og «alumni».
  *
- * Rollen settes automatisk to steder, og begge bommer av og til: Feide
- * bestemmer på nytt bare når medlemmet faktisk logger inn med Feide, og
- * godkjenning av en selvregistrert konto gir alltid «medlem». Det er de
- * tilfellene denne knappen finnes for.
+ * For en som venter i køen er dette godkjenningens jobb — der velges rollen
+ * med en gang. Denne knappen er for alle andre: Feide bestemmer på nytt bare
+ * når medlemmet faktisk logger inn med Feide, så en som ble ferdig for år
+ * siden og ikke har vært innom sitter fortsatt som medlem.
  */
 function ChangeBaselineRoleDialog({
     user,
