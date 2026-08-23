@@ -232,8 +232,10 @@ require contract signing.`,
                         },
                     );
                 } catch (error) {
+                    // The signer is already bound to the request logger by the
+                    // auth middleware, so only the group is added here.
                     logger.error(
-                        { err: error, userId: user.id, groupSlug: grp.slug },
+                        { err: error, groupSlug: grp.slug },
                         "Failed to queue contract signed email",
                     );
                 }
