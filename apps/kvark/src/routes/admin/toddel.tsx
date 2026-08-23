@@ -1,7 +1,8 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BookOpenIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { z } from "zod";
 
 import type { ToddelIssue } from "@tihlde/sdk";
 import { Button } from "@tihlde/ui/ui/button";
@@ -39,13 +40,21 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { errorStatus } from "#/lib/utils";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+
+// `?ny` gjør opprettelsesdialogen adresserbar, slik at «Ny utgave» på den
+// offentlige TÖDDEL-siden lander rett i skjemaet i stedet for bare på listen.
+const searchSchema = z.object({
+    ny: z.boolean().optional().catch(undefined),
+});
 
 export const Route = createFileRoute("/admin/toddel")({
     component: ToddelAdminPage,
     beforeLoad: async ({ location }) => {
         await requireAdminSection(location.href, "toddel");
     },
+    validateSearch: searchSchema,
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getToddelIssuesQuery());
         return { breadcrumbs: "TÖDDEL" };
@@ -61,9 +70,26 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 function ToddelAdminPage() {
     const canCreate = useAnyScopePermission(["toddel:create", "toddel:manage"]);
+    const { ny } = Route.useSearch();
+    const navigate = Route.useNavigate();
     const [dialog, setDialog] = useState<
         { mode: "create" } | { mode: "edit"; issue: ToddelIssue } | null
     >(null);
+
+    // `canCreate` er false ved første render på en kald sidelast, siden
+    // sesjonen ikke er hentet enda. Derfor en effekt og ikke en lazy
+    // initialisering.
+    useEffect(() => {
+        if (!ny || !canCreate) return;
+        setDialog({ mode: "create" });
+    }, [ny, canCreate]);
+
+    function closeDialog() {
+        setDialog(null);
+        // Ellers ville dialogen åpnet seg igjen med en gang, siden `ny`
+        // fortsatt sto i URL-en.
+        if (ny) navigate({ search: {}, replace: true });
+    }
 
     return (
         <Stagger
@@ -96,7 +122,7 @@ function ToddelAdminPage() {
                         dialog.mode === "edit" ? dialog.issue.edition : "create"
                     }
                     issue={dialog.mode === "edit" ? dialog.issue : null}
-                    onClose={() => setDialog(null)}
+                    onClose={closeDialog}
                 />
             )}
         </Stagger>
@@ -227,6 +253,19 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
     );
 }
 
+/**
+ * API-et svarer på engelsk, og meldingen ble vist rått til brukeren i et
+ * ellers norsk skjema. Den ene feilen en redaktør faktisk treffer på er
+ * duplikat utgavenummer, så den oversettes; resten faller tilbake til
+ * API-teksten, som fortsatt er bedre enn ingenting.
+ */
+function submitErrorMessage(error: unknown, edition: number): string {
+    if (errorStatus(error) === 409) {
+        return `Utgave ${edition} finnes allerede. Rediger den i stedet, eller velg et ledig nummer.`;
+    }
+    return error instanceof Error ? error.message : String(error);
+}
+
 function IssueDialog({
     issue,
     onClose,
@@ -310,7 +349,7 @@ function IssueDialog({
             }
             onClose();
         } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(submitErrorMessage(err, Number(edition)));
         }
     }
 
