@@ -35,7 +35,7 @@ const SLICE_COLORS = [
 const UNKNOWN_COLOR = "oklch(0.65 0.02 260)";
 
 function sliceColor(slice: FormStudySlice, index: number): string {
-    return slice.key === "ukjent"
+    return slice.unknown
         ? UNKNOWN_COLOR
         : SLICE_COLORS[index % SLICE_COLORS.length];
 }
