@@ -1,11 +1,18 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { PlusIcon } from "lucide-react";
 import { Suspense } from "react";
+import { Button } from "@tihlde/ui/ui/button";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 
 import { getToddelIssuesQuery } from "#/api/queries/toddel";
 import { IssueCard } from "#/components/issue-card";
+import { PageHeader } from "#/components/page-header";
+import { useAnyScopePermission } from "#/hooks/use-permission";
 import { OSLO_TIME_ZONE } from "#/lib/date";
+
+/** Module-level so the permission lookup keeps a stable identity. */
+const TODDEL_CREATE_PERMISSIONS = ["toddel:create", "toddel:manage"] as const;
 
 export const Route = createFileRoute("/_app/toddel")({
     component: ToddelPage,
@@ -72,14 +79,32 @@ function IssueGrid() {
 }
 
 function ToddelPage() {
+    // Scopet er ukjent på en offentlig liste, så any-scope er riktig her:
+    // et gruppe-scopet toddel:create er en ekte tilgang, og API-et avviser
+    // uansett den enkelte forespørselen som ikke treffer.
+    const canCreateIssue = useAnyScopePermission(TODDEL_CREATE_PERMISSIONS);
+
     return (
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
-            <div className="flex flex-col gap-1">
-                <h1 className="text-3xl">TÖDDEL</h1>
-                <p className="text-muted-foreground">
-                    Les tidligere utgaver av TIHLDE sitt studentblad
-                </p>
-            </div>
+            <PageHeader
+                title="TÖDDEL"
+                description="Les tidligere utgaver av TIHLDE sitt studentblad"
+                action={
+                    canCreateIssue ? (
+                        <Button
+                            render={
+                                <Link
+                                    to="/admin/toddel"
+                                    search={{ ny: true }}
+                                />
+                            }
+                        >
+                            <PlusIcon className="size-4" />
+                            Ny utgave
+                        </Button>
+                    ) : null
+                }
+            />
 
             <Suspense fallback={<IssueGridSkeleton />}>
                 <IssueGrid />
