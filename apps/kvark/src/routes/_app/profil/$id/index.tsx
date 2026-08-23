@@ -88,9 +88,7 @@ function RouteComponent() {
     const membershipDescription =
         memberships.length > 0
             ? `${memberships.length} ${memberships.length === 1 ? "gruppe" : "grupper"}`
-            : isOwnProfile
-              ? "Du er ikke medlem i noen grupper"
-              : "Ikke medlem i noen grupper";
+            : "Ikke medlem i noen grupper";
 
     return (
         <>
@@ -119,25 +117,26 @@ function RouteComponent() {
                 </>
             ) : null}
 
-            {/* Gruppene vises direkte i stedet for et telle-kort. Kortet så
-                klikkbart ut uten å være det, og på andres profil var det alt
-                sidens innhold besto av. */}
-            <div className="flex flex-col gap-3">
-                <h3>Medlemskap</h3>
-                {memberships.length > 0 ? (
-                    <ProfileMembershipChips
-                        groups={memberships.map((group) => ({
-                            slug: group.slug,
-                            name: group.name,
-                            canOpen: canOpenGroup(group),
-                        }))}
-                    />
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        {membershipDescription}
-                    </p>
-                )}
-            </div>
+            {/* Bare på andres profil: der er dette omtrent alt siden har å
+                vise. På egen profil holder det med Medlemskap-fanen. */}
+            {!isOwnProfile ? (
+                <div className="flex flex-col gap-3">
+                    <h3>Medlemskap</h3>
+                    {memberships.length > 0 ? (
+                        <ProfileMembershipChips
+                            groups={memberships.map((group) => ({
+                                slug: group.slug,
+                                name: group.name,
+                                canOpen: canOpenGroup(group),
+                            }))}
+                        />
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            {membershipDescription}
+                        </p>
+                    )}
+                </div>
+            ) : null}
 
             {/* Kommende arrangementer og oppgaver er personlige og vises kun på
                 egen profil. */}
