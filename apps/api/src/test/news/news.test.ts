@@ -351,7 +351,7 @@ describe("News System", () => {
                         title: "Old announcement",
                         header: "No longer relevant",
                         body: "Something that happened last year.",
-                        emojisAllowed: false,
+                        emojisAllowed: true,
                     },
                 })
                 .then((r) => r.json());
@@ -394,6 +394,17 @@ describe("News System", () => {
                 param: { id: created.id },
             });
             expect(editorGet.status).toBe(200);
+
+            // Reactions are allowed on this article, so a 404 here can only be
+            // the archiving: an article that is off the website cannot be
+            // reacted to by someone holding an old URL.
+            const reactionResponse = await userClient.api.news[":id"][
+                "reactions"
+            ].$post({
+                param: { id: created.id },
+                json: { emoji: "👍" },
+            });
+            expect(reactionResponse.status).toBe(404);
 
             // === ADMIN LISTING ===
 
