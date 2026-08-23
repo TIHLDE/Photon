@@ -31,6 +31,8 @@ import { ImageUp, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { convertHeicToJpeg, isHeicFile } from "@tihlde/ui/lib/heic";
+
 import { avatarImageUrl } from "#/lib/assets";
 import { initials } from "#/lib/utils";
 
@@ -113,6 +115,8 @@ export function EditProfileDialog({
     /** Fila som beskjæres nå. Er den satt, viser dialogen beskjæringen. */
     const [cropSource, setCropSource] = useState<File | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    /** HEIC-konvertering tar et par sekunder, og skal ikke se ut som ingenting. */
+    const [isConverting, setIsConverting] = useState(false);
 
     const form = useForm({
         defaultValues: { bio, github, linkedin } satisfies EditProfileValues,
@@ -168,11 +172,14 @@ export function EditProfileDialog({
         return () => URL.revokeObjectURL(url);
     }, [croppedImage]);
 
-    function pickFile(file: File | null | undefined) {
+    async function pickFile(file: File | null | undefined) {
         setImageError(null);
         if (!file) return;
 
-        if (!file.type.startsWith("image/")) {
+        // HEIC-filer har ofte tom `type`, så formatsjekken må slippe dem
+        // gjennom på filnavnet — ellers avvises iPhone-bilder som «ikke et
+        // bilde».
+        if (!file.type.startsWith("image/") && !isHeicFile(file)) {
             setImageError("Filen må være et bilde.");
             return;
         }
@@ -180,6 +187,25 @@ export function EditProfileDialog({
             setImageError(
                 `Bildet er ${(file.size / 1024 / 1024).toFixed(1)} MB. Maks er ${IMAGE_MAX_BYTES / 1024 / 1024} MB.`,
             );
+            return;
+        }
+
+        // Beskjæringen viser bildet i en `<img>`, og hverken Chrome eller
+        // Firefox kan dekode HEIC — så iPhone-bilder må konverteres først,
+        // ellers møter medlemmet en tom ramme.
+        if (isHeicFile(file)) {
+            setIsConverting(true);
+            try {
+                setCropSource(await convertHeicToJpeg(file));
+            } catch (error) {
+                setImageError(
+                    error instanceof Error
+                        ? error.message
+                        : "Fikk ikke lest bildet. Prøv en annen fil.",
+                );
+            } finally {
+                setIsConverting(false);
+            }
             return;
         }
 
@@ -244,6 +270,7 @@ export function EditProfileDialog({
                                         previewUrl={previewUrl}
                                         canRemove={canRemove}
                                         error={imageError}
+                                        isConverting={isConverting}
                                         onPick={pickFile}
                                         onRemove={() => {
                                             // Et nytt bilde angres tilbake til
@@ -403,6 +430,7 @@ function AvatarField({
     previewUrl,
     canRemove,
     error,
+    isConverting,
     onPick,
     onRemove,
 }: {
@@ -410,6 +438,7 @@ function AvatarField({
     previewUrl: string | null;
     canRemove: boolean;
     error: string | null;
+    isConverting: boolean;
     onPick: (file: File | undefined) => void;
     onRemove: () => void;
 }) {
@@ -427,6 +456,7 @@ function AvatarField({
                     alt={name}
                     fallback={initials(name)}
                     onSelect={onPick}
+                    disabled={isConverting}
                     labels={{
                         change: "Bytt profilbilde",
                         upload: "Last opp profilbilde",
@@ -439,10 +469,15 @@ function AvatarField({
                             type="button"
                             variant="outline"
                             size="sm"
+                            disabled={isConverting}
                             onClick={() => pickerRef.current?.open()}
                         >
                             <ImageUp />
-                            {previewUrl ? "Bytt bilde" : "Last opp bilde"}
+                            {isConverting
+                                ? "Åpner bildet …"
+                                : previewUrl
+                                  ? "Bytt bilde"
+                                  : "Last opp bilde"}
                         </Button>
                         {canRemove ? (
                             <Button

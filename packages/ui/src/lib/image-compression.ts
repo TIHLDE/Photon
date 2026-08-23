@@ -7,6 +7,8 @@
  * it in a worker first turns that into well under a megabyte.
  */
 
+import { convertHeicToJpeg } from "#/lib/heic";
+
 /** Longest edge kept in the browser. Matches the API's cap. */
 export const CLIENT_MAX_DIMENSION = 2560;
 
@@ -83,26 +85,36 @@ function toFile(data: Blob, originalName: string, type: string): File {
  * upload.
  */
 export async function compressImageFile(file: File): Promise<File> {
-    if (!isCompressibleImage(file)) return file;
+    // HEIC først: komprimeringen går via en canvas, og hverken Chrome eller
+    // Firefox kan dekode HEIC — så uten dette blir bildet stående urørt og
+    // avvist av API-et, som bare tar imot JPEG, PNG, GIF og WebP. Feiler
+    // konverteringen, kastes den videre: en fil ingen ledd i kjeden kan lese
+    // er ikke noe å late som om gikk bra.
+    const readable = await convertHeicToJpeg(file);
+
+    if (!isCompressibleImage(readable)) return readable;
 
     try {
         const { default: imageCompression } =
             await import("browser-image-compression");
-        const compressed = await imageCompression(file, COMPRESSION_OPTIONS);
+        const compressed = await imageCompression(
+            readable,
+            COMPRESSION_OPTIONS,
+        );
 
         // Already-small images can come back larger than they went in.
-        if (compressed.size >= file.size) return file;
+        if (compressed.size >= readable.size) return readable;
 
         // Some browsers drop the MIME type on the resulting Blob, so fall back
         // to the type the file came in with.
         const type =
             compressed.type ||
-            file.type ||
-            inferMimeFromFilename(file.name) ||
+            readable.type ||
+            inferMimeFromFilename(readable.name) ||
             "application/octet-stream";
-        return toFile(compressed, file.name, type);
+        return toFile(compressed, readable.name, type);
     } catch {
-        return file;
+        return readable;
     }
 }
 

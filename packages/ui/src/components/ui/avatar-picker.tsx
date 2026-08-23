@@ -123,7 +123,9 @@ export function AvatarPicker({
             <input
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                // iPhone-bilder er HEIC, og filvelgeren skjuler alt som ikke
+                // står her: «image/*» dekker dem ikke i alle nettlesere.
+                accept="image/*,.heic,.heif"
                 className="sr-only"
                 disabled={disabled}
                 onChange={(event) => {
