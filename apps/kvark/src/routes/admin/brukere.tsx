@@ -68,6 +68,10 @@ import {
     updateUserStudyMutation,
     updateUserStudyYearMutation,
 } from "#/api/queries/user";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { AdminAllergyPicker } from "#/components/admin-allergy-picker";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminGroupPicker } from "#/components/admin-group-picker";
@@ -1316,6 +1320,7 @@ function MembersTable({
     const [study, setStudy] = useState<string>(ALL);
     const [role, setRole] = useState<string>(ALL);
     const [year, setYear] = useState<string>(ALL);
+    const confirmRemove = usePendingConfirm<GroupMember>();
 
     const debouncedSearch = useDebounced(search);
 
@@ -1398,16 +1403,6 @@ function MembersTable({
                 </CardContent>
             </Card>
         );
-    }
-
-    function handleRemove(member: GroupMember) {
-        if (
-            window.confirm(
-                `Fjerne ${member.user.name} fra gruppen? Dette kan ikke angres.`,
-            )
-        ) {
-            remove.mutate({ groupSlug, userId: member.userId });
-        }
     }
 
     return (
@@ -1602,7 +1597,9 @@ function MembersTable({
                                                             remove.isPending
                                                         }
                                                         onClick={() =>
-                                                            handleRemove(member)
+                                                            confirmRemove.request(
+                                                                member,
+                                                            )
                                                         }
                                                     >
                                                         <Trash2 className="size-4" />
@@ -1618,6 +1615,23 @@ function MembersTable({
                     </CardContent>
                 </Card>
             )}
+
+            <ConfirmDeleteDialog
+                open={confirmRemove.open}
+                onOpenChange={(open) => !open && confirmRemove.clear()}
+                title={`Fjerne ${confirmRemove.shown?.user.name} fra gruppen?`}
+                description="Medlemmet mister tilgangene gruppen gir. Brukeren beholdes, og kan legges inn igjen."
+                confirmLabel="Fjern medlem"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmRemove.pending) return;
+                    remove.mutate({
+                        groupSlug,
+                        userId: confirmRemove.pending.userId,
+                    });
+                    confirmRemove.clear();
+                }}
+            />
         </div>
     );
 }

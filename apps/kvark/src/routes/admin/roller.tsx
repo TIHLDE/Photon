@@ -61,6 +61,10 @@ import {
     updateMemberPermissionsMutation,
     updatePositionMutation,
 } from "#/api/queries/roles";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import {
@@ -412,6 +416,7 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
     const remove = useMutation(deletePositionMutation);
     const [editing, setEditing] = useState<GroupPosition | null>(null);
     const [createOpen, setCreateOpen] = useState(false);
+    const confirmDelete = usePendingConfirm<GroupPosition>();
     // The rows below list only what a holder has beyond the group, so they
     // need the group's own two lists. Reading them requires managing the
     // group; without them the column falls back to the full list.
@@ -442,16 +447,6 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                 ))}
             </div>
         );
-    }
-
-    function handleDelete(position: GroupPosition) {
-        if (
-            window.confirm(
-                `Slette vervet «${position.name}»? Alle holdere mister tilgangene.`,
-            )
-        ) {
-            remove.mutate({ groupSlug, positionId: position.id });
-        }
     }
 
     return (
@@ -547,7 +542,9 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                             <DropdownMenuItem
                                                 variant="destructive"
                                                 onClick={() =>
-                                                    handleDelete(position)
+                                                    confirmDelete.request(
+                                                        position,
+                                                    )
                                                 }
                                             >
                                                 Slett
@@ -609,6 +606,23 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                     position={editing}
                 />
             )}
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette vervet «${confirmDelete.shown?.name}»?`}
+                description="Alle som har vervet mister tilgangene det gir. Dette kan ikke angres."
+                confirmLabel="Slett verv"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({
+                        groupSlug,
+                        positionId: confirmDelete.pending.id,
+                    });
+                    confirmDelete.clear();
+                }}
+            />
         </>
     );
 }

@@ -60,6 +60,10 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import {
     useAnyScopePermission,
@@ -260,6 +264,7 @@ function JobsTable({
     // buttons follow the item, not just the global permission.
     const canEdit = useCanActOnResource(["jobs:update", "jobs:manage"]);
     const canDelete = useCanActOnResource(["jobs:delete", "jobs:manage"]);
+    const confirmDelete = usePendingConfirm<JobListItem>();
 
     // Listen ligger her, ikke i forelderen, så oppslaget av `?rediger=<id>`
     // må også gjøres her. Kjører kun når id-en endrer seg, slik at dialogen
@@ -301,85 +306,98 @@ function JobsTable({
         );
     }
 
-    function handleDelete(job: JobListItem) {
-        if (
-            window.confirm(
-                `Slette annonsen "${job.title}"? Dette kan ikke angres.`,
-            )
-        ) {
-            remove.mutate({ jobId: job.id });
-        }
-    }
-
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Bedrift</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Frist</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filtered.map((job) => (
-                            <TableRow key={job.id}>
-                                <TableCell>{job.title}</TableCell>
-                                <TableCell>{job.company}</TableCell>
-                                <TableCell>
-                                    {JOB_TYPE_LABELS[job.jobType as JobType] ??
-                                        job.jobType}
-                                </TableCell>
-                                <TableCell>
-                                    {job.isContinuouslyHiring
-                                        ? "Fortløpende"
-                                        : formatDeadline(job.deadline)}
-                                </TableCell>
-                                <TableCell>
-                                    {job.expired ? (
-                                        <Badge variant="outline">Utløpt</Badge>
-                                    ) : (
-                                        <Badge variant="secondary">Aktiv</Badge>
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex justify-end gap-2">
-                                        {canEdit(job.createdById) ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onEdit(job)}
-                                            >
-                                                <PencilIcon className="size-4" />
-                                                Rediger
-                                            </Button>
-                                        ) : null}
-                                        {canDelete(job.createdById) ? (
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                disabled={remove.isPending}
-                                                onClick={() =>
-                                                    handleDelete(job)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Bedrift</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Frist</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {filtered.map((job) => (
+                                <TableRow key={job.id}>
+                                    <TableCell>{job.title}</TableCell>
+                                    <TableCell>{job.company}</TableCell>
+                                    <TableCell>
+                                        {JOB_TYPE_LABELS[
+                                            job.jobType as JobType
+                                        ] ?? job.jobType}
+                                    </TableCell>
+                                    <TableCell>
+                                        {job.isContinuouslyHiring
+                                            ? "Fortløpende"
+                                            : formatDeadline(job.deadline)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {job.expired ? (
+                                            <Badge variant="outline">
+                                                Utløpt
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="secondary">
+                                                Aktiv
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            {canEdit(job.createdById) ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => onEdit(job)}
+                                                >
+                                                    <PencilIcon className="size-4" />
+                                                    Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canDelete(job.createdById) ? (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    disabled={remove.isPending}
+                                                    onClick={() =>
+                                                        confirmDelete.request(
+                                                            job,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette annonsen «${confirmDelete.shown?.title}»?`}
+                description="Annonsen fjernes fra karrieresiden for godt. Dette kan ikke angres."
+                confirmLabel="Slett annonse"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ jobId: confirmDelete.pending.id });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }
 

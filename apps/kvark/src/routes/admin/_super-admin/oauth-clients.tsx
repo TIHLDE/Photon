@@ -41,6 +41,10 @@ import {
     type CreatedOAuthClient,
     type OAuthClientFull,
 } from "#/api/queries/oauth";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 
 type RevealedSecret = { clientId: string; clientSecret: string };
 
@@ -59,6 +63,7 @@ function OAuthClientsPage() {
 
     const rotate = useMutation(rotateOAuthClientSecretMutation);
     const remove = useMutation(deleteOAuthClientMutation);
+    const confirmDelete = usePendingConfirm<OAuthClientFull>();
 
     async function handleRotate(client: OAuthClientFull) {
         const result = await rotate.mutateAsync({ clientId: client.client_id });
@@ -66,18 +71,6 @@ function OAuthClientsPage() {
             clientId: result.client_id,
             clientSecret: result.client_secret,
         });
-    }
-
-    function handleDelete(client: OAuthClientFull) {
-        if (
-            window.confirm(
-                `Er du sikker på at du vil slette ${
-                    client.client_name ?? client.client_id
-                }? Alle tilkoblede brukere blir logget ut av appen.`,
-            )
-        ) {
-            remove.mutate({ clientId: client.client_id });
-        }
     }
 
     return (
@@ -104,7 +97,7 @@ function OAuthClientsPage() {
                     rotatePending={rotate.isPending}
                     removePending={remove.isPending}
                     onRotate={handleRotate}
-                    onDelete={handleDelete}
+                    onDelete={confirmDelete.request}
                 />
             </Suspense>
 
@@ -122,6 +115,22 @@ function OAuthClientsPage() {
             <SecretRevealDialog
                 secret={revealedSecret}
                 onClose={() => setRevealedSecret(null)}
+            />
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette ${confirmDelete.shown?.client_name ?? confirmDelete.shown?.client_id}?`}
+                description="Alle tilkoblede brukere blir logget ut av appen, og klienten må registreres på nytt for å virke igjen."
+                confirmLabel="Slett klient"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({
+                        clientId: confirmDelete.pending.client_id,
+                    });
+                    confirmDelete.clear();
+                }}
             />
         </Stagger>
     );

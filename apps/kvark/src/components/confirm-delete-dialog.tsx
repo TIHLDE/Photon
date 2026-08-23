@@ -8,7 +8,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@tihlde/ui/ui/alert-dialog";
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 type ConfirmDeleteDialogProps = {
     open: boolean;
@@ -60,4 +60,27 @@ export function ConfirmDeleteDialog({
             </AlertDialogContent>
         </AlertDialog>
     );
+}
+
+/**
+ * State for en bekreftelsesdialog som gjelder ett element i en liste.
+ *
+ * `shown` henger igjen på det forrige elementet mens dialogen animeres ut.
+ * Uten det bytter tittelen til «undefined» i det halve sekundet lukkingen
+ * tar, siden `pending` allerede er nullet når siste render kjører.
+ */
+export function usePendingConfirm<T>() {
+    const [pending, setPending] = useState<T | null>(null);
+    const lastShown = useRef<T | null>(null);
+    if (pending) lastShown.current = pending;
+
+    return {
+        /** Elementet som venter på bekreftelse, eller `null`. */
+        pending,
+        /** Elementet dialogen skal vise — også mens den lukkes. */
+        shown: pending ?? lastShown.current,
+        open: pending !== null,
+        request: (item: T) => setPending(item),
+        clear: () => setPending(null),
+    };
 }

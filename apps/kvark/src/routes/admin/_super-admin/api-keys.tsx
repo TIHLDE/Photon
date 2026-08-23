@@ -43,6 +43,10 @@ import {
 } from "#/api/queries/api-keys";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import { OSLO_DATE_OPTIONS } from "#/lib/date";
@@ -115,6 +119,8 @@ function ApiKeysTable({
     const { data: apiKeys } = useSuspenseQuery(getApiKeysQuery(0));
     const regenerate = useMutation(regenerateApiKeyMutation);
     const remove = useMutation(deleteApiKeyMutation);
+    const confirmRotate = usePendingConfirm<ApiKey>();
+    const confirmDelete = usePendingConfirm<ApiKey>();
 
     if (apiKeys.length === 0) {
         return (
@@ -131,125 +137,145 @@ function ApiKeysTable({
     }
 
     async function handleRegenerate(apiKey: ApiKey) {
-        if (
-            window.confirm(
-                `Regenerere nøkkelen "${apiKey.name}"? Den gamle nøkkelen slutter å virke umiddelbart.`,
-            )
-        ) {
-            const result = await regenerate.mutateAsync({
-                apiKeyId: apiKey.id,
-            });
-            onRevealSecret(result.key);
-        }
-    }
-
-    function handleDelete(apiKey: ApiKey) {
-        if (
-            window.confirm(
-                `Slette nøkkelen "${apiKey.name}"? Dette kan ikke angres.`,
-            )
-        ) {
-            remove.mutate({ apiKeyId: apiKey.id });
-        }
+        const result = await regenerate.mutateAsync({ apiKeyId: apiKey.id });
+        onRevealSecret(result.key);
     }
 
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Navn</TableHead>
-                            <TableHead>Prefiks</TableHead>
-                            <TableHead>Tilganger</TableHead>
-                            <TableHead>Sist brukt</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {apiKeys.map((apiKey) => (
-                            <TableRow key={apiKey.id}>
-                                <TableCell>
-                                    <div className="flex flex-col gap-0.5">
-                                        <span>{apiKey.name}</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {apiKey.description}
-                                        </span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <code className="text-xs">
-                                        {apiKey.keyPrefix}…
-                                    </code>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-wrap gap-1">
-                                        {apiKey.permissions.length === 0 ? (
-                                            <span className="text-xs text-muted-foreground">
-                                                Ingen
-                                            </span>
-                                        ) : (
-                                            apiKey.permissions.map(
-                                                (permission) => (
-                                                    <Badge
-                                                        key={permission}
-                                                        variant="secondary"
-                                                    >
-                                                        {permission}
-                                                    </Badge>
-                                                ),
-                                            )
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    {apiKey.lastUsedAt
-                                        ? new Date(
-                                              apiKey.lastUsedAt,
-                                          ).toLocaleDateString(
-                                              "nb-NO",
-                                              OSLO_DATE_OPTIONS,
-                                          )
-                                        : "Aldri"}
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex justify-end gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => onEdit(apiKey)}
-                                        >
-                                            <PencilIcon className="size-4" />
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={regenerate.isPending}
-                                            onClick={() =>
-                                                handleRegenerate(apiKey)
-                                            }
-                                        >
-                                            <RefreshCwIcon className="size-4" />
-                                            Roter
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={remove.isPending}
-                                            onClick={() => handleDelete(apiKey)}
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Navn</TableHead>
+                                <TableHead>Prefiks</TableHead>
+                                <TableHead>Tilganger</TableHead>
+                                <TableHead>Sist brukt</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {apiKeys.map((apiKey) => (
+                                <TableRow key={apiKey.id}>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-0.5">
+                                            <span>{apiKey.name}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {apiKey.description}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <code className="text-xs">
+                                            {apiKey.keyPrefix}…
+                                        </code>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                            {apiKey.permissions.length === 0 ? (
+                                                <span className="text-xs text-muted-foreground">
+                                                    Ingen
+                                                </span>
+                                            ) : (
+                                                apiKey.permissions.map(
+                                                    (permission) => (
+                                                        <Badge
+                                                            key={permission}
+                                                            variant="secondary"
+                                                        >
+                                                            {permission}
+                                                        </Badge>
+                                                    ),
+                                                )
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        {apiKey.lastUsedAt
+                                            ? new Date(
+                                                  apiKey.lastUsedAt,
+                                              ).toLocaleDateString(
+                                                  "nb-NO",
+                                                  OSLO_DATE_OPTIONS,
+                                              )
+                                            : "Aldri"}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => onEdit(apiKey)}
+                                            >
+                                                <PencilIcon className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={regenerate.isPending}
+                                                onClick={() =>
+                                                    confirmRotate.request(
+                                                        apiKey,
+                                                    )
+                                                }
+                                            >
+                                                <RefreshCwIcon className="size-4" />
+                                                Roter
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                disabled={remove.isPending}
+                                                onClick={() =>
+                                                    confirmDelete.request(
+                                                        apiKey,
+                                                    )
+                                                }
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            {/* Rotering sletter ingenting, men den gamle nøkkelen dør i samme
+            øyeblikk — samme «dette kan ikke angres»-bekreftelse som sletting. */}
+            <ConfirmDeleteDialog
+                open={confirmRotate.open}
+                onOpenChange={(open) => !open && confirmRotate.clear()}
+                title={`Rotere nøkkelen «${confirmRotate.shown?.name}»?`}
+                description="Den gamle nøkkelen slutter å virke umiddelbart, og alt som bruker den mister tilgangen til API-et."
+                confirmLabel="Roter nøkkel"
+                isPending={regenerate.isPending}
+                onConfirm={() => {
+                    if (!confirmRotate.pending) return;
+                    void handleRegenerate(confirmRotate.pending);
+                    confirmRotate.clear();
+                }}
+            />
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette nøkkelen «${confirmDelete.shown?.name}»?`}
+                description="Alt som bruker nøkkelen mister tilgangen til API-et. Dette kan ikke angres."
+                confirmLabel="Slett nøkkel"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ apiKeyId: confirmDelete.pending.id });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }
 
