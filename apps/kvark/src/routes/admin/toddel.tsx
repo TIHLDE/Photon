@@ -40,6 +40,10 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { errorStatus } from "#/lib/utils";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
@@ -146,6 +150,7 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
     const remove = useMutation(deleteToddelMutation);
     const canEdit = useAnyScopePermission(["toddel:update", "toddel:manage"]);
     const canDelete = useAnyScopePermission(["toddel:delete", "toddel:manage"]);
+    const confirmDelete = usePendingConfirm<ToddelIssue>();
 
     if (issues.length === 0) {
         return (
@@ -161,95 +166,105 @@ function IssuesTable({ onEdit }: { onEdit: (issue: ToddelIssue) => void }) {
         );
     }
 
-    function handleDelete(issue: ToddelIssue) {
-        if (
-            window.confirm(
-                `Fjerne utgave ${issue.edition} – "${issue.title}" fra arkivet?`,
-            )
-        ) {
-            remove.mutate({ edition: issue.edition });
-        }
-    }
-
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Utgave</TableHead>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Publisert</TableHead>
-                            <TableHead>Filer</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {issues.map((issue) => (
-                            <TableRow key={issue.edition}>
-                                <TableCell>{issue.edition}</TableCell>
-                                <TableCell>{issue.title}</TableCell>
-                                <TableCell>{issue.publishedAt}</TableCell>
-                                <TableCell>
-                                    <div className="flex gap-3">
-                                        <a
-                                            className="underline"
-                                            href={issue.pdfUrl}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            PDF
-                                        </a>
-                                        {issue.imageUrl ? (
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Utgave</TableHead>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Publisert</TableHead>
+                                <TableHead>Filer</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {issues.map((issue) => (
+                                <TableRow key={issue.edition}>
+                                    <TableCell>{issue.edition}</TableCell>
+                                    <TableCell>{issue.title}</TableCell>
+                                    <TableCell>{issue.publishedAt}</TableCell>
+                                    <TableCell>
+                                        <div className="flex gap-3">
                                             <a
                                                 className="underline"
-                                                href={issue.imageUrl}
+                                                href={issue.pdfUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
-                                                Forside
+                                                PDF
                                             </a>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                Ingen forside
-                                            </span>
-                                        )}
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex justify-end gap-2">
-                                        {canEdit ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onEdit(issue)}
-                                            >
-                                                <PencilIcon className="size-4" />
-                                                Rediger
-                                            </Button>
-                                        ) : null}
-                                        {canDelete ? (
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                disabled={remove.isPending}
-                                                onClick={() =>
-                                                    handleDelete(issue)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                                            {issue.imageUrl ? (
+                                                <a
+                                                    className="underline"
+                                                    href={issue.imageUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    Forside
+                                                </a>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    Ingen forside
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            {canEdit ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        onEdit(issue)
+                                                    }
+                                                >
+                                                    <PencilIcon className="size-4" />
+                                                    Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canDelete ? (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    disabled={remove.isPending}
+                                                    onClick={() =>
+                                                        confirmDelete.request(
+                                                            issue,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Fjerne utgave ${confirmDelete.shown?.edition} fra arkivet?`}
+                description="Utgaven forsvinner fra TÖDDEL-siden. PDF-en og forsidebildet blir liggende, men ingen kommer til dem."
+                confirmLabel="Slett utgave"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ edition: confirmDelete.pending.edition });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }
 
