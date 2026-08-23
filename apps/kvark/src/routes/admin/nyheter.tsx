@@ -1,10 +1,18 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { NewspaperIcon, PencilIcon, PlusIcon, Trash2 } from "lucide-react";
+import {
+    ArchiveIcon,
+    ArchiveRestoreIcon,
+    NewspaperIcon,
+    PencilIcon,
+    PlusIcon,
+    Trash2,
+} from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
 
 import type { NewsListItem } from "@tihlde/sdk";
 import { RichEditor } from "@tihlde/ui/complex/markdown";
+import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import {
@@ -50,6 +58,13 @@ import { richRegistry } from "#/components/markdown/directives/presets";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatInOslo } from "#/lib/date";
 
+/**
+ * Adminlisten viser også de arkiverte. Det er hele poenget med arkivering:
+ * nyheten forsvinner fra de offentlige sidene, men den skal fortsatt være
+ * her — med et merke som sier hvorfor den ikke er å se ute.
+ */
+const adminNewsQuery = () => getNewsQuery(0, { archived: "include" }, 100);
+
 // `?rediger=<id>` gjør redigeringsdialogen adresserbar, slik at «Rediger
 // nyhet» på nyhetssiden kan lenke rett til riktig artikkel i stedet for å
 // slippe deg av på listen. `?ny` gjør det samme for opprettelsesdialogen,
@@ -66,7 +81,7 @@ export const Route = createFileRoute("/admin/nyheter")({
     },
     validateSearch: searchSchema,
     loader: async ({ context }) => {
-        await context.queryClient.ensureQueryData(getNewsQuery(0));
+        await context.queryClient.ensureQueryData(adminNewsQuery());
         return { breadcrumbs: "Nyheter" };
     },
 });
@@ -103,7 +118,7 @@ function NewsAdminPage() {
         >
             <AdminPageHeader
                 title="Nyheter"
-                description="Alle publiserte nyheter. Brødteksten lagres som markdown."
+                description="Alle nyheter, også de arkiverte. Brødteksten lagres som markdown."
                 action={
                     canCreate ? (
                         <Button onClick={() => setDialog({ mode: "create" })}>
@@ -140,8 +155,9 @@ function NewsTable({
     autoEditId?: string;
     onEdit: (news: NewsListItem) => void;
 }) {
-    const { data } = useSuspenseQuery(getNewsQuery(0, {}, 100));
+    const { data } = useSuspenseQuery(adminNewsQuery());
     const remove = useMutation(deleteNewsMutation);
+    const setArchived = useMutation(updateNewsMutation);
     const canEdit = useAnyScopePermission(["news:update", "news:manage"]);
     const canDelete = useAnyScopePermission(["news:delete", "news:manage"]);
     const confirmDelete = usePendingConfirm<NewsListItem>();
@@ -180,6 +196,7 @@ function NewsTable({
                                 <TableHead>Tittel</TableHead>
                                 <TableHead>Utdrag</TableHead>
                                 <TableHead>Publisert</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">
                                     Handlinger
                                 </TableHead>
@@ -193,6 +210,16 @@ function NewsTable({
                                     <TableCell>
                                         {formatDate(news.createdAt)}
                                     </TableCell>
+                                    <TableCell>
+                                        {news.archivedAt ? (
+                                            <Badge variant="secondary">
+                                                Arkivert{" "}
+                                                {formatDate(news.archivedAt)}
+                                            </Badge>
+                                        ) : (
+                                            <Badge>Publisert</Badge>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
                                             {canEdit ? (
@@ -203,6 +230,40 @@ function NewsTable({
                                                 >
                                                     <PencilIcon className="size-4" />
                                                     Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canEdit ? (
+                                                // Ikon uten tekst, som
+                                                // sletteknappen ved siden av:
+                                                // med etikett ble raden bredere
+                                                // enn kortet og handlingene
+                                                // havnet utenfor skjermen.
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    aria-label={
+                                                        news.archivedAt
+                                                            ? `Gjenopprett ${news.title}`
+                                                            : `Arkiver ${news.title}`
+                                                    }
+                                                    disabled={
+                                                        setArchived.isPending
+                                                    }
+                                                    onClick={() =>
+                                                        setArchived.mutate({
+                                                            newsId: news.id,
+                                                            data: {
+                                                                archived:
+                                                                    !news.archivedAt,
+                                                            },
+                                                        })
+                                                    }
+                                                >
+                                                    {news.archivedAt ? (
+                                                        <ArchiveRestoreIcon className="size-4" />
+                                                    ) : (
+                                                        <ArchiveIcon className="size-4" />
+                                                    )}
                                                 </Button>
                                             ) : null}
                                             {canDelete ? (

@@ -2303,7 +2303,7 @@ export interface paths {
         };
         /**
          * List news articles
-         * @description Get a paginated list of all news articles. Public endpoint.
+         * @description Get a paginated list of news articles. Public endpoint; archived articles are left out unless the caller asks for them and holds 'news:create', 'news:update' or 'news:manage'.
          */
         get: operations["listNews"];
         put?: never;
@@ -2327,7 +2327,7 @@ export interface paths {
         };
         /**
          * Get news article
-         * @description Get a single news article by ID. Public endpoint.
+         * @description Get a single news article by ID. Public endpoint. An archived article is only visible to callers holding 'news:create', 'news:update' or 'news:manage'.
          */
         get: operations["getNews"];
         put?: never;
@@ -2341,7 +2341,7 @@ export interface paths {
         head?: never;
         /**
          * Update news article
-         * @description Update a news article. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.
+         * @description Update a news article, including archiving and restoring it via `archived`. Requires 'news:update' or 'news:manage', held globally or for any single group, or being the creator.
          */
         patch: operations["updateNews"];
         trace?: never;
@@ -5785,6 +5785,8 @@ export interface components {
             imageAlt: string | null;
             /** @description Whether reactions are enabled */
             emojisAllowed: boolean;
+            /** @description When the article was archived (ISO 8601), or null if it is live */
+            archivedAt: string | null;
             /** @description Creator user ID */
             createdById: string | null;
             /** @description Creation time (ISO 8601) */
@@ -5847,6 +5849,8 @@ export interface components {
             imageAlt: string | null;
             /** @description Whether reactions are allowed */
             emojisAllowed: boolean;
+            /** @description When the article was archived (ISO 8601), or null if it is live */
+            archivedAt: string | null;
             /**
              * Format: date
              * @description Creation time (ISO 8601)
@@ -5875,6 +5879,8 @@ export interface components {
             imageUrl?: string | null;
             imageAlt?: string | null;
             emojisAllowed?: boolean;
+            /** @description Archive or restore the article. An archived article disappears from the public news pages but stays in the admin panel. */
+            archived?: boolean;
         };
         DeleteNewsResponse: {
             message: string;
@@ -13267,6 +13273,8 @@ export interface operations {
                 pageSize?: number;
                 /** @description Number of items to skip */
                 page?: number;
+                /** @description Whether to return archived articles. 'exclude' (default) returns only live articles, 'only' returns only archived ones, 'include' returns both. Anything but 'exclude' requires a news permission. */
+                archived?: "exclude" | "include" | "only";
             };
             header?: never;
             path?: never;
@@ -13282,6 +13290,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["NewsList"];
                 };
+            };
+            /** @description Forbidden - Insufficient permissions */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

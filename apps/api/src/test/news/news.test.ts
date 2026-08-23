@@ -329,4 +329,124 @@ describe("News System", () => {
         },
         120_000,
     );
+
+    integrationTest(
+        "Archiving takes an article off the public pages but keeps it for the admin panel",
+        async ({ ctx }) => {
+            const editor = await ctx.utils.createTestUser();
+            const regularUser = await ctx.utils.createTestUser();
+
+            await ctx.utils.giveUserPermissions(editor, [
+                "news:create",
+                "news:update",
+            ]);
+
+            const editorClient = await ctx.utils.clientForUser(editor);
+            const userClient = await ctx.utils.clientForUser(regularUser);
+            const anonClient = ctx.utils.client();
+
+            const created = await editorClient.api.news
+                .$post({
+                    json: {
+                        title: "Old announcement",
+                        header: "No longer relevant",
+                        body: "Something that happened last year.",
+                        emojisAllowed: false,
+                    },
+                })
+                .then((r) => r.json());
+
+            expect(created.archivedAt).toBeNull();
+
+            // === ARCHIVE ===
+
+            const archiveResponse = await editorClient.api.news[":id"].$patch({
+                param: { id: created.id },
+                json: { archived: true },
+            });
+
+            expect(archiveResponse.status).toBe(200);
+            const archived = await archiveResponse.json();
+            expect(archived.archivedAt).not.toBeNull();
+
+            // Gone from the public list...
+            const publicList = await anonClient.api.news
+                .$get({ query: {} })
+                .then((r) => r.json());
+            expect(publicList.items.some((n) => n.id === created.id)).toBe(
+                false,
+            );
+
+            // ...and from the public detail page.
+            const publicGet = await anonClient.api.news[":id"].$get({
+                param: { id: created.id },
+            });
+            expect(publicGet.status).toBe(404);
+
+            // A signed-in member without news permissions sees the same thing.
+            const memberGet = await userClient.api.news[":id"].$get({
+                param: { id: created.id },
+            });
+            expect(memberGet.status).toBe(404);
+
+            // But an editor still reaches it.
+            const editorGet = await editorClient.api.news[":id"].$get({
+                param: { id: created.id },
+            });
+            expect(editorGet.status).toBe(200);
+
+            // === ADMIN LISTING ===
+
+            const adminList = await editorClient.api.news
+                .$get({ query: { archived: "include" } })
+                .then((r) => r.json());
+            expect(adminList.items.some((n) => n.id === created.id)).toBe(true);
+
+            const onlyArchived = await editorClient.api.news
+                .$get({ query: { archived: "only" } })
+                .then((r) => r.json());
+            expect(onlyArchived.items.every((n) => n.archivedAt !== null)).toBe(
+                true,
+            );
+
+            // Asking for archived articles without the permission is refused,
+            // so the filter cannot be used to read past the archive.
+            const forbiddenList = await userClient.api.news.$get({
+                query: { archived: "include" },
+            });
+            expect(forbiddenList.status).toBe(403);
+
+            const anonList = await anonClient.api.news.$get({
+                query: { archived: "only" },
+            });
+            expect(anonList.status).toBe(403);
+
+            // === RESTORE ===
+
+            const restored = await editorClient.api.news[":id"]
+                .$patch({
+                    param: { id: created.id },
+                    json: { archived: false },
+                })
+                .then((r) => r.json());
+            expect(restored.archivedAt).toBeNull();
+
+            const listAfterRestore = await anonClient.api.news
+                .$get({ query: {} })
+                .then((r) => r.json());
+            expect(
+                listAfterRestore.items.some((n) => n.id === created.id),
+            ).toBe(true);
+
+            // An ordinary edit leaves the archive state alone.
+            const editedWhileLive = await editorClient.api.news[":id"]
+                .$patch({
+                    param: { id: created.id },
+                    json: { title: "Old announcement, revised" },
+                })
+                .then((r) => r.json());
+            expect(editedWhileLive.archivedAt).toBeNull();
+        },
+        120_000,
+    );
 });
