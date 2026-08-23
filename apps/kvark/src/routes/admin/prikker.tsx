@@ -47,6 +47,10 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { searchUsersQuery } from "#/api/queries/roles";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import {
     UserSearchCombobox,
@@ -114,6 +118,7 @@ function StrikesSection() {
         "events:update",
         "events:manage",
     ]);
+    const confirmDelete = usePendingConfirm<Strike>();
 
     if (isPending) {
         return (
@@ -141,12 +146,6 @@ function StrikesSection() {
                 </CardContent>
             </Card>
         );
-    }
-
-    function handleDelete(strike: Strike) {
-        if (window.confirm("Slette denne prikken? Dette kan ikke angres.")) {
-            remove.mutate({ strikeId: strike.id });
-        }
     }
 
     return (
@@ -212,7 +211,9 @@ function StrikesSection() {
                                                     size="sm"
                                                     disabled={remove.isPending}
                                                     onClick={() =>
-                                                        handleDelete(strike)
+                                                        confirmDelete.request(
+                                                            strike,
+                                                        )
                                                     }
                                                 >
                                                     <Trash2 className="size-4" />
@@ -250,6 +251,24 @@ function StrikesSection() {
                     </Button>
                 </div>
             )}
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title="Slette denne prikken?"
+                description={
+                    confirmDelete.shown
+                        ? `Prikken på ${confirmDelete.shown.user.name} fjernes for godt. Dette kan ikke angres.`
+                        : ""
+                }
+                confirmLabel="Slett prikk"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ strikeId: confirmDelete.pending.id });
+                    confirmDelete.clear();
+                }}
+            />
         </div>
     );
 }

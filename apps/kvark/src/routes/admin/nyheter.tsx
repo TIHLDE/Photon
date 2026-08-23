@@ -42,6 +42,10 @@ import {
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminImageField } from "#/components/admin-image-field";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatInOslo } from "#/lib/date";
@@ -140,6 +144,7 @@ function NewsTable({
     const remove = useMutation(deleteNewsMutation);
     const canEdit = useAnyScopePermission(["news:update", "news:manage"]);
     const canDelete = useAnyScopePermission(["news:delete", "news:manage"]);
+    const confirmDelete = usePendingConfirm<NewsListItem>();
 
     // Listen ligger her, ikke i forelderen, så oppslaget av `?rediger=<id>`
     // må også gjøres her. Kjører kun når id-en endrer seg, slik at dialogen
@@ -165,71 +170,79 @@ function NewsTable({
         );
     }
 
-    function handleDelete(news: NewsListItem) {
-        if (
-            window.confirm(
-                `Slette nyheten «${news.title}»? Dette kan ikke angres.`,
-            )
-        ) {
-            remove.mutate({ newsId: news.id });
-        }
-    }
-
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Utdrag</TableHead>
-                            <TableHead>Publisert</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.items.map((news) => (
-                            <TableRow key={news.id}>
-                                <TableCell>{news.title}</TableCell>
-                                <TableCell>{news.header}</TableCell>
-                                <TableCell>
-                                    {formatDate(news.createdAt)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        {canEdit ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onEdit(news)}
-                                            >
-                                                <PencilIcon className="size-4" />
-                                                Rediger
-                                            </Button>
-                                        ) : null}
-                                        {canDelete ? (
-                                            <Button
-                                                variant="destructive"
-                                                size="icon"
-                                                aria-label={`Slett ${news.title}`}
-                                                disabled={remove.isPending}
-                                                onClick={() =>
-                                                    handleDelete(news)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Utdrag</TableHead>
+                                <TableHead>Publisert</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {data.items.map((news) => (
+                                <TableRow key={news.id}>
+                                    <TableCell>{news.title}</TableCell>
+                                    <TableCell>{news.header}</TableCell>
+                                    <TableCell>
+                                        {formatDate(news.createdAt)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            {canEdit ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => onEdit(news)}
+                                                >
+                                                    <PencilIcon className="size-4" />
+                                                    Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canDelete ? (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    aria-label={`Slett ${news.title}`}
+                                                    disabled={remove.isPending}
+                                                    onClick={() =>
+                                                        confirmDelete.request(
+                                                            news,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette «${confirmDelete.shown?.title}»?`}
+                description="Nyheten fjernes fra siden for godt. Dette kan ikke angres."
+                confirmLabel="Slett nyhet"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ newsId: confirmDelete.pending.id });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }
 

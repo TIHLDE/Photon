@@ -63,6 +63,10 @@ import {
     getGalleriesQuery,
     updateGalleryMutation,
 } from "#/api/queries/galleries";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 import z from "zod";
@@ -469,6 +473,14 @@ function UploadPicturesCard() {
     );
 }
 
+/** «og alle 0 bildene» leser feil på et tomt galleri, og «1 bildene» like ille. */
+function galleryDeleteScope(pictureCount: number): string {
+    if (pictureCount === 0) return "Galleriet slettes for godt.";
+    if (pictureCount === 1)
+        return "Galleriet og bildet i det slettes for godt.";
+    return `Galleriet og alle ${pictureCount} bildene i det slettes for godt.`;
+}
+
 function GalleryTable({ onEdit }: { onEdit: (gallery: Gallery) => void }) {
     const { data } = useSuspenseQuery(getGalleriesQuery(0));
     const deleteGallery = useMutation(deleteGalleryMutation);
@@ -480,6 +492,7 @@ function GalleryTable({ onEdit }: { onEdit: (gallery: Gallery) => void }) {
         "galleries:delete",
         "galleries:manage",
     ]);
+    const confirmDelete = usePendingConfirm<Gallery>();
 
     if (data.items.length === 0) {
         return (
@@ -496,78 +509,93 @@ function GalleryTable({ onEdit }: { onEdit: (gallery: Gallery) => void }) {
     }
 
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Arrangement</TableHead>
-                            <TableHead>Bilder</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.items.map((gallery) => (
-                            <TableRow key={gallery.id}>
-                                <TableCell>
-                                    <Link
-                                        to="/galleri/$slug"
-                                        params={{ slug: gallery.slug }}
-                                    >
-                                        {gallery.title}
-                                    </Link>
-                                </TableCell>
-                                <TableCell>
-                                    {gallery.event?.title ?? "—"}
-                                </TableCell>
-                                <TableCell>{gallery.pictureCount}</TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        {canEdit ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onEdit(gallery)}
-                                            >
-                                                <PencilIcon className="size-4" />
-                                                Rediger
-                                            </Button>
-                                        ) : null}
-                                        {canDelete ? (
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                size="icon"
-                                                aria-label={`Slett ${gallery.title}`}
-                                                disabled={
-                                                    deleteGallery.isPending
-                                                }
-                                                onClick={() => {
-                                                    if (
-                                                        !window.confirm(
-                                                            `Slette "${gallery.title}" og alle bildene i det?`,
-                                                        )
-                                                    ) {
-                                                        return;
-                                                    }
-                                                    deleteGallery.mutate({
-                                                        slug: gallery.slug,
-                                                    });
-                                                }}
-                                            >
-                                                <Trash2Icon className="size-4" />
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Arrangement</TableHead>
+                                <TableHead>Bilder</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {data.items.map((gallery) => (
+                                <TableRow key={gallery.id}>
+                                    <TableCell>
+                                        <Link
+                                            to="/galleri/$slug"
+                                            params={{ slug: gallery.slug }}
+                                        >
+                                            {gallery.title}
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell>
+                                        {gallery.event?.title ?? "—"}
+                                    </TableCell>
+                                    <TableCell>
+                                        {gallery.pictureCount}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            {canEdit ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        onEdit(gallery)
+                                                    }
+                                                >
+                                                    <PencilIcon className="size-4" />
+                                                    Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canDelete ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    aria-label={`Slett ${gallery.title}`}
+                                                    disabled={
+                                                        deleteGallery.isPending
+                                                    }
+                                                    onClick={() =>
+                                                        confirmDelete.request(
+                                                            gallery,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2Icon className="size-4" />
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette «${confirmDelete.shown?.title}»?`}
+                description={`${galleryDeleteScope(
+                    confirmDelete.shown?.pictureCount ?? 0,
+                )} Dette kan ikke angres.`}
+                confirmLabel="Slett galleri"
+                isPending={deleteGallery.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    deleteGallery.mutate({ slug: confirmDelete.pending.slug });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }

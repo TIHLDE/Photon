@@ -43,6 +43,10 @@ import { Stagger } from "@tihlde/ui/ui/motion";
 import { requireAdminSection } from "#/lib/admin-access";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import {
+    ConfirmDeleteDialog,
+    usePendingConfirm,
+} from "#/components/confirm-delete-dialog";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { OSLO_TIME_ZONE } from "#/lib/date";
 
@@ -111,6 +115,7 @@ function BannersTable({ onEdit }: { onEdit: (banner: Banner) => void }) {
         "banners:delete",
         "banners:manage",
     ]);
+    const confirmDelete = usePendingConfirm<Banner>();
 
     if (banners.length === 0) {
         return (
@@ -126,76 +131,86 @@ function BannersTable({ onEdit }: { onEdit: (banner: Banner) => void }) {
         );
     }
 
-    function handleDelete(banner: Banner) {
-        if (
-            window.confirm(
-                `Slette banneret "${banner.title}"? Dette kan ikke angres.`,
-            )
-        ) {
-            remove.mutate({ bannerId: banner.id });
-        }
-    }
-
     return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Tittel</TableHead>
-                            <TableHead>Synlig fra</TableHead>
-                            <TableHead>Synlig til</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                                Handlinger
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {banners.map((banner) => (
-                            <TableRow key={banner.id}>
-                                <TableCell>{banner.title}</TableCell>
-                                <TableCell>
-                                    {formatDateTime(banner.visibleFrom)}
-                                </TableCell>
-                                <TableCell>
-                                    {formatDateTime(banner.visibleUntil)}
-                                </TableCell>
-                                <TableCell>
-                                    <BannerStatusBadge banner={banner} />
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex justify-end gap-2">
-                                        {canEdit ? (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => onEdit(banner)}
-                                            >
-                                                <PencilIcon className="size-4" />
-                                                Rediger
-                                            </Button>
-                                        ) : null}
-                                        {canDelete ? (
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                disabled={remove.isPending}
-                                                onClick={() =>
-                                                    handleDelete(banner)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
-                                        ) : null}
-                                    </div>
-                                </TableCell>
+        <>
+            <Card>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Tittel</TableHead>
+                                <TableHead>Synlig fra</TableHead>
+                                <TableHead>Synlig til</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">
+                                    Handlinger
+                                </TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {banners.map((banner) => (
+                                <TableRow key={banner.id}>
+                                    <TableCell>{banner.title}</TableCell>
+                                    <TableCell>
+                                        {formatDateTime(banner.visibleFrom)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {formatDateTime(banner.visibleUntil)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <BannerStatusBadge banner={banner} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex justify-end gap-2">
+                                            {canEdit ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        onEdit(banner)
+                                                    }
+                                                >
+                                                    <PencilIcon className="size-4" />
+                                                    Rediger
+                                                </Button>
+                                            ) : null}
+                                            {canDelete ? (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    disabled={remove.isPending}
+                                                    onClick={() =>
+                                                        confirmDelete.request(
+                                                            banner,
+                                                        )
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            ) : null}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <ConfirmDeleteDialog
+                open={confirmDelete.open}
+                onOpenChange={(open) => !open && confirmDelete.clear()}
+                title={`Slette banneret «${confirmDelete.shown?.title}»?`}
+                description="Banneret fjernes for godt. Dette kan ikke angres."
+                confirmLabel="Slett banner"
+                isPending={remove.isPending}
+                onConfirm={() => {
+                    if (!confirmDelete.pending) return;
+                    remove.mutate({ bannerId: confirmDelete.pending.id });
+                    confirmDelete.clear();
+                }}
+            />
+        </>
     );
 }
 
