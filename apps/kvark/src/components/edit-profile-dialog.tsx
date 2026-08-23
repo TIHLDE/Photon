@@ -112,16 +112,30 @@ export function EditProfileDialog({
     const [imageError, setImageError] = useState<string | null>(null);
     /** Fila som beskjæres nå. Er den satt, viser dialogen beskjæringen. */
     const [cropSource, setCropSource] = useState<File | null>(null);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     const form = useForm({
         defaultValues: { bio, github, linkedin } satisfies EditProfileValues,
         validators: { onChange: editProfileSchema },
         onSubmit: async ({ value }) => {
-            await onSubmit?.({
-                ...value,
-                imageFile: croppedImage,
-                removeImage,
-            });
+            setSubmitError(null);
+            try {
+                await onSubmit?.({
+                    ...value,
+                    imageFile: croppedImage,
+                    removeImage,
+                });
+            } catch (error) {
+                // Dialogen blir stående med det medlemmet skrev, så de kan
+                // prøve igjen. Uten dette så en feilet lagring ut som at
+                // ingenting skjedde: knappen sluttet bare å gjøre noe.
+                setSubmitError(
+                    error instanceof Error
+                        ? error.message
+                        : "Fikk ikke lagret endringene. Prøv igjen.",
+                );
+                return;
+            }
             setOpen(false);
         },
     });
@@ -141,6 +155,7 @@ export function EditProfileDialog({
         setRemoveImage(false);
         setImageError(null);
         setCropSource(null);
+        setSubmitError(null);
     }, [open]);
 
     useEffect(() => {
@@ -347,7 +362,14 @@ export function EditProfileDialog({
                                     </form.Field>
                                 </FieldGroup>
                             </DialogBody>
-                            <DialogFooter>
+                            <DialogFooter className="flex-col items-stretch gap-2 sm:flex-col">
+                                <FieldError
+                                    errors={
+                                        submitError
+                                            ? [{ message: submitError }]
+                                            : undefined
+                                    }
+                                />
                                 <form.Subscribe
                                     selector={(state) => ({
                                         canSubmit: state.canSubmit,

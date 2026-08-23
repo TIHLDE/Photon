@@ -264,18 +264,31 @@ function RouteComponent() {
                             imageUrl = "";
                         }
 
-                        await updateSettings.mutateAsync({
-                            data: {
-                                // Tomme strenger må sendes med — `undefined`
-                                // betyr «ikke endre», så feltene kunne aldri
-                                // tømmes igjen. API-et lagrer tomt som NULL.
-                                bioDescription: values.bio,
-                                githubUrl: values.github,
-                                linkedinUrl: values.linkedin,
-                                allergies: settings?.allergies ?? [],
-                                ...(imageUrl === undefined ? {} : { imageUrl }),
-                            },
-                        });
+                        try {
+                            await updateSettings.mutateAsync({
+                                data: {
+                                    // Tomme strenger må sendes med —
+                                    // `undefined` betyr «ikke endre», så
+                                    // feltene kunne aldri tømmes igjen.
+                                    // API-et lagrer tomt som NULL.
+                                    bioDescription: values.bio,
+                                    githubUrl: values.github,
+                                    linkedinUrl: values.linkedin,
+                                    allergies: settings?.allergies ?? [],
+                                    ...(imageUrl === undefined
+                                        ? {}
+                                        : { imageUrl }),
+                                },
+                            });
+                        } catch (error) {
+                            // Dialogen viser denne teksten. HTTP-feilen fra
+                            // klienten sier «Request failed with status code
+                            // 400», som ikke hjelper et medlem.
+                            throw new Error(
+                                "Fikk ikke lagret profilen. Prøv igjen.",
+                                { cause: error },
+                            );
+                        }
                         await invalidateAuth();
                     }}
                 />
