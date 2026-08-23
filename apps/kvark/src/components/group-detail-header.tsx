@@ -42,8 +42,11 @@ export function GroupDetailHeader({
 }: GroupDetailHeaderProps) {
     return (
         <DetailHeader
+            // Fast størrelse, ikke `h-full`: bildet har en egen høyde som
+            // blåser opp raden headeren strekker seg etter, så avataren ble
+            // merkbart større idet et bilde ble lagt til.
             avatar={
-                <Avatar className="size-16 shrink-0 md:row-span-3 md:aspect-square md:h-full md:max-h-32 md:w-auto">
+                <Avatar className="size-16 shrink-0 md:row-span-3 md:size-24">
                     {group.logoUrl ? (
                         <AvatarImage
                             src={avatarImageUrl(group.logoUrl)}
