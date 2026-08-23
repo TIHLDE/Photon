@@ -151,3 +151,84 @@ export function formatSubmissionStudy(
     );
     return parts.length > 0 ? parts.join(" · ") : null;
 }
+
+/** Én andel i et sirkeldiagram, f.eks. ett kull eller én studieretning. */
+export type FormStudySlice = {
+    /** Nøkkelen diagrammet bruker, unik innenfor sitt diagram. */
+    key: string;
+    label: string;
+    count: number;
+    /** Andel av alle svarene, avrundet til hele prosent. */
+    percentage: number;
+};
+
+export type FormStudyDistribution = {
+    cohorts: FormStudySlice[];
+    programs: FormStudySlice[];
+};
+
+const UNKNOWN_KEY = "ukjent";
+
+function toSlices(
+    counts: Map<string, { label: string; count: number }>,
+    total: number,
+    compare: (a: FormStudySlice, b: FormStudySlice) => number,
+): FormStudySlice[] {
+    const slices = [...counts.entries()].map(([key, { label, count }]) => ({
+        key,
+        label,
+        count,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    }));
+
+    // «Ukjent» sist uansett hvordan resten sorteres — den er en restpost, ikke
+    // et kull eller et studieprogram på linje med de andre.
+    return slices.sort((a, b) => {
+        if (a.key === UNKNOWN_KEY) return 1;
+        if (b.key === UNKNOWN_KEY) return -1;
+        return compare(a, b);
+    });
+}
+
+/**
+ * Fordelingen av kull og studieretning blant dem som har svart. Regnes ut av
+ * svarlista, som allerede har med studiet til hver enkelt, slik at
+ * statistikken alltid kan vises — også for skjemaer uten valgspørsmål.
+ */
+export function summarizeFormStudy(
+    submissions: FormSubmissionRow[],
+): FormStudyDistribution {
+    const cohorts = new Map<string, { label: string; count: number }>();
+    const programs = new Map<string, { label: string; count: number }>();
+
+    for (const submission of submissions) {
+        const cohortKey = submission.studyStartYear
+            ? String(submission.studyStartYear)
+            : UNKNOWN_KEY;
+        const cohortLabel = submission.studyStartYear
+            ? `Kull ${submission.studyStartYear}`
+            : "Ukjent kull";
+        const programKey = submission.studyProgram ?? UNKNOWN_KEY;
+        const programLabel = submission.studyProgram ?? "Ukjent studieretning";
+
+        const cohort = cohorts.get(cohortKey);
+        if (cohort) cohort.count += 1;
+        else cohorts.set(cohortKey, { label: cohortLabel, count: 1 });
+
+        const program = programs.get(programKey);
+        if (program) program.count += 1;
+        else programs.set(programKey, { label: programLabel, count: 1 });
+    }
+
+    const total = submissions.length;
+
+    return {
+        // Nyeste kull først, mens studieretningene sorteres på størrelse.
+        cohorts: toSlices(cohorts, total, (a, b) => b.key.localeCompare(a.key)),
+        programs: toSlices(
+            programs,
+            total,
+            (a, b) => b.count - a.count || a.label.localeCompare(b.label, "nb"),
+        ),
+    };
+}
