@@ -63,6 +63,7 @@ import {
     getUserAllergiesQuery,
     getUsersInfiniteQuery,
     updateUserAllergiesMutation,
+    updateUserBaselineRoleMutation,
     updateUserStatusMutation,
     updateUserStudyMutation,
     updateUserStudyYearMutation,
@@ -254,6 +255,11 @@ function AllUsersTable({
         id: string;
         name: string;
         isActive: boolean;
+    } | null>(null);
+    const [changingRole, setChangingRole] = useState<{
+        id: string;
+        name: string;
+        baselineRole: "member" | "alumni" | null;
     } | null>(null);
     const [deleting, setDeleting] = useState<{
         id: string;
@@ -465,6 +471,19 @@ function AllUsersTable({
                                                     <Badge variant="secondary">
                                                         Venter
                                                     </Badge>
+                                                ) : user.baselineRole ===
+                                                  "alumni" ? (
+                                                    /* Alumni er aktive
+                                                    medlemmer på alle måter
+                                                    unntatt én: de kan ikke
+                                                    melde seg på
+                                                    arrangementer. Det er verdt
+                                                    en egen merkelapp, ellers
+                                                    er forskjellen usynlig
+                                                    herfra. */
+                                                    <Badge variant="outline">
+                                                        Alumni
+                                                    </Badge>
                                                 ) : (
                                                     "Aktiv"
                                                 )}
@@ -554,6 +573,38 @@ function AllUsersTable({
                                                                 >
                                                                     Allergier
                                                                 </Button>
+                                                                {/* Ikke for en
+                                                                som venter:
+                                                                rollen deles ut
+                                                                av godkjenningen,
+                                                                og å sette den
+                                                                her ville sett ut
+                                                                som at kontoen var
+                                                                i orden mens den
+                                                                fortsatt står i
+                                                                køen. */}
+                                                                {user.approvalStatus !==
+                                                                    "pending" && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() =>
+                                                                            setChangingRole(
+                                                                                {
+                                                                                    id: user.id,
+                                                                                    name: user.name,
+                                                                                    baselineRole:
+                                                                                        user.baselineRole,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {user.baselineRole ===
+                                                                        "alumni"
+                                                                            ? "Gjør til medlem"
+                                                                            : "Gjør til alumni"}
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -654,6 +705,14 @@ function AllUsersTable({
                 }}
             />
 
+            <ChangeBaselineRoleDialog
+                user={changingRole}
+                open={changingRole !== null}
+                onOpenChange={(open) => {
+                    if (!open) setChangingRole(null);
+                }}
+            />
+
             <ApproveUserDialog
                 user={approving}
                 open={approving !== null}
@@ -680,6 +739,12 @@ function AllUsersTable({
  * /admin/roller — så dialogen spør bare én gang, og sier hva godkjenningen
  * faktisk gir.
  */
+/** Rollene godkjenningen kan gi, med etikettene velgeren viser. */
+const APPROVE_ROLE_OPTIONS = [
+    { value: "member", label: "Medlem" },
+    { value: "alumni", label: "Alumni" },
+];
+
 function ApproveUserDialog({
     user,
     open,
@@ -690,13 +755,26 @@ function ApproveUserDialog({
     onOpenChange: (open: boolean) => void;
 }) {
     const [error, setError] = useState<string | null>(null);
+    /**
+     * «Medlem» er svaret nesten hver gang, så det er forvalgt. Alumni står
+     * her fordi de som registrerer seg med privat e-post ofte er nettopp det:
+     * tidligere studenter uten NTNU-konto å logge inn med.
+     */
+    const [role, setRole] = useState<"member" | "alumni">("member");
     const approve = useMutation(approveUserMutation);
+
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setRole("member");
+        setError(null);
+    }
 
     async function handleApprove() {
         if (!user) return;
         setError(null);
         try {
-            await approve.mutateAsync({ userId: user.id });
+            await approve.mutateAsync({ userId: user.id, role });
             onOpenChange(false);
         } catch (err) {
             setError(await extractErrorMessage(err));
@@ -713,9 +791,42 @@ function ApproveUserDialog({
                         {user?.email ? ` · ${user.email}` : ""}
                     </DialogDescription>
                 </DialogHeader>
+                <FieldGroup>
+                    <Field>
+                        <FieldLabel htmlFor="approve-role">Rolle</FieldLabel>
+                        <Select
+                            // `items` er ikke pynt: uten den slår ikke
+                            // `SelectValue` opp etiketten, og knappen viser
+                            // råverdien «member».
+                            items={APPROVE_ROLE_OPTIONS}
+                            value={role}
+                            onValueChange={(value) =>
+                                setRole(value as "member" | "alumni")
+                            }
+                        >
+                            <SelectTrigger id="approve-role">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {APPROVE_ROLE_OPTIONS.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FieldDescription>
+                            {role === "member"
+                                ? "Medlemmer kan melde seg på arrangementer og se medlemssidene."
+                                : "Alumni ser alt medlemmer ser, men kan ikke melde seg på arrangementer."}
+                        </FieldDescription>
+                    </Field>
+                </FieldGroup>
                 <FieldDescription>
-                    Brukeren blir medlem: kan melde seg på arrangementer og se
-                    medlemssidene. De får en e-post om at kontoen er godkjent.
+                    Brukeren får en e-post om at kontoen er godkjent.
                 </FieldDescription>
                 {error && (
                     <p className="text-sm text-destructive" role="alert">
@@ -1085,6 +1196,100 @@ function ChangeStatusDialog({
                             disabled={update.isPending}
                         >
                             {deactivating ? "Arkiver" : "Gjenopprett"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+/**
+ * Flytt et medlem mellom «medlem» og «alumni».
+ *
+ * For en som venter i køen er dette godkjenningens jobb — der velges rollen
+ * med en gang. Denne knappen er for alle andre: Feide bestemmer på nytt bare
+ * når medlemmet faktisk logger inn med Feide, så en som ble ferdig for år
+ * siden og ikke har vært innom sitter fortsatt som medlem.
+ */
+function ChangeBaselineRoleDialog({
+    user,
+    open,
+    onOpenChange,
+}: {
+    user: {
+        id: string;
+        name: string;
+        baselineRole: "member" | "alumni" | null;
+    } | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const [error, setError] = useState<string | null>(null);
+    const update = useMutation(updateUserBaselineRoleMutation);
+
+    const [lastUserId, setLastUserId] = useState<string | null>(null);
+    if (user && user.id !== lastUserId) {
+        setLastUserId(user.id);
+        setError(null);
+    }
+
+    // En konto uten noen av rollene — en fremmed, eller en Feide aldri har
+    // sagt noe om — behandles som medlem her: handlingen som gir mening er å
+    // gjøre den til alumni.
+    const target = user?.baselineRole === "alumni" ? "member" : "alumni";
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!user) return;
+
+        setError(null);
+        try {
+            await update.mutateAsync({ userId: user.id, role: target });
+            onOpenChange(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {target === "alumni"
+                                ? "Gjør til alumni"
+                                : "Gjør til medlem"}
+                        </DialogTitle>
+                        <DialogDescription>{user?.name}</DialogDescription>
+                    </DialogHeader>
+                    <p className="text-sm">
+                        {target === "alumni"
+                            ? "Alumni kan ikke melde seg på arrangementer. Alt annet er som før: profil, grupper, historikk og sidene de kan lese."
+                            : "Medlemmer kan melde seg på arrangementer. Det er den eneste forskjellen fra alumni."}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                        Logger de inn med Feide senere, settes rollen på nytt ut
+                        fra om studiet er aktivt.
+                    </p>
+                    {error && (
+                        <p className="text-sm text-destructive" role="alert">
+                            {error}
+                        </p>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Avbryt
+                        </Button>
+                        <Button type="submit" disabled={update.isPending}>
+                            {target === "alumni"
+                                ? "Gjør til alumni"
+                                : "Gjør til medlem"}
                         </Button>
                     </DialogFooter>
                 </form>

@@ -201,15 +201,56 @@ export const updateUserStatusMutation = mutationOptions({
 });
 
 /**
+ * Flytt et medlem mellom `member` og `alumni`.
+ *
+ * Forskjellen er én ting: alumni kan ikke melde seg på arrangementer. Alt
+ * annet — profil, grupper, historikk, sidene de kan lese — er likt.
+ *
+ * Trengs fordi Feide bestemmer på nytt bare når medlemmet logger inn med Feide:
+ * en som ble ferdig for år siden og ikke har vært innom sitter fortsatt som
+ * medlem. For en konto som venter i køen velges rollen i godkjenningen i
+ * stedet.
+ */
+export const updateUserBaselineRoleMutation = mutationOptions({
+    mutationFn: ({
+        userId,
+        role,
+    }: {
+        userId: string;
+        role: "member" | "alumni";
+    }) =>
+        apiClient.patch("/api/user/{id}/baseline-role", {
+            params: { id: userId },
+            json: { role },
+        }),
+    onSuccess(_, __, ___, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...UserQueryKeys.listInfinite],
+            exact: false,
+        });
+    },
+});
+
+/**
  * Godkjenn en bruker som har registrert seg selv.
  *
- * Gir `member`-rollen — den samme en student får av Feide — og sender en
- * e-post om at brukeren er klar til bruk. Uten dette står kontoen uten roller
- * og kommer ingen vei.
+ * Gir rollen admin velger — «medlem» som før, eller «alumni» for en tidligere
+ * student som ikke skal kunne melde seg på arrangementer — og sender en e-post
+ * om at brukeren er klar til bruk. Uten dette står kontoen uten roller og
+ * kommer ingen vei.
  */
 export const approveUserMutation = mutationOptions({
-    mutationFn: ({ userId }: { userId: string }) =>
-        apiClient.post("/api/user/{id}/approve", { params: { id: userId } }),
+    mutationFn: ({
+        userId,
+        role,
+    }: {
+        userId: string;
+        role: "member" | "alumni";
+    }) =>
+        apiClient.post("/api/user/{id}/approve", {
+            params: { id: userId },
+            json: { role },
+        }),
     onSuccess(_, __, ___, ctx) {
         ctx.client.invalidateQueries({
             queryKey: [...UserQueryKeys.listInfinite],

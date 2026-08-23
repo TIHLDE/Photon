@@ -2874,6 +2874,26 @@ export interface paths {
         patch: operations["updateUserStatus"];
         trace?: never;
     };
+    "/api/user/{id}/baseline-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set a member's baseline role
+         * @description Moves the account between 'member' and 'alumni'. Only 'member' may register for events; alumni keep every other kind of access. Setting one removes the other. Requires 'users:manage'.
+         */
+        patch: operations["updateUserBaselineRole"];
+        trace?: never;
+    };
     "/api/user/{id}/approve": {
         parameters: {
             query?: never;
@@ -2885,7 +2905,7 @@ export interface paths {
         put?: never;
         /**
          * Approve a self-registered account
-         * @description Grants the 'member' role to an account that signed itself up on the website and is waiting for approval, and tells the person by e-mail. Requires 'users:manage'.
+         * @description Grants a baseline role to an account that signed itself up on the website and is waiting for approval, and tells the person by e-mail. Defaults to 'member'; pass 'alumni' for a former member, who then keeps every kind of access except registering for events. Requires 'users:manage'.
          */
         post: operations["approveUser"];
         delete?: never;
@@ -6372,6 +6392,8 @@ export interface components {
             approvalStatus: ("pending" | "approved") | null;
             /** @description The account's e-mail address. Shown to the admins who hold 'users:view', who need it both to judge a stranger waiting for approval and to get hold of an ordinary member. */
             email: string | null;
+            /** @description The member/alumni baseline role the account holds, or null for an account holding neither — a stranger, or someone Feide has never confirmed either way. Only 'member' carries the right to register for events. */
+            baselineRole: ("member" | "alumni") | null;
             /** @description Account creation timestamp */
             createdAt: string;
         };
@@ -6423,10 +6445,31 @@ export interface components {
             /** @description Why the account was deactivated. Ignored when activating. */
             reason?: string;
         };
+        UpdateUserBaselineRole: {
+            message: string;
+            /** @enum {string} */
+            role: "member" | "alumni";
+        };
+        UpdateUserBaselineRoleInput: {
+            /**
+             * @description 'member' can register for events; 'alumni' keeps everything else but loses that right. Setting one removes the other.
+             * @enum {string}
+             */
+            role: "member" | "alumni";
+        };
         ApproveUser: {
             message: string;
             /** @constant */
             approvalStatus: "approved";
+            /** @enum {string} */
+            role: "member" | "alumni";
+        };
+        ApproveUserInput: {
+            /**
+             * @description Which baseline role the account gets. Defaults to 'member'. Pick 'alumni' for a former member — they keep every kind of access except registering for events.
+             * @enum {string}
+             */
+            role?: "member" | "alumni";
         };
         UserProfile: {
             /** @description User ID */
@@ -15029,6 +15072,57 @@ export interface operations {
             };
         };
     };
+    updateUserBaselineRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserBaselineRoleInput"];
+            };
+        };
+        responses: {
+            /** @description Baseline role updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateUserBaselineRole"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     approveUser: {
         parameters: {
             query?: never;
@@ -15038,7 +15132,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveUserInput"];
+            };
+        };
         responses: {
             /** @description Account approved */
             200: {

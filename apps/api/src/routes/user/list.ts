@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, asc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
@@ -147,6 +147,26 @@ export const listUsersRoute = route().get(
             .groupBy(schema.groupMembership.userId)
             .as("cohort");
 
+        /**
+         * The baseline role the account holds, which is what decides whether
+         * the member may register for events at all.
+         *
+         * `max` picks `member` over `alumni` on the account that somehow holds
+         * both: the two are meant to be mutually exclusive, but if they are
+         * not, the one that grants something is the one in effect, and the
+         * admin should be shown what the checker will do.
+         */
+        const baselineRole = db
+            .select({
+                userId: schema.userRole.userId,
+                name: sql<string>`max(${schema.role.name})`.as("baseline_role"),
+            })
+            .from(schema.userRole)
+            .innerJoin(schema.role, eq(schema.role.id, schema.userRole.roleId))
+            .where(inArray(schema.role.name, ["member", "alumni"]))
+            .groupBy(schema.userRole.userId)
+            .as("baseline_role");
+
         const where = and(
             search
                 ? or(
@@ -193,10 +213,14 @@ export const listUsersRoute = route().get(
                 >`coalesce(${studyProgram.programmeStartYear}, ${cohort.startYear})`,
                 approvalStatus: schema.user.approvalStatus,
                 email: schema.user.email,
+                baselineRole: sql<
+                    "member" | "alumni" | null
+                >`${baselineRole.name}`,
             })
             .from(schema.user)
             .leftJoin(studyProgram, eq(studyProgram.userId, schema.user.id))
             .leftJoin(cohort, eq(cohort.userId, schema.user.id))
+            .leftJoin(baselineRole, eq(baselineRole.userId, schema.user.id))
             /**
              * The approval queue is a worklist, so it is ordered by how long
              * someone has been kept waiting. Everything else is a directory,
