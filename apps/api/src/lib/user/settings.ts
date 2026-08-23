@@ -24,7 +24,9 @@ export const UserSettingsSchema = z.object({
     gender: z.enum(genderVariants),
     allowsPhotosByDefault: z.boolean(),
     acceptsEventRules: z.boolean(),
-    imageUrl: z.url({ message: "Must be a valid URL" }).optional(),
+    // Klarerbar på samme måte som lenkene: tom streng betyr «bruk
+    // Feide-bildet igjen», og lagres som NULL.
+    imageUrl: clearableUrl,
     bioDescription: z.string().optional(),
     githubUrl: clearableUrl,
     linkedinUrl: clearableUrl,
@@ -200,7 +202,7 @@ export async function createUserSettings(
             gender: settings.gender,
             allowsPhotosByDefault: settings.allowsPhotosByDefault,
             acceptsEventRules: settings.acceptsEventRules,
-            imageUrl: settings.imageUrl ?? null,
+            imageUrl: emptyToNull(settings.imageUrl) ?? null,
             bioDescription: emptyToNull(settings.bioDescription) ?? null,
             githubUrl: emptyToNull(settings.githubUrl) ?? null,
             linkedinUrl: emptyToNull(settings.linkedinUrl) ?? null,
@@ -270,7 +272,7 @@ export async function updateUserSettings(
         ) {
             const values = {
                 ...settingsUpdates,
-                imageUrl: settingsUpdates.imageUrl ?? undefined,
+                imageUrl: emptyToNull(settingsUpdates.imageUrl),
                 bioDescription: emptyToNull(settingsUpdates.bioDescription),
                 githubUrl: emptyToNull(settingsUpdates.githubUrl),
                 linkedinUrl: emptyToNull(settingsUpdates.linkedinUrl),
