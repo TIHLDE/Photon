@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1.4.0 AS base
 WORKDIR /usr/src/app
 
 # Prune stage - turbo figures out exactly what's needed
@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 RUN bun run build --filter=@photon/api
 
 # Final image
-FROM oven/bun:1-slim AS release
+FROM oven/bun:1.4.0-slim AS release
 WORKDIR /usr/src/app
 # The bundle keeps its build-time path (apps/api/dist), so a package it has to
 # resolve at runtime is found the same way it was during the build. `bun build`

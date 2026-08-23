@@ -36,7 +36,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 ### Utviklingsverktøy
 
 - **TypeScript 5.9** - Statisk typing
-- **Bun 1.3** - Pakkebehandler og runtime
+- **Bun 1.4** - Pakkebehandler og runtime
 - **Turborepo** - Monorepo byggeorkestrering
 - **Biome** - Rask linting og formatering
 - **Vitest** - Enhetstesting og integrasjonstesting
@@ -46,7 +46,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 
 ### Forutsetninger
 
-- **Bun** ≥1.3
+- **Bun** ≥1.4
 - **Docker** og **Docker Compose**
 
 ### Installasjon

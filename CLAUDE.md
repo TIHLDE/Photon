@@ -65,7 +65,7 @@ Photon/
 
 ### Dev Tools
 
-- **Bun 1.2** - Package manager & runtime
+- **Bun 1.4** - Package manager & runtime
 - **Turborepo** - Monorepo build orchestration
 - **TypeScript 5.9** - Type system (strict mode)
 - **Oxc (oxlint + oxfmt)** - Linting and formatting
