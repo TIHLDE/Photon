@@ -62,9 +62,10 @@ export function toFormFieldsPayload(
 }
 
 /**
- * Tidspunktet et planlagt skjema åpner, f.eks. «tor. 30. apr. 2026 kl. 12:00».
+ * Tidspunktet et planlagt skjema åpner eller stenger, f.eks.
+ * «tor. 30. apr. 2026 kl. 12:00».
  */
-export function formatFormOpensAt(iso: string): string {
+export function formatFormScheduleAt(iso: string): string {
     return formatInOslo(iso, "EEE d. MMM yyyy 'kl.' HH:mm");
 }
 

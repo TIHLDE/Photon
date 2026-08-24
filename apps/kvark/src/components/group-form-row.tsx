@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
 import { ListChecksIcon, PencilIcon } from "lucide-react";
 
 import { ShareButton } from "#/components/share-button";
-import { formatFormOpensAt } from "#/lib/form";
+import { formatFormScheduleAt } from "#/lib/form";
 import type { Form } from "#/lib/group";
 
 type GroupFormRowProps = {
@@ -21,18 +21,7 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                 <CardTitle>{form.title}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-                {form.isOpenNow ? null : form.isOpen && form.opensAt ? (
-                    <p className="text-sm text-muted-foreground">
-                        Spørreskjemaet åpner {formatFormOpensAt(form.opensAt)}.
-                    </p>
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        Spørreskjemaet er ikke åpent for innsending av svar.
-                        {canManage
-                            ? " Åpne det under «Rediger» for å kunne svare på og dele skjemaet."
-                            : ""}
-                    </p>
-                )}
+                <FormScheduleNote form={form} canManage={canManage} />
                 <div className="flex flex-wrap items-center gap-2">
                     <Button
                         variant="outline"
@@ -79,5 +68,63 @@ export function GroupFormRow({ form, canManage, onEdit }: GroupFormRowProps) {
                 </div>
             </CardContent>
         </Card>
+    );
+}
+
+/**
+ * Én linje om når skjemaet tar imot svar.
+ *
+ * Et skjema kan være stengt av tre grunner, og de trenger hver sin beskjed:
+ * det er ikke åpnet ennå, svarfristen har gått ut, eller noen har stengt det.
+ * Et åpent skjema med en frist sier når fristen går ut, så man vet at det
+ * haster; ellers sier det ingenting.
+ */
+function FormScheduleNote({
+    form,
+    canManage,
+}: {
+    form: Form;
+    canManage: boolean;
+}) {
+    if (form.isOpenNow) {
+        return form.closesAt ? (
+            <p className="text-sm text-muted-foreground">
+                Spørreskjemaet stenger {formatFormScheduleAt(form.closesAt)}.
+            </p>
+        ) : null;
+    }
+
+    // Et skjema kan ha begge tidspunktene. Har åpningen passert, er det
+    // fristen som er grunnen til at det er stengt — ellers ville linja sagt at
+    // skjemaet «åpner» på et tidspunkt som var i går.
+    const opensInTheFuture =
+        form.opensAt !== null && new Date(form.opensAt).getTime() > Date.now();
+
+    if (form.isOpen && opensInTheFuture && form.opensAt) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                Spørreskjemaet åpner {formatFormScheduleAt(form.opensAt)}.
+            </p>
+        );
+    }
+
+    if (form.isOpen && form.closesAt) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                Spørreskjemaet stengte {formatFormScheduleAt(form.closesAt)}.
+                {canManage
+                    ? " Fjern eller flytt stengetidspunktet under «Rediger» for å ta imot svar igjen."
+                    : ""}
+            </p>
+        );
+    }
+
+    return (
+        <p className="text-sm text-muted-foreground">
+            Spørreskjemaet er ikke åpent for innsending av svar.
+            {canManage
+                ? " Åpne det under «Rediger» for å kunne svare på og dele skjemaet."
+                : ""}
+        </p>
     );
 }

@@ -523,6 +523,9 @@ function GroupDetail() {
                     opens_at: values.opensAt
                         ? values.opensAt.toISOString()
                         : null,
+                    closes_at: values.closesAt
+                        ? values.closesAt.toISOString()
+                        : null,
                     only_for_group_members: values.onlyForGroupMembers,
                     ...(values.description
                         ? { description: values.description }
@@ -604,6 +607,9 @@ function GroupDetail() {
                     is_open_for_submissions: values.isOpen,
                     opens_at: values.opensAt
                         ? values.opensAt.toISOString()
+                        : null,
+                    closes_at: values.closesAt
+                        ? values.closesAt.toISOString()
                         : null,
                     can_submit_multiple: values.canSubmitMultiple,
                     only_for_group_members: values.onlyForMembers,

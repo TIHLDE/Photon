@@ -24,6 +24,19 @@ export class FormHasSubmissionsException extends HTTPException {
     }
 }
 
+/**
+ * Et skjema kan planlegges både til å åpne og til å stenge, og en frist som
+ * ligger før åpningen ville gitt et skjema som aldri tar imot et svar.
+ */
+export class FormScheduleOutOfOrderException extends HTTPException {
+    constructor() {
+        super(400, {
+            message:
+                "Skjemaet må stenge etter at det åpner. Velg et senere tidspunkt for stengingen.",
+        });
+    }
+}
+
 export class FormNotOpenForSubmissionException extends HTTPException {
     constructor() {
         super(403, {

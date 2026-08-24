@@ -123,8 +123,14 @@ export type Form = {
      */
     opensAt: string | null;
     /**
+     * ISO-tidspunktet skjemaet stenger seg selv, eller null når det ikke har
+     * noen svarfrist.
+     */
+    closesAt: string | null;
+    /**
      * Om skjemaet tar imot svar nå. Skiller seg fra `isOpen` bare når
-     * skjemaet er planlagt til et tidspunkt som ikke har kommet ennå.
+     * skjemaet er planlagt til et tidspunkt som ikke har kommet ennå, eller
+     * når svarfristen har gått ut.
      */
     isOpenNow: boolean;
     /** Om samme person kan sende inn flere svar. */
@@ -465,6 +471,7 @@ export function mapForm(form: ApiGroupForm): Form {
         description: form.description ?? "",
         isOpen: form.is_open_for_submissions,
         opensAt: form.opens_at ?? null,
+        closesAt: form.closes_at ?? null,
         isOpenNow: form.is_open_now,
         canSubmitMultiple: form.can_submit_multiple,
         onlyForMembers: form.only_for_group_members,

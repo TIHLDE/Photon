@@ -3,8 +3,10 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { FormScheduleOutOfOrderException } from "~/lib/form/exceptions";
 import {
     createFieldsAndOptions,
+    effectiveSchedule,
     resolveScheduledOpenState,
 } from "~/lib/form/service";
 import { describeRoute } from "~/lib/openapi";
@@ -81,6 +83,24 @@ export const createGroupFormRoute = route().post(
             });
         }
 
+        // Åpningen avgjøres før skjemaet skrives: en frist som ligger før
+        // åpningen skal avvises, og gjør den det etter at form-raden er satt
+        // inn, blir raden liggende igjen uten et gruppeskjema.
+        const openState = resolveScheduledOpenState({
+            isOpenForSubmissions: body.is_open_for_submissions,
+            opensAt: body.opens_at ? new Date(body.opens_at) : null,
+            closesAt: body.closes_at ? new Date(body.closes_at) : null,
+        });
+
+        const schedule = effectiveSchedule(openState);
+        if (
+            schedule.opensAt &&
+            schedule.closesAt &&
+            schedule.closesAt.getTime() <= schedule.opensAt.getTime()
+        ) {
+            throw new FormScheduleOutOfOrderException();
+        }
+
         // Create form
         const [form] = await db
             .insert(schema.form)
@@ -97,12 +117,6 @@ export const createGroupFormRoute = route().post(
             });
         }
 
-        // Create group form link
-        const openState = resolveScheduledOpenState({
-            isOpenForSubmissions: body.is_open_for_submissions,
-            opensAt: body.opens_at ? new Date(body.opens_at) : null,
-        });
-
         await db.insert(schema.formGroupForm).values({
             formId: form.id,
             groupSlug,
@@ -110,6 +124,7 @@ export const createGroupFormRoute = route().post(
             canSubmitMultiple: body.can_submit_multiple,
             isOpenForSubmissions: openState.isOpenForSubmissions,
             opensAt: openState.opensAt,
+            closesAt: openState.closesAt,
             onlyForGroupMembers: body.only_for_group_members,
         });
 
@@ -147,6 +162,7 @@ export const createGroupFormRoute = route().post(
                 can_submit_multiple: groupForm?.canSubmitMultiple,
                 is_open_for_submissions: groupForm?.isOpenForSubmissions,
                 opens_at: groupForm?.opensAt?.toISOString() ?? null,
+                closes_at: groupForm?.closesAt?.toISOString() ?? null,
                 only_for_group_members: groupForm?.onlyForGroupMembers,
                 resource_type: "GroupForm",
                 created_at: createdForm?.createdAt.toISOString(),

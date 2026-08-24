@@ -118,6 +118,7 @@ export const listGroupFormsRoute = route().get(
                     can_submit_multiple: groupForm.canSubmitMultiple,
                     is_open_for_submissions: groupForm.isOpenForSubmissions,
                     opens_at: groupForm.opensAt?.toISOString() ?? null,
+                    closes_at: groupForm.closesAt?.toISOString() ?? null,
                     is_open_now: isGroupFormOpen(groupForm),
                     only_for_group_members: groupForm.onlyForGroupMembers,
                     resource_type: "GroupForm",
