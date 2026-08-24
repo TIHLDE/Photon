@@ -346,9 +346,11 @@ export const groupFormListSchema = Schema(
             can_submit_multiple: z.boolean(),
             // Bryteren slik den er lagret. Et skjema som er planlagt fram i
             // tid står som åpent her, men tar ikke imot svar før `opens_at`
-            // har passert — se `is_open_now`.
+            // har passert, og et skjema med en svarfrist slutter å ta imot
+            // svar når `closes_at` har passert — se `is_open_now`.
             is_open_for_submissions: z.boolean(),
             opens_at: z.iso.datetime().nullable(),
+            closes_at: z.iso.datetime().nullable(),
             is_open_now: z.boolean(),
             only_for_group_members: z.boolean(),
             resource_type: z.string(),
@@ -385,6 +387,7 @@ export const createGroupFormResponseSchema = Schema(
         can_submit_multiple: z.boolean().optional(),
         is_open_for_submissions: z.boolean().optional(),
         opens_at: z.iso.datetime().nullable().optional(),
+        closes_at: z.iso.datetime().nullable().optional(),
         only_for_group_members: z.boolean().optional(),
         resource_type: z.string(),
         created_at: z.string().optional(),

@@ -98,12 +98,14 @@ export const getRoute = route().get(
                 : null,
             can_submit_multiple: groupForm?.canSubmitMultiple ?? null,
             // Svarsiden spør «kan jeg svare nå?», så et skjema som er planlagt
-            // fram i tid rapporteres som stengt til tidspunktet har passert.
-            // `opens_at` lar siden si når det åpner.
+            // fram i tid rapporteres som stengt til tidspunktet har passert,
+            // og et skjema med en utgått svarfrist som stengt igjen.
+            // `opens_at` og `closes_at` lar siden si når det åpner og stengte.
             is_open_for_submissions: groupForm
                 ? isGroupFormOpen(groupForm)
                 : null,
             opens_at: groupForm?.opensAt?.toISOString() ?? null,
+            closes_at: groupForm?.closesAt?.toISOString() ?? null,
             only_for_group_members: groupForm?.onlyForGroupMembers ?? null,
             website_url: `/sporreskjema/${form.id}/`,
             created_at: form.createdAt.toISOString(),

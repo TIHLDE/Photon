@@ -4530,6 +4530,7 @@ export interface components {
             can_submit_multiple: boolean | null;
             is_open_for_submissions: boolean | null;
             opens_at: string | null;
+            closes_at: string | null;
             only_for_group_members: boolean | null;
         };
         UpdateFormResponse: {
@@ -4559,6 +4560,7 @@ export interface components {
             can_submit_multiple?: boolean | null;
             is_open_for_submissions?: boolean | null;
             opens_at?: string | null;
+            closes_at?: string | null;
             only_for_group_members?: boolean | null;
         };
         UpdateForm: {
@@ -4589,6 +4591,8 @@ export interface components {
             only_for_group_members?: boolean;
             /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
             opens_at?: string | null;
+            /** @description When the form closes for submissions; after it the form stops taking answers. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            closes_at?: string | null;
         };
         DeleteFormResponse: {
             detail: string;
@@ -5462,6 +5466,7 @@ export interface components {
             can_submit_multiple?: boolean;
             is_open_for_submissions?: boolean;
             opens_at?: string | null;
+            closes_at?: string | null;
             only_for_group_members?: boolean;
             resource_type: string;
             created_at?: string;
@@ -5513,6 +5518,8 @@ export interface components {
             only_for_group_members: boolean;
             /** @description When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this. */
             opens_at?: string | null;
+            /** @description When the form closes for submissions; after it the form stops taking answers. Setting it turns is_open_for_submissions on, and turning that off clears this. */
+            closes_at?: string | null;
         };
         GroupFormList: {
             /** Format: uuid */
@@ -5524,6 +5531,7 @@ export interface components {
             can_submit_multiple: boolean;
             is_open_for_submissions: boolean;
             opens_at: string | null;
+            closes_at: string | null;
             is_open_now: boolean;
             only_for_group_members: boolean;
             resource_type: string;

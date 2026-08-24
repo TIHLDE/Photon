@@ -66,6 +66,12 @@ const groupFormSettings = {
         description:
             "When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this.",
     }),
+    // Svarfristen. Å sette den slår på «åpent for svar», akkurat som
+    // åpningstidspunktet; å slå av «åpent for svar» fjerner den.
+    closes_at: z.iso.datetime().nullable().optional().meta({
+        description:
+            "When the form closes for submissions; after it the form stops taking answers. Setting it turns is_open_for_submissions on, and turning that off clears this.",
+    }),
 };
 
 /**
@@ -107,6 +113,10 @@ export const createGroupFormSchema = Schema(
         opens_at: z.iso.datetime().nullable().optional().meta({
             description:
                 "When the form opens for submissions; until then it stays closed. Setting it turns is_open_for_submissions on, and turning that off clears this.",
+        }),
+        closes_at: z.iso.datetime().nullable().optional().meta({
+            description:
+                "When the form closes for submissions; after it the form stops taking answers. Setting it turns is_open_for_submissions on, and turning that off clears this.",
         }),
     }),
 );
@@ -211,9 +221,12 @@ export const formDetailSchema = Schema(
         group: formGroupContextSchema.nullable(),
         can_submit_multiple: z.boolean().nullable(),
         // Om skjemaet tar imot svar akkurat nå. Et skjema som er planlagt fram
-        // i tid er `false` her til tidspunktet i `opens_at` har passert.
+        // i tid er `false` her til tidspunktet i `opens_at` har passert, og et
+        // skjema med en svarfrist er `false` igjen når `closes_at` har
+        // passert.
         is_open_for_submissions: z.boolean().nullable(),
         opens_at: z.iso.datetime().nullable(),
+        closes_at: z.iso.datetime().nullable(),
         only_for_group_members: z.boolean().nullable(),
     }),
 );
@@ -261,6 +274,7 @@ export const updateFormResponseSchema = Schema(
         can_submit_multiple: z.boolean().nullable().optional(),
         is_open_for_submissions: z.boolean().nullable().optional(),
         opens_at: z.iso.datetime().nullable().optional(),
+        closes_at: z.iso.datetime().nullable().optional(),
         only_for_group_members: z.boolean().nullable().optional(),
     }),
 );

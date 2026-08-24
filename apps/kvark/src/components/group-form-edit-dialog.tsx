@@ -34,6 +34,8 @@ export type GroupFormEditValues = {
     isOpen: boolean;
     /** Null betyr «åpner med en gang». */
     opensAt: Date | null;
+    /** Null betyr «ingen svarfrist». */
+    closesAt: Date | null;
     canSubmitMultiple: boolean;
     onlyForMembers: boolean;
     /** Tom streng betyr «ingen varsling». */
@@ -68,22 +70,32 @@ const questionSchema = z
         { error: "Legg til minst ett alternativ", path: ["options"] },
     );
 
-const schema = z.object({
-    title: z
-        .string()
-        .min(1, { error: "Tittel er påkrevd" })
-        .max(400, { error: "Maks 400 tegn" }),
-    description: z.string(),
-    isOpen: z.boolean(),
-    opensAt: z.date().nullable(),
-    canSubmitMultiple: z.boolean(),
-    onlyForMembers: z.boolean(),
-    emailReceiver: z.union([
-        z.literal(""),
-        z.email({ error: "Ugyldig e-postadresse" }),
-    ]),
-    questions: z.array(questionSchema),
-});
+const schema = z
+    .object({
+        title: z
+            .string()
+            .min(1, { error: "Tittel er påkrevd" })
+            .max(400, { error: "Maks 400 tegn" }),
+        description: z.string(),
+        isOpen: z.boolean(),
+        opensAt: z.date().nullable(),
+        closesAt: z.date().nullable(),
+        canSubmitMultiple: z.boolean(),
+        onlyForMembers: z.boolean(),
+        emailReceiver: z.union([
+            z.literal(""),
+            z.email({ error: "Ugyldig e-postadresse" }),
+        ]),
+        questions: z.array(questionSchema),
+    })
+    // Et skjema som stenger før det åpner ville aldri tatt imot et svar.
+    .refine(
+        (values) =>
+            !values.opensAt ||
+            !values.closesAt ||
+            values.closesAt.getTime() > values.opensAt.getTime(),
+        { error: "Må være etter åpningen", path: ["closesAt"] },
+    );
 
 type GroupFormEditDialogProps = {
     open: boolean;
@@ -214,6 +226,7 @@ function useEditForm({
             description: form.description,
             isOpen: form.isOpen,
             opensAt: form.opensAt ? new Date(form.opensAt) : null,
+            closesAt: form.closesAt ? new Date(form.closesAt) : null,
             canSubmitMultiple: form.canSubmitMultiple,
             onlyForMembers: form.onlyForMembers,
             emailReceiver: form.emailReceiver,
@@ -226,6 +239,7 @@ function useEditForm({
                 description: value.description,
                 isOpen: value.isOpen,
                 opensAt: value.opensAt,
+                closesAt: value.closesAt,
                 canSubmitMultiple: value.canSubmitMultiple,
                 onlyForMembers: value.onlyForMembers,
                 emailReceiver: value.emailReceiver.trim(),
@@ -305,14 +319,20 @@ function EditForm({
                                 </field.Field>
                             )}
                         </editForm.AppField>
-                        {/* Stenger man skjemaet, følger åpningstidspunktet med: ellers
-                    ville skjemaet man nettopp stengte åpnet seg selv igjen. */}
+                        {/* Stenger man skjemaet, følger begge tidspunktene med:
+                    ellers ville skjemaet man nettopp stengte åpnet seg selv
+                    igjen, eller stengt seg selv på nytt senere. */}
                         <editForm.AppField
                             name="isOpen"
                             listeners={{
                                 onChange: ({ value }) => {
-                                    if (!value)
+                                    if (!value) {
                                         editForm.setFieldValue("opensAt", null);
+                                        editForm.setFieldValue(
+                                            "closesAt",
+                                            null,
+                                        );
+                                    }
                                 },
                             }}
                         >
@@ -350,6 +370,30 @@ function EditForm({
                                         Valgfritt. Med et tidspunkt er skjemaet
                                         stengt til da, og åpner seg selv når
                                         tiden kommer.
+                                    </field.Description>
+                                    <field.Error />
+                                </field.Field>
+                            )}
+                        </editForm.AppField>
+                        {/* Og en frist betyr at skjemaet skal ta imot svar til da
+                    — også den slår på bryteren. */}
+                        <editForm.AppField
+                            name="closesAt"
+                            listeners={{
+                                onChange: ({ value }) => {
+                                    if (value)
+                                        editForm.setFieldValue("isOpen", true);
+                                },
+                            }}
+                        >
+                            {(field) => (
+                                <field.Field>
+                                    <field.Label>Stenger</field.Label>
+                                    <field.DateTimePicker />
+                                    <field.Description>
+                                        Valgfritt. Med et tidspunkt slutter
+                                        skjemaet å ta imot svar når fristen går
+                                        ut.
                                     </field.Description>
                                     <field.Error />
                                 </field.Field>

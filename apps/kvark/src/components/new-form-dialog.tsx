@@ -52,23 +52,34 @@ const questionSchema = z
         path: ["options"],
     });
 
-const newFormSchema = z.object({
-    title: z
-        .string()
-        .min(1, { error: "Tittel er påkrevd" })
-        .max(400, { error: "Maks 400 tegn" }),
-    description: z.string().max(2000, { error: "Maks 2000 tegn" }),
-    emailReceiverOnSubmit: z.union([
-        z.email({ error: "Må være en gyldig e-postadresse" }),
-        z.literal(""),
-    ]),
-    canSubmitMultiple: z.boolean(),
-    isOpenForSubmissions: z.boolean(),
-    /** Tomt betyr «åpner med en gang». */
-    opensAt: z.date().nullable(),
-    onlyForGroupMembers: z.boolean(),
-    questions: z.array(questionSchema),
-});
+const newFormSchema = z
+    .object({
+        title: z
+            .string()
+            .min(1, { error: "Tittel er påkrevd" })
+            .max(400, { error: "Maks 400 tegn" }),
+        description: z.string().max(2000, { error: "Maks 2000 tegn" }),
+        emailReceiverOnSubmit: z.union([
+            z.email({ error: "Må være en gyldig e-postadresse" }),
+            z.literal(""),
+        ]),
+        canSubmitMultiple: z.boolean(),
+        isOpenForSubmissions: z.boolean(),
+        /** Tomt betyr «åpner med en gang». */
+        opensAt: z.date().nullable(),
+        /** Tomt betyr «ingen svarfrist». */
+        closesAt: z.date().nullable(),
+        onlyForGroupMembers: z.boolean(),
+        questions: z.array(questionSchema),
+    })
+    // Et skjema som stenger før det åpner ville aldri tatt imot et svar.
+    .refine(
+        (values) =>
+            !values.opensAt ||
+            !values.closesAt ||
+            values.closesAt.getTime() > values.opensAt.getTime(),
+        { error: "Må være etter åpningen", path: ["closesAt"] },
+    );
 
 export type NewFormValues = z.infer<typeof newFormSchema>;
 type NewFormQuestion = NewFormValues["questions"][number];
@@ -83,6 +94,7 @@ const EMPTY_VALUES: NewFormValues = {
     // «Rediger».
     isOpenForSubmissions: true,
     opensAt: null,
+    closesAt: null,
     onlyForGroupMembers: false,
     questions: [],
 };
@@ -394,19 +406,24 @@ export function NewFormDialog({
                                 <>
                                     <FieldSeparator />
 
-                                    {/* De to feltene holder hverandre i ørene:
-                                    stenger man skjemaet, forsvinner
-                                    åpningstidspunktet, og setter man et
-                                    tidspunkt, åpnes skjemaet for den datoen. */}
+                                    {/* Feltene holder hverandre i ørene: stenger
+                                    man skjemaet, forsvinner både åpningen og
+                                    fristen, og setter man et tidspunkt, åpnes
+                                    skjemaet for den datoen. */}
                                     <form.AppField
                                         name="isOpenForSubmissions"
                                         listeners={{
                                             onChange: ({ value }) => {
-                                                if (!value)
+                                                if (!value) {
                                                     form.setFieldValue(
                                                         "opensAt",
                                                         null,
                                                     );
+                                                    form.setFieldValue(
+                                                        "closesAt",
+                                                        null,
+                                                    );
+                                                }
                                             },
                                         }}
                                     >
@@ -443,6 +460,34 @@ export function NewFormDialog({
                                                     er skjemaet stengt til da,
                                                     og åpner seg selv når tiden
                                                     kommer.
+                                                </field.Description>
+                                                <field.Error />
+                                            </field.Field>
+                                        )}
+                                    </form.AppField>
+
+                                    <form.AppField
+                                        name="closesAt"
+                                        listeners={{
+                                            onChange: ({ value }) => {
+                                                if (value)
+                                                    form.setFieldValue(
+                                                        "isOpenForSubmissions",
+                                                        true,
+                                                    );
+                                            },
+                                        }}
+                                    >
+                                        {(field) => (
+                                            <field.Field>
+                                                <field.Label>
+                                                    Stenger
+                                                </field.Label>
+                                                <field.DateTimePicker />
+                                                <field.Description>
+                                                    Valgfritt. Med et tidspunkt
+                                                    slutter skjemaet å ta imot
+                                                    svar når fristen går ut.
                                                 </field.Description>
                                                 <field.Error />
                                             </field.Field>

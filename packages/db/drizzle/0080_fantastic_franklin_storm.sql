@@ -1,0 +1,1 @@
+ALTER TABLE "form_group_form" ADD COLUMN "closes_at" timestamp;

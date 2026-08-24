@@ -113,6 +113,13 @@ export const formGroupForm = pgTable(
          * man planlegger et skjema fram i tid uten å måtte huske å åpne det.
          */
         opensAt: timestamp("opens_at"),
+        /**
+         * Når skjemaet skal stenge seg selv. Null betyr «ingen frist», altså
+         * at det står åpent til noen stenger det. Er tidspunktet passert, er
+         * skjemaet stengt selv om bryteren står på — det er slik man setter en
+         * svarfrist uten å måtte huske å stenge skjemaet.
+         */
+        closesAt: timestamp("closes_at"),
         onlyForGroupMembers: boolean("only_for_group_members")
             .default(false)
             .notNull(),

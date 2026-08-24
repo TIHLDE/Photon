@@ -2,9 +2,13 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { FormHasSubmissionsException } from "~/lib/form/exceptions";
+import {
+    FormHasSubmissionsException,
+    FormScheduleOutOfOrderException,
+} from "~/lib/form/exceptions";
 import {
     canManageForm,
+    effectiveSchedule,
     findDestructiveFieldChanges,
     resolveScheduledOpenState,
     updateFieldsAndOptions,
@@ -102,21 +106,43 @@ export const updateRoute = route().patch(
         }
 
         // `null` fjerner planleggingen; utelatt lar den stå.
-        const openState = resolveScheduledOpenState({
-            isOpenForSubmissions: body.is_open_for_submissions,
-            opensAt:
-                body.opens_at === undefined
-                    ? undefined
-                    : body.opens_at === null
-                      ? null
-                      : new Date(body.opens_at),
-        });
+        const openState = resolveScheduledOpenState(
+            {
+                isOpenForSubmissions: body.is_open_for_submissions,
+                opensAt:
+                    body.opens_at === undefined
+                        ? undefined
+                        : body.opens_at === null
+                          ? null
+                          : new Date(body.opens_at),
+                closesAt:
+                    body.closes_at === undefined
+                        ? undefined
+                        : body.closes_at === null
+                          ? null
+                          : new Date(body.closes_at),
+            },
+            groupForm ?? undefined,
+        );
+
+        // En PATCH kan sette det ene tidspunktet og la det andre stå, så
+        // rekkefølgen sjekkes mot tilstanden slik den blir etter lagring.
+        const schedule = effectiveSchedule(openState, groupForm ?? undefined);
+        if (
+            groupForm &&
+            schedule.opensAt &&
+            schedule.closesAt &&
+            schedule.closesAt.getTime() <= schedule.opensAt.getTime()
+        ) {
+            throw new FormScheduleOutOfOrderException();
+        }
 
         const groupFormValues = {
             emailReceiverOnSubmit: body.email_receiver_on_submit,
             canSubmitMultiple: body.can_submit_multiple,
             isOpenForSubmissions: openState.isOpenForSubmissions,
             opensAt: openState.opensAt,
+            closesAt: openState.closesAt,
             onlyForGroupMembers: body.only_for_group_members,
         };
 
@@ -167,6 +193,7 @@ export const updateRoute = route().patch(
             is_open_for_submissions:
                 updatedGroupForm?.isOpenForSubmissions ?? null,
             opens_at: updatedGroupForm?.opensAt?.toISOString() ?? null,
+            closes_at: updatedGroupForm?.closesAt?.toISOString() ?? null,
             only_for_group_members:
                 updatedGroupForm?.onlyForGroupMembers ?? null,
             created_at: updatedForm?.createdAt.toISOString(),

@@ -27,55 +27,121 @@ type DbCtx = { db: Database };
 /**
  * Om et gruppeskjema faktisk tar imot svar akkurat nå.
  *
- * Bryteren «åpent for svar» er hovedbryteren, og `opensAt` utsetter den bare:
- * et skjema som er planlagt fram i tid er stengt til tidspunktet har passert.
- * At det å planlegge en dato likevel åpner skjemaet den dagen — uansett hva
- * bryteren sto på fra før — er avgjort når raden skrives, se
+ * Bryteren «åpent for svar» er hovedbryteren, og de to tidspunktene snevrer
+ * den bare inn: `opensAt` utsetter åpningen, og `closesAt` er svarfristen. Et
+ * skjema som er planlagt fram i tid er stengt til tidspunktet har passert, og
+ * et skjema med en frist som har gått ut er stengt igjen.
+ *
+ * At det å planlegge en dato likevel åpner skjemaet — uansett hva bryteren
+ * sto på fra før — er avgjort når raden skrives, se
  * `resolveScheduledOpenState`. Da kan bryteren av alltid bety stengt, og en
  * dato kan ikke bli liggende igjen og åpne skjemaet på nytt senere.
  */
 export function isGroupFormOpen(
     groupForm: Pick<
         typeof schema.formGroupForm.$inferSelect,
-        "isOpenForSubmissions" | "opensAt"
+        "isOpenForSubmissions" | "opensAt" | "closesAt"
     >,
     now: Date = new Date(),
 ): boolean {
     if (!groupForm.isOpenForSubmissions) return false;
-    return !groupForm.opensAt || groupForm.opensAt.getTime() <= now.getTime();
+    if (groupForm.opensAt && groupForm.opensAt.getTime() > now.getTime()) {
+        return false;
+    }
+    return !groupForm.closesAt || groupForm.closesAt.getTime() > now.getTime();
 }
 
 /**
- * De to feltene som styrer åpningen, slik de skal lagres.
+ * De tre feltene som styrer åpningen, slik de skal lagres.
  *
  * De henger sammen, så de må avgjøres i lag — ellers kan man lagre
  * kombinasjoner som ikke betyr noe:
  *
- * - Et tidspunkt betyr «skjemaet skal åpne da», så bryteren slås på. Det er
- *   det som gjør at et stengt skjema kan planlegges uten å åpnes med en gang,
- *   og derfor vinner tidspunktet også over en bryter som er sendt av i samme
- *   forespørsel — det er den mest presise beskjeden av de to.
+ * - Et tidspunkt betyr «skjemaet skal åpne da» eller «skjemaet svarer til
+ *   da», så bryteren slås på. Det er det som gjør at et stengt skjema kan
+ *   planlegges uten å åpnes med en gang, og derfor vinner tidspunktene også
+ *   over en bryter som er sendt av i samme forespørsel — de er den mest
+ *   presise beskjeden.
  * - Bryteren av, uten et tidspunkt ved siden av, betyr «ikke ta imot svar», så
  *   planleggingen fjernes. Uten det ville et skjema man nettopp stengte åpnet
  *   seg selv igjen.
+ * - Bryteren på igjen, mens en svarfrist allerede har gått ut, ville ikke gjort
+ *   noe i det hele tatt — skjemaet stengte i samme øyeblikk det ble åpnet. Da
+ *   er fristen brukt opp, og den fjernes.
  *
  * `undefined` inn betyr «ikke rørt av denne forespørselen»; ut betyr «ikke
  * skriv dette feltet».
  */
-export function resolveScheduledOpenState(input: {
+export function resolveScheduledOpenState(
+    input: {
+        isOpenForSubmissions: boolean | undefined;
+        opensAt: Date | null | undefined;
+        closesAt: Date | null | undefined;
+    },
+    /** Raden slik den er lagret. Utelatt når skjemaet opprettes. */
+    stored?: { opensAt: Date | null; closesAt: Date | null },
+    now: Date = new Date(),
+): {
     isOpenForSubmissions: boolean | undefined;
     opensAt: Date | null | undefined;
-}): {
-    isOpenForSubmissions: boolean | undefined;
-    opensAt: Date | null | undefined;
+    closesAt: Date | null | undefined;
 } {
-    if (input.opensAt) {
-        return { isOpenForSubmissions: true, opensAt: input.opensAt };
+    if (input.opensAt || input.closesAt) {
+        return {
+            isOpenForSubmissions: true,
+            opensAt: input.opensAt,
+            closesAt: input.closesAt,
+        };
     }
+
     if (input.isOpenForSubmissions === false) {
-        return { isOpenForSubmissions: false, opensAt: null };
+        return {
+            isOpenForSubmissions: false,
+            opensAt: null,
+            closesAt: null,
+        };
     }
+
+    if (
+        input.isOpenForSubmissions === true &&
+        input.closesAt === undefined &&
+        stored?.closesAt &&
+        stored.closesAt.getTime() <= now.getTime()
+    ) {
+        return {
+            isOpenForSubmissions: true,
+            opensAt: input.opensAt,
+            closesAt: null,
+        };
+    }
+
     return input;
+}
+
+/**
+ * Tidspunktene slik de blir stående etter en oppdatering, altså det som er
+ * sendt inn der det er sendt inn noe, og det lagrede ellers.
+ *
+ * En PATCH kan sette det ene tidspunktet og la det andre stå, så rekkefølgen
+ * mellom dem kan bare sjekkes mot begge to samlet.
+ */
+export function effectiveSchedule(
+    resolved: {
+        opensAt: Date | null | undefined;
+        closesAt: Date | null | undefined;
+    },
+    stored?: { opensAt: Date | null; closesAt: Date | null },
+): { opensAt: Date | null; closesAt: Date | null } {
+    return {
+        opensAt:
+            resolved.opensAt === undefined
+                ? (stored?.opensAt ?? null)
+                : resolved.opensAt,
+        closesAt:
+            resolved.closesAt === undefined
+                ? (stored?.closesAt ?? null)
+                : resolved.closesAt,
+    };
 }
 
 /**

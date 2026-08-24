@@ -28,7 +28,7 @@ import { richRegistry } from "#/components/markdown/directives/presets";
 import { formHandlers, useAppForm } from "#/hooks/form";
 import { useGoBack } from "#/hooks/use-go-back";
 import { formatEventDate } from "#/lib/event";
-import { formatFormOpensAt, mapSubmission } from "#/lib/form";
+import { formatFormScheduleAt, mapSubmission } from "#/lib/form";
 
 export const Route = createFileRoute("/_app/sporreskjema/$id")({
     component: FormPage,
@@ -136,9 +136,20 @@ function FormBody({ form }: { form: FormDetail }) {
     }
 
     if (form.resource_type === "GroupForm" && !form.is_open_for_submissions) {
-        // Et skjema som er planlagt fram i tid er stengt akkurat nå, men vi vet
-        // når det åpner — da er det den beskjeden som er nyttig.
-        const opensAt = form.opens_at;
+        // Et skjema kan være stengt fordi det ikke har åpnet ennå, fordi
+        // svarfristen har gått ut, eller fordi noen har stengt det. Vet vi
+        // hvilken av delene det er, er det den beskjeden som er nyttig.
+        const opensAt =
+            form.opens_at && new Date(form.opens_at).getTime() > Date.now()
+                ? form.opens_at
+                : null;
+        const closedAt =
+            !opensAt &&
+            form.closes_at &&
+            new Date(form.closes_at).getTime() <= Date.now()
+                ? form.closes_at
+                : null;
+
         return (
             <Alert>
                 <TriangleAlert />
@@ -149,8 +160,10 @@ function FormBody({ form }: { form: FormDetail }) {
                 </AlertTitle>
                 <AlertDescription>
                     {opensAt
-                        ? `Spørreskjemaet åpner ${formatFormOpensAt(opensAt)}.`
-                        : "Spørreskjemaet er ikke åpent for innsending av svar akkurat nå."}
+                        ? `Spørreskjemaet åpner ${formatFormScheduleAt(opensAt)}.`
+                        : closedAt
+                          ? `Fristen gikk ut ${formatFormScheduleAt(closedAt)}.`
+                          : "Spørreskjemaet er ikke åpent for innsending av svar akkurat nå."}
                 </AlertDescription>
             </Alert>
         );
