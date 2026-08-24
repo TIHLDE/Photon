@@ -87,6 +87,11 @@ export type EventFormValues = {
     priorityUsers: PriorityUser[];
     /** Avvis alle utenfor en pool i stedet for å sette dem på venteliste. */
     onlyAllowPrioritized: boolean;
+    /**
+     * Slipp alumni inn på påmeldingen. Uten dette er påmelding forbeholdt
+     * aktive medlemmer — det er den eneste forskjellen på de to rollene.
+     */
+    openToAlumni: boolean;
 };
 
 type EventFormProps = {
@@ -568,6 +573,26 @@ export function EventForm({
                                         </Field>
                                     ) : null}
                                 </div>
+                            ) : null}
+                            {values.requiresSigningUp ? (
+                                <Field
+                                    orientation="horizontal"
+                                    className="w-fit gap-3"
+                                >
+                                    <Checkbox
+                                        id="event-open-to-alumni"
+                                        checked={values.openToAlumni}
+                                        onCheckedChange={(checked) =>
+                                            onChange({
+                                                openToAlumni: Boolean(checked),
+                                            })
+                                        }
+                                    />
+                                    <FieldLabel htmlFor="event-open-to-alumni">
+                                        Åpent for alumni (ellers kan bare aktive
+                                        medlemmer melde seg på)
+                                    </FieldLabel>
+                                </Field>
                             ) : null}
                             <div className="grid gap-4 lg:grid-cols-4">
                                 {values.requiresSigningUp ? (

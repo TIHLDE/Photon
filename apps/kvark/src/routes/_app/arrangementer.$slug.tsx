@@ -200,7 +200,9 @@ function EventDetailPage() {
         void invalidateEventRegistrations(queryClient, event.id);
     }, [registrationStatus, event.id, queryClient]);
 
-    const eventRules = useEventRulesConsent();
+    // Et arrangement som er åpnet for alumni kan meldes på av folk uten
+    // påmeldingsretten, og de trenger avhukingen like mye som medlemmene.
+    const eventRules = useEventRulesConsent(event.openToAlumni);
     const registerMutation = useMutation(registerForEventMutation);
     const unregisterMutation = useMutation(unregisterFromEventMutation);
     const payMutation = useMutation(createEventPaymentMutation);

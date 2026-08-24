@@ -1,3 +1,5 @@
+import { hasPermission } from "@photon/auth/rbac";
+import { userHasRole } from "@photon/auth/roles";
 import { schema } from "@photon/db";
 import { eq, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -16,7 +18,6 @@ import { getUserStrikeCount } from "../../../lib/event/strikes";
 import { getUnansweredEvaluations } from "../../../lib/form/evaluation";
 import { route } from "../../../lib/route";
 import { hasAcceptedEventRules } from "../../../lib/user/settings";
-import { requireAccess } from "../../../middleware/access";
 import { requireAuth } from "../../../middleware/auth";
 import {
     createRegistrationBodySchema,
@@ -30,7 +31,7 @@ export const registerToEventRoute = route().post(
         summary: "Register to an event",
         operationId: "createEventRegistration",
         description:
-            "Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role.",
+            "Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role — unless the event has openToAlumni set, which lets alumni register for that event alone.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -40,7 +41,7 @@ export const registerToEventRoute = route().post(
         .notFound({ description: "Event not found" })
         .forbidden({
             description:
-                "User has not accepted the event rules, owes an answer to an evaluation, or the event only allows members covered by a priority pool or members of a specific institute to register",
+                "User may not register for events at all, has not accepted the event rules, owes an answer to an evaluation, or the event only allows members covered by a priority pool or members of a specific institute to register",
         })
         .response({
             statusCode: 409,
@@ -49,7 +50,6 @@ export const registerToEventRoute = route().post(
         })
         .build(),
     requireAuth,
-    requireAccess({ permission: "events:registrations:create" }),
     validator("json", createRegistrationBodySchema),
     async (c) => {
         const now = new Date();
@@ -68,6 +68,7 @@ export const registerToEventRoute = route().post(
          */
         const [
             event,
+            canRegisterForEvents,
             hasAcceptedRules,
             unanswered,
             existingRegistration,
@@ -81,6 +82,7 @@ export const registerToEventRoute = route().post(
                     restrictedToInstitute: true,
                 },
             }),
+            hasPermission(ctx, userId, "events:registrations:create"),
             hasAcceptedEventRules(userId, ctx),
             getUnansweredEvaluations(ctx, userId),
             db.query.eventRegistration.findFirst({
@@ -98,6 +100,33 @@ export const registerToEventRoute = route().post(
 
         if (!event) {
             throw new HTTPException(404, { message: "Event not found" });
+        }
+
+        /**
+         * Retten til å melde seg på er en rolletilgang, ikke noe ved
+         * arrangementet: `member` har den, `alumni` har den ikke, og det er
+         * hele forskjellen på de to. Sjekken lå derfor i mellomvaren, som
+         * aldri får se arrangementet.
+         *
+         * Den måtte hit ned for at `openToAlumni` skulle bety noe. Et
+         * arrangement som er åpnet for alumni slipper dem inn — bare dem, og
+         * bare der: alle andre uten tilgangen stoppes fortsatt, og alumni
+         * stoppes fortsatt på hvert arrangement som ikke er åpnet.
+         *
+         * Rollen slås bare opp når tilgangen mangler, så et vanlig medlem
+         * betaler ikke for spørringen.
+         */
+        if (!canRegisterForEvents) {
+            const isAlumni =
+                event.openToAlumni &&
+                (await userHasRole(ctx, userId, "alumni"));
+
+            if (!isAlumni) {
+                throw new HTTPException(403, {
+                    message:
+                        "Forbidden - requires permission: events:registrations:create",
+                });
+            }
         }
 
         if (event.isRegistrationClosed || !event.requiresSigningUp) {

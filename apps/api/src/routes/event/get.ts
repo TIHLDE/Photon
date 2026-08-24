@@ -310,6 +310,7 @@ export const getRoute = route().get(
             payInfo,
             enforcesPreviousStrikes: event.enforcesPreviousStrikes,
             onlyAllowPrioritized: event.onlyAllowPrioritized,
+            openToAlumni: event.openToAlumni,
             restrictedToInstitute: event.restrictedToInstitute ?? null,
             visibility: event.visibility,
             priorityPools,

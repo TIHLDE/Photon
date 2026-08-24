@@ -181,6 +181,7 @@ export const createRoute = route().post(
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
                 canCauseStrikes: body.canCauseStrikes,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                openToAlumni: body.openToAlumni ?? false,
                 restrictedToInstituteId,
                 visibility: body.visibility,
             };

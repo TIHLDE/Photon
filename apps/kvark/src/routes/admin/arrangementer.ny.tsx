@@ -78,6 +78,7 @@ const emptyValues: EventFormValues = {
     priorityPools: [],
     priorityUsers: [],
     onlyAllowPrioritized: false,
+    openToAlumni: false,
     title: "",
     description: "",
     categorySlug: "",
@@ -277,6 +278,9 @@ function NewEventPage() {
                         (user) => user.id,
                     ),
                     onlyAllowPrioritized: values.onlyAllowPrioritized,
+                    // Uten påmelding er det ingenting å åpne for alumni.
+                    openToAlumni:
+                        values.requiresSigningUp && values.openToAlumni,
                     // Betalte arrangementer gir aldri prikker.
                     canCauseStrikes: canCauseStrikes,
                     enforcesPreviousStrikes: canCauseStrikes,

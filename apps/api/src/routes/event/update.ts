@@ -261,6 +261,7 @@ export const updateRoute = route().put(
                 imageUrl: body.imageUrl,
                 imageAlt: body.imageAlt,
                 onlyAllowPrioritized: body.onlyAllowPrioritized,
+                openToAlumni: body.openToAlumni,
                 restrictedToInstituteId,
                 visibility: body.visibility,
                 isPaidEvent: body.isPaidEvent,

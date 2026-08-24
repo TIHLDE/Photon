@@ -845,7 +845,7 @@ export interface paths {
         put?: never;
         /**
          * Register to an event
-         * @description Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role.
+         * @description Create a new registration for the authenticated user to attend an event, initially with pending status. Requires the 'events:registrations:create' permission — granted by the member baseline role (active students), not by the alumni role — unless the event has openToAlumni set, which lets alumni register for that event alone.
          */
         post: operations["createEventRegistration"];
         /**
@@ -3733,6 +3733,8 @@ export interface components {
             onlyAllowPrioritized: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
+            /** @description Let alumni register too, not only active members. False — the default — leaves the event to active members. Gates registration only; it does not change who can see the event. */
+            openToAlumni?: boolean;
             /** @description Can this event give strike penalties to users? */
             canCauseStrikes: boolean;
             /** @description Should the system enforce strike rules for this event? */
@@ -3886,6 +3888,8 @@ export interface components {
             onlyAllowPrioritized?: boolean;
             /** @description Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute. */
             restrictedToInstituteSlug?: string | null;
+            /** @description Let alumni register too, not only active members. False — the default — leaves the event to active members. Gates registration only; it does not change who can see the event. */
+            openToAlumni?: boolean;
             /** @description Can this event give strike penalties to users? */
             canCauseStrikes?: boolean;
             /** @description Should the system enforce strike rules for this event? */
@@ -4047,6 +4051,8 @@ export interface components {
             enforcesPreviousStrikes: boolean;
             /** @description Only members covered by a priority pool may register */
             onlyAllowPrioritized: boolean;
+            /** @description Whether alumni may register for this event, in addition to active members */
+            openToAlumni: boolean;
             /** @description The institute this event is reserved for. Only members of a study group under this institute may register. Null means open to every institute. */
             restrictedToInstitute: {
                 /** @description Institute slug */
