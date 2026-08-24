@@ -163,6 +163,21 @@ export const event = pgTable("event", {
         .default(false)
         .notNull(),
     /**
+     * Lets alumni register too, not just active members.
+     *
+     * The right to sign up for an event is a role permission
+     * (`events:registrations:create`), held by the `member` baseline role and
+     * deliberately not by `alumni` — that single permission is the whole
+     * difference between the two roles. It is global, so without this column
+     * the only way to let a graduated member join one arrangement was to hand
+     * them the permission for every arrangement.
+     *
+     * False — the default — leaves the event to active members alone. Like the
+     * institute restriction and the priority-pool-only flag, this gates
+     * registration only: it changes nothing about who can see the event.
+     */
+    openToAlumni: boolean("open_to_alumni").default(false).notNull(),
+    /**
      * Restricts registration to members of a single NTNU institute, matched
      * through the study groups they belong to. NULL — the default — means the
      * event is open to every institute, which is what nearly all events are.

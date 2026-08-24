@@ -307,6 +307,7 @@ function valuesFromEvent(
         // arrangementet — API-et deler ikke navngitte personer med andre.
         priorityUsers: event.priorityUsers ?? [],
         onlyAllowPrioritized: event.onlyAllowPrioritized,
+        openToAlumni: event.openToAlumni,
         title: event.title,
         description: event.description,
         categorySlug: event.category.slug,
@@ -512,6 +513,8 @@ function DetailsTab({ eventId }: { eventId: string }) {
             priorityPools: poolsForSubmit(values.priorityPools),
             priorityUserIds: values.priorityUsers.map((user) => user.id),
             onlyAllowPrioritized: values.onlyAllowPrioritized,
+            // Uten påmelding er det ingenting å åpne for alumni.
+            openToAlumni: values.requiresSigningUp && values.openToAlumni,
             // Betalte arrangementer gir aldri prikker.
             canCauseStrikes: canCauseStrikes,
             enforcesPreviousStrikes: canCauseStrikes,

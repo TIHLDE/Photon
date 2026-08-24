@@ -118,6 +118,13 @@ const eventMutationSchema = z.object({
         description:
             "Slug of the NTNU institute this event is reserved for (e.g. 'idi' or 'iik'). Only members of a study group belonging to that institute may sign up. Null — the default — leaves the event open to every institute.",
     }),
+    // Valgfritt av samme grunn som `priorityUserIds`: feltet kom etter at
+    // API-et var i bruk, og et kall som ikke nevner det skal fortsatt
+    // opprette arrangementer.
+    openToAlumni: z.boolean().optional().meta({
+        description:
+            "Let alumni register too, not only active members. False — the default — leaves the event to active members. Gates registration only; it does not change who can see the event.",
+    }),
 
     // Strikes & enforcement
     canCauseStrikes: z.boolean().meta({
@@ -749,6 +756,10 @@ export const eventDetailSchema = Schema(
         }),
         onlyAllowPrioritized: z.boolean().meta({
             description: "Only members covered by a priority pool may register",
+        }),
+        openToAlumni: z.boolean().meta({
+            description:
+                "Whether alumni may register for this event, in addition to active members",
         }),
         restrictedToInstitute: z
             .object({

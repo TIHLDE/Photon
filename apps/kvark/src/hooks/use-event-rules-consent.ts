@@ -10,17 +10,23 @@ import { usePermission } from "#/hooks/use-permission";
  *
  * API-et avviser påmelding uten godkjenning, så dette må vises før
  * påmeldingen åpner — ikke i det sekundet plassene slippes.
+ *
+ * `alsoAsk` er for dem som kan melde seg på uten å ha påmeldingsretten
+ * globalt: et arrangement som er åpnet for alumni. Uten den fikk alumnen
+ * påmeldingen avvist av regelen uten å få se avhukingen som løser den — den
+ * bor ellers inne på profilinnstillingene.
  */
-export function useEventRulesConsent() {
+export function useEventRulesConsent(alsoAsk = false) {
     const { data: session } = useQuery(authQueryOptions);
     // Alumni og andre uten påmeldingsrett har ingen nytte av varselet — de
-    // stoppes uansett et annet sted.
+    // stoppes uansett et annet sted, med mindre kalleren sier at nettopp her
+    // kan de melde seg på.
     const canRegister = usePermission("events:registrations:create");
     const accept = useMutation(updateUserSettingsMutation);
 
     const mustAccept =
         Boolean(session) &&
-        canRegister &&
+        (canRegister || alsoAsk) &&
         session?.user.settings?.acceptsEventRules !== true;
 
     return {
