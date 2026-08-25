@@ -11,7 +11,7 @@ import { Reveal, Stagger } from "@tihlde/ui/ui/motion";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { Plus } from "lucide-react";
-import { Suspense } from "react";
+import { type ReactNode, Suspense } from "react";
 
 import { authQueryOptions } from "#/api/auth";
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -61,18 +61,22 @@ function Home() {
 
     return (
         <>
-            {/* Bannere er beskjeder vi av og til har. Både mens de lastes og
+            {/* Bannerne bor inne i heroen, ikke foran den: de deler
+             * førsteskjermen med den i stedet for å skyve den nedover.
+             * Bannere er beskjeder vi av og til har. Både mens de lastes og
              * hvis de feiler er riktig svar det samme: ingenting. */}
-            <CatchBoundary
-                getResetKey={() => "banners"}
-                errorComponent={() => null}
-            >
-                <Suspense fallback={null}>
-                    <BannersSection />
-                </Suspense>
-            </CatchBoundary>
-
-            <Hero />
+            <Hero
+                banners={
+                    <CatchBoundary
+                        getResetKey={() => "banners"}
+                        errorComponent={() => null}
+                    >
+                        <Suspense fallback={null}>
+                            <BannersSection />
+                        </Suspense>
+                    </CatchBoundary>
+                }
+            />
 
             <section className="container mx-auto w-full px-4 py-8">
                 <SectionHeader
@@ -229,21 +233,27 @@ function EventsSkeleton() {
     );
 }
 
-function Hero() {
+function Hero({ banners }: { banners?: ReactNode }) {
     // The hero fills exactly the space the first screen actually offers, so its
     // content lands on the optical centre on every device instead of drifting
     // low: 100svh (stable while mobile browser chrome hides and shows) minus
     // the 3.5rem header, and below lg also the fixed bottom bar with its
     // safe-area inset. The padding is the floor for short viewports, where the
     // content is taller than the space available.
+    //
+    // Bannerne står øverst i den samme kolonna og tar høyden de trenger;
+    // seksjonen under er `flex-1` og sentrerer seg i det som er igjen. Da blir
+    // heroen like høy med og uten bannere — de spiser av plassen inni den i
+    // stedet for å skyve den ned — og de kan aldri legge seg oppå innholdet.
     return (
-        <div className="relative flex min-h-[calc(100svh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] flex-col justify-center lg:min-h-[calc(100svh_-_3.5rem)]">
+        <div className="relative flex min-h-[calc(100svh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] flex-col lg:min-h-[calc(100svh_-_3.5rem)]">
             <HeroSectionBackground className="h-full text-primary -z-50" />
+            {banners}
             {/* Logo, blurb and actions are the section's three direct children,
              * so Stagger walks them in that reading order on its own. */}
             <Stagger
                 render={
-                    <section className="container mx-auto flex w-full flex-col items-center gap-6 px-4 py-16 text-center" />
+                    <section className="container mx-auto flex w-full flex-1 flex-col items-center justify-center gap-6 px-4 py-16 text-center" />
                 }
             >
                 <div
