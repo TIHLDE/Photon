@@ -14,6 +14,7 @@ const testEnv = {
     WEBSITE_URL: "http://localhost:3000",
     MAX_TEST_WORKERS: "1",
     MAIL_FROM: "no-reply@test.tihlde.org",
+    MAIL_ALLOWED_FROM: "hs@test.tihlde.org",
     EMAIL_API_KEY: "test-email-api-key",
 } satisfies TestEnv;
 

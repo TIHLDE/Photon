@@ -71,6 +71,18 @@ function toOrigin(url: string): string {
     }
 }
 
+/**
+ * The bare address out of a sender string.
+ *
+ * MAIL_FROM is allowed to carry a display name — `TIHLDE <no-reply@tihlde.org>`
+ * — but the allowlist is compared against what a caller sends, which is a plain
+ * address. Without this the configured sender would fail its own check.
+ */
+function toEmailAddress(sender: string): string {
+    const angled = /<([^>]+)>/.exec(sender);
+    return (angled?.[1] ?? sender).trim().toLowerCase();
+}
+
 const envSchema = z
     .object({
         // CONFIG
@@ -135,6 +147,17 @@ const envSchema = z
         MAIL_USER: z.string().optional(),
         MAIL_PASS: z.string().optional(),
         MAIL_FROM: z.string().default("no-reply@tihlde.org"),
+        /**
+         * Further addresses `/emails/send` may send as, comma-separated.
+         * MAIL_FROM is always allowed and need not be listed.
+         *
+         * An allowlist rather than a free choice: EMAIL_API_KEY is handed to
+         * tools outside this codebase, and without one any holder of the key
+         * could write as any tihlde.org address. The address must in any case
+         * be one the SMTP account has "send as" rights for — Gmail rejects the
+         * rest — so this is a limit, not a grant.
+         */
+        MAIL_ALLOWED_FROM: z.string().default(""),
         EMAIL_API_KEY: z.string().default("test-email-api-key"),
         /** Where the "for bedrifter" contact form delivers its submissions */
         COMPANY_CONTACT_EMAIL: z
@@ -206,9 +229,19 @@ const envSchema = z
               ? PRODUCTION_WEBSITE_ORIGINS
               : [];
 
+        const allowedFrom = vals.MAIL_ALLOWED_FROM.split(",")
+            .map((address) => address.trim())
+            .filter(Boolean);
+
         const resolved = {
             ...vals,
             WEBSITE_URL: websiteUrl,
+            /** Every address the email API may send as, MAIL_FROM included. */
+            MAIL_ALLOWED_FROM_LIST: [
+                ...new Set(
+                    [vals.MAIL_FROM, ...allowedFrom].map(toEmailAddress),
+                ),
+            ],
             /**
              * Every frontend origin the API accepts, WEBSITE_URL first. Only
              * WEBSITE_URL is used to *build* links (emails, redirects); the

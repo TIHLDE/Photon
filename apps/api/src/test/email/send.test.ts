@@ -264,4 +264,94 @@ describe("send email endpoint", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "Test that copy recipients and reply-to reach the queued email",
+        async ({ ctx }) => {
+            const client = ctx.utils.client({
+                Authorization: "Bearer test-email-api-key",
+            });
+
+            const response = await client.api.email.send.$post({
+                json: {
+                    to: "test@example.com",
+                    cc: ["au@test.tihlde.org"],
+                    bcc: ["arkiv@test.tihlde.org"],
+                    replyTo: "hs@test.tihlde.org",
+                    subject: "Copied Email",
+                    content: [{ type: "text", content: "Body." }],
+                },
+            });
+
+            expect(response.status).toBe(200);
+
+            const emailQueue =
+                ctx.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME);
+            const jobs = await emailQueue.getJobs(["waiting", "active"]);
+
+            expect(jobs).toHaveLength(1);
+            expect(jobs[0]?.data.options).toMatchObject({
+                to: "test@example.com",
+                cc: ["au@test.tihlde.org"],
+                bcc: ["arkiv@test.tihlde.org"],
+                replyTo: "hs@test.tihlde.org",
+            });
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "Test that an allowed sender overrides the default one",
+        async ({ ctx }) => {
+            const client = ctx.utils.client({
+                Authorization: "Bearer test-email-api-key",
+            });
+
+            const response = await client.api.email.send.$post({
+                json: {
+                    to: "test@example.com",
+                    from: "hs@test.tihlde.org",
+                    subject: "From HS",
+                    content: [{ type: "text", content: "Body." }],
+                },
+            });
+
+            expect(response.status).toBe(200);
+
+            const emailQueue =
+                ctx.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME);
+            const jobs = await emailQueue.getJobs(["waiting", "active"]);
+
+            expect(jobs[0]?.data.options.from).toBe("hs@test.tihlde.org");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "Test that a sender outside the allowlist is refused",
+        async ({ ctx }) => {
+            const client = ctx.utils.client({
+                Authorization: "Bearer test-email-api-key",
+            });
+
+            const response = await client.api.email.send.$post({
+                json: {
+                    to: "test@example.com",
+                    from: "styret@example.com",
+                    subject: "Spoofed",
+                    content: [{ type: "text", content: "Body." }],
+                },
+            });
+
+            expect(response.status).toBe(403);
+
+            // Nothing may be queued: a refused sender that still sent would be
+            // the whole point of the check.
+            const emailQueue =
+                ctx.queue.getQueue<EmailQueueJobData>(EMAIL_QUEUE_NAME);
+            const jobs = await emailQueue.getJobs(["waiting", "active"]);
+            expect(jobs).toHaveLength(0);
+        },
+        500_000,
+    );
 });
