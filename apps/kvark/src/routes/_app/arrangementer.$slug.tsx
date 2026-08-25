@@ -343,6 +343,8 @@ function EventDetailPage() {
         page.registeredUsers.map((u) => ({
             id: u.id,
             name: u.name,
+            image: u.image,
+            isAnonymous: u.isAnonymous,
             allowPhoto: u.allowPhoto,
         })),
     );
