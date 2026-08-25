@@ -47,6 +47,28 @@ import {
 } from "#/components/profile-header";
 import { formatStudyLabel } from "#/lib/utils";
 
+/**
+ * Underrutene på profilen, slik at aliaset «me» beholder siden man var på vei
+ * til. Uten dette havnet f.eks. «Svar nå» i allergibanneret på oversikten i
+ * stedet for innstillingene lenken peker på.
+ */
+const PROFILE_SUBROUTES = [
+    "/profil/$id/arrangementer",
+    "/profil/$id/innstillinger",
+    "/profil/$id/medlemskap",
+    "/profil/$id/prikker",
+    "/profil/$id/sporreskjemaer",
+] as const;
+
+function subrouteFor(
+    pathname: string,
+): (typeof PROFILE_SUBROUTES)[number] | undefined {
+    const suffix = pathname
+        .slice(`/profil/${OWN_PROFILE_ALIAS}`.length)
+        .replace(/\/$/, "");
+    return PROFILE_SUBROUTES.find((route) => route === `/profil/$id${suffix}`);
+}
+
 export const Route = createFileRoute("/_app/profil/$id")({
     component: RouteComponent,
     beforeLoad: async ({ location, params }) => {
@@ -55,8 +77,9 @@ export const Route = createFileRoute("/_app/profil/$id")({
         // Bytt aliaset med den lesbare varianten når kontoen har en.
         if (params.id === OWN_PROFILE_ALIAS) {
             throw redirect({
-                to: "/profil/$id",
+                to: subrouteFor(location.pathname) ?? "/profil/$id",
                 params: { id: auth.user.username ?? auth.user.id },
+                search: location.search,
                 replace: true,
             });
         }
