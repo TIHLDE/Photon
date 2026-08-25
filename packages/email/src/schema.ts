@@ -55,6 +55,28 @@ export const sendCustomEmailSchema = z.object({
             description:
                 "Recipient email address (string) or list of recipient email addresses (array)",
         }),
+    cc: z
+        .array(z.email("Each Cc recipient must be a valid email address"))
+        .optional()
+        .meta({
+            description:
+                "Addresses to put on copy. Note that the API sends one email per `to` recipient, so a Cc address receives one copy per recipient.",
+        }),
+    bcc: z
+        .array(z.email("Each Bcc recipient must be a valid email address"))
+        .optional()
+        .meta({
+            description:
+                "Addresses to put on blind copy. Same per-recipient caveat as `cc`.",
+        }),
+    from: z.email("Sender must be a valid email address").optional().meta({
+        description:
+            "Sender address. Must be one the server allows (MAIL_FROM plus MAIL_ALLOWED_FROM); defaults to MAIL_FROM.",
+    }),
+    replyTo: z
+        .email("Reply-to must be a valid email address")
+        .optional()
+        .meta({ description: "Where replies should go. Defaults to `from`." }),
     subject: z
         .string()
         .min(1, "Subject cannot be empty")
