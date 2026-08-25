@@ -27,6 +27,13 @@ export type EventPrice = { kind: "free" } | { kind: "paid"; label: string };
 export type EventRegistrant = {
     id: string;
     name: string;
+    image?: string | null;
+    /**
+     * Sant for medlemmer som har skrudd av offentlige påmeldinger. Da bærer
+     * verken `id`, `name` eller `image` en identitet, så raden skal ikke lenke
+     * videre til noen profil.
+     */
+    isAnonymous?: boolean;
     studyProgram?: string;
     classYear?: number;
     onWaitlist?: boolean;

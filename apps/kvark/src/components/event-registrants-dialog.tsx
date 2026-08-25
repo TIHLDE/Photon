@@ -1,4 +1,5 @@
-import { Avatar, AvatarFallback } from "@tihlde/ui/ui/avatar";
+import { Link } from "@tanstack/react-router";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -12,7 +13,9 @@ import {
 import { ScrollArea } from "@tihlde/ui/ui/scroll-area";
 import type { ReactElement } from "react";
 
+import { avatarImageUrl } from "#/lib/assets";
 import type { EventRegistrant } from "#/lib/event";
+import { initials } from "#/lib/utils";
 
 type EventRegistrantsDialogProps = {
     trigger: ReactElement;
@@ -104,16 +107,16 @@ function RegistrantRow({
     registrant: EventRegistrant;
     waitlist?: boolean;
 }) {
-    const initials = registrant.name
-        .split(" ")
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join("");
-
-    return (
-        <div className="flex items-center gap-3 rounded-md p-2">
+    const content = (
+        <>
             <Avatar>
-                <AvatarFallback>{initials}</AvatarFallback>
+                {registrant.image ? (
+                    <AvatarImage
+                        src={avatarImageUrl(registrant.image)}
+                        alt={registrant.name}
+                    />
+                ) : null}
+                <AvatarFallback>{initials(registrant.name)}</AvatarFallback>
             </Avatar>
             <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{registrant.name}</span>
@@ -134,6 +137,22 @@ function RegistrantRow({
                 <Badge variant="outline">Ikke foto</Badge>
             ) : null}
             {waitlist ? <Badge variant="secondary">Venteliste</Badge> : null}
-        </div>
+        </>
+    );
+
+    // Anonymiserte rader har ingen id å lenke til — der bærer verken navnet
+    // eller bildet en identitet.
+    if (registrant.isAnonymous) {
+        return <div className="flex items-center gap-3 p-2">{content}</div>;
+    }
+
+    return (
+        <Button
+            variant="ghost"
+            className="h-auto w-full justify-start gap-3 p-2 text-left"
+            render={<Link to="/profil/$id" params={{ id: registrant.id }} />}
+        >
+            {content}
+        </Button>
     );
 }
