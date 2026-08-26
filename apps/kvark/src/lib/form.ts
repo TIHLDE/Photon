@@ -5,7 +5,6 @@ import type {
     UpdateForm,
 } from "@tihlde/sdk";
 import { formatInOslo } from "#/lib/date";
-import { formatStudyLabel } from "#/lib/utils";
 
 export type FormQuestionType =
     | "text_answer"
@@ -87,11 +86,13 @@ export type FormSubmissionRow = {
     userEmail: string;
     /** Studieretningen personen går på nå, om vi kjenner den. */
     studyProgram: string | null;
-    /**
-     * Klassetrinnet, 1–5. Null for den vi ikke kan plassere i løpet — uten
-     * kjent kull, eller ferdig med studiet.
-     */
+    /** Klassetrinnet, 1–5. Null for den vi ikke kan plassere i løpet. */
     classYear: number | null;
+    /**
+     * Om personen er ferdig med studiet. Eget felt fra API-et, ikke utledet av
+     * at `classYear` er null: den er også null for dem vi ikke vet nok om.
+     */
+    isAlumni: boolean;
     submittedAt: string;
     answers: FormAnswer[];
 };
@@ -106,6 +107,7 @@ export function mapSubmission(
         userEmail: submission.user.email,
         studyProgram: submission.user.study_program,
         classYear: submission.user.class_year,
+        isAlumni: submission.user.is_alumni,
         submittedAt: formatInOslo(submission.created_at, "d. MMM yyyy"),
         answers: submission.answers.map((answer) => ({
             fieldId: answer.field_id,
@@ -147,19 +149,30 @@ export function mapFormStatistics(
 }
 
 /**
- * «Dataingeniør · 3. klasse» — studieretning og klassetrinn på én linje, slik
- * det står i den første kolonnen i svarlista (issue #681). Tom når vi ikke vet
+ * «Dataingeniør · 3. klasse», «Dataingeniør · Alumni», eller studieretningen
+ * alene — den første kolonnen i svarlista (issue #681). Tom når vi ikke vet
  * noe.
  *
- * Samme etikett som profilen, og av samme grunn: kullet til en masterstudent
- * er masteropptaket, så svarlista skrev «kull 2026» om den profilen kaller
- * 4. klasse. Se {@link formatStudyLabel}.
+ * Klassetrinn og ikke kull, av samme grunn som på profilen: kullet til en
+ * masterstudent er masteropptaket, så lista skrev «kull 2026» om den profilen
+ * kaller 4. klasse.
+ *
+ * At den som er ferdig får «Alumni» er derimot en forskjell fra profilen, og en
+ * tilsiktet en. Profilen er personens egen side, der `formatStudyLabel` bevisst
+ * tier om at løpet er over; svarlista leses av den som eier skjemaet, og for
+ * dem er nettopp det skillet et poeng.
  */
 export function formatSubmissionStudy(
     programme: string | null,
     classYear: number | null,
+    isAlumni = false,
 ): string | null {
-    return formatStudyLabel({ programme, classYear }) ?? null;
+    const detail = classYear
+        ? `${classYear}. klasse`
+        : isAlumni
+          ? "Alumni"
+          : null;
+    return [programme, detail].filter(Boolean).join(" · ") || null;
 }
 
 /** Én andel i et sirkeldiagram, f.eks. ett klassetrinn eller én studieretning. */
@@ -269,8 +282,17 @@ export function summarizeFormStudy(
     const classLevels = countBy(
         rows,
         (submission) =>
-            submission.classYear === null ? null : String(submission.classYear),
-        (value) => (value === null ? "Ukjent klassetrinn" : `${value}. klasse`),
+            submission.classYear !== null
+                ? String(submission.classYear)
+                : submission.isAlumni
+                  ? ALUMNI_BUCKET
+                  : null,
+        (value) =>
+            value === null
+                ? "Ukjent klassetrinn"
+                : value === ALUMNI_BUCKET
+                  ? "Alumni"
+                  : `${value}. klasse`,
     );
     const programs = countBy(
         rows,
@@ -286,7 +308,9 @@ export function summarizeFormStudy(
             classLevels,
             total,
             "klassetrinn",
-            (a, b) => Number(a.value) - Number(b.value),
+            // Laveste klassetrinn først, alumni etter alle årene, og restposten
+            // sist — den plasserer `toSlices` selv.
+            (a, b) => bucketOrder(a.value) - bucketOrder(b.value),
         ),
         programs: toSlices(
             programs,
@@ -295,6 +319,18 @@ export function summarizeFormStudy(
             (a, b) => b.count - a.count || a.label.localeCompare(b.label, "nb"),
         ),
     };
+}
+
+/**
+ * Bøtta for dem som er ferdige. Den står i samme rekke som klassetrinnene, men
+ * er aldri et årstall: se {@link formatSubmissionStudy}.
+ */
+const ALUMNI_BUCKET = "alumni";
+
+/** Hvor en bøtte hører hjemme i rekkefølgen. Alumni etter siste klassetrinn. */
+function bucketOrder(value: string | null): number {
+    if (value === ALUMNI_BUCKET) return Number.MAX_SAFE_INTEGER;
+    return Number(value);
 }
 
 /** Ett svar per person, det første i lista. */

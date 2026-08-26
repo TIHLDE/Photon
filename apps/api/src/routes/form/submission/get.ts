@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
-import { computeUserClassYear } from "~/lib/event/priority";
+import { computeClassStanding } from "~/lib/event/priority";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -81,6 +81,7 @@ export const getSubmissionRoute = route().get(
                 submission.userId,
             ) ?? [];
         const study = deriveStudyFromGroups(studyRows);
+        const standing = computeClassStanding(studyRows);
 
         return c.json({
             id: submission.id,
@@ -90,7 +91,8 @@ export const getSubmissionRoute = route().get(
                 email: submission.user.email,
                 study_program: study.studyProgram,
                 // Klassetrinn, ikke kull — se `submissionUserSchema`.
-                class_year: computeUserClassYear(studyRows),
+                class_year: standing.classYear,
+                is_alumni: standing.isAlumni,
             },
             created_at: submission.createdAt.toISOString(),
             updated_at: submission.updatedAt.toISOString(),

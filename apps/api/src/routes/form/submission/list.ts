@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
-import { computeUserClassYear } from "~/lib/event/priority";
+import { computeClassStanding } from "~/lib/event/priority";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -116,6 +116,7 @@ export const listSubmissionsRoute = route().get(
             submissions.map((submission) => {
                 const rows = studyByUser.get(submission.userId) ?? [];
                 const study = deriveStudyFromGroups(rows);
+                const standing = computeClassStanding(rows);
                 return {
                     id: submission.id,
                     user: {
@@ -129,7 +130,8 @@ export const listSubmissionsRoute = route().get(
                          * «kull 2026» om den profilen kaller 4. klasse. Samme
                          * funksjon som profilen og prioriteringspoolene bruker.
                          */
-                        class_year: computeUserClassYear(rows),
+                        class_year: standing.classYear,
+                        is_alumni: standing.isAlumni,
                     },
                     created_at: submission.createdAt.toISOString(),
                     updated_at: submission.updatedAt.toISOString(),

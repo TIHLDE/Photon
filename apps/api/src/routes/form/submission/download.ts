@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
-import { computeUserClassYear } from "~/lib/event/priority";
+import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
@@ -138,6 +138,7 @@ export const downloadSubmissionsRoute = route().get(
             "email",
             "study",
             "class_year",
+            "alumni",
             ...form.fields.map((field) => field.title),
         ];
 
@@ -145,13 +146,14 @@ export const downloadSubmissionsRoute = route().get(
         const rows = submissions.map((submission) => {
             const studyRows = groupsByUser.get(submission.userId) ?? [];
             const study = deriveStudyFromGroups(studyRows);
-            const classYear = computeUserClassYear(studyRows);
+            const standing = computeClassStanding(studyRows);
 
             const row: string[] = [
                 submission.user.name,
                 submission.user.email,
                 study.studyProgram ?? "",
-                classYear === null ? "" : String(classYear),
+                standing.classYear === null ? "" : String(standing.classYear),
+                standing.isAlumni ? "ja" : "",
             ];
 
             // Add answer for each field

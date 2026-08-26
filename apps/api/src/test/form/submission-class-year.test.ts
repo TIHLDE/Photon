@@ -178,4 +178,107 @@ describe("Study on a form submission", () => {
             expect(one.user).toMatchObject({ class_year: 4 });
         },
     );
+
+    /**
+     * `class_year: null` betyr «vi klarer ikke plassere dem», ikke «ferdig».
+     * De to må skilles av serveren, som har både startåret og programmets
+     * lengde: å lese alumni ut av null ville stemplet begge kontoene i prod som
+     * svarte på «Bli medlem av TIHLDE Diskgolf!» som utdannet — den ene er tre
+     * dager gammel og har ingen studiegruppe i det hele tatt, fordi de studerer
+     * noe annet ved NTNU.
+     */
+    integrationTest(
+        "skiller den som er ferdig fra den vi ikke vet noe om",
+        async ({ ctx }) => {
+            const leader = await ctx.utils.createTestUser();
+            const alumnus = await ctx.utils.createTestUser();
+            const outsider = await ctx.utils.createTestUser();
+
+            await ctx.utils.setupGroups();
+            await ctx.db.insert(schema.groupMembership).values([
+                { userId: leader.id, groupSlug: "index", role: "leader" },
+                { userId: alumnus.id, groupSlug: "index", role: "member" },
+                { userId: outsider.id, groupSlug: "index", role: "member" },
+            ]);
+
+            // Ferdig: treårig bachelor, begynt for fem år siden.
+            await ctx.db.insert(schema.groupMembership).values([
+                {
+                    userId: alumnus.id,
+                    groupSlug: "dataingenir",
+                    role: "member",
+                },
+                {
+                    userId: alumnus.id,
+                    groupSlug: String(currentAcademicYear() - 4),
+                    role: "member",
+                },
+            ]);
+
+            const leaderClient = await ctx.utils.clientForUser(leader);
+            const createResponse = await leaderClient.api.groups[
+                ":slug"
+            ].forms.$post({
+                param: { slug: "index" },
+                json: {
+                    title: "Bli medlem",
+                    template: false,
+                    group: "index",
+                    can_submit_multiple: false,
+                    is_open_for_submissions: true,
+                    only_for_group_members: false,
+                    fields: [
+                        {
+                            title: "Hvorfor?",
+                            type: "text_answer",
+                            required: true,
+                            order: 0,
+                        },
+                    ],
+                },
+            });
+            expect(createResponse.status).toBe(201);
+            const form = await createResponse.json();
+            const fieldId = form.fields?.[0]?.id as string;
+
+            for (const user of [alumnus, outsider]) {
+                const client = await ctx.utils.clientForUser(user);
+                const res = await client.api.forms[":formId"].submissions.$post(
+                    {
+                        param: { formId: form.id! },
+                        json: {
+                            answers: [
+                                {
+                                    field: { id: fieldId },
+                                    answer_text: "Diskgolf",
+                                },
+                            ],
+                        },
+                    },
+                );
+                expect(res.status).toBe(201);
+            }
+
+            const listResponse = await leaderClient.api.forms[
+                ":formId"
+            ].submissions.$get({ param: { formId: form.id! } });
+            expect(listResponse.status).toBe(200);
+            const byUser = new Map(
+                (await listResponse.json()).map((s) => [s.user.id, s.user]),
+            );
+
+            expect(byUser.get(alumnus.id)).toMatchObject({
+                study_program: "Dataingeniør",
+                class_year: null,
+                is_alumni: true,
+            });
+
+            // Uten studiegruppe vet vi ingenting — og da påstår vi ingenting.
+            expect(byUser.get(outsider.id)).toMatchObject({
+                study_program: null,
+                class_year: null,
+                is_alumni: false,
+            });
+        },
+    );
 });

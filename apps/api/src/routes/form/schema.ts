@@ -343,6 +343,17 @@ const submissionUserSchema = z.object({
      * 4. klasse. `computeUserClassYear` eier den ene omregningen.
      */
     class_year: z.number().nullable(),
+    /**
+     * Om medlemmet er ferdig med studiet.
+     *
+     * Eget felt, ikke utledet av at `class_year` er null: den er også null for
+     * dem vi ikke kan plassere i det hele tatt, og de finnes — kontoer opprettet
+     * i august 2026 som svarte på «Bli medlem av TIHLDE Diskgolf!» har Feide-
+     * innlogging, men ingen studiegruppe, fordi de studerer noe annet ved NTNU.
+     * «Alumni» på en konto som er tre dager gammel er ikke en avrunding, det er
+     * det motsatte av sannheten.
+     */
+    is_alumni: z.boolean(),
 });
 
 export const submissionDetailSchema = Schema(

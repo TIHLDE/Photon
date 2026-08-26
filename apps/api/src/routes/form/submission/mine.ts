@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { computeUserClassYear } from "~/lib/event/priority";
+import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { route } from "~/lib/route";
@@ -71,7 +71,7 @@ export const listOwnSubmissionsRoute = route().get(
         const studyRows =
             (await loadStudyGroupRows(ctx, [user.id])).get(user.id) ?? [];
         const study = deriveStudyFromGroups(studyRows);
-        const classYear = computeUserClassYear(studyRows);
+        const standing = computeClassStanding(studyRows);
 
         return c.json(
             submissions.map((submission) => ({
@@ -82,7 +82,8 @@ export const listOwnSubmissionsRoute = route().get(
                     email: submission.user.email,
                     study_program: study.studyProgram,
                     // Klassetrinn, ikke kull — se `submissionUserSchema`.
-                    class_year: classYear,
+                    class_year: standing.classYear,
+                    is_alumni: standing.isAlumni,
                 },
                 created_at: submission.createdAt.toISOString(),
                 updated_at: submission.updatedAt.toISOString(),
