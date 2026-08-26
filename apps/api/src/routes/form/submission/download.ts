@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
+import { computeUserClassYear } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
@@ -113,10 +114,10 @@ export const downloadSubmissionsRoute = route().get(
         }
 
         /**
-         * Study and cohort per respondent, from the group projection — see
-         * `deriveStudyFromGroups`. Fetched for the whole export in one query
-         * rather than per row, and grouped here so the derivation stays the
-         * shared one. These two columns shipped empty until now.
+         * Study and class level per respondent, from the group projection —
+         * see `deriveStudyFromGroups`. Fetched for the whole export in one
+         * query rather than per row, and grouped here so the derivation stays
+         * the shared one. These two columns shipped empty until now.
          */
         const submitterIds = [...new Set(submissions.map((s) => s.userId))];
         const groupsByUser = await loadStudyGroupRows(
@@ -124,28 +125,33 @@ export const downloadSubmissionsRoute = route().get(
             submitterIds,
         );
 
-        // Build CSV header
+        /**
+         * Class level rather than cohort year. A master's own intake is the
+         * year on their programme row, while their cohort — the group, the
+         * class level on their profile, the priority pools — is the bachelor
+         * year they started. The export said "studyyear 2026" about the person
+         * the site calls 4. klasse, so it now carries the one number every
+         * other surface agrees on.
+         */
         const headers = [
             "name",
             "email",
             "study",
-            "studyyear",
+            "class_year",
             ...form.fields.map((field) => field.title),
         ];
 
         // Build CSV rows
         const rows = submissions.map((submission) => {
-            const study = deriveStudyFromGroups(
-                groupsByUser.get(submission.userId) ?? [],
-            );
+            const studyRows = groupsByUser.get(submission.userId) ?? [];
+            const study = deriveStudyFromGroups(studyRows);
+            const classYear = computeUserClassYear(studyRows);
 
             const row: string[] = [
                 submission.user.name,
                 submission.user.email,
                 study.studyProgram ?? "",
-                study.studyStartYear === null
-                    ? ""
-                    : String(study.studyStartYear),
+                classYear === null ? "" : String(classYear),
             ];
 
             // Add answer for each field

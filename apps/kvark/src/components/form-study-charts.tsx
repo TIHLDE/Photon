@@ -32,7 +32,7 @@ import {
 /**
  * Faste farger med god avstand i fargesirkelen, så nabosektorer er lette å
  * skille. Skalaen i temaet har bare fem trinn av samme farge, som ville gjort
- * et diagram med mange kull uleselig.
+ * et diagram med mange kategorier uleselig.
  */
 const SLICE_COLORS = [
     "oklch(0.62 0.17 250)",
@@ -187,9 +187,9 @@ export function FormStudyCharts({ submissions }: FormStudyChartsProps) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
                 <FormStudyDonut
-                    title="Kull"
+                    title="Klassetrinn"
                     description={description}
-                    slices={distribution.cohorts}
+                    slices={distribution.classLevels}
                 />
                 <FormStudyDonut
                     title="Studieretning"

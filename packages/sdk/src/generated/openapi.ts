@@ -3488,6 +3488,20 @@ export interface components {
         SendCustomEmail: {
             /** @description Recipient email address (string) or list of recipient email addresses (array) */
             to: string | string[];
+            /** @description Addresses to put on copy. Note that the API sends one email per `to` recipient, so a Cc address receives one copy per recipient. */
+            cc?: string[];
+            /** @description Addresses to put on blind copy. Same per-recipient caveat as `cc`. */
+            bcc?: string[];
+            /**
+             * Format: email
+             * @description Sender address. Must be one the server allows (MAIL_FROM plus MAIL_ALLOWED_FROM); defaults to MAIL_FROM.
+             */
+            from?: string;
+            /**
+             * Format: email
+             * @description Where replies should go. Defaults to `from`.
+             */
+            replyTo?: string;
             /** @description Email subject line */
             subject: string;
             /** @description Array of content blocks (title, text, or button) to render in the email */
@@ -4643,7 +4657,7 @@ export interface components {
                 name: string;
                 email: string;
                 study_program: string | null;
-                study_start_year: number | null;
+                class_year: number | null;
             };
             created_at: string;
             updated_at: string;
@@ -4667,7 +4681,7 @@ export interface components {
                 name: string;
                 email: string;
                 study_program: string | null;
-                study_start_year: number | null;
+                class_year: number | null;
             };
             created_at: string;
             updated_at: string;
@@ -7903,7 +7917,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Forbidden - Invalid API key */
+            /** @description Forbidden - Invalid API key or disallowed sender */
             403: {
                 headers: {
                     [name: string]: unknown;

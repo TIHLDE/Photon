@@ -59,17 +59,18 @@ export function FormSubmissionsTable({
                                 <span className="text-xs text-muted-foreground">
                                     {submission.userEmail}
                                 </span>
-                                {/* Studie og kull hører til personen, ikke til
-                                    et eget spørsmål: skjemaeieren leser svarene
-                                    per kull like ofte som per navn (#681). */}
+                                {/* Studie og klassetrinn hører til personen,
+                                    ikke til et eget spørsmål: skjemaeieren
+                                    leser svarene per klassetrinn like ofte som
+                                    per navn (#681). */}
                                 {formatSubmissionStudy(
                                     submission.studyProgram,
-                                    submission.studyStartYear,
+                                    submission.classYear,
                                 ) ? (
                                     <span className="text-xs text-muted-foreground">
                                         {formatSubmissionStudy(
                                             submission.studyProgram,
-                                            submission.studyStartYear,
+                                            submission.classYear,
                                         )}
                                     </span>
                                 ) : null}
