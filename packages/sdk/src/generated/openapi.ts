@@ -4657,7 +4657,8 @@ export interface components {
                 name: string;
                 email: string;
                 study_program: string | null;
-                study_start_year: number | null;
+                class_year: number | null;
+                is_alumni: boolean;
             };
             created_at: string;
             updated_at: string;
@@ -4681,7 +4682,8 @@ export interface components {
                 name: string;
                 email: string;
                 study_program: string | null;
-                study_start_year: number | null;
+                class_year: number | null;
+                is_alumni: boolean;
             };
             created_at: string;
             updated_at: string;

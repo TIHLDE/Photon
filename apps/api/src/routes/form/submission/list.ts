@@ -2,6 +2,7 @@ import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
+import { computeClassStanding } from "~/lib/event/priority";
 import { deriveStudyFromGroups, loadStudyGroupRows } from "~/lib/user/study";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -103,9 +104,9 @@ export const listSubmissionsRoute = route().get(
             );
         }
 
-        // Studieretning og kull for hele lista i én spørring, utledet med den
-        // samme rangeringen som profilen bruker — ellers kunne skjemaet og
-        // profilen vist to ulike studier for samme person.
+        // Studieretning og klassetrinn for hele lista i én spørring, utledet
+        // med den samme rangeringen som profilen bruker — ellers kunne skjemaet
+        // og profilen vist to ulike studier for samme person.
         const studyByUser = await loadStudyGroupRows(
             ctx,
             submissions.map((s) => s.userId),
@@ -113,9 +114,9 @@ export const listSubmissionsRoute = route().get(
 
         return c.json(
             submissions.map((submission) => {
-                const study = deriveStudyFromGroups(
-                    studyByUser.get(submission.userId) ?? [],
-                );
+                const rows = studyByUser.get(submission.userId) ?? [];
+                const study = deriveStudyFromGroups(rows);
+                const standing = computeClassStanding(rows);
                 return {
                     id: submission.id,
                     user: {
@@ -123,7 +124,14 @@ export const listSubmissionsRoute = route().get(
                         name: submission.user.name,
                         email: submission.user.email,
                         study_program: study.studyProgram,
-                        study_start_year: study.studyStartYear,
+                        /**
+                         * Klassetrinn, ikke kull: for en masterstudent er
+                         * `studyStartYear` masteropptaket, og svarlista skrev
+                         * «kull 2026» om den profilen kaller 4. klasse. Samme
+                         * funksjon som profilen og prioriteringspoolene bruker.
+                         */
+                        class_year: standing.classYear,
+                        is_alumni: standing.isAlumni,
                     },
                     created_at: submission.createdAt.toISOString(),
                     updated_at: submission.updatedAt.toISOString(),

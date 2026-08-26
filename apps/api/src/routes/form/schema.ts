@@ -328,12 +328,32 @@ const submissionUserSchema = z.object({
     name: z.string(),
     email: z.string(),
     /**
-     * Studieretning og kull, utledet på samme måte som på profilen og i
-     * deltakerlista. Skjemaeieren leser svarene per kull like ofte som per
-     * person, og måtte før slå opp hver enkelt manuelt (issue #681).
+     * Studieretning og klassetrinn, utledet på samme måte som på profilen og i
+     * deltakerlista. Skjemaeieren leser svarene per klassetrinn like ofte som
+     * per person, og måtte før slå opp hver enkelt manuelt (issue #681).
      */
     study_program: z.string().nullable(),
-    study_start_year: z.number().nullable(),
+    /**
+     * Klassetrinnet, 1–5, eller null for den vi ikke kan plassere i løpet.
+     *
+     * Klassetrinn og ikke kull: kullet til en masterstudent er masteropptaket
+     * på programraden, mens det alle andre steder — kullgruppa, klassetrinnet
+     * på profilen, prioriteringspoolene — er bacheloråret de begynte. Svarlista
+     * skrev derfor «kull 2026» om den samme personen profilen kalte
+     * 4. klasse. `computeUserClassYear` eier den ene omregningen.
+     */
+    class_year: z.number().nullable(),
+    /**
+     * Om medlemmet er ferdig med studiet.
+     *
+     * Eget felt, ikke utledet av at `class_year` er null: den er også null for
+     * dem vi ikke kan plassere i det hele tatt, og de finnes — kontoer opprettet
+     * i august 2026 som svarte på «Bli medlem av TIHLDE Diskgolf!» har Feide-
+     * innlogging, men ingen studiegruppe, fordi de studerer noe annet ved NTNU.
+     * «Alumni» på en konto som er tre dager gammel er ikke en avrunding, det er
+     * det motsatte av sannheten.
+     */
+    is_alumni: z.boolean(),
 });
 
 export const submissionDetailSchema = Schema(

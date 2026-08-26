@@ -86,8 +86,13 @@ export type FormSubmissionRow = {
     userEmail: string;
     /** Studieretningen personen går på nå, om vi kjenner den. */
     studyProgram: string | null;
-    /** Kullet, altså året de startet. */
-    studyStartYear: number | null;
+    /** Klassetrinnet, 1–5. Null for den vi ikke kan plassere i løpet. */
+    classYear: number | null;
+    /**
+     * Om personen er ferdig med studiet. Eget felt fra API-et, ikke utledet av
+     * at `classYear` er null: den er også null for dem vi ikke vet nok om.
+     */
+    isAlumni: boolean;
     submittedAt: string;
     answers: FormAnswer[];
 };
@@ -101,7 +106,8 @@ export function mapSubmission(
         userName: submission.user.name,
         userEmail: submission.user.email,
         studyProgram: submission.user.study_program,
-        studyStartYear: submission.user.study_start_year,
+        classYear: submission.user.class_year,
+        isAlumni: submission.user.is_alumni,
         submittedAt: formatInOslo(submission.created_at, "d. MMM yyyy"),
         answers: submission.answers.map((answer) => ({
             fieldId: answer.field_id,
@@ -143,24 +149,37 @@ export function mapFormStatistics(
 }
 
 /**
- * «BIDATA · kull 2023» — studieretning og kull på én linje, slik det står i
- * den første kolonnen i svarlista (issue #681). Tom når vi ikke vet noe.
+ * «Dataingeniør · 3. klasse», «Dataingeniør · Alumni», eller studieretningen
+ * alene — den første kolonnen i svarlista (issue #681). Tom når vi ikke vet
+ * noe.
+ *
+ * Klassetrinn og ikke kull, av samme grunn som på profilen: kullet til en
+ * masterstudent er masteropptaket, så lista skrev «kull 2026» om den profilen
+ * kaller 4. klasse.
+ *
+ * At den som er ferdig får «Alumni» er derimot en forskjell fra profilen, og en
+ * tilsiktet en. Profilen er personens egen side, der `formatStudyLabel` bevisst
+ * tier om at løpet er over; svarlista leses av den som eier skjemaet, og for
+ * dem er nettopp det skillet et poeng.
  */
 export function formatSubmissionStudy(
     programme: string | null,
-    startYear: number | null,
+    classYear: number | null,
+    isAlumni = false,
 ): string | null {
-    const parts = [programme, startYear ? `kull ${startYear}` : null].filter(
-        Boolean,
-    );
-    return parts.length > 0 ? parts.join(" · ") : null;
+    const detail = classYear
+        ? `${classYear}. klasse`
+        : isAlumni
+          ? "Alumni"
+          : null;
+    return [programme, detail].filter(Boolean).join(" · ") || null;
 }
 
-/** Én andel i et sirkeldiagram, f.eks. ett kull eller én studieretning. */
+/** Én andel i et sirkeldiagram, f.eks. ett klassetrinn eller én studieretning. */
 export type FormStudySlice = {
     /**
-     * Nøkkelen diagrammet bruker. Syntetisk, ikke navnet på kullet eller
-     * studiet: den ender som CSS-variabelnavn i `ChartStyle`, som skriver
+     * Nøkkelen diagrammet bruker. Syntetisk, ikke navnet på klassetrinnet
+     * eller studiet: den ender som CSS-variabelnavn i `ChartStyle`, som skriver
      * `<style>` med `dangerouslySetInnerHTML`. Et gruppenavn har mellomrom og
      * er skrevet av et menneske, og hører ikke hjemme der.
      */
@@ -169,12 +188,12 @@ export type FormStudySlice = {
     count: number;
     /** Andel av alle svarene, avrundet til hele prosent. */
     percentage: number;
-    /** Restposten for dem vi ikke kjenner kullet eller studiet til. */
+    /** Restposten for dem vi ikke kjenner klassetrinnet eller studiet til. */
     unknown: boolean;
 };
 
 export type FormStudyDistribution = {
-    cohorts: FormStudySlice[];
+    classLevels: FormStudySlice[];
     programs: FormStudySlice[];
     /** Hva andelene er regnet ut av — svar eller personer, alt etter modus. */
     total: number;
@@ -183,7 +202,7 @@ export type FormStudyDistribution = {
 /**
  * Om hvert svar teller for seg, eller om flere svar fra samme person teller
  * som én. De skiller lag på skjemaer som tar imot mer enn ett svar per
- * person, der den ivrigste ellers drar sitt eget kull opp.
+ * person, der den ivrigste ellers drar sitt eget klassetrinn opp.
  */
 export type FormStudyCountMode = "submissions" | "people";
 
@@ -203,7 +222,7 @@ function toSlices(
     return (
         [...buckets]
             // Restposten sist uansett hvordan resten sorteres — den er ikke et
-            // kull eller et studieprogram på linje med de andre.
+            // klassetrinn eller et studieprogram på linje med de andre.
             .sort((a, b) => {
                 if (a.value === null) return 1;
                 if (b.value === null) return -1;
@@ -244,7 +263,7 @@ function countBy(
 }
 
 /**
- * Fordelingen av kull og studieretning blant dem som har svart. Regnes ut av
+ * Fordelingen av klassetrinn og studieretning blant dem som har svart. Regnes ut av
  * svarlista, som allerede har med studiet til hver enkelt, slik at
  * statistikken alltid kan vises — også for skjemaer uten valgspørsmål.
  *
@@ -260,13 +279,20 @@ export function summarizeFormStudy(
     const rows = mode === "people" ? uniqueByUser(submissions) : submissions;
     const total = rows.length;
 
-    const cohorts = countBy(
+    const classLevels = countBy(
         rows,
         (submission) =>
-            submission.studyStartYear === null
-                ? null
-                : String(submission.studyStartYear),
-        (value) => (value === null ? "Ukjent kull" : `Kull ${value}`),
+            submission.classYear !== null
+                ? String(submission.classYear)
+                : submission.isAlumni
+                  ? ALUMNI_BUCKET
+                  : null,
+        (value) =>
+            value === null
+                ? "Ukjent klassetrinn"
+                : value === ALUMNI_BUCKET
+                  ? "Alumni"
+                  : `${value}. klasse`,
     );
     const programs = countBy(
         rows,
@@ -276,12 +302,15 @@ export function summarizeFormStudy(
 
     return {
         total,
-        // Nyeste kull først, mens studieretningene sorteres på størrelse.
-        cohorts: toSlices(
-            cohorts,
+        // Laveste klassetrinn først, mens studieretningene sorteres på
+        // størrelse.
+        classLevels: toSlices(
+            classLevels,
             total,
-            "kull",
-            (a, b) => Number(b.value) - Number(a.value),
+            "klassetrinn",
+            // Laveste klassetrinn først, alumni etter alle årene, og restposten
+            // sist — den plasserer `toSlices` selv.
+            (a, b) => bucketOrder(a.value) - bucketOrder(b.value),
         ),
         programs: toSlices(
             programs,
@@ -290,6 +319,18 @@ export function summarizeFormStudy(
             (a, b) => b.count - a.count || a.label.localeCompare(b.label, "nb"),
         ),
     };
+}
+
+/**
+ * Bøtta for dem som er ferdige. Den står i samme rekke som klassetrinnene, men
+ * er aldri et årstall: se {@link formatSubmissionStudy}.
+ */
+const ALUMNI_BUCKET = "alumni";
+
+/** Hvor en bøtte hører hjemme i rekkefølgen. Alumni etter siste klassetrinn. */
+function bucketOrder(value: string | null): number {
+    if (value === ALUMNI_BUCKET) return Number.MAX_SAFE_INTEGER;
+    return Number(value);
 }
 
 /** Ett svar per person, det første i lista. */

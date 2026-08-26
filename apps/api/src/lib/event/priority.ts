@@ -106,6 +106,38 @@ export function computeUserClassYear(
     groups: readonly MembershipRow[],
     now = new Date(),
 ): number | null {
+    return computeClassStanding(groups, now).classYear;
+}
+
+/**
+ * Where a member stands in their degree: the class level, and — when that is
+ * null — whether we know they have finished.
+ *
+ * The two questions are not the same, and reading one off the other is how a
+ * brand new member gets called an alumnus. `classYear` is null both for the
+ * member who is past their programme and for the one we cannot place at all,
+ * and in production the second group is real: accounts made in August 2026
+ * that answered "Bli medlem av TIHLDE Diskgolf!" have a Feide login but no
+ * study programme at all, because they study something else at NTNU.
+ *
+ * So `isAlumni` is only ever true on positive evidence — we know the
+ * programme, we know when they started, and even the earliest reading of that
+ * is past the programme's length. Without a study group we do not claim it:
+ * the ceiling below collapses to 1. klasse for a member we cannot place, which
+ * is a deliberate conservatism for the priority pools and no statement about
+ * anyone having graduated.
+ */
+export type ClassStanding = {
+    /** 1–5, or null when we cannot place the member on a class level. */
+    classYear: number | null;
+    /** Past the programme's length, on evidence rather than inference. */
+    isAlumni: boolean;
+};
+
+export function computeClassStanding(
+    groups: readonly MembershipRow[],
+    now = new Date(),
+): ClassStanding {
     let current: MembershipRow | null = null;
     let latestCohort: number | null = null;
 
@@ -142,7 +174,7 @@ export function computeUserClassYear(
     const ownYear = current?.startYear ?? null;
     const startYear = ownYear ?? latestCohort;
 
-    if (startYear === null) return null;
+    if (startYear === null) return { classYear: null, isAlumni: false };
 
     const base = computeClassYear(startYear, now);
 
@@ -168,11 +200,22 @@ export function computeUserClassYear(
     for (const candidate of candidates) {
         const floor = onMaster ? MASTER_CLASS_OFFSET + 1 : MIN_CLASS_YEAR;
         if (candidate >= floor && candidate <= ceiling) {
-            return candidate;
+            return { classYear: candidate, isAlumni: false };
         }
     }
 
-    return null;
+    /**
+     * Out of range, in one of two directions. Past the end is a graduate; below
+     * the floor is a year we cannot make sense of — a cohort group dated next
+     * autumn, say — and claiming they finished would be the wrong way round.
+     * Measured against the programme's own length rather than `ceiling`, which
+     * is not one for the member we could not place on a programme at all.
+     */
+    const finished =
+        current !== null &&
+        Math.min(...candidates) > programmeLength(current.slug);
+
+    return { classYear: null, isAlumni: finished };
 }
 
 /**
