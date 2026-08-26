@@ -110,9 +110,9 @@ describe("syncBaselineRoles", () => {
             /**
              * `feideActive` is what makes the row proof. It is written on every
              * login that saw the programme — `false` included, since a lapsed
-             * membership still comes back with `showAll=true` — so a row
-             * without it was never touched by a Feide login at all. See the
-             * fadderuka case below.
+             * membership still comes back with `showAll=true`. A row without it
+             * is either older than the column or written by something that
+             * never asked Feide; see the fadderuka case below.
              */
             await ctx.db.insert(schema.studyProgramMembership).values({
                 userId: user.id,

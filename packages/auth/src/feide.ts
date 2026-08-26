@@ -766,18 +766,25 @@ export async function syncBaselineRoles(
                     eq(studyProgramMembership.userId, userId),
                     /**
                      * `feideActive` is what makes a row proof, not the row
-                     * itself. Only this function's caller writes that column,
-                     * and it writes it on every login that saw the programme —
-                     * `false` included, since `showAll=true` returns lapsed
-                     * memberships too, so a real graduate still qualifies.
+                     * itself. Only `applyFeideStudyPrograms` writes that
+                     * column, and it writes it on every login that saw the
+                     * programme — `false` included, since `showAll=true`
+                     * returns lapsed memberships too, so a real graduate still
+                     * qualifies.
                      *
-                     * A row without it was written by something that never
-                     * asked Feide: the fadderuka registration, which records
-                     * the intake it guessed, or a manual cohort correction.
-                     * Counting those as history would turn the first empty
-                     * Feide answer into a demotion for a member nobody has
-                     * ever seen enrolled — which is the same mistake as
-                     * reading it off their group memberships.
+                     * The row alone proves nothing: the fadderuka registration
+                     * writes one holding the intake it guessed, and so does a
+                     * manual cohort correction. Counting those as history
+                     * would turn the first empty Feide answer into a demotion
+                     * for a member nobody has ever seen enrolled — the same
+                     * mistake as reading it off their group memberships.
+                     *
+                     * This does catch rows a login *did* write: 123 rows in
+                     * production carry `start_year_source = 'feide'` with a
+                     * null flag, all from before 14 August 2026, when the
+                     * column started being written. They land on the forgiving
+                     * side of an answer that was ambiguous anyway, and each of
+                     * them fills in the flag on its owner's next login.
                      */
                     isNotNull(studyProgramMembership.feideActive),
                 ),
