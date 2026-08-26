@@ -6,7 +6,7 @@ import type {
     OAuth2UserInfo,
 } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { AnyColumn, SQL } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
@@ -761,7 +761,27 @@ export async function syncBaselineRoles(
         const [studyHistory] = await tx
             .select({ userId: studyProgramMembership.userId })
             .from(studyProgramMembership)
-            .where(eq(studyProgramMembership.userId, userId))
+            .where(
+                and(
+                    eq(studyProgramMembership.userId, userId),
+                    /**
+                     * `feideActive` is what makes a row proof, not the row
+                     * itself. Only this function's caller writes that column,
+                     * and it writes it on every login that saw the programme —
+                     * `false` included, since `showAll=true` returns lapsed
+                     * memberships too, so a real graduate still qualifies.
+                     *
+                     * A row without it was written by something that never
+                     * asked Feide: the fadderuka registration, which records
+                     * the intake it guessed, or a manual cohort correction.
+                     * Counting those as history would turn the first empty
+                     * Feide answer into a demotion for a member nobody has
+                     * ever seen enrolled — which is the same mistake as
+                     * reading it off their group memberships.
+                     */
+                    isNotNull(studyProgramMembership.feideActive),
+                ),
+            )
             .limit(1);
         // No row means we have never seen this member enrolled, so an empty
         // Feide result tells us nothing about whether they graduated. Leaving

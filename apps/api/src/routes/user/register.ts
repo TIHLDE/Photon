@@ -186,12 +186,46 @@ export const registerUserRoute = route().post(
          * fixable from the admin panel; no year at all quietly drops the member
          * out of every cohort-based priority pool.
          */
+        const startYear = currentAcademicYear();
+
         await db.transaction(async (tx) => {
+            /**
+             * The guess is recorded on the programme row too, marked
+             * `derived`, and that row is the whole point: a later Feide login
+             * with a real `fc:fs:kull` outranks `derived`, and
+             * `syncFeideForUser` then drops the cohort group the superseded
+             * guess put the member in.
+             *
+             * Without the row that cleanup never fired — it keys on the
+             * previous row's source, and there was none — so the guessed year
+             * stayed alongside the real one. In production that left 20 members
+             * in two cohort groups at once, most of them one year apart, with
+             * every group-based reading (the admin cohort filter, inherited
+             * priority pools, `deriveStudyFromGroups`'s `Math.max()` fallback)
+             * picking the wrong one.
+             */
+            const programme = await tx.query.studyProgram.findFirst({
+                where: (p, { eq: equals }) => equals(p.slug, studyProgramSlug),
+                columns: { id: true },
+            });
+
+            if (programme) {
+                await tx
+                    .insert(schema.studyProgramMembership)
+                    .values({
+                        userId,
+                        studyProgramId: programme.id,
+                        startYear,
+                        startYearSource: "derived",
+                    })
+                    .onConflictDoNothing();
+            }
+
             await syncDerivedStudyGroups(
                 tx,
                 userId,
                 studyProgramSlug,
-                currentAcademicYear(),
+                startYear,
             );
             await syncBaselineRoles(tx, userId, true);
         });

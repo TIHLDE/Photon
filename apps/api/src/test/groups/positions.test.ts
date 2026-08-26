@@ -1039,10 +1039,17 @@ describe("group positions", () => {
                     .returning();
                 if (!program) throw new Error("Could not seed study programme");
 
+                // `feideActive` er det som gjør raden til bevis: bare en
+                // Feide-innlogging skriver den, og den skriver den hver gang —
+                // `false` også, siden et utløpt medlemskap fortsatt kommer med
+                // i `showAll=true`. En rad uten den er et gjett (fadderuka-
+                // registreringa, eller en manuell kullretting), ikke historikk.
                 await ctx.db.insert(schema.studyProgramMembership).values({
                     userId: alumnus.id,
                     studyProgramId: program.id,
                     startYear: 2019,
+                    startYearSource: "feide",
+                    feideActive: false,
                 });
 
                 await ctx.db.transaction(async (tx) => {
@@ -1071,12 +1078,16 @@ describe("group positions", () => {
                 });
                 expect(await getUserRoles(ctx, student.id)).toContain("member");
 
-                // Graduating: once a study programme proves they were
-                // enrolled, an empty Feide result does mean they finished.
+                // Graduating: once a login has seen them enrolled, an empty
+                // Feide result does mean they finished. `feideActive: false`
+                // is that login — the lapsed membership `showAll=true` still
+                // returns.
                 await ctx.db.insert(schema.studyProgramMembership).values({
                     userId: student.id,
                     studyProgramId: program.id,
                     startYear: 2021,
+                    startYearSource: "feide",
+                    feideActive: false,
                 });
                 await ctx.db.transaction(async (tx) => {
                     await syncBaselineRoles(tx, student.id, false);

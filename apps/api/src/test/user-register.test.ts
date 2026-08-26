@@ -1,3 +1,7 @@
+import {
+    applyFeideStudyPrograms,
+    currentAcademicYear,
+} from "@photon/auth/feide";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -34,6 +38,22 @@ describe("POST /api/user/register", () => {
         });
         expect(res.status).toBe(201);
         return ((await res.json()) as { key: string }).key;
+    }
+
+    /** The cohort groups the member is in, as bare years. */
+    async function cohortGroupsOf(
+        ctx: IntegrationTestContext,
+        userId: string,
+    ): Promise<string[]> {
+        const rows = await ctx.db
+            .select({ slug: schema.groupMembership.groupSlug })
+            .from(schema.groupMembership)
+            .where(eq(schema.groupMembership.userId, userId));
+
+        return rows
+            .map((r) => r.slug)
+            .filter((slug) => /^\d{4}$/.test(slug))
+            .sort();
     }
 
     const body = {
@@ -305,6 +325,84 @@ describe("POST /api/user/register", () => {
                     .where(eq(schema.user.email, "angriper@stud.ntnu.no"));
                 expect(derived?.username).toBe("angriper");
             }
+        },
+    );
+
+    /**
+     * The guessed cohort has to be recorded on the programme row, not only as
+     * a group.
+     *
+     * `syncFeideForUser` cleans up a superseded guess by looking at the source
+     * of the year it is replacing. With no programme row there was nothing to
+     * look at, so the guess survived the login that corrected it and the member
+     * ended up in two cohort groups at once — 20 of them in production, most
+     * one year apart. Everything that reads the groups rather than the
+     * programme row (the admin cohort filter, inherited priority pools,
+     * `deriveStudyFromGroups`'s `Math.max()` fallback) then had two answers to
+     * choose from.
+     */
+    integrationTest(
+        "records the guessed cohort as `derived`, so Feide can correct it",
+        async ({ ctx }) => {
+            await ctx.utils.createTestGroup({
+                slug: "dataingenir",
+                name: "Dataingeniør",
+                type: "STUDY",
+            });
+            await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "dataingenir",
+                    feideCode: "BIDATA",
+                    displayName: "Dataingeniør",
+                    type: "bachelor",
+                })
+                .onConflictDoNothing();
+            await ctx.db
+                .insert(schema.role)
+                .values([{ name: "member" }, { name: "alumni" }])
+                .onConflictDoNothing();
+
+            const key = await apiKeyWith(ctx, ["users:create"]);
+            const res = await ctx.app.request("/api/user/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify(body),
+            });
+            expect(res.status).toBe(201);
+            const { id } = (await res.json()) as { id: string };
+
+            const guessed = currentAcademicYear();
+            const [row] = await ctx.db
+                .select({
+                    startYear: schema.studyProgramMembership.startYear,
+                    source: schema.studyProgramMembership.startYearSource,
+                })
+                .from(schema.studyProgramMembership)
+                .where(eq(schema.studyProgramMembership.userId, id));
+            expect(row).toEqual({ startYear: guessed, source: "derived" });
+            expect(await cohortGroupsOf(ctx, id)).toEqual([String(guessed)]);
+
+            /**
+             * The login that knows better. Feide reports the real intake one
+             * year earlier, which outranks `derived`, so the guessed cohort
+             * group goes with it and the member is left in exactly one.
+             */
+            const real = guessed - 1;
+            await applyFeideStudyPrograms(
+                ctx.db,
+                id,
+                [{ code: "BIDATA", startYear: real, active: true }],
+                [],
+                null,
+                null,
+                new Date(),
+            );
+
+            expect(await cohortGroupsOf(ctx, id)).toEqual([String(real)]);
         },
     );
 

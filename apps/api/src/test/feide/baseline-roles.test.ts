@@ -107,10 +107,19 @@ describe("syncBaselineRoles", () => {
                 .returning();
             if (!program) throw new Error("Could not seed study programme");
 
+            /**
+             * `feideActive` is what makes the row proof. It is written on every
+             * login that saw the programme — `false` included, since a lapsed
+             * membership still comes back with `showAll=true` — so a row
+             * without it was never touched by a Feide login at all. See the
+             * fadderuka case below.
+             */
             await ctx.db.insert(schema.studyProgramMembership).values({
                 userId: user.id,
                 studyProgramId: program.id,
                 startYear: 2021,
+                startYearSource: "feide",
+                feideActive: false,
             });
 
             await ctx.db.transaction((tx) =>
@@ -118,6 +127,55 @@ describe("syncBaselineRoles", () => {
             );
 
             expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+
+    /**
+     * The fadderuka registration writes a programme row of its own, holding
+     * the intake it guessed. That row is not evidence of anything Feide said —
+     * nobody has logged in yet — so an empty Feide result must still leave the
+     * member alone. Otherwise the guess turns the very first login that comes
+     * back empty into a demotion, and it is a brand new student it hits.
+     *
+     * `feideActive` tells the two kinds of row apart: only
+     * `applyFeideStudyPrograms` writes it, and it writes it every time. A
+     * manual cohort correction (`PATCH /user/:id/study-year`) creates the same
+     * shape of row and is likewise no proof.
+     */
+    integrationTest(
+        "keeps member when the only programme row is a registration guess",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            const [program] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-forretningsutvikling",
+                    feideCode: "ITBAITBEDR",
+                    displayName: "Digital forretningsutvikling",
+                    type: "bachelor",
+                })
+                .returning();
+            if (!program) throw new Error("Could not seed study programme");
+
+            await ctx.db.insert(schema.studyProgramMembership).values({
+                userId: user.id,
+                studyProgramId: program.id,
+                startYear: 2026,
+                startYearSource: "derived",
+            });
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(tx, user.id, false),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
         },
     );
 
