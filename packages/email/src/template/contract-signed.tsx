@@ -8,6 +8,7 @@ import {
     Text,
 } from "@react-email/components";
 import React from "react";
+import { formatOsloDate } from "../date";
 import { emailStyles } from "./styles";
 
 export interface ContractSignedEmailProps {
@@ -23,11 +24,7 @@ export const ContractSignedEmail = ({
     signedAt,
     logoUrl,
 }: ContractSignedEmailProps) => {
-    const formattedDate = new Date(signedAt).toLocaleDateString("nb-NO", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
+    const formattedDate = formatOsloDate(signedAt);
 
     return (
         <Html>

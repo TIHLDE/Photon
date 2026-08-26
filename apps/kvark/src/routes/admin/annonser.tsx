@@ -69,8 +69,7 @@ import {
     useAnyScopePermission,
     useCanActOnResource,
 } from "#/hooks/use-permission";
-import { nextWholeHour } from "#/lib/date";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate, nextWholeHour } from "#/lib/date";
 
 const JOB_TYPES = ["full_time", "part_time", "summer_job", "other"] as const;
 type JobType = (typeof JOB_TYPES)[number];
@@ -780,7 +779,7 @@ function JobDialog({
 
 function formatDeadline(iso: string | null): string {
     if (!iso) return "—";
-    return new Date(iso).toLocaleDateString("nb-NO", OSLO_DATE_OPTIONS);
+    return formatOsloDate(iso);
 }
 
 function TableSkeleton() {

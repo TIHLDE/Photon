@@ -48,7 +48,7 @@ import {
     usePendingConfirm,
 } from "#/components/confirm-delete-dialog";
 import { useAnyScopePermission } from "#/hooks/use-permission";
-import { OSLO_TIME_ZONE } from "#/lib/date";
+import { formatOsloDateTime } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/bannere")({
     component: BannersAdminPage,
@@ -450,8 +450,7 @@ function BannerDialog({
 }
 
 function formatDateTime(iso: string): string {
-    return new Date(iso).toLocaleString("nb-NO", {
-        timeZone: OSLO_TIME_ZONE,
+    return formatOsloDateTime(iso, {
         dateStyle: "short",
         timeStyle: "short",
     });

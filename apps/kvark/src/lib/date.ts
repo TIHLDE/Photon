@@ -50,3 +50,60 @@ export function todayInOslo(): Date {
         .map(Number) as [number, number, number];
     return new Date(year, month - 1, day);
 }
+
+/**
+ * Cached `Intl` formatters, keyed on the options they were built with.
+ *
+ * Constructing an `Intl.DateTimeFormat` is the expensive part of formatting,
+ * and the admin tables format one date per row. The cache keeps the helpers
+ * below as cheap as a hand-rolled module-level formatter.
+ */
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+
+function osloFormatter(
+    options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+    const key = JSON.stringify(options);
+    let formatter = formatterCache.get(key);
+    if (!formatter) {
+        formatter = new Intl.DateTimeFormat("nb-NO", {
+            ...options,
+            timeZone: OSLO_TIME_ZONE,
+        });
+        formatterCache.set(key, formatter);
+    }
+    return formatter;
+}
+
+/**
+ * En dato i norsk tid, f.eks. `26. august 2026`.
+ *
+ * Bruk denne i stedet for `toLocaleDateString`, som formaterer i tidssonen til
+ * den som kjører koden — UTC på SSR-serveren, Europe/Oslo i nettleseren.
+ */
+export function formatOsloDate(
+    value: Date | string | number,
+    options: Intl.DateTimeFormatOptions = {},
+): string {
+    return osloFormatter(options).format(new Date(value));
+}
+
+/**
+ * Dato og klokkeslett i norsk tid, f.eks. `26.8.2026, 22:05:07`.
+ *
+ * Standardopsjonene er de `toLocaleString("nb-NO")` selv bruker, slik at
+ * helperen skriver nøyaktig det kallstedene gjorde før.
+ */
+export function formatOsloDateTime(
+    value: Date | string | number,
+    options: Intl.DateTimeFormatOptions = {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+    },
+): string {
+    return osloFormatter(options).format(new Date(value));
+}

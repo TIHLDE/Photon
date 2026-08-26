@@ -120,6 +120,12 @@ Pair TanStack Router and TanStack Query with Suspense aggressively.
 - Mutations invalidate the relevant query keys; do not manually edit cache unless there is a clear reason.
 - Never call the SDK directly inside a dumb component.
 
+### 7. Datoer og klokkeslett
+
+- Alt vises i norsk tid. Bruk `formatOsloDate` / `formatOsloDateTime` fra `#/lib/date` — aldri `toLocale*` eller `new Intl.DateTimeFormat` direkte (oxlint stopper det).
+- Trenger du en dato som verdi, ikke tekst: `formatInOslo` for date-fns-mønstre og `todayInOslo` som standardverdi i datovelgere.
+- Grunnen er hydrering like mye som riktig tid: SSR-serveren står i UTC og nettleseren i `Europe/Oslo`, så en tidssoneløs formattering gir ulik HTML på de to sidene og React-feil #418.
+
 ## Directory Layout
 
 ```

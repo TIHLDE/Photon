@@ -40,5 +40,48 @@
         "apps/web-old/**",
         "**/.oxlintrc.json",
         "**/.oxfmtrc.json"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "apps/api/src/**",
+                "packages/auth/src/**",
+                "packages/core/src/**",
+                "packages/email/src/**"
+            ],
+            "rules": {
+                "no-restricted-properties": [
+                    "error",
+                    {
+                        "property": "toLocaleDateString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "property": "toLocaleTimeString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "property": "toLocaleString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "object": "Intl",
+                        "property": "DateTimeFormat",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    }
+                ]
+            }
+        },
+        {
+            "files": [
+                "apps/api/src/lib/oslo-day.ts",
+                "packages/auth/src/academic-year.ts",
+                "packages/core/src/slug.ts",
+                "packages/email/src/date.ts"
+            ],
+            "rules": {
+                "no-restricted-properties": "off"
+            }
+        }
     ]
 }

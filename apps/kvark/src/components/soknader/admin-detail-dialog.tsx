@@ -27,7 +27,7 @@ import type {
 } from "#/api/queries/applications";
 import { formatIsoDate, formatNok } from "./format";
 import { ApplicationStatusBadge } from "./status-badge";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDateTime } from "#/lib/date";
 
 const STATUS_OPTIONS: { value: ApplicationStatus; label: string }[] = [
     { value: "new", label: "Ny" },
@@ -177,12 +177,7 @@ export function AdminDetailDialog({
                                     label={application.statusLabel}
                                 />
                                 <span className="text-sm text-muted-foreground">
-                                    {new Date(
-                                        application.createdAt,
-                                    ).toLocaleString(
-                                        "nb-NO",
-                                        OSLO_DATE_OPTIONS,
-                                    )}
+                                    {formatOsloDateTime(application.createdAt)}
                                 </span>
                                 {application.hasPdf && (
                                     <Button

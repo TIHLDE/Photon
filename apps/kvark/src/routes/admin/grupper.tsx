@@ -98,7 +98,7 @@ import {
     groupTypeLabel,
     supportsGroupSubtype,
 } from "#/lib/group";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/grupper")({
     component: GrupperAdminPage,
@@ -942,12 +942,7 @@ function MemberRow({
                 )}
             </TableCell>
             <TableCell>
-                {member.signedAt
-                    ? new Date(member.signedAt).toLocaleDateString(
-                          "nb-NO",
-                          OSLO_DATE_OPTIONS,
-                      )
-                    : "—"}
+                {member.signedAt ? formatOsloDate(member.signedAt) : "—"}
             </TableCell>
             <TableCell>
                 {member.hasSigned && onRevoke && (

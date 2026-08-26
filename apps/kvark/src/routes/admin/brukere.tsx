@@ -82,6 +82,7 @@ import {
     type UserSearchOption,
 } from "#/components/user-search-combobox";
 import { extractErrorMessage } from "#/lib/api-error";
+import { formatOsloDate } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 import { computeClassYear, initials, programmeLength } from "#/lib/utils";
 
@@ -92,11 +93,11 @@ const ROLE_LABELS: Record<string, string> = {
     member: "Medlem",
 };
 
-const MEMBER_SINCE_FORMAT = new Intl.DateTimeFormat("nb-NO", {
+const MEMBER_SINCE_FORMAT = {
     day: "numeric",
     month: "long",
     year: "numeric",
-});
+} satisfies Intl.DateTimeFormatOptions;
 
 /** Sentinel for "no filter" — the Select needs a concrete value. */
 const ALL = "__all__";
@@ -1583,8 +1584,9 @@ function MembersTable({
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            {MEMBER_SINCE_FORMAT.format(
-                                                new Date(member.createdAt),
+                                            {formatOsloDate(
+                                                member.createdAt,
+                                                MEMBER_SINCE_FORMAT,
                                             )}
                                         </TableCell>
                                         {!readOnly && (

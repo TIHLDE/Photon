@@ -208,6 +208,30 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 - **Test location**: `apps/api/src/test/`
 - **Config**: `maxWorkers: 1` by default (configurable via `MAX_TEST_WORKERS` env)
 
+### Time & Timezones
+
+TIHLDE happens in Norwegian time, but nothing the code runs on does. The API
+container runs UTC, kvark's SSR server runs UTC, and the browser runs
+`Europe/Oslo` — so anything that formats or buckets a date without naming a
+zone is two hours off for half the day, and differs between server and client.
+
+- **Never call `toLocaleString` / `toLocaleDateString` / `toLocaleTimeString`
+  or construct `Intl.DateTimeFormat` directly.** oxlint blocks it. Use
+  `formatOsloDate` / `formatOsloDateTime` from `apps/kvark/src/lib/date.ts`
+  (frontend), `apps/api/src/lib/oslo-day.ts` (API) or
+  `packages/email/src/date.ts` (email templates).
+- **Calendar-day logic** — "today", "this month", the year an academic term
+  belongs to — must read the Norwegian day, not `getDate()`/`getMonth()`. Use
+  `startOfTodayInOslo` / `isoDateInOslo` (API), `todayInOslo` (kvark) or
+  `osloDateParts` (`packages/auth/src/academic-year.ts`).
+- **Instants are fine as they are.** Comparing two `Date`s, storing a
+  timestamp, or emitting iCal `Z`-times needs no zone — only rendering and
+  day-bucketing do.
+- **Do not "fix" this by setting `TZ=Europe/Oslo` on the container.**
+  node-postgres parses `timestamp without time zone` in the process's local
+  zone, so flipping `TZ` reinterprets every stored timestamp and shifts all
+  existing events, registrations and deadlines by two hours.
+
 ### Authentication & Authorization
 
 - **Auth**: Better Auth library (`packages/auth/src/index.ts`)

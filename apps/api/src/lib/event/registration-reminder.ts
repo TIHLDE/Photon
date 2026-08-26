@@ -3,6 +3,7 @@ import { and, eq, gt, isNotNull, isNull, lte } from "drizzle-orm";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { sendNotification } from "../notification";
+import { formatOsloDate, formatOsloDateTime } from "../oslo-day";
 
 /** How long before registration opens the reminder is sent. */
 export const REGISTRATION_REMINDER_LEAD_MS = 60 * 60 * 1000;
@@ -13,15 +14,10 @@ export const REGISTRATION_REMINDER_LEAD_MS = 60 * 60 * 1000;
  * timezone the events actually happen in.
  */
 export function formatRegistrationStart(date: Date): string {
-    const day = date.toLocaleDateString("nb-NO", {
-        day: "numeric",
-        month: "long",
-        timeZone: "Europe/Oslo",
-    });
-    const time = date.toLocaleTimeString("nb-NO", {
+    const day = formatOsloDate(date, { day: "numeric", month: "long" });
+    const time = formatOsloDateTime(date, {
         hour: "2-digit",
         minute: "2-digit",
-        timeZone: "Europe/Oslo",
     });
 
     return `${day} kl. ${time}`;
