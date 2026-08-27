@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
+import { startOfTodayInOslo } from "~/lib/oslo-day";
 import { integrationTest } from "~/test/config/integration";
 
 describe("Job Postings System", () => {
@@ -448,6 +449,66 @@ describe("Job Postings System", () => {
             expect(finalList.items.length).toBeGreaterThan(0);
             // First item should be the most recently created (minimalJob)
             expect(finalList.items[0]?.id).toBe(minimalJob.id);
+        },
+        120_000,
+    );
+
+    /**
+     * The listing keeps an ad through the whole of its deadline day, and the
+     * day is the Norwegian one. Measured against the server's midnight, this
+     * boundary sat two hours late: the first two hours of every Norwegian day
+     * still listed ads that ran out yesterday.
+     */
+    integrationTest(
+        "expiry follows the Norwegian day, not the server's",
+        async ({ ctx }) => {
+            const poster = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(poster, ["jobs:create"]);
+            const posterClient = await ctx.utils.clientForUser(poster);
+            const readerClient = await ctx.utils.clientForUser(
+                await ctx.utils.createTestUser(),
+            );
+
+            const osloMidnight = startOfTodayInOslo().getTime();
+            const create = async (title: string, deadline: Date) => {
+                const response = await posterClient.api.jobs.$post({
+                    json: {
+                        title,
+                        company: "Frist AS",
+                        location: "Trondheim",
+                        deadline: deadline.toISOString(),
+                        jobType: "full_time",
+                    },
+                });
+                expect(response.status).toBe(201);
+                return await response.json();
+            };
+
+            // Ran out earlier today in Norway — still on the list.
+            const today = await create(
+                "Frist tidligere i dag",
+                new Date(osloMidnight + 60_000),
+            );
+            // Ran out one minute before the Norwegian day began — off the list.
+            const yesterday = await create(
+                "Frist i gaar kveld",
+                new Date(osloMidnight - 60_000),
+            );
+
+            const listed = await (
+                await readerClient.api.jobs.$get({ query: {} })
+            ).json();
+            const ids = listed.items.map((job) => job.id);
+            expect(ids).toContain(today.id);
+            expect(ids).not.toContain(yesterday.id);
+
+            // Both are still reachable when expired ads are asked for.
+            const all = await (
+                await readerClient.api.jobs.$get({ query: { expired: "true" } })
+            ).json();
+            const allIds = all.items.map((job) => job.id);
+            expect(allIds).toContain(today.id);
+            expect(allIds).toContain(yesterday.id);
         },
         120_000,
     );

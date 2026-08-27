@@ -21,9 +21,6 @@ export function nextWholeHour(from: Date = new Date()): Date {
  */
 export const OSLO_TIME_ZONE = "Europe/Oslo";
 
-/** `Intl`-opsjoner for datoer som skrives ut med `toLocale*`. */
-export const OSLO_DATE_OPTIONS = { timeZone: OSLO_TIME_ZONE } as const;
-
 /**
  * `format()` fra date-fns, men alltid i norsk tid og med norsk locale.
  * Bruk denne i stedet for `format(new Date(iso), …)` for alt som skal vises.
