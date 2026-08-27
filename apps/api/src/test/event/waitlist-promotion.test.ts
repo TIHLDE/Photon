@@ -164,3 +164,215 @@ describe("waitlist promotion when a spot is freed", () => {
         500_000,
     );
 });
+
+/**
+ * Å heve kapasiteten frigjør plasser, og en frigjort plass tilhører ventelista
+ * — samme regel som når noen melder seg av. Før gjorde ingenting det: den nye
+ * plassen ble stående tom til noen helt nye meldte seg på og gikk forbi folk
+ * som hadde stått og ventet i dagevis. Slik gikk det på Immatrikuleringsball
+ * 2026 i august 2026.
+ */
+describe("waitlist promotion when the capacity is raised", () => {
+    integrationTest(
+        "raising the capacity hands the new spots to the waitlist, in order",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const organizer = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+            const organizerClient = await ctx.utils.clientForUser(organizer);
+
+            const event = await ctx.utils.createTestEvent({
+                slug: `utvidet-${Date.now()}`,
+                capacity: 1,
+            });
+
+            const holder = await ctx.utils.createTestUser();
+            const first = await ctx.utils.createTestUser();
+            const second = await ctx.utils.createTestUser();
+            const third = await ctx.utils.createTestUser();
+
+            for (const user of [holder, first, second, third]) {
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                await ctx.utils.createPendingRegistration(event.id, user.id);
+                await resolveRegistrationsForEvent(event.id, ctx);
+                // Ventelisterekkefølgen avgjøres av påmeldingstidspunktet.
+                await new Promise((r) => setTimeout(r, 10));
+            }
+
+            expect((await statusFor(ctx, event.id, first.id)).position).toBe(1);
+            expect((await statusFor(ctx, event.id, second.id)).position).toBe(
+                2,
+            );
+            expect((await statusFor(ctx, event.id, third.id)).position).toBe(3);
+
+            const response = await organizerClient.api.event[":id"].$put({
+                param: { id: event.id },
+                json: { capacity: 3 },
+            });
+            expect(response.status).toBe(200);
+
+            // De to øverste rykker opp — én per frigjort plass — og den
+            // tredje blir stående, nå som nummer én.
+            expect((await statusFor(ctx, event.id, holder.id)).status).toBe(
+                "registered",
+            );
+            expect(await statusFor(ctx, event.id, first.id)).toEqual({
+                status: "registered",
+                position: null,
+            });
+            expect(await statusFor(ctx, event.id, second.id)).toEqual({
+                status: "registered",
+                position: null,
+            });
+            expect(await statusFor(ctx, event.id, third.id)).toEqual({
+                status: "waitlisted",
+                position: 1,
+            });
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "lifting the capacity limit entirely empties the waitlist",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const organizer = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+            const organizerClient = await ctx.utils.clientForUser(organizer);
+
+            const event = await ctx.utils.createTestEvent({
+                slug: `uten-tak-${Date.now()}`,
+                capacity: 1,
+            });
+
+            const users = [];
+            for (let i = 0; i < 3; i++) {
+                const user = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                await ctx.utils.createPendingRegistration(event.id, user.id);
+                await resolveRegistrationsForEvent(event.id, ctx);
+                await new Promise((r) => setTimeout(r, 10));
+                users.push(user);
+            }
+
+            const response = await organizerClient.api.event[":id"].$put({
+                param: { id: event.id },
+                json: { capacity: null },
+            });
+            expect(response.status).toBe(200);
+
+            for (const user of users) {
+                expect(await statusFor(ctx, event.id, user.id)).toEqual({
+                    status: "registered",
+                    position: null,
+                });
+            }
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "turning sign-up off promotes nobody, however the capacity reads",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const organizer = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+            const organizerClient = await ctx.utils.clientForUser(organizer);
+
+            const event = await ctx.utils.createTestEvent({
+                slug: `uten-pamelding-${Date.now()}`,
+                capacity: 1,
+            });
+
+            const holder = await ctx.utils.createTestUser();
+            const waiting = await ctx.utils.createTestUser();
+
+            for (const user of [holder, waiting]) {
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                await ctx.utils.createPendingRegistration(event.id, user.id);
+                await resolveRegistrationsForEvent(event.id, ctx);
+                await new Promise((r) => setTimeout(r, 10));
+            }
+
+            // Skjemaet krever at kapasiteten nullstilles sammen med
+            // påmeldingen, og det ser ut som et hevet tak. Det er det ikke:
+            // ingen plasser å dele ut, og ingen som kan bruke dem.
+            const response = await organizerClient.api.event[":id"].$put({
+                param: { id: event.id },
+                json: {
+                    requiresSigningUp: false,
+                    capacity: null,
+                    allowWaitlist: false,
+                },
+            });
+            expect(response.status).toBe(200);
+
+            expect(await statusFor(ctx, event.id, waiting.id)).toEqual({
+                status: "waitlisted",
+                position: 1,
+            });
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "an update that does not touch the capacity promotes nobody",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const organizer = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(organizer, ["events:update"]);
+            const organizerClient = await ctx.utils.clientForUser(organizer);
+
+            const event = await ctx.utils.createTestEvent({
+                slug: `urort-${Date.now()}`,
+                capacity: 1,
+            });
+
+            const holder = await ctx.utils.createTestUser();
+            const waiting = await ctx.utils.createTestUser();
+
+            for (const user of [holder, waiting]) {
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+                await ctx.utils.createPendingRegistration(event.id, user.id);
+                await resolveRegistrationsForEvent(event.id, ctx);
+                await new Promise((r) => setTimeout(r, 10));
+            }
+
+            // Både en urelatert endring og en senket kapasitet skal la
+            // ventelista stå.
+            for (const json of [{ title: "Nytt navn" }, { capacity: 1 }]) {
+                const response = await organizerClient.api.event[":id"].$put({
+                    param: { id: event.id },
+                    json,
+                });
+                expect(response.status).toBe(200);
+
+                expect(await statusFor(ctx, event.id, waiting.id)).toEqual({
+                    status: "waitlisted",
+                    position: 1,
+                });
+            }
+        },
+        500_000,
+    );
+});
