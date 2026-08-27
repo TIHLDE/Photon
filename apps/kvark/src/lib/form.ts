@@ -105,9 +105,14 @@ export function mapSubmission(
         userId: submission.user.id,
         userName: submission.user.name,
         userEmail: submission.user.email,
-        studyProgram: submission.user.study_program,
-        classYear: submission.user.class_year,
-        isAlumni: submission.user.is_alumni,
+        // `?? null` er ikke overflødig selv om typene sier feltene alltid er
+        // med: kvark deployes på hver merge til main, mens API-et først følger
+        // etter på neste release-tag. Da mangler et nytt felt i svaret, og
+        // `undefined` slipper forbi null-sjekkene lenger nede — statistikken
+        // skrev «undefined. klasse» på alle svar mellom #718 og releasen.
+        studyProgram: submission.user.study_program ?? null,
+        classYear: submission.user.class_year ?? null,
+        isAlumni: submission.user.is_alumni ?? false,
         submittedAt: formatInOslo(submission.created_at, "d. MMM yyyy"),
         answers: submission.answers.map((answer) => ({
             fieldId: answer.field_id,
