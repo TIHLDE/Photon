@@ -411,11 +411,16 @@ export async function reverseEventPayment(
  * payment obligation (and countdown timer) of their own, with the longer
  * waiting-list deadline — unless they had already paid before losing the spot,
  * in which case they owe nothing and get no deadline.
+ *
+ * Returns whether someone was actually moved, so a caller that freed more than
+ * one spot at once — raising the capacity does exactly that — can call again
+ * until the waiting list or the new room runs out. Each promotion takes one
+ * member off the waiting list, so such a loop always ends.
  */
 export async function promoteFromWaitlist(
     ctx: AppContext,
     event: PaidEventLike,
-): Promise<void> {
+): Promise<boolean> {
     // A spot has to actually be free. Callers that just cancelled a
     // registration know one is; the unregister route calls this for every
     // cancellation, including ones that give up a waitlist place rather than a
@@ -434,7 +439,7 @@ export async function promoteFromWaitlist(
             );
 
         if (Number(taken?.count ?? 0) >= capacity) {
-            return;
+            return false;
         }
     }
 
@@ -446,18 +451,33 @@ export async function promoteFromWaitlist(
 
     const promoted = waitlisted[0];
     if (!promoted) {
-        return;
+        return false;
     }
 
-    await ctx.db
+    /**
+     * Claim the place conditionally, the same way the deadline handler claims
+     * a spot it is about to reclaim. Two callers can be in here at once — two
+     * overlapping saves that both raised the capacity, say — and both would
+     * otherwise read the same member off the top of the list and "promote"
+     * them twice: two "du har fått plass" for one person, and a spot that
+     * silently stays empty. Losing the claim means somebody else got there
+     * first, which is a reason to stop, not to try the next in line.
+     */
+    const [claimed] = await ctx.db
         .update(schema.eventRegistration)
         .set({ status: "registered", waitlistPosition: null })
         .where(
             and(
                 eq(schema.eventRegistration.eventId, event.id),
                 eq(schema.eventRegistration.userId, promoted.userId),
+                eq(schema.eventRegistration.status, "waitlisted"),
             ),
-        );
+        )
+        .returning({ userId: schema.eventRegistration.userId });
+
+    if (!claimed) {
+        return false;
+    }
 
     const url = eventUrl(event.slug);
     await sendNotification(
@@ -505,6 +525,8 @@ export async function promoteFromWaitlist(
                 ),
             );
     }
+
+    return true;
 }
 
 /**

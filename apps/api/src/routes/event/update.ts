@@ -4,6 +4,7 @@ import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { promoteFromWaitlist } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
 import {
@@ -52,6 +53,12 @@ export const updateRoute = route().put(
         // Uploaded pictures are staged until a row claims them; without this
         // the cleanup cron deletes the file after two days.
         await promoteAssetUrls(bucket, [body.imageUrl]);
+
+        /**
+         * Whether this update opened room that was not there before. Set
+         * inside the transaction, acted on after it commits — see below.
+         */
+        let capacityGrew = false;
 
         const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event
@@ -232,6 +239,24 @@ export const updateRoute = route().put(
                 return undefined;
             };
 
+            /**
+             * Prisen følger nå samme regel som alle de andre feltene: utelatt
+             * betyr «ikke rør». Den gjorde ikke det før — `undefined` ble
+             * tvunget til `null`, så enhver delvis oppdatering som ikke nevnte
+             * prisen gjorde et betalt arrangement gratis for alle som meldte
+             * seg på etterpå, uten et eneste varsel. Kvark sender hele skjemaet
+             * hver gang og slapp derfor unna; et skript mot API-et gjorde det
+             * ikke.
+             *
+             * `null` og 0 nullstiller fortsatt, som før, og det gjør også det
+             * å skru av betaling: en pris uten betaling betyr ingenting.
+             */
+            const nextPriceMinor = ((): number | null | undefined => {
+                if (body.isPaidEvent === false) return null;
+                if (body.price === undefined) return undefined;
+                return body.price ? body.price * 100 : null;
+            })();
+
             const nextRegistrationStart = updateDateNullable(
                 body.registrationStart,
             );
@@ -270,7 +295,7 @@ export const updateRoute = route().put(
                 requiresSigningUp: body.requiresSigningUp,
                 enforcesPreviousStrikes: body.enforcesPreviousStrikes,
                 canCauseStrikes: body.canCauseStrikes,
-                priceMinor: body.price ? body.price * 100 : null,
+                priceMinor: nextPriceMinor,
                 updatedAt: new Date(),
                 title: body.title,
                 start: updateDate(body.start),
@@ -349,8 +374,58 @@ export const updateRoute = route().put(
                 }
             }
 
+            // `undefined` leaves the capacity alone; `null` lifts the limit
+            // entirely, which frees every remaining spot at once.
+            const nextCapacity =
+                body.capacity === undefined ? event.capacity : body.capacity;
+
+            /**
+             * Turning sign-up off forces `capacity` to null (the schema says
+             * so), which reads exactly like lifting the limit — but there are
+             * no spots to hand out on an event nobody signs up for, and every
+             * member left waiting would get a "du har fått plass" they cannot
+             * use. Only an event that still takes registrations promotes.
+             */
+            const stillRequiresSigningUp =
+                body.requiresSigningUp ?? event.requiresSigningUp;
+
+            capacityGrew =
+                stillRequiresSigningUp &&
+                event.capacity !== null &&
+                (nextCapacity === null || nextCapacity > event.capacity);
+
             return slug;
         });
+
+        /**
+         * Raising the capacity frees spots, and a freed spot belongs to the
+         * waiting list — the same rule an unregistration follows. Nothing did
+         * that before: the new room simply sat there until somebody new
+         * happened to sign up and took it ahead of members who had been
+         * waiting for days. That is how it went for Immatrikuleringsball 2026
+         * in August 2026.
+         *
+         * Deliberately outside the transaction above, like the unregister
+         * route: promotion hands out payment obligations and queues their
+         * countdown timers, and those must not ride on a transaction that can
+         * still roll back.
+         *
+         * One call moves one member, so it runs until the waiting list or the
+         * new room runs out — `promoteFromWaitlist` counts the spots itself
+         * and stops once the event is full again.
+         */
+        if (capacityGrew) {
+            const event = await db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, eventId),
+                with: { pools: true, priorityUsers: true },
+            });
+
+            if (event) {
+                while (await promoteFromWaitlist(c.get("ctx"), event)) {
+                    // Until the event is full or nobody is waiting.
+                }
+            }
+        }
 
         return c.json({ eventId, slug: updatedSlug }, 200);
     },
