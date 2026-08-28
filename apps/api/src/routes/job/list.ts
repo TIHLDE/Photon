@@ -1,8 +1,9 @@
 import { schema } from "@photon/db";
-import { and, desc, eq, gt, gte, ilike, lte, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import type z from "zod";
 import { describeRoute } from "~/lib/openapi";
+import { startOfTodayInOslo } from "~/lib/oslo-day";
 import { route } from "~/lib/route";
 import {
     getNextPage,
@@ -48,16 +49,13 @@ export const listRoute = route().get(
                 // label only: every ad carries a deadline and falls off when
                 // it passes. Ads migrated from Lepton without a deadline are
                 // treated as expired.
+                //
+                // An ad is listed through the whole of its deadline day, so
+                // the bound is midnight Oslo today — not the server's midnight,
+                // which is 02:00 Norwegian time and would keep yesterday's ads
+                // up for the first two hours of the day.
                 !showExpired
-                    ? gt(
-                          schema.jobPost.deadline,
-                          (() => {
-                              const d = new Date();
-                              d.setDate(d.getDate() - 1);
-                              d.setHours(23, 59, 59, 999);
-                              return d;
-                          })(),
-                      )
+                    ? gte(schema.jobPost.deadline, startOfTodayInOslo())
                     : undefined,
                 // Free text search on title and company
                 search

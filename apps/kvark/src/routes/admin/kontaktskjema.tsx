@@ -28,7 +28,7 @@ import { AdminPageHeader } from "#/components/admin-page-header";
 import { AdminDetailDialog } from "#/components/soknader/admin-detail-dialog";
 import { ApplicationStatusBadge } from "#/components/soknader/status-badge";
 import { useAnyScopePermission } from "#/hooks/use-permission";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 const searchSchema = z.object({
     /** Deep link from the notification email opens this henvendelse directly. */
@@ -183,11 +183,8 @@ function AdminCompanyContactPage() {
                                             {application.title}
                                         </TableCell>
                                         <TableCell>
-                                            {new Date(
+                                            {formatOsloDate(
                                                 application.createdAt,
-                                            ).toLocaleDateString(
-                                                "nb-NO",
-                                                OSLO_DATE_OPTIONS,
                                             )}
                                         </TableCell>
                                         <TableCell>

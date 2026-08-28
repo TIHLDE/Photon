@@ -2039,8 +2039,11 @@ function formatDateTime(iso: string) {
 }
 
 /** Minor units (øre) -> "1 234 kr" */
+/** Beløp i kroner, med norsk tusenskille — `Intl` gir samme utfall uansett hvor koden kjører. */
+const NOK_AMOUNT = new Intl.NumberFormat("nb-NO");
+
 function formatAmount(minor: number) {
-    return `${(minor / 100).toLocaleString("nb-NO")} kr`;
+    return `${NOK_AMOUNT.format(minor / 100)} kr`;
 }
 
 /* ------------------------------- Allergier ------------------------------ */

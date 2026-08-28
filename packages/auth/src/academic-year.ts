@@ -8,6 +8,36 @@
  */
 
 /**
+ * Read in Oslo time rather than through `getMonth()`/`getFullYear()`, which
+ * answer in whatever zone the code runs in. The API container runs UTC, so on
+ * 1 August between 00:00 and 02:00 Norwegian time it would still read July and
+ * put a member in the previous intake — while kvark, running in the browser,
+ * read August for the same instant. Pinning the zone makes both agree, and
+ * makes the boundary land where the academic year actually turns.
+ */
+const OSLO_YEAR_MONTH_FORMAT = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Oslo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+});
+
+/**
+ * `[year, month, day]` of an instant in Oslo, month zero-indexed.
+ *
+ * Exported for the other places that key on the Norwegian calendar day rather
+ * than the server's, such as the Feide semester-registration windows.
+ */
+export function osloDateParts(
+    now: Date,
+): [year: number, month: number, day: number] {
+    const [year, month, day] = OSLO_YEAR_MONTH_FORMAT.format(now)
+        .split("-")
+        .map(Number) as [number, number, number];
+    return [year, month - 1, day];
+}
+
+/**
  * The intake year someone registering right now belongs to.
  *
  * The Norwegian academic year starts in August, so a member who signs up in
@@ -15,7 +45,8 @@
  * `>= 7` is August onwards.
  */
 export function currentAcademicYear(now = new Date()): number {
-    return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+    const [year, month] = osloDateParts(now);
+    return month >= 7 ? year : year - 1;
 }
 
 /**

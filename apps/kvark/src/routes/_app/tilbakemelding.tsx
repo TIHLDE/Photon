@@ -72,7 +72,7 @@ import {
 } from "#/api/queries/feedback";
 import { LoadMoreButton } from "#/components/load-more-button";
 import { usePermission } from "#/hooks/use-permission";
-import { OSLO_TIME_ZONE } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/_app/tilbakemelding")({
     component: FeedbackPage,
@@ -119,8 +119,7 @@ const STATUS_VARIANTS: Record<
 };
 
 function formatDate(value: string): string {
-    return new Date(value).toLocaleDateString("nb-NO", {
-        timeZone: OSLO_TIME_ZONE,
+    return formatOsloDate(value, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",

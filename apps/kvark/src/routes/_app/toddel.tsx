@@ -9,7 +9,7 @@ import { getToddelIssuesQuery } from "#/api/queries/toddel";
 import { IssueCard } from "#/components/issue-card";
 import { PageHeader } from "#/components/page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
-import { OSLO_TIME_ZONE } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 /** Module-level so the permission lookup keeps a stable identity. */
 const TODDEL_CREATE_PERMISSIONS = ["toddel:create", "toddel:manage"] as const;
@@ -29,8 +29,7 @@ export const Route = createFileRoute("/_app/toddel")({
  * the same caption on two different magazines.
  */
 function publishedLabel(publishedAt: string): string {
-    const label = new Date(publishedAt).toLocaleDateString("nb-NO", {
-        timeZone: OSLO_TIME_ZONE,
+    const label = formatOsloDate(publishedAt, {
         month: "long",
         year: "numeric",
     });

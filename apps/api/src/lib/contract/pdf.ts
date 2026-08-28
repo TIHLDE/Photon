@@ -13,6 +13,7 @@
 
 import type { SignaturePlacement } from "@photon/db/schema";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { formatOsloDate, formatOsloDateTime } from "~/lib/oslo-day";
 
 export type StampContractInput = {
     /** The original, unsigned contract PDF. */
@@ -31,7 +32,7 @@ export type StampContractInput = {
 
 /** Long Norwegian date, e.g. "17. juli 2026". */
 function formatDate(date: Date): string {
-    return date.toLocaleDateString("nb-NO", {
+    return formatOsloDate(date, {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -39,7 +40,7 @@ function formatDate(date: Date): string {
 }
 
 function formatDateTime(date: Date): string {
-    return date.toLocaleString("nb-NO", {
+    return formatOsloDateTime(date, {
         dateStyle: "medium",
         timeStyle: "short",
     });

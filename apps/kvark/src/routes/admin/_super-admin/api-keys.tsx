@@ -49,7 +49,7 @@ import {
 } from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/_super-admin/api-keys")({
     component: ApiKeysPage,
@@ -195,12 +195,7 @@ function ApiKeysTable({
                                     </TableCell>
                                     <TableCell>
                                         {apiKey.lastUsedAt
-                                            ? new Date(
-                                                  apiKey.lastUsedAt,
-                                              ).toLocaleDateString(
-                                                  "nb-NO",
-                                                  OSLO_DATE_OPTIONS,
-                                              )
+                                            ? formatOsloDate(apiKey.lastUsedAt)
                                             : "Aldri"}
                                     </TableCell>
                                     <TableCell>

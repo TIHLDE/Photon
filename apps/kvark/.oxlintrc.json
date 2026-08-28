@@ -1,4 +1,37 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
-    "extends": ["../../.oxlintrc.json"]
+    "extends": ["../../.oxlintrc.json"],
+    "overrides": [
+        {
+            "files": ["src/**"],
+            "rules": {
+                "no-restricted-properties": [
+                    "error",
+                    {
+                        "property": "toLocaleDateString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "property": "toLocaleTimeString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "property": "toLocaleString",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    },
+                    {
+                        "object": "Intl",
+                        "property": "DateTimeFormat",
+                        "message": "Formaterer i tidssonen koden kjører i — UTC i API-containeren og på SSR-serveren, Europe/Oslo i nettleseren. Bruk formatOsloDate / formatOsloDateTime (apps/kvark/src/lib/date.ts, apps/api/src/lib/oslo-day.ts, packages/email/src/date.ts)."
+                    }
+                ]
+            }
+        },
+        {
+            "files": ["src/lib/date.ts"],
+            "rules": {
+                "no-restricted-properties": "off"
+            }
+        }
+    ]
 }

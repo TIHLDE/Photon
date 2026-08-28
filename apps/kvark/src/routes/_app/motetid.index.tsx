@@ -20,7 +20,7 @@ import {
     deleteMotetidEventMutation,
     getMyMotetidEventsQuery,
 } from "#/api/queries/motetid";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/_app/motetid/")({
     component: MotetidPage,
@@ -70,11 +70,7 @@ function MotetidEventList() {
                         >
                             <p className="font-medium">{event.title}</p>
                             <p className="text-xs text-muted-foreground">
-                                Opprettet{" "}
-                                {new Date(event.createdAt).toLocaleDateString(
-                                    "nb-NO",
-                                    OSLO_DATE_OPTIONS,
-                                )}
+                                Opprettet {formatOsloDate(event.createdAt)}
                                 {" · "}
                                 {event.participantCount}{" "}
                                 {event.participantCount === 1

@@ -59,7 +59,7 @@ import {
 import { initials } from "#/lib/utils";
 
 import { avatarImageUrl } from "#/lib/assets";
-import { OSLO_DATE_OPTIONS } from "#/lib/date";
+import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/prikker")({
     component: StrikesAdminPage,
@@ -196,12 +196,7 @@ function StrikesSection() {
                                         {strike.reason ?? "—"}
                                     </TableCell>
                                     <TableCell>
-                                        {new Date(
-                                            strike.createdAt,
-                                        ).toLocaleDateString(
-                                            "nb-NO",
-                                            OSLO_DATE_OPTIONS,
-                                        )}
+                                        {formatOsloDate(strike.createdAt)}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex justify-end">

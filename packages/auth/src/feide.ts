@@ -26,6 +26,7 @@ import { env } from "@photon/core/env";
 import {
     currentAcademicYear,
     isMasterStudySlug,
+    osloDateParts,
     programmeLength,
 } from "./academic-year";
 
@@ -1065,8 +1066,10 @@ async function removeCohortMembership(
  * Month is zero-indexed.
  */
 function inRegistrationWindow(now: Date): boolean {
-    const month = now.getMonth();
-    const day = now.getDate();
+    // Norwegian calendar day, not the container's: the API runs UTC, so
+    // `getMonth()`/`getDate()` close the window two hours early on 16 February
+    // and open it two hours late on 1 August.
+    const [, month, day] = osloDateParts(now);
     const autumn = month === 7 || (month === 8 && day <= 15);
     const spring = month === 0 || (month === 1 && day <= 15);
     return autumn || spring;
