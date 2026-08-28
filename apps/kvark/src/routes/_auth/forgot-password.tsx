@@ -12,11 +12,16 @@ import {
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 
-import { requestPasswordResetMutationOptions } from "#/api/auth";
+import {
+    requestPasswordResetMutationOptions,
+    sanitizeRedirectTo,
+} from "#/api/auth";
 import { formHandlers, useAppForm } from "#/hooks/form";
 
 export const Route = createFileRoute("/_auth/forgot-password")({
     component: ForgotPasswordPage,
+    // Destinasjonen brukeren var på vei til, videreført fra innloggingssiden.
+    validateSearch: z.object({ redirectTo: z.string().optional() }),
 });
 
 const forgotPasswordSchema = z.object({
@@ -24,6 +29,7 @@ const forgotPasswordSchema = z.object({
 });
 
 function ForgotPasswordPage() {
+    const { redirectTo } = Route.useSearch();
     const requestResetMutation = useMutation(
         requestPasswordResetMutationOptions,
     );
@@ -38,15 +44,20 @@ function ForgotPasswordPage() {
         },
         async onSubmit({ value }) {
             // redirectTo must be an absolute URL — Better Auth's originCheck
-            // validates it against trustedOrigins.
-            const redirectTo =
+            // validates it against trustedOrigins. Destinasjonen henges på som
+            // søkeparameter: backend bygger lenka med `new URL(...)` og setter
+            // bare `token`, så det som allerede står der overlever.
+            const resetPath = redirectTo
+                ? `/reset-password?redirectTo=${encodeURIComponent(sanitizeRedirectTo(redirectTo))}`
+                : "/reset-password";
+            const resetUrl =
                 typeof window !== "undefined"
-                    ? `${window.location.origin}/reset-password`
-                    : "/reset-password";
+                    ? new URL(resetPath, window.location.origin).toString()
+                    : resetPath;
 
             await requestResetMutation.mutateAsync({
                 email: value.email,
-                redirectTo,
+                redirectTo: resetUrl,
             });
         },
     });
@@ -65,6 +76,7 @@ function ForgotPasswordPage() {
                 <CardFooter>
                     <Link
                         to="/login"
+                        search={{ redirectTo }}
                         className="text-sm underline underline-offset-4"
                     >
                         Tilbake til innlogging
@@ -120,6 +132,7 @@ function ForgotPasswordPage() {
                     <p className="text-sm text-muted-foreground">
                         <Link
                             to="/login"
+                            search={{ redirectTo }}
                             className="underline underline-offset-4"
                         >
                             Tilbake til innlogging

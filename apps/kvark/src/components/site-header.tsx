@@ -1,4 +1,4 @@
-import { Link, type LinkOptions } from "@tanstack/react-router";
+import { Link, type LinkOptions, useRouterState } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import {
@@ -15,6 +15,7 @@ import type { ReactNode } from "react";
 import { ThemeSwitcher } from "./theme-switcher";
 import { TihldeLogo } from "./icons/tihlde";
 
+import { loginSearchFor } from "#/api/auth";
 import { avatarImageUrl } from "#/lib/assets";
 
 export type InternalLink = {
@@ -64,6 +65,10 @@ export function SiteHeader({
     actions,
     hasProfileTodo = false,
 }: SiteHeaderProps) {
+    const currentHref = useRouterState({
+        select: (state) => state.location.href,
+    });
+
     return (
         <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur">
             <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
@@ -143,7 +148,13 @@ export function SiteHeader({
                     <Link
                         {...(user
                             ? { to: "/profil/$id", params: { id: "me" } }
-                            : { to: "/login" })}
+                            : {
+                                  to: "/login",
+                                  // Med siden man står på som destinasjon, så
+                                  // en som kom hit fra en e-postlenke kommer
+                                  // tilbake hit etter innlogging.
+                                  search: loginSearchFor(currentHref),
+                              })}
                         aria-label={
                             user
                                 ? hasProfileTodo
