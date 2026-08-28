@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarClock, GraduationCap, MapPin } from "lucide-react";
+import { CalendarClock, MapPin } from "lucide-react";
 
 import { ListCard } from "#/components/list-card";
 
@@ -28,9 +28,14 @@ export function JobCard({
             title={title}
             imageUrl={imageUrl}
             imageBadge={jobType}
+            /*
+             * Sted og klassetrinn deler rad. Da har annonsekortet like mange
+             * metarader som arrangementskortet, og de blir like høye — coveret
+             * er låst til 21:9 og ville ellers latt en tredje rad stikke ut
+             * under bildet.
+             */
             meta={[
-                { icon: GraduationCap, text: classLevels },
-                { icon: MapPin, text: location },
+                { icon: MapPin, text: `${location} · ${classLevels}` },
                 { icon: CalendarClock, text: deadline },
             ]}
         />
