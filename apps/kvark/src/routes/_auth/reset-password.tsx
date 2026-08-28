@@ -18,6 +18,9 @@ import { useMutation } from "@tanstack/react-query";
 const searchSchema = z.object({
     token: z.string().optional(),
     error: z.string().optional(),
+    // Fulgte med fra «Glemt passord», og videre inn i lenka som e-posten bar.
+    // Better Auth legger bare til `token` på den URL-en, så denne står igjen.
+    redirectTo: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_auth/reset-password")({
@@ -42,7 +45,7 @@ const resetPasswordSchema = z
     });
 
 function ResetPasswordPage() {
-    const { token, error: tokenError } = Route.useSearch();
+    const { token, error: tokenError, redirectTo } = Route.useSearch();
 
     const changePasswordMutation = useMutation(changePasswordMutationOptions);
 
@@ -80,6 +83,7 @@ function ResetPasswordPage() {
                 <CardFooter>
                     <Link
                         to="/forgot-password"
+                        search={{ redirectTo }}
                         className="text-sm underline underline-offset-4"
                     >
                         Be om ny lenke
@@ -101,6 +105,7 @@ function ResetPasswordPage() {
                 <CardFooter>
                     <Link
                         to="/login"
+                        search={{ redirectTo }}
                         className="text-sm underline underline-offset-4"
                     >
                         Gå til innlogging
@@ -165,6 +170,7 @@ function ResetPasswordPage() {
                     <p className="text-sm text-muted-foreground">
                         <Link
                             to="/login"
+                            search={{ redirectTo }}
                             className="underline underline-offset-4"
                         >
                             Tilbake til innlogging

@@ -133,7 +133,15 @@ function LinkFeideCard() {
                 <CardContent>
                     <Button
                         className="w-full"
-                        onClick={() => navigate({ to: "/login" })}
+                        onClick={() =>
+                            navigate({
+                                to: "/login",
+                                // Destinasjonen fulgte med hit gjennom
+                                // Feide-runden, og skal ikke gå tapt bare
+                                // fordi lenken rakk å gå ut.
+                                search: { redirectTo: next },
+                            })
+                        }
                     >
                         Til innlogging
                     </Button>

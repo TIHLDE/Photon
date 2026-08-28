@@ -227,6 +227,11 @@ function LoginPage() {
                             <div className="flex justify-end">
                                 <Link
                                     to="/forgot-password"
+                                    // Destinasjonen følger med gjennom hele
+                                    // passordrunden, så en som kom fra en
+                                    // e-postlenke og måtte lage nytt passord
+                                    // fortsatt havner der til slutt.
+                                    search={{ redirectTo }}
                                     className="text-sm text-muted-foreground underline underline-offset-4"
                                 >
                                     Glemt passord?

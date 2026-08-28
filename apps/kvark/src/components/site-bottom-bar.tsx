@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
     Accordion,
     AccordionContent,
@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { loginSearchFor } from "#/api/auth";
+
 import { TihldeLogo } from "./icons/tihlde";
 import type { NavItem, NavLink } from "./site-header";
 
@@ -43,6 +45,9 @@ export function SiteBottomBar({
 }: SiteBottomBarProps) {
     const [menuOpen, setMenuOpen] = useState(false);
     const closeMenu = () => setMenuOpen(false);
+    const currentHref = useRouterState({
+        select: (state) => state.location.href,
+    });
 
     return (
         <BottomBar className="lg:hidden">
@@ -145,7 +150,14 @@ export function SiteBottomBar({
                                     link={{
                                         kind: "internal",
                                         label: "Logg inn",
-                                        link: { to: "/login" },
+                                        link: {
+                                            to: "/login",
+                                            // Tilbake hit etterpå, ikke på
+                                            // forsiden — baren står også på
+                                            // innloggingssidene, og der gir
+                                            // hjelperen ingen destinasjon.
+                                            search: loginSearchFor(currentHref),
+                                        },
                                     }}
                                     onNavigate={closeMenu}
                                 />

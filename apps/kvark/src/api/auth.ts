@@ -255,6 +255,38 @@ export function sanitizeRedirectTo(url: unknown): string {
 }
 
 /**
+ * Sidene i `_auth`-mappa. Å sende noen tilbake hit etter innlogging ville
+ * enten vært en runddans (`/login?redirectTo=/login`) eller landet dem på et
+ * skjema de nettopp var ferdige med, så disse teller ikke som destinasjon.
+ */
+const AUTH_PATHS = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/velg-passord",
+    "/koble-feide",
+    "/oauth/consent",
+];
+
+function isAuthPath(href: string): boolean {
+    const path = href.split(/[?#]/)[0] ?? "";
+    return AUTH_PATHS.includes(path);
+}
+
+/**
+ * `search`-objektet en «Logg inn»-lenke skal ha når den står på siden brukeren
+ * er på nå — så en som klikker seg inn fra en e-postlenke kommer tilbake dit
+ * i stedet for på forsiden. Tomt objekt når destinasjonen er en av
+ * innloggingssidene selv, som er det samme som ingen destinasjon.
+ */
+export function loginSearchFor(href: string): { redirectTo?: string } {
+    if (isAuthPath(href)) return {};
+    const redirectTo = sanitizeRedirectTo(href);
+    return redirectTo === "/" ? {} : { redirectTo };
+}
+
+/**
  * Attempts to authenticate the user and redirects to the login page if not authenticated
  * @param request the request object from the loader
  * @returns auth object if authenticated
