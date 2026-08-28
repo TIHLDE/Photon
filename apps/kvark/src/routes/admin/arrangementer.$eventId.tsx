@@ -862,13 +862,23 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
     );
     useLoadAllPages(registrationsQuery);
 
-    const participants = useMemo(
-        () =>
+    const participants = useMemo(() => {
+        const rows =
             registrationsQuery.data?.pages.flatMap(
                 (page) => page.registeredUsers,
-            ) ?? [],
-        [registrationsQuery.data],
-    );
+            ) ?? [];
+        // Ventelista leses ovenfra og ned: den som står øverst er den som får
+        // plassen når noen melder seg av. Lista kommer nyeste først fra API-et,
+        // som er riktig for påmeldte, men snur ventelista på hodet.
+        if (status !== "waitlisted") {
+            return rows;
+        }
+        return [...rows].sort(
+            (a, b) =>
+                (a.waitlistPosition ?? Number.MAX_SAFE_INTEGER) -
+                (b.waitlistPosition ?? Number.MAX_SAFE_INTEGER),
+        );
+    }, [registrationsQuery.data, status]);
     const isPending = registrationsQuery.isPending;
 
     /**
@@ -1066,11 +1076,16 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                     return (
                                         <TableRow key={participant.id}>
                                             <TableCell>
-                                                {participant.name}
                                                 {participant.waitlistPosition !=
-                                                null
-                                                    ? ` (#${participant.waitlistPosition})`
-                                                    : ""}
+                                                null ? (
+                                                    <span className="text-muted-foreground mr-2 tabular-nums">
+                                                        {
+                                                            participant.waitlistPosition
+                                                        }
+                                                        .
+                                                    </span>
+                                                ) : null}
+                                                {participant.name}
                                             </TableCell>
                                             <TableCell>
                                                 {participant.email ?? "—"}
