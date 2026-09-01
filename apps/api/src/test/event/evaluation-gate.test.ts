@@ -288,4 +288,56 @@ describe("unanswered evaluations block registration", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "an evaluation older than 30 days no longer blocks",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            // Lepton stopped blocking 30 days after the event ended. Dropping
+            // that window in the port locked 299 members out of every
+            // registration over evaluations going back to 2021.
+            const longAgo = Date.now() - 60 * 24 * 60 * 60 * 1000;
+            const attended = await ctx.utils.createTestEvent({
+                title: "Halloween",
+                slug: `halloween-${Date.now()}`,
+                start: new Date(longAgo),
+                end: new Date(longAgo + 4 * 60 * 60 * 1000),
+                registrationStart: new Date(longAgo - 7 * 24 * 60 * 60 * 1000),
+                registrationEnd: new Date(longAgo - 60 * 60 * 1000),
+            });
+            const next = await ctx.utils.createTestEvent({
+                title: "Bedpres",
+                slug: `neste-5-${Date.now()}`,
+            });
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:registrations:create",
+            ]);
+            await ctx.utils.acceptEventRules(user.id);
+            const client = await ctx.utils.clientForUser(user);
+
+            await addEvaluation(ctx.db, attended.id);
+            await markAttended(ctx.db, attended.id, user.id);
+
+            const response = await client.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: next.id },
+                json: {},
+            });
+
+            expect(response.status).toBe(200);
+
+            // ...and it is gone from the profile tab too, so the member is not
+            // shown a debt the API no longer enforces.
+            const listed =
+                await client.api.user.me["unanswered-evaluations"].$get();
+            expect(listed.status).toBe(200);
+            expect(await listed.json()).toHaveLength(0);
+        },
+        500_000,
+    );
 });
