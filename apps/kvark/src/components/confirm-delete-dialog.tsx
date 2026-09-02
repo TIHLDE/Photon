@@ -8,7 +8,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@tihlde/ui/ui/alert-dialog";
-import { useRef, useState, type ReactNode } from "react";
+import { Input } from "@tihlde/ui/ui/input";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type ConfirmDeleteDialogProps = {
     open: boolean;
@@ -21,6 +22,8 @@ type ConfirmDeleteDialogProps = {
     confirmLabel: string;
     onConfirm: () => void;
     isPending?: boolean;
+    /** If set, this exact phrase must be entered before confirming. */
+    confirmationPhrase?: string;
 };
 
 /**
@@ -35,7 +38,17 @@ export function ConfirmDeleteDialog({
     confirmLabel,
     onConfirm,
     isPending = false,
+    confirmationPhrase,
 }: ConfirmDeleteDialogProps) {
+    const [confirmation, setConfirmation] = useState("");
+
+    useEffect(() => {
+        if (!open) setConfirmation("");
+    }, [open]);
+
+    const isConfirmationValid =
+        !confirmationPhrase || confirmation === confirmationPhrase;
+
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
@@ -45,13 +58,32 @@ export function ConfirmDeleteDialog({
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+                {confirmationPhrase ? (
+                    <div className="flex flex-col gap-2">
+                        <p className="text-sm font-medium">
+                            Skriv:
+                            <span className="rounded bg-muted px-1 py-0.5 font-mono">
+                                {confirmationPhrase}
+                            </span>
+                        </p>
+                        <Input
+                            value={confirmation}
+                            onChange={(event) =>
+                                setConfirmation(event.target.value)
+                            }
+                            placeholder="Skriv inn teksten over"
+                            aria-label="Bekreft sletting"
+                            autoComplete="off"
+                        />
+                    </div>
+                ) : null}
                 <AlertDialogFooter>
                     <AlertDialogCancel variant="outline" size="default">
                         Avbryt
                     </AlertDialogCancel>
                     <AlertDialogAction
                         variant="destructive"
-                        disabled={isPending}
+                        disabled={isPending || !isConfirmationValid}
                         onClick={onConfirm}
                     >
                         {confirmLabel}

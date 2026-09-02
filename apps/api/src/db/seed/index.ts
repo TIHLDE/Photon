@@ -59,11 +59,11 @@ export default async (ctx: AppContext) => {
     // 2. User (allergies - reference data)
     await seedUser(ctx);
 
-    // 3. Auth (users)
-    await seedAuth(ctx);
-
-    // 4. Org (groups)
+    // 3. Org (groups)
     await seedOrg(ctx);
+
+    // 4. Auth (users)
+    await seedAuth(ctx);
 
     // 5. Event (categories)
     await seedEvent(ctx);
