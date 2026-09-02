@@ -1204,7 +1204,11 @@ export interface paths {
          * @description Submit answers to a form
          */
         post: operations["createFormSubmission"];
-        delete?: never;
+        /**
+         * Delete all submissions
+         * @description Delete all submissions for a form. Requires permission to manage the form.
+         */
+        delete: operations["deleteAllFormSubmissions"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4674,6 +4678,9 @@ export interface components {
                 }[];
             }[];
         }[];
+        DeleteSubmissionResponse: {
+            detail: string;
+        };
         SubmissionDetail: {
             /** Format: uuid */
             id: string;
@@ -4698,9 +4705,6 @@ export interface components {
                     title: string;
                 }[];
             }[];
-        };
-        DeleteSubmissionResponse: {
-            detail: string;
         };
         DeleteSubmissionWithReason: {
             reason: string;
@@ -9802,6 +9806,53 @@ export interface operations {
             };
             /** @description Conflict - Duplicate submission not allowed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteAllFormSubmissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                formId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteSubmissionResponse"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Not Found - Form not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

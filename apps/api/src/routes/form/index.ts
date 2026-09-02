@@ -6,6 +6,7 @@ import { listRoute } from "./list";
 import { statisticsRoute } from "./statistics";
 import { createSubmissionRoute } from "./submission/create";
 import { deleteSubmissionWithReasonRoute } from "./submission/delete";
+import { deleteAllSubmissionsRoute } from "./submission/delete-all";
 import { downloadSubmissionsRoute } from "./submission/download";
 import { getSubmissionRoute } from "./submission/get";
 import { listSubmissionsRoute } from "./submission/list";
@@ -30,5 +31,6 @@ export const formRoutes = route()
     .route("/", listSubmissionsRoute)
     .route("/", downloadSubmissionsRoute)
     .route("/", listOwnSubmissionsRoute)
+    .route("/", deleteAllSubmissionsRoute)
     .route("/", getSubmissionRoute)
     .route("/", deleteSubmissionWithReasonRoute);

@@ -59,5 +59,47 @@ export default async ({ db, auth }: AppContext) => {
                 .values({ userId, roleId: rootRole.id })
                 .onConflictDoNothing();
         }
+
+        await db
+            .insert(schema.groupMembership)
+            .values({ userId, groupSlug: "index", role: "member" })
+            .onConflictDoNothing();
+    }
+
+    // Create a regular development user for testing non-admin access.
+    const memberUsers = await db
+        .select()
+        .from(schema.user)
+        .where(eq(schema.user.email, "medlem@test.com"))
+        .limit(1);
+
+    if (!memberUsers.length) {
+        const member = await auth.api.createUser({
+            body: {
+                email: "medlem@test.com",
+                password: "index123",
+                name: "Medlem Test",
+                role: "user",
+                data: {
+                    username: "medlem",
+                },
+            },
+        });
+
+        await db
+            .update(schema.user)
+            .set({ emailVerified: true })
+            .where(eq(schema.user.id, member.user.id));
+
+        await db.insert(schema.userSettings).values({
+            userId: member.user.id,
+            acceptsEventRules: true,
+            allowsPhotosByDefault: true,
+            receiveMailCommunication: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isOnboarded: true,
+            gender: "male"
+        });
     }
 };

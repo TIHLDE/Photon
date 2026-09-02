@@ -1,4 +1,5 @@
 import {
+    useMutation,
     useQuery,
     useQueryClient,
     useSuspenseQuery,
@@ -22,12 +23,19 @@ import {
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
-import { ArrowLeft, DownloadIcon, LockIcon, TriangleAlert } from "lucide-react";
+import {
+    ArrowLeft,
+    DownloadIcon,
+    LockIcon,
+    Trash2,
+    TriangleAlert,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
 
 import { authClientWithRedirect } from "#/api/auth";
 import {
+    deleteAllSubmissionsMutation,
     downloadFormSubmissionsQuery,
     getFormByIdQuery,
     getFormStatisticsQuery,
@@ -35,6 +43,7 @@ import {
 } from "#/api/queries/forms";
 import { FormStatisticsList } from "#/components/form-statistics-list";
 import { FormStudyCharts } from "#/components/form-study-charts";
+import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import { FormSubmissionsTable } from "#/components/form-submissions-table";
 import { useGoBack } from "#/hooks/use-go-back";
 import { mapFormStatistics, mapSubmission } from "#/lib/form";
@@ -59,6 +68,8 @@ function FormSubmissionsPage() {
     const goBack = useGoBack();
     const queryClient = useQueryClient();
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const deleteAllSubmissions = useMutation(deleteAllSubmissionsMutation);
 
     const { data: form } = useSuspenseQuery(getFormByIdQuery(id));
     // Svarene og statistikken er bare for dem som kan administrere skjemaet.
@@ -92,6 +103,13 @@ function FormSubmissionsPage() {
      * CSV-en lages av API-et; her hentes den bare og lagres. Nedlastingen går
      * ikke gjennom en vanlig lenke fordi endepunktet krever innlogging.
      */
+    function handleDeleteAllSubmissions() {
+        deleteAllSubmissions.mutate(
+            { formId: id },
+            { onSuccess: () => setIsDeleteDialogOpen(false) },
+        );
+    }
+
     async function handleDownload() {
         setIsDownloading(true);
         try {
@@ -178,19 +196,44 @@ function FormSubmissionsPage() {
                                         </TabsTrigger>
                                     </TabsList>
                                 </Tabs>
-                                <Button
-                                    variant="outline"
-                                    className="ml-auto"
-                                    disabled={
-                                        isDownloading ||
-                                        submissions.length === 0
-                                    }
-                                    onClick={handleDownload}
-                                >
-                                    <DownloadIcon />
-                                    Last ned som CSV
-                                </Button>
+                                <div className="ml-auto flex flex-wrap gap-3">
+                                    <Button
+                                        variant="destructive"
+                                        disabled={
+                                            deleteAllSubmissions.isPending ||
+                                            submissions.length === 0
+                                        }
+                                        onClick={() =>
+                                            setIsDeleteDialogOpen(true)
+                                        }
+                                    >
+                                        <Trash2 />
+                                        Slett alle svar
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        disabled={
+                                            isDownloading ||
+                                            submissions.length === 0
+                                        }
+                                        onClick={handleDownload}
+                                    >
+                                        <DownloadIcon />
+                                        Last ned som CSV
+                                    </Button>
+                                </div>
                             </div>
+                            {deleteAllSubmissions.isError ? (
+                                <Alert variant="destructive">
+                                    <TriangleAlert />
+                                    <AlertTitle>
+                                        Klarte ikke å slette svarene
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                        {deleteAllSubmissions.error.message}
+                                    </AlertDescription>
+                                </Alert>
+                            ) : null}
                             {visning === "svar" ? (
                                 <FormSubmissionsTable
                                     questions={questions}
@@ -214,6 +257,16 @@ function FormSubmissionsPage() {
                     )}
                 </CardContent>
             </Card>
+            <ConfirmDeleteDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Sikker på at du vil slette alle svarene?"
+                description={`Alle ${submissions.length} svar på "${form.title}" blir slettet permanent dersom du fortsetter. Dette kan ikke angres.`}
+                confirmLabel="Slett alle svar"
+                confirmationPhrase="Ja jeg vil slette svarene"
+                onConfirm={handleDeleteAllSubmissions}
+                isPending={deleteAllSubmissions.isPending}
+            />
         </div>
     );
 }

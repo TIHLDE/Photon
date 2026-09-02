@@ -239,3 +239,19 @@ export const createSubmissionMutation = mutationOptions({
 
 // TODO: deleteSubmissionWithReason requires a request body on DELETE,
 // which the api client doesn't currently support. Add when the client supports it.
+export const deleteAllSubmissionsMutation = mutationOptions({
+    mutationFn: ({ formId }: { formId: string }) =>
+        apiClient.delete("/api/forms/{formId}/submissions", {
+            params: { formId },
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...FormQueryKeys.submissions, vars.formId],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...FormQueryKeys.statistics, vars.formId],
+            exact: false,
+        });
+    },
+});
