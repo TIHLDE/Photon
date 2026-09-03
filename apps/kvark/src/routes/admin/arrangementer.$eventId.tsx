@@ -1540,8 +1540,8 @@ function StudyVerificationMark({
     const isStale = verification === "stale";
 
     const explanation = isStale
-        ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studium eller blitt ferdig uten at vi vet det."
-        : "Studiet er aldri bekreftet av Feide. Det kommer fra Lepton-importen, fadderuke-påmeldingen eller en manuell retting, og sier ingenting om at medlemmet faktisk går der nå.";
+        ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studie eller blitt ferdig."
+        : "Studiet har ikke blitt bekreftet via Feide";
 
     const Icon = isStale ? ClockFadingIcon : TriangleAlertIcon;
 

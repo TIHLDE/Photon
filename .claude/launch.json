@@ -4,13 +4,34 @@
         {
             "name": "api",
             "runtimeExecutable": "bun",
-            "runtimeArgs": ["run", "--filter", "@photon/api", "dev"],
+            "runtimeArgs": [
+                "run",
+                "--filter",
+                "@photon/api",
+                "dev"
+            ],
             "port": 4100
         },
         {
             "name": "kvark",
             "runtimeExecutable": "bun",
-            "runtimeArgs": ["run", "--filter", "kvark", "dev"],
+            "runtimeArgs": [
+                "run",
+                "--filter",
+                "kvark",
+                "dev"
+            ],
+            "port": 3000,
+            "autoPort": true
+        },
+        {
+            "name": "proton",
+            "runtimeExecutable": "pnpm",
+            "runtimeArgs": [
+                "-C",
+                "/Users/mathiasstrom/tihlde-repos/Proton",
+                "dev"
+            ],
             "port": 3000,
             "autoPort": true
         }
