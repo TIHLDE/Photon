@@ -69,6 +69,7 @@ import {
 } from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { TeknologiministerMessage } from "#/components/teknologiminister-message";
 import z from "zod";
 
 import { useAnyScopePermission } from "#/hooks/use-permission";
@@ -312,6 +313,22 @@ function GalleryDialog({
     );
 }
 
+/**
+ * `POST /api/galleries/:slug/pictures` tar maks 100 bilder om gangen, og en
+ * fadderuke-mappe er fort tre ganger så stor. Vi laster opp og fester én pulje
+ * av gangen: hver forespørsel holder seg innenfor grensa, og bildene som alt
+ * er lagt inn blir liggende selv om noe ryker underveis.
+ */
+const PICTURES_PER_BATCH = 50;
+
+function batched<T>(items: T[], size: number): T[][] {
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+        batches.push(items.slice(i, i + size));
+    }
+    return batches;
+}
+
 function UploadPicturesCard() {
     const { data } = useSuspenseQuery(getGalleriesQuery(0));
     const galleries = data.items;
@@ -320,6 +337,8 @@ function UploadPicturesCard() {
     const [files, setFiles] = useState<File[]>([]);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadedCount, setUploadedCount] = useState<number | null>(null);
+    const [addedCount, setAddedCount] = useState(0);
+    const [progress, setProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
 
     const queryClient = useQueryClient();
@@ -333,40 +352,53 @@ function UploadPicturesCard() {
         setIsUploading(true);
         setUploadError(null);
         setUploadedCount(null);
+        setAddedCount(0);
+        setProgress(0);
 
+        /**
+         * Files go to the asset store one by one, then the resulting URLs are
+         * attached to the album — the same two-step shape Lepton used (blob
+         * upload, then Picture rows), bare pulje for pulje.
+         */
+        let added = 0;
         try {
-            /**
-             * Files go to the asset store one by one, then all the resulting
-             * URLs are attached to the album in a single request — the same
-             * two-step shape Lepton used (blob upload, then Picture rows).
-             */
-            const uploaded: { imageUrl: string }[] = [];
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append("file", file);
-                const asset = await uploadAsset.mutateAsync({ formData });
-                uploaded.push({ imageUrl: assetPublicUrl(asset.key) });
+            for (const batch of batched(files, PICTURES_PER_BATCH)) {
+                const uploaded: { imageUrl: string }[] = [];
+                for (const file of batch) {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const asset = await uploadAsset.mutateAsync({ formData });
+                    uploaded.push({ imageUrl: assetPublicUrl(asset.key) });
+                    setProgress((done) => done + 1);
+                }
+
+                await addPictures.mutateAsync({
+                    slug,
+                    data: { pictures: uploaded },
+                });
+
+                added += uploaded.length;
+                setAddedCount(added);
             }
 
-            await addPictures.mutateAsync({
-                slug,
-                data: { pictures: uploaded },
-            });
-
-            setUploadedCount(uploaded.length);
+            setUploadedCount(added);
             setFiles([]);
-            await queryClient.invalidateQueries({
-                queryKey: ["galleries"],
-                exact: false,
-            });
         } catch (error) {
             setUploadError(
                 error instanceof Error
                     ? error.message
                     : "Ukjent feil under opplasting",
             );
+            // Puljene som gikk gjennom ligger allerede i galleriet. Lar de
+            // resterende filene bli stående i feltet, så «prøv igjen» tar
+            // opp tråden i stedet for å legge inn duplikater.
+            setFiles(files.slice(added));
         } finally {
             setIsUploading(false);
+            await queryClient.invalidateQueries({
+                queryKey: ["galleries"],
+                exact: false,
+            });
         }
     }
 
@@ -424,6 +456,11 @@ function UploadPicturesCard() {
                                         value={files}
                                         onValueChange={setFiles}
                                         labels={dropzoneLabels}
+                                        // Nye filer midt i en pågående
+                                        // opplasting ville verken blitt lastet
+                                        // opp eller overlevd opprydningen
+                                        // etterpå.
+                                        disabled={isUploading}
                                     />
                                 </Field>
                             </FieldGroup>
@@ -446,7 +483,13 @@ function UploadPicturesCard() {
                                         Kunne ikke laste opp
                                     </AlertTitle>
                                     <AlertDescription>
-                                        {uploadError}
+                                        <TeknologiministerMessage
+                                            message={
+                                                addedCount > 0
+                                                    ? `${addedCount === 1 ? "1 bilde" : `${addedCount} bilder`} rakk å bli lagt til. Resten ligger klare i feltet – prøv igjen. (${uploadError})`
+                                                    : uploadError
+                                            }
+                                        />
                                     </AlertDescription>
                                 </Alert>
                             )}
@@ -461,7 +504,7 @@ function UploadPicturesCard() {
                                     }
                                 >
                                     {isUploading
-                                        ? "Laster opp…"
+                                        ? `Laster opp… ${progress}/${files.length}`
                                         : `Last opp ${files.length || ""}`.trim()}
                                 </Button>
                             </div>
