@@ -167,6 +167,24 @@ export const studyProgramMembership = pgTable(
 );
 
 /**
+ * The inverse of `user.studyProgramMemberships`, which the relational query
+ * needs declared on both sides before `with` will resolve it.
+ */
+export const studyProgramMembershipRelations = relations(
+    studyProgramMembership,
+    ({ one }) => ({
+        user: one(user, {
+            fields: [studyProgramMembership.userId],
+            references: [user.id],
+        }),
+        studyProgram: one(studyProgram, {
+            fields: [studyProgramMembership.studyProgramId],
+            references: [studyProgram.id],
+        }),
+    }),
+);
+
+/**
  * NB: `group.type` is a `varchar`, not this enum, and holds upper-case values
  * from the Lepton migration — including `SPORTSTEAM`, which is not listed
  * here. Treat this list as indicative, compare types case-insensitively, and

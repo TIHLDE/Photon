@@ -24,6 +24,7 @@ import {
     CheckIcon,
     CircleHelpIcon,
     CopyIcon,
+    ShieldQuestionMarkIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -62,6 +63,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
@@ -1091,14 +1093,21 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                                 {participant.email ?? "—"}
                                             </TableCell>
                                             <TableCell>
-                                                {formatStudyLabel({
-                                                    programme:
-                                                        participant.studyProgram,
-                                                    classYear:
-                                                        classYearOf(
-                                                            participant,
-                                                        ),
-                                                }) ?? "—"}
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    {formatStudyLabel({
+                                                        programme:
+                                                            participant.studyProgram,
+                                                        classYear:
+                                                            classYearOf(
+                                                                participant,
+                                                            ),
+                                                    }) ?? "—"}
+                                                    <StudyVerificationMark
+                                                        verification={
+                                                            participant.studyVerification
+                                                        }
+                                                    />
+                                                </span>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
@@ -1490,6 +1499,47 @@ const PAYMENT_STATUS_VARIANTS: Record<
     refunded: "secondary",
     failed: "destructive",
 };
+
+/**
+ * Merket som sier at studiet bak en prioritering ikke er bekreftet av Feide.
+ *
+ * Studiegruppa er det prioriteringen leser, og den fjernes aldri av seg selv:
+ * den som byttet studium eller ble ferdig står der til de logger inn med Feide
+ * igjen. Arrangøren så ingen forskjell på et studium NTNU har bekreftet denne
+ * måneden og ett som ble skrevet inn på et fadderuke-skjema i 2024.
+ *
+ * Vises bare når det er noe å si. Er studiet bekreftet, er raden ren — et
+ * grønt merke på tre av fire deltakere hadde vært støy, og det er avviket
+ * arrangøren skal kunne få øye på.
+ */
+function StudyVerificationMark({
+    verification,
+}: {
+    verification?: "verified" | "stale" | "unverified";
+}) {
+    if (!verification || verification === "verified") return null;
+
+    const explanation =
+        verification === "stale"
+            ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studium eller blitt ferdig uten at vi vet det."
+            : "Studiet er aldri bekreftet av Feide. Det kommer fra Lepton-importen, fadderuke-påmeldingen eller en manuell retting, og sier ingenting om at medlemmet faktisk går der nå.";
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span
+                        className="text-muted-foreground inline-flex"
+                        aria-label={explanation}
+                    >
+                        <ShieldQuestionMarkIcon className="size-3.5" />
+                    </span>
+                }
+            />
+            <TooltipContent className="max-w-72">{explanation}</TooltipContent>
+        </Tooltip>
+    );
+}
 
 function PaymentStatusBadge({ status }: { status: string }) {
     return (

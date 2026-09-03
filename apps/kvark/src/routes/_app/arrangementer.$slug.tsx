@@ -46,6 +46,7 @@ import { DetailsCard } from "#/components/details-card";
 import { EventQrDialog } from "#/components/event-qr-dialog";
 import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { AllergyNudge } from "#/components/allergy-nudge";
+import { FeideRefreshNudge } from "#/components/feide-refresh-nudge";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
@@ -623,6 +624,11 @@ function EventDetailPage() {
                                   ]
                                 : []),
                         ]}
+                    />
+
+                    <FeideRefreshNudge
+                        eventId={event.id}
+                        hasPriority={priorityLabels.length > 0}
                     />
 
                     <EventRegistrationCard

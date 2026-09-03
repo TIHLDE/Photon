@@ -1081,6 +1081,13 @@ export const registeredUserSchema = Schema(
             description:
                 "The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins.",
         }),
+        studyVerification: z
+            .enum(["verified", "stale", "unverified"])
+            .optional()
+            .meta({
+                description:
+                    "Whether Feide has confirmed the member is on the study programme shown. 'verified' means Feide answered within the last 120 days, 'stale' that it answered longer ago than that, and 'unverified' that it has never answered — the study came from the Lepton migration, the fadderuka sign-up or an admin correction. Priority pools still match on group membership regardless; this only tells the organizer how well the study behind a priority is known. Only included for event admins.",
+            }),
     }),
 );
 

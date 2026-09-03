@@ -26,6 +26,7 @@ import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
 import {
     feidePlugin,
+    isFeideCheckCurrent,
     recoverMissingBaselineRole,
     redirectToPasswordSetupAfterRevoke,
     revokeUnprovenCredentials,
@@ -931,6 +932,17 @@ export function createAuth(options: CreateAuthOptions) {
                                     },
                                 },
                             },
+                            /**
+                             * Only the timestamp, and no join to the programme:
+                             * the question the frontend asks is "when did Feide
+                             * last say anything about this member", which a
+                             * login answers for every one of their programmes
+                             * at once. Folded into this query rather than added
+                             * as a fourth round-trip.
+                             */
+                            studyProgramMemberships: {
+                                columns: { feideCheckedAt: true },
+                            },
                         },
                     }),
                     getUserPermissions({ db }, user.id),
@@ -954,6 +966,28 @@ export function createAuth(options: CreateAuthOptions) {
                 const settings = row?.settings;
                 const credential = accounts.find(
                     (a) => a.providerId === "credential",
+                );
+
+                /**
+                 * When Feide last answered for this member, and whether asking
+                 * again is even possible.
+                 *
+                 * A member with no Feide account is never nudged: they have
+                 * nothing to sign in with, and the study they carry — from the
+                 * Lepton migration or the fadderuka form — is the best we will
+                 * ever have for them. Nudging them would be asking for
+                 * something they cannot give.
+                 */
+                const feideCheckedAt = (row?.studyProgramMemberships ?? [])
+                    .map((m) => m.feideCheckedAt)
+                    .filter((at): at is Date => at != null)
+                    .reduce<Date | null>(
+                        (newest, at) =>
+                            newest === null || at > newest ? at : newest,
+                        null,
+                    );
+                const hasFeideAccount = accounts.some(
+                    (a) => a.providerId === "feide",
                 );
 
                 return {
@@ -981,6 +1015,18 @@ export function createAuth(options: CreateAuthOptions) {
                                   ),
                               }
                             : null,
+                        /**
+                         * Enough for the frontend to ask the member to sign in
+                         * with Feide again when their enrolment answer has gone
+                         * stale — see `isFeideCheckCurrent`. Never a claim that
+                         * anything is wrong with them: an expired answer costs
+                         * nobody their priority, it only means we last heard
+                         * from Feide more than a semester ago.
+                         */
+                        feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
+                        needsFeideRefresh:
+                            hasFeideAccount &&
+                            !isFeideCheckCurrent(feideCheckedAt),
                     },
                     session,
                     permissions: [...new Set(permissions)],

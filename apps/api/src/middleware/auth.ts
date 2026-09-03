@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser } from "@photon/auth";
+import { isFeideCheckCurrent } from "@photon/auth/feide";
 import {
     type VerifiedAccessToken,
     verifyJWTAccessToken,
@@ -33,7 +34,7 @@ async function sessionFromVerifiedToken(
     if (!session || session.userId !== verified.sub) return null;
     if (session.expiresAt <= new Date()) return null;
 
-    const [user, settings, accounts] = await Promise.all([
+    const [user, settings, accounts, programmes] = await Promise.all([
         ctx.db.query.user.findFirst({
             where: eq(schema.user.id, verified.sub),
         }),
@@ -45,10 +46,21 @@ async function sessionFromVerifiedToken(
             where: eq(schema.account.userId, verified.sub),
             columns: { providerId: true, passwordSource: true },
         }),
+        ctx.db.query.studyProgramMembership.findMany({
+            where: eq(schema.studyProgramMembership.userId, verified.sub),
+            columns: { feideCheckedAt: true },
+        }),
     ]);
     if (!user) return null;
 
     const credential = accounts.find((a) => a.providerId === "credential");
+    const feideCheckedAt = programmes
+        .map((p) => p.feideCheckedAt)
+        .filter((at): at is Date => at != null)
+        .reduce<Date | null>(
+            (newest, at) => (newest === null || at > newest ? at : newest),
+            null,
+        );
 
     // Mirror the shape `customSession` builds, so bearer- and cookie-authenticated
     // requests see the same user object. `approvedAt`/`approvedBy` are left out
@@ -72,6 +84,10 @@ async function sessionFromVerifiedToken(
                 : credential.passwordSource === "migrated"
                   ? "placeholder"
                   : "chosen",
+            feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
+            needsFeideRefresh:
+                accounts.some((a) => a.providerId === "feide") &&
+                !isFeideCheckCurrent(feideCheckedAt),
         } as unknown as AuthUser,
         session: session as AuthSession,
     };

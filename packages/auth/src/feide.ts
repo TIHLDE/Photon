@@ -1056,6 +1056,35 @@ async function removeCohortMembership(
 }
 
 /**
+ * How long a Feide answer about enrolment counts as current, in days.
+ *
+ * Enrolment only changes at the two semester boundaries, around 1 August and
+ * 1 January, so what matters is not the age of an answer but whether a
+ * boundary has passed since it was given. 120 days is the plain age that best
+ * approximates that: members sign in around the start of each semester, and
+ * 120 days from early September lands just before the spring semester — where
+ * 90 would expire in the exam period with nothing having changed since
+ * September, and 180 not until March, a month past the spring registration
+ * deadline.
+ *
+ * Nothing is taken away when it expires. The member is asked to sign in with
+ * Feide again, because that is the only thing that can refresh the answer:
+ * Feide issues us no refresh token, so there is no way to ask on their behalf.
+ */
+export const FEIDE_CHECK_MAX_AGE_DAYS = 120;
+
+/** Whether a Feide answer given at `checkedAt` is still current at `now`. */
+export function isFeideCheckCurrent(
+    checkedAt: Date | null | undefined,
+    now: Date = new Date(),
+): boolean {
+    if (!checkedAt) return false;
+
+    const age = now.getTime() - checkedAt.getTime();
+    return age < FEIDE_CHECK_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/**
  * Semester registration windows, when `feideActive = false` says nothing.
  *
  * NTNU flips the flag off for a student who has not registered for the term
