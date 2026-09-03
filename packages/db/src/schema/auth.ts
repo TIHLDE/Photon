@@ -8,6 +8,7 @@ import {
     pgTableCreator,
 } from "drizzle-orm/pg-core";
 
+import { studyProgramMembership } from "./org";
 import { userSettings } from "./user";
 
 const pgTable = pgTableCreator((name) => `auth_${name}`);
@@ -287,6 +288,16 @@ export const userRelations = relations(user, ({ one, many }) => ({
         fields: [user.id],
         references: [userSettings.userId],
     }),
+    /**
+     * The enrolment rows Feide writes, imported lazily for the same reason
+     * `userSettings` is: `org.ts` reads `user` from here at load time.
+     *
+     * Declared so `get-session` can read when Feide last answered for a member
+     * without a fourth round-trip — the relational query folds it into the
+     * statement it already runs. See the freshness rule in
+     * `@photon/auth/feide`.
+     */
+    studyProgramMemberships: many(studyProgramMembership),
 }));
 
 export const sessionRelations = relations(session, ({ one, many }) => ({

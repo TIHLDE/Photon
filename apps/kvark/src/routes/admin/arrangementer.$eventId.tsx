@@ -23,6 +23,7 @@ import {
     TriangleAlertIcon,
     CheckIcon,
     CircleHelpIcon,
+    ClockFadingIcon,
     CopyIcon,
     UsersIcon,
     UtensilsCrossedIcon,
@@ -62,6 +63,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
@@ -1091,14 +1093,24 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                                 {participant.email ?? "—"}
                                             </TableCell>
                                             <TableCell>
-                                                {formatStudyLabel({
-                                                    programme:
-                                                        participant.studyProgram,
-                                                    classYear:
-                                                        classYearOf(
-                                                            participant,
-                                                        ),
-                                                }) ?? "—"}
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    {formatStudyLabel({
+                                                        programme:
+                                                            participant.studyProgram,
+                                                        classYear:
+                                                            classYearOf(
+                                                                participant,
+                                                            ),
+                                                    }) ?? "—"}
+                                                    <StudyVerificationMark
+                                                        programme={
+                                                            participant.studyProgram
+                                                        }
+                                                        verification={
+                                                            participant.studyVerification
+                                                        }
+                                                    />
+                                                </span>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
@@ -1490,6 +1502,69 @@ const PAYMENT_STATUS_VARIANTS: Record<
     refunded: "secondary",
     failed: "destructive",
 };
+
+/**
+ * Merket som sier at studiet bak en prioritering ikke er bekreftet av Feide.
+ *
+ * Studiegruppa er det prioriteringen leser, og den fjernes aldri av seg selv:
+ * den som byttet studium eller ble ferdig står der til de logger inn med Feide
+ * igjen. Arrangøren så ingen forskjell på et studium NTNU har bekreftet denne
+ * måneden og ett som ble skrevet inn på et fadderuke-skjema i 2024.
+ *
+ * Vises bare når det er noe å si. Er studiet bekreftet, er raden ren — et
+ * grønt merke på tre av fire deltakere hadde vært støy, og det er avviket
+ * arrangøren skal kunne få øye på.
+ */
+function StudyVerificationMark({
+    programme,
+    verification,
+}: {
+    programme?: string | null;
+    verification?: "verified" | "stale" | "unverified";
+}) {
+    // Uten studium er det ingenting å bekrefte. Deltakere som bare har et kull
+    // — eller ingen av delene — leser som «ubekreftet» fordi det ikke finnes et
+    // studieprogram å ha et Feide-svar om, og et varselikon ved siden av «—»
+    // ville pekt på et problem som ikke er der. De matcher heller ingen
+    // studiepool, så de er ikke det arrangøren ser etter.
+    if (!programme) return null;
+    if (!verification || verification === "verified") return null;
+
+    /**
+     * To tegn, ikke ett i to farger: de sier forskjellige ting.
+     *
+     * Aldri bekreftet er det verste — vi har ingenting, og studiet kan være
+     * hva som helst. Det får trekanten og gult. Bekreftet, men gammelt, er en
+     * opplysning: svaret fantes, det har bare gått en stund. Klokka og blått.
+     */
+    const isStale = verification === "stale";
+
+    const explanation = isStale
+        ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studie eller blitt ferdig."
+        : "Studiet har ikke blitt bekreftet via Feide";
+
+    const Icon = isStale ? ClockFadingIcon : TriangleAlertIcon;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span
+                        className={
+                            isStale
+                                ? "text-info inline-flex"
+                                : "text-warning inline-flex"
+                        }
+                        aria-label={explanation}
+                    >
+                        <Icon className="size-3.5" />
+                    </span>
+                }
+            />
+            <TooltipContent className="max-w-72">{explanation}</TooltipContent>
+        </Tooltip>
+    );
+}
 
 function PaymentStatusBadge({ status }: { status: string }) {
     return (

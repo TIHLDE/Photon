@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser } from "@photon/auth";
+import { isFeideCheckCurrent } from "@photon/auth/feide";
 import {
     type VerifiedAccessToken,
     verifyJWTAccessToken,
@@ -36,6 +37,12 @@ async function sessionFromVerifiedToken(
     const [user, settings, accounts] = await Promise.all([
         ctx.db.query.user.findFirst({
             where: eq(schema.user.id, verified.sub),
+            // Folded in rather than fetched on its own: this runs on every
+            // bearer-authenticated request, and the relational query carries
+            // it in the statement it was already going to send.
+            with: {
+                studyProgramMemberships: { columns: { feideCheckedAt: true } },
+            },
         }),
         ctx.db.query.userSettings.findFirst({
             where: eq(schema.userSettings.userId, verified.sub),
@@ -49,12 +56,26 @@ async function sessionFromVerifiedToken(
     if (!user) return null;
 
     const credential = accounts.find((a) => a.providerId === "credential");
+    const feideCheckedAt = user.studyProgramMemberships
+        .map((p) => p.feideCheckedAt)
+        .filter((at): at is Date => at != null)
+        .reduce<Date | null>(
+            (newest, at) => (newest === null || at > newest ? at : newest),
+            null,
+        );
 
     // Mirror the shape `customSession` builds, so bearer- and cookie-authenticated
     // requests see the same user object. `approvedAt`/`approvedBy` are left out
     // for that reason: they are an admin's audit trail, not something a session
     // has any use for, and the cookie path does not carry them.
-    const { approvedAt: _approvedAt, approvedBy: _approvedBy, ...rest } = user;
+    const {
+        approvedAt: _approvedAt,
+        approvedBy: _approvedBy,
+        // Not part of the session shape — read above, then dropped, so the
+        // bearer path returns exactly what `customSession` returns.
+        studyProgramMemberships: programmes,
+        ...rest
+    } = user;
     return {
         user: {
             ...rest,
@@ -72,6 +93,13 @@ async function sessionFromVerifiedToken(
                 : credential.passwordSource === "migrated"
                   ? "placeholder"
                   : "chosen",
+            feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
+            // Same three conditions as `customSession`; see the note there for
+            // why a member with no programme row is left alone.
+            needsFeideRefresh:
+                accounts.some((a) => a.providerId === "feide") &&
+                programmes.length > 0 &&
+                !isFeideCheckCurrent(feideCheckedAt),
         } as unknown as AuthUser,
         session: session as AuthSession,
     };

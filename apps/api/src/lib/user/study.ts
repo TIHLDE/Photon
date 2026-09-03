@@ -1,3 +1,4 @@
+import { isFeideCheckCurrent } from "@photon/auth/feide";
 import { schema } from "@photon/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
@@ -15,7 +16,28 @@ import type { AppContext } from "~/lib/ctx";
 export type UserStudy = {
     studyProgram: string | null;
     studyStartYear: number | null;
+    /** How well we know the member is on that programme. */
+    verification: StudyVerification;
 };
+
+/**
+ * How well we know a member is on the programme we show for them.
+ *
+ * - `verified` — Feide answered for this programme recently enough that a
+ *   semester cannot have turned over since; see `FEIDE_CHECK_MAX_AGE_DAYS`.
+ * - `stale` — Feide answered once, but long enough ago that the member may
+ *   have finished or switched without us hearing about it.
+ * - `unverified` — Feide has never answered for this programme. Most of the
+ *   organization: the study group came from the Lepton migration, from the
+ *   fadderuka sign-up form, or from an admin correction, and none of those is
+ *   evidence of enrolment.
+ *
+ * Only ever used to *inform*. A priority pool still matches on group
+ * membership whatever this says, because a missing answer is not a no — see
+ * `findSupersededStudySlugs` in `~/lib/event/priority` for the one reading
+ * that is evidence enough to act on.
+ */
+export type StudyVerification = "verified" | "stale" | "unverified";
 
 /** The two group types that make up the projection, lower-cased. */
 export const STUDY_GROUP_TYPES = ["study", "studyyear"] as const;
@@ -43,6 +65,8 @@ export type StudyGroupRow = {
     startYear?: number | null;
     /** `studyProgramMembership.feideActive`, when the caller loaded it. */
     feideActive?: boolean | null;
+    /** `studyProgramMembership.feideCheckedAt`, when the caller loaded it. */
+    feideCheckedAt?: Date | null;
 };
 
 /**
@@ -86,7 +110,10 @@ function enrolmentRank(feideActive: boolean | null | undefined): number {
  * cohort group when we have no year for it. That fallback carries the 1423
  * members who have groups but no programme row at all.
  */
-export function deriveStudyFromGroups(groups: StudyGroupRow[]): UserStudy {
+export function deriveStudyFromGroups(
+    groups: StudyGroupRow[],
+    now: Date = new Date(),
+): UserStudy {
     let chosen: StudyGroupRow | null = null;
     let latestCohort: number | null = null;
 
@@ -109,9 +136,23 @@ export function deriveStudyFromGroups(groups: StudyGroupRow[]): UserStudy {
         }
     }
 
+    /**
+     * Read off the programme that won, not off the member as a whole: the
+     * question is whether *this* programme is confirmed, and a fresh answer
+     * about the master someone has moved on to says nothing about the bachelor
+     * we would be showing if it had lost the ranking.
+     */
+    const verification: StudyVerification =
+        chosen?.feideActive == null
+            ? "unverified"
+            : isFeideCheckCurrent(chosen.feideCheckedAt, now)
+              ? "verified"
+              : "stale";
+
     return {
         studyProgram: chosen?.name ?? null,
         studyStartYear: chosen?.startYear ?? latestCohort,
+        verification,
     };
 }
 
@@ -171,6 +212,7 @@ export async function loadStudyGroupRows(
             programmeType: schema.studyProgram.type,
             startYear: schema.studyProgramMembership.startYear,
             feideActive: schema.studyProgramMembership.feideActive,
+            feideCheckedAt: schema.studyProgramMembership.feideCheckedAt,
         })
         .from(schema.groupMembership)
         .innerJoin(
@@ -213,6 +255,7 @@ export async function loadStudyGroupRows(
             isMaster: row.programmeType === "master",
             startYear: row.startYear,
             feideActive: row.feideActive,
+            feideCheckedAt: row.feideCheckedAt,
         });
         byUser.set(row.userId, entry);
     }

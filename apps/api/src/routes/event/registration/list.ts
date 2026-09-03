@@ -243,6 +243,7 @@ export const getAllRegistrationsForEventsRoute = route().get(
                               : null,
                           studyProgram: study.studyProgram,
                           studyStartYear: study.studyStartYear,
+                          studyVerification: study.verification,
                       }
                     : {}),
             };

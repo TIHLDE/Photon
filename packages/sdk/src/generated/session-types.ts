@@ -26,6 +26,8 @@ export type ExtendedSession = {
             allergiesConfirmedAt: Date | null;
 
         } | null;
+        feideCheckedAt: string | null;
+        needsFeideRefresh: boolean;
         id: string;
         createdAt: Date;
         updatedAt: Date;
