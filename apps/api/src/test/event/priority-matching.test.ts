@@ -180,6 +180,45 @@ describe("findSupersededStudySlugs", () => {
         expect(findSupersededStudySlugs([])).toEqual(new Set());
     });
 
+    it("names every programme that is over, not just the newest", () => {
+        // A member who took the bachelor, switched once, and is now on the
+        // master has two dead programmes behind them. Both have to go, or the
+        // one left behind still hands out priority.
+        expect(
+            findSupersededStudySlugs([
+                study("digital-forretningsutvikling", false),
+                study("digital-infrastruktur-og-cybersikkerhet", false),
+                study("digital-samhandling", true),
+            ]),
+        ).toEqual(
+            new Set([
+                "digital-forretningsutvikling",
+                "digital-infrastruktur-og-cybersikkerhet",
+            ]),
+        );
+    });
+
+    it("never names the programme the member is actually on", () => {
+        expect(
+            findSupersededStudySlugs([
+                study("dataingenir", true),
+                study("informasjonsbehandling", false),
+            ]),
+        ).toEqual(new Set(["informasjonsbehandling"]));
+    });
+
+    it("leaves cohort groups out of it", () => {
+        // A cohort is a year, not an enrolment. It cannot lapse, and a pool
+        // naming one must keep working for someone who changed programme.
+        expect(
+            findSupersededStudySlugs([
+                cohort(2023),
+                study("dataingenir", false),
+                study("digital-samhandling", true),
+            ]),
+        ).toEqual(new Set(["dataingenir"]));
+    });
+
     it("leaves a member enrolled on two programmes at once alone", () => {
         expect(
             findSupersededStudySlugs([
@@ -395,6 +434,48 @@ describe("isUserPrioritized", () => {
                 event: withPools([
                     { groupSlug: "dataingenir", classYear: null },
                 ]),
+            }),
+        ).toBe(true);
+    });
+
+    it("still matches a cohort pool after a change of programme", () => {
+        expect(
+            isUserPrioritized({
+                ...base,
+                userGroupSlugs: new Set(["2023", "dataingenir"]),
+                userClassYear: 4,
+                supersededStudySlugs: new Set(["dataingenir"]),
+                event: withPools([{ groupSlug: "2023", classYear: null }]),
+            }),
+        ).toBe(true);
+    });
+
+    it("keeps every other pool on the same event reachable", () => {
+        // Losing one pool must not cost the member the ones they still meet:
+        // the pools are alternatives, and the loop has to carry on past the
+        // one it just rejected.
+        expect(
+            isUserPrioritized({
+                ...base,
+                userGroupSlugs: new Set(["dataingenir", "index"]),
+                userClassYear: null,
+                supersededStudySlugs: new Set(["dataingenir"]),
+                event: withPools([
+                    { groupSlug: "dataingenir", classYear: null },
+                    { groupSlug: "index", classYear: null },
+                ]),
+            }),
+        ).toBe(true);
+    });
+
+    it("leaves a class-only pool untouched by a change of programme", () => {
+        expect(
+            isUserPrioritized({
+                ...base,
+                userGroupSlugs: new Set(["dataingenir"]),
+                userClassYear: 4,
+                supersededStudySlugs: new Set(["dataingenir"]),
+                event: withPools([{ groupSlug: null, classYear: 4 }]),
             }),
         ).toBe(true);
     });
