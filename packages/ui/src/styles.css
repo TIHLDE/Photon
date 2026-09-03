@@ -61,6 +61,12 @@
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.577 0.245 27.325);
+    /* Gult varsel: noe mangler og bør fikses, men ingenting er galt ennå.
+       Mørkere enn ren gul, som ikke holder kontrast mot lys bakgrunn. */
+    --warning: oklch(0.63 0.14 78);
+    /* Blå merknad: opplysning, ikke advarsel. Egen tone framfor --primary,
+       som bærer klikkbarhet. */
+    --info: oklch(0.55 0.13 245);
     --border: oklch(0.922 0 0);
     /* Dempet skillelinje for seksjoner som ikke skal trekke blikket (footer o.l.) */
     --border-subtle: oklch(0.97 0 0);
@@ -111,6 +117,9 @@
     --accent-foreground: #f5f7f9;
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: oklch(0.637 0.237 25.331);
+    /* Lysere enn i lys modus: mot navy må begge løftes for å bli lesbare. */
+    --warning: oklch(0.83 0.15 85);
+    --info: oklch(0.75 0.13 245);
     --border: #0d3172;
     /* Nytt trinn i navy-skalaen (L 11%), midt mellom --background (L 5.7%) og
        #091f49 (L 16.1%). Så vidt synlig mot bakgrunnen. Merk: samme verdi som
@@ -160,6 +169,8 @@
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
     --color-border: var(--border);
     --color-border-subtle: var(--border-subtle);
     --color-input: var(--input);

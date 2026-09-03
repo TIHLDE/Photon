@@ -23,8 +23,8 @@ import {
     TriangleAlertIcon,
     CheckIcon,
     CircleHelpIcon,
+    ClockFadingIcon,
     CopyIcon,
-    ShieldQuestionMarkIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -1530,20 +1530,34 @@ function StudyVerificationMark({
     if (!programme) return null;
     if (!verification || verification === "verified") return null;
 
-    const explanation =
-        verification === "stale"
-            ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studium eller blitt ferdig uten at vi vet det."
-            : "Studiet er aldri bekreftet av Feide. Det kommer fra Lepton-importen, fadderuke-påmeldingen eller en manuell retting, og sier ingenting om at medlemmet faktisk går der nå.";
+    /**
+     * To tegn, ikke ett i to farger: de sier forskjellige ting.
+     *
+     * Aldri bekreftet er det verste — vi har ingenting, og studiet kan være
+     * hva som helst. Det får trekanten og gult. Bekreftet, men gammelt, er en
+     * opplysning: svaret fantes, det har bare gått en stund. Klokka og blått.
+     */
+    const isStale = verification === "stale";
+
+    const explanation = isStale
+        ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studium eller blitt ferdig uten at vi vet det."
+        : "Studiet er aldri bekreftet av Feide. Det kommer fra Lepton-importen, fadderuke-påmeldingen eller en manuell retting, og sier ingenting om at medlemmet faktisk går der nå.";
+
+    const Icon = isStale ? ClockFadingIcon : TriangleAlertIcon;
 
     return (
         <Tooltip>
             <TooltipTrigger
                 render={
                     <span
-                        className="text-muted-foreground inline-flex"
+                        className={
+                            isStale
+                                ? "text-info inline-flex"
+                                : "text-warning inline-flex"
+                        }
                         aria-label={explanation}
                     >
-                        <ShieldQuestionMarkIcon className="size-3.5" />
+                        <Icon className="size-3.5" />
                     </span>
                 }
             />
