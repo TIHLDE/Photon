@@ -1,5 +1,6 @@
 import { env } from "@photon/core/env";
 import type { Context } from "hono";
+import { routePath } from "hono/route";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
 import { requestId as requestIdMiddleware } from "hono/request-id";
@@ -35,11 +36,14 @@ export const pinoLoggerMiddleware = every(
         const method = c.req.method;
         const url = c.req.path;
 
+        const route = routePath(c, -1);
+
         const logger = createLogger().child({
             requestId,
             request: {
                 method,
                 url,
+                route,
             },
         });
         c.set("logger", logger);
