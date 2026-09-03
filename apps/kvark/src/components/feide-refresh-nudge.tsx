@@ -39,10 +39,26 @@ export function FeideRefreshNudge({
 
     const signIn = () => {
         setIsSigningIn(true);
-        // Tilbake hit etterpå: den som blir sendt til forsiden må finne fram
-        // igjen selv, og da er poenget med å bekrefte studiet borte.
+
+        /**
+         * Via `/koble-feide?linked=1`, ikke rett hit tilbake.
+         *
+         * `syncFeideHook` kjører bare når Feide-callbacken minter en *ny*
+         * sesjon, og den som allerede er innlogget kan havne i lenkegrenen,
+         * som ikke gjør det — da hentes ingenting, og påminnelsen ville sendt
+         * medlemmet gjennom hele runden uten å endre noe. Den siden kaller
+         * synk-endepunktet eksplisitt med sesjonen den har, og runden innom
+         * Feide har akkurat fornyet tilgangstokenet den bruker.
+         *
+         * Kaller synken to ganger i det tilfellet hvor kroken også kjørte.
+         * Den er idempotent, og det er den billige halvdelen av å være sikker.
+         *
+         * `next` bærer med seg arrangementet, så medlemmet lander der de var.
+         */
+        const next =
+            router.state.location.pathname + router.state.location.searchStr;
         void signInWithFeide(
-            router.state.location.pathname + router.state.location.searchStr,
+            `/koble-feide?linked=1&next=${encodeURIComponent(next)}`,
         ).catch(() => setIsSigningIn(false));
     };
 

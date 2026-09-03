@@ -1103,6 +1103,9 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                                             ),
                                                     }) ?? "—"}
                                                     <StudyVerificationMark
+                                                        programme={
+                                                            participant.studyProgram
+                                                        }
                                                         verification={
                                                             participant.studyVerification
                                                         }
@@ -1513,10 +1516,18 @@ const PAYMENT_STATUS_VARIANTS: Record<
  * arrangøren skal kunne få øye på.
  */
 function StudyVerificationMark({
+    programme,
     verification,
 }: {
+    programme?: string | null;
     verification?: "verified" | "stale" | "unverified";
 }) {
+    // Uten studium er det ingenting å bekrefte. Deltakere som bare har et kull
+    // — eller ingen av delene — leser som «ubekreftet» fordi det ikke finnes et
+    // studieprogram å ha et Feide-svar om, og et varselikon ved siden av «—»
+    // ville pekt på et problem som ikke er der. De matcher heller ingen
+    // studiepool, så de er ikke det arrangøren ser etter.
+    if (!programme) return null;
     if (!verification || verification === "verified") return null;
 
     const explanation =

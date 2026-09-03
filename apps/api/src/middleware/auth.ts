@@ -85,8 +85,11 @@ async function sessionFromVerifiedToken(
                   ? "placeholder"
                   : "chosen",
             feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
+            // Same three conditions as `customSession`; see the note there for
+            // why a member with no programme row is left alone.
             needsFeideRefresh:
                 accounts.some((a) => a.providerId === "feide") &&
+                programmes.length > 0 &&
                 !isFeideCheckCurrent(feideCheckedAt),
         } as unknown as AuthUser,
         session: session as AuthSession,

@@ -977,8 +977,18 @@ export function createAuth(options: CreateAuthOptions) {
                  * Lepton migration or the fadderuka form — is the best we will
                  * ever have for them. Nudging them would be asking for
                  * something they cannot give.
+                 *
+                 * Neither is a member Feide has no programme for at all. 13 in
+                 * production, and their logins are not missing — they have
+                 * happened, and came back empty, because the member studies
+                 * something else at NTNU or the campus gate held the programme
+                 * back. Another sign-in returns the same nothing, so the ask
+                 * would be one they can never satisfy: the prompt would come
+                 * back every time, on every event, for as long as the account
+                 * exists.
                  */
-                const feideCheckedAt = (row?.studyProgramMemberships ?? [])
+                const programmes = row?.studyProgramMemberships ?? [];
+                const feideCheckedAt = programmes
                     .map((m) => m.feideCheckedAt)
                     .filter((at): at is Date => at != null)
                     .reduce<Date | null>(
@@ -1026,6 +1036,7 @@ export function createAuth(options: CreateAuthOptions) {
                         feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
                         needsFeideRefresh:
                             hasFeideAccount &&
+                            programmes.length > 0 &&
                             !isFeideCheckCurrent(feideCheckedAt),
                     },
                     session,

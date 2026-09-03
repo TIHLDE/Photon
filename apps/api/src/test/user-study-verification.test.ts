@@ -115,6 +115,19 @@ describe("deriveStudyFromGroups — verification", () => {
         expect(result.verification).toBe("verified");
     });
 
+    it("has nothing to say about a member with no programme at all", () => {
+        // Only a cohort group. The answer is vacuously "unverified" — there is
+        // no programme to have a Feide answer about — so the participant list
+        // must not put a warning next to a study it is not showing.
+        const onlyCohort = deriveStudyFromGroups(
+            [{ slug: "2025", name: "2025", type: "STUDYYEAR" }],
+            NOW,
+        );
+
+        expect(onlyCohort.studyProgram).toBeNull();
+        expect(onlyCohort.verification).toBe("unverified");
+    });
+
     it("reports a confirmed departure as verified, not unverified", () => {
         // `false` is an answer. The member is out of that programme and we
         // know it — which is exactly what the priority fix acts on.
