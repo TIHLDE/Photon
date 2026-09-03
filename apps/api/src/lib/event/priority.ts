@@ -69,12 +69,64 @@ type MembershipRow = {
     feideActive?: boolean | null;
 };
 
-/** What a member is, reduced to the two things a priority pool can ask about. */
+/** What a member is, reduced to the three things a priority pool can ask about. */
 export type UserPriorityFacts = {
     groupSlugs: Set<string>;
     /** 1-5, or null when we cannot place the member on a class level. */
     classYear: number | null;
+    /** Study programmes the member has demonstrably moved on from. */
+    supersededStudySlugs: Set<string>;
 };
+
+/**
+ * The study programmes a member has left, on positive evidence alone.
+ *
+ * A study group's membership is never taken away — leaving a programme should
+ * not cost anyone their history, and `syncDerivedStudyGroups` only ever adds.
+ * That is right for a roster and wrong for a priority pool: it makes
+ * "member of `digital-infrastruktur-og-cybersikkerhet`" mean *has ever
+ * studied it*, so a DigSec graduate now on the Digital samhandling master
+ * kept a seat on a DigSec bedpres ahead of the students it was meant for.
+ * 25 members in production are in that position, and two of them were on one
+ * event.
+ *
+ * The evidence has to be positive in both halves: Feide said this programme
+ * is over, *and* Feide said another one is running. Neither half alone is
+ * enough to take a place away from someone.
+ *
+ * A lone `false` is the half that looks conclusive and is not. It means
+ * finished, quit, on leave, on exchange — or, most often between August and
+ * mid-September, simply not registered for the term yet, which is the window
+ * priority pools for the autumn's events are decided in. {@link
+ * hasFinishedProgramme} in `@photon/auth/feide` refuses to act on it for the
+ * same reason, and 21 of the 22 members it describes already hold the alumni
+ * role and cannot register at all.
+ *
+ * A missing flag is not evidence either, in either direction. The column has
+ * only been written since 14 August 2026 and fills in on the member's next
+ * login, and 1346 of 1960 study-group memberships in production have no
+ * programme row behind them at all — every one of them migrated from Lepton.
+ * Requiring proof of *current* enrolment rather than proof of departure would
+ * strip three quarters of the organization of the priority they have.
+ *
+ * Reads only what the caller already joined, so a member whose active
+ * programme has no group membership yields no evidence and keeps every
+ * priority they had. That is the forgiving direction, and the one to fail in.
+ */
+export function findSupersededStudySlugs(
+    groups: readonly MembershipRow[],
+): Set<string> {
+    const superseded = new Set<string>();
+    let hasActiveProgramme = false;
+
+    for (const group of groups) {
+        if (group.isStudyProgramme === false) continue;
+        if (group.feideActive === true) hasActiveProgramme = true;
+        if (group.feideActive === false) superseded.add(group.slug);
+    }
+
+    return hasActiveProgramme ? superseded : new Set<string>();
+}
 
 /**
  * Which class level a member is on.
@@ -323,9 +375,12 @@ export async function getUserPriorityFacts(
         )
         .where(eq(schema.groupMembership.userId, userId));
 
+    const membershipRows = rows.map(toMembershipRow);
+
     return {
         groupSlugs: new Set(rows.map((row) => row.slug)),
-        classYear: computeUserClassYear(rows.map(toMembershipRow), now),
+        classYear: computeUserClassYear(membershipRows, now),
+        supersededStudySlugs: findSupersededStudySlugs(membershipRows),
     };
 }
 
@@ -350,6 +405,13 @@ interface IsUserPrioritizedParams {
     userGroupSlugs: Set<string>;
     /** Null when the member has no cohort — matches no class-level pool. */
     userClassYear: number | null;
+    /**
+     * Study programmes the member has left, from
+     * {@link findSupersededStudySlugs}. Optional because absent evidence is
+     * the default everywhere: no set means no programme is known to be over,
+     * and every group the member is in still counts.
+     */
+    supersededStudySlugs?: Set<string>;
     event: EventPriorityRules;
     strikeCount: number;
     enforcesPreviousStrikes: boolean;
@@ -373,10 +435,17 @@ interface IsUserPrioritizedParams {
  * the organizer wants you ahead of the queue, not that prikkene dine er
  * strøket — and an event that enforces strikes would otherwise have a way to
  * quietly not enforce them.
+ *
+ * A pool naming a study programme asks about the programme the member is on
+ * now, not every one they have been on; see
+ * {@link findSupersededStudySlugs}. Every other kind of group — a committee,
+ * a subgroup, an interest group — keeps asking exactly what it says, which is
+ * whether the member is in it.
  */
 export function isUserPrioritized({
     userGroupSlugs,
     userClassYear,
+    supersededStudySlugs,
     event,
     strikeCount,
     enforcesPreviousStrikes,
@@ -395,8 +464,9 @@ export function isUserPrioritized({
         // An empty pool asks nothing and would otherwise match everyone.
         if (pool.groupSlug === null && pool.classYear === null) continue;
 
-        if (pool.groupSlug !== null && !userGroupSlugs.has(pool.groupSlug)) {
-            continue;
+        if (pool.groupSlug !== null) {
+            if (!userGroupSlugs.has(pool.groupSlug)) continue;
+            if (supersededStudySlugs?.has(pool.groupSlug)) continue;
         }
 
         if (pool.classYear !== null && userClassYear !== pool.classYear) {
@@ -505,6 +575,7 @@ export async function loadPrioritization(
         factsByUser.set(userId, {
             groupSlugs: new Set(rows.map((row) => row.slug)),
             classYear: computeUserClassYear(rows, now),
+            supersededStudySlugs: findSupersededStudySlugs(rows),
         });
     }
 
@@ -522,6 +593,7 @@ export async function loadPrioritization(
         return isUserPrioritized({
             userGroupSlugs: facts?.groupSlugs ?? new Set<string>(),
             userClassYear: facts?.classYear ?? null,
+            supersededStudySlugs: facts?.supersededStudySlugs,
             event,
             strikeCount: strikesByUser.get(userId) ?? 0,
             enforcesPreviousStrikes,

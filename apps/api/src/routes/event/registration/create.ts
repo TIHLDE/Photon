@@ -219,6 +219,7 @@ export const registerToEventRoute = route().post(
             const isPrioritized = isUserPrioritized({
                 userGroupSlugs: priorityFacts.groupSlugs,
                 userClassYear: priorityFacts.classYear,
+                supersededStudySlugs: priorityFacts.supersededStudySlugs,
                 event,
                 strikeCount,
                 enforcesPreviousStrikes: event.enforcesPreviousStrikes,
