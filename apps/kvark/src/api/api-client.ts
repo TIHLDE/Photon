@@ -15,6 +15,7 @@ import ky, {
 import type { paths } from "@tihlde/sdk";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
+import { validationIssueMessage } from "#/lib/validation-message";
 
 // During SSR the request runs on the server, where `credentials: "include"`
 // has no browser cookie jar to draw from. Forward the incoming request's
@@ -255,7 +256,8 @@ class Client<Paths extends object> {
  *
  * Uten dette blir forklaringen liggende igjen i responskroppen, og alt kallere
  * har å vise brukeren er ky sin generiske «Request failed with status code
- * 403». API-et svarer alltid `{ status, message }` (se `globalErrorHandler`).
+ * 403». API-et svarer `{ status, message }` (se `globalErrorHandler`) — bortsett
+ * fra valideringsfeil, som `validationIssueMessage` plukker fra hverandre.
  */
 function useApiErrorMessage(error: unknown): void {
     if (!(error instanceof Error)) return;
@@ -269,6 +271,12 @@ function useApiErrorMessage(error: unknown): void {
     const message = (data as { message?: unknown }).message;
     if (typeof message === "string" && message) {
         error.message = message;
+        return;
+    }
+
+    const validation = validationIssueMessage(data);
+    if (validation) {
+        error.message = validation;
     }
 }
 

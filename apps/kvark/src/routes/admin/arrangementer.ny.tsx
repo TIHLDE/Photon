@@ -17,6 +17,7 @@ import { getGroupMembersQuery, getGroupsQuery } from "#/api/queries/groups";
 import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminNoAccess } from "#/components/admin-no-access";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { TeknologiministerMessage } from "#/components/teknologiminister-message";
 import type { EventFormValues } from "#/components/event-form";
 import { ALL_INSTITUTES, EventForm } from "#/components/event-form";
 import { poolsForSubmit } from "#/components/priority-pool-editor";
@@ -355,7 +356,9 @@ function NewEventPage() {
                     <Alert variant="destructive">
                         <XCircle className="size-4" />
                         <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
-                        <AlertDescription>{uploadError}</AlertDescription>
+                        <AlertDescription>
+                            <TeknologiministerMessage message={uploadError} />
+                        </AlertDescription>
                     </Alert>
                 )}
                 {createEvent.isError && (

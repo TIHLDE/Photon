@@ -88,6 +88,7 @@ import { getInstitutesQuery } from "#/api/queries/institutes";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AttendanceScannerDialog } from "#/components/attendance-scanner-dialog";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { TeknologiministerMessage } from "#/components/teknologiminister-message";
 import { AdminStatCard } from "#/components/admin-stat-card";
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
 import type { EventFormValues } from "#/components/event-form";
@@ -612,7 +613,9 @@ function DetailsTab({ eventId }: { eventId: string }) {
                     <Alert variant="destructive">
                         <XCircle className="size-4" />
                         <AlertTitle>Kunne ikke laste opp bildet</AlertTitle>
-                        <AlertDescription>{uploadError}</AlertDescription>
+                        <AlertDescription>
+                            <TeknologiministerMessage message={uploadError} />
+                        </AlertDescription>
                     </Alert>
                 )}
                 {updateEvent.isSuccess && (

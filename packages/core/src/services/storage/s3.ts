@@ -18,7 +18,31 @@ export type S3ObjectStorageServiceOptions = {
     region: string;
     useSSL: boolean;
     forcePathStyle: boolean;
+    /** Overrides {@link DEFAULT_TIMEOUTS}. Rarely needed. */
+    timeouts?: { requestMs?: number; connectionMs?: number };
 };
+
+/**
+ * Without these the SDK waits forever.
+ *
+ * `requestTimeout` is a socket-inactivity limit, not a deadline for the whole
+ * transfer, so a slow 50 MB upload is unaffected — only a connection that has
+ * gone quiet is cut off. A stalled download hung a maintenance script for 51
+ * minutes at 100 % CPU on 3. september 2026; the same hang inside the API
+ * holds a request, and with it a database connection, open indefinitely.
+ *
+ * `throwOnRequestTimeout` is the half that does the work. On its own
+ * `requestTimeout` only logs «a request has exceeded the configured timeout»
+ * and keeps waiting — which is exactly as useless as no timeout at all, and
+ * was verified against a socket that accepts and never answers.
+ *
+ * The SDK retries a timeout, so a connection that never answers costs up to
+ * three of these before the call gives up. Minutes, not forever.
+ */
+const DEFAULT_TIMEOUTS = {
+    requestMs: 120_000,
+    connectionMs: 15_000,
+} as const;
 
 export class S3ObjectStorageService implements ObjectStorageService {
     readonly client: S3Client;
@@ -40,6 +64,14 @@ export class S3ObjectStorageService implements ObjectStorageService {
                 secretAccessKey: options.secretAccessKey,
             },
             forcePathStyle: options.forcePathStyle,
+            requestHandler: {
+                requestTimeout:
+                    options.timeouts?.requestMs ?? DEFAULT_TIMEOUTS.requestMs,
+                connectionTimeout:
+                    options.timeouts?.connectionMs ??
+                    DEFAULT_TIMEOUTS.connectionMs,
+                throwOnRequestTimeout: true,
+            },
         };
 
         const client = new S3Client(config);

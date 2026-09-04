@@ -137,6 +137,56 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /**
+ * S3 error names that mean "the bucket will not take more", not "something
+ * broke".
+ *
+ * Ceph/RGW — which is what stack.it serves — answers `QuotaExceeded` with a
+ * 403, while other implementations use 507 `InsufficientStorage`. Matching on
+ * the name rather than the status is what keeps a plain `AccessDenied` 403 out
+ * of this branch.
+ *
+ * Note that the quota exhausted is not necessarily the one on bytes: RGW also
+ * caps the number of objects, and that is the limit `photon-files` actually
+ * hit — with 11 GB of a 15 GB bucket in use. The message therefore says the
+ * storage is full without claiming to know which dimension ran out.
+ */
+const STORAGE_FULL_ERROR_NAMES = new Set([
+    "QuotaExceeded",
+    "InsufficientStorage",
+]);
+
+/**
+ * True when `err` — or anything it wraps — is the object store refusing a
+ * write because there is no room left.
+ *
+ * Walks the cause chain for the same reason {@link isUniqueViolation} does:
+ * the failure surfaces several layers below the route.
+ */
+export function isStorageQuotaExceeded(err: unknown): boolean {
+    let current: unknown = err;
+    for (let depth = 0; current && depth < 5; depth++) {
+        const candidate = current as {
+            name?: unknown;
+            Code?: unknown;
+            $metadata?: { httpStatusCode?: unknown };
+        };
+
+        if (
+            (typeof candidate.name === "string" &&
+                STORAGE_FULL_ERROR_NAMES.has(candidate.name)) ||
+            (typeof candidate.Code === "string" &&
+                STORAGE_FULL_ERROR_NAMES.has(candidate.Code)) ||
+            candidate.$metadata?.httpStatusCode === 507
+        ) {
+            return true;
+        }
+
+        current = (current as { cause?: unknown }).cause;
+    }
+    return false;
+}
+
+/**
  * Global error handler for Hono apps.
  * Normalizes all errors to the standard response format.
  *
@@ -200,6 +250,22 @@ export function globalErrorHandler(err: Error, c: Context): Response {
             message: "Ressursen finnes allerede",
         };
         return c.json(response, 409);
+    }
+
+    /**
+     * A full bucket is an operational condition with a fix — raise the quota —
+     * not a bug in the request. As a bare 500 it reached the uploader as
+     * «Internal server error», which is how an out-of-space object store spent
+     * an evening looking like a broken gallery (3. september 2026).
+     */
+    if (isStorageQuotaExceeded(err)) {
+        console.error("Object storage is out of space:", err);
+        const response: HttpAppExceptionData = {
+            status: 507,
+            message:
+                "Lagringen er full, så filen ble ikke lagret. Si fra til Teknologiminister.",
+        };
+        return c.json(response, 507);
     }
 
     // Unexpected errors - log and return generic message
