@@ -1,6 +1,8 @@
+import { isMemberReadableAsset } from "~/lib/asset/member-readable";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { captureAuth } from "~/middleware/auth";
 import { metadataResponseSchema } from "./schema";
 
 export const getRoute = route().get(
@@ -24,8 +26,10 @@ public than its bytes.`,
         })
         .notFound({ description: "Asset not found" })
         .build(),
+    captureAuth,
     async (c) => {
-        const { bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { bucket } = ctx;
         const key = c.req.param("key");
 
         const asset = await bucket.getAsset(key);
@@ -34,10 +38,13 @@ public than its bytes.`,
             throw HTTPAppException.NotFound("Asset");
         }
 
-        // "Not found" og ikke "forbidden", så ruta ikke bekrefter hvilke
-        // nøkler som finnes — samme svar som nedlastingsruta gir.
+        // Samme regel som nedlastingsruta: størrelsen og filnavnet på et
+        // galleribilde er ikke mer offentlig enn bytene.
         if (asset.visibility === "private") {
-            throw HTTPAppException.NotFound("Asset");
+            const signedIn = c.get("user") !== undefined;
+            if (!signedIn || !(await isMemberReadableAsset(ctx, key))) {
+                throw HTTPAppException.NotFound("Asset");
+            }
         }
 
         return c.json({

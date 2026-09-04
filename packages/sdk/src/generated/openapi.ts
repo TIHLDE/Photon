@@ -451,12 +451,15 @@ export interface paths {
         };
         /**
          * Download a file
-         * @description Download a file by its key. No authentication required.
+         * @description Download a file by its key.
          *
          *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
          *
-         *     Private assets (e.g. contract signatures) are never served here — they are only
-         *     reachable through routes that perform their own authorization.
+         *     Most assets — nyhets- og arrangementsbilder, gruppelogoer, Töddel — need no
+         *     authentication. Galleribilder og profilbilder do: they answer 404 unless the
+         *     request carries a session. Contract signatures, application attachments and
+         *     fine pictures are never served here at all; they are only reachable through
+         *     routes that perform their own authorization.
          *
          *     **Resized variants:**
          *     Pass `?w=` with one of 160, 320, 480, 640, 960, 1280, 1920 to get the image

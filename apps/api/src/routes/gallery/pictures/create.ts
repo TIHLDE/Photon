@@ -2,7 +2,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { claimPrivateAssetUrls } from "~/lib/asset";
 import { findAlbumBySlugOrId } from "~/lib/gallery";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -47,7 +47,7 @@ export const createPicturesRoute = route().post(
 
         // Without this every picture disappears from the album two days after
         // it was added.
-        await promoteAssetUrls(
+        await claimPrivateAssetUrls(
             ctx.bucket,
             pictures.map((p) => p.imageUrl),
         );
