@@ -1,5 +1,6 @@
-import { useNavigate, type LinkOptions } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { useNavigate, type LinkOptions } from "@tanstack/react-router";
 import {
     Command,
     CommandDialog,
@@ -11,23 +12,31 @@ import {
     CommandSeparator,
     CommandShortcut,
 } from "@tihlde/ui/ui/command";
+import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import {
-    Briefcase,
-    CalendarDays,
-    Home,
-    Newspaper,
-    ShieldCheck,
-    Tv,
-    User,
-    Users,
+    BookOpenIcon,
+    BookOpenTextIcon,
+    BriefcaseIcon,
+    BugIcon,
+    CalendarDaysIcon,
+    ChartCandlestickIcon,
+    GitBranchIcon,
+    HomeIcon,
+    LockKeyholeIcon,
+    NewspaperIcon,
+    ShieldCheckIcon,
+    UserIcon,
+    UsersIcon,
 } from "lucide-react";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 
+import { authQueryOptions } from "#/api/auth";
 import { useIsAdmin } from "#/hooks/use-permission";
+import { avatarImageUrl } from "#/lib/assets";
 
 type CommandAction =
     | { kind: "navigate"; link: LinkOptions }
-    | { kind: "external"; href: string }
+    | { kind: "external"; href: string; target?: HTMLAnchorElement["target"] }
     | { kind: "callback"; run: () => void };
 
 type CommandEntry = {
@@ -53,42 +62,110 @@ const SECTIONS: CommandSection[] = [
             {
                 id: "home",
                 label: "Hjem",
-                icon: <Home />,
+                icon: <HomeIcon />,
                 keywords: ["forside", "start"],
                 action: { kind: "navigate", link: { to: "/" } },
             },
             {
                 id: "events",
                 label: "Arrangementer",
-                icon: <CalendarDays />,
+                icon: <CalendarDaysIcon />,
                 keywords: ["events"],
                 action: { kind: "navigate", link: { to: "/arrangementer" } },
             },
             {
                 id: "news",
                 label: "Nyheter",
-                icon: <Newspaper />,
+                icon: <NewspaperIcon />,
                 keywords: ["news"],
                 action: { kind: "navigate", link: { to: "/nyheter" } },
             },
             {
                 id: "groups",
                 label: "Grupper",
-                icon: <Users />,
+                icon: <UsersIcon />,
                 action: { kind: "navigate", link: { to: "/grupper" } },
             },
             {
                 id: "jobs",
                 label: "Stillinger",
-                icon: <Briefcase />,
+                icon: <BriefcaseIcon />,
                 keywords: ["annonser", "jobs"],
                 action: { kind: "navigate", link: { to: "/annonser" } },
             },
             {
                 id: "toddel",
                 label: "TÖDDEL",
-                icon: <Tv />,
+                icon: <BookOpenIcon />,
                 action: { kind: "navigate", link: { to: "/toddel" } },
+            },
+            {
+                id: "bugs",
+                label: "Bugs og Tilbakemeldinger",
+                icon: <BugIcon />,
+                keywords: ["bugs", "ide", "problem"],
+                action: { kind: "navigate", link: { to: "/tilbakemelding" } },
+            },
+            {
+                id: "kokebok",
+                label: "Kokebok",
+                keywords: ["øvinger", "oppgaver"],
+                action: { kind: "navigate", link: { to: "/kokebok" } },
+            },
+            {
+                id: "privacy",
+                label: "Personvern",
+                icon: <LockKeyholeIcon />,
+                keywords: ["privacy", "personvern"],
+                action: { kind: "navigate", link: { to: "/personvern" } },
+            },
+        ],
+    },
+    {
+        heading: "Eksterne Sider",
+        items: [
+            {
+                id: "wiki",
+                label: "Wiki",
+                icon: <BookOpenTextIcon />,
+                keywords: ["info"],
+                action: {
+                    kind: "external",
+                    href: "https://wiki.tihlde.org",
+                    target: "_blank",
+                },
+            },
+            {
+                id: "github",
+                label: "GitHub",
+                icon: <GitBranchIcon />,
+                keywords: ["kode", "prosjekter"],
+                action: {
+                    kind: "external",
+                    href: "https://github.com/TIHLDE",
+                    target: "_blank",
+                },
+            },
+            {
+                id: "fondet",
+                label: "Fondet",
+                icon: <ChartCandlestickIcon />,
+                keywords: ["fondet", "økonomi"],
+                action: {
+                    kind: "external",
+                    href: "https://fondet.tihlde.org",
+                    target: "_blank",
+                },
+            },
+            {
+                id: "kontres",
+                label: "Kontres",
+                keywords: ["reservere", "utstyr"],
+                action: {
+                    kind: "external",
+                    href: "https://kontres.tihlde.org",
+                    target: "_blank",
+                },
             },
         ],
     },
@@ -98,7 +175,7 @@ const SECTIONS: CommandSection[] = [
             {
                 id: "profile",
                 label: "Min profil",
-                icon: <User />,
+                icon: <UserIcon />,
                 keywords: ["profil", "meg"],
                 action: {
                     kind: "navigate",
@@ -114,7 +191,7 @@ const SECTIONS: CommandSection[] = [
             {
                 id: "dashboard",
                 label: "Admin Dashboard",
-                icon: <ShieldCheck />,
+                icon: <ShieldCheckIcon />,
                 keywords: ["admin", "dashboard"],
                 action: { kind: "navigate", link: { to: "/admin" } },
             },
@@ -126,11 +203,46 @@ export function CommandMenu() {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
     const isAdmin = useIsAdmin();
+    const { data: session } = useQuery(authQueryOptions);
 
-    const sections = useMemo(
-        () => SECTIONS.filter((section) => !section.requiresAdmin || isAdmin),
-        [isAdmin],
-    );
+    const sections = useMemo(() => {
+        const sections = SECTIONS.filter(
+            (section) => !section.requiresAdmin || isAdmin,
+        );
+
+        if ((session?.groups?.length ?? 0) > 0) {
+            sections.push({
+                heading: "Mine Grupper",
+                items:
+                    session?.groups.map((group) => ({
+                        id: `group-${group.slug}`,
+                        label: group.name,
+                        icon: (
+                            <Avatar className="size-5 shrink-0 [&_svg]:size-3.5">
+                                {group.logoUrl ? (
+                                    <AvatarImage
+                                        src={avatarImageUrl(group.logoUrl)}
+                                        alt=""
+                                    />
+                                ) : null}
+                                <AvatarFallback>
+                                    <UsersIcon />
+                                </AvatarFallback>
+                            </Avatar>
+                        ),
+                        action: {
+                            kind: "navigate",
+                            link: {
+                                to: "/grupper/$slug",
+                                params: { slug: group.slug },
+                            },
+                        },
+                    })) ?? [],
+            });
+        }
+
+        return sections;
+    }, [isAdmin, session]);
 
     useHotkey("Mod+K", () => {
         setOpen((prev) => !prev);

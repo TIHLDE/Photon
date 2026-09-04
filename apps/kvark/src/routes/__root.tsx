@@ -1,4 +1,5 @@
 import {
+    ClientOnly,
     HeadContent,
     Scripts,
     createRootRouteWithContext,
@@ -102,7 +103,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     <TooltipProvider>
                         <PostHogProvider>
                             {children}
-                            <CommandMenu />
+                            <ClientOnly>
+                                <CommandMenu />
+                            </ClientOnly>
                             <TanStackDevtools
                                 config={{
                                     position: "bottom-right",
