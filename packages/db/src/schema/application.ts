@@ -14,10 +14,10 @@ import { timestamps } from "../timestamps";
 import { user } from "./auth";
 import { group } from "./org";
 
-// NOTE: literal full table names instead of pgTableCreator — same reasoning as
-// motetid.ts: the creator's prefix is runtime-only, so at the type level the
-// table would keep its base name and collide with other features' tables,
-// silently breaking relational query inference across the whole schema.
+// NOTE: literal full table names instead of pgTableCreator. The creator's
+// prefix is runtime-only, so at the type level the table would keep its base
+// name and collide with other features' tables, silently breaking relational
+// query inference across the whole schema.
 
 /**
  * Søknadstyper, ported from the standalone utlegg.tihlde.org portal.

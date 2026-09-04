@@ -125,13 +125,6 @@ export function useSiteNavItems(
                                   },
                                   {
                                       kind: "internal",
-                                      label: "Møtetid",
-                                      link: linkOptions({ to: "/motetid" }),
-                                      description:
-                                          "Finn et tidspunkt som passer alle",
-                                  },
-                                  {
-                                      kind: "internal",
                                       label: "Galleri",
                                       link: linkOptions({ to: "/galleri" }),
                                       description:

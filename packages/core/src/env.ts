@@ -193,10 +193,6 @@ const envSchema = z
          */
         EXPO_ACCESS_TOKEN: z.string().optional(),
 
-        // GOOGLE (møtetid calendar sync)
-        GOOGLE_CLIENT_ID: z.string().optional(),
-        GOOGLE_CLIENT_SECRET: z.string().optional(),
-
         // VIPPS
         VIPPS_SUBSCRIPTION_KEY: z.string().optional(),
         VIPPS_CLIENT_ID: z.string().optional(),

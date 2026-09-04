@@ -13,11 +13,14 @@ import { cn } from "#/lib/utils";
  */
 function QRCode({
     value,
+    logo,
     className,
     ref,
     ...props
 }: Omit<React.ComponentProps<"div">, "ref"> & {
     value: string;
+    /** Optional image to place in the center of the code. */
+    logo?: string;
     /** The underlying canvas, so callers can export the code as a PNG. */
     ref?: React.Ref<HTMLCanvasElement>;
 }) {
@@ -31,6 +34,16 @@ function QRCode({
                 ref={ref}
                 size={1024}
                 value={value}
+                imageSettings={
+                    logo
+                        ? {
+                              src: logo,
+                              height: 160,
+                              width: 160,
+                              excavate: true,
+                          }
+                        : undefined
+                }
                 className="h-auto! w-full!"
             />
         </div>
