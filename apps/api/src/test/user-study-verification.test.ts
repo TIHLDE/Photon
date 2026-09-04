@@ -129,9 +129,6 @@ describe("deriveStudyFromGroups — verification", () => {
     });
 
     it("keeps a confirmed departure apart from a confirmed enrolment", () => {
-        // Both are answers, and they used to share one state — so a member
-        // Feide had confirmed as finished read exactly like one Feide had
-        // confirmed as studying, and the participant list showed neither.
         expect(
             deriveStudyFromGroups(
                 [
@@ -147,9 +144,6 @@ describe("deriveStudyFromGroups — verification", () => {
     });
 
     it("calls an old 'not enrolled' stale, not inactive", () => {
-        // The age of the answer decides before its content does. A `false`
-        // from last winter says nothing about this term — it is the same
-        // reading the priority rule refuses to act on alone.
         expect(
             deriveStudyFromGroups(
                 [

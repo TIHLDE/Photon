@@ -1507,30 +1507,8 @@ const PAYMENT_STATUS_VARIANTS: Record<
     failed: "destructive",
 };
 
-/**
- * Hva Feide sist sa om studiet til en deltaker.
- *
- * Studiegruppa er det prioriteringen leser, og den fjernes aldri av seg selv:
- * den som byttet studium eller ble ferdig står der til de logger inn med Feide
- * igjen. Arrangøren så ingen forskjell på et studium NTNU har bekreftet denne
- * måneden og ett som ble skrevet inn på et fadderuke-skjema i 2024.
- *
- * Tre tegn, fordi de sier tre forskjellige ting, og bare ett av dem er
- * kunnskap:
- *
- * - **Feide sier ikke aktiv** er det eneste sikre. NTNU har svart, nylig, at
- *   medlemmet ikke er innskrevet. Det er også det som betyr noe på et
- *   arrangement som ikke er åpent for alumni — der sto raden tidligere helt
- *   ren, fordi et bekreftet «nei» delte tilstand med et bekreftet «ja».
- * - **Aldri bekreftet** er fravær av kunnskap, ikke et nei.
- * - **Gammelt svar** er kunnskap som kan ha gått ut på dato.
- *
- * Ingenting sperres på dette. Det er arrangøren som avgjør hva det betyr —
- * poenget er at de kan se det.
- *
- * Bekreftet aktiv får ingen merking. De fleste er det, og et grønt merke på
- * alle sammen hadde skjult de tre som skiller seg ut.
- */
+// Studiegruppa fjernes aldri av seg selv, så gruppa alene sier ingenting om
+// hvorvidt noen studerer der nå. Ingenting sperres på dette; arrangøren avgjør.
 function StudyVerificationMark({
     programme,
     verification,
@@ -1538,10 +1516,7 @@ function StudyVerificationMark({
     programme?: string | null;
     verification?: "active" | "inactive" | "stale" | "unverified";
 }) {
-    // Uten studium er det ingenting å bekrefte. Deltakere som bare har et kull
-    // — eller ingen av delene — har ikke et studieprogram å ha et Feide-svar
-    // om, og et varselikon ved siden av «—» ville pekt på et problem som ikke
-    // er der. De matcher heller ingen studiepool.
+    // Uten studium er «ubekreftet» sant på den tomme måten.
     if (!programme) return null;
     if (!verification || verification === "active") return null;
 

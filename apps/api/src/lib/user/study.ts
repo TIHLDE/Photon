@@ -25,11 +25,9 @@ export type UserStudy = {
  *
  * - `active` — Feide said they are enrolled, recently enough that a semester
  *   cannot have turned over since; see `FEIDE_CHECK_MAX_AGE_DAYS`.
- * - `inactive` — Feide said they are *not* enrolled, just as recently. The one
- *   state here that is knowledge rather than the absence of it, and the reason
- *   this is four values and not three: it used to share `verified` with
- *   `active`, so a member Feide had confirmed as finished read exactly like a
- *   member Feide had confirmed as studying.
+ * - `inactive` — Feide said they are *not* enrolled, just as recently. Kept
+ *   apart from `active` because it is the only state here that is knowledge
+ *   rather than the absence of it.
  * - `stale` — Feide answered once, but long enough ago that the member may
  *   have finished or switched without us hearing about it.
  * - `unverified` — Feide has never answered for this programme. Most of the
@@ -37,11 +35,9 @@ export type UserStudy = {
  *   fadderuka sign-up form, or from an admin correction, and none of those is
  *   evidence of enrolment.
  *
- * Only ever used to *inform*, including `inactive`. A priority pool still
- * matches on group membership whatever this says, and nobody is turned away
- * from an event on it — see `findSupersededStudySlugs` in
- * `~/lib/event/priority` for the one reading that is evidence enough to act
- * on by itself.
+ * Only ever used to *inform*, `inactive` included: nothing is gated on this.
+ * See `findSupersededStudySlugs` in `~/lib/event/priority` for the one reading
+ * that is evidence enough to act on by itself.
  */
 export type StudyVerification = "active" | "inactive" | "stale" | "unverified";
 

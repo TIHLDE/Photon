@@ -136,8 +136,6 @@ describe("Study verification on the participant list", () => {
                 studyProgramId: programmeId,
                 startYear: 2022,
                 startYearSource: "feide",
-                // A recent, explicit "not enrolled" — the one thing here we
-                // actually know, and what an alumni-closed event turns on.
                 feideActive: false,
                 feideCheckedAt: daysAgo(5),
             });
