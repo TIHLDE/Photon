@@ -36,7 +36,6 @@ const tags = [
     "notifications",
     "payments",
     "positions",
-    "qr-codes",
     "roles",
     "strikes",
     "toddel",
