@@ -7,6 +7,16 @@ import {
     useQueryClient,
     useSuspenseQuery,
 } from "@tanstack/react-query";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@tihlde/ui/ui/alert-dialog";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -246,6 +256,8 @@ function EventDetailPage() {
         },
         now,
     );
+    const isOnWaitlist = registrationState === "on-waitlist";
+    const [confirmUnregister, setConfirmUnregister] = useState(false);
     // Tallene i kortet — plasser og venteliste — er fra før påmeldingen åpnet,
     // og på et populært arrangement er de utdaterte i samme sekund. Vi henter
     // arrangementet på nytt i det klokka passerer åpningen, så knappen som
@@ -393,6 +405,7 @@ function EventDetailPage() {
 
     function handleUnregister() {
         unregisterMutation.mutate({ eventId: event.id });
+        setConfirmUnregister(false);
     }
 
     // Nettleseren fryser siden når vi sender medlemmet til Vipps, og gir den
@@ -671,7 +684,7 @@ function EventDetailPage() {
                         // Ventelista er samme påmelding: serveren avgjør om
                         // det ble plass eller kø.
                         onJoinWaitlist={handleRegister}
-                        onUnregister={handleUnregister}
+                        onUnregister={() => setConfirmUnregister(true)}
                         onPay={handlePay}
                         isSubmitting={
                             registerMutation.isPending ||
@@ -762,6 +775,43 @@ function EventDetailPage() {
                             ) : null
                         }
                     />
+
+                    <AlertDialog
+                        open={confirmUnregister}
+                        onOpenChange={setConfirmUnregister}
+                    >
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                    {isOnWaitlist
+                                        ? "Er du sikker på at du vil forlate ventelisten?"
+                                        : "Er du sikker på at du vil melde deg av?"}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {isOnWaitlist
+                                        ? "Melder du deg på igjen, stiller du bakerst i køen."
+                                        : "Plassen går videre til første på ventelista, og arrangementet kan være fullt om du ombestemmer deg."}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel
+                                    variant="outline"
+                                    size="default"
+                                >
+                                    Avbryt
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                    variant="destructive"
+                                    disabled={unregisterMutation.isPending}
+                                    onClick={handleUnregister}
+                                >
+                                    {isOnWaitlist
+                                        ? "Forlat venteliste"
+                                        : "Meld deg av"}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </>
             }
         />
