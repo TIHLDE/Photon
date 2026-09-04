@@ -13,7 +13,6 @@ Disallow: /qr-koder
 Disallow: /soknader
 Disallow: /kontrakt
 Disallow: /sporreskjema/*
-Disallow: /motetid/*
 
 # Gruppeoversikten er offentlig, den enkelte gruppesiden er det ikke.
 Allow: /grupper$

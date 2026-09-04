@@ -31,7 +31,6 @@ import { feedbackRoutes } from "./routes/feedback";
 import { groupsRoutes } from "./routes/groups";
 import { instituteRoutes } from "./routes/institutes";
 import { jobRoutes } from "./routes/job";
-import { motetidRoutes } from "./routes/motetid";
 import { galleryRoutes } from "./routes/gallery";
 import { newsRoutes } from "./routes/news";
 import { qrCodeRoutes } from "./routes/qr-code";
@@ -100,7 +99,6 @@ export const createApp = async (variables?: Variables) => {
         .route("/groups", groupsRoutes)
         .route("/institutes", instituteRoutes)
         .route("/contracts", contractsRoutes)
-        .route("/motetid", motetidRoutes)
         .route("/news", newsRoutes)
         .route("/toddel", toddelRoutes)
         .route("/qr-codes", qrCodeRoutes)

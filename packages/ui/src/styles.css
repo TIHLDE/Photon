@@ -542,24 +542,6 @@ body:has([data-slot="drawer-content"][data-state="open"])
     mask-composite: intersect;
 }
 
-/* Møtetid: subtle nudge on the primary action when the user tries to paint
-   the grid before entering edit mode. */
-@keyframes motetid-primary-nudge {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.55;
-    }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .motetid-primary-nudge {
-        animation: motetid-primary-nudge 0.25s ease-in-out 1;
-    }
-}
-
 /* Honour a user's reduced-motion preference globally: collapse movement-based
    transitions and animations (slides, zooms, the spinner, the caret blink) to
    effectively instant, while leaving final visual state intact — opacity and

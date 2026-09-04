@@ -12,10 +12,10 @@ import {
 import { timestamps } from "../timestamps";
 import { user } from "./auth";
 
-// NOTE: literal full table names instead of pgTableCreator — same reasoning as
-// application.ts and motetid.ts: the creator's prefix is runtime-only, so at
-// the type level this table would be called "feedback" and collide with
-// event.ts's `eventFeedback`, silently breaking relational query inference.
+// NOTE: literal full table names instead of pgTableCreator. The creator's
+// prefix is runtime-only, so at the type level this table would be called
+// "feedback" and collide with event.ts's `eventFeedback`, silently breaking
+// relational query inference.
 
 /**
  * Idé eller feilmelding fra et medlem — the "tilbakemelding" page.
