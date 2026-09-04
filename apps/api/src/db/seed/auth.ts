@@ -99,7 +99,7 @@ export default async ({ db, auth }: AppContext) => {
             createdAt: new Date(),
             updatedAt: new Date(),
             isOnboarded: true,
-            gender: "male",
+            gender: "male"
         });
     }
 };
