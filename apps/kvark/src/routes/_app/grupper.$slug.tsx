@@ -641,8 +641,9 @@ function GroupDetail() {
     async function handleGiveFine(values: GiveFineValues) {
         setFineError(null);
         try {
+            // Privat fordi bildet viser hvem som ble bøtelagt for hva.
             const imageUrl = values.image
-                ? await uploadImage(values.image)
+                ? await uploadImage(values.image, { visibility: "private" })
                 : undefined;
 
             for (const userId of values.userIds) {
@@ -794,6 +795,7 @@ function GroupDetail() {
                     ) : null}
                     {activeTab === "boter" ? (
                         <GroupFinesTab
+                            groupSlug={slug}
                             fines={fines}
                             fineUsers={fineUsers}
                             statistics={apiFineStatistics}

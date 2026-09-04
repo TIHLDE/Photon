@@ -402,6 +402,10 @@ export interface paths {
          * @description Get metadata for an asset by its key. No authentication required.
          *
          *     The key is the full path returned when uploading, e.g., `uploads/2024/01/uuid_filename.jpg`
+         *
+         *     Private assets are reported as missing here, exactly as `GET /api/assets/:key`
+         *     reports them — the size and filename of a fine's evidence picture are no more
+         *     public than its bytes.
          */
         get: operations["getAssetMetadata"];
         put?: never;
@@ -1652,6 +1656,34 @@ export interface paths {
          * @description Set the same status on every fine the member has in this group, regardless of any filter the caller is currently looking at (Lepton parity). Requires being the fines admin (botsjef) or the group's leader.
          */
         patch: operations["batchUpdateUserFines"];
+        trace?: never;
+    };
+    "/api/groups/{groupSlug}/fines/{fineId}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a fine's evidence picture
+         * @description Streams the picture attached to a fine.
+         *
+         *     Fine pictures are private assets: `GET /api/assets/:key` refuses to serve
+         *     them, and this route is the only way to read one. The rule is the same one
+         *     that governs the fine itself — the member it was given to, the member who gave
+         *     it, any member of the group, the botsjef, and root.
+         *
+         *     Anything else answers 404, signed-out callers included, so the route never
+         *     confirms that a given fine or picture exists.
+         */
+        get: operations["getFineImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/groups/{groupSlug}/fines/{fineId}": {
@@ -4959,7 +4991,7 @@ export interface components {
             amount: number;
             /** @description User's defense text */
             defense: string | null;
-            /** @description Evidence image URL */
+            /** @description Evidence image URL. Private — the asset route refuses it; read the picture through GET /api/groups/{groupSlug}/fines/{fineId}/image. Use this field only to tell whether a fine has a picture. */
             image: string | null;
             /** @description Fine status (pending, approved, paid, rejected) */
             status: string;
@@ -10936,6 +10968,34 @@ export interface operations {
                 };
             };
             /** @description Not Found - Group not found, or fines not activated for it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getFineImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupSlug: string;
+                fineId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The picture */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found - No such fine or picture, or the caller may not read it */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -44,6 +44,8 @@ const STATUS_OPTIONS: Array<{ value: FineStatusFilter; label: string }> = [
 ];
 
 type GroupFinesTabProps = {
+    /** Gruppa botene hører til. Bøtebilder hentes per gruppe og bot. */
+    groupSlug: string;
     /** Botene som er lastet inn så langt for gjeldende filter. */
     fines: Fine[];
     /** Gruppens medlemmer med bøtesummen sin, for «Per medlem». */
@@ -101,6 +103,7 @@ function perMember(value: number, memberCount: number): string {
 }
 
 export function GroupFinesTab({
+    groupSlug,
     fines,
     fineUsers,
     statistics,
@@ -254,6 +257,7 @@ export function GroupFinesTab({
             </div>
 
             <GroupFineDialog
+                groupSlug={groupSlug}
                 fines={fines}
                 openIndex={openIndex}
                 onOpenChange={setOpenIndex}

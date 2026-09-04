@@ -26,10 +26,52 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Fine } from "#/lib/group";
 
-import { assetImageUrl } from "#/lib/assets";
+import { fetchFineImageUrl } from "#/api/queries/groups";
+
+// Bøtebilder er private, så de må hentes med sesjonen framfor å pekes på med
+// en `<img src>`.
+function useFineImage(
+    groupSlug: string,
+    fineId: string | null,
+    hasImage: boolean,
+) {
+    const [url, setUrl] = useState<string | null>(null);
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        setUrl(null);
+        setFailed(false);
+
+        if (!fineId || !hasImage) return;
+
+        let revoked = false;
+        let objectUrl: string | null = null;
+
+        fetchFineImageUrl(groupSlug, fineId)
+            .then((next) => {
+                objectUrl = next;
+                if (revoked) {
+                    URL.revokeObjectURL(next);
+                    return;
+                }
+                setUrl(next);
+            })
+            .catch(() => {
+                if (!revoked) setFailed(true);
+            });
+
+        return () => {
+            revoked = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [groupSlug, fineId, hasImage]);
+
+    return { url, failed };
+}
 
 type GroupFineDialogProps = {
     fines: Fine[];
+    groupSlug: string;
     openIndex: number | null;
     onOpenChange: (i: number | null) => void;
     /**
@@ -56,6 +98,7 @@ type GroupFineDialogProps = {
 
 export function GroupFineDialog({
     fines,
+    groupSlug,
     openIndex,
     onOpenChange,
     canManage,
@@ -76,6 +119,12 @@ export function GroupFineDialog({
     useEffect(() => {
         setDefenseDraft(null);
     }, [fineId]);
+
+    const { url: imageUrl, failed: imageFailed } = useFineImage(
+        groupSlug,
+        fineId,
+        Boolean(fine?.image),
+    );
 
     const isOwnFine = Boolean(
         fine && currentUserId && fine.userId === currentUserId,
@@ -195,14 +244,25 @@ export function GroupFineDialog({
                                         {fine.reason}
                                     </p>
                                 </div>
-                                {fine.image ? (
-                                    <img
-                                        src={assetImageUrl(fine.image, 960)}
-                                        alt="Bevis for boten"
-                                        loading="lazy"
-                                        decoding="async"
-                                        className="max-h-80 w-full rounded-md object-contain"
-                                    />
+                                {fine.image && imageFailed ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Fikk ikke lastet bildet. Last siden på
+                                        nytt.
+                                    </p>
+                                ) : null}
+                                {fine.image && !imageFailed ? (
+                                    imageUrl ? (
+                                        <img
+                                            src={imageUrl}
+                                            alt="Bevis for boten"
+                                            decoding="async"
+                                            className="max-h-80 w-full rounded-md object-contain"
+                                        />
+                                    ) : (
+                                        // Holder av plassen, ellers hopper
+                                        // innholdet under når bildet lander.
+                                        <div className="h-40 w-full animate-pulse rounded-md bg-muted" />
+                                    )
                                 ) : null}
                                 {canWriteDefense ? (
                                     <div className="flex flex-col gap-2">

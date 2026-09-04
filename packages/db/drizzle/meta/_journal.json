@@ -568,6 +568,13 @@
       "when": 1787598509600,
       "tag": "0080_fantastic_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1788547288526,
+      "tag": "0081_private_fine_images",
+      "breakpoints": true
     }
   ]
 }

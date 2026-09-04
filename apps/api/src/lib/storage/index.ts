@@ -45,6 +45,10 @@ export interface AssetStorageService {
         offset?: number;
     }): Promise<schema.Asset[]>;
     promoteAsset(key: string): Promise<schema.Asset | null>;
+    setAssetVisibility(
+        key: string,
+        visibility: "public" | "private",
+    ): Promise<schema.Asset | null>;
 }
 
 export type StorageService = AssetStorageService;
@@ -158,6 +162,19 @@ export class DatabaseAssetStorageService implements AssetStorageService {
                 promotedAt: new Date(),
                 updatedAt: new Date(),
             })
+            .where(eq(schema.asset.key, key))
+            .returning();
+
+        return updated ?? null;
+    }
+
+    async setAssetVisibility(
+        key: string,
+        visibility: "public" | "private",
+    ): Promise<schema.Asset | null> {
+        const [updated] = await this.db
+            .update(schema.asset)
+            .set({ visibility, updatedAt: new Date() })
             .where(eq(schema.asset.key, key))
             .returning();
 
