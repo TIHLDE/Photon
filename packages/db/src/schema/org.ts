@@ -166,10 +166,6 @@ export const studyProgramMembership = pgTable(
     (t) => [primaryKey({ columns: [t.userId, t.studyProgramId] })],
 );
 
-/**
- * The inverse of `user.studyProgramMemberships`, which the relational query
- * needs declared on both sides before `with` will resolve it.
- */
 export const studyProgramMembershipRelations = relations(
     studyProgramMembership,
     ({ one }) => ({

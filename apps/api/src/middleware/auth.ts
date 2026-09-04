@@ -37,9 +37,6 @@ async function sessionFromVerifiedToken(
     const [user, settings, accounts] = await Promise.all([
         ctx.db.query.user.findFirst({
             where: eq(schema.user.id, verified.sub),
-            // Folded in rather than fetched on its own: this runs on every
-            // bearer-authenticated request, and the relational query carries
-            // it in the statement it was already going to send.
             with: {
                 studyProgramMemberships: { columns: { feideCheckedAt: true } },
             },
@@ -71,8 +68,6 @@ async function sessionFromVerifiedToken(
     const {
         approvedAt: _approvedAt,
         approvedBy: _approvedBy,
-        // Not part of the session shape — read above, then dropped, so the
-        // bearer path returns exactly what `customSession` returns.
         studyProgramMemberships: programmes,
         ...rest
     } = user;
@@ -94,8 +89,6 @@ async function sessionFromVerifiedToken(
                   ? "placeholder"
                   : "chosen",
             feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
-            // Same three conditions as `customSession`; see the note there for
-            // why a member with no programme row is left alone.
             needsFeideRefresh:
                 accounts.some((a) => a.providerId === "feide") &&
                 programmes.length > 0 &&
