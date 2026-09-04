@@ -33,7 +33,7 @@ describe("full object storage", () => {
         await expect(res.json()).resolves.toEqual({
             status: 507,
             message:
-                "Lagringsplassen er full, så filen ble ikke lagret. Si fra til Teknologiminister.",
+                "Lagringen er full, så filen ble ikke lagret. Si fra til Teknologiminister.",
         });
     });
 

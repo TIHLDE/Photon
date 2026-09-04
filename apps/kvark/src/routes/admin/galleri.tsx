@@ -459,7 +459,11 @@ function UploadPicturesCard() {
                                         // Nye filer midt i en pågående
                                         // opplasting ville verken blitt lastet
                                         // opp eller overlevd opprydningen
-                                        // etterpå.
+                                        // etterpå. Feilgrenen i handleUpload
+                                        // regner dessuten ut hva som gjenstår
+                                        // med `files.slice(added)`, og det
+                                        // regnestykket forutsetter at lista
+                                        // står stille mens vi laster opp.
                                         disabled={isUploading}
                                     />
                                 </Field>

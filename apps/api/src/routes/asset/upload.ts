@@ -40,6 +40,11 @@ Pass an optional "visibility" field set to "private" for files that must not be 
         })
         .badRequest({ description: "Invalid file type or size exceeded" })
         .unauthorized()
+        .response({
+            statusCode: 507,
+            description:
+                "Insufficient Storage - the object store rejected the write because its quota is exhausted",
+        })
         .build(),
     requireAuthOrApiKey,
     async (c) => {

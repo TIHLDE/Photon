@@ -137,12 +137,18 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /**
- * S3 error names that mean "the bucket is full", not "something broke".
+ * S3 error names that mean "the bucket will not take more", not "something
+ * broke".
  *
  * Ceph/RGW — which is what stack.it serves — answers `QuotaExceeded` with a
  * 403, while other implementations use 507 `InsufficientStorage`. Matching on
  * the name rather than the status is what keeps a plain `AccessDenied` 403 out
  * of this branch.
+ *
+ * Note that the quota exhausted is not necessarily the one on bytes: RGW also
+ * caps the number of objects, and that is the limit `photon-files` actually
+ * hit — with 11 GB of a 15 GB bucket in use. The message therefore says the
+ * storage is full without claiming to know which dimension ran out.
  */
 const STORAGE_FULL_ERROR_NAMES = new Set([
     "QuotaExceeded",
@@ -257,7 +263,7 @@ export function globalErrorHandler(err: Error, c: Context): Response {
         const response: HttpAppExceptionData = {
             status: 507,
             message:
-                "Lagringsplassen er full, så filen ble ikke lagret. Si fra til Teknologiminister.",
+                "Lagringen er full, så filen ble ikke lagret. Si fra til Teknologiminister.",
         };
         return c.json(response, 507);
     }

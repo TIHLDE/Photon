@@ -7465,6 +7465,13 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPAppException"];
                 };
             };
+            /** @description Insufficient Storage - the object store rejected the write because its quota is exhausted */
+            507: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     getAssetMetadata: {
