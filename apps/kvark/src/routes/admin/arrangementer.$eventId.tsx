@@ -1550,7 +1550,7 @@ function StudyVerificationMark({
             icon: GraduationCapIcon,
             className: "text-destructive inline-flex",
             explanation:
-                "Feide sier at medlemmet ikke lenger er innskrevet på dette studiet.",
+                "Feide har flagget dette medlemmet som ferdig på dette studiet. Om du tror dette er feil, ta kontakt med Teknologiminister.",
         },
         unverified: {
             icon: TriangleAlertIcon,
@@ -1581,7 +1581,12 @@ function StudyVerificationMark({
                 }
             />
             <TooltipContent className="max-w-72">
-                {mark.explanation}
+                {/* Ett flex-barn: TooltipContent er `inline-flex`, så teksten
+                    og lenka ble to elementer og lenka ble klemt til én
+                    bokstav i bredden. */}
+                <span className="block">
+                    <TeknologiministerMessage message={mark.explanation} />
+                </span>
             </TooltipContent>
         </Tooltip>
     );
