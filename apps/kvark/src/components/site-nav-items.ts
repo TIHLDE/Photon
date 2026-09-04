@@ -128,7 +128,7 @@ export function useSiteNavItems(
                                       label: "Galleri",
                                       link: linkOptions({ to: "/galleri" }),
                                       description:
-                                          "Se alle bilder fra TIHLDE sine arrangementer",
+                                          "Se bilder fra TIHLDEs arrangementer",
                                   },
                                   {
                                       kind: "internal",
