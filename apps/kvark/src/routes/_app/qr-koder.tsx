@@ -105,7 +105,9 @@ function QRCodesPage() {
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_20rem]">
                 <div className="flex flex-col gap-5">
                     <Field>
-                        <FieldLabel htmlFor="qr-code-type">Dataformat</FieldLabel>
+                        <FieldLabel htmlFor="qr-code-type">
+                            Dataformat
+                        </FieldLabel>
                         <select
                             id="qr-code-type"
                             className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-3 text-sm outline-none focus-visible:ring-3"
