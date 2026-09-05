@@ -2,6 +2,7 @@ import { type DbSchema, schema } from "@photon/db";
 import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
+import { env } from "~/lib/env";
 
 /**
  * Sized for Töddel: the archive's largest issue is just under 40 MB, so 50 MB
@@ -95,6 +96,14 @@ export async function deleteAsset(
     await bucket.delete(key);
 }
 
+//
+// TODO: REMOVE ONCE R2 is REMOVED
+//
+/** Apply the namespace for the currently configured runtime write target. */
+export function newAssetKey(relativeKey: string): string {
+    return env.ASSET_WRITE_TARGET === "r2" ? `r2/${relativeKey}` : relativeKey;
+}
+
 /**
  * Generate a unique key for storing an asset
  * Format: uploads/{year}/{month}/{uuid}_{sanitized_filename}
@@ -112,5 +121,9 @@ export function generateAssetKey(originalFilename: string): string {
         ?.replace(/[^a-zA-Z0-9._-]/g, "_")
         .substring(0, 100);
 
-    return `uploads/${year}/${month}/${uuid}_${sanitized}`;
+    //
+    // TODO: REVERT ONCE DRIFT SERVERS IS BACK UP
+    //
+    // return `uploads/${year}/${month}/${uuid}_${sanitized}`;
+    return newAssetKey(`uploads/${year}/${month}/${uuid}_${sanitized}`);
 }

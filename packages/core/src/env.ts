@@ -134,6 +134,22 @@ const envSchema = z
             .optional()
             .transform(toBoolean({ defaultVal: true })),
 
+        // TEMPORARY R2 OVERFLOW STORAGE
+        R2_ENDPOINT: z.string().default("localhost:9000"),
+        R2_ACCESS_KEY_ID: z.string().default("minioadmin"),
+        R2_SECRET_ACCESS_KEY: z.string().default("minioadmin"),
+        R2_BUCKET_NAME: z.string().default("photon-files-r2"),
+        R2_REGION: z.string().default("auto"),
+        R2_USE_SSL: z
+            .string()
+            .optional()
+            .transform(toBoolean({ defaultVal: false })),
+        R2_FORCE_PATH_STYLE: z
+            .string()
+            .optional()
+            .transform(toBoolean({ defaultVal: true })),
+        ASSET_WRITE_TARGET: z.enum(["drift", "r2"]).default("drift"),
+
         // FEIDE
         FEIDE_CLIENT_ID: z.string().default(""),
         FEIDE_CLIENT_SECRET: z.string().default(""),

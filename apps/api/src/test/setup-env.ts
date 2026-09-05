@@ -16,6 +16,11 @@ const testEnv = {
     MAIL_FROM: "no-reply@test.tihlde.org",
     MAIL_ALLOWED_FROM: "hs@test.tihlde.org",
     EMAIL_API_KEY: "test-email-api-key",
+
+    //
+    // TODO: REMOVE THIS ONCE DRIFT SERVERS IS UP
+    //
+    ASSET_WRITE_TARGET: "r2",
 } satisfies TestEnv;
 
 Object.assign(process.env, testEnv);

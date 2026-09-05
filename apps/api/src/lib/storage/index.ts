@@ -1,5 +1,6 @@
 import {
     type ObjectStorageService,
+    PrefixRoutedObjectStorageService,
     S3ObjectStorageService,
 } from "@photon/core/services/storage";
 import { type DbSchema, schema } from "@photon/db";
@@ -168,15 +169,30 @@ export class DatabaseAssetStorageService implements AssetStorageService {
 export async function createStorageClient(options: {
     db: NodePgDatabase<DbSchema>;
 }): Promise<AssetStorageService> {
-    const objectStorage = await S3ObjectStorageService.create({
-        endpoint: env.S3_ENDPOINT,
-        accessKeyId: env.S3_ACCESS_KEY_ID,
-        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-        bucketName: env.S3_BUCKET_NAME,
-        region: env.S3_REGION,
-        useSSL: env.S3_USE_SSL,
-        forcePathStyle: env.S3_FORCE_PATH_STYLE,
-    });
+    //
+    // TODO: Remove R2 Storage once drift servers are up
+    //
+    const [drift, r2] = await Promise.all([
+        S3ObjectStorageService.create({
+            endpoint: env.S3_ENDPOINT,
+            accessKeyId: env.S3_ACCESS_KEY_ID,
+            secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+            bucketName: env.S3_BUCKET_NAME,
+            region: env.S3_REGION,
+            useSSL: env.S3_USE_SSL,
+            forcePathStyle: env.S3_FORCE_PATH_STYLE,
+        }),
+        S3ObjectStorageService.create({
+            endpoint: env.R2_ENDPOINT,
+            accessKeyId: env.R2_ACCESS_KEY_ID,
+            secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+            bucketName: env.R2_BUCKET_NAME,
+            region: env.R2_REGION,
+            useSSL: env.R2_USE_SSL,
+            forcePathStyle: env.R2_FORCE_PATH_STYLE,
+        }),
+    ]);
+    const objectStorage = new PrefixRoutedObjectStorageService(drift, r2);
 
     return new DatabaseAssetStorageService(objectStorage, options.db);
 }

@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { stampContractPdf } from "~/lib/contract/pdf";
+import { newAssetKey } from "~/lib/asset";
 import { env } from "~/lib/env";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -130,7 +131,13 @@ require contract signing.`,
         }
 
         // Both are private: only GET /api/contracts/signed-pdf serves them.
-        const keyPrefix = `contracts/${activeContract.id}/${user.id}/${randomUUID()}`;
+        //
+        // TOOD: REVERT ONCE DRIFT SERVERS IS BACK UP
+        //
+        // const keyPrefix = `contracts/${activeContract.id}/${user.id}/${randomUUID()}`;
+        const keyPrefix = newAssetKey(
+            `contracts/${activeContract.id}/${user.id}/${randomUUID()}`,
+        );
         const signatureFileKey = `${keyPrefix}_signature.png`;
         const signedPdfKey = `${keyPrefix}_signed.pdf`;
 

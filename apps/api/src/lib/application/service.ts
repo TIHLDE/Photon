@@ -3,6 +3,7 @@ import { schema } from "@photon/db";
 import type { ApplicationType } from "@photon/db/schema";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
+import { newAssetKey } from "~/lib/asset";
 import { getUserStudy } from "~/lib/user/study";
 import { renderApplicationPdf } from "./pdf";
 import type { ApplicationWithDetails } from "./types";
@@ -167,7 +168,13 @@ export async function generateApplicationPdf(
 ): Promise<string> {
     const pdf = await renderApplicationPdf(application, ctx.bucket);
 
-    const key = `applications/${application.id}/${randomUUID()}.pdf`;
+    //
+    // TODO: REVERT THIS ONCE DRIFT SERVERS ARE UP
+    //
+    // const key = `applications/${application.id}/${randomUUID()}.pdf`;
+    const key = newAssetKey(
+        `applications/${application.id}/${randomUUID()}.pdf`,
+    );
     await ctx.bucket.upload(key, pdf, {
         originalFilename: `soknad-${application.id}.pdf`,
         contentType: "application/pdf",

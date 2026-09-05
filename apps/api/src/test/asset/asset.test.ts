@@ -202,9 +202,15 @@ describe("Asset Upload/Download System", () => {
             expect(response.status).toBe(201);
 
             const result = (await response.json()) as any;
+
+            //
+            // TODO: REMOVE ONCE DRIFT SERVERS IS UP
+            //
             expect(result.key).toMatch(
-                /^uploads\/\d{4}\/\d{2}\/.+_api-upload\.jpg$/,
+                /^r2\/uploads\/\d{4}\/\d{2}\/.+_api-upload\.jpg$/,
             );
+            //
+
             expect(result.originalFilename).toBe("api-upload.jpg");
             expect(result.contentType).toBe("image/jpeg");
             expect(result.status).toBe("staged");
@@ -667,8 +673,15 @@ describe("Asset Upload/Download System", () => {
                 keys.add(key);
 
                 // Verify format
+                // expect(key).toMatch(
+                //     /^uploads\/\d{4}\/\d{2}\/[a-f0-9-]+_test-file\.png$/,
+                // );
+
+                //
+                // TODO: REMOVE ONCE DRIFT SERVERS IS UP
+                //
                 expect(key).toMatch(
-                    /^uploads\/\d{4}\/\d{2}\/[a-f0-9-]+_test-file\.png$/,
+                    /^r2\/uploads\/\d{4}\/\d{2}\/[a-f0-9-]+_test-file\.png$/,
                 );
             }
         },

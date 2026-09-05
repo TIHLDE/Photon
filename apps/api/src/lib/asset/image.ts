@@ -181,6 +181,13 @@ export const IMAGE_VARIANT_WEBP_QUALITY = 72;
  * them and the open download route cannot address them directly.
  */
 export function imageVariantKey(key: string, width: ImageVariantWidth): string {
+    //
+    // TODO: REMOVE THIS IF ONCE DRIFT SERVERS IS UP
+    //
+    if (key.startsWith("r2/")) {
+        return `r2/derivatives/w${width}/${key.slice("r2/".length)}.webp`;
+    }
+
     return `derivatives/w${width}/${key}.webp`;
 }
 
