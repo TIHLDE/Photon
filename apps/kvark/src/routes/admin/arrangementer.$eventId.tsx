@@ -25,6 +25,7 @@ import {
     CircleHelpIcon,
     ClockFadingIcon,
     CopyIcon,
+    GraduationCapIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -1506,65 +1507,62 @@ const PAYMENT_STATUS_VARIANTS: Record<
     failed: "destructive",
 };
 
-/**
- * Merket som sier at studiet bak en prioritering ikke er bekreftet av Feide.
- *
- * Studiegruppa er det prioriteringen leser, og den fjernes aldri av seg selv:
- * den som byttet studium eller ble ferdig står der til de logger inn med Feide
- * igjen. Arrangøren så ingen forskjell på et studium NTNU har bekreftet denne
- * måneden og ett som ble skrevet inn på et fadderuke-skjema i 2024.
- *
- * Vises bare når det er noe å si. Er studiet bekreftet, er raden ren — et
- * grønt merke på tre av fire deltakere hadde vært støy, og det er avviket
- * arrangøren skal kunne få øye på.
- */
+// Studiegruppa fjernes aldri av seg selv, så gruppa alene sier ingenting om
+// hvorvidt noen studerer der nå. Ingenting sperres på dette; arrangøren avgjør.
 function StudyVerificationMark({
     programme,
     verification,
 }: {
     programme?: string | null;
-    verification?: "verified" | "stale" | "unverified";
+    verification?: "active" | "inactive" | "stale" | "unverified";
 }) {
-    // Uten studium er det ingenting å bekrefte. Deltakere som bare har et kull
-    // — eller ingen av delene — leser som «ubekreftet» fordi det ikke finnes et
-    // studieprogram å ha et Feide-svar om, og et varselikon ved siden av «—»
-    // ville pekt på et problem som ikke er der. De matcher heller ingen
-    // studiepool, så de er ikke det arrangøren ser etter.
+    // Uten studium er «ubekreftet» sant på den tomme måten.
     if (!programme) return null;
-    if (!verification || verification === "verified") return null;
+    if (!verification || verification === "active") return null;
 
-    /**
-     * To tegn, ikke ett i to farger: de sier forskjellige ting.
-     *
-     * Aldri bekreftet er det verste — vi har ingenting, og studiet kan være
-     * hva som helst. Det får trekanten og gult. Bekreftet, men gammelt, er en
-     * opplysning: svaret fantes, det har bare gått en stund. Klokka og blått.
-     */
-    const isStale = verification === "stale";
+    const marks = {
+        inactive: {
+            icon: GraduationCapIcon,
+            className: "text-destructive inline-flex",
+            explanation:
+                "Feide har flagget dette medlemmet som ferdig på dette studiet. Om du tror dette er feil, ta kontakt med Teknologiminister.",
+        },
+        unverified: {
+            icon: TriangleAlertIcon,
+            className: "text-warning inline-flex",
+            explanation: "Studiet har ikke blitt bekreftet via Feide",
+        },
+        stale: {
+            icon: ClockFadingIcon,
+            className: "text-info inline-flex",
+            explanation:
+                "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studie eller blitt ferdig.",
+        },
+    } as const;
 
-    const explanation = isStale
-        ? "Feide har bekreftet studiet, men ikke på over et semester. Medlemmet kan ha byttet studie eller blitt ferdig."
-        : "Studiet har ikke blitt bekreftet via Feide";
-
-    const Icon = isStale ? ClockFadingIcon : TriangleAlertIcon;
+    const mark = marks[verification];
+    const Icon = mark.icon;
 
     return (
         <Tooltip>
             <TooltipTrigger
                 render={
                     <span
-                        className={
-                            isStale
-                                ? "text-info inline-flex"
-                                : "text-warning inline-flex"
-                        }
-                        aria-label={explanation}
+                        className={mark.className}
+                        aria-label={mark.explanation}
                     >
                         <Icon className="size-3.5" />
                     </span>
                 }
             />
-            <TooltipContent className="max-w-72">{explanation}</TooltipContent>
+            <TooltipContent className="max-w-72">
+                {/* Ett flex-barn: TooltipContent er `inline-flex`, så teksten
+                    og lenka ble to elementer og lenka ble klemt til én
+                    bokstav i bredden. */}
+                <span className="block">
+                    <TeknologiministerMessage message={mark.explanation} />
+                </span>
+            </TooltipContent>
         </Tooltip>
     );
 }

@@ -54,7 +54,7 @@ describe("isFeideCheckCurrent", () => {
 });
 
 describe("deriveStudyFromGroups — verification", () => {
-    it("calls a recently confirmed programme verified", () => {
+    it("calls a recently confirmed enrolment active", () => {
         expect(
             deriveStudyFromGroups(
                 [
@@ -66,7 +66,7 @@ describe("deriveStudyFromGroups — verification", () => {
                 ],
                 NOW,
             ).verification,
-        ).toBe("verified");
+        ).toBe("active");
     });
 
     it("calls an old answer stale", () => {
@@ -112,7 +112,7 @@ describe("deriveStudyFromGroups — verification", () => {
         );
 
         expect(result.studyProgram).toBe("digital-samhandling");
-        expect(result.verification).toBe("verified");
+        expect(result.verification).toBe("active");
     });
 
     it("has nothing to say about a member with no programme at all", () => {
@@ -128,9 +128,7 @@ describe("deriveStudyFromGroups — verification", () => {
         expect(onlyCohort.verification).toBe("unverified");
     });
 
-    it("reports a confirmed departure as verified, not unverified", () => {
-        // `false` is an answer. The member is out of that programme and we
-        // know it — which is exactly what the priority fix acts on.
+    it("keeps a confirmed departure apart from a confirmed enrolment", () => {
         expect(
             deriveStudyFromGroups(
                 [
@@ -142,6 +140,21 @@ describe("deriveStudyFromGroups — verification", () => {
                 ],
                 NOW,
             ).verification,
-        ).toBe("verified");
+        ).toBe("inactive");
+    });
+
+    it("calls an old 'not enrolled' stale, not inactive", () => {
+        expect(
+            deriveStudyFromGroups(
+                [
+                    study("dataingenir", {
+                        feideActive: false,
+                        feideCheckedAt: daysBefore(200),
+                        startYear: 2022,
+                    }),
+                ],
+                NOW,
+            ).verification,
+        ).toBe("stale");
     });
 });

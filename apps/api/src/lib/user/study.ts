@@ -23,8 +23,11 @@ export type UserStudy = {
 /**
  * How well we know a member is on the programme we show for them.
  *
- * - `verified` — Feide answered for this programme recently enough that a
- *   semester cannot have turned over since; see `FEIDE_CHECK_MAX_AGE_DAYS`.
+ * - `active` — Feide said they are enrolled, recently enough that a semester
+ *   cannot have turned over since; see `FEIDE_CHECK_MAX_AGE_DAYS`.
+ * - `inactive` — Feide said they are *not* enrolled, just as recently. Kept
+ *   apart from `active` because it is the only state here that is knowledge
+ *   rather than the absence of it.
  * - `stale` — Feide answered once, but long enough ago that the member may
  *   have finished or switched without us hearing about it.
  * - `unverified` — Feide has never answered for this programme. Most of the
@@ -32,12 +35,11 @@ export type UserStudy = {
  *   fadderuka sign-up form, or from an admin correction, and none of those is
  *   evidence of enrolment.
  *
- * Only ever used to *inform*. A priority pool still matches on group
- * membership whatever this says, because a missing answer is not a no — see
- * `findSupersededStudySlugs` in `~/lib/event/priority` for the one reading
- * that is evidence enough to act on.
+ * Only ever used to *inform*, `inactive` included: nothing is gated on this.
+ * See `findSupersededStudySlugs` in `~/lib/event/priority` for the one reading
+ * that is evidence enough to act on by itself.
  */
-export type StudyVerification = "verified" | "stale" | "unverified";
+export type StudyVerification = "active" | "inactive" | "stale" | "unverified";
 
 /** The two group types that make up the projection, lower-cased. */
 export const STUDY_GROUP_TYPES = ["study", "studyyear"] as const;
@@ -145,9 +147,11 @@ export function deriveStudyFromGroups(
     const verification: StudyVerification =
         chosen?.feideActive == null
             ? "unverified"
-            : isFeideCheckCurrent(chosen.feideCheckedAt, now)
-              ? "verified"
-              : "stale";
+            : !isFeideCheckCurrent(chosen.feideCheckedAt, now)
+              ? "stale"
+              : chosen.feideActive
+                ? "active"
+                : "inactive";
 
     return {
         studyProgram: chosen?.name ?? null,

@@ -86,7 +86,7 @@ describe("Study verification on the participant list", () => {
     );
 
     integrationTest(
-        "marks a recently confirmed study as verified",
+        "marks a recently confirmed enrolment as active",
         async ({ ctx }) => {
             await ctx.utils.setupEventCategories();
             const programmeId = await seedProgramme(ctx);
@@ -114,7 +114,39 @@ describe("Study verification on the participant list", () => {
             });
 
             const row = await listParticipants(ctx, event.id, member.id);
-            expect(row?.studyVerification).toBe("verified");
+            expect(row?.studyVerification).toBe("active");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "marks a member Feide says is no longer enrolled as inactive",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            const programmeId = await seedProgramme(ctx);
+
+            const event = await ctx.utils.createTestEvent({ capacity: 10 });
+            const member = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: member.id,
+                groupSlug: "dataingenir",
+            });
+            await ctx.db.insert(schema.studyProgramMembership).values({
+                userId: member.id,
+                studyProgramId: programmeId,
+                startYear: 2022,
+                startYearSource: "feide",
+                feideActive: false,
+                feideCheckedAt: daysAgo(5),
+            });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: member.id,
+                status: "registered",
+            });
+
+            const row = await listParticipants(ctx, event.id, member.id);
+            expect(row?.studyVerification).toBe("inactive");
         },
         500_000,
     );
