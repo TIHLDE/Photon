@@ -3,7 +3,7 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { promoteAssetUrls } from "~/lib/asset";
+import { claimPrivateAssetUrls } from "~/lib/asset";
 import { sendNotification } from "~/lib/notification";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -148,8 +148,9 @@ export const createFineRoute = route().post(
         }
 
         // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.image]);
+        // this the cleanup cron deletes the file after two days. Privat fordi
+        // bildet viser hvem som ble bøtelagt for hva.
+        await claimPrivateAssetUrls(bucket, [body.image]);
 
         // Create the fine
         const [created] = await db

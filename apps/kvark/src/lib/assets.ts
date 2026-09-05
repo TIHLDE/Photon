@@ -14,6 +14,23 @@ export function assetPublicUrl(key: string): string {
 }
 
 /**
+ * Private assets — søknadsvedlegg, bøtebilder — kan ikke brukes som `<img src>`
+ * / `<a href>` på tvers av origins, fordi nettleseren ikke sender sesjonen dit.
+ * Hent bytene med credentials i stedet.
+ *
+ * Callers must revoke the URL when they are done with it.
+ */
+export async function fetchPrivateObjectUrl(path: string): Promise<string> {
+    const response = await fetch(new URL(path, apiBase()), {
+        credentials: "include",
+    });
+    if (!response.ok) {
+        throw new Error(`Kunne ikke hente fil (${response.status})`);
+    }
+    return URL.createObjectURL(await response.blob());
+}
+
+/**
  * Widths `GET /api/assets/:key?w=` accepts. Must stay in sync with
  * `IMAGE_VARIANT_WIDTHS` in the API — an unlisted width is a 400, not a
  * silently full-size image.

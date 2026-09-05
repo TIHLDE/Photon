@@ -75,13 +75,23 @@ export const uploadAssetMutation = mutationOptions({
  * The API re-encodes images to WebP on the way in, so the returned key does not
  * necessarily match the file's original extension — always use the key from the
  * response rather than deriving one from the file name.
+ *
+ * `visibility: "private"` holder bildet unna den åpne `GET /api/assets/:key`.
+ * URL-en bygges likevel likt: den er det raden lagrer, og den autoriserte ruta
+ * finner nøkkelen igjen i den.
  */
 export function useImageUploader() {
     const uploadAsset = useMutation(uploadAssetMutation);
 
-    async function uploadImage(file: File): Promise<string> {
+    async function uploadImage(
+        file: File,
+        options?: { visibility?: "public" | "private" },
+    ): Promise<string> {
         const formData = new FormData();
         formData.append("file", file);
+        if (options?.visibility) {
+            formData.append("visibility", options.visibility);
+        }
         const asset = await uploadAsset.mutateAsync({ formData });
         return assetPublicUrl(asset.key);
     }

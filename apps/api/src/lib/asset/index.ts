@@ -87,6 +87,24 @@ export async function promoteAssetUrls(
 }
 
 /**
+ * Som {@link promoteAssetUrls}, men gjør også assetet privat: raden som peker
+ * på filen avgjør hvor privat den er, ikke hva klienten husket å be om ved
+ * opplasting.
+ */
+export async function claimPrivateAssetUrls(
+    bucket: StorageService,
+    urls: (string | null | undefined)[],
+): Promise<void> {
+    for (const url of urls) {
+        const key = url ? assetKeyFromUrl(url) : null;
+        if (!key) continue;
+
+        await bucket.promoteAsset(key);
+        await bucket.setAssetVisibility(key, "private");
+    }
+}
+
+/**
  * Delete an asset from both storage and database
  */
 export async function deleteAsset(

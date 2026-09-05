@@ -89,10 +89,10 @@ export const fineSchema = Schema(
             .string()
             .nullable()
             .meta({ description: "User's defense text" }),
-        image: z
-            .string()
-            .nullable()
-            .meta({ description: "Evidence image URL" }),
+        image: z.string().nullable().meta({
+            description:
+                "Evidence image URL. Private — the asset route refuses it; read the picture through GET /api/groups/{groupSlug}/fines/{fineId}/image. Use this field only to tell whether a fine has a picture.",
+        }),
         status: z.string().meta({
             description: "Fine status (pending, approved, paid, rejected)",
         }),

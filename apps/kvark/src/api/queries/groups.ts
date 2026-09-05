@@ -4,6 +4,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
+import { fetchPrivateObjectUrl } from "#/lib/assets";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type {
     CreateGroup,
@@ -349,6 +350,19 @@ export const getGroupFineByIdQuery = (groupSlug: string, fineId: string) =>
                 params: { groupSlug, fineId },
             }),
     });
+
+/**
+ * Bildet er et privat asset, så URL-en i `fine.image` svarer 404 — den sier
+ * bare om boten har et bilde. Callers must revoke the URL when they are done.
+ */
+export function fetchFineImageUrl(
+    groupSlug: string,
+    fineId: string,
+): Promise<string> {
+    return fetchPrivateObjectUrl(
+        `api/groups/${encodeURIComponent(groupSlug)}/fines/${encodeURIComponent(fineId)}/image`,
+    );
+}
 
 export const createFineMutation = mutationOptions({
     mutationFn: ({
