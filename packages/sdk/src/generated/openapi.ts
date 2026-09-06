@@ -3989,10 +3989,10 @@ export interface components {
             /** @description The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins. */
             studyStartYear?: number | null;
             /**
-             * @description Whether Feide has confirmed the member is on the study programme shown. 'verified' means Feide answered within the last 120 days, 'stale' that it answered longer ago than that, and 'unverified' that it has never answered — the study came from the Lepton migration, the fadderuka sign-up or an admin correction. Priority pools still match on group membership regardless; this only tells the organizer how well the study behind a priority is known. Only included for event admins.
+             * @description What Feide last said about the member's enrolment on the study programme shown. 'active' and 'inactive' are answers given within the last 120 days — enrolled, and explicitly not enrolled. 'stale' is an answer older than that, and 'unverified' means Feide has never answered: the study came from the Lepton migration, the fadderuka sign-up or an admin correction. Nothing is gated on this — priority pools still match on group membership, and nobody is turned away from an alumni-closed event on it. It tells the organizer how well the study behind a priority is known, and which participants cannot be confirmed as current students. Only included for event admins.
              * @enum {string}
              */
-            studyVerification?: "verified" | "stale" | "unverified";
+            studyVerification?: "active" | "inactive" | "stale" | "unverified";
         };
         EventRegistrationList: {
             /** @description Total number of items available */

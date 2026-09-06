@@ -28,6 +28,9 @@ export function TeknologiministerMessage({ message }: { message: string }) {
                             to="/grupper/$slug"
                             params={{ slug: "index" }}
                             search={{ tab: "medlemmer" }}
+                            // Farge først på hover: `--link` gir bare 4.34:1
+                            // mot popover-flaten, se notatet i styles.css.
+                            className="underline underline-offset-4 hover:text-link"
                         >
                             {TEKNOLOGIMINISTER}
                         </Link>
