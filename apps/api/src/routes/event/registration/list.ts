@@ -1,6 +1,6 @@
 import { schema } from "@photon/db";
 import { registrationStatusVariants } from "@photon/db/schema";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
@@ -117,7 +117,10 @@ export const getAllRegistrationsForEventsRoute = route().get(
         );
 
         const registrations = await db.query.eventRegistration.findMany({
-            orderBy: (r) => [desc(r.createdAt)],
+            // Eldste først, samme vei som ventelista leses. Nyeste først gjorde
+            // at den som sist rykket opp fra ventelista sto øverst og så ut til
+            // å ha vært først inne.
+            orderBy: (r) => [asc(r.createdAt)],
             where: filters,
             limit: pageSize,
             offset: getPageOffset(page, pageSize),
