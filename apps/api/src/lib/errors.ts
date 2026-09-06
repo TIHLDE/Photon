@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import z from "zod";
 import { env } from "./env";
+import { logger as rootLogger, type LoggerType } from "./logger";
 
 /**
  * Domain-level validation error for use in service/domain layers.
@@ -43,6 +44,7 @@ export class HTTPAppException extends HTTPException {
     constructor(data: HttpAppExceptionData) {
         const { status } = data;
         super(status as ContentfulStatusCode, {
+            message: data.message,
             res: new Response(
                 JSON.stringify(httpAppExceptionSchema.parse(data)),
                 {
@@ -195,9 +197,16 @@ export function isStorageQuotaExceeded(err: unknown): boolean {
  * app.onError(globalErrorHandler);
  */
 export function globalErrorHandler(err: Error, c: Context): Response {
+    const logger: LoggerType = c.get("logger") ?? rootLogger;
     // Already a properly formatted HTTPAppException
     if (err instanceof HTTPAppException) {
-        return err.getResponse();
+        const response = err.getResponse();
+        if (response.status >= 500)
+            logger.error(
+                { event: "http.error", err, status: response.status },
+                err.message,
+            );
+        return response;
     }
 
     // Domain-level validation errors (from service layer)
@@ -225,6 +234,11 @@ export function globalErrorHandler(err: Error, c: Context): Response {
 
     // Hono's HTTPException (from middleware or other sources)
     if (err instanceof HTTPException) {
+        if (err.status >= 500)
+            logger.error(
+                { event: "http.error", err, status: err.status },
+                err.message,
+            );
         const response: HttpAppExceptionData = {
             status: err.status,
             message: err.message || "An error occurred",
@@ -244,7 +258,10 @@ export function globalErrorHandler(err: Error, c: Context): Response {
      * still look the conflict up and answer with something specific.
      */
     if (isUniqueViolation(err)) {
-        console.error("Unique constraint violation reached the handler:", err);
+        logger.error(
+            { event: "http.error", err, status: 409 },
+            "Unique constraint violation reached the handler",
+        );
         const response: HttpAppExceptionData = {
             status: 409,
             message: "Ressursen finnes allerede",
@@ -259,7 +276,10 @@ export function globalErrorHandler(err: Error, c: Context): Response {
      * an evening looking like a broken gallery (3. september 2026).
      */
     if (isStorageQuotaExceeded(err)) {
-        console.error("Object storage is out of space:", err);
+        logger.error(
+            { event: "http.error", err, status: 507 },
+            "Object storage is out of space",
+        );
         const response: HttpAppExceptionData = {
             status: 507,
             message:
@@ -269,7 +289,7 @@ export function globalErrorHandler(err: Error, c: Context): Response {
     }
 
     // Unexpected errors - log and return generic message
-    console.error("Unhandled error:", err);
+    logger.error({ event: "http.error", err, status: 500 }, "Unhandled error");
 
     const response: HttpAppExceptionData = {
         status: 500,

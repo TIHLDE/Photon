@@ -1,33 +1,10 @@
-import { env } from "@photon/core/env";
 import type { Context } from "hono";
 import { routePath } from "hono/route";
 import { every } from "hono/combine";
 import { createMiddleware } from "hono/factory";
 import { requestId as requestIdMiddleware } from "hono/request-id";
-import { pino } from "pino";
-import type { PrettyOptions } from "pino-pretty";
-
-export type LoggerType = ReturnType<typeof createLogger>;
-
-const debugTransportOptions: PrettyOptions = {
-    colorize: true,
-};
-
-function createLogger() {
-    const isDev = env.NODE_ENV === "development";
-    return pino({
-        level: isDev ? "debug" : "info",
-        timestamp: pino.stdTimeFunctions.isoTime,
-        ...(isDev
-            ? {
-                  transport: {
-                      target: "pino-pretty",
-                      options: debugTransportOptions,
-                  },
-              }
-            : {}),
-    });
-}
+import { logger as rootLogger, type LoggerType } from "~/lib/logger";
+export type { LoggerType } from "~/lib/logger";
 
 export const pinoLoggerMiddleware = every(
     requestIdMiddleware(),
@@ -38,7 +15,7 @@ export const pinoLoggerMiddleware = every(
 
         const route = routePath(c, -1);
 
-        const logger = createLogger().child({
+        const logger = rootLogger.child({
             requestId,
             request: {
                 method,
@@ -53,7 +30,7 @@ export const pinoLoggerMiddleware = every(
         await next();
         const elapsed = Date.now() - start;
         logger
-            .child({ elapsedMs: elapsed })
+            .child({ elapsedMs: elapsed, status: c.res.status })
             .info(`<-- ${method} ${url} (elapsed: ${elapsed}ms)`);
     },
 );
