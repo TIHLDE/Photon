@@ -609,3 +609,14 @@ export const eventFavoriteRelations = relations(eventFavorite, ({ one }) => ({
         references: [event.id],
     }),
 }));
+
+// Vipps utsteder hemmeligheten én gang, ved registrering, og viser den aldri
+// igjen. Lå den bare i Redis, mistet vi den ved hver deploy — og siden en
+// glemt registrering ikke kan gjenfinnes, ble det registrert en ny hver gang.
+// Vipps tar 25 per hendelsestype før det feiler.
+export const vippsWebhook = pgTable("vipps_webhook", {
+    id: text("id").primaryKey(),
+    secret: text("secret").notNull(),
+    url: text("url").notNull(),
+    ...timestamps,
+});

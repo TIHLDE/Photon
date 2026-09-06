@@ -1,5 +1,4 @@
 import { env } from "@photon/core/env";
-import { setupWebhooks } from "./lib/vipps";
 import { installErrorInterceptors } from "./lib/logger";
 
 export { createApp } from "./app";
@@ -7,8 +6,6 @@ export type { App } from "./app";
 
 if (env.NODE_ENV !== "test") {
     installErrorInterceptors();
-
-    void (await setupWebhooks());
 
     const { createApp } = await import("./app");
     const app = await createApp();
