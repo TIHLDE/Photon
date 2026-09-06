@@ -40,10 +40,28 @@ export async function fetchWithTimeout(
     }
 }
 
+/**
+ * The endpoint an error message may name, with the secret-bearing parts cut.
+ *
+ * A query string can carry a signed token — a presigned S3 link, an Azure SAS
+ * URL — and this ends up in the log. `origin` drops any `user:pass@` along the
+ * way. Everything but http(s) is named by scheme alone, because a `data:` URL
+ * keeps its whole payload in the path.
+ */
 function requestUrlOf(input: string | URL | Request): string {
-    return typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.href
-          : input.url;
+    const href =
+        typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url;
+
+    try {
+        const url = new URL(href);
+        return url.protocol === "http:" || url.protocol === "https:"
+            ? `${url.origin}${url.pathname}`
+            : url.protocol;
+    } catch {
+        return "the request URL";
+    }
 }
