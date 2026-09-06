@@ -47,6 +47,17 @@ vi.mock("@vippsmobilepay/sdk", () => ({
 
 // `env` er en Proxy uten `ownKeys`, så den kan ikke spres — da forsvinner
 // DATABASE_URL og resten. Legg et lag over i stedet.
+// Tokenet caches i Redis, som ikke finnes i CI. Det er en ren cache med TTL,
+// så en tom en er et gyldig svar — men uten dette ville testen bevist at
+// Redis var oppe, ikke at registreringen lagres i basen.
+vi.mock("~/lib/cache", () => ({
+    getRedis: async () => ({
+        get: async () => null,
+        set: async () => undefined,
+        setEx: async () => undefined,
+    }),
+}));
+
 vi.mock("@photon/core/env", async (importOriginal) => {
     const actual = await importOriginal<typeof import("@photon/core/env")>();
     const overrides: Record<string, unknown> = {
