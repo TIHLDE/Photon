@@ -15,6 +15,10 @@ services:
             - photon.tihlde.org-redis
     photon.tihlde.org-redis:
         container_name: photon.tihlde.org-redis
-        image: redis:alpine
+        # Pinnet til major 8, som `redis:alpine` peker på i dag — samme digest,
+        # så dette endrer ingenting nå. Uten pinningen kan `pull_policy: always`
+        # dra inn en ny major på en hvilken som helst deploy, og BullMQ er
+        # følsom for hvilken Redis den snakker med.
+        image: redis:8-alpine
         pull_policy: always
         restart: unless-stopped
