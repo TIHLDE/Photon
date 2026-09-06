@@ -8,7 +8,7 @@ import {
     isAlbumCreator,
     serializeAlbum,
 } from "~/lib/gallery";
-import { promoteAssetUrls } from "~/lib/asset";
+import { claimPrivateAssetUrls } from "~/lib/asset";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -50,7 +50,7 @@ export const updateRoute = route().patch(
 
         // The cover is staged until a row claims it; without this the cleanup
         // cron deletes the file after two days.
-        await promoteAssetUrls(ctx.bucket, [body.imageUrl]);
+        await claimPrivateAssetUrls(ctx.bucket, [body.imageUrl]);
 
         const [album] = await ctx.db
             .update(schema.galleryAlbum)

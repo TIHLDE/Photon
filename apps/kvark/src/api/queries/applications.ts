@@ -1,6 +1,7 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import type { components } from "@tihlde/sdk";
 import { apiClient } from "#/api/api-client";
+import { fetchPrivateObjectUrl } from "#/lib/assets";
 
 export type ApplicationSummary = components["schemas"]["ApplicationSummary"];
 export type ApplicationDetail = components["schemas"]["ApplicationDetail"];
@@ -119,28 +120,6 @@ export const regenerateApplicationPdfMutation = mutationOptions({
         invalidateApplications(ctx.client);
     },
 });
-
-const apiBase = () =>
-    (import.meta.env.VITE_API_URL as string | undefined) ??
-    "https://photon.tihlde.org/";
-
-/**
- * PDFs and attachments are private assets served by authorized routes, so
- * they cannot be used as a plain `<img src>` / `<a href>` across origins —
- * the browser would not attach the session cookie. Fetch the bytes with
- * credentials and hand back an object URL instead.
- *
- * Callers must revoke the URL when they are done with it.
- */
-export async function fetchPrivateObjectUrl(path: string): Promise<string> {
-    const response = await fetch(new URL(path, apiBase()), {
-        credentials: "include",
-    });
-    if (!response.ok) {
-        throw new Error(`Kunne ikke hente fil (${response.status})`);
-    }
-    return URL.createObjectURL(await response.blob());
-}
 
 /** Fetch an application's PDF and return a temporary object URL for it. */
 export function fetchApplicationPdfUrl(id: string): Promise<string> {

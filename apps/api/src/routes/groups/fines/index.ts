@@ -3,6 +3,7 @@ import { batchUpdateFinesRoute, batchUpdateUserFinesRoute } from "./batch";
 import { createFineRoute } from "./create";
 import { deleteFineRoute } from "./delete";
 import { getFineRoute } from "./get";
+import { getFineImageRoute } from "./image";
 import { listFinesRoute } from "./list";
 import { fineStatisticsRoute } from "./statistics";
 import { updateFineRoute } from "./update";
@@ -20,6 +21,7 @@ export const finesRoutes = route()
     .route("/", listFineUsersRoute)
     .route("/", batchUpdateFinesRoute)
     .route("/", batchUpdateUserFinesRoute)
+    .route("/", getFineImageRoute)
     .route("/", getFineRoute)
     .route("/", updateFineRoute)
     .route("/", deleteFineRoute);

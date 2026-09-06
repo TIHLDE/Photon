@@ -6,9 +6,11 @@ import {
     isOptimizableImage,
     resizeImage,
 } from "~/lib/asset/image";
+import { isMemberReadableAsset } from "~/lib/asset/member-readable";
 import { HTTPAppException } from "~/lib/errors";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { captureAuth } from "~/middleware/auth";
 
 export const downloadRoute = route().get(
     "/:key{.+}",
@@ -16,12 +18,15 @@ export const downloadRoute = route().get(
         tags: ["assets"],
         summary: "Download a file",
         operationId: "downloadAsset",
-        description: `Download a file by its key. No authentication required.
+        description: `Download a file by its key.
 
 The key is the full path returned when uploading, e.g., \`uploads/2024/01/uuid_filename.jpg\`
 
-Private assets (e.g. contract signatures) are never served here — they are only
-reachable through routes that perform their own authorization.
+Most assets — nyhets- og arrangementsbilder, gruppelogoer, Töddel — need no
+authentication. Galleribilder og profilbilder do: they answer 404 unless the
+request carries a session. Contract signatures, application attachments and
+fine pictures are never served here at all; they are only reachable through
+routes that perform their own authorization.
 
 **Resized variants:**
 Pass \`?w=\` with one of ${IMAGE_VARIANT_WIDTHS.join(", ")} to get the image
@@ -37,8 +42,10 @@ parameter is ignored for non-image assets (PDF, GIF).`,
         .badRequest({ description: "Unsupported width" })
         .notFound({ description: "Asset not found" })
         .build(),
+    captureAuth,
     async (c) => {
-        const { bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { bucket } = ctx;
         const key = c.req.param("key");
 
         const widthParam = c.req.query("w");
@@ -60,11 +67,16 @@ parameter is ignored for non-image assets (PDF, GIF).`,
             throw HTTPAppException.NotFound("Asset");
         }
 
-        // Private assets must go through a route that authorizes the caller.
-        // Report them as missing rather than forbidden, so this route does not
-        // confirm which keys exist.
-        if (asset.visibility === "private") {
-            throw HTTPAppException.NotFound("Asset");
+        // Galleribilder og profilbilder er lesbare for enhver innlogget
+        // bruker; resten av de private hører til en rute som autoriserer den
+        // enkelte kalleren. 404 framfor 403, så ruta ikke bekrefter hvilke
+        // nøkler som finnes.
+        const needsSession = asset.visibility === "private";
+        if (needsSession) {
+            const signedIn = c.get("user") !== undefined;
+            if (!signedIn || !(await isMemberReadableAsset(ctx, key))) {
+                throw HTTPAppException.NotFound("Asset");
+            }
         }
 
         // Serve a cached variant when one was asked for and the asset is an
@@ -107,6 +119,7 @@ parameter is ignored for non-image assets (PDF, GIF).`,
                             original,
                             asset.contentType || "application/octet-stream",
                             asset.originalFilename,
+                            needsSession,
                         );
                     }
                 }
@@ -115,6 +128,7 @@ parameter is ignored for non-image assets (PDF, GIF).`,
                     variant,
                     "image/webp",
                     asset.originalFilename,
+                    needsSession,
                 );
             }
 
@@ -124,6 +138,7 @@ parameter is ignored for non-image assets (PDF, GIF).`,
                 content,
                 asset.contentType || "application/octet-stream",
                 asset.originalFilename,
+                needsSession,
             );
         } catch {
             throw HTTPAppException.NotFound("Asset");
@@ -134,11 +149,16 @@ parameter is ignored for non-image assets (PDF, GIF).`,
 /**
  * Asset keys are content-addressed by a UUID and their bytes never change, so
  * every response here — original or variant — is safe to cache forever.
+ *
+ * `private` for det som krever innlogging: uten det kan nginx eller en CDN
+ * servere galleribildet videre til noen som ikke er logget inn, og gaten er
+ * omgått.
  */
 function imageResponse(
     body: Buffer,
     contentType: string,
     originalFilename: string,
+    needsSession = false,
 ): Response {
     return new Response(body, {
         status: 200,
@@ -146,7 +166,7 @@ function imageResponse(
             "Content-Type": contentType,
             "Content-Length": body.length.toString(),
             "Content-Disposition": `inline; filename="${encodeURIComponent(originalFilename)}"`,
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": `${needsSession ? "private" : "public"}, max-age=31536000, immutable`,
         },
     });
 }

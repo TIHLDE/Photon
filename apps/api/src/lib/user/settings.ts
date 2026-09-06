@@ -2,7 +2,7 @@ import { genderVariants, userAllergy, userSettings } from "@photon/db/schema";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
-import { promoteAssetUrls } from "../asset";
+import { claimPrivateAssetUrls } from "../asset";
 import type { AppContext } from "../ctx";
 
 export const UserAllergySchema = z.object({
@@ -189,7 +189,7 @@ export async function createUserSettings(
 
     // The profile picture is staged until a row claims it; without this the
     // cleanup cron deletes the file after two days.
-    await promoteAssetUrls(ctx.bucket, [settings.imageUrl]);
+    await claimPrivateAssetUrls(ctx.bucket, [settings.imageUrl]);
 
     // Use transaction for atomicity
     // Onboarding stiller allergispørsmålet, så det å fullføre den er et svar —
@@ -247,7 +247,7 @@ export async function updateUserSettings(
 ): Promise<StoredUserSettings> {
     const { db } = ctx;
 
-    await promoteAssetUrls(ctx.bucket, [updates.imageUrl]);
+    await claimPrivateAssetUrls(ctx.bucket, [updates.imageUrl]);
 
     return await db.transaction(async (tx) => {
         // Separate allergies from other updates
