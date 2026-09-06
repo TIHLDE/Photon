@@ -16,27 +16,27 @@ describe("Delete all form submissions", () => {
         });
 
         const leaderClient = await ctx.utils.clientForUser(leader);
-        const createResponse = await leaderClient.api.groups[":slug"].forms.$post(
-            {
-                param: { slug: "index" },
-                json: {
-                    title: "Slettetest",
-                    template: false,
-                    group: "index",
-                    can_submit_multiple: true,
-                    is_open_for_submissions: true,
-                    only_for_group_members: false,
-                    fields: [
-                        {
-                            title: "Svar",
-                            type: "text_answer",
-                            required: false,
-                            order: 0,
-                        },
-                    ],
-                },
+        const createResponse = await leaderClient.api.groups[
+            ":slug"
+        ].forms.$post({
+            param: { slug: "index" },
+            json: {
+                title: "Slettetest",
+                template: false,
+                group: "index",
+                can_submit_multiple: true,
+                is_open_for_submissions: true,
+                only_for_group_members: false,
+                fields: [
+                    {
+                        title: "Svar",
+                        type: "text_answer",
+                        required: false,
+                        order: 0,
+                    },
+                ],
             },
-        );
+        });
         expect(createResponse.status).toBe(201);
         const form = await createResponse.json();
         const field = form.fields?.[0];
@@ -73,9 +73,9 @@ describe("Delete all form submissions", () => {
         ].submissions.$delete({ param: { formId: form.id! } });
         expect(deleteResponse.status).toBe(200);
 
-        const after = await leaderClient.api.forms[":formId"].submissions.$get(
-            { param: { formId: form.id! } },
-        );
+        const after = await leaderClient.api.forms[":formId"].submissions.$get({
+            param: { formId: form.id! },
+        });
         expect(await after.json()).toHaveLength(0);
     });
 });
