@@ -7,7 +7,6 @@ import { getMyUpcomingEventsQuery } from "#/api/queries/events";
 import { getUserProfileQuery } from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileMembershipChips } from "#/components/profile-membership-chips";
-import { ProfileOverviewHeader } from "#/components/profile-overview-header";
 import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
 import type { ProfileLink } from "#/components/profile-header";
 import { isPrivateGroupType } from "#/lib/group";
@@ -92,10 +91,7 @@ function RouteComponent() {
 
     return (
         <>
-            <ProfileOverviewHeader
-                name={profile.name}
-                isOwnProfile={isOwnProfile}
-            />
+            <h2 className="text-2xl">Oversikt</h2>
             {profile.bio ? (
                 <div className="flex flex-col gap-2">
                     <h3 className="text-xs text-muted-foreground">Om</h3>
