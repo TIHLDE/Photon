@@ -12,6 +12,7 @@ import {
     startRegistrationResolveWorker,
 } from "./event/resolve-queue";
 import { startPushNotificationWorker } from "./notification/push";
+import { setupWebhooks } from "./vipps";
 
 /**
  * Start cron job to resolve pending event registrations
@@ -158,7 +159,27 @@ function startPaymentDeadlineSweepCron(ctx: AppContext): void {
  * Initialize all background workers and cron jobs
  * Called once when the application starts
  */
+/**
+ * Registrer Vipps-webhooken, men la aldri Vipps avgjøre om API-et svarer.
+ *
+ * Kallet lå tidligere som `await` i index.ts, foran `Bun.serve`. Kastet det —
+ * en nede leverandør, utløpte nøkler, eller taket på 25 registreringer —
+ * fanget uncaughtException-guarden feilen og logget «server stays up», men
+ * `Bun.serve` var aldri nådd. Prosessen levde, Docker så en frisk container,
+ * og porten svarte ingenting. Verifisert lokalt med ugyldige nøkler: HTTP 000.
+ *
+ * Webhooken er dessuten ikke kritisk vei. `confirmPaymentForUser` spør Vipps
+ * direkte når medlemmet kommer tilbake fra betalingen.
+ */
+function setupVippsWebhooks(ctx: AppContext): void {
+    setupWebhooks(ctx.db).catch((error: unknown) => {
+        console.error("Could not set up Vipps webhook:", error);
+    });
+}
+
 export function startBackgroundJobs(ctx: AppContext): void {
+    setupVippsWebhooks(ctx);
+
     // Start email worker
     startQueuedEmailWorker(ctx.queue, ctx.emailDelivery);
 

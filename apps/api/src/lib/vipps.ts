@@ -1,8 +1,14 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { type DbSchema, schema } from "@photon/db";
+import { eq } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Client, type GetPaymentResponse } from "@vippsmobilepay/sdk";
 import type { Context } from "hono";
 import { getRedis } from "./cache";
 import { env } from "./env";
+
+/** Bare det setupWebhooks trenger, så kallere kan sende en transaksjon. */
+type VippsDb = NodePgDatabase<DbSchema>;
 
 function getVippsClient() {
     if (
@@ -286,90 +292,107 @@ const WEBHOOK_EVENTS = [
     "epayments.payment.terminated.v1",
 ];
 
-const WEBHOOK_ID_CACHE_KEY = "vipps:webhook_id";
-const WEBHOOK_SECRET_CACHE_KEY = "vipps:webhook_secret";
 const WEBHOOK_API_PATH = "/api/event/payment/webhook";
 
-export async function setupWebhooks(): Promise<{ id: string; secret: string }> {
+export async function setupWebhooks(
+    db: VippsDb,
+): Promise<{ id: string; secret: string }> {
     if (env.VIPPS_TEST_MODE) {
         return { id: "test", secret: "test" };
     }
     const vipps = getVippsClient();
     const vippsToken = await getVippsToken();
+    const url = env.WEBHOOK_URL + WEBHOOK_API_PATH;
 
-    // Check if we have webhook registration in redis
-    const redis = await getRedis();
-    const existingWebhookId = await redis.get(WEBHOOK_ID_CACHE_KEY);
+    const stored = await db.query.vippsWebhook.findFirst({
+        where: eq(schema.vippsWebhook.url, url),
+    });
 
-    let hasRegisteredWebhook = false;
-
-    // No registered webhook (saved locally)
-    if (existingWebhookId) {
+    if (stored) {
         if (!env.REFRESH_VIPPS_WEBHOOKS) {
-            hasRegisteredWebhook = true;
-        } else {
-            const response = await vipps.webhook.list(vippsToken);
-
-            if (!response.ok) {
-                throw `Something went wrong while getting webhooks${response}`;
-            }
-
-            hasRegisteredWebhook = response.data.webhooks.some(
-                (w) => w.id === existingWebhookId,
-            );
-        }
-    }
-
-    if (hasRegisteredWebhook) {
-        const secret = await redis.get(WEBHOOK_SECRET_CACHE_KEY);
-        if (!secret) {
-            throw "Vipps webhook ID is present in redis, but not secret!";
+            return { id: stored.id, secret: stored.secret };
         }
 
-        if (!existingWebhookId) {
-            throw "This should not happen. Logic above results in webhookId being set.";
+        const response = await vipps.webhook.list(vippsToken);
+        if (!response.ok) {
+            throw new Error("Could not list Vipps webhooks");
         }
 
-        return {
-            id: existingWebhookId,
-            secret,
-        };
+        if (response.data.webhooks.some((w) => w.id === stored.id)) {
+            await pruneForeignWebhooks(vipps, vippsToken, url, stored.id);
+            return { id: stored.id, secret: stored.secret };
+        }
+
+        // Registreringen er borte hos Vipps; raden vår er verdiløs.
+        await db
+            .delete(schema.vippsWebhook)
+            .where(eq(schema.vippsWebhook.id, stored.id));
     }
 
     const response = await vipps.webhook.register(vippsToken, {
         events: WEBHOOK_EVENTS,
-        // url: env.ROOT_URL + WEBHOOK_API_PATH,
-        url: env.WEBHOOK_URL + WEBHOOK_API_PATH,
+        url,
     });
 
     if (!response.ok) {
-        throw `Something went wrong while creating webhook ${JSON.stringify(response, null, 2)}`;
+        throw new Error("Could not register Vipps webhook");
     }
 
     const { id, secret } = response.data;
 
-    redis.set(WEBHOOK_ID_CACHE_KEY, id);
-    redis.set(WEBHOOK_SECRET_CACHE_KEY, secret);
+    await db
+        .insert(schema.vippsWebhook)
+        .values({ id, secret, url })
+        .onConflictDoUpdate({
+            target: schema.vippsWebhook.id,
+            set: { secret, url },
+        });
 
-    return {
-        id,
-        secret,
-    };
+    await pruneForeignWebhooks(vipps, vippsToken, url, id);
+
+    return { id, secret };
+}
+
+/**
+ * Slett registreringer mot vår egen URL som ikke er den vi har hemmeligheten
+ * til. Vipps hverken erstatter eller deduplikerer, så uten dette blir hver
+ * glemt registrering stående og levere videre — verifisert mot testmiljøet,
+ * der seks identiske hadde hopet seg opp. Taket er 25 per hendelsestype, og
+ * over det feiler registreringen.
+ *
+ * Andres URL-er røres ikke: samme salgsenhet kan ha integrasjoner vi ikke
+ * kjenner til.
+ */
+async function pruneForeignWebhooks(
+    vipps: ReturnType<typeof getVippsClient>,
+    token: string,
+    url: string,
+    keepId: string,
+): Promise<void> {
+    const listed = await vipps.webhook.list(token);
+    if (!listed.ok) return;
+
+    for (const webhook of listed.data.webhooks) {
+        if (webhook.url !== url || webhook.id === keepId) continue;
+        await vipps.webhook.delete(token, webhook.id);
+    }
 }
 
 /**
  * Gets the current webhook secret that should be used to validate webhooks from Vipps
  */
-async function getWebhookSecret() {
-    const redis = await getRedis();
+async function getWebhookSecret(db: VippsDb) {
+    const url = env.WEBHOOK_URL + WEBHOOK_API_PATH;
 
-    const secret = await redis.get(WEBHOOK_SECRET_CACHE_KEY);
+    const stored = await db.query.vippsWebhook.findFirst({
+        where: eq(schema.vippsWebhook.url, url),
+    });
 
-    if (secret) {
-        return secret;
+    if (stored) {
+        return stored.secret;
     }
 
-    const webhook = await setupWebhooks();
+    const webhook = await setupWebhooks(db);
     return webhook.secret;
 }
 
@@ -476,7 +499,7 @@ export async function verifyVippsWebhookRequest(
     c: Context,
     rawBody: string,
 ): Promise<boolean> {
-    const secret = await getWebhookSecret();
+    const secret = await getWebhookSecret(c.get("ctx").db);
     const url = new URL(c.req.url);
 
     return verifyVippsWebhookSignature(
