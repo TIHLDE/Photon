@@ -78,41 +78,10 @@ export type UserPriorityFacts = {
     supersededStudySlugs: Set<string>;
 };
 
-/**
- * The study programmes a member has left, on positive evidence alone.
- *
- * A study group's membership is never taken away — leaving a programme should
- * not cost anyone their history, and `syncDerivedStudyGroups` only ever adds.
- * That is right for a roster and wrong for a priority pool: it makes
- * "member of `digital-infrastruktur-og-cybersikkerhet`" mean *has ever
- * studied it*, so a DigSec graduate now on the Digital samhandling master
- * kept a seat on a DigSec bedpres ahead of the students it was meant for.
- * 25 members in production are in that position, and two of them were on one
- * event.
- *
- * The evidence has to be positive in both halves: Feide said this programme
- * is over, *and* Feide said another one is running. Neither half alone is
- * enough to take a place away from someone.
- *
- * A lone `false` is the half that looks conclusive and is not. It means
- * finished, quit, on leave, on exchange — or, most often between August and
- * mid-September, simply not registered for the term yet, which is the window
- * priority pools for the autumn's events are decided in. {@link
- * hasFinishedProgramme} in `@photon/auth/feide` refuses to act on it for the
- * same reason, and 21 of the 22 members it describes already hold the alumni
- * role and cannot register at all.
- *
- * A missing flag is not evidence either, in either direction. The column has
- * only been written since 14 August 2026 and fills in on the member's next
- * login, and 1346 of 1960 study-group memberships in production have no
- * programme row behind them at all — every one of them migrated from Lepton.
- * Requiring proof of *current* enrolment rather than proof of departure would
- * strip three quarters of the organization of the priority they have.
- *
- * Reads only what the caller already joined, so a member whose active
- * programme has no group membership yields no evidence and keeps every
- * priority they had. That is the forgiving direction, and the one to fail in.
- */
+// Bevis i begge halvdeler, aldri én: en enslig `false` betyr like gjerne
+// permisjon, utveksling eller manglende semesterregistrering, og et manglende
+// flagg betyr ingenting — 1346 av 1960 studiegruppe-medlemskap i prod har
+// ingen programrad bak seg.
 export function findSupersededStudySlugs(
     groups: readonly MembershipRow[],
 ): Set<string> {
@@ -405,12 +374,7 @@ interface IsUserPrioritizedParams {
     userGroupSlugs: Set<string>;
     /** Null when the member has no cohort — matches no class-level pool. */
     userClassYear: number | null;
-    /**
-     * Study programmes the member has left, from
-     * {@link findSupersededStudySlugs}. Optional because absent evidence is
-     * the default everywhere: no set means no programme is known to be over,
-     * and every group the member is in still counts.
-     */
+    /** Fra {@link findSupersededStudySlugs}; tomt betyr ingen bevis. */
     supersededStudySlugs?: Set<string>;
     event: EventPriorityRules;
     strikeCount: number;
@@ -437,10 +401,7 @@ interface IsUserPrioritizedParams {
  * quietly not enforce them.
  *
  * A pool naming a study programme asks about the programme the member is on
- * now, not every one they have been on; see
- * {@link findSupersededStudySlugs}. Every other kind of group — a committee,
- * a subgroup, an interest group — keeps asking exactly what it says, which is
- * whether the member is in it.
+ * now; every other kind of group still asks only about membership.
  */
 export function isUserPrioritized({
     userGroupSlugs,

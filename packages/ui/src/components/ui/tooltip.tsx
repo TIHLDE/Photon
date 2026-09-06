@@ -23,18 +23,6 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
     return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
-/**
- * Tooltipen er en flate som følger temaet, ikke en invertert boks.
- *
- * ShadCNs standard er `bg-foreground` mot `text-background`, som snur seg med
- * temaet: svart boks i lys modus, hvit i mørk. Den hvite boksen lyste mot den
- * mørke navy-flaten som om noe var galt, i stedet for å lese som en merknad.
- *
- * Popover-tokenene gir det samme forholdet begge veier — hvit på lys, navy på
- * mørk — og `ring-foreground/10` er samme kant som `Popover` bruker, så de to
- * lagene ser ut som samme system. Pilen males med, ellers stikker den gamle
- * fargen ut under boksen.
- */
 function TooltipContent({
     className,
     side = "top",

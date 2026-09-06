@@ -932,14 +932,6 @@ export function createAuth(options: CreateAuthOptions) {
                                     },
                                 },
                             },
-                            /**
-                             * Only the timestamp, and no join to the programme:
-                             * the question the frontend asks is "when did Feide
-                             * last say anything about this member", which a
-                             * login answers for every one of their programmes
-                             * at once. Folded into this query rather than added
-                             * as a fourth round-trip.
-                             */
                             studyProgramMemberships: {
                                 columns: { feideCheckedAt: true },
                             },
@@ -968,25 +960,9 @@ export function createAuth(options: CreateAuthOptions) {
                     (a) => a.providerId === "credential",
                 );
 
-                /**
-                 * When Feide last answered for this member, and whether asking
-                 * again is even possible.
-                 *
-                 * A member with no Feide account is never nudged: they have
-                 * nothing to sign in with, and the study they carry — from the
-                 * Lepton migration or the fadderuka form — is the best we will
-                 * ever have for them. Nudging them would be asking for
-                 * something they cannot give.
-                 *
-                 * Neither is a member Feide has no programme for at all. 13 in
-                 * production, and their logins are not missing — they have
-                 * happened, and came back empty, because the member studies
-                 * something else at NTNU or the campus gate held the programme
-                 * back. Another sign-in returns the same nothing, so the ask
-                 * would be one they can never satisfy: the prompt would come
-                 * back every time, on every event, for as long as the account
-                 * exists.
-                 */
+                // Uten Feide-konto er det ingenting å be om, og uten en
+                // programrad ville en ny innlogging gitt samme tomme svar —
+                // 13 i prod studerer noe annet ved NTNU.
                 const programmes = row?.studyProgramMemberships ?? [];
                 const feideCheckedAt = programmes
                     .map((m) => m.feideCheckedAt)
@@ -1025,14 +1001,6 @@ export function createAuth(options: CreateAuthOptions) {
                                   ),
                               }
                             : null,
-                        /**
-                         * Enough for the frontend to ask the member to sign in
-                         * with Feide again when their enrolment answer has gone
-                         * stale — see `isFeideCheckCurrent`. Never a claim that
-                         * anything is wrong with them: an expired answer costs
-                         * nobody their priority, it only means we last heard
-                         * from Feide more than a semester ago.
-                         */
                         feideCheckedAt: feideCheckedAt?.toISOString() ?? null,
                         needsFeideRefresh:
                             hasFeideAccount &&

@@ -13,19 +13,6 @@ type FeideRefreshNudgeProps = {
     hasPriority: boolean;
 };
 
-/**
- * Ber medlemmet bekrefte studiet sitt med Feide på et arrangement som
- * prioriterer.
- *
- * Prioriteringen leser studiegruppa, og den gruppa fjernes aldri av seg selv.
- * Har du byttet studium eller blitt ferdig, står den til du logger inn med
- * Feide igjen — og da er det din egen plass, eller noen andres, som avhenger av
- * et svar som er over et semester gammelt.
- *
- * Ingenting tas fra noen her. Vi ber, vi krever ikke: en utdatert bekreftelse
- * er ikke bevis for at noe er galt, og å sperre påmeldingen på den ville
- * rammet alle som bare ikke har logget inn på en stund.
- */
 export function FeideRefreshNudge({
     eventId,
     hasPriority,
@@ -40,21 +27,9 @@ export function FeideRefreshNudge({
     const signIn = () => {
         setIsSigningIn(true);
 
-        /**
-         * Via `/koble-feide?linked=1`, ikke rett hit tilbake.
-         *
-         * `syncFeideHook` kjører bare når Feide-callbacken minter en *ny*
-         * sesjon, og den som allerede er innlogget kan havne i lenkegrenen,
-         * som ikke gjør det — da hentes ingenting, og påminnelsen ville sendt
-         * medlemmet gjennom hele runden uten å endre noe. Den siden kaller
-         * synk-endepunktet eksplisitt med sesjonen den har, og runden innom
-         * Feide har akkurat fornyet tilgangstokenet den bruker.
-         *
-         * Kaller synken to ganger i det tilfellet hvor kroken også kjørte.
-         * Den er idempotent, og det er den billige halvdelen av å være sikker.
-         *
-         * `next` bærer med seg arrangementet, så medlemmet lander der de var.
-         */
+        // Via /koble-feide fordi syncFeideHook bare kjører når callbacken
+        // minter en ny sesjon — den som allerede er innlogget kan havne i
+        // lenkegrenen, som ikke gjør det. Den siden kaller synken eksplisitt.
         const next =
             router.state.location.pathname + router.state.location.searchStr;
         void signInWithFeide(
