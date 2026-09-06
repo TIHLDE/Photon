@@ -15,6 +15,36 @@ services:
             - photon.tihlde.org-redis
     photon.tihlde.org-redis:
         container_name: photon.tihlde.org-redis
-        image: redis:alpine
+        # Pinnet til major 8, som er det `redis:alpine` løser til i dag
+        # (8.10.1). Med `pull_policy: always` på et bevegelig tag kunne prod
+        # tidligere hoppe major-versjon på en hvilken som helst deploy, uten
+        # at noe sa fra. Det var ufarlig så lenge alt lå i minnet og gikk tapt
+        # uansett — men nå som AOF-en overlever, er det et format det er verdt
+        # å ha kontroll på hvem som skriver.
+        #
+        # Fortsatt bevegelig innenfor major, så sikkerhetsoppdateringer
+        # kommer inn av seg selv. Med volumet på plass er en gjenskaping av
+        # containeren ikke lenger et datatap.
+        image: redis:8-alpine
         pull_policy: always
         restart: unless-stopped
+        # Redis er ikke en cache her: køen er eneste hukommelse om arbeid som
+        # skal skje senere. Mister vi den, blir ingen betalingsfrist håndhevet
+        # — ingenting i basen feier `event_payment.expiresAt`, så en ubetalt
+        # plass blir aldri inndratt og ventelista rykker aldri.
+        #
+        # `--save ""` slår av RDB-øyeblikksbildene til fordel for AOF alene:
+        # AOF-en skrives fortløpende, mens et øyeblikksbilde per definisjon
+        # ligger etter og ville gitt oss en halv kø tilbake. Samme oppsett som
+        # dev har hatt hele tiden.
+        command: ["redis-server", "--save", "", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+volumes:
+    redis_data:
