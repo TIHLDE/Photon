@@ -872,9 +872,8 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
             registrationsQuery.data?.pages.flatMap(
                 (page) => page.registeredUsers,
             ) ?? [];
-        // Ventelista leses ovenfra og ned: den som står øverst er den som får
-        // plassen når noen melder seg av. Lista kommer nyeste først fra API-et,
-        // som er riktig for påmeldte, men snur ventelista på hodet.
+        // Ventelista sorteres på posisjon, ikke på påmeldingstidspunkt: den
+        // som rykket opp sist står ikke nødvendigvis sist i køen.
         if (status !== "waitlisted") {
             return rows;
         }
