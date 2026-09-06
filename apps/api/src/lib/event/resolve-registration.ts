@@ -108,8 +108,10 @@ export async function resolveRegistrationsForEvent(
             (registration) => registration.userId,
         );
 
+        // Ventelista er med fordi et bytte skal fylle plassen fra toppen av
+        // den, og det krever at vi vet hvem der som er prioritert.
         const isUserPrioritizedForEvent = await loadPrioritization(
-            batchUserIds,
+            [...batchUserIds, ...event.registrations.map((r) => r.userId)],
             event,
             event.enforcesPreviousStrikes,
             tx,
@@ -133,6 +135,9 @@ export async function resolveRegistrationsForEvent(
          * out. Writing the status as we went made that a race with itself.
          */
         const registeredUserIds = new Set<string>();
+
+        /** Ventelistemedlemmer et bytte løftet inn; status er alt skrevet. */
+        const promotedUserIds = new Set<string>();
 
         // Step 4: Process each pending registration in order
         for (const registration of pendingRegistrations) {
@@ -203,6 +208,30 @@ export async function resolveRegistrationsForEvent(
                 );
 
                 if (swapTarget) {
+                    /**
+                     * Plassen som frigjøres tilhører den best rangerte som
+                     * venter, ikke den som tilfeldigvis utløste byttet.
+                     *
+                     * Rangeringen er prioriterte først, så påmeldingstidspunkt.
+                     * Den som melder seg på nå er sist i tid, så enhver
+                     * prioritert på ventelista slår dem. Uten dette tok den
+                     * nyankomne plassen selv: på bedpresen med Mnemonic gikk
+                     * den til én som meldte seg på tre dager for seint, foran
+                     * 68 prioriterte som hadde stått der siden påmeldingen
+                     * åpnet.
+                     */
+                    const rightfulHeir = event.registrations
+                        .filter(
+                            (r) =>
+                                r.status === "waitlisted" &&
+                                r.createdAt < registration.createdAt &&
+                                isUserPrioritizedForEvent(r.userId),
+                        )
+                        .sort(
+                            (a, b) =>
+                                a.createdAt.getTime() - b.createdAt.getTime(),
+                        )[0];
+
                     // Perform swap: demote swapTarget to waitlist
                     await tx
                         .update(schema.eventRegistration)
@@ -221,7 +250,50 @@ export async function resolveRegistrationsForEvent(
                         );
 
                     swappedUserId = swapTarget.userId;
-                    finalStatus = "registered";
+                    finalStatus = rightfulHeir ? "waitlisted" : "registered";
+
+                    if (rightfulHeir) {
+                        // Skrives med én gang, ikke utsatt som plassene til de
+                        // ventende: posisjonsberegningen lenger nede leser
+                        // ventelista ut av databasen og må se dem borte.
+                        await tx
+                            .update(schema.eventRegistration)
+                            .set({
+                                status: "registered",
+                                waitlistPosition: null,
+                            })
+                            .where(
+                                and(
+                                    eq(
+                                        schema.eventRegistration.eventId,
+                                        eventId,
+                                    ),
+                                    eq(
+                                        schema.eventRegistration.userId,
+                                        rightfulHeir.userId,
+                                    ),
+                                ),
+                            );
+                        promotedUserIds.add(rightfulHeir.userId);
+                        rightfulHeir.status = "registered";
+                        rightfulHeir.waitlistPosition = null;
+
+                        const heirUrl = `${env.WEBSITE_URL}/arrangementer/${event.slug}`;
+                        notifications.add({
+                            userId: rightfulHeir.userId,
+                            title: `Du har fått plass på ${event.title}!`,
+                            description: `En plass ble ledig, og du er nå påmeldt ${event.title}.`,
+                            link: heirUrl,
+                            emailTemplate: {
+                                name: "RegistrationConfirmedEmail",
+                                props: {
+                                    eventName: event.title,
+                                    eventUrl: heirUrl,
+                                    logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                                },
+                            },
+                        });
+                    }
 
                     // They may have taken their spot earlier in this very pass,
                     // in which case the deferred write below must not put it
@@ -385,12 +457,17 @@ export async function resolveRegistrationsForEvent(
 
             // Update local event.registrations array for next iteration
             // This is needed so subsequent pending registrations see updated state
-            if (finalStatus === "registered") {
+            // Også ventelisteplasseringer: et bytte senere i samme runde skal
+            // kunne gi plassen til en fra denne batchen som meldte seg på
+            // først. Uten dette så iterasjon to bare den ventelista som lå der
+            // da runden startet, og den nyeste av to nyankomne tok plassen fra
+            // den eldste.
+            if (finalStatus === "registered" || finalStatus === "waitlisted") {
                 event.registrations.push({
                     eventId,
                     userId,
                     status: finalStatus,
-                    waitlistPosition: null,
+                    waitlistPosition,
                     createdAt: registration.createdAt,
                     updatedAt: new Date(),
                     attendedAt: null,
@@ -430,20 +507,25 @@ export async function resolveRegistrationsForEvent(
          * there is no reason to write them one by one.
          */
         if (registeredUserIds.size > 0) {
-            const registeredIds = [...registeredUserIds];
-
             await tx
                 .update(schema.eventRegistration)
                 .set({ status: "registered", waitlistPosition: null })
                 .where(
                     and(
                         eq(schema.eventRegistration.eventId, eventId),
-                        inArray(schema.eventRegistration.userId, registeredIds),
+                        inArray(schema.eventRegistration.userId, [
+                            ...registeredUserIds,
+                        ]),
                     ),
                 );
+        }
 
+        // Opprykkede er med: de har en plass nå, og en plass på et betalt
+        // arrangement bærer et krav uansett hvordan den ble til.
+        const spotHolders = [...registeredUserIds, ...promotedUserIds];
+        if (spotHolders.length > 0) {
             // Paid events only; the call is a no-op on a free one.
-            await createPaymentObligations(txCtx, event, registeredIds);
+            await createPaymentObligations(txCtx, event, spotHolders);
         }
     });
 
