@@ -854,7 +854,21 @@ export async function syncBaselineRoles(
          *
          * `every`, not `some`: a member who finished the bachelor and is on the
          * master is still a student.
+         *
+         * Acted on in both directions only from positive evidence, because
+         * `hasFinishedProgramme` says `false` for two different things: a
+         * member provably inside the degree, and one we cannot place at all.
+         * Treating those alike hands `member` back to a real graduate — and
+         * "cannot place" is the common case right here, since
+         * `deriveStartYear` returns null for exactly the inactive readings
+         * this branch handles.
          */
+        if (inRegistrationWindow(now)) return;
+
+        // One unplaceable programme is enough to sink the verdict: it could be
+        // the master they are still on, and "all finished" would be a guess.
+        if (programmes.some((p) => p.startYear === null)) return;
+
         target = programmes.every((p) =>
             hasFinishedProgramme(p.programSlug, p.startYear, now),
         )

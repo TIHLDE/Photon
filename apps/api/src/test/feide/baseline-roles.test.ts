@@ -427,6 +427,121 @@ describe("syncBaselineRoles", () => {
         },
     );
 
+    /**
+     * The reading that exposed the first version of this guard.
+     *
+     * `deriveStartYear` hands back null for an inactive membership with no
+     * kull group, so "no year" is what this branch normally sees. Reading that
+     * as "not finished, therefore a member" gives a real graduate the
+     * påmelding right back on every login — the mirror image of the bug being
+     * fixed, and just as permanent.
+     */
+    integrationTest(
+        "gives nothing back on an inactive reading it cannot place",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.alumni })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: null,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+
+    /**
+     * A finished bachelor next to a master we cannot place is not a verdict
+     * either: the master may well be running.
+     */
+    integrationTest(
+        "withholds the verdict when one programme cannot be placed",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2020,
+                            active: false,
+                        },
+                        {
+                            programSlug: "digital-samhandling",
+                            startYear: null,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The window takes nothing away, and gives nothing back either. An
+     * alumnus who signs in on 20 August must not come out a member.
+     */
+    integrationTest(
+        "hands nothing back inside the semester registration window",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.alumni })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2025,
+                            active: false,
+                        },
+                    ],
+                    INSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+
     integrationTest(
         "leaves a stranger with neither role untouched",
         async ({ ctx }) => {
