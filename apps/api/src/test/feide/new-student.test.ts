@@ -344,24 +344,38 @@ describe("a student with no prior TIHLDE account", () => {
             await seedProgramme(ctx.db);
             const user = await ctx.utils.createTestUser();
 
-            await signInWithFeide(ctx.db, user.id, [
-                kull("BIDATA", "2026H"),
-                ...firstSemester.map(emne),
-            ]);
+            await signInWithFeide(
+                ctx.db,
+                user.id,
+                [kull("BIDATA", "2023H"), ...firstSemester.map(emne)],
+                new Date("2023-10-01T09:00:00Z"),
+            );
 
-            // Three years on: the memberships have lapsed.
-            await signInWithFeide(ctx.db, user.id, [
-                {
-                    ...kull("BIDATA", "2026H"),
-                    membership: { active: false },
-                },
-                ...firstSemester.map(emne),
-            ]);
+            /**
+             * Three years on, and said with the clock rather than only in a
+             * comment. An inactive reading is only evidence of graduation once
+             * the member is past the length of the degree and outside the
+             * semester registration window — before this test passed on the
+             * same reading taken from a first-year, which is the demotion that
+             * hit real students in August 2026.
+             */
+            await signInWithFeide(
+                ctx.db,
+                user.id,
+                [
+                    {
+                        ...kull("BIDATA", "2023H"),
+                        membership: { active: false },
+                    },
+                    ...firstSemester.map(emne),
+                ],
+                new Date("2026-10-01T09:00:00Z"),
+            );
 
             // "Én gang TIHLDE-medlem, alltid TIHLDE-medlem": the groups stay,
             // only the baseline role moves.
             expect(await groupSlugsOf(ctx.db, user.id)).toEqual([
-                "2026",
+                "2023",
                 "dataingenior",
             ]);
             expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
