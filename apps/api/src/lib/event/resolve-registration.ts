@@ -457,12 +457,17 @@ export async function resolveRegistrationsForEvent(
 
             // Update local event.registrations array for next iteration
             // This is needed so subsequent pending registrations see updated state
-            if (finalStatus === "registered") {
+            // Også ventelisteplasseringer: et bytte senere i samme runde skal
+            // kunne gi plassen til en fra denne batchen som meldte seg på
+            // først. Uten dette så iterasjon to bare den ventelista som lå der
+            // da runden startet, og den nyeste av to nyankomne tok plassen fra
+            // den eldste.
+            if (finalStatus === "registered" || finalStatus === "waitlisted") {
                 event.registrations.push({
                     eventId,
                     userId,
                     status: finalStatus,
-                    waitlistPosition: null,
+                    waitlistPosition,
                     createdAt: registration.createdAt,
                     updatedAt: new Date(),
                     attendedAt: null,

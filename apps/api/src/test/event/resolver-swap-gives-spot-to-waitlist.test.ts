@@ -18,7 +18,10 @@ vi.mock("~/lib/vipps", () => ({
 
 const MINUTE = 60_000;
 
-async function seedFullEvent(ctx: IntegrationTestContext) {
+async function seedFullEvent(
+    ctx: IntegrationTestContext,
+    opts: { capacity?: number } = {},
+) {
     await ctx.utils.setupEventCategories();
 
     await ctx.db.insert(schema.group).values({
@@ -29,7 +32,9 @@ async function seedFullEvent(ctx: IntegrationTestContext) {
         finesActivated: false,
     });
 
-    const event = await ctx.utils.createTestEvent({ capacity: 1 });
+    const event = await ctx.utils.createTestEvent({
+        capacity: opts.capacity ?? 1,
+    });
     await ctx.db.insert(schema.eventPriorityPool).values({
         eventId: event.id,
         groupSlug: "prioritert-gjeng",
@@ -112,6 +117,60 @@ describe("A swap frees a spot for the waiting list, not for the newcomer", () =>
                 })
             ).length;
             expect(registered).toBe(1);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "ranks two newcomers in the same pass against each other",
+        async ({ ctx }) => {
+            // To ikke-prioriterte med plass, så to bytter er mulige i samme
+            // runde. Da må den andre plassen gå til den av de to nyankomne som
+            // meldte seg på først — ikke til den som tilfeldigvis kom sist.
+            const event = await seedFullEvent(ctx, { capacity: 2 });
+            const now = Date.now();
+
+            const seatedA = await addMember(ctx, { prioritized: false });
+            const seatedB = await addMember(ctx, { prioritized: false });
+            for (const [i, u] of [seatedA, seatedB].entries()) {
+                await ctx.db.insert(schema.eventRegistration).values({
+                    eventId: event.id,
+                    userId: u.id,
+                    status: "registered",
+                    createdAt: new Date(now + i * 1000),
+                });
+            }
+
+            const waiting = await addMember(ctx, { prioritized: true });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: waiting.id,
+                status: "waitlisted",
+                waitlistPosition: 1,
+                createdAt: new Date(now + MINUTE),
+            });
+
+            const first = await addMember(ctx, { prioritized: true });
+            const second = await addMember(ctx, { prioritized: true });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: first.id,
+                status: "pending",
+                createdAt: new Date(now + 10 * MINUTE),
+            });
+            await ctx.db.insert(schema.eventRegistration).values({
+                eventId: event.id,
+                userId: second.id,
+                status: "pending",
+                createdAt: new Date(now + 20 * MINUTE),
+            });
+
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const status = await statusOf(ctx, event.id);
+            expect(status(waiting.id)?.status).toBe("registered");
+            expect(status(first.id)?.status).toBe("registered");
+            expect(status(second.id)?.status).toBe("waitlisted");
         },
         500_000,
     );
