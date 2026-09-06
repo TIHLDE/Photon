@@ -27,19 +27,22 @@ jobs:
             - name: Check linting
               run: bun run lint
 
+            - name: Check formatting
+              run: bun run format
+
             # Drizzle applies migrations by journal timestamp, not by index, and
             # silently skips any that are not newer than the last one applied.
             - name: Check migration order
               run: bun run db:check-order
 
-            - name: Check types
-              run: bun run typecheck
-
             - name: Check building
               run: bun run build
 
+            - name: Check types
+              run: bun run typecheck
     api-tests:
         name: API Tests (${{ matrix.shard }})
+        needs: check
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
@@ -60,6 +63,7 @@ jobs:
 
     other-tests:
         name: Other Tests
+        needs: check
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
