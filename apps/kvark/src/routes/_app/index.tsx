@@ -468,7 +468,7 @@ function Hero({ banners }: { banners?: ReactNode }) {
     // stedet for å skyve den ned — og de kan aldri legge seg oppå innholdet.
     return (
         <div className="relative flex min-h-[calc(100svh_-_3.5rem_-_4rem_-_env(safe-area-inset-bottom))] flex-col lg:min-h-[calc(100svh_-_3.5rem)]">
-            <HeroSectionBackground className="h-full text-primary -z-50" />
+            <HeroSectionBackground className="text-primary -z-50" />
             {banners}
             {/* Logo, blurb and actions are the section's three direct children,
              * so Stagger walks them in that reading order on its own. */}

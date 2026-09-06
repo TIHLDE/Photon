@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "@photon/core/http";
 import { schema } from "@photon/db";
 import {
     PUSH_QUEUE_NAME,
@@ -141,7 +142,7 @@ export async function deliverPushNotification(
 }
 
 async function sendChunk(chunk: ExpoPushMessage[]): Promise<ExpoPushTicket[]> {
-    const response = await fetch(EXPO_PUSH_URL, {
+    const response = await fetchWithTimeout(EXPO_PUSH_URL, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

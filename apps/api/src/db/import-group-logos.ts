@@ -9,6 +9,7 @@
  * Run with:
  *   cd apps/api && bun run src/db/import-group-logos.ts
  */
+import { fetchWithTimeout } from "@photon/core/http";
 import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq, isNotNull } from "drizzle-orm";
 import { env } from "~/lib/env";
@@ -57,7 +58,9 @@ async function main() {
         }
 
         try {
-            const response = await fetch(sourceUrl);
+            const response = await fetchWithTimeout(sourceUrl, {
+                timeoutMs: 60_000,
+            });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
