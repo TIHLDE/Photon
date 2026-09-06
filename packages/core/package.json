@@ -11,6 +11,7 @@
         "./services/queue": "./src/services/queue/index.ts",
         "./services/storage": "./src/services/storage/index.ts",
         "./env": "./src/env.ts",
+        "./http": "./src/http.ts",
         "./slug": "./src/slug.ts"
     },
     "dependencies": {

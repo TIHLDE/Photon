@@ -23,6 +23,7 @@ import {
     userRole,
 } from "@photon/db/schema";
 import { env } from "@photon/core/env";
+import { fetchWithTimeout } from "@photon/core/http";
 import {
     currentAcademicYear,
     isMasterStudySlug,
@@ -1493,7 +1494,7 @@ async function fetchValidStudyPrograms(
      * presence of a group no longer means "enrolled". `membership.active` on
      * each group carries that instead; see {@link parseValidStudyPrograms}.
      */
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         "https://groups-api.dataporten.no/groups/me/groups?showAll=true",
         { headers: { Authorization: `Bearer ${accessToken}` } },
     );
@@ -2104,9 +2105,10 @@ export const redirectToPasswordSetupAfterRevoke: (
  * the other to fill in the username that decision depends on next time.
  */
 async function fetchFeideProfile(accessToken: string): Promise<OpenIDProfile> {
-    const response = await fetch("https://auth.dataporten.no/openid/userinfo", {
-        headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const response = await fetchWithTimeout(
+        "https://auth.dataporten.no/openid/userinfo",
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
 
     if (!response.ok) {
         throw new Error("Failed to fetch user info");

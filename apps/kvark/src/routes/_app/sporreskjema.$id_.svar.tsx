@@ -184,6 +184,11 @@ function FormSubmissionsPage() {
                                                     | "svar"
                                                     | "statistikk",
                                             },
+                                            // Fanebyttet er ikke et sted man
+                                            // skal kunne gå tilbake til;
+                                            // ellers må «Tilbake» gjennom hver
+                                            // fane før den forlater siden.
+                                            replace: true,
                                         })
                                     }
                                 >

@@ -199,7 +199,11 @@ export function HeroSectionBackground({ className }: { className?: string }) {
         <div
             data-slot="hero-waves"
             className={cn(
-                "absolute inset-0 h-[90vh] w-full overflow-hidden text-black",
+                // Høyden kommer fra `inset-0` alene. En egen høyde her var
+                // 90vh, som er høyere enn seksjonene på /opptak, /ny-student
+                // og /bedrift — bølgene ble kappet tvert av `overflow-hidden`
+                // i bunnen i stedet for å fylle seksjonen.
+                "absolute inset-0 overflow-hidden text-black",
                 className,
             )}
             style={
