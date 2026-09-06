@@ -16,6 +16,9 @@ import { integrationTest } from "~/test/config/integration";
  * enrolled, is proof enough to take "member" away.
  */
 describe("syncBaselineRoles", () => {
+    const OUTSIDE_WINDOW = new Date("2026-10-01T09:00:00Z");
+    const INSIDE_WINDOW = new Date("2026-08-20T09:00:00Z");
+
     const seedRoles = async (db: NodePgDatabase<DbSchema>) => {
         await db
             .insert(schema.role)
@@ -122,8 +125,12 @@ describe("syncBaselineRoles", () => {
                 feideActive: false,
             });
 
+            // Outside the semester registration window, where "inactive" is
+            // allowed to mean something. Fixed rather than `new Date()`: run
+            // in the first half of September this same case is deliberately
+            // no verdict at all, and the test would flip with the calendar.
             await ctx.db.transaction((tx) =>
-                syncBaselineRoles(tx, user.id, false),
+                syncBaselineRoles(tx, user.id, false, [], OUTSIDE_WINDOW),
             );
 
             expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
@@ -195,6 +202,343 @@ describe("syncBaselineRoles", () => {
             );
 
             expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The August reading, which is the one that broke people.
+     *
+     * NTNU turns `membership.active` off for anyone who has not registered for
+     * the term, so through July and August it is off for every returning
+     * student. Believing it demoted a second-year in three committees, and a
+     * first-year who had not started yet, to `alumni` — and `alumni` is
+     * precisely the role that cannot register for events.
+     *
+     * The verdict here does not depend on the window: even in October, an
+     * inactive reading on someone two years into a three-year bachelor is not
+     * evidence they graduated.
+     */
+    integrationTest(
+        "keeps member when an inactive programme is still inside its length",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2025,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The first-year case. Feide names the programme but has not flagged the
+     * membership active yet, which for a brand new student is the normal state
+     * for weeks. They are a member from their first login, not an alumnus and
+     * not roleless.
+     */
+    integrationTest(
+        "makes a first-year a member on an inactive first reading",
+        async ({ ctx }) => {
+            await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "dataingenior",
+                            startYear: 2026,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    integrationTest(
+        "demotes when every inactive programme is past its length",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2020,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+
+    /**
+     * A finished bachelor alongside a running master is a student, not a
+     * graduate. `every`, not `some` — reading it the other way takes the role
+     * off everyone who continued.
+     */
+    integrationTest(
+        "keeps member while one of several programmes is still running",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2020,
+                            active: false,
+                        },
+                        {
+                            programSlug: "digital-samhandling",
+                            startYear: 2026,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    integrationTest(
+        "takes nothing away inside the semester registration window",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2020,
+                            active: false,
+                        },
+                    ],
+                    INSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The same guard on the branch that reads stored rows instead of a fresh
+     * Feide answer. An empty answer about someone two years into a bachelor is
+     * no more evidence than an inactive one.
+     */
+    integrationTest(
+        "keeps member when an empty answer meets an unfinished programme",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            const [program] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "digital-forretningsutvikling",
+                    feideCode: "ITBAITBEDR",
+                    displayName: "Digital forretningsutvikling",
+                    type: "bachelor",
+                })
+                .returning();
+            if (!program) throw new Error("Could not seed study programme");
+
+            await ctx.db.insert(schema.studyProgramMembership).values({
+                userId: user.id,
+                studyProgramId: program.id,
+                startYear: 2025,
+                startYearSource: "feide",
+                feideActive: false,
+            });
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(tx, user.id, false, [], OUTSIDE_WINDOW),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The reading that exposed the first version of this guard.
+     *
+     * `deriveStartYear` hands back null for an inactive membership with no
+     * kull group, so "no year" is what this branch normally sees. Reading that
+     * as "not finished, therefore a member" gives a real graduate the
+     * påmelding right back on every login — the mirror image of the bug being
+     * fixed, and just as permanent.
+     */
+    integrationTest(
+        "gives nothing back on an inactive reading it cannot place",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.alumni })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: null,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
+        },
+    );
+
+    /**
+     * A finished bachelor next to a master we cannot place is not a verdict
+     * either: the master may well be running.
+     */
+    integrationTest(
+        "withholds the verdict when one programme cannot be placed",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.member })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2020,
+                            active: false,
+                        },
+                        {
+                            programSlug: "digital-samhandling",
+                            startYear: null,
+                            active: false,
+                        },
+                    ],
+                    OUTSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["member"]);
+        },
+    );
+
+    /**
+     * The window takes nothing away, and gives nothing back either. An
+     * alumnus who signs in on 20 August must not come out a member.
+     */
+    integrationTest(
+        "hands nothing back inside the semester registration window",
+        async ({ ctx }) => {
+            const roles = await seedRoles(ctx.db);
+            const user = await ctx.utils.createTestUser();
+
+            await ctx.db
+                .insert(schema.userRole)
+                .values({ userId: user.id, roleId: roles.alumni })
+                .onConflictDoNothing();
+
+            await ctx.db.transaction((tx) =>
+                syncBaselineRoles(
+                    tx,
+                    user.id,
+                    false,
+                    [
+                        {
+                            programSlug: "digital-forretningsutvikling",
+                            startYear: 2025,
+                            active: false,
+                        },
+                    ],
+                    INSIDE_WINDOW,
+                ),
+            );
+
+            expect(await rolesOf(ctx.db, user.id)).toEqual(["alumni"]);
         },
     );
 

@@ -417,6 +417,69 @@ export async function syncFeideForUser(
         campus,
         username,
     );
+
+    await queueForApprovalIfUnresolved(db, userId, who);
+}
+
+/**
+ * Put an account the Feide sync could not resolve in front of a human.
+ *
+ * A login that ends with no baseline role is not rare and not visible. Feide
+ * returns no TIHLDE programme — the student is not in FS yet, or the campus
+ * gate held the programme back — and every branch above declines to guess, on
+ * purpose. What is left is an account with no role, no groups and no approval
+ * status: it is not in the approval queue, it raises nothing in the admin
+ * panel, and the only trace is a warning line in the log.
+ *
+ * The member sees a website that quietly does not work. Eight accounts in
+ * production reached this state between 7 August and 5 September 2026; all
+ * eight signed in once and never came back.
+ *
+ * "Pending" is what the rest of the system already calls an account whose
+ * membership a human has to decide, and the approval queue is where that
+ * decision gets made. Routing these there is not a new mechanism, it is the
+ * existing one finally being reached.
+ *
+ * Narrow on purpose:
+ * - only when no baseline role is held, so nothing that already works can be
+ *   taken away from anyone. An established member always holds one.
+ * - only when the status is still null, so an admin's own `approved` decision
+ *   is never reopened.
+ *
+ * It reverses itself: the member branch of {@link syncBaselineRoles} moves
+ * pending -> approved, so the day Feide does report the programme, the next
+ * login clears the queue entry without anyone touching it.
+ */
+async function queueForApprovalIfUnresolved(
+    db: AuthCreateContext["db"],
+    userId: string,
+    who: string,
+): Promise<void> {
+    const [baseline] = await db
+        .select({ roleId: userRole.roleId })
+        .from(userRole)
+        .innerJoin(role, eq(role.id, userRole.roleId))
+        .where(
+            and(
+                eq(userRole.userId, userId),
+                inArray(role.name, ["member", "alumni"]),
+            ),
+        )
+        .limit(1);
+
+    if (baseline) return;
+
+    const queued = await db
+        .update(user)
+        .set({ approvalStatus: "pending" })
+        .where(and(eq(user.id, userId), isNull(user.approvalStatus)))
+        .returning({ id: user.id });
+
+    if (queued.length > 0) {
+        console.warn(
+            `Feide sync left ${who} without a baseline role; queued for admin approval.`,
+        );
+    }
 }
 
 /**
@@ -524,6 +587,11 @@ export async function applyFeideStudyPrograms(
          * accident of ordering. There is a regression test for exactly this.
          */
         const existingCohortYears = await readCohortYears(tx, userId);
+
+        // What the baseline role is decided on, gathered as the loop resolves
+        // each programme: the slug and the year it settled on, which is what
+        // `hasFinishedProgramme` needs and `groups` alone cannot give.
+        const enrolment: BaselineProgramme[] = [];
 
         for (const feideGroup of groups) {
             const sp = await tx
@@ -701,6 +769,12 @@ export async function applyFeideStudyPrograms(
                 startYear: effectiveStartYear,
                 now,
             });
+
+            enrolment.push({
+                programSlug,
+                startYear: effectiveStartYear,
+                active: feideGroup.active,
+            });
         }
 
         /**
@@ -716,6 +790,8 @@ export async function applyFeideStudyPrograms(
             tx,
             userId,
             groups.some((g) => g.active),
+            enrolment,
+            now,
         );
     });
 }
@@ -746,6 +822,8 @@ export async function syncBaselineRoles(
     tx: Transaction,
     userId: string,
     isActiveStudent: boolean,
+    programmes: BaselineProgramme[] = [],
+    now = new Date(),
 ): Promise<void> {
     const baselineRoles = await tx
         .select({ id: role.id, name: role.name })
@@ -759,10 +837,54 @@ export async function syncBaselineRoles(
     let target: "member" | "alumni" | null = null;
     if (isActiveStudent) {
         target = "member";
+    } else if (programmes.length > 0) {
+        /**
+         * Feide named the programmes but reports none of them active, which is
+         * the reading {@link hasFinishedProgramme} exists to disbelieve. Most
+         * of the people it describes have not gone anywhere — the flag is off
+         * for anyone who has not registered for the term, which in August is
+         * every returning student and every first-year FS has not caught up
+         * with yet.
+         *
+         * Taking the flag at face value here is what put a first-year and two
+         * second-years — one of them in three committees — on `alumni` in
+         * August 2026, locked out of every påmelding with an account that
+         * looked deliberately set that way. The guard was already in this file;
+         * only `syncProgrammeLinkedGroups` used it.
+         *
+         * `every`, not `some`: a member who finished the bachelor and is on the
+         * master is still a student.
+         *
+         * Acted on in both directions only from positive evidence, because
+         * `hasFinishedProgramme` says `false` for two different things: a
+         * member provably inside the degree, and one we cannot place at all.
+         * Treating those alike hands `member` back to a real graduate — and
+         * "cannot place" is the common case right here, since
+         * `deriveStartYear` returns null for exactly the inactive readings
+         * this branch handles.
+         */
+        if (inRegistrationWindow(now)) return;
+
+        // One unplaceable programme is enough to sink the verdict: it could be
+        // the master they are still on, and "all finished" would be a guess.
+        if (programmes.some((p) => p.startYear === null)) return;
+
+        target = programmes.every((p) =>
+            hasFinishedProgramme(p.programSlug, p.startYear, now),
+        )
+            ? "alumni"
+            : "member";
     } else {
-        const [studyHistory] = await tx
-            .select({ userId: studyProgramMembership.userId })
+        const studyHistory = await tx
+            .select({
+                slug: studyProgram.slug,
+                startYear: studyProgramMembership.startYear,
+            })
             .from(studyProgramMembership)
+            .innerJoin(
+                studyProgram,
+                eq(studyProgram.id, studyProgramMembership.studyProgramId),
+            )
             .where(
                 and(
                     eq(studyProgramMembership.userId, userId),
@@ -790,12 +912,24 @@ export async function syncBaselineRoles(
                      */
                     isNotNull(studyProgramMembership.feideActive),
                 ),
-            )
-            .limit(1);
+            );
         // No row means we have never seen this member enrolled, so an empty
         // Feide result tells us nothing about whether they graduated. Leaving
         // the roles untouched is the only honest option.
-        if (!studyHistory) return;
+        if (studyHistory.length === 0) return;
+
+        // An empty answer about a member still inside their programme is no
+        // more evidence than an inactive one: same people, same four meanings,
+        // and we have even less to go on. Only once every programme we have
+        // seen them on is past its length does the silence read as finished.
+        if (
+            !studyHistory.every((row) =>
+                hasFinishedProgramme(row.slug, row.startYear, now),
+            )
+        ) {
+            return;
+        }
+
         target = "alumni";
     }
 
@@ -1398,6 +1532,16 @@ export async function syncDerivedStudyGroups(
             .values(memberships)
             .onConflictDoNothing();
     }
+}
+
+/**
+ * One programme as the baseline-role decision sees it: which programme, which
+ * intake, and whether Feide currently calls the membership active.
+ */
+export interface BaselineProgramme {
+    programSlug: string;
+    startYear: number | null;
+    active: boolean;
 }
 
 interface StudyProgram {

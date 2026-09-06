@@ -162,4 +162,92 @@ describe("recoverMissingBaselineRole", () => {
         },
         500_000,
     );
+
+    /**
+     * A login Feide has no TIHLDE programme for used to end in silence: no
+     * role, no groups, and `approval_status` left null, which keeps the account
+     * out of the very queue that exists for deciding whether someone is a
+     * member. Eight such accounts sat in production between 7 August and
+     * 5 September 2026; every one of them signed in once and never returned.
+     *
+     * Pending is not a punishment, it is the account finally being visible to
+     * someone who can decide.
+     */
+    integrationTest(
+        "queues an account Feide cannot place for admin approval",
+        async ({ ctx }) => {
+            vi.stubGlobal(
+                "fetch",
+                vi.fn(async (input: string | URL | Request) => {
+                    const url = String(
+                        input instanceof Request ? input.url : input,
+                    );
+                    if (url.includes("groups-api.dataporten.no")) {
+                        return new Response("[]", { status: 200 });
+                    }
+                    if (url.includes("auth.dataporten.no/openid/userinfo")) {
+                        return new Response(
+                            JSON.stringify({
+                                sub: "feide-sub",
+                                "dataporten-userid_sec": [
+                                    "feide:stranger@ntnu.no",
+                                ],
+                            }),
+                            { status: 200 },
+                        );
+                    }
+                    throw new Error(`Unexpected fetch in test: ${url}`);
+                }),
+            );
+            await seedStudyProgramme(ctx);
+
+            const user = await ctx.utils.createTestUser();
+            await linkFeideAccount(ctx, user.id, "feide-unplaceable");
+
+            await recoverMissingBaselineRole(ctx.db, user.id);
+
+            expect(await baselineRolesOf(ctx, user.id)).toEqual([]);
+
+            const [row] = await ctx.db
+                .select({ status: schema.user.approvalStatus })
+                .from(schema.user)
+                .where(eq(schema.user.id, user.id));
+
+            expect(row?.status).toBe("pending");
+        },
+        500_000,
+    );
+
+    /**
+     * And it lets go again on its own. The day Feide does report the
+     * programme, the member branch moves pending -> approved, so nobody has to
+     * clear the queue entry by hand.
+     */
+    integrationTest(
+        "clears the queue entry once Feide places the member",
+        async ({ ctx }) => {
+            stubDataporten();
+            await seedStudyProgramme(ctx);
+
+            const user = await ctx.utils.createTestUser();
+            await linkFeideAccount(ctx, user.id, "feide-placed-later");
+
+            await ctx.db
+                .update(schema.user)
+                .set({ approvalStatus: "pending" })
+                .where(eq(schema.user.id, user.id));
+
+            await recoverMissingBaselineRole(ctx.db, user.id);
+
+            expect(await baselineRolesOf(ctx, user.id)).toEqual(["member"]);
+
+            const [row] = await ctx.db
+                .select({ status: schema.user.approvalStatus })
+                .from(schema.user)
+                .where(eq(schema.user.id, user.id));
+
+            expect(row?.status).toBe("approved");
+        },
+        500_000,
+    );
 });

@@ -1054,7 +1054,16 @@ describe("group positions", () => {
 
                 await ctx.db.transaction(async (tx) => {
                     await syncBaselineRoles(tx, student.id, true);
-                    await syncBaselineRoles(tx, alumnus.id, false);
+                    // Fixed date, outside the semester registration window: an
+                    // inactive reading is deliberately no verdict inside it, so
+                    // with the wall clock this case would flip every September.
+                    await syncBaselineRoles(
+                        tx,
+                        alumnus.id,
+                        false,
+                        [],
+                        new Date("2026-10-01T09:00:00Z"),
+                    );
                     await syncBaselineRoles(tx, stranger.id, false);
                 });
 
@@ -1090,7 +1099,13 @@ describe("group positions", () => {
                     feideActive: false,
                 });
                 await ctx.db.transaction(async (tx) => {
-                    await syncBaselineRoles(tx, student.id, false);
+                    await syncBaselineRoles(
+                        tx,
+                        student.id,
+                        false,
+                        [],
+                        new Date("2026-10-01T09:00:00Z"),
+                    );
                 });
                 const graduated = await getUserRoles(ctx, student.id);
                 expect(graduated).not.toContain("member");
