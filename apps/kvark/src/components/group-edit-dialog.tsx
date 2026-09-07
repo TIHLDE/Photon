@@ -66,7 +66,8 @@ type GroupEditDialogProps = {
     group: Group;
     /** Gruppens medlemmer — botsjefen må være en av dem. */
     members: ComboboxMember[];
-    onSubmit: (values: GroupEditValues) => void;
+    /** Returnerer om lagringen gikk gjennom; dialogen lukkes bare da. */
+    onSubmit: (values: GroupEditValues) => Promise<boolean>;
     isSubmitting?: boolean;
     error?: string | null;
 };
@@ -109,9 +110,9 @@ export function GroupEditDialog({
     const typeEditable = canEditGroupType(group.type ?? "");
     const hasSubtype = supportsGroupSubtype(type);
 
-    function handleSubmit(event: React.FormEvent) {
+    async function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
-        onSubmit({
+        const saved = await onSubmit({
             name: name.trim(),
             description,
             contactEmail: contactEmail.trim() || null,
@@ -128,6 +129,7 @@ export function GroupEditDialog({
             finesAdminId: finesAdmin?.id ?? null,
             finesInfo,
         });
+        if (saved) setOpen(false);
     }
 
     return (

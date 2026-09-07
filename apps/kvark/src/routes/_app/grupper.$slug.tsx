@@ -474,7 +474,7 @@ function GroupDetail() {
         ? active
         : "om";
 
-    async function handleSaveGroup(values: GroupEditValues) {
+    async function handleSaveGroup(values: GroupEditValues): Promise<boolean> {
         setGroupError(null);
         try {
             await updateGroup.mutateAsync({
@@ -490,12 +490,14 @@ function GroupDetail() {
                     finesInfo: values.finesInfo,
                 },
             });
+            return true;
         } catch (error) {
             setGroupError(
                 error instanceof Error
                     ? error.message
                     : "Ukjent feil da gruppen skulle lagres",
             );
+            return false;
         }
     }
 
