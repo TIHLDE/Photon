@@ -474,7 +474,7 @@ function GroupDetail() {
         ? active
         : "om";
 
-    async function handleSaveGroup(values: GroupEditValues) {
+    async function handleSaveGroup(values: GroupEditValues): Promise<boolean> {
         setGroupError(null);
         try {
             await updateGroup.mutateAsync({
@@ -490,12 +490,14 @@ function GroupDetail() {
                     finesInfo: values.finesInfo,
                 },
             });
+            return true;
         } catch (error) {
             setGroupError(
                 error instanceof Error
                     ? error.message
                     : "Ukjent feil da gruppen skulle lagres",
             );
+            return false;
         }
     }
 
@@ -900,22 +902,27 @@ function GroupDetail() {
                         <GroupLawsTab
                             laws={laws}
                             canManage={canManageLaws}
-                            onSave={(values, lawId) => {
-                                if (lawId) {
-                                    updateLaw.mutate({
-                                        groupSlug: slug,
-                                        lawId,
-                                        data: values,
-                                    });
-                                } else {
-                                    createLaw.mutate({
-                                        groupSlug: slug,
-                                        data: values,
-                                    });
-                                }
-                            }}
+                            isSaving={
+                                createLaw.isPending || updateLaw.isPending
+                            }
+                            isDeleting={deleteLaw.isPending}
+                            onSave={(values, lawId) =>
+                                lawId
+                                    ? updateLaw.mutateAsync({
+                                          groupSlug: slug,
+                                          lawId,
+                                          data: values,
+                                      })
+                                    : createLaw.mutateAsync({
+                                          groupSlug: slug,
+                                          data: values,
+                                      })
+                            }
                             onDelete={(lawId) =>
-                                deleteLaw.mutate({ groupSlug: slug, lawId })
+                                deleteLaw.mutateAsync({
+                                    groupSlug: slug,
+                                    lawId,
+                                })
                             }
                         />
                     ) : null}

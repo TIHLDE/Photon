@@ -233,15 +233,18 @@ function AdminCompanyContactPage() {
                 }}
                 onSave={(values) => {
                     if (!selectedId) return;
-                    updateStatus.mutate({
-                        id: selectedId,
-                        data: {
-                            status: values.status,
-                            internalComment: values.internalComment || null,
-                            messageToSubmitter:
-                                values.messageToSubmitter || undefined,
+                    updateStatus.mutate(
+                        {
+                            id: selectedId,
+                            data: {
+                                status: values.status,
+                                internalComment: values.internalComment || null,
+                                messageToSubmitter:
+                                    values.messageToSubmitter || undefined,
+                            },
                         },
-                    });
+                        { onSuccess: closeDialog },
+                    );
                 }}
             />
         </Stagger>

@@ -25,7 +25,7 @@ type GroupDetailHeaderProps = {
     onGiveFine: () => void;
     /** Medlemmene botsjefen kan velges blant i redigeringsdialogen. */
     members: ComboboxMember[];
-    onSaveGroup: (values: GroupEditValues) => void;
+    onSaveGroup: (values: GroupEditValues) => Promise<boolean>;
     isSavingGroup?: boolean;
     saveGroupError?: string | null;
 };

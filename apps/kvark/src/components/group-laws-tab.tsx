@@ -5,13 +5,17 @@ import { GroupLawFormDialog } from "#/components/group-law-form-dialog";
 import type { LawFormValues } from "#/components/group-law-form-dialog";
 import { GroupLawItem } from "#/components/group-law-item";
 import { GroupPageHeader } from "#/components/group-page-header";
+import { extractErrorMessage } from "#/lib/api-error";
 import type { Law } from "#/lib/group";
 
 type GroupLawsTabProps = {
     laws: Law[];
     canManage: boolean;
-    onSave: (values: LawFormValues, lawId?: string) => void;
-    onDelete: (lawId: string) => void;
+    /** Avviser når API-et sier nei, slik at dialogen kan bli stående. */
+    onSave: (values: LawFormValues, lawId?: string) => Promise<unknown>;
+    onDelete: (lawId: string) => Promise<unknown>;
+    isSaving?: boolean;
+    isDeleting?: boolean;
 };
 
 export function GroupLawsTab({
@@ -19,18 +23,33 @@ export function GroupLawsTab({
     canManage,
     onSave,
     onDelete,
+    isSaving,
+    isDeleting,
 }: GroupLawsTabProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<Law | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     function openCreate() {
         setEditing(null);
+        setError(null);
         setDialogOpen(true);
     }
 
     function openEdit(law: Law) {
         setEditing(law);
+        setError(null);
         setDialogOpen(true);
+    }
+
+    async function run(action: Promise<unknown>) {
+        setError(null);
+        try {
+            await action;
+            setDialogOpen(false);
+        } catch (err) {
+            setError(await extractErrorMessage(err));
+        }
     }
 
     return (
@@ -62,19 +81,12 @@ export function GroupLawsTab({
             <GroupLawFormDialog
                 open={dialogOpen}
                 law={editing}
+                isSaving={isSaving}
+                isDeleting={isDeleting}
+                error={error}
                 onClose={() => setDialogOpen(false)}
-                onSubmit={(values) => {
-                    onSave(values, editing?.id);
-                    setDialogOpen(false);
-                }}
-                onDelete={
-                    editing
-                        ? () => {
-                              onDelete(editing.id);
-                              setDialogOpen(false);
-                          }
-                        : undefined
-                }
+                onSubmit={(values) => run(onSave(values, editing?.id))}
+                onDelete={editing ? () => run(onDelete(editing.id)) : undefined}
             />
         </div>
     );
