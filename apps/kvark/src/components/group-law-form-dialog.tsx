@@ -29,6 +29,9 @@ type GroupLawFormDialogProps = {
     onClose: () => void;
     onSubmit: (values: LawFormValues) => void;
     onDelete?: () => void;
+    isSaving?: boolean;
+    isDeleting?: boolean;
+    error?: string | null;
 };
 
 export function GroupLawFormDialog({
@@ -37,6 +40,9 @@ export function GroupLawFormDialog({
     onClose,
     onSubmit,
     onDelete,
+    isSaving = false,
+    isDeleting = false,
+    error = null,
 }: GroupLawFormDialogProps) {
     const [paragraph, setParagraph] = useState("1");
     const [title, setTitle] = useState("");
@@ -63,8 +69,10 @@ export function GroupLawFormDialog({
         Number.isInteger(parsedAmount) &&
         parsedAmount >= 0;
 
+    const busy = isSaving || isDeleting;
+
     function handleSubmit() {
-        if (!valid) return;
+        if (!valid || busy) return;
         onSubmit({
             paragraph: parsedParagraph,
             title: title.trim(),
@@ -160,12 +168,18 @@ export function GroupLawFormDialog({
                             </p>
                         </Field>
                     </FieldGroup>
+                    {error ? (
+                        <p role="alert" className="text-sm text-destructive">
+                            {error}
+                        </p>
+                    ) : null}
                 </form>
                 <DialogFooter>
                     {law && onDelete ? (
                         <Button
                             variant="destructive"
                             className="mr-auto"
+                            disabled={busy}
                             onClick={() => setConfirmDelete(true)}
                         >
                             Slett
@@ -174,8 +188,8 @@ export function GroupLawFormDialog({
                     <Button variant="outline" onClick={onClose}>
                         Avbryt
                     </Button>
-                    <Button disabled={!valid} onClick={handleSubmit}>
-                        {law ? "Oppdater" : "Opprett"}
+                    <Button disabled={!valid || busy} onClick={handleSubmit}>
+                        {isSaving ? "Lagrer …" : law ? "Oppdater" : "Opprett"}
                     </Button>
                 </DialogFooter>
 
@@ -185,6 +199,7 @@ export function GroupLawFormDialog({
                     title={`Slette §${law?.paragraph} ${law?.title}?`}
                     description="Paragrafen fjernes fra gruppens lovverk for godt. Bøter som allerede er gitt blir stående."
                     confirmLabel="Slett paragraf"
+                    isPending={isDeleting}
                     onConfirm={() => {
                         setConfirmDelete(false);
                         onDelete?.();
