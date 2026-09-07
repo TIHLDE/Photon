@@ -133,7 +133,14 @@ export function GroupEditDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+            open={open}
+            // Låst mens lagringen går: lukkes dialogen underveis, forsvinner
+            // både endringene og en eventuell feilmelding.
+            onOpenChange={(next) => {
+                if (next || !isSubmitting) setOpen(next);
+            }}
+        >
             <DialogTrigger
                 render={
                     <Button variant="outline">
@@ -316,6 +323,7 @@ export function GroupEditDialog({
                     <Button
                         type="button"
                         variant="outline"
+                        disabled={isSubmitting}
                         onClick={() => setOpen(false)}
                     >
                         Avbryt

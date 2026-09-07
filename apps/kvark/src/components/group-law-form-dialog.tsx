@@ -84,8 +84,10 @@ export function GroupLawFormDialog({
     return (
         <Dialog
             open={open}
+            // Låst mens kallet går: lukkes dialogen underveis, forsvinner
+            // både det som ble skrevet og en eventuell feilmelding.
             onOpenChange={(o) => {
-                if (!o) onClose();
+                if (!o && !busy) onClose();
             }}
         >
             <DialogContent className="max-w-md">
@@ -185,7 +187,7 @@ export function GroupLawFormDialog({
                             Slett
                         </Button>
                     ) : null}
-                    <Button variant="outline" onClick={onClose}>
+                    <Button variant="outline" disabled={busy} onClick={onClose}>
                         Avbryt
                     </Button>
                     <Button disabled={!valid || busy} onClick={handleSubmit}>
