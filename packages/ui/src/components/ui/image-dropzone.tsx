@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ImagePlusIcon, UploadIcon, XIcon } from "lucide-react";
+import { FileTextIcon, ImagePlusIcon, UploadIcon, XIcon } from "lucide-react";
 import { type Accept, useDropzone } from "react-dropzone";
 
 import { cn } from "#/lib/utils";
@@ -79,6 +79,25 @@ const defaultLabels: DropzoneLabels = {
 
 type Preview = { file: File; url: string };
 
+/**
+ * iPhone-bilder er HEIC, og filvelgeren skjuler alt som ikke står her:
+ * «image/*» dekker dem ikke i alle nettlesere, så utvidelsene må med.
+ */
+export const IMAGE_ACCEPT: Accept = { "image/*": [".heic", ".heif"] };
+
+/**
+ * Bilder og PDF. Et bilag kommer like ofte som PDF på e-post som et bilde fra
+ * kameraet, og da skal det ikke måtte skjermdumpes først.
+ */
+export const IMAGE_AND_PDF_ACCEPT: Accept = {
+    ...IMAGE_ACCEPT,
+    "application/pdf": [".pdf"],
+};
+
+function isImageFile(file: File): boolean {
+    return file.type.startsWith("image/");
+}
+
 function formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -87,6 +106,21 @@ function formatSize(bytes: number): string {
 
 function formatType(file: File): string {
     return file.type.split("/")[1]?.toUpperCase() ?? "";
+}
+
+/** Filkort for et vedlegg nettleseren ikke kan vise som bilde. */
+function FileTile({ name, className }: { name: string; className?: string }) {
+    return (
+        <span
+            className={cn(
+                "flex flex-col items-center justify-center gap-1 bg-muted p-2 text-center text-muted-foreground",
+                className,
+            )}
+        >
+            <FileTextIcon className="size-5 shrink-0" aria-hidden />
+            <span className="sr-only">{name}</span>
+        </span>
+    );
 }
 
 function getDropzoneText(
@@ -119,9 +153,7 @@ export function ImageDropzone({
     onValueChange,
     onError,
     onBlur,
-    // iPhone-bilder er HEIC, og filvelgeren skjuler alt som ikke står her:
-    // «image/*» dekker dem ikke i alle nettlesere, så utvidelsene må med.
-    accept = { "image/*": [".heic", ".heif"] },
+    accept = IMAGE_ACCEPT,
     minSize,
     maxSize,
     maxFiles,
@@ -411,6 +443,7 @@ function DropzonePreviewItem({
 }: DropzonePreviewItemProps) {
     const { file, url } = preview;
     const type = formatType(file);
+    const isImage = isImageFile(file);
 
     // With a preset, each item is shown in the published crop rather than as a
     // row, so a batch upload is checked at a glance.
@@ -419,8 +452,11 @@ function DropzonePreviewItem({
             <li className="flex flex-col gap-1">
                 <ImagePresetFrame
                     preset={preset}
-                    src={url}
+                    src={isImage ? url : undefined}
                     alt={file.name}
+                    fallback={
+                        <FileTile name={file.name} className="size-full" />
+                    }
                     overlay={
                         <>
                             <button
@@ -465,11 +501,18 @@ function DropzonePreviewItem({
             }}
             className="flex cursor-pointer items-center gap-3 rounded-md p-1.5 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
         >
-            <img
-                src={url}
-                alt={file.name}
-                className="size-10 shrink-0 rounded-sm object-cover"
-            />
+            {isImage ? (
+                <img
+                    src={url}
+                    alt={file.name}
+                    className="size-10 shrink-0 rounded-sm object-cover"
+                />
+            ) : (
+                <FileTile
+                    name={file.name}
+                    className="size-10 shrink-0 rounded-sm"
+                />
+            )}
             <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm">{file.name}</span>
                 <span className="text-xs text-muted-foreground">
@@ -515,11 +558,20 @@ function DropzonePreviewDialog({
                     <DialogTitle className="truncate pr-8 text-sm font-medium">
                         {preview.file.name}
                     </DialogTitle>
-                    <img
-                        src={preview.url}
-                        alt={preview.file.name}
-                        className="max-h-[80vh] w-full rounded-lg object-contain"
-                    />
+                    {isImageFile(preview.file) ? (
+                        <img
+                            src={preview.url}
+                            alt={preview.file.name}
+                            className="max-h-[80vh] w-full rounded-lg object-contain"
+                        />
+                    ) : (
+                        // Nettleserens egen PDF-viser tar seg av blob-URL-en.
+                        <iframe
+                            src={preview.url}
+                            title={preview.file.name}
+                            className="h-[80vh] w-full rounded-lg"
+                        />
+                    )}
                 </DialogContent>
             )}
         </Dialog>
