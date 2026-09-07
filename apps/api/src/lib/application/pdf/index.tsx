@@ -1,4 +1,5 @@
 import { renderToBuffer } from "@react-pdf/renderer";
+import { PDFDocument } from "pdf-lib";
 import React from "react";
 import type { StorageService } from "~/lib/storage";
 import {
@@ -15,25 +16,66 @@ import { SupportPdf } from "./support";
 
 /**
  * Attachments live in private object storage, so there is no URL for
- * @react-pdf to fetch — the bytes have to be inlined. Anything that isn't an
- * image (a PDF attachment, say) is skipped rather than crashing the render.
+ * @react-pdf to fetch — the bytes have to be inlined. @react-pdf only draws
+ * images, so a PDF attachment is kept aside and appended by
+ * {@link appendPdfAttachments} instead.
  */
-async function loadAttachmentDataUris(
+async function loadAttachments(
     bucket: StorageService,
     assetKeys: string[],
-): Promise<string[]> {
-    const dataUris: string[] = [];
+): Promise<{ imageDataUris: string[]; pdfs: Buffer[] }> {
+    const imageDataUris: string[] = [];
+    const pdfs: Buffer[] = [];
 
     for (const key of assetKeys) {
         const asset = await bucket.getAsset(key);
         const contentType = asset?.contentType;
-        if (!contentType?.startsWith("image/")) continue;
 
-        const bytes = await bucket.download(key);
-        dataUris.push(`data:${contentType};base64,${bytes.toString("base64")}`);
+        if (contentType?.startsWith("image/")) {
+            const bytes = await bucket.download(key);
+            imageDataUris.push(
+                `data:${contentType};base64,${bytes.toString("base64")}`,
+            );
+            continue;
+        }
+
+        if (contentType === "application/pdf") {
+            pdfs.push(await bucket.download(key));
+        }
     }
 
-    return dataUris;
+    return { imageDataUris, pdfs };
+}
+
+/**
+ * Legger sidene fra PDF-vedleggene bakerst i den genererte søknaden.
+ *
+ * Uten dette ville en PDF-kvittering vært usynlig i akkurat det dokumentet
+ * økonomiansvarlig leser. Et vedlegg som ikke lar seg lese hoppes over: en
+ * søknad skal ikke gå tapt fordi ett bilag var ødelagt.
+ */
+async function appendPdfAttachments(
+    document: Buffer,
+    attachments: Buffer[],
+): Promise<Buffer> {
+    if (attachments.length === 0) return document;
+
+    const merged = await PDFDocument.load(document);
+
+    for (const attachment of attachments) {
+        try {
+            const source = await PDFDocument.load(attachment);
+            const pages = await merged.copyPages(
+                source,
+                source.getPageIndices(),
+            );
+            for (const page of pages) merged.addPage(page);
+        } catch (error) {
+            console.error("Skipping unreadable PDF attachment", error);
+        }
+    }
+
+    return Buffer.from(await merged.save());
 }
 
 /**
@@ -47,7 +89,7 @@ export async function renderApplicationPdf(
     application: ApplicationWithDetails,
     bucket: StorageService,
 ): Promise<Buffer> {
-    const images = await loadAttachmentDataUris(
+    const { imageDataUris: images, pdfs } = await loadAttachments(
         bucket,
         application.attachments.map((attachment) => attachment.assetKey),
     );
@@ -61,19 +103,24 @@ export async function renderApplicationPdf(
                 );
             }
 
-            return renderToBuffer(
-                <ExpensePdf
-                    name={application.contactName}
-                    email={application.contactEmail}
-                    amount={formatNok(expense.amountNok)}
-                    date={formatApplicationDate(expense.expenseDate)}
-                    description={expense.description}
-                    accountNumber={expense.accountNumber}
-                    groupName={expense.group.name}
-                    budgetType={applicationBudgetTypeLabels[expense.budgetType]}
-                    signature={application.signature}
-                    receipts={images}
-                />,
+            return appendPdfAttachments(
+                await renderToBuffer(
+                    <ExpensePdf
+                        name={application.contactName}
+                        email={application.contactEmail}
+                        amount={formatNok(expense.amountNok)}
+                        date={formatApplicationDate(expense.expenseDate)}
+                        description={expense.description}
+                        accountNumber={expense.accountNumber}
+                        groupName={expense.group.name}
+                        budgetType={
+                            applicationBudgetTypeLabels[expense.budgetType]
+                        }
+                        signature={application.signature}
+                        receipts={images}
+                    />,
+                ),
+                pdfs,
             );
         }
 
@@ -86,21 +133,24 @@ export async function renderApplicationPdf(
                 );
             }
 
-            return renderToBuffer(
-                <SupportPdf
-                    title={applicationTypeLabels[application.type]}
-                    name={application.contactName}
-                    email={application.contactEmail}
-                    groupName={support.group.name}
-                    purpose={support.purpose}
-                    eventDescription={support.eventDescription}
-                    justification={support.justification}
-                    totalAmount={formatNok(support.totalAmountNok)}
-                    budgetLink={support.budgetLink}
-                    summary={support.summary}
-                    signature={application.signature}
-                    budgetImages={images}
-                />,
+            return appendPdfAttachments(
+                await renderToBuffer(
+                    <SupportPdf
+                        title={applicationTypeLabels[application.type]}
+                        name={application.contactName}
+                        email={application.contactEmail}
+                        groupName={support.group.name}
+                        purpose={support.purpose}
+                        eventDescription={support.eventDescription}
+                        justification={support.justification}
+                        totalAmount={formatNok(support.totalAmountNok)}
+                        budgetLink={support.budgetLink}
+                        summary={support.summary}
+                        signature={application.signature}
+                        budgetImages={images}
+                    />,
+                ),
+                pdfs,
             );
         }
 
@@ -112,17 +162,20 @@ export async function renderApplicationPdf(
                 );
             }
 
-            return renderToBuffer(
-                <HsCasePdf
-                    contactName={application.contactName}
-                    contactEmail={application.contactEmail}
-                    caseName={hsCase.caseName}
-                    caseType={applicationCaseTypeLabels[hsCase.caseType]}
-                    background={hsCase.background}
-                    assessment={hsCase.assessment}
-                    recommendation={hsCase.recommendation}
-                    images={images}
-                />,
+            return appendPdfAttachments(
+                await renderToBuffer(
+                    <HsCasePdf
+                        contactName={application.contactName}
+                        contactEmail={application.contactEmail}
+                        caseName={hsCase.caseName}
+                        caseType={applicationCaseTypeLabels[hsCase.caseType]}
+                        background={hsCase.background}
+                        assessment={hsCase.assessment}
+                        recommendation={hsCase.recommendation}
+                        images={images}
+                    />,
+                ),
+                pdfs,
             );
         }
 

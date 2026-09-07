@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@tihlde/ui/ui/card";
+import { IMAGE_AND_PDF_ACCEPT } from "@tihlde/ui/ui/image-dropzone";
 import { CardDescription } from "@tihlde/ui/ui/card";
 import { FieldGroup } from "@tihlde/ui/ui/field";
 import { Spinner } from "@tihlde/ui/ui/spinner";
@@ -228,10 +229,14 @@ export function ExpenseForm({
                         {(field) => (
                             <field.Field required>
                                 <field.Label>Kvitteringer</field.Label>
-                                <field.ImageDropzone multiple maxFiles={10} />
+                                <field.ImageDropzone
+                                    multiple
+                                    maxFiles={10}
+                                    accept={IMAGE_AND_PDF_ACCEPT}
+                                />
                                 <field.Description>
-                                    Last opp bilder av kvitteringene. Maks 10
-                                    filer.
+                                    Last opp bilder eller PDF-er av
+                                    kvitteringene. Maks 10 filer.
                                 </field.Description>
                                 <field.Error />
                             </field.Field>

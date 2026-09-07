@@ -19,13 +19,19 @@ import { Separator } from "@tihlde/ui/ui/separator";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Spinner } from "@tihlde/ui/ui/spinner";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import { Download } from "lucide-react";
+import { Download, FileTextIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type {
     ApplicationDetail,
     ApplicationStatus,
 } from "#/api/queries/applications";
 import { formatIsoDate, formatNok } from "./format";
+
+/** Vedleggets nøkkel beholder filendelsen, som er det eneste typehintet her. */
+function isPdfKey(assetKey: string): boolean {
+    return assetKey.toLowerCase().endsWith(".pdf");
+}
+
 import { ApplicationStatusBadge } from "./status-badge";
 import { formatOsloDateTime } from "#/lib/date";
 
@@ -237,11 +243,23 @@ export function AdminDetailDialog({
                                                             target="_blank"
                                                             rel="noreferrer"
                                                         >
-                                                            <img
-                                                                src={url}
-                                                                alt="Vedlegg"
-                                                                className="h-32 w-full rounded-md object-cover"
-                                                            />
+                                                            {isPdfKey(
+                                                                attachment.assetKey,
+                                                            ) ? (
+                                                                <span className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-md bg-muted text-sm text-muted-foreground">
+                                                                    <FileTextIcon
+                                                                        className="size-6"
+                                                                        aria-hidden
+                                                                    />
+                                                                    Åpne PDF
+                                                                </span>
+                                                            ) : (
+                                                                <img
+                                                                    src={url}
+                                                                    alt="Vedlegg"
+                                                                    className="h-32 w-full rounded-md object-cover"
+                                                                />
+                                                            )}
                                                         </a>
                                                     ) : (
                                                         <Skeleton
