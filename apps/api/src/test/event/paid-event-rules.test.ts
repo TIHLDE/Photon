@@ -437,6 +437,59 @@ describe("Paid event rules", () => {
     );
 
     integrationTest(
+        "prikker nedprioriterer ikke på et betalt arrangement med gammelt flagg",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            // Kombinasjonen skjemaet nå avviser, lagt rett i basen slik en rad
+            // fra før regelen ser ut.
+            const event = await ctx.utils.createTestEvent({
+                slug: `betalt-gammelt-flagg-${Date.now()}`,
+                capacity: 1,
+                isPaidEvent: true,
+                priceMinor: 10_000,
+                enforcesPreviousStrikes: true,
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const clean = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values([
+                { eventId: event.id, userId: striken.id },
+                { eventId: event.id, userId: clean.id },
+            ]);
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(event.id, striken.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            await ctx.utils.createPendingRegistration(event.id, clean.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+            });
+
+            // Prikkene teller ikke her, så plassen hans står — på et gratis
+            // arrangement ville han blitt byttet ut.
+            expect(strikenEnd?.status).toBe("registered");
+            expect(cleanEnd?.status).toBe("waitlisted");
+        },
+        500_000,
+    );
+
+    integrationTest(
         "et gratis arrangement kan fortsatt skru på prikker",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();

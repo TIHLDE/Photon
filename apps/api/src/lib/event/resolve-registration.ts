@@ -10,7 +10,11 @@ import {
     findSwapTarget,
     loadPrioritization,
 } from "./priority";
-import { canRegisterBasedOnStrikes, getStrikeCountsForUsers } from "./strikes";
+import {
+    canRegisterBasedOnStrikes,
+    eventEnforcesStrikes,
+    getStrikeCountsForUsers,
+} from "./strikes";
 
 /**
  * Resolve all pending registrations for an event
@@ -101,6 +105,13 @@ export async function resolveRegistrationsForEvent(
             : Math.max(0, (event.capacity ?? 0) - registeredCount);
 
         /**
+         * Prikkene teller bare når arrangementet faktisk håndhever dem. Leses
+         * én gang her, så hver avgjørelse i passet — kø, bytte og
+         * ventelisteplass — bruker samme svar.
+         */
+        const enforcesStrikes = eventEnforcesStrikes(event);
+
+        /**
          * Everyone in this batch, prioritized in two queries up front, rather
          * than two queries per member inside the loop below.
          */
@@ -113,7 +124,7 @@ export async function resolveRegistrationsForEvent(
         const isUserPrioritizedForEvent = await loadPrioritization(
             [...batchUserIds, ...event.registrations.map((r) => r.userId)],
             event,
-            event.enforcesPreviousStrikes,
+            enforcesStrikes,
             tx,
         );
 
@@ -204,7 +215,7 @@ export async function resolveRegistrationsForEvent(
                 const swapTarget = await findSwapTarget(
                     event.registrations,
                     event,
-                    event.enforcesPreviousStrikes,
+                    enforcesStrikes,
                     tx,
                 );
 
@@ -348,7 +359,7 @@ export async function resolveRegistrationsForEvent(
                 const positions = await calculateWaitlistPositions(
                     eventId,
                     event,
-                    event.enforcesPreviousStrikes,
+                    enforcesStrikes,
                     tx,
                 );
                 waitlistPosition = positions.get(userId) ?? null;
@@ -416,7 +427,7 @@ export async function resolveRegistrationsForEvent(
                 const positions = await calculateWaitlistPositions(
                     eventId,
                     event,
-                    event.enforcesPreviousStrikes,
+                    enforcesStrikes,
                     tx,
                 );
 

@@ -11,6 +11,7 @@ import {
     calculateWaitlistPositions,
     resolvePriorityUserIds,
 } from "~/lib/event/priority";
+import { eventEnforcesStrikes } from "~/lib/event/strikes";
 import { isEventOwner } from "../../lib/event/middleware";
 import { generateUniqueEventSlug } from "../../lib/event/slug";
 import { route } from "../../lib/route";
@@ -383,7 +384,10 @@ export const updateRoute = route().put(
             if (priorityChanged) {
                 const refreshed = await tx.query.event.findFirst({
                     where: (e, { eq }) => eq(e.id, eventId),
-                    columns: { enforcesPreviousStrikes: true },
+                    columns: {
+                        enforcesPreviousStrikes: true,
+                        isPaidEvent: true,
+                    },
                     with: {
                         pools: true,
                         priorityUsers: true,
@@ -394,7 +398,7 @@ export const updateRoute = route().put(
                     const positions = await calculateWaitlistPositions(
                         eventId,
                         refreshed,
-                        refreshed.enforcesPreviousStrikes,
+                        eventEnforcesStrikes(refreshed),
                         tx,
                     );
 

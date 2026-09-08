@@ -169,6 +169,21 @@ export async function issueStrike(
     return true;
 }
 
+/**
+ * Om arrangementet håndhever prikker i det hele tatt.
+ *
+ * Betalende arrangementer står utenfor prikksystemet, og `!isPaidEvent` er
+ * ikke bare et belte til skjemavalideringens bukseseler: rader fra før regelen
+ * kan bære begge deler. Avmeldingsruta leser den samme kombinasjonen for å
+ * avgjøre om den skal dele ut en prikk.
+ */
+export function eventEnforcesStrikes(event: {
+    enforcesPreviousStrikes: boolean;
+    isPaidEvent: boolean;
+}): boolean {
+    return event.enforcesPreviousStrikes && !event.isPaidEvent;
+}
+
 interface CanRegisterResult {
     allowed: boolean;
     reason?: string;

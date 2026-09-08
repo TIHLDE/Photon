@@ -11,6 +11,7 @@ import { env } from "../env";
 import { sendNotification } from "../notification";
 import { capturePayment, getPaymentDetails, refundPayment } from "../vipps";
 import { calculateWaitlistPositions } from "./priority";
+import { eventEnforcesStrikes } from "./strikes";
 
 /**
  * How long a member has to pay after securing a spot on a paid event.
@@ -510,7 +511,7 @@ export async function promoteFromWaitlist(
     const positions = await calculateWaitlistPositions(
         event.id,
         event,
-        event.enforcesPreviousStrikes,
+        eventEnforcesStrikes(event),
         ctx.db,
     );
 
