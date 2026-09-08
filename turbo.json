@@ -11,10 +11,6 @@
             ],
             "persistent": true
         },
-        "@photon/web#dev": {
-            "dependsOn": [],
-            "persistent": true
-        },
         "dev:up": { "cache": false },
         "dev:down": { "cache": false },
         "dev:fresh": { "cache": false },

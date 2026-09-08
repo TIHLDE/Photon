@@ -37,7 +37,6 @@
         "**/drizzle/**",
         "**/dist/**",
         "**/generated/**",
-        "apps/web-old/**",
         "**/.oxlintrc.json",
         "**/.oxfmtrc.json"
     ],

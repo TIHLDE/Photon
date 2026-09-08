@@ -95,9 +95,6 @@ export async function createAppContext(): Promise<AppContext> {
         bucket,
     };
 }
-
-export const createMainAppContext = createAppContext;
-
 export async function createTestAppContext(options?: {
     db?: NodePgDatabase<DbSchema>;
 }): Promise<AppContext> {
