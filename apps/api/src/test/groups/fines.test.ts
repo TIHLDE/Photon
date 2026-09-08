@@ -116,6 +116,56 @@ describe("fines", () => {
         );
 
         integrationTest(
+            "accepts a fine with a negative amount",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "fines-negative-group",
+                    finesActivated: true,
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                const targetUser = await ctx.auth.api.createUser({
+                    body: {
+                        email: "negative-target@test.com",
+                        name: "Negative Target",
+                        password: "test123!",
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: targetUser.user.id,
+                    groupSlug: group.slug,
+                });
+
+                // En negativ bot er en motpost: den trekker fra summen når en
+                // tidligere bot skal gjøres opp eller kompenseres.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].fines.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        userId: targetUser.user.id,
+                        groupSlug: group.slug,
+                        reason: "Motpost",
+                        amount: -2,
+                    },
+                });
+
+                expect(response.status).toBe(201);
+                const json = await response.json();
+                expect(json.amount).toBe(-2);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "successfully creates a fine as a plain member of the group",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();

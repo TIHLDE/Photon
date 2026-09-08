@@ -5056,7 +5056,7 @@ export interface components {
             groupSlug: string;
             /** @description Reason for the fine */
             reason: string;
-            /** @description Number of fines given (0 or more) */
+            /** @description Number of fines given (may be negative) */
             amount: number;
             /** @description User's defense text */
             defense?: string;

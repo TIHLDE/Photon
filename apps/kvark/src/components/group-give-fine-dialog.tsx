@@ -77,13 +77,12 @@ export function GroupGiveFineDialog({
         if (next) setAmount(String(next.amount));
     }
 
-    // 0 er en gyldig bot (en advarsel som ikke teller i summene), så feltet
-    // valideres på «er dette et helt tall ≥ 0», ikke på at det er positivt.
+    // Negative bøter er gyldige (en motpost som trekker fra), og 0 er en
+    // advarsel som ikke teller i summene, så feltet valideres bare på at det
+    // er et helt tall.
     const parsedAmount = Number(amount);
     const amountValid =
-        amount.trim().length > 0 &&
-        Number.isInteger(parsedAmount) &&
-        parsedAmount >= 0;
+        amount.trim().length > 0 && Number.isInteger(parsedAmount);
 
     // En gruppe uten lovverk skal fortsatt kunne gi bøter — da er det ingen
     // paragraf å velge, og feltet er ikke påkrevd.
@@ -174,14 +173,14 @@ export function GroupGiveFineDialog({
                                 <Input
                                     id="fine-amount"
                                     type="number"
-                                    min={0}
                                     step={1}
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Sett 0 hvis boten skal registreres uten å
-                                    telle.
+                                    telle, eller et negativt tall for å trekke
+                                    fra bøter personen har fått.
                                 </p>
                             </Field>
 

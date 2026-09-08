@@ -19,7 +19,6 @@ export const createLawSchema = Schema(
         amount: z
             .number()
             .int()
-            .min(0)
             .optional()
             .meta({ description: "Default number of fine units" }),
     }),
@@ -47,7 +46,6 @@ export const updateLawSchema = Schema(
         amount: z
             .number()
             .int()
-            .min(0)
             .optional()
             .meta({ description: "Default number of fine units" }),
     }),

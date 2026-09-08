@@ -66,8 +66,7 @@ export function GroupLawFormDialog({
         parsedParagraph >= 0 &&
         parsedParagraph <= 99.99 &&
         title.trim().length > 0 &&
-        Number.isInteger(parsedAmount) &&
-        parsedAmount >= 0;
+        Number.isInteger(parsedAmount);
 
     const busy = isSaving || isDeleting;
 

@@ -30,7 +30,7 @@ export function GroupFineRow({ fine, onOpen }: GroupFineRowProps) {
             {/* Her sto radnummeret, som så ut som et antall. Nå står det som
                 faktisk betyr noe: hvor mange bøter personen fikk. */}
             <Badge variant="secondary" className="min-w-16 justify-center">
-                {fine.amount} {fine.amount === 1 ? "bot" : "bøter"}
+                {fine.amount} {Math.abs(fine.amount) === 1 ? "bot" : "bøter"}
             </Badge>
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* `truncate` hører hjemme på navnet, ikke på flex-raden:

@@ -220,7 +220,7 @@ export function GroupFineDialog({
                                     steder, verken i lista eller her. */}
                                         <Badge variant="secondary">
                                             {fine.amount}{" "}
-                                            {fine.amount === 1
+                                            {Math.abs(fine.amount) === 1
                                                 ? "bot"
                                                 : "bøter"}
                                         </Badge>
