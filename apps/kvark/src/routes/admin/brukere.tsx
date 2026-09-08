@@ -84,7 +84,7 @@ import {
 import { extractErrorMessage } from "#/lib/api-error";
 import { formatOsloDate } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
-import { computeClassYear, initials, programmeLength } from "#/lib/utils";
+import { initials } from "#/lib/utils";
 
 import { avatarImageUrl } from "#/lib/assets";
 
@@ -106,21 +106,21 @@ const NO_STUDY = "__none__";
 
 /**
  * Studieprogram + klassetrinn på én linje, f.eks. "Dataingeniør · 3. klasse".
- * Klassetrinn vises kun mens studiet varer (3 år på bachelor, 5 på master);
- * etterpå er medlemmet alumni, og kullet sier mer enn et klassetrinn som
- * fortsetter å telle oppover.
+ *
+ * Klassetrinnet kommer fra API-et, ikke fra kullet: masterens første år er 4.
+ * klasse, og om årstallet hører til masteren eller bacheloren foran den står
+ * ikke i tallet. Den som er forbi studiets lengde får kullet i stedet — et
+ * klassetrinn som fortsetter å telle oppover sier mindre enn året de begynte.
  */
 function formatStudy(
     programme: string | null,
     startYear: number | null,
+    classYear: number | null,
 ): string | null {
     if (!programme) return null;
+    if (classYear !== null) return `${programme} · ${classYear}. klasse`;
     if (startYear === null) return programme;
-    const classYear = computeClassYear(startYear);
-    if (classYear < 1 || classYear > programmeLength(programme)) {
-        return `${programme} · kull ${startYear}`;
-    }
-    return `${programme} · ${classYear}. klasse`;
+    return `${programme} · kull ${startYear}`;
 }
 
 export const Route = createFileRoute("/admin/brukere")({
@@ -497,6 +497,7 @@ function AllUsersTable({
                                                 {formatStudy(
                                                     user.studyProgram,
                                                     user.studyStartYear,
+                                                    user.classYear,
                                                 ) ?? "—"}
                                             </TableCell>
                                             <TableCell>
@@ -1524,6 +1525,7 @@ function MembersTable({
                                             {formatStudy(
                                                 member.user.studyProgram,
                                                 member.user.studyStartYear,
+                                                member.user.classYear,
                                             ) ?? "—"}
                                         </TableCell>
                                         <TableCell>

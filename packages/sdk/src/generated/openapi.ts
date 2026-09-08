@@ -4023,6 +4023,10 @@ export interface components {
             studyProgram?: string | null;
             /** @description The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins. */
             studyStartYear?: number | null;
+            /** @description Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place. Only included for event admins. */
+            classYear?: number | null;
+            /** @description Past the programme's length, on positive evidence. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all. Only included for event admins. */
+            isAlumni?: boolean;
             /**
              * @description What Feide last said about the member's enrolment on the study programme shown. 'active' and 'inactive' are answers given within the last 120 days — enrolled, and explicitly not enrolled. 'stale' is an answer older than that, and 'unverified' means Feide has never answered: the study came from the Lepton migration, the fadderuka sign-up or an admin correction. Nothing is gated on this — priority pools still match on group membership, and nobody is turned away from an alumni-closed event on it. It tells the organizer how well the study behind a priority is known, and which participants cannot be confirmed as current students. Only included for event admins.
              * @enum {string}
@@ -5222,6 +5226,10 @@ export interface components {
                 studyProgram: string | null;
                 /** @description The year the member started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
                 studyStartYear: number | null;
+                /** @description Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place. */
+                classYear: number | null;
+                /** @description Past the programme's length, on positive evidence. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all. */
+                isAlumni: boolean;
             };
         };
         GroupMemberList: components["schemas"]["GroupMember"][];
@@ -6106,6 +6114,10 @@ export interface components {
             studyProgram: string | null;
             /** @description The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown. */
             studyStartYear: number | null;
+            /** @description Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place — served by the API so the rule lives in one place rather than being recomputed per client. */
+            classYear: number | null;
+            /** @description Past the programme's length, on positive evidence: we know the programme, we know the start year, and even the earliest reading of it is beyond the length. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all. */
+            isAlumni: boolean;
             /** @description False when the account is deactivated — the member cannot sign in. */
             isActive: boolean;
             /** @description 'pending' for a self-registered account still waiting for an admin, 'approved' once one said yes. Null for accounts that never needed approving — Feide logins and members migrated from Lepton. */

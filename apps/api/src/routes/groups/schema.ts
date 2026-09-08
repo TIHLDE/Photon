@@ -259,6 +259,14 @@ export const memberSchema = Schema(
                     description:
                         "The year the member started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
                 }),
+                classYear: z.number().int().nullable().meta({
+                    description:
+                        "Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place.",
+                }),
+                isAlumni: z.boolean().meta({
+                    description:
+                        "Past the programme's length, on positive evidence. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all.",
+                }),
             })
             .meta({ description: "Public user info for the member" }),
     }),

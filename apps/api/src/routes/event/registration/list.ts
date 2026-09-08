@@ -5,6 +5,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { canActOnEvent } from "~/lib/event/access";
+import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import {
@@ -210,9 +211,16 @@ export const getAllRegistrationsForEventsRoute = route().get(
         const returnRegistrations = registrations.map((r, index) => {
             const payment = paymentByUserId.get(r.userId);
             const isAnonymous = anonymousUserIds.has(r.userId);
-            const study = deriveStudyFromGroups(
-                studyByUser.get(r.userId) ?? [],
-            );
+            const studyRows = studyByUser.get(r.userId) ?? [];
+            const study = deriveStudyFromGroups(studyRows);
+            /**
+             * Served rather than left to the client: a master's first year is
+             * 4. klasse, and `studyStartYear` alone does not say whether the
+             * year belongs to the master or the bachelor it followed. kvark
+             * computed it from that year and showed master students three
+             * class levels too low.
+             */
+            const standing = computeClassStanding(studyRows);
             return {
                 // The user id is left out for anonymised rows: it identifies
                 // the member just as well as the name does.
@@ -246,6 +254,8 @@ export const getAllRegistrationsForEventsRoute = route().get(
                               : null,
                           studyProgram: study.studyProgram,
                           studyStartYear: study.studyStartYear,
+                          classYear: standing.classYear,
+                          isAlumni: standing.isAlumni,
                           studyVerification: study.verification,
                       }
                     : {}),
