@@ -42,7 +42,7 @@ export function LawCombobox({ items, value, onValueChange }: LawComboboxProps) {
                                     {/* Se GroupLawItem: 0 bøter betyr
                                         overskrift/forklaring, ikke «null
                                         bøter». */}
-                                    {item.amount > 0 ? (
+                                    {item.amount !== 0 ? (
                                         <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
                                             {item.amount} bøter
                                         </span>

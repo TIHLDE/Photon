@@ -44,6 +44,42 @@ describe("laws", () => {
         );
 
         integrationTest(
+            "successfully creates a law with a negative amount",
+            async ({ ctx }) => {
+                const user = await ctx.utils.createTestUser();
+                const client = await ctx.utils.clientForUser(user);
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "laws-negative-group",
+                });
+
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: user.id,
+                    groupSlug: group.slug,
+                    role: "leader",
+                });
+
+                // En paragraf kan foreslå en motpost, for eksempel en
+                // paragraf som sletter bøter.
+                const response = await client.api.groups[
+                    ":groupSlug"
+                ].laws.$post({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        paragraph: 9.01,
+                        title: "Sletter en bot",
+                        amount: -1,
+                    },
+                });
+
+                expect(response.status).toBe(201);
+                const json = await response.json();
+                expect(json.amount).toBe(-1);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "successfully creates a law as fines admin",
             async ({ ctx }) => {
                 const user = await ctx.utils.createTestUser();

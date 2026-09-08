@@ -195,12 +195,25 @@ export const createFineRoute = route().post(
             ? `paragraf "${Number(newFine.law.paragraph).toFixed(2)} ${newFine.law.title}"`
             : `"${newFine.reason}"`;
 
+        // En negativ bot er en motpost, ikke en straff: «har gitt deg -2
+        // bøter for å ha brutt ...» leser som en ny bot.
+        const giver = newFine.createdByUser?.name ?? "Noen";
+        const notification =
+            newFine.amount < 0
+                ? {
+                      title: `Du har fått bøter trukket fra i "${group.name}"`,
+                      description: `${giver} har trukket fra ${Math.abs(newFine.amount)} bøter med ${offence} i gruppen ${group.name}`,
+                  }
+                : {
+                      title: `Du har fått en bot i "${group.name}"`,
+                      description: `${giver} har gitt deg ${newFine.amount} bøter for å ha brutt ${offence} i gruppen ${group.name}`,
+                  };
+
         try {
             await sendNotification(
                 {
                     userId: newFine.userId,
-                    title: `Du har fått en bot i "${group.name}"`,
-                    description: `${newFine.createdByUser?.name ?? "Noen"} har gitt deg ${newFine.amount} bøter for å ha brutt ${offence} i gruppen ${group.name}`,
+                    ...notification,
                     link: `/grupper/${groupSlug}?tab=boter`,
                 },
                 ctx,
