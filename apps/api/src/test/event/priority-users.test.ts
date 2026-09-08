@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
+import { isUserPrioritized } from "~/lib/event/priority";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 
@@ -136,6 +137,77 @@ describe("individually prioritized users", () => {
                 json: {},
             });
             expect(namedResponse.status).toBe(200);
+
+            const strangerClient = await ctx.utils.clientForUser(stranger);
+            const strangerResponse = await strangerClient.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: event.id },
+                json: {},
+            });
+            expect(strangerResponse.status).toBe(403);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "tre prikker nedprioriterer, men stenger ikke ute av poolen",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            const event = await ctx.utils.createTestEvent({
+                capacity: 10,
+                onlyAllowPrioritized: true,
+                enforcesPreviousStrikes: true,
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const stranger = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values({
+                eventId: event.id,
+                userId: striken.id,
+            });
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            for (const user of [striken, stranger]) {
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+            }
+
+            // Prikkene er en nedprioritering, ikke en sperre: han slipper inn
+            // i køen, og resolveren avgjør plassen hans.
+            const strikenClient = await ctx.utils.clientForUser(striken);
+            const strikenResponse = await strikenClient.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: event.id },
+                json: {},
+            });
+            expect(strikenResponse.status).toBe(200);
+
+            // Uten prikker teller han fortsatt ikke som prioritert.
+            expect(
+                isUserPrioritized({
+                    userGroupSlugs: new Set<string>(),
+                    userClassYear: null,
+                    event: {
+                        pools: [],
+                        priorityUsers: [{ userId: striken.id }],
+                    },
+                    strikeCount: 3,
+                    enforcesPreviousStrikes: true,
+                    isNamedIndividually: true,
+                }),
+            ).toBe(false);
 
             const strangerClient = await ctx.utils.clientForUser(stranger);
             const strangerResponse = await strangerClient.api.event[

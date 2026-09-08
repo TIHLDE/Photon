@@ -11,10 +11,9 @@ import {
 } from "../../../lib/event/institute";
 import {
     getUserPriorityFacts,
-    isUserPrioritized,
+    matchesPriorityRules,
 } from "../../../lib/event/priority";
 import { enqueueRegistrationResolve } from "../../../lib/event/resolve-queue";
-import { getUserStrikeCount } from "../../../lib/event/strikes";
 import { getUnansweredEvaluations } from "../../../lib/form/evaluation";
 import { route } from "../../../lib/route";
 import { hasAcceptedEventRules } from "../../../lib/user/settings";
@@ -208,27 +207,31 @@ export const registerToEventRoute = route().post(
             }
         }
 
-        // Events with onlyAllowPrioritized reject non-prioritized users
-        // outright at sign-up time, instead of waitlisting them.
+        /**
+         * Events with onlyAllowPrioritized reject users the pools do not cover
+         * outright at sign-up time, instead of waitlisting them.
+         *
+         * Prikker decide nothing here. Etter retningslinjene er tre prikker en
+         * nedprioritering — venteliste bak de andre, og bytte om plassen på et
+         * fullt arrangement — og den avgjørelsen tar resolveren. Da den ble
+         * lest som manglende prioritering også her, ble et arrangement «kun
+         * for 1. klasse» stengt for en 1.-klassing med tre prikker, med en
+         * beskjed om at han ikke var i målgruppa.
+         */
         if (event.onlyAllowPrioritized) {
-            const [priorityFacts, strikeCount] = await Promise.all([
-                getUserPriorityFacts(userId, db),
-                getUserStrikeCount(userId, db),
-            ]);
+            const priorityFacts = await getUserPriorityFacts(userId, db);
 
-            const isPrioritized = isUserPrioritized({
+            const matchesRules = matchesPriorityRules({
                 userGroupSlugs: priorityFacts.groupSlugs,
                 userClassYear: priorityFacts.classYear,
                 supersededStudySlugs: priorityFacts.supersededStudySlugs,
                 event,
-                strikeCount,
-                enforcesPreviousStrikes: event.enforcesPreviousStrikes,
                 isNamedIndividually: event.priorityUsers.some(
                     (entry) => entry.userId === userId,
                 ),
             });
 
-            if (!isPrioritized) {
+            if (!matchesRules) {
                 throw new HTTPException(403, {
                     message:
                         "This event only allows members in a priority pool to register",

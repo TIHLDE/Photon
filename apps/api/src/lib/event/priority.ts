@@ -388,35 +388,27 @@ interface IsUserPrioritizedParams {
 }
 
 /**
- * Determine if a user is prioritized for an event
+ * Whether the event's own rules cover this member: named individually, or
+ * matching every criterion of at least one priority pool.
  *
- * A user is prioritized if they:
- * - Are named individually on the event, OR
- * - Satisfy every criterion of AT LEAST ONE priority pool
- * - and have fewer than 3 strikes (if enforcesPreviousStrikes is true)
- *
- * The strike rule applies to named individuals too. Being singled out says
- * the organizer wants you ahead of the queue, not that prikkene dine er
- * strøket — and an event that enforces strikes would otherwise have a way to
- * quietly not enforce them.
+ * Prikker are deliberately not part of the answer. Retningslinjene make three
+ * prikker a *nedprioritering*, not a sperre, and `onlyAllowPrioritized` reads
+ * this question as "is this arrangement for you at all" — mixing the two turned
+ * the demotion into a 403 for a member standing squarely in the pool.
  *
  * A pool naming a study programme asks about the programme the member is on
  * now; every other kind of group still asks only about membership.
  */
-export function isUserPrioritized({
+export function matchesPriorityRules({
     userGroupSlugs,
     userClassYear,
     supersededStudySlugs,
     event,
-    strikeCount,
-    enforcesPreviousStrikes,
     isNamedIndividually,
-}: IsUserPrioritizedParams): boolean {
-    // Users with 3+ strikes cannot be prioritized
-    if (enforcesPreviousStrikes && strikeCount >= 3) {
-        return false;
-    }
-
+}: Omit<
+    IsUserPrioritizedParams,
+    "strikeCount" | "enforcesPreviousStrikes"
+>): boolean {
     if (isNamedIndividually) {
         return true;
     }
@@ -438,6 +430,27 @@ export function isUserPrioritized({
     }
 
     return false;
+}
+
+/**
+ * Where the member stands in the queue: covered by the event's rules, and not
+ * nedprioritert by three or more prikker.
+ *
+ * The strike rule applies to named individuals too. Being singled out says the
+ * organizer wants you ahead of the queue, not that prikkene dine er strøket —
+ * and an event that enforces strikes would otherwise have a way to quietly not
+ * enforce them.
+ */
+export function isUserPrioritized({
+    strikeCount,
+    enforcesPreviousStrikes,
+    ...rules
+}: IsUserPrioritizedParams): boolean {
+    if (enforcesPreviousStrikes && strikeCount >= 3) {
+        return false;
+    }
+
+    return matchesPriorityRules(rules);
 }
 
 /**
