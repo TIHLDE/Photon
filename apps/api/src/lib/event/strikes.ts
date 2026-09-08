@@ -169,6 +169,21 @@ export async function issueStrike(
     return true;
 }
 
+/**
+ * Om arrangementet håndhever prikker i det hele tatt.
+ *
+ * Betalende arrangementer står utenfor prikksystemet, og `!isPaidEvent` er
+ * ikke bare et belte til skjemavalideringens bukseseler: rader fra før regelen
+ * kan bære begge deler. Avmeldingsruta leser den samme kombinasjonen for å
+ * avgjøre om den skal dele ut en prikk.
+ */
+export function eventEnforcesStrikes(event: {
+    enforcesPreviousStrikes: boolean;
+    isPaidEvent: boolean;
+}): boolean {
+    return event.enforcesPreviousStrikes && !event.isPaidEvent;
+}
+
 interface CanRegisterResult {
     allowed: boolean;
     reason?: string;
@@ -184,8 +199,15 @@ export function canRegisterBasedOnStrikes(
     strikeCount: number,
     registrationStart: Date | null,
     pendingCreatedAt: Date,
+    /**
+     * Betalende arrangementer håndhever ikke prikksystemet, sier
+     * retningslinjene, og kvark skjuler prikkevalget når man krysser av for
+     * betaling. Ventetida her leste ingen av delene, så et betalt arrangement
+     * utsatte påmeldingen likevel.
+     */
+    eventEnforcesStrikes = true,
 ): CanRegisterResult {
-    if (strikeCount === 0 || !registrationStart) {
+    if (!eventEnforcesStrikes || strikeCount === 0 || !registrationStart) {
         return { allowed: true };
     }
 

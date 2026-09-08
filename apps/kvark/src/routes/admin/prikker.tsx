@@ -4,6 +4,12 @@ import { DotSquareIcon, PlusIcon, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import type { Strike } from "@tihlde/sdk";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@tihlde/ui/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
 import { Badge } from "@tihlde/ui/ui/badge";
 import { Button } from "@tihlde/ui/ui/button";
@@ -39,7 +45,7 @@ import {
     createStrikeMutation,
     deleteStrikeMutation,
     getEventsQuery,
-    getStrikesQuery,
+    getStrikesByMemberQuery,
 } from "#/api/queries/events";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
@@ -108,7 +114,8 @@ function StrikesAdminPage() {
 
 function StrikesSection() {
     const [page, setPage] = useState(0);
-    const { data, isPending } = useQuery(getStrikesQuery(page));
+    const [open, setOpen] = useState<string[]>([]);
+    const { data, isPending } = useQuery(getStrikesByMemberQuery(page));
     const remove = useMutation(deleteStrikeMutation);
     // Arranging a group's events carries its prikker, so the arrangør sees the
     // delete button too. The API still answers per prikk: the button only
@@ -132,9 +139,9 @@ function StrikesSection() {
         );
     }
 
-    const strikes = data?.strikes ?? [];
+    const members = data?.members ?? [];
 
-    if (strikes.length === 0) {
+    if (members.length === 0) {
         return (
             <Card>
                 <CardContent>
@@ -152,74 +159,122 @@ function StrikesSection() {
         <div className="flex flex-col gap-4">
             <Card>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Bruker</TableHead>
-                                <TableHead>Arrangement</TableHead>
-                                <TableHead>Antall</TableHead>
-                                <TableHead>Begrunnelse</TableHead>
-                                <TableHead>Dato</TableHead>
-                                <TableHead className="text-right">
-                                    Handlinger
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {strikes.map((strike) => (
-                                <TableRow key={strike.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Avatar className="size-7">
-                                                <AvatarImage
-                                                    src={avatarImageUrl(
-                                                        strike.user.image ??
-                                                            undefined,
-                                                    )}
-                                                />
-                                                <AvatarFallback>
-                                                    {initials(
-                                                        strike.user.name ?? "?",
-                                                    )}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span>{strike.user.name}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{strike.event.title}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary">
-                                            {strike.count}
+                    <Accordion
+                        multiple
+                        value={open}
+                        onValueChange={(next) => setOpen(next as string[])}
+                    >
+                        {members.map((member) => (
+                            <AccordionItem
+                                key={member.user.id}
+                                value={member.user.id}
+                                className="px-4"
+                            >
+                                <AccordionTrigger>
+                                    <div className="flex flex-1 items-center gap-3 pr-3">
+                                        <Avatar className="size-7">
+                                            <AvatarImage
+                                                src={avatarImageUrl(
+                                                    member.user.image ??
+                                                        undefined,
+                                                )}
+                                            />
+                                            <AvatarFallback>
+                                                {initials(
+                                                    member.user.name ?? "?",
+                                                )}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <span>{member.user.name}</span>
+                                        {/* Totalen er summen av prikkene, ikke
+                                        antall rader: én tildeling kan være
+                                        verdt to. */}
+                                        <Badge
+                                            variant="secondary"
+                                            className="ml-auto"
+                                        >
+                                            {member.totalStrikes}{" "}
+                                            {member.totalStrikes === 1
+                                                ? "prikk"
+                                                : "prikker"}
                                         </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {strike.reason ?? "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatOsloDate(strike.createdAt)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex justify-end">
-                                            {canDelete ? (
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    disabled={remove.isPending}
-                                                    onClick={() =>
-                                                        confirmDelete.request(
-                                                            strike,
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            ) : null}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    {/* Faste bredder: flere medlemmer kan stå
+                                    åpne samtidig, og da må kolonnene i de
+                                    ulike tabellene stå på linje. */}
+                                    <Table className="table-fixed">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[30%]">
+                                                    Arrangement
+                                                </TableHead>
+                                                <TableHead className="w-[10%]">
+                                                    Antall
+                                                </TableHead>
+                                                <TableHead>
+                                                    Begrunnelse
+                                                </TableHead>
+                                                <TableHead className="w-[14%]">
+                                                    Dato
+                                                </TableHead>
+                                                <TableHead className="w-[12%] text-right">
+                                                    Handlinger
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {member.strikes.map((strike) => (
+                                                <TableRow key={strike.id}>
+                                                    {/* Cellene er nowrap, så
+                                                    en lang arrangementstittel
+                                                    ville rent inn i nabo-
+                                                    kolonnen. */}
+                                                    <TableCell className="truncate">
+                                                        {strike.event.title}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="secondary">
+                                                            {strike.count}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="truncate text-muted-foreground">
+                                                        {strike.reason ?? "—"}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {formatOsloDate(
+                                                            strike.createdAt,
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex justify-end">
+                                                            {canDelete ? (
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    disabled={
+                                                                        remove.isPending
+                                                                    }
+                                                                    onClick={() =>
+                                                                        confirmDelete.request(
+                                                                            strike,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </Button>
+                                                            ) : null}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
                 </CardContent>
             </Card>
 

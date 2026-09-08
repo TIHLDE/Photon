@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
 import { processEventNoShows } from "~/lib/event/no-show";
+import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext } from "~/test/config/integration";
 
@@ -271,6 +272,328 @@ describe("Paid event rules", () => {
 
             expect(result).toEqual({ processed: false, struck: 0 });
             expect(await strikeTotal(ctx, event.id, noShow.id)).toBe(0);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "prikker utsetter ikke påmeldingen til et betalt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+
+            // Påmeldingen åpnet for en time siden, så to prikker ville krevd
+            // tolv timers venting på et gratis arrangement.
+            const paid = await ctx.utils.createTestEvent({
+                isPaidEvent: true,
+                priceMinor: 10_000,
+            });
+            const free = await ctx.utils.createTestEvent({
+                slug: `gratis-${Date.now()}`,
+            });
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: free.id,
+                userId: user.id,
+                count: 2,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(paid.id, user.id);
+            await resolveRegistrationsForEvent(paid.id, ctx);
+
+            await ctx.utils.createPendingRegistration(free.id, user.id);
+            await resolveRegistrationsForEvent(free.id, ctx);
+
+            const onPaid = await ctx.db.query.eventRegistration.findFirst({
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, paid.id), eq(reg.userId, user.id)),
+            });
+            const onFree = await ctx.db.query.eventRegistration.findFirst({
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, free.id), eq(reg.userId, user.id)),
+            });
+
+            expect(onPaid?.status).toBe("registered");
+            expect(onFree?.status).toBe("cancelled");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "et betalt arrangement kan ikke skru på prikker i en senere endring",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({ isPaidEvent: true, price: 100 }),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            // Kallet nevner ikke betaling, så skjemaet ser ingen konflikt.
+            // Regelen må leses på arrangementet slik det allerede står.
+            for (const patch of [
+                { enforcesPreviousStrikes: true },
+                { canCauseStrikes: true },
+                { cancellationDeadline: "2025-11-30T12:00:00Z" },
+            ]) {
+                const response = await client.api.event[":id"].$put({
+                    param: { id: eventId },
+                    json: patch as never,
+                });
+                expect(response.status).toBe(400);
+            }
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, eventId),
+            });
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+            expect(stored?.canCauseStrikes).toBe(false);
+            expect(stored?.cancellationDeadline).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "å gjøre et arrangement betalt rydder bort prikkene det hadde",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({
+                    canCauseStrikes: true,
+                    enforcesPreviousStrikes: true,
+                    cancellationDeadline: "2025-11-30T12:00:00Z",
+                }),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            // Kallet ber ikke om noe ulovlig — det gjør arrangementet betalt,
+            // og da har prikkene ingenting der å gjøre lenger.
+            const response = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: { isPaidEvent: true, price: 100 },
+            });
+            expect(response.status).toBe(200);
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, eventId),
+            });
+            expect(stored?.canCauseStrikes).toBe(false);
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+            expect(stored?.cancellationDeadline).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "en urørt endring på et betalt arrangement rydder raden i stedet for å feile",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["events:update"]);
+            const client = await ctx.utils.clientForUser(user);
+
+            // Raden bærer kombinasjonen fra før — slik testhjelperen og
+            // eldre rader gjør det.
+            const event = await ctx.utils.createTestEvent({
+                slug: `betalt-med-prikker-${Date.now()}`,
+                isPaidEvent: true,
+                priceMinor: 10_000,
+                enforcesPreviousStrikes: true,
+            });
+
+            const response = await client.api.event[":id"].$put({
+                param: { id: event.id },
+                json: { title: "Nytt navn" },
+            });
+            expect(response.status).toBe(200);
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, event.id),
+            });
+            expect(stored?.title).toBe("Nytt navn");
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "prikker nedprioriterer ikke på et betalt arrangement med gammelt flagg",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            // Kombinasjonen skjemaet nå avviser, lagt rett i basen slik en rad
+            // fra før regelen ser ut.
+            const event = await ctx.utils.createTestEvent({
+                slug: `betalt-gammelt-flagg-${Date.now()}`,
+                capacity: 1,
+                isPaidEvent: true,
+                priceMinor: 10_000,
+                enforcesPreviousStrikes: true,
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const clean = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values([
+                { eventId: event.id, userId: striken.id },
+                { eventId: event.id, userId: clean.id },
+            ]);
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(event.id, striken.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            await ctx.utils.createPendingRegistration(event.id, clean.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+            });
+
+            // Prikkene teller ikke her, så plassen hans står — på et gratis
+            // arrangement ville han blitt byttet ut.
+            expect(strikenEnd?.status).toBe("registered");
+            expect(cleanEnd?.status).toBe("waitlisted");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "prikker endrer ikke ventelisterekkefølgen på et betalt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            const DAY = 24 * HOUR;
+
+            /**
+             * To like arrangementer, én betalt og én gratis, med samme tre
+             * medlemmer i samme rekkefølge. Alle tre er prioritert ved navn,
+             * så det eneste som skiller dem er prikkene — og påmeldingen
+             * åpnet for et døgn siden, så ventetida ikke blander seg inn.
+             */
+            async function seed(paid: boolean) {
+                const event = await ctx.utils.createTestEvent({
+                    slug: `${paid ? "betalt" : "gratis"}-venteliste-${Date.now()}`,
+                    capacity: 1,
+                    enforcesPreviousStrikes: true,
+                    registrationStart: new Date(Date.now() - DAY),
+                    ...(paid ? { isPaidEvent: true, priceMinor: 10_000 } : {}),
+                });
+
+                const holder = await ctx.utils.createTestUser();
+                const striken = await ctx.utils.createTestUser();
+                const clean = await ctx.utils.createTestUser();
+
+                await ctx.db.insert(schema.eventPriorityUser).values(
+                    [holder, striken, clean].map((user) => ({
+                        eventId: event.id,
+                        userId: user.id,
+                    })),
+                );
+                await ctx.db.insert(schema.eventStrike).values({
+                    eventId: event.id,
+                    userId: striken.id,
+                    count: 3,
+                    reason: "Test",
+                });
+
+                // Plassen tas først, så de to andre stiller seg i kø i denne
+                // rekkefølgen: prikkebæreren foran den uten prikker.
+                for (const user of [holder, striken, clean]) {
+                    await ctx.utils.createPendingRegistration(
+                        event.id,
+                        user.id,
+                    );
+                    await resolveRegistrationsForEvent(event.id, ctx);
+                }
+
+                const position = async (userId: string) =>
+                    (
+                        await ctx.db.query.eventRegistration.findFirst({
+                            where: (reg, { and, eq }) =>
+                                and(
+                                    eq(reg.eventId, event.id),
+                                    eq(reg.userId, userId),
+                                ),
+                        })
+                    )?.waitlistPosition;
+
+                return {
+                    striken: await position(striken.id),
+                    clean: await position(clean.id),
+                };
+            }
+
+            const onPaid = await seed(true);
+            const onFree = await seed(false);
+
+            // Betalt: prikkene teller ikke, så køen er ren FIFO.
+            expect(onPaid.striken).toBe(1);
+            expect(onPaid.clean).toBe(2);
+
+            // Gratis: tre prikker nedprioriterer, og den uten prikker går forbi.
+            expect(onFree.striken).toBe(2);
+            expect(onFree.clean).toBe(1);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "et gratis arrangement kan fortsatt skru på prikker",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({}),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            const response = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: { enforcesPreviousStrikes: true, canCauseStrikes: true },
+            });
+
+            expect(response.status).toBe(200);
         },
         500_000,
     );

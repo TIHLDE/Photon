@@ -23,11 +23,13 @@ import { deleteEventRegistrationRoute } from "./registration/delete";
 import { getAllRegistrationsForEventsRoute } from "./registration/list";
 import { createStrikeRoute } from "./strike/create";
 import { deleteStrikeRoute } from "./strike/delete";
+import { listStrikesByUserRoute } from "./strike/list-by-user";
 import { listStrikesRoute } from "./strike/list";
 import { updateRoute } from "./update";
 
 export const eventRoutes = route()
     // Strikes (registered before "/:eventId" so the static /strikes path wins)
+    .route("/", listStrikesByUserRoute)
     .route("/", listStrikesRoute)
     // Static path, so it has to beat "/:eventId" to the punch as well
     .route("/", getMyEventHistoryRoute)

@@ -262,6 +262,14 @@ export const createEventSchema = Schema(
                     path: ["canCauseStrikes"],
                 });
             }
+            if (val.enforcesPreviousStrikes) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "enforcesPreviousStrikes cannot be true if isPaidEvent is true",
+                    path: ["enforcesPreviousStrikes"],
+                });
+            }
             if (val.cancellationDeadline) {
                 ctx.addIssue({
                     code: "custom",
@@ -390,6 +398,14 @@ export const updateEventSchema = Schema(
                     message:
                         "canCauseStrikes cannot be true if isPaidEvent is true",
                     path: ["canCauseStrikes"],
+                });
+            }
+            if (val.enforcesPreviousStrikes) {
+                ctx.addIssue({
+                    code: "custom",
+                    message:
+                        "enforcesPreviousStrikes cannot be true if isPaidEvent is true",
+                    path: ["enforcesPreviousStrikes"],
                 });
             }
             if (val.cancellationDeadline) {

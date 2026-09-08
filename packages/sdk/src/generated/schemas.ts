@@ -178,6 +178,7 @@ export type SignContract = Schemas["SignContract"];
 export type SignContractResponse = Schemas["SignContractResponse"];
 export type Strike = Schemas["Strike"];
 export type StrikeList = Schemas["StrikeList"];
+export type StrikesByUserList = Schemas["StrikesByUserList"];
 export type SubmissionDetail = Schemas["SubmissionDetail"];
 export type SubmissionList = Schemas["SubmissionList"];
 export type ToddelIssue = Schemas["ToddelIssue"];

@@ -509,6 +509,23 @@ export const createEventFormMutation = mutationOptions({
 
 // -- Strikes (prikker) --
 
+export const getStrikesByMemberQuery = (
+    page: number,
+    pageSize: number = DEFAULT_PAGE_SIZE,
+) =>
+    queryOptions({
+        queryKey: [
+            ...EventQueryKeys.strikes,
+            "members",
+            page,
+            pageSize,
+        ] as const,
+        queryFn: () =>
+            apiClient.get("/api/event/strikes/members", {
+                searchParams: { page, pageSize },
+            }),
+    });
+
 export const getStrikesQuery = (
     page: number,
     userId?: string,

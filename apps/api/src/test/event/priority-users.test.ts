@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
+import { isUserPrioritized } from "~/lib/event/priority";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 
@@ -145,6 +146,135 @@ describe("individually prioritized users", () => {
                 json: {},
             });
             expect(strangerResponse.status).toBe(403);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "tre prikker nedprioriterer, men stenger ikke ute av poolen",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            const event = await ctx.utils.createTestEvent({
+                capacity: 10,
+                onlyAllowPrioritized: true,
+                enforcesPreviousStrikes: true,
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const stranger = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values({
+                eventId: event.id,
+                userId: striken.id,
+            });
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            for (const user of [striken, stranger]) {
+                await ctx.utils.giveUserPermissions(user, [
+                    "events:registrations:create",
+                ]);
+                await ctx.utils.acceptEventRules(user.id);
+            }
+
+            // Prikkene er en nedprioritering, ikke en sperre: han slipper inn
+            // i køen, og resolveren avgjør plassen hans.
+            const strikenClient = await ctx.utils.clientForUser(striken);
+            const strikenResponse = await strikenClient.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: event.id },
+                json: {},
+            });
+            expect(strikenResponse.status).toBe(200);
+
+            // Uten prikker teller han fortsatt ikke som prioritert.
+            expect(
+                isUserPrioritized({
+                    userGroupSlugs: new Set<string>(),
+                    userClassYear: null,
+                    event: {
+                        pools: [],
+                        priorityUsers: [{ userId: striken.id }],
+                    },
+                    strikeCount: 3,
+                    enforcesPreviousStrikes: true,
+                    isNamedIndividually: true,
+                }),
+            ).toBe(false);
+
+            const strangerClient = await ctx.utils.clientForUser(stranger);
+            const strangerResponse = await strangerClient.api.event[
+                ":eventId"
+            ].registration.$post({
+                param: { eventId: event.id },
+                json: {},
+            });
+            expect(strangerResponse.status).toBe(403);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "en prioritert bytter ut en med tre prikker på et fullt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            // Ventetida holdes utenfor: påmeldingen åpnet for et døgn siden,
+            // så det som skiller de to her er prikkene og ingenting annet.
+            const event = await ctx.utils.createTestEvent({
+                capacity: 1,
+                onlyAllowPrioritized: true,
+                enforcesPreviousStrikes: true,
+                registrationStart: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const clean = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values([
+                { eventId: event.id, userId: striken.id },
+                { eventId: event.id, userId: clean.id },
+            ]);
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(event.id, striken.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            // Plassen sto ledig, så han får den — nedprioritert er ikke det
+            // samme som sist i køen når køen er tom.
+            const afterFirst = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            expect(afterFirst?.status).toBe("registered");
+
+            await ctx.utils.createPendingRegistration(event.id, clean.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+            });
+
+            expect(cleanEnd?.status).toBe("registered");
+            expect(strikenEnd?.status).toBe("waitlisted");
         },
         500_000,
     );
