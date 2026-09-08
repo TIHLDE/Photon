@@ -18,7 +18,7 @@ Photon er en komplett backend-løsning for Kvark, bygget med fokus på ytelse, t
 - **📧 E-postsystem**: React Email-baserte maler med lokal forhåndsvisning
 - **⚡ Jobbkø**: BullMQ med Redis for asynkron behandling
 - **📊 OpenAPI-dokumentasjon**: Automatisk generert API-dokumentasjon med Scalar
-- **🧪 Testing**: Vitest med Testcontainers for integrasjonstester
+- **🧪 Testing**: Vitest med PGlite-database i minnet for integrasjonstester
 
 ## 🛠️ Teknologistack
 
@@ -277,7 +277,7 @@ Dokumentasjonen bruker Scalar API Reference og inkluderer både API-ruter og aut
 Photon bruker Vitest for testing med støtte for:
 
 - **Enhetstester** - Rask testing av individuelle funksjoner
-- **Integrasjonstester** - Testing med ekte database via Testcontainers
+- **Integrasjonstester** - Testing mot en PGlite-database i minnet
 - **Dekningsrapporter** - Generert med @vitest/coverage-v8
 
 ```bash
@@ -285,7 +285,7 @@ Photon bruker Vitest for testing med støtte for:
 bun run test
 ```
 
-Testcontainers starter automatisk PostgreSQL-, Redis- og MinIO-containere for integrasjonstester, så sørg for at Docker kjører.
+Testene trenger ikke Docker. De kjører mot en PGlite-database i minnet, og cache, kø, lagring og e-post er erstattet med varianter i minnet. Docker trengs kun til `bun dev`.
 
 Om du ønsker å kjøre flere tester parallellt, kan du justere `MAX_TEST_WORKERS` miljøvariabelen.
 
