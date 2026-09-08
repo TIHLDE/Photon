@@ -490,6 +490,87 @@ describe("Paid event rules", () => {
     );
 
     integrationTest(
+        "prikker endrer ikke ventelisterekkefølgen på et betalt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            const DAY = 24 * HOUR;
+
+            /**
+             * To like arrangementer, én betalt og én gratis, med samme tre
+             * medlemmer i samme rekkefølge. Alle tre er prioritert ved navn,
+             * så det eneste som skiller dem er prikkene — og påmeldingen
+             * åpnet for et døgn siden, så ventetida ikke blander seg inn.
+             */
+            async function seed(paid: boolean) {
+                const event = await ctx.utils.createTestEvent({
+                    slug: `${paid ? "betalt" : "gratis"}-venteliste-${Date.now()}`,
+                    capacity: 1,
+                    enforcesPreviousStrikes: true,
+                    registrationStart: new Date(Date.now() - DAY),
+                    ...(paid ? { isPaidEvent: true, priceMinor: 10_000 } : {}),
+                });
+
+                const holder = await ctx.utils.createTestUser();
+                const striken = await ctx.utils.createTestUser();
+                const clean = await ctx.utils.createTestUser();
+
+                await ctx.db.insert(schema.eventPriorityUser).values(
+                    [holder, striken, clean].map((user) => ({
+                        eventId: event.id,
+                        userId: user.id,
+                    })),
+                );
+                await ctx.db.insert(schema.eventStrike).values({
+                    eventId: event.id,
+                    userId: striken.id,
+                    count: 3,
+                    reason: "Test",
+                });
+
+                // Plassen tas først, så de to andre stiller seg i kø i denne
+                // rekkefølgen: prikkebæreren foran den uten prikker.
+                for (const user of [holder, striken, clean]) {
+                    await ctx.utils.createPendingRegistration(
+                        event.id,
+                        user.id,
+                    );
+                    await resolveRegistrationsForEvent(event.id, ctx);
+                }
+
+                const position = async (userId: string) =>
+                    (
+                        await ctx.db.query.eventRegistration.findFirst({
+                            where: (reg, { and, eq }) =>
+                                and(
+                                    eq(reg.eventId, event.id),
+                                    eq(reg.userId, userId),
+                                ),
+                        })
+                    )?.waitlistPosition;
+
+                return {
+                    striken: await position(striken.id),
+                    clean: await position(clean.id),
+                };
+            }
+
+            const onPaid = await seed(true);
+            const onFree = await seed(false);
+
+            // Betalt: prikkene teller ikke, så køen er ren FIFO.
+            expect(onPaid.striken).toBe(1);
+            expect(onPaid.clean).toBe(2);
+
+            // Gratis: tre prikker nedprioriterer, og den uten prikker går forbi.
+            expect(onFree.striken).toBe(2);
+            expect(onFree.clean).toBe(1);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "et gratis arrangement kan fortsatt skru på prikker",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();
