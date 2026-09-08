@@ -1,4 +1,7 @@
-import { parseValidStudyPrograms } from "@photon/auth/feide";
+import {
+    cohortGroupsByProgramme,
+    parseValidStudyPrograms,
+} from "@photon/auth/feide";
 import { assert, describe, test } from "vitest";
 
 describe("feide parse valid study programs", () => {
@@ -575,5 +578,84 @@ describe("parseValidStudyPrograms — programme and cohort groups", () => {
         assert.lengthOf(programs, 1);
         assert.equal(programs[0]?.code, "ITBAITBEDR");
         assert.isNull(programs[0]?.startYear);
+    });
+});
+
+/**
+ * Diagnostikken som skal svare på hvorfor 18 medlemmer i prod har et Feide-år
+ * som er tidligere enn kullgruppa de valgte da de meldte seg inn.
+ *
+ * `parseValidStudyPrograms` beholder det første kullet den ser, og
+ * `showAll=true` tar med utløpte medlemskap. Er det flere kull i svaret, er
+ * valget avhengig av rekkefølgen Feide tilfeldigvis svarer i — og da må vi
+ * vite at det skjer før vi kan rette parseren.
+ */
+describe("cohortGroupsByProgramme", () => {
+    const cohort = (code: string, term: string, active: boolean) => ({
+        id: `fc:fs:fs:kull:ntnu.no:${code}:${term}`,
+        type: "fc:fs:kull",
+        displayName: `Kull ${code} ${term}`,
+        membership: {
+            basic: "member",
+            active,
+            displayName: "Student",
+            fsroles: ["STUDENT"],
+        },
+        parent: "fc:org:ntnu.no",
+    });
+
+    test("samler alle kull for ett program, med aktiv-flagget", () => {
+        const groups = [
+            cohort("BDIGSEC", "2024H", false),
+            cohort("BDIGSEC", "2025H", true),
+        ];
+
+        const byCode = cohortGroupsByProgramme(groups);
+        assert.deepEqual(byCode.get("BDIGSEC"), [
+            {
+                id: "fc:fs:fs:kull:ntnu.no:BDIGSEC:2024H",
+                year: 2024,
+                active: false,
+            },
+            {
+                id: "fc:fs:fs:kull:ntnu.no:BDIGSEC:2025H",
+                year: 2025,
+                active: true,
+            },
+        ]);
+
+        /**
+         * Poenget med hele diagnostikken: parseren tar det første, altså det
+         * utløpte 2024-kullet, selv om bare 2025 er aktivt. Endres denne
+         * linja til 2025, er parseren fikset og loggingen kan fjernes.
+         */
+        assert.deepEqual(
+            parseValidStudyPrograms(groups).find((p) => p.code === "BDIGSEC")
+                ?.startYear,
+            2024,
+        );
+    });
+
+    test("holder programmene fra hverandre og ignorerer ukjente koder", () => {
+        const byCode = cohortGroupsByProgramme([
+            cohort("BIDATA", "2023H", true),
+            cohort("BDIGSEC", "2025H", true),
+            cohort("MEDIEVIT", "2021H", true),
+        ]);
+
+        assert.deepEqual([...byCode.keys()].sort(), ["BDIGSEC", "BIDATA"]);
+        assert.equal(byCode.get("BIDATA")?.length, 1);
+    });
+
+    test("tar med et kull uten lesbart år, så loggen viser hele svaret", () => {
+        const byCode = cohortGroupsByProgramme([
+            cohort("BIDATA", "1899H", true),
+            cohort("BIDATA", "2023H", true),
+        ]);
+
+        assert.deepEqual(
+            byCode.get("BIDATA")?.map((c) => c.year),
+            [null, 2023],
+        );
     });
 });

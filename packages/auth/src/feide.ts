@@ -1722,6 +1722,28 @@ async function fetchValidStudyPrograms(
         );
     }
 
+    /**
+     * A programme with more than one cohort is the case the parser cannot
+     * currently handle: it keeps the first year it sees, and `showAll=true`
+     * means a lapsed cohort is just as likely to be first as the current one.
+     * Logged whether or not the pick looks wrong — the point is to find out
+     * how often several arrive at all, and which one Feide still calls active.
+     */
+    for (const [code, cohorts] of cohortGroupsByProgramme(groups)) {
+        const years = new Set(
+            cohorts.map((c) => c.year).filter((y) => y !== null),
+        );
+        if (years.size < 2) continue;
+
+        console.warn(
+            `Feide sent ${cohorts.length} cohorts for ${code} to ${who}, with ${years.size} distinct years. Parser kept ${
+                programs.find((p) => p.code === code)?.startYear ?? "none"
+            }. Cohorts: ${cohorts
+                .map((c) => `${c.id} (active=${c.active})`)
+                .join(", ")}`,
+        );
+    }
+
     return {
         programs,
         campus: resolveCampus(groups),
@@ -1820,6 +1842,52 @@ const ALLOWED_CODES: ReadonlySet<string> = new Set(ALLOWED_PROGRAM_CODES);
 
 function isAllowedCode(code: string | undefined): code is ProgramCode {
     return code !== undefined && ALLOWED_CODES.has(code);
+}
+
+/**
+ * Every `fc:fs:kull` group a TIHLDE programme got, keyed by programme code.
+ *
+ * Diagnostic only — {@link parseValidStudyPrograms} does its own parsing. It
+ * exists to answer one open question: whether a programme ever arrives with
+ * more than one cohort. `showAll=true` deliberately includes lapsed
+ * memberships, and the parser keeps whichever cohort it happens to see first,
+ * so a lapsed one could be beating the current intake. In production 18
+ * members carry a Feide year that is *earlier* than the cohort group they
+ * picked when they joined, 14 of them on BDIGSEC alone, and the year is frozen
+ * once written — `feide` does not outrank `feide`. Either Feide sends several
+ * cohorts and we pick wrong, or it sends one wrong cohort; the two need
+ * different fixes and only the response tells them apart.
+ *
+ * Exported for testing.
+ */
+export function cohortGroupsByProgramme(
+    groups: FeideGroup[],
+): Map<ProgramCode, { id: string; year: number | null; active: boolean }[]> {
+    const byCode = new Map<
+        ProgramCode,
+        { id: string; year: number | null; active: boolean }[]
+    >();
+
+    for (const g of groups) {
+        if (g.type !== "fc:fs:kull") continue;
+
+        const parts = g.id.split(":");
+        const code = parts.at(-2);
+        if (!isAllowedCode(code)) continue;
+
+        const raw = parts.at(-1);
+        const parsed = raw ? Number.parseInt(raw.substring(0, 4)) : Number.NaN;
+        const year =
+            !Number.isNaN(parsed) && parsed >= 2000 && parsed <= 3000
+                ? parsed
+                : null;
+
+        const entry = byCode.get(code) ?? [];
+        entry.push({ id: g.id, year, active: g.membership?.active === true });
+        byCode.set(code, entry);
+    }
+
+    return byCode;
 }
 
 /**
