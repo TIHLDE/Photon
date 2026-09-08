@@ -130,6 +130,58 @@ describe("strikes grouped by member", () => {
     );
 
     integrationTest(
+        "to medlemmer med samme tidspunkt havner ikke på samme side to ganger",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["events:strikes:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            const event = await ctx.utils.createTestEvent({
+                slug: `prikk-likt-${Date.now()}`,
+            });
+            const sameMoment = new Date();
+
+            const first = await ctx.utils.createTestUser();
+            const second = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventStrike).values([
+                {
+                    eventId: event.id,
+                    userId: first.id,
+                    count: 1,
+                    reason: null,
+                    createdAt: sameMoment,
+                },
+                {
+                    eventId: event.id,
+                    userId: second.id,
+                    count: 1,
+                    reason: null,
+                    createdAt: sameMoment,
+                },
+            ]);
+
+            const pageOne = await client.api.event.strikes.members.$get({
+                query: { pageSize: "1", page: "0" },
+            });
+            const pageTwo = await client.api.event.strikes.members.$get({
+                query: { pageSize: "1", page: "1" },
+            });
+
+            const ids = [
+                ...(await pageOne.json()).members,
+                ...(await pageTwo.json()).members,
+            ].map((member) => member.user.id);
+
+            expect(new Set(ids).size).toBe(2);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "uten tilgang kommer man ikke inn",
         async ({ ctx }) => {
             await ctx.utils.setupGroups();
