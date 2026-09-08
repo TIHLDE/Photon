@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -177,6 +178,78 @@ describe("strikes grouped by member", () => {
             ].map((member) => member.user.id);
 
             expect(new Set(ids).size).toBe(2);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "en arrangør ser bare prikkene fra sin egen gruppes arrangementer",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const leader = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(leader);
+
+            const own = await ctx.utils.createTestGroup({
+                slug: "egen-gruppe",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({ leaderPermissions: ["events:update"] })
+                .where(eq(schema.group.slug, own.slug));
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: leader.id,
+                groupSlug: own.slug,
+                role: "leader",
+            });
+
+            const ownEvent = await ctx.utils.createTestEvent({
+                slug: `egen-${Date.now()}`,
+                organizerGroupSlug: own.slug,
+            });
+            const foreignEvent = await ctx.utils.createTestEvent({
+                slug: `fremmed-${Date.now()}`,
+            });
+
+            const member = await ctx.utils.createTestUser();
+            const stranger = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventStrike).values([
+                {
+                    eventId: ownEvent.id,
+                    userId: member.id,
+                    count: 1,
+                    reason: "Egen gruppe",
+                },
+                {
+                    eventId: foreignEvent.id,
+                    userId: member.id,
+                    count: 2,
+                    reason: "Annen gruppe",
+                },
+                {
+                    eventId: foreignEvent.id,
+                    userId: stranger.id,
+                    count: 1,
+                    reason: "Annen gruppe",
+                },
+            ]);
+
+            const response = await client.api.event.strikes.members.$get({
+                query: {},
+            });
+            expect(response.status).toBe(200);
+            const body = await response.json();
+
+            // Medlemmet har tre prikker, men bare den ene hører til gruppa
+            // hans. Totalen må stemme med radene under, ellers står det ett
+            // tall utenpå og noe annet inni.
+            expect(body.members).toHaveLength(1);
+            expect(body.members[0]?.user.id).toBe(member.id);
+            expect(body.members[0]?.totalStrikes).toBe(1);
+            expect(body.members[0]?.strikes).toHaveLength(1);
+            expect(body.totalCount).toBe(1);
         },
         500_000,
     );

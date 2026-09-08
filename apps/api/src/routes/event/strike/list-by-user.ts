@@ -93,7 +93,6 @@ export const listStrikesByUserRoute = route().get(
             .select({
                 userId: schema.eventStrike.userId,
                 total: sql<number>`sum(${schema.eventStrike.count})::int`,
-                latest: sql<Date>`max(${schema.eventStrike.createdAt})`,
             })
             .from(schema.eventStrike)
             .where(filters)
