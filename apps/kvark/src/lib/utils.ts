@@ -1,4 +1,3 @@
-import { computeClassYear } from "@photon/auth/academic-year";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -39,42 +38,23 @@ export {
 } from "@photon/auth/academic-year";
 
 /**
- * Masterprogrammene ved TIHLDE. Alt annet (Dataingeniør, Digital
- * forretningsutvikling, Digital infrastruktur og cybersikkerhet, Drift,
- * Informasjonsbehandling) er treårig bachelor. Programnavnene har variert
- * mellom Lepton-importen og Feide, så vi matcher på det særegne ordet.
- */
-const MASTER_PROGRAMME_MARKERS = ["samhandling", "transformasjon", "master"];
-
-/** Antall år programmet varer — brukes til å avgjøre når noen er alumni. */
-export function programmeLength(programme: string | undefined): number {
-    if (!programme) return 3;
-    const name = programme.toLowerCase();
-    return MASTER_PROGRAMME_MARKERS.some((marker) => name.includes(marker))
-        ? 5
-        : 3;
-}
-
-/**
  * Hvor et medlem står i løpet, som en bøtte det går an å telle på:
  * `"1"`–`"5"` for klassetrinnet, `"alumni"` for den som er ferdig, og
  * `"unknown"` når vi ikke vet nok til å plassere dem.
  *
- * Samme regel som studielinja ellers i admin: klassetrinnet gjelder så lenge
- * programmet varer (3 år på bachelor, 5 på master), og den som har passert det
- * er alumni. Uten kull vet vi ingenting — også når studiet er kjent, for det
- * er kullet som sier når de begynte.
+ * Tar tallene serveren har regnet ut, og regner ikke om igjen på kullet.
+ * Kullet alene kan ikke svare: masterens første år er 4. klasse, og om
+ * årstallet hører til masteren eller bacheloren foran den står ikke i tallet.
+ * Da denne bøtta regnet selv, viste admin-listene alle 37 masterstudentene i
+ * prod tre klassetrinn for lavt, mens profilen og svarlista — som spør
+ * serveren — hadde dem riktig.
  */
 export function classLevelBucket(
-    programme: string | null | undefined,
-    startYear: number | null | undefined,
+    classYear: number | null | undefined,
+    isAlumni: boolean | null | undefined,
 ): string {
-    if (startYear === null || startYear === undefined) return "unknown";
-    const classYear = computeClassYear(startYear);
-    if (classYear < 1) return "unknown";
-    return classYear <= programmeLength(programme ?? undefined)
-        ? String(classYear)
-        : "alumni";
+    if (classYear != null) return String(classYear);
+    return isAlumni ? "alumni" : "unknown";
 }
 
 /** Etiketten som hører til en {@link classLevelBucket}. */

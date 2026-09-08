@@ -6,6 +6,8 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { computeClassStanding } from "~/lib/event/priority";
+import { loadStudyGroupRows } from "~/lib/user/study";
 import {
     PaginationSchema,
     getNextPage,
@@ -38,7 +40,8 @@ export const listUsersRoute = route().get(
     requireAccess({ permission: "users:view" }),
     validator("query", PaginationSchema.extend(userListQuerySchema.shape)),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const {
             page,
             pageSize,
@@ -235,17 +238,41 @@ export const listUsersRoute = route().get(
             .offset(getPageOffset(page, pageSize))
             .where(where);
 
+        /**
+         * The class level, computed rather than left to the client. A master's
+         * first year is 4. klasse, and the offset that encodes only holds if
+         * you know the year belongs to the master and not the bachelor it
+         * followed — which `studyStartYear` alone does not say. kvark worked it
+         * out from that year and showed all 37 master students in production
+         * three class levels too low, while the profile and the form answers,
+         * which ask the server, had them right.
+         *
+         * One query for the page rather than one per row, and the same
+         * `loadStudyGroupRows` the profile uses, so the two can never disagree.
+         */
+        const studyByUser = await loadStudyGroupRows(
+            ctx,
+            rows.map((row) => row.id),
+        );
+
         return c.json({
             totalCount,
             pages: totalPages,
             nextPage: getNextPage(page, totalPages),
-            items: rows.map(({ banned, ...row }) => ({
-                ...row,
-                // `banned` is nullable in Better Auth's schema; only an
-                // explicit true means deactivated.
-                isActive: banned !== true,
-                createdAt: row.createdAt.toISOString(),
-            })),
+            items: rows.map(({ banned, ...row }) => {
+                const standing = computeClassStanding(
+                    studyByUser.get(row.id) ?? [],
+                );
+                return {
+                    ...row,
+                    classYear: standing.classYear,
+                    isAlumni: standing.isAlumni,
+                    // `banned` is nullable in Better Auth's schema; only an
+                    // explicit true means deactivated.
+                    isActive: banned !== true,
+                    createdAt: row.createdAt.toISOString(),
+                };
+            }),
         } satisfies z.infer<typeof userListResponseSchema>);
     },
 );

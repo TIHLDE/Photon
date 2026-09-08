@@ -683,10 +683,12 @@ const REGISTRATION_FILTERS = [
 /**
  * Kullet og studiet til de påmeldte, som klikkbare tall.
  *
- * Bøttene regnes ut i nettleseren fra `studyProgram` og `studyStartYear` på
- * hver påmelding — arrangøren laster allerede hele lista for å kunne søke i
- * den, så et eget statistikk-endepunkt ville bare telt de samme radene en gang
- * til.
+ * Bøttene telles i nettleseren fra `studyProgram` og `classYear` på hver
+ * påmelding — arrangøren laster allerede hele lista for å kunne søke i den, så
+ * et eget statistikk-endepunkt ville bare telt de samme radene en gang til.
+ * Selve klassetrinnet regnes ikke her: det kommer ferdig fra API-et, fordi
+ * kullåret alene ikke sier om det hører til masteren eller bacheloren foran
+ * den.
  */
 type RegistrationFacets = {
     /** Klassetrinn-bøtte, se `classLevelBucket`. */
@@ -702,7 +704,9 @@ const NO_STUDY = "__none__";
 
 type BreakdownParticipant = {
     studyProgram?: string | null;
-    studyStartYear?: number | null;
+    /** Klassetrinnet fra API-et; kullet alene kan ikke svare for en master. */
+    classYear?: number | null;
+    isAlumni?: boolean | null;
 };
 
 function studyBucket(participant: BreakdownParticipant): string {
@@ -715,16 +719,11 @@ function studyBucket(participant: BreakdownParticipant): string {
  * fortsatt går der.
  */
 function classYearOf(participant: BreakdownParticipant): number | null {
-    const bucket = levelBucket(participant);
-    const year = Number.parseInt(bucket, 10);
-    return Number.isFinite(year) ? year : null;
+    return participant.classYear ?? null;
 }
 
 function levelBucket(participant: BreakdownParticipant): string {
-    return classLevelBucket(
-        participant.studyProgram,
-        participant.studyStartYear,
-    );
+    return classLevelBucket(participant.classYear, participant.isAlumni);
 }
 
 /**

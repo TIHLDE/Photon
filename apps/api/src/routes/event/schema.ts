@@ -1081,6 +1081,14 @@ export const registeredUserSchema = Schema(
             description:
                 "The year the member started studying (kull), derived from their study programme or STUDYYEAR group. Null when unknown. Only included for event admins.",
         }),
+        classYear: z.number().int().nullable().optional().meta({
+            description:
+                "Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place. Only included for event admins.",
+        }),
+        isAlumni: z.boolean().optional().meta({
+            description:
+                "Past the programme's length, on positive evidence. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all. Only included for event admins.",
+        }),
         studyVerification: z
             .enum(["active", "inactive", "stale", "unverified"])
             .optional()

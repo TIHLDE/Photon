@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { type ClassStanding, computeClassStanding } from "~/lib/event/priority";
 import { assertGroupVisible } from "~/lib/group";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -77,8 +78,10 @@ export const listMembersRoute = route().get(
         const groupsByUser = await loadStudyGroupRows(c.get("ctx"), userIds);
 
         const studyByUser = new Map<string, UserStudy>();
+        const standingByUser = new Map<string, ClassStanding>();
         for (const [userId, groups] of groupsByUser) {
             studyByUser.set(userId, deriveStudyFromGroups(groups));
+            standingByUser.set(userId, computeClassStanding(groups));
         }
 
         return c.json(
@@ -90,6 +93,15 @@ export const listMembersRoute = route().get(
                         studyByUser.get(member.userId)?.studyProgram ?? null,
                     studyStartYear:
                         studyByUser.get(member.userId)?.studyStartYear ?? null,
+                    /**
+                     * Klassetrinnet regnes her, ikke i nettleseren: masterens
+                     * første år er 4. klasse, og om `studyStartYear` hører til
+                     * masteren eller bacheloren foran den står ikke i tallet.
+                     */
+                    ...(standingByUser.get(member.userId) ?? {
+                        classYear: null,
+                        isAlumni: false,
+                    }),
                 },
             })),
         );

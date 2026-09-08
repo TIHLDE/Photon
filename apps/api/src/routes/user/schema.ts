@@ -314,6 +314,14 @@ export const userListItemSchema = Schema(
             description:
                 "The year the user started studying (kull), derived from their STUDYYEAR group membership. Null when unknown.",
         }),
+        classYear: z.number().int().nullable().meta({
+            description:
+                "Class level 1-5, computed from the current programme and its length. A master's first year is 4. Null for alumni and for anyone we cannot place — served by the API so the rule lives in one place rather than being recomputed per client.",
+        }),
+        isAlumni: z.boolean().meta({
+            description:
+                "Past the programme's length, on positive evidence: we know the programme, we know the start year, and even the earliest reading of it is beyond the length. A separate field because `classYear` is null both for the member who has finished and for the one we cannot place at all.",
+        }),
         isActive: z.boolean().meta({
             description:
                 "False when the account is deactivated — the member cannot sign in.",
