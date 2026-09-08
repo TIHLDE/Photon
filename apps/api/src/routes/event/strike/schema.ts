@@ -80,6 +80,37 @@ export const strikeListResponseSchema = Schema(
     }),
 );
 
+export const strikesByUserResponseSchema = Schema(
+    "StrikesByUserList",
+    z.object({
+        totalCount: z
+            .number()
+            .meta({ description: "Total number of members with strikes" }),
+        pages: z.number().meta({ description: "Total number of pages" }),
+        nextPage: z
+            .number()
+            .nullable()
+            .meta({ description: "Next page number, or null if last page" }),
+        members: z.array(
+            z.object({
+                user: z.object({
+                    id: z.string().meta({ description: "User ID" }),
+                    name: z.string().meta({ description: "User display name" }),
+                    image: z
+                        .string()
+                        .nullable()
+                        .meta({ description: "User profile image URL" }),
+                }),
+                totalStrikes: z.number().meta({
+                    description:
+                        "Sum of the counts of the strikes listed here. A single strike row can be worth several.",
+                }),
+                strikes: z.array(strikeSchema),
+            }),
+        ),
+    }),
+);
+
 export const deleteStrikeResponseSchema = Schema(
     "DeleteStrikeResponse",
     z.object({

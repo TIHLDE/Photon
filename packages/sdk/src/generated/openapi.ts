@@ -625,6 +625,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/event/strikes/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List members with active strikes
+         * @description Retrieve members who currently have active strikes (prikker), each with the sum of their strikes and the strikes themselves. Paginates over members, not strikes, so a member's total is never split across pages. Requires 'events:strikes:view' or 'events:manage' permission; an organizer sees only the strikes from their own groups' events, and the total counts exactly those.
+         */
+        get: operations["listStrikesByMember"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event/strikes": {
         parameters: {
             query?: never;
@@ -3434,6 +3454,27 @@ export interface components {
                 /** @description Event slug */
                 slug: string;
             };
+        };
+        StrikesByUserList: {
+            /** @description Total number of members with strikes */
+            totalCount: number;
+            /** @description Total number of pages */
+            pages: number;
+            /** @description Next page number, or null if last page */
+            nextPage: number | null;
+            members: {
+                user: {
+                    /** @description User ID */
+                    id: string;
+                    /** @description User display name */
+                    name: string;
+                    /** @description User profile image URL */
+                    image: string | null;
+                };
+                /** @description Sum of the counts of the strikes listed here. A single strike row can be worth several. */
+                totalStrikes: number;
+                strikes: components["schemas"]["Strike"][];
+            }[];
         };
         StrikeList: {
             /** @description Total number of strikes */
@@ -7628,6 +7669,49 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listStrikesByMember: {
+        parameters: {
+            query?: {
+                /** @description Number of items to return */
+                pageSize?: number;
+                /** @description Number of items to skip */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrikesByUserList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
+            };
+            /** @description Kontoen din venter på godkjenning fra en administrator. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPAppException"];
+                };
             };
         };
     };
