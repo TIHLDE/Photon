@@ -160,6 +160,7 @@ function StrikesSection() {
             <Card>
                 <CardContent className="p-0">
                     <Accordion
+                        multiple
                         value={open}
                         onValueChange={(next) => setOpen(next as string[])}
                     >
@@ -200,18 +201,25 @@ function StrikesSection() {
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                    <Table>
+                                    {/* Faste bredder: flere medlemmer kan stå
+                                    åpne samtidig, og da må kolonnene i de
+                                    ulike tabellene stå på linje. */}
+                                    <Table className="table-fixed">
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>
+                                                <TableHead className="w-[30%]">
                                                     Arrangement
                                                 </TableHead>
-                                                <TableHead>Antall</TableHead>
+                                                <TableHead className="w-[10%]">
+                                                    Antall
+                                                </TableHead>
                                                 <TableHead>
                                                     Begrunnelse
                                                 </TableHead>
-                                                <TableHead>Dato</TableHead>
-                                                <TableHead className="text-right">
+                                                <TableHead className="w-[14%]">
+                                                    Dato
+                                                </TableHead>
+                                                <TableHead className="w-[12%] text-right">
                                                     Handlinger
                                                 </TableHead>
                                             </TableRow>
@@ -219,7 +227,11 @@ function StrikesSection() {
                                         <TableBody>
                                             {member.strikes.map((strike) => (
                                                 <TableRow key={strike.id}>
-                                                    <TableCell>
+                                                    {/* Cellene er nowrap, så
+                                                    en lang arrangementstittel
+                                                    ville rent inn i nabo-
+                                                    kolonnen. */}
+                                                    <TableCell className="truncate">
                                                         {strike.event.title}
                                                     </TableCell>
                                                     <TableCell>
@@ -227,7 +239,7 @@ function StrikesSection() {
                                                             {strike.count}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell className="text-muted-foreground">
+                                                    <TableCell className="truncate text-muted-foreground">
                                                         {strike.reason ?? "—"}
                                                     </TableCell>
                                                     <TableCell>
