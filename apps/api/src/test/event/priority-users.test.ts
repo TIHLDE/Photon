@@ -222,6 +222,64 @@ describe("individually prioritized users", () => {
     );
 
     integrationTest(
+        "en prioritert bytter ut en med tre prikker på et fullt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.setupGroups();
+
+            // Ventetida holdes utenfor: påmeldingen åpnet for et døgn siden,
+            // så det som skiller de to her er prikkene og ingenting annet.
+            const event = await ctx.utils.createTestEvent({
+                capacity: 1,
+                onlyAllowPrioritized: true,
+                enforcesPreviousStrikes: true,
+                registrationStart: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            });
+
+            const striken = await ctx.utils.createTestUser();
+            const clean = await ctx.utils.createTestUser();
+
+            await ctx.db.insert(schema.eventPriorityUser).values([
+                { eventId: event.id, userId: striken.id },
+                { eventId: event.id, userId: clean.id },
+            ]);
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: striken.id,
+                count: 3,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(event.id, striken.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            // Plassen sto ledig, så han får den — nedprioritert er ikke det
+            // samme som sist i køen når køen er tom.
+            const afterFirst = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            expect(afterFirst?.status).toBe("registered");
+
+            await ctx.utils.createPendingRegistration(event.id, clean.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+
+            const strikenEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, striken.id)),
+            });
+            const cleanEnd = await ctx.db.query.eventRegistration.findFirst({
+                where: (r, { and, eq }) =>
+                    and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
+            });
+
+            expect(cleanEnd?.status).toBe("registered");
+            expect(strikenEnd?.status).toBe("waitlisted");
+        },
+        500_000,
+    );
+
+    integrationTest(
         "create stores the named individuals, update replaces them",
         async ({ ctx }) => {
             await ctx.utils.setupGroups();

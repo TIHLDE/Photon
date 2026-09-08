@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
 import { processEventNoShows } from "~/lib/event/no-show";
+import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext } from "~/test/config/integration";
 
@@ -271,6 +272,194 @@ describe("Paid event rules", () => {
 
             expect(result).toEqual({ processed: false, struck: 0 });
             expect(await strikeTotal(ctx, event.id, noShow.id)).toBe(0);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "prikker utsetter ikke påmeldingen til et betalt arrangement",
+        async ({ ctx }) => {
+            await ctx.utils.setupEventCategories();
+
+            // Påmeldingen åpnet for en time siden, så to prikker ville krevd
+            // tolv timers venting på et gratis arrangement.
+            const paid = await ctx.utils.createTestEvent({
+                isPaidEvent: true,
+                priceMinor: 10_000,
+            });
+            const free = await ctx.utils.createTestEvent({
+                slug: `gratis-${Date.now()}`,
+            });
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: free.id,
+                userId: user.id,
+                count: 2,
+                reason: "Test",
+            });
+
+            await ctx.utils.createPendingRegistration(paid.id, user.id);
+            await resolveRegistrationsForEvent(paid.id, ctx);
+
+            await ctx.utils.createPendingRegistration(free.id, user.id);
+            await resolveRegistrationsForEvent(free.id, ctx);
+
+            const onPaid = await ctx.db.query.eventRegistration.findFirst({
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, paid.id), eq(reg.userId, user.id)),
+            });
+            const onFree = await ctx.db.query.eventRegistration.findFirst({
+                where: (reg, { and, eq }) =>
+                    and(eq(reg.eventId, free.id), eq(reg.userId, user.id)),
+            });
+
+            expect(onPaid?.status).toBe("registered");
+            expect(onFree?.status).toBe("cancelled");
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "et betalt arrangement kan ikke skru på prikker i en senere endring",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({ isPaidEvent: true, price: 100 }),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            // Kallet nevner ikke betaling, så skjemaet ser ingen konflikt.
+            // Regelen må leses på arrangementet slik det allerede står.
+            for (const patch of [
+                { enforcesPreviousStrikes: true },
+                { canCauseStrikes: true },
+                { cancellationDeadline: "2025-11-30T12:00:00Z" },
+            ]) {
+                const response = await client.api.event[":id"].$put({
+                    param: { id: eventId },
+                    json: patch as never,
+                });
+                expect(response.status).toBe(400);
+            }
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, eventId),
+            });
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+            expect(stored?.canCauseStrikes).toBe(false);
+            expect(stored?.cancellationDeadline).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "å gjøre et arrangement betalt rydder bort prikkene det hadde",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({
+                    canCauseStrikes: true,
+                    enforcesPreviousStrikes: true,
+                    cancellationDeadline: "2025-11-30T12:00:00Z",
+                }),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            // Kallet ber ikke om noe ulovlig — det gjør arrangementet betalt,
+            // og da har prikkene ingenting der å gjøre lenger.
+            const response = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: { isPaidEvent: true, price: 100 },
+            });
+            expect(response.status).toBe(200);
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, eventId),
+            });
+            expect(stored?.canCauseStrikes).toBe(false);
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+            expect(stored?.cancellationDeadline).toBeNull();
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "en urørt endring på et betalt arrangement rydder raden i stedet for å feile",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+
+            const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["events:update"]);
+            const client = await ctx.utils.clientForUser(user);
+
+            // Raden bærer kombinasjonen fra før — slik testhjelperen og
+            // eldre rader gjør det.
+            const event = await ctx.utils.createTestEvent({
+                slug: `betalt-med-prikker-${Date.now()}`,
+                isPaidEvent: true,
+                priceMinor: 10_000,
+                enforcesPreviousStrikes: true,
+            });
+
+            const response = await client.api.event[":id"].$put({
+                param: { id: event.id },
+                json: { title: "Nytt navn" },
+            });
+            expect(response.status).toBe(200);
+
+            const stored = await ctx.db.query.event.findFirst({
+                where: (e, { eq }) => eq(e.id, event.id),
+            });
+            expect(stored?.title).toBe("Nytt navn");
+            expect(stored?.enforcesPreviousStrikes).toBe(false);
+        },
+        500_000,
+    );
+
+    integrationTest(
+        "et gratis arrangement kan fortsatt skru på prikker",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: createEventBody({}),
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            const response = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: { enforcesPreviousStrikes: true, canCauseStrikes: true },
+            });
+
+            expect(response.status).toBe(200);
         },
         500_000,
     );

@@ -150,6 +150,7 @@ export async function resolveRegistrationsForEvent(
                 strikeCount,
                 event.registrationStart,
                 createdAt,
+                !event.isPaidEvent,
             );
 
             if (!allowed) {

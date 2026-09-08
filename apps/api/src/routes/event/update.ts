@@ -73,6 +73,46 @@ export const updateRoute = route().put(
             }
             const event = existing[0];
 
+            /**
+             * Reglene for betalte arrangementer leses på arrangementet slik
+             * det blir *etter* oppdateringen, ikke bare på feltene kallet
+             * sender med.
+             *
+             * Skjemaet ser bare kroppen, og blokka der kjører kun når kallet
+             * selv setter `isPaidEvent: true`. Et kall som bare skrudde på
+             * prikkeflagget mot et arrangement som allerede var betalt, kom
+             * derfor forbi regelen om at betalte arrangementer står utenfor
+             * prikksystemet.
+             *
+             * Kallet avvises bare når det er kallet som ber om bruddet. Står
+             * bruddet i raden fra før, ryddes det bort ved lagring i stedet —
+             * ellers ville hver eneste endring på et slikt arrangement blitt
+             * avvist, også de som ikke rører prikker, og raden hadde vært
+             * umulig å redigere seg ut av.
+             */
+            const willBePaid = body.isPaidEvent ?? event.isPaidEvent;
+
+            if (willBePaid) {
+                if (body.canCauseStrikes) {
+                    throw new HTTPException(400, {
+                        message:
+                            "canCauseStrikes cannot be true if isPaidEvent is true",
+                    });
+                }
+                if (body.enforcesPreviousStrikes) {
+                    throw new HTTPException(400, {
+                        message:
+                            "enforcesPreviousStrikes cannot be true if isPaidEvent is true",
+                    });
+                }
+                if (body.cancellationDeadline) {
+                    throw new HTTPException(400, {
+                        message:
+                            "cancellationDeadline cannot be set if isPaidEvent is true",
+                    });
+                }
+            }
+
             // Validate referenced entities if updated
             if (body.categorySlug && body.categorySlug !== event.categorySlug) {
                 const category = await tx
@@ -293,8 +333,12 @@ export const updateRoute = route().put(
                 isRegistrationClosed: body.isRegistrationClosed,
                 reactionsAllowed: body.reactionsAllowed,
                 requiresSigningUp: body.requiresSigningUp,
-                enforcesPreviousStrikes: body.enforcesPreviousStrikes,
-                canCauseStrikes: body.canCauseStrikes,
+                // Se sjekken over: et betalt arrangement lagres alltid uten
+                // prikker, også når raden bar dem fra før.
+                enforcesPreviousStrikes: willBePaid
+                    ? false
+                    : body.enforcesPreviousStrikes,
+                canCauseStrikes: willBePaid ? false : body.canCauseStrikes,
                 priceMinor: nextPriceMinor,
                 updatedAt: new Date(),
                 title: body.title,
@@ -305,9 +349,9 @@ export const updateRoute = route().put(
                     ? null
                     : undefined,
                 registrationEnd: updateDateNullable(body.registrationEnd),
-                cancellationDeadline: updateDateNullable(
-                    body.cancellationDeadline,
-                ),
+                cancellationDeadline: willBePaid
+                    ? null
+                    : updateDateNullable(body.cancellationDeadline),
                 updateByUserId: userId,
             };
 

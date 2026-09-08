@@ -184,8 +184,15 @@ export function canRegisterBasedOnStrikes(
     strikeCount: number,
     registrationStart: Date | null,
     pendingCreatedAt: Date,
+    /**
+     * Betalende arrangementer håndhever ikke prikksystemet, sier
+     * retningslinjene, og kvark skjuler prikkevalget når man krysser av for
+     * betaling. Ventetida her leste ingen av delene, så et betalt arrangement
+     * utsatte påmeldingen likevel.
+     */
+    eventEnforcesStrikes = true,
 ): CanRegisterResult {
-    if (strikeCount === 0 || !registrationStart) {
+    if (!eventEnforcesStrikes || strikeCount === 0 || !registrationStart) {
         return { allowed: true };
     }
 
