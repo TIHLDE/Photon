@@ -6,14 +6,14 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { computeClassStanding } from "~/lib/event/priority";
+import { loadStudyGroupRows } from "~/lib/user/study";
 import {
     PaginationSchema,
     getNextPage,
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
-import { computeClassStanding } from "~/lib/event/priority";
-import { loadStudyGroupRows } from "~/lib/user/study";
 import {
     NO_STUDY_FILTER,
     userListQuerySchema,

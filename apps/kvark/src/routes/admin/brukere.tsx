@@ -115,10 +115,17 @@ const NO_STUDY = "__none__";
 function formatStudy(
     programme: string | null,
     startYear: number | null,
-    classYear: number | null,
+    /**
+     * `undefined` og ikke bare `null`, selv om typen sier feltet alltid er
+     * med: kvark deployes på hver merge til main, mens API-et først følger
+     * etter på neste release-tag. I mellomtiden mangler feltet i svaret, og
+     * en `!== null`-sjekk slipper `undefined` forbi — det var slik
+     * statistikken skrev «undefined. klasse» mellom #718 og releasen.
+     */
+    classYear: number | null | undefined,
 ): string | null {
     if (!programme) return null;
-    if (classYear !== null) return `${programme} · ${classYear}. klasse`;
+    if (classYear != null) return `${programme} · ${classYear}. klasse`;
     if (startYear === null) return programme;
     return `${programme} · kull ${startYear}`;
 }
