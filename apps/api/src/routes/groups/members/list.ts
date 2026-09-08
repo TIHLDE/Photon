@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { type ClassStanding, computeClassStanding } from "~/lib/event/priority";
 import { assertGroupVisible } from "~/lib/group";

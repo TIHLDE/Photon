@@ -85,7 +85,6 @@ export const listSubmissionsRoute = route().get(
 
         // Filter out waitlist users for event forms
         if (eventForm) {
-            const submissionUserIds = submissions.map((s) => s.userId);
             const registrations = await db
                 .select()
                 .from(schema.eventRegistration)

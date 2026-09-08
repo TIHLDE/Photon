@@ -1,5 +1,5 @@
 import { schema } from "@photon/db";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { canManageForm } from "~/lib/form/service";
 import { computeClassStanding } from "~/lib/event/priority";
