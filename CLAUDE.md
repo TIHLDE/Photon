@@ -314,7 +314,8 @@ SMTP_PORT=1025
 
 - `bun run test` needs no Docker: the suite runs on an in-memory PGlite
   database, and cache, queue, storage and email are in-memory fakes.
-- Docker is only needed for `bun dev`, which runs against real services.
+- Docker is needed for `bun dev` and for the `db:*` commands (`db:push`,
+  `db:migrate`, `db:studio`), which all run against the real dev services.
 
 ### Email Development
 

@@ -285,7 +285,7 @@ Photon bruker Vitest for testing med støtte for:
 bun run test
 ```
 
-Testene trenger ikke Docker. De kjører mot en PGlite-database i minnet, og cache, kø, lagring og e-post er erstattet med varianter i minnet. Docker trengs kun til `bun dev`.
+Testene trenger ikke Docker. De kjører mot en PGlite-database i minnet, og cache, kø, lagring og e-post er erstattet med varianter i minnet. Docker trengs til `bun dev` og til `db:*`-kommandoene (`db:push`, `db:migrate`, `db:studio`), som alle går mot de ekte dev-tjenestene.
 
 Om du ønsker å kjøre flere tester parallellt, kan du justere `MAX_TEST_WORKERS` miljøvariabelen.
 
