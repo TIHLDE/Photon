@@ -69,7 +69,7 @@ Photon/
 - **Turborepo** - Monorepo build orchestration
 - **TypeScript 5.9** - Type system (strict mode)
 - **Oxc (oxlint + oxfmt)** - Linting and formatting
-- **Vitest** - Testing with Testcontainers
+- **Vitest** - Testing with an in-memory PGlite database
 
 ## Common Commands
 
@@ -204,7 +204,8 @@ The repo has **one long-lived branch: `main`**. There is no `dev` branch.
 ### Testing
 
 - **Framework**: Vitest (config in `apps/api/vitest.config.ts`)
-- **Integration tests**: Use Testcontainers for PostgreSQL, Redis, MinIO
+- **Integration tests**: Run against an in-memory PGlite database; cache, queue,
+  storage and email are in-memory fakes. No Docker required.
 - **Test location**: `apps/api/src/test/`
 - **Config**: `maxWorkers: 1` by default (configurable via `MAX_TEST_WORKERS` env)
 
@@ -243,7 +244,7 @@ zone is two hours off for half the day, and differs between server and client.
 
 ### Database Queries
 
-**IMPORTANT**: Always use the database instance from Hono context (`c.get('ctx').db`), NOT a direct import. This is required for the testing setup with Testcontainers.
+**IMPORTANT**: Always use the database instance from Hono context (`c.get('ctx').db`), NOT a direct import. This is required for the testing setup, which swaps in an in-memory database.
 
 ```typescript
 import { schema } from "@photon/db/schema";
@@ -309,10 +310,12 @@ SMTP_PORT=1025
 - This is a **port with improvements**, not a direct translation
 - Use TypeScript best practices, not Python patterns
 
-### Testing with Docker
+### Testing
 
-- Testcontainers requires Docker to be running
-- Tests automatically spin up PostgreSQL/Redis/MinIO containers
+- `bun run test` needs no Docker: the suite runs on an in-memory PGlite
+  database, and cache, queue, storage and email are in-memory fakes.
+- Docker is needed for `bun dev` and for the `db:*` commands (`db:push`,
+  `db:migrate`, `db:studio`), which all run against the real dev services.
 
 ### Email Development
 
