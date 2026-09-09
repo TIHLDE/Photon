@@ -170,6 +170,22 @@ export const jobListFilterSchema = PaginationSchema.extend({
     jobType: z.enum(schema.jobTypeVariants).optional().meta({
         description: "Filter by job type",
     }),
+    years: z
+        .preprocess((value) => {
+            if (value === undefined) return undefined;
+            const years = (
+                Array.isArray(value) ? value : String(value).split(",")
+            )
+                .map((year) => String(year).trim())
+                .filter(Boolean);
+            return years.length > 0 ? years : undefined;
+        }, z.array(z.enum(schema.userClassVariants)).optional())
+        .meta({
+            type: "array",
+            items: { type: "string", enum: [...schema.userClassVariants] },
+            description:
+                "Return jobs targeting any selected year of study. Accepts repeated or comma-separated values. Combined with year when both are provided.",
+        }),
     year: z.enum(schema.userClassVariants).optional().meta({
         description:
             "Filter by year of study (returns jobs targeting that class)",

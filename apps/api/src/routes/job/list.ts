@@ -23,7 +23,7 @@ export const listRoute = route().get(
         summary: "List job postings",
         operationId: "listJobs",
         description:
-            "Get a paginated list of job postings. Supports search, job type, year of study, and expired filtering. Public endpoint.",
+            "Get a paginated list of job postings. Supports search, job type, single or multiple years of study, and expired filtering. Public endpoint.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -34,7 +34,7 @@ export const listRoute = route().get(
     validator("query", jobListFilterSchema),
     async (c) => {
         const { db } = c.get("ctx");
-        const { page, pageSize, search, expired, jobType, year } =
+        const { page, pageSize, search, expired, jobType, year, years } =
             c.req.valid("query");
 
         const showExpired = expired === true;
@@ -66,6 +66,16 @@ export const listRoute = route().get(
                     : undefined,
                 // Filter by job type
                 jobType ? eq(schema.jobPost.jobType, jobType) : undefined,
+                years?.length
+                    ? or(
+                          ...years.map((selectedYear) =>
+                              and(
+                                  lte(schema.jobPost.classStart, selectedYear),
+                                  gte(schema.jobPost.classEnd, selectedYear),
+                              ),
+                          ),
+                      )
+                    : undefined,
                 // Filter by year of study: job must target a range that includes the requested class
                 year
                     ? and(
