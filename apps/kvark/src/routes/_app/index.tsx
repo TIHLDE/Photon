@@ -16,29 +16,28 @@ import { type ReactNode, Suspense } from "react";
 import { authQueryOptions } from "#/api/auth";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { getEventsQuery } from "#/api/queries/events";
-import { getJobsQuery } from "#/api/queries/jobs";
 import { getNewsQuery } from "#/api/queries/news";
 import { getVisibleBannersQuery } from "#/api/queries/banners";
 import { EventCard } from "#/components/event-card";
 import { InfoBanner } from "#/components/info-banner";
-import { JobCard } from "#/components/job-card";
 import { NewsCard } from "#/components/news-card";
 import { SectionError } from "#/components/section-error";
 import { TihldeLogo } from "#/components/icons/tihlde";
 import { HeroSectionBackground } from "#/components/hero-section";
 import { formatEventDateTime } from "#/lib/event";
-import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
-import { BEDPRES_CATEGORIES, EVENT_CATEGORIES } from "#/lib/event-categories";
+import {
+    ACTIVITY_CATEGORIES,
+    BEDPRES_CATEGORIES,
+    EVENT_CATEGORIES,
+} from "#/lib/event-categories";
 import { formatNewsDateRelative } from "#/lib/news";
 
 /**
- * Forsida viser arrangementer, ikke aktiviteter: alle tre spørringene filtrerer
- * derfor på kategori i stedet for å ta imot alt API-et har.
- *
- * Bedpressene har sin egen spalte og er trukket ut av «Arrangementer», slik at
- * det samme arrangementet ikke står i begge. Kalenderen viser dem sammen igjen
- * — den er ett bilde av alt som skjer, ikke en tredje spalte.
+ * Hver type har sin egen liste på forsida. Bedpressene er trukket ut av
+ * «Arrangementer», og aktiviteter vises i seksjonen under i stedet.
+ * Kalenderen viser arrangementer og bedpresser sammen, men ikke aktiviteter.
  */
+const ACTIVITY_SLUGS = ACTIVITY_CATEGORIES.map((category) => category.value);
 const BEDPRES_SLUGS = BEDPRES_CATEGORIES.map((category) => category.value);
 const CALENDAR_SLUGS = EVENT_CATEGORIES.map((category) => category.value);
 const EVENT_SLUGS = CALENDAR_SLUGS.filter(
@@ -77,13 +76,14 @@ const calendarEventsQuery = () =>
         CALENDAR_PAGE_SIZE,
     );
 
-/**
- * De nyeste stillingsannonsene — seks, så de fyller de samme to spaltene som
- * arrangementene. API-et sorterer på publiseringstidspunkt og lar utgåtte
- * annonser ligge igjen med mindre man ber om dem.
- */
-const JOBS_PREVIEW_COUNT = 6;
-const latestJobsQuery = () => getJobsQuery(0, {}, JOBS_PREVIEW_COUNT);
+/** Seks aktiviteter, fordelt på to spalter. */
+const ACTIVITIES_PREVIEW_COUNT = 6;
+const upcomingActivitiesQuery = () =>
+    getEventsQuery(
+        0,
+        { expired: false, category: ACTIVITY_SLUGS },
+        ACTIVITIES_PREVIEW_COUNT,
+    );
 
 /** The three newest news items, ordered by the API. */
 const NEWS_PREVIEW_COUNT = 3;
@@ -109,7 +109,6 @@ function Home() {
         "events:create",
         "events:manage",
     ]);
-    const canCreateJob = useAnyScopePermission(["jobs:create", "jobs:manage"]);
     const canCreateNews = useAnyScopePermission(["news:create", "news:manage"]);
 
     return (
@@ -207,22 +206,18 @@ function Home() {
                 </Tabs>
             </section>
 
-            {/* Samme form som arrangementene: overskrift og handling på én
-             * linje, kortene i to spalter under. Ingen fane — annonser har
-             * ingen kalender å veksle til. */}
             <section className="container mx-auto w-full px-4 py-8">
                 <SectionHeader
-                    title="Stillingsannonser"
-                    actionLabel={canCreateJob ? "Ny annonse" : undefined}
-                    actionTo="/admin/annonser"
-                    actionSearch={{ ny: true }}
+                    title="Aktiviteter"
+                    actionLabel={canCreateEvent ? "Ny aktivitet" : undefined}
+                    actionTo="/admin/arrangementer/ny"
                 />
                 <CatchBoundary
-                    getResetKey={() => "jobs"}
-                    errorComponent={JobsUnavailable}
+                    getResetKey={() => "activities"}
+                    errorComponent={ActivitiesUnavailable}
                 >
-                    <Suspense fallback={<JobsSkeleton />}>
-                        <JobsSection />
+                    <Suspense fallback={<ActivitiesSkeleton />}>
+                        <ActivitiesSection />
                     </Suspense>
                 </CatchBoundary>
             </section>
@@ -352,30 +347,25 @@ function CalendarUnavailable() {
     return <SectionError message="Vi fikk ikke lastet kalenderen." />;
 }
 
-function JobsSection() {
-    const { data } = useSuspenseQuery(latestJobsQuery());
-    const jobs = data.items;
+function ActivitiesSection() {
+    const { data } = useSuspenseQuery(upcomingActivitiesQuery());
+    const activities = data.items;
 
-    if (jobs.length === 0) return null;
+    if (activities.length === 0) return null;
 
     return (
         <Stagger render={<ul className="mt-4 grid gap-8 lg:grid-cols-2" />}>
-            {jobs.map((job) => (
-                <li key={job.id}>
-                    <JobCard
-                        slug={job.id}
-                        title={job.title}
-                        jobType={formatJobType(job.jobType)}
-                        classLevels={formatClassRange(
-                            job.classStart,
-                            job.classEnd,
-                        )}
-                        location={job.location}
-                        deadline={formatJobDeadline(
-                            job.deadline,
-                            job.isContinuouslyHiring,
-                        )}
-                        imageUrl={job.imageUrl || undefined}
+            {activities.map((activity) => (
+                <li key={activity.id}>
+                    <EventCard
+                        slug={activity.slug}
+                        title={activity.title}
+                        startsAt={formatEventDateTime(activity.startTime)}
+                        location={activity.location ?? ""}
+                        organizer={activity.organizer?.name ?? ""}
+                        category={activity.category?.label}
+                        imageUrl={activity.image || undefined}
+                        imageAlt={activity.imageAlt || undefined}
                     />
                 </li>
             ))}
@@ -383,15 +373,14 @@ function JobsSection() {
     );
 }
 
-/** Annonsene er ikke verdt en feilside — resten av forsida står. */
-function JobsUnavailable() {
-    return <SectionError message="Vi fikk ikke lastet stillingsannonsene." />;
+function ActivitiesUnavailable() {
+    return <SectionError message="Vi fikk ikke lastet aktivitetene." />;
 }
 
-function JobsSkeleton() {
+function ActivitiesSkeleton() {
     return (
         <div className="mt-4 grid gap-8 lg:grid-cols-2">
-            {Array.from({ length: JOBS_PREVIEW_COUNT }, (_, i) => (
+            {Array.from({ length: ACTIVITIES_PREVIEW_COUNT }, (_, i) => (
                 <Skeleton key={i} className="h-32 w-full" />
             ))}
         </div>
