@@ -2446,7 +2446,7 @@ export interface paths {
         };
         /**
          * List job postings
-         * @description Get a paginated list of job postings. Supports search, job type, year of study, and expired filtering. Public endpoint.
+         * @description Get a paginated list of job postings. Supports search, job type, single or multiple years of study, and expired filtering. Public endpoint.
          */
         get: operations["listJobs"];
         put?: never;
@@ -13602,6 +13602,8 @@ export interface operations {
                 expired?: boolean;
                 /** @description Filter by job type */
                 jobType?: "full_time" | "part_time" | "summer_job" | "other";
+                /** @description Return jobs targeting any selected year of study. Accepts repeated or comma-separated values. Combined with year when both are provided. */
+                years?: ("first" | "second" | "third" | "fourth" | "fifth" | "alumni")[];
                 /** @description Filter by year of study (returns jobs targeting that class) */
                 year?: "first" | "second" | "third" | "fourth" | "fifth" | "alumni";
             };

@@ -5,6 +5,104 @@ import { integrationTest } from "~/test/config/integration";
 
 describe("Job Postings System", () => {
     integrationTest(
+        "Filters jobs before pagination and matches any selected year",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+            const deadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+            await ctx.db.insert(schema.jobPost).values([
+                {
+                    title: "First",
+                    company: "Acme",
+                    location: "Oslo",
+                    deadline,
+                    jobType: "summer_job",
+                    classStart: "first",
+                    classEnd: "first",
+                },
+                {
+                    title: "Middle",
+                    company: "Acme",
+                    location: "Oslo",
+                    deadline,
+                    jobType: "summer_job",
+                    classStart: "third",
+                    classEnd: "third",
+                },
+                {
+                    title: "Fifth",
+                    company: "Acme",
+                    location: "Oslo",
+                    deadline,
+                    jobType: "part_time",
+                    classStart: "fifth",
+                    classEnd: "fifth",
+                },
+                {
+                    title: "Broad",
+                    company: "Other",
+                    location: "Oslo",
+                    deadline,
+                    jobType: "full_time",
+                    classStart: "first",
+                    classEnd: "alumni",
+                },
+                {
+                    title: "Expired",
+                    company: "Acme",
+                    location: "Oslo",
+                    deadline: new Date(0),
+                    jobType: "summer_job",
+                    classStart: "first",
+                    classEnd: "fifth",
+                },
+            ]);
+
+            for (const years of ["first,fifth", ["first", "fifth"]]) {
+                const response = await client.api.jobs.$get({
+                    query: { years },
+                });
+                expect(response.status).toBe(200);
+                const result = await response.json();
+                expect(result.totalCount).toBe(3);
+                expect(result.items.map((job) => job.title).sort()).toEqual([
+                    "Broad",
+                    "Fifth",
+                    "First",
+                ]);
+            }
+
+            const combined = await client.api.jobs.$get({
+                query: {
+                    years: "first,fifth",
+                    search: "acme",
+                    jobType: "summer_job",
+                    pageSize: "1",
+                },
+            });
+            const result = await combined.json();
+            expect(result.totalCount).toBe(1);
+            expect(result.items.map((job) => job.title)).toEqual(["First"]);
+            expect(result.nextPage).toBeNull();
+
+            const legacy = await client.api.jobs.$get({
+                query: { year: "third" },
+            });
+            expect(
+                (await legacy.json()).items.map((job) => job.title).sort(),
+            ).toEqual(["Broad", "Middle"]);
+            const cleared = await client.api.jobs.$get({
+                query: { years: "" },
+            });
+            expect((await cleared.json()).totalCount).toBe(4);
+            const invalid = await client.api.jobs.$get({
+                query: { years: "first,invalid" },
+            });
+            expect(invalid.status).toBe(400);
+        },
+    );
+
+    integrationTest(
         "Complete job lifecycle: create, list with filters, get, update, delete",
         async ({ ctx }) => {
             // Setup users with different permissions

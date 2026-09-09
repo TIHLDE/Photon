@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@tihlde/ui/ui/button";
 import { Stagger } from "@tihlde/ui/ui/motion";
 import { PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 
 import { getJobsQuery } from "#/api/queries/jobs";
 import { JobCard } from "#/components/job-card";
@@ -15,6 +15,7 @@ import {
 } from "#/components/job-filters";
 import { PageHeader } from "#/components/page-header";
 import { useAnyScopePermission } from "#/hooks/use-permission";
+import { useDebouncedValue } from "#/hooks/use-debounced-value";
 import { formatClassRange, formatJobDeadline, formatJobType } from "#/lib/job";
 
 /** Module-level so the permission lookup keeps a stable identity. */
@@ -41,11 +42,43 @@ const JOB_TYPES: { value: JobType; label: string }[] = [
     { value: "annet", label: "Annet" },
 ];
 
+const API_JOB_TYPES = {
+    sommerjobb: "summer_job",
+    deltid: "part_time",
+    fulltid: "full_time",
+    annet: "other",
+} as const;
+
+const API_CLASS_YEARS = [
+    "first",
+    "second",
+    "third",
+    "fourth",
+    "fifth",
+] as const;
+
 function JobsPage() {
     const [filters, setFilters] =
         useState<JobFiltersValue>(DEFAULT_JOB_FILTERS);
 
-    const { data } = useSuspenseQuery(getJobsQuery(0));
+    const debouncedQuery = useDebouncedValue(filters.query, 300);
+    const listFilters = useMemo(
+        () => ({
+            search: debouncedQuery.trim() || undefined,
+            jobType: filters.jobType
+                ? API_JOB_TYPES[filters.jobType]
+                : undefined,
+            years: filters.classLevels.length
+                ? API_CLASS_YEARS.filter((_, index) =>
+                      filters.classLevels.includes(index + 1),
+                  )
+                : undefined,
+        }),
+        [debouncedQuery, filters.jobType, filters.classLevels],
+    );
+    // Keep the current results visible while the next filter request resolves.
+    const deferredFilters = useDeferredValue(listFilters);
+    const { data } = useSuspenseQuery(getJobsQuery(0, deferredFilters));
     const jobs = data.items;
     // Any-scope: scopet er ukjent på en offentlig liste, og API-et avviser
     // uansett den enkelte forespørselen som ikke treffer.
