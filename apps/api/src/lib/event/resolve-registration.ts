@@ -39,6 +39,12 @@ export async function resolveRegistrationsForEvent(
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
         const txCtx = { ...ctx, db: tx };
+        // Organizer additions and waitlist promotions allocate under the same lock.
+        await tx
+            .select({ id: schema.event.id })
+            .from(schema.event)
+            .where(eq(schema.event.id, eventId))
+            .for("update");
 
         // Step 1: Fetch all pending registrations for this event with FOR UPDATE lock
         // This prevents concurrent processing of the same registrations

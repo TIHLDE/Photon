@@ -15,6 +15,7 @@ import { createPaymentRoute } from "./payment/create";
 import { listEventPaymentsRoute } from "./payment/list";
 import { refundEventPaymentRoute } from "./payment/refund";
 import { paymentWebhookRoute } from "./payment/webhook";
+import { adminCreateRegistrationRoute } from "./registration/admin-create";
 import { setAttendanceRoute } from "./registration/attendance";
 import { getMyEventHistoryRoute } from "./registration/history";
 import { getMyUpcomingEventsRoute } from "./registration/upcoming";
@@ -57,6 +58,7 @@ export const eventRoutes = route()
     .route("/", registerToEventRoute)
     .route("/", getAllRegistrationsForEventsRoute)
     .route("/", deleteEventRegistrationRoute)
+    .route("/", adminCreateRegistrationRoute)
     .route("/", setAttendanceRoute)
 
     // Allergier for arrangøren
