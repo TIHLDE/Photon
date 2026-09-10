@@ -19,12 +19,12 @@
         "./*": "./*"
     },
     "publishConfig": {
-        "access": "public",
         "exports": {
             ".": "./dist/index.mjs",
             "./types": "./dist/types.mjs",
             "./*": "./*"
         },
+        "access": "public",
         "provenance": true
     },
     "scripts": {
@@ -43,8 +43,8 @@
         "@types/bun": "catalog:",
         "@types/node": "catalog:",
         "openapi-typescript": "^7.13.0",
-        "tsdown": "catalog:",
         "ts-morph": "^27.0.2",
+        "tsdown": "catalog:",
         "typescript": "^5.9.0"
     }
 }

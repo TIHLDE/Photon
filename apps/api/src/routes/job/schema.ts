@@ -171,15 +171,18 @@ export const jobListFilterSchema = PaginationSchema.extend({
         description: "Filter by job type",
     }),
     years: z
-        .preprocess((value) => {
-            if (value === undefined) return undefined;
-            const years = (
-                Array.isArray(value) ? value : String(value).split(",")
-            )
-                .map((year) => String(year).trim())
-                .filter(Boolean);
-            return years.length > 0 ? years : undefined;
-        }, z.array(z.enum(schema.userClassVariants)).optional())
+        .preprocess(
+            (value) => {
+                if (value === undefined) return undefined;
+                const years = (
+                    Array.isArray(value) ? value : String(value).split(",")
+                )
+                    .map((year) => String(year).trim())
+                    .filter(Boolean);
+                return years.length > 0 ? years : undefined;
+            },
+            z.array(z.enum(schema.userClassVariants)).optional(),
+        )
         .meta({
             type: "array",
             items: { type: "string", enum: [...schema.userClassVariants] },
