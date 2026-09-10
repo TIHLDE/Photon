@@ -30,7 +30,7 @@
         "@types/react": "catalog:frontend",
         "@types/react-dom": "catalog:frontend",
         "react-email": "4.2.8",
-        "tsdown": "^0.21.2",
+        "tsdown": "catalog:",
         "typescript": "catalog:"
     }
 }

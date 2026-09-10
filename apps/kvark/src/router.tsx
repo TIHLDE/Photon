@@ -26,7 +26,11 @@ function DefaultRouteError({ error }: ErrorComponentProps) {
             // `invalidate` kjører loaderen på nytt og nullstiller feilgrensa
             // selv, så knappen trenger ikke røre `reset`.
             onRetry={() => void router.invalidate()}
-            detail={import.meta.env.DEV ? error.message : undefined}
+            detail={
+                import.meta.env.DEV && error instanceof Error
+                    ? error.message
+                    : undefined
+            }
         />
     );
 }

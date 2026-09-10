@@ -1,5 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+// openapi-typescript requires the TS 5 JS compiler API, so @tihlde/sdk pins
+// typescript@^5.9 locally (typescript@7 has no JS API). Remove that pin once
+// openapi-typescript supports TS 7.
 import openapiTS, { COMMENT_HEADER, astToString } from "openapi-typescript";
 import { createApp } from "../../../apps/api/src/app";
 import type { AppContext, AppServices } from "../../../apps/api/src/lib/ctx";
