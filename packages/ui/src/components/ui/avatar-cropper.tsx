@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { clamp as clampNumber } from "es-toolkit";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 
 import { Button } from "#/components/ui/button";
@@ -162,8 +163,9 @@ export function AvatarCropper({
         (next: Transform): Transform => {
             if (!natural || boxSize === 0) return next;
 
-            const scale = Math.min(
-                Math.max(next.scale, minScale),
+            const scale = clampNumber(
+                next.scale,
+                minScale,
                 minScale * MAX_ZOOM,
             );
             const width = natural.width * scale;
@@ -171,8 +173,8 @@ export function AvatarCropper({
 
             return {
                 scale,
-                x: Math.min(0, Math.max(next.x, boxSize - width)),
-                y: Math.min(0, Math.max(next.y, boxSize - height)),
+                x: clampNumber(next.x, boxSize - width, 0),
+                y: clampNumber(next.y, boxSize - height, 0),
             };
         },
         [natural, boxSize, minScale],

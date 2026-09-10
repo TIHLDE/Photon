@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { describe, expect, vi } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
@@ -43,7 +44,7 @@ describe("GET /api/version", () => {
              */
             const client = ctx.utils.client();
             const first = await (await client.api.version.$get()).json();
-            await new Promise((r) => setTimeout(r, 1100));
+            await delay(1100);
             const second = await (await client.api.version.$get()).json();
 
             expect(second.startedAt).toBe(first.startedAt);

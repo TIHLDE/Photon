@@ -1,3 +1,4 @@
+import { sumBy } from "es-toolkit";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
@@ -93,7 +94,7 @@ export async function getUserStrikeCount(
             ),
         );
 
-    return rows.reduce((total, row) => total + row.count, 0);
+    return sumBy(rows, (row) => row.count);
 }
 
 /**

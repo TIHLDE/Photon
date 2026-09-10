@@ -1,3 +1,4 @@
+import { union } from "es-toolkit";
 import { addMilliseconds, formatDistanceStrict, set } from "date-fns";
 import { nb } from "date-fns/locale";
 import { MAX_CLASS_YEAR, computeClassYear } from "@photon/auth/academic-year";
@@ -442,10 +443,8 @@ export function priorityPoolLabels(
         else bare.push(label);
     }
 
-    return [
-        ...new Set([
-            ...bare.sort((a, b) => a.localeCompare(b, "nb")),
-            ...named.sort((a, b) => a.localeCompare(b, "nb")),
-        ]),
-    ];
+    return union(
+        bare.sort((a, b) => a.localeCompare(b, "nb")),
+        named.sort((a, b) => a.localeCompare(b, "nb")),
+    );
 }

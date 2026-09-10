@@ -4,6 +4,7 @@
  * This module provides functions to manage the permissions assigned to roles.
  */
 
+import { union } from "es-toolkit";
 import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { role } from "@photon/db/schema";
@@ -28,7 +29,7 @@ export async function assignRolePermissions(
     if (permissionNames.length === 0) return;
 
     const existing = r.permissions ?? [];
-    const merged = [...new Set([...existing, ...permissionNames])];
+    const merged = union(existing, permissionNames);
 
     const db = ctx.db;
     await db.update(role).set({ permissions: merged }).where(eq(role.id, r.id));

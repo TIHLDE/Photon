@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -120,7 +121,7 @@ describe("update keeps the price it was not asked to change", () => {
                 await ctx.utils.acceptEventRules(user.id);
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
             }
 
             // Nøyaktig kallet et skript ville gjort: bare kapasiteten.

@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
@@ -61,7 +62,7 @@ describe("Registration Resolver", () => {
                 await ctx.utils.createPendingRegistration(event.id, user1.id);
 
                 // Wait a moment to ensure different timestamp
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // Create second registration (should be waitlisted)
                 await ctx.utils.createPendingRegistration(event.id, user2.id);
@@ -209,7 +210,7 @@ describe("Registration Resolver", () => {
                 expect(nonPriorityReg1?.status).toBe("registered");
 
                 // Wait a moment
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // Now prioritized user registers (should swap)
                 await ctx.utils.createPendingRegistration(
@@ -285,7 +286,7 @@ describe("Registration Resolver", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
 
                 // Wait
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // Partial user tries to register (should NOT swap)
                 await ctx.utils.createPendingRegistration(
@@ -487,7 +488,7 @@ describe("Registration Resolver", () => {
                 );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // User 2: non-prioritized, waitlisted
                 const user2Data = await ctx.auth.api.createUser({
@@ -503,7 +504,7 @@ describe("Registration Resolver", () => {
                 );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // User 3: prioritized, waitlisted
                 const user3Data = await ctx.auth.api.createUser({
@@ -524,7 +525,7 @@ describe("Registration Resolver", () => {
                 );
                 await resolveRegistrationsForEvent(event.id, ctx);
 
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // User 4: non-prioritized, waitlisted
                 const user4Data = await ctx.auth.api.createUser({

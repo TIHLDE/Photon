@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
 import { processEventNoShows } from "~/lib/event/no-show";
+import { sumBy } from "es-toolkit";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -22,7 +23,7 @@ async function strikeTotal(
         where: (s, { and, eq }) =>
             and(eq(s.userId, userId), eq(s.eventId, eventId)),
     });
-    return rows.reduce((total, r) => total + r.count, 0);
+    return sumBy(rows, (r) => r.count);
 }
 
 /** Standardkroppen til POST /event, med feltene testen bryr seg om overstyrt. */

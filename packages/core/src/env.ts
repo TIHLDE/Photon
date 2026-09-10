@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { config } from "@dotenvx/dotenvx";
+import { uniq } from "es-toolkit";
 import { z } from "zod";
 
 /**
@@ -233,19 +234,15 @@ const envSchema = z
             ...vals,
             WEBSITE_URL: websiteUrl,
             /** Every address the email API may send as, MAIL_FROM included. */
-            MAIL_ALLOWED_FROM_LIST: [
-                ...new Set(
-                    [vals.MAIL_FROM, ...allowedFrom].map(toEmailAddress),
-                ),
-            ],
+            MAIL_ALLOWED_FROM_LIST: uniq(
+                [vals.MAIL_FROM, ...allowedFrom].map(toEmailAddress),
+            ),
             /**
              * Every frontend origin the API accepts, WEBSITE_URL first. Only
              * WEBSITE_URL is used to *build* links (emails, redirects); the
              * rest are accepted on the way in.
              */
-            WEBSITE_ORIGINS: [
-                ...new Set([websiteUrl, ...extraOrigins].map(toOrigin)),
-            ],
+            WEBSITE_ORIGINS: uniq([websiteUrl, ...extraOrigins].map(toOrigin)),
         };
 
         if (!resolved.WEBHOOK_URL) {

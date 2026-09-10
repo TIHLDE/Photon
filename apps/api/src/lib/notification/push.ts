@@ -1,3 +1,4 @@
+import { chunk } from "es-toolkit";
 import { fetchWithTimeout } from "@photon/core/http";
 import { schema } from "@photon/db";
 import {
@@ -113,14 +114,13 @@ export async function deliverPushNotification(
 
     const staleTokens: string[] = [];
 
-    for (let i = 0; i < messages.length; i += EXPO_PUSH_CHUNK_SIZE) {
-        const chunk = messages.slice(i, i + EXPO_PUSH_CHUNK_SIZE);
-        const tickets = await sendChunk(chunk);
+    for (const batch of chunk(messages, EXPO_PUSH_CHUNK_SIZE)) {
+        const tickets = await sendChunk(batch);
 
         tickets.forEach((ticket, index) => {
             if (ticket?.status !== "error") return;
 
-            const token = chunk[index]?.to;
+            const token = batch[index]?.to;
             // The device uninstalled the app or wiped the token. Expo will
             // keep rejecting it forever, so drop it instead of retrying.
             if (token && ticket.details?.error === "DeviceNotRegistered") {

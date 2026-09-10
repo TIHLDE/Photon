@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -31,7 +32,7 @@ describe("betalingsfrist-sweep når køen har mistet jobben", () => {
             await ctx.utils.createPendingRegistration(event.id, unpaid.id);
             await resolveRegistrationsForEvent(event.id, ctx);
 
-            await new Promise((resolve) => setTimeout(resolve, 10));
+            await delay(10);
 
             const waiting = await ctx.utils.createTestUser();
             await ctx.utils.createPendingRegistration(event.id, waiting.id);

@@ -115,6 +115,7 @@ import {
     formatStudyLabel,
 } from "#/lib/utils";
 import { EVENT_FORM_ERRORS } from "#/lib/event";
+import { countBy, sumBy, uniq } from "es-toolkit";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
 import { formatInOslo } from "#/lib/date";
@@ -736,13 +737,9 @@ function countBuckets(
     bucketOf: (participant: BreakdownParticipant) => string,
     rank: (bucket: string, count: number) => [number, number, string],
 ): Array<{ bucket: string; count: number }> {
-    const counts = new Map<string, number>();
-    for (const participant of participants) {
-        const bucket = bucketOf(participant);
-        counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
-    }
+    const counts = countBy(participants, bucketOf);
 
-    return [...counts.entries()]
+    return Object.entries(counts)
         .map(([bucket, count]) => ({ bucket, count }))
         .sort((a, b) => {
             const rankA = rank(a.bucket, a.count);
@@ -1645,10 +1642,7 @@ function groupPaymentsByUser(payments: EventPaymentAdmin[]): PaymentGroup[] {
             const paid = sorted.filter((payment) => payment.status === "paid");
             const amountMinor =
                 paid.length > 0
-                    ? paid.reduce(
-                          (sum, payment) => sum + payment.amountMinor,
-                          0,
-                      )
+                    ? sumBy(paid, (payment) => payment.amountMinor)
                     : sorted[0].amountMinor;
 
             return {
@@ -1657,18 +1651,15 @@ function groupPaymentsByUser(payments: EventPaymentAdmin[]): PaymentGroup[] {
                 payments: sorted,
                 status,
                 amountMinor,
-                flags: Array.from(
-                    new Set(
-                        sorted
-                            .map((payment) => payment.flag)
-                            .filter(
-                                (
-                                    flag,
-                                ): flag is NonNullable<
-                                    EventPaymentAdmin["flag"]
-                                > => Boolean(flag),
-                            ),
-                    ),
+                flags: uniq(
+                    sorted
+                        .map((payment) => payment.flag)
+                        .filter(
+                            (
+                                flag,
+                            ): flag is NonNullable<EventPaymentAdmin["flag"]> =>
+                                Boolean(flag),
+                        ),
                 ),
             };
         })

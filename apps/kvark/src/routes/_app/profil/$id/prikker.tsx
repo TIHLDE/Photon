@@ -14,6 +14,7 @@ import {
 } from "@tihlde/ui/ui/empty";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Ticket } from "lucide-react";
+import { sumBy } from "es-toolkit";
 
 import { formatEventDate } from "#/lib/event";
 
@@ -31,7 +32,7 @@ function RouteComponent() {
     // prikker — utløpte filtreres bort av `getStrikeActiveCutoff` server-side.
     const { data, isPending } = useQuery(getStrikesQuery(0, profile.id));
     const strikes = data?.strikes ?? [];
-    const total = strikes.reduce((sum, strike) => sum + strike.count, 0);
+    const total = sumBy(strikes, (strike) => strike.count);
 
     if (isPending) {
         return (

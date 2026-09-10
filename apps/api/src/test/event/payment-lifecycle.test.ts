@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { PAYMENT_QUEUE_NAME } from "@photon/core/services/queue";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
@@ -139,7 +140,7 @@ describe("Paid event payment lifecycle", () => {
                 await ctx.utils.createPendingRegistration(event.id, user1.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
 
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 const user2Data = await ctx.auth.api.createUser({
                     body: {
@@ -304,7 +305,7 @@ describe("Paid event payment lifecycle", () => {
                     })
                     .where(eq(schema.eventPayment.id, paidPayment?.id ?? ""));
 
-                await new Promise((resolve) => setTimeout(resolve, 10));
+                await delay(10);
 
                 // Prioritized user registers → should swap out the paid user.
                 const prioritizedData = await ctx.auth.api.createUser({
@@ -931,7 +932,7 @@ describe("Paid event payment lifecycle", () => {
 
             // Second sign-up, a moment later: fresh registration, fresh
             // obligation, fresh deadline.
-            await new Promise((resolve) => setTimeout(resolve, 10));
+            await delay(10);
             await ctx.utils.createPendingRegistration(event.id, user.id);
             await resolveRegistrationsForEvent(event.id, ctx);
 
@@ -1019,7 +1020,7 @@ describe("Paid event payment lifecycle", () => {
                 ].registration.$delete({ param: { eventId: event.id } });
                 expect(off.status).toBe(200);
 
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
                 await client.api.event[":eventId"].registration.$post({
                     param: { eventId: event.id },
                     json: {},

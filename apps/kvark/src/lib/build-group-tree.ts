@@ -1,3 +1,4 @@
+import { sum } from "es-toolkit";
 import type { Edge, Node } from "@xyflow/react";
 
 import {
@@ -321,8 +322,7 @@ export function buildGroupTree(data: GroupTreeInput): GroupTreeOutput {
     const mainW = Math.max(...data.main.map(sectionWidth));
     const branchWidths = data.branches.map(branchWidth);
     const branchesTotalW =
-        branchWidths.reduce((sum, w) => sum + w, 0) +
-        Math.max(0, data.branches.length - 1) * BRANCH_GAP;
+        sum(branchWidths) + Math.max(0, data.branches.length - 1) * BRANCH_GAP;
 
     const totalW = Math.max(mainW, branchesTotalW);
 

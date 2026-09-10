@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { sumBy } from "es-toolkit";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
@@ -76,9 +77,9 @@ describe("strikes grouped by member", () => {
             expect(pagedBody.pages).toBe(2);
             expect(pagedBody.members).toHaveLength(1);
             expect(pagedBody.members[0]?.totalStrikes).toBe(
-                pagedBody.members[0]?.strikes.reduce(
-                    (sum, strike) => sum + strike.count,
-                    0,
+                sumBy(
+                    pagedBody.members[0]?.strikes ?? [],
+                    (strike) => strike.count,
                 ),
             );
         },

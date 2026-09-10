@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { EMAIL_QUEUE_NAME, PUSH_QUEUE_NAME } from "@photon/core/services/queue";
 import { describe, expect, vi } from "vitest";
 import { resolveRegistrationsForEvent } from "~/lib/event/resolve-registration";
@@ -46,7 +47,7 @@ describe("Notifications from a resolved batch", () => {
                 // Keep the sign-up order deterministic: the resolver is FIFO on
                 // `createdAt`, and three rows written in the same millisecond
                 // would leave who gets the last spot to chance.
-                await new Promise((resolve) => setTimeout(resolve, 5));
+                await delay(5);
             }
 
             await resolveRegistrationsForEvent(event.id, ctx);

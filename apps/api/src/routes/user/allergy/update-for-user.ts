@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
+import { uniq } from "es-toolkit";
 import { ensureUserSettingsRow, setUserAllergies } from "~/lib/user/settings";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
@@ -59,7 +60,7 @@ export const updateUserAllergiesRoute = route().put(
             });
         }
 
-        const slugs = [...new Set(allergies)];
+        const slugs = uniq(allergies);
 
         // Checked up front rather than left to the foreign key: a bad slug
         // would otherwise surface as a 500 after the delete had already run.

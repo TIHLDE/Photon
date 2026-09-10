@@ -1,3 +1,5 @@
+import { uniq } from "es-toolkit";
+
 /**
  * Which permissions unlock each section of the admin panel.
  *
@@ -104,6 +106,6 @@ export type AdminSection = keyof typeof ADMIN_SECTION_PERMISSIONS;
  * page to visit, so someone holding it should still be offered the way in.
  * The baseline `member`/`alumni` roles hold none of these.
  */
-export const ALL_ADMIN_SECTION_PERMISSIONS: string[] = Array.from(
-    new Set(Object.values(ADMIN_SECTION_PERMISSIONS).flat()),
+export const ALL_ADMIN_SECTION_PERMISSIONS: string[] = uniq(
+    Object.values(ADMIN_SECTION_PERMISSIONS).flat(),
 );

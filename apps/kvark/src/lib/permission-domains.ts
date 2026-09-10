@@ -1,4 +1,5 @@
 import { PERMISSIONS } from "@photon/auth/rbac/registry";
+import { union } from "es-toolkit";
 
 /**
  * The permission checkboxes shown in the admin UI.
@@ -264,7 +265,7 @@ export function toggleDomain(
     if (!domain) return current;
 
     if (checked) {
-        return [...new Set([...current, ...domain.permissions])];
+        return union(current, domain.permissions);
     }
     // Removes exactly this box's permissions, so unticking "Arrangementer"
     // cannot take "Refusjon" with it just because they share a prefix.
