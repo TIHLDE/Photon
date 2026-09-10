@@ -17,17 +17,9 @@ export const Route = createFileRoute("/_app/profil/$id/medlemskap")({
     component: RouteComponent,
 });
 
-/**
- * Grupper man faktisk melder seg inn i. study/studyyear er projeksjoner av
- * Feide-data, og TIHLDE har alle medlemmer — ingen av dem er verv.
- * Typen er UPPERCASE i databasen.
- */
-function isRealMembership(group: { type: string }): boolean {
-    return !["study", "studyyear", "tihlde"].includes(group.type.toLowerCase());
-}
+import { isRealMembership } from "#/lib/group";
 
-/**
- * Perioden et avsluttet medlemskap varte, som årstall: «2023–2025», eller
+/** Perioden et avsluttet medlemskap varte, som årstall: «2023–2025», eller
  * bare «2024» når det både startet og sluttet samme år.
  */
 function membershipPeriod(startedAt: string, endedAt: string): string {

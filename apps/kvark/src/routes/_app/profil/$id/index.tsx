@@ -9,7 +9,7 @@ import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileMembershipChips } from "#/components/profile-membership-chips";
 import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
 import type { ProfileLink } from "#/components/profile-header";
-import { isPrivateGroupType } from "#/lib/group";
+import { isPrivateGroupType, isRealMembership } from "#/lib/group";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import type { SignatureStatus } from "@tihlde/sdk";
@@ -27,9 +27,6 @@ import { FileSignature, ListTodo, UtensilsCrossed } from "lucide-react";
 export const Route = createFileRoute("/_app/profil/$id/")({
     component: RouteComponent,
 });
-
-/** Grupper som ikke er reelle medlemskap — de er avledet av Feide-dataene. */
-const DERIVED_GROUP_TYPES = ["study", "studyyear", "tihlde"];
 
 function RouteComponent() {
     const { id } = Route.useParams();
@@ -65,9 +62,7 @@ function RouteComponent() {
             url: profile.linkedinUrl,
         });
 
-    const memberships = profile.groups.filter(
-        (g) => !DERIVED_GROUP_TYPES.includes(g.type.toLowerCase()),
-    );
+    const memberships = profile.groups.filter(isRealMembership);
 
     /**
      * Om den som ser på kan åpne gruppesiden. Speiler `assertGroupVisible` i

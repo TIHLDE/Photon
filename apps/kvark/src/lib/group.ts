@@ -261,6 +261,19 @@ export function isCohortGroupType(type: string | null | undefined): boolean {
 }
 
 /**
+ * Om medlemskapet er en gruppe man faktisk melder seg inn i. study/studyyear
+ * er projeksjoner av Feide-data, og TIHLDE har alle medlemmer — ingen av dem
+ * er verv. Typen er UPPERCASE i databasen.
+ */
+export function isRealMembership(group: {
+    type: string | null | undefined;
+}): boolean {
+    return !["study", "studyyear", "tihlde"].includes(
+        group.type?.toLowerCase() ?? "",
+    );
+}
+
+/**
  * Gruppetypene sortert etter hvor høyt de sitter i TIHLDE. Rekkefølgen er den
  * samme som organisasjonskartet på /grupper bruker: Hovedorgan øverst, så
  * undergrupper, komitéer, og til slutt interesse- og idrettsgrupper på samme

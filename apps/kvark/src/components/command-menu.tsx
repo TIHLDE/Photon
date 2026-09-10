@@ -33,6 +33,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { authQueryOptions } from "#/api/auth";
 import { useIsAdmin } from "#/hooks/use-permission";
 import { avatarImageUrl } from "#/lib/assets";
+import { isRealMembership } from "#/lib/group";
 
 type CommandAction =
     | { kind: "navigate"; link: LinkOptions }
@@ -210,34 +211,35 @@ export function CommandMenu() {
             (section) => !section.requiresAdmin || isAdmin,
         );
 
-        if ((session?.groups?.length ?? 0) > 0) {
+        const myGroups = session?.groups?.filter(isRealMembership) ?? [];
+
+        if (myGroups.length > 0) {
             sections.push({
                 heading: "Mine Grupper",
-                items:
-                    session?.groups.map((group) => ({
-                        id: `group-${group.slug}`,
-                        label: group.name,
-                        icon: (
-                            <Avatar className="size-5 shrink-0 [&_svg]:size-3.5">
-                                {group.logoUrl ? (
-                                    <AvatarImage
-                                        src={avatarImageUrl(group.logoUrl)}
-                                        alt=""
-                                    />
-                                ) : null}
-                                <AvatarFallback>
-                                    <UsersIcon />
-                                </AvatarFallback>
-                            </Avatar>
-                        ),
-                        action: {
-                            kind: "navigate",
-                            link: {
-                                to: "/grupper/$slug",
-                                params: { slug: group.slug },
-                            },
+                items: myGroups.map((group) => ({
+                    id: `group-${group.slug}`,
+                    label: group.name,
+                    icon: (
+                        <Avatar className="size-5 shrink-0 [&_svg]:size-3.5">
+                            {group.logoUrl ? (
+                                <AvatarImage
+                                    src={avatarImageUrl(group.logoUrl)}
+                                    alt=""
+                                />
+                            ) : null}
+                            <AvatarFallback>
+                                <UsersIcon />
+                            </AvatarFallback>
+                        </Avatar>
+                    ),
+                    action: {
+                        kind: "navigate",
+                        link: {
+                            to: "/grupper/$slug",
+                            params: { slug: group.slug },
                         },
-                    })) ?? [],
+                    },
+                })),
             });
         }
 
