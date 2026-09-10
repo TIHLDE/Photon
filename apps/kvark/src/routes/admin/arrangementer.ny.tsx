@@ -101,6 +101,7 @@ const emptyValues: EventFormValues = {
     price: "",
     image: null,
     imageAlt: "",
+    removeImage: false,
 };
 
 function NewEventPage() {

@@ -344,6 +344,7 @@ function valuesFromEvent(
             : "",
         image: null,
         imageAlt: event.imageAlt ?? "",
+        removeImage: false,
     };
 }
 
@@ -480,14 +481,21 @@ function DetailsTab({ eventId }: { eventId: string }) {
             title: values.title,
             description: values.description,
             categorySlug: values.categorySlug,
-            organizerGroupSlug: values.organizerGroupSlug,
+            // Utelatt når ingen arrangør er valgt, slik at API-et lar den
+            // gamle stå. Tom streng ville truffet fremmednøkkelen og gitt 500.
+            organizerGroupSlug: values.organizerGroupSlug || undefined,
             location: values.location,
             locationLat: values.locationCoords?.lat ?? null,
             locationLng: values.locationCoords?.lng ?? null,
-            // Utelatt når ingen ny fil er valgt, slik at det lagrede bildet
-            // blir stående.
-            ...(imageUrl ? { imageUrl } : {}),
-            imageAlt: values.imageAlt || null,
+            // Ny fil erstatter det lagrede bildet; «Fjern bilde» nullstiller
+            // det. Utelatt når ingen av delene gjelder, slik at bildet blir
+            // stående.
+            ...(imageUrl
+                ? { imageUrl }
+                : values.removeImage
+                  ? { imageUrl: null }
+                  : {}),
+            imageAlt: values.removeImage ? null : values.imageAlt || null,
             start: values.start.toISOString(),
             end: values.end.toISOString(),
             // Uten påmelding avviser API-et både frist og kapasitet.
@@ -587,6 +595,7 @@ function DetailsTab({ eventId }: { eventId: string }) {
                 isSearchingAddress={isSearchingAddress}
                 onSubmit={handleSubmit}
                 readOnly={!canEdit}
+                organizerOptional
                 submitLabel={
                     isUploading ? "Laster opp bilde …" : "Lagre endringer"
                 }

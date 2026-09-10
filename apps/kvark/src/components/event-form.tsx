@@ -27,6 +27,7 @@ import {
     SelectValue,
 } from "@tihlde/ui/ui/select";
 import { nb } from "date-fns/locale";
+import { XIcon } from "lucide-react";
 import { useRef } from "react";
 import type { FormEvent, ReactNode } from "react";
 
@@ -77,6 +78,7 @@ export type EventFormValues = {
     price: string;
     image: File | null;
     imageAlt: string;
+    removeImage: boolean;
     /**
      * Prioriteringspooler. Hver pool er ett kriterium — maks én gruppe og maks
      * ett klassetrinn — og det holder å treffe én av dem. Se
@@ -119,6 +121,13 @@ type EventFormProps = {
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
     submitLabel: string;
     isSubmitting: boolean;
+    /**
+     * Lagreknappen låses til en arrangørgruppe er valgt — det krever
+     * oppretting. Redigering kan utelate arrangøren, og API-et lar den
+     * gamle stå: arrangementer uten arrangør (f.eks. fra migreringen) skal
+     * kunne lagres uten å måtte velge en ny først.
+     */
+    organizerOptional?: boolean;
     /** Knapp som legger seg til venstre for lagreknappen, f.eks. slett. */
     secondaryAction?: ReactNode;
     /** Statusmeldinger som vises rett over knappen. */
@@ -155,6 +164,7 @@ export function EventForm({
     onSubmit,
     submitLabel,
     isSubmitting,
+    organizerOptional,
     secondaryAction,
     children,
     readOnly = false,
@@ -815,14 +825,52 @@ export function EventForm({
                                 description="Vises på arrangementskortet og øverst på arrangementssiden. Forhåndsvisningen er samme utsnitt som besøkende ser."
                                 preset="cover-wide"
                                 value={values.image}
-                                onChange={(image) => onChange({ image })}
-                                existingImageUrl={existingImageUrl}
+                                onChange={(image) =>
+                                    onChange({ image, removeImage: false })
+                                }
+                                existingImageUrl={
+                                    values.removeImage ? null : existingImageUrl
+                                }
                                 // Dropsonen tar imot filer som slippes på den
                                 // uansett hva fieldsettet over sier, og ber om
                                 // et bilde den ikke kan ta imot.
                                 disabled={readOnly}
                                 readOnly={readOnly}
                             />
+                            {existingImageUrl && !values.image && !readOnly ? (
+                                values.removeImage ? (
+                                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        Bildet fjernes når du lagrer.
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                                onChange({ removeImage: false })
+                                            }
+                                        >
+                                            Angre
+                                        </Button>
+                                    </p>
+                                ) : (
+                                    <div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                                onChange({
+                                                    removeImage: true,
+                                                    image: null,
+                                                })
+                                            }
+                                        >
+                                            <XIcon />
+                                            Fjern bilde
+                                        </Button>
+                                    </div>
+                                )
+                            ) : null}
                             <Field>
                                 <FieldLabel htmlFor="event-image-alt">
                                     Bildebeskrivelse
@@ -852,7 +900,10 @@ export function EventForm({
                     {secondaryAction}
                     <Button
                         type="submit"
-                        disabled={isSubmitting || !values.organizerGroupSlug}
+                        disabled={
+                            isSubmitting ||
+                            (!organizerOptional && !values.organizerGroupSlug)
+                        }
                     >
                         {submitLabel}
                     </Button>
