@@ -1,4 +1,3 @@
-import { delay } from "es-toolkit";
 /**
  * Backfills fine (bot) evidence images that the original migration dropped.
  *
@@ -43,6 +42,8 @@ const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://photon.tihlde.org";
 const TABLES_DIR = process.env.LEPTON_TABLES_DIR ?? "data/tables";
 const MAX_BYTES = 20 * 1024 * 1024;
 const DELAY_MS = 100;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const filenameOf = (url: string): string => {
     try {
@@ -180,7 +181,7 @@ const main = async () => {
                 `bot ${job.fineId} (${err instanceof Error ? err.message : err})`,
             );
         }
-        await delay(DELAY_MS);
+        await sleep(DELAY_MS);
     }
 
     console.log();

@@ -1,4 +1,3 @@
-import { delay } from "es-toolkit";
 /**
  * Copies event and group images from Lepton's storage into Photon's bucket.
  *
@@ -36,6 +35,8 @@ const connectionString = need("DATABASE_URL");
 const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://photon.tihlde.org";
 const MAX_BYTES = 20 * 1024 * 1024;
 const DELAY_MS = 100;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const filenameOf = (url: string): string => {
     try {
@@ -193,7 +194,7 @@ const main = async () => {
                 `${job.label} (${err instanceof Error ? err.message : err})`,
             );
         }
-        await delay(DELAY_MS);
+        await sleep(DELAY_MS);
     }
 
     console.log();

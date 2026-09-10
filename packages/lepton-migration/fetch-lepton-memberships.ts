@@ -1,4 +1,3 @@
-import { delay } from "es-toolkit";
 /**
  * Fetches every group's memberships from Lepton into a local JSON cache.
  *
@@ -24,6 +23,8 @@ type LeptonMembership = {
     membership_type: string;
     created_at: string;
 };
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const get = async (path: string) => {
     const res = await fetch(`${BASE}${path}`, {
@@ -88,12 +89,12 @@ const main = async () => {
             rows.push(...data.results);
             if (!data.next) break;
             page++;
-            await delay(DELAY_MS);
+            await sleep(DELAY_MS);
         }
         memberships[slug] = rows;
         total += rows.length;
         if (rows.length > 0) console.log(`  ${slug}: ${rows.length}`);
-        await delay(DELAY_MS);
+        await sleep(DELAY_MS);
     }
 
     const out = `${import.meta.dir}/data/lepton-memberships.json`;

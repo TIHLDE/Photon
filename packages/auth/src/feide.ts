@@ -1817,8 +1817,6 @@ export function resolveCampus(groups: FeideGroup[]): Campus | null {
         if (!courseCode) continue;
 
         const campus = campusOfCourseCode(courseCode);
-        // The loop skips course codes without a campus marker, so countBy
-        // doesn't fit directly.
         if (campus) votes.set(campus, (votes.get(campus) ?? 0) + 1);
     }
 

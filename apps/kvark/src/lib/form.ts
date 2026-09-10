@@ -283,7 +283,10 @@ export function summarizeFormStudy(
 ): FormStudyDistribution {
     // Nyeste svar først fra API-et, så det er det siste svaret fra hver person
     // som blir stående når vi teller personer.
-    const rows = mode === "people" ? uniqueByUser(submissions) : submissions;
+    const rows =
+        mode === "people"
+            ? uniqBy(submissions, (submission) => submission.userId)
+            : submissions;
     const total = rows.length;
 
     const classLevels = countBy(
@@ -338,9 +341,4 @@ const ALUMNI_BUCKET = "alumni";
 function bucketOrder(value: string | null): number {
     if (value === ALUMNI_BUCKET) return Number.MAX_SAFE_INTEGER;
     return Number(value);
-}
-
-/** Ett svar per person, det første i lista. */
-function uniqueByUser(submissions: FormSubmissionRow[]): FormSubmissionRow[] {
-    return uniqBy(submissions, (submission) => submission.userId);
 }

@@ -15,7 +15,6 @@
         "@photon/db": "workspace:*",
         "@photon/email": "workspace:*",
         "drizzle-orm": "catalog:backend",
-        "es-toolkit": "catalog:",
         "mysql2": "^3.14.4"
     },
     "devDependencies": {

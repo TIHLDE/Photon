@@ -1,6 +1,5 @@
 {
     "$schema": "./node_modules/oxlint/configuration_schema.json",
-    "jsPlugins": [],
     "categories": {},
     "rules": {},
     "settings": {
