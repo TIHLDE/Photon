@@ -42,7 +42,7 @@ export async function resolveRegistrationsForEvent(
 
         // Step 1: Fetch all pending registrations for this event with FOR UPDATE lock
         // This prevents concurrent processing of the same registrations
-        const pendingRegistrations = await tx
+        let pendingRegistrations = await tx
             .select()
             .from(schema.eventRegistration)
             .where(
@@ -76,8 +76,11 @@ export async function resolveRegistrationsForEvent(
 
         // Validate event is open for registration
         if (!event.requiresSigningUp || event.isRegistrationClosed) {
-            // Cancel all pending registrations since event is not accepting registrations
+            // Only organizer additions may resolve while registration is closed.
             for (const registration of pendingRegistrations) {
+                if (event.requiresSigningUp && registration.addedByOrganizer) {
+                    continue;
+                }
                 await tx
                     .update(schema.eventRegistration)
                     .set({ status: "cancelled" })
@@ -91,7 +94,11 @@ export async function resolveRegistrationsForEvent(
                         ),
                     );
             }
-            return;
+            pendingRegistrations = pendingRegistrations.filter(
+                (registration) =>
+                    event.requiresSigningUp && registration.addedByOrganizer,
+            );
+            if (pendingRegistrations.length === 0) return;
         }
 
         // Step 3: Calculate initial capacity state
@@ -164,7 +171,7 @@ export async function resolveRegistrationsForEvent(
                 !event.isPaidEvent,
             );
 
-            if (!allowed) {
+            if (!registration.addedByOrganizer && !allowed) {
                 // User is blocked due to strike timing
                 await tx
                     .update(schema.eventRegistration)
@@ -484,6 +491,7 @@ export async function resolveRegistrationsForEvent(
                     updatedAt: new Date(),
                     attendedAt: null,
                     allowPhoto: registration.allowPhoto,
+                    addedByOrganizer: registration.addedByOrganizer,
                 });
             }
             if (swappedUserId) {
@@ -502,6 +510,7 @@ export async function resolveRegistrationsForEvent(
                             updatedAt: new Date(),
                             attendedAt: existing.attendedAt,
                             allowPhoto: existing.allowPhoto,
+                            addedByOrganizer: existing.addedByOrganizer,
                         };
                     }
                 }

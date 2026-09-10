@@ -335,6 +335,24 @@ export const registerForEventMutation = mutationOptions({
     },
 });
 
+export const adminAddRegistrationMutation = mutationOptions({
+    // Tvinger en spesifikk bruker inn på arrangementet — f.eks. en
+    // medarrangør før påmeldingen har åpnet. API-et hopper over de vanlige
+    // sperrene, men svarer fortsatt 409 på en som allerede står på lista.
+    mutationFn: ({ eventId, userId }: { eventId: string; userId: string }) =>
+        apiClient.post("/api/event/{eventId}/registration/{userId}", {
+            params: { eventId, userId },
+            json: {},
+        }),
+    onSuccess(_, vars, __, ctx) {
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.registrations, vars.eventId],
+            exact: false,
+        });
+        invalidateEventDetails(ctx.client);
+    },
+});
+
 export const unregisterFromEventMutation = mutationOptions({
     mutationFn: ({ eventId }: { eventId: string }) =>
         apiClient.delete("/api/event/{eventId}/registration", {

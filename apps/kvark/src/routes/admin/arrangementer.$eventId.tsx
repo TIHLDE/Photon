@@ -73,6 +73,7 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { searchAddressQuery } from "#/api/queries/address";
 import { useImageUploader } from "#/api/queries/assets";
 import {
+    adminAddRegistrationMutation,
     createEventFormMutation,
     deleteEventMutation,
     getEventByIdQuery,
@@ -100,6 +101,7 @@ import {
     toFormPool,
 } from "#/components/priority-pool-editor";
 import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
+import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
 import {
@@ -686,7 +688,11 @@ const REGISTRATION_STATUS_VARIANTS: Record<
 };
 
 const REGISTRATION_FILTERS = [
-    { value: "aktive", label: "Påmeldte", status: undefined },
+    {
+        value: "aktive",
+        label: "Påmeldte",
+        status: "registered,attended,no_show,pending",
+    },
     { value: "venteliste", label: "Venteliste", status: "waitlisted" },
 ] as const;
 
@@ -868,9 +874,28 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
     const [search, setSearch] = useState("");
     const [facets, setFacets] = useState<RegistrationFacets>(NO_FACETS);
 
-    const registrationsQuery = useInfiniteQuery(
-        getEventRegistrationsInfiniteQuery(eventId, status ? { status } : {}),
-    );
+    /**
+     * Tvinge noen inn på arrangementet — f.eks. en medarrangør eller vert før
+     * påmeldingen har åpnet. Denne fanen vises bare for den som kan administrere
+     * arrangementet, så knappen trenger ingen egen rettighetssjekk.
+     */
+    const userSearch = usePriorityUserSearch();
+    const addRegistration = useMutation(adminAddRegistrationMutation);
+    const [addError, setAddError] = useState<string | null>(null);
+
+    const registrationsQuery = useInfiniteQuery({
+        ...getEventRegistrationsInfiniteQuery(
+            eventId,
+            status ? { status } : {},
+        ),
+        staleTime: 0,
+        refetchInterval: (query) =>
+            query.state.data?.pages.some((page) =>
+                page.registeredUsers.some((user) => user.status === "pending"),
+            )
+                ? 2000
+                : false,
+    });
     useLoadAllPages(registrationsQuery);
 
     const participants = useMemo(() => {
@@ -950,22 +975,58 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
 
     return (
         <div className="flex flex-col gap-4">
-            <Tabs
-                value={filter}
-                onValueChange={(value) =>
-                    setFilter(
-                        value as (typeof REGISTRATION_FILTERS)[number]["value"],
-                    )
-                }
-            >
-                <TabsList>
-                    {REGISTRATION_FILTERS.map((f) => (
-                        <TabsTrigger key={f.value} value={f.value}>
-                            {f.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-            </Tabs>
+            <div className="flex flex-wrap items-center gap-4">
+                <Tabs
+                    value={filter}
+                    onValueChange={(value) =>
+                        setFilter(
+                            value as (typeof REGISTRATION_FILTERS)[number]["value"],
+                        )
+                    }
+                >
+                    <TabsList>
+                        {REGISTRATION_FILTERS.map((f) => (
+                            <TabsTrigger key={f.value} value={f.value}>
+                                {f.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+                <div className="ml-auto">
+                    <GroupAddMemberDialog
+                        copy={{
+                            trigger: "Legg til deltaker",
+                            title: "Legg til deltaker",
+                            description:
+                                "Legger til brukeren selv før påmeldingen har åpnet eller etter at den er stengt. Vanlige regler for kapasitet, prioritering, venteliste og betaling gjelder.",
+                            submit: "Legg til",
+                            submitting: "Legger til …",
+                        }}
+                        query={userSearch.query}
+                        onQueryChange={userSearch.onQueryChange}
+                        results={userSearch.results}
+                        isSearching={userSearch.isSearching}
+                        isAdding={addRegistration.isPending}
+                        error={addError}
+                        onAdd={async (userId) => {
+                            setAddError(null);
+                            // Feiler, blir dialogen stående med
+                            // feilmeldingen: feilen kastes videre så den
+                            // lukkes bare på suksess.
+                            try {
+                                await addRegistration.mutateAsync({
+                                    eventId,
+                                    userId,
+                                });
+                                setFilter("aktive");
+                            } catch (err) {
+                                setAddError(await extractErrorMessage(err));
+                                throw err;
+                            }
+                        }}
+                    />
+                </div>
+            </div>
 
             {participants.length > 0 ? (
                 <div className="flex flex-col gap-3">
