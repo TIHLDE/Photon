@@ -998,7 +998,7 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                             trigger: "Legg til deltaker",
                             title: "Legg til deltaker",
                             description:
-                                "Legger til brukeren selv før påmeldingen har åpnet eller etter at den er stengt. Vanlige regler for kapasitet, prioritering, venteliste og betaling gjelder.",
+                                "Gir brukeren plass selv om arrangementet er fullt eller påmeldingen er stengt. Plassen beholdes uavhengig av prioritet. Vanlige betalingsfrister gjelder.",
                             submit: "Legg til",
                             submitting: "Legger til …",
                         }}

@@ -211,7 +211,11 @@ export async function resolveRegistrationsForEvent(
             let finalStatus: RegistrationStatus;
             let swappedUserId: string | null = null;
 
-            if (isUnlimitedCapacity || availableSpots > 0) {
+            if (
+                registration.addedByOrganizer ||
+                isUnlimitedCapacity ||
+                availableSpots > 0
+            ) {
                 // User gets a spot
                 finalStatus = "registered";
                 if (!isUnlimitedCapacity) {

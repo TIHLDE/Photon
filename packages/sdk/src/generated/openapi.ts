@@ -896,7 +896,7 @@ export interface paths {
         put?: never;
         /**
          * Add a user to an event (admin)
-         * @description Add a user on their behalf, including before registration opens or after it closes. Requires 'events:update' or 'events:manage', globally or for the arranging group. Bypasses registration timing (including strike delays), closed registration, event-rule acceptance, unanswered evaluations, institute and priority eligibility, and the user's events:registrations:create permission. Capacity, priority ordering, waitlist settings and payment obligations still apply. Events without sign-up and existing active registrations are rejected; cancelled registrations are reused. Returns pending while the background resolver allocates the place.
+         * @description Add a user on their behalf, including before registration opens or after it closes. Requires 'events:update' or 'events:manage', globally or for the arranging group. Bypasses registration timing (including strike delays), closed registration, event-rule acceptance, unanswered evaluations, institute and priority eligibility, and the user's events:registrations:create permission. Grants a confirmed place even above capacity, regardless of waitlist settings, and protects it from priority-based displacement. Payment obligations still apply. Events without sign-up and existing active registrations are rejected; cancelled registrations are reused. Returns pending while the background resolver confirms the place.
          */
         post: operations["adminCreateEventRegistration"];
         delete?: never;

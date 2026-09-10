@@ -11,8 +11,7 @@ const HOUR = 60 * 60 * 1000;
  * The admin add-registration route exists so an organizer can force-add
  * people — themselves or a co-organizer — to an event whose registration
  * window has not opened yet. It skips the checks that gate a member's own
- * sign-up, but it does not hand out spots ahead of the queue: the resolver
- * decides capacity and waitlist exactly as for a normal sign-up.
+ * sign-up and guarantees a place regardless of capacity or priority.
  */
 async function organizer(ctx: IntegrationTestContext) {
     const user = await ctx.utils.createTestUser();
@@ -180,6 +179,7 @@ describe("Organizer registration resolution", () => {
                     registrationEnd: new Date(Date.now() + 72 * HOUR),
                     isRegistrationClosed: scenario === "closed",
                     capacity: scenario === "full" ? 1 : 10,
+                    allowWaitlist: scenario !== "full",
                     isPaidEvent: scenario === "paid",
                     priceMinor: scenario === "paid" ? 10000 : null,
                 });
@@ -211,7 +211,13 @@ describe("Organizer registration resolution", () => {
                 await resolveRegistrationsForEvent(event.id, ctx);
                 expect(
                     (await registration(ctx, event.id, guest.id))?.status,
-                ).toBe(scenario === "full" ? "waitlisted" : "registered");
+                ).toBe("registered");
+                if (scenario === "full") {
+                    expect(
+                        (await registration(ctx, event.id, ordinary.id))
+                            ?.status,
+                    ).toBe("registered");
+                }
                 if (scenario === "closed" || scenario === "strikes") {
                     expect(
                         (await registration(ctx, event.id, ordinary.id))
@@ -230,6 +236,86 @@ describe("Organizer registration resolution", () => {
                 }
             },
         );
+    }
+
+    for (const samePass of [true, false]) {
+        for (const alreadyFull of [true, false]) {
+            integrationTest(
+                `protects a forced participant from priority displacement (same pass: ${samePass}, already full: ${alreadyFull})`,
+                async ({ ctx }) => {
+                    await ctx.utils.setupGroups();
+                    await ctx.utils.setupEventCategories();
+                    const event = await ctx.utils.createTestEvent({
+                        capacity: 1,
+                        allowWaitlist: true,
+                        onlyAllowPrioritized: true,
+                    });
+                    const guest = await ctx.utils.createTestUser();
+                    const prioritized = await ctx.utils.createTestUser();
+                    const holder = await ctx.utils.createTestUser();
+                    await ctx.db.insert(schema.eventPriorityUser).values([
+                        { eventId: event.id, userId: prioritized.id },
+                        { eventId: event.id, userId: holder.id },
+                    ]);
+                    if (alreadyFull) {
+                        await ctx.db.insert(schema.eventRegistration).values({
+                            eventId: event.id,
+                            userId: holder.id,
+                            status: "registered",
+                        });
+                    }
+                    const { client } = await organizer(ctx);
+                    const response = await client.api.event[
+                        ":eventId"
+                    ].registration[":userId"].$post({
+                        param: { eventId: event.id, userId: guest.id },
+                        json: {},
+                    });
+                    expect(response.status).toBe(200);
+                    const forced = await registration(ctx, event.id, guest.id);
+                    if (!forced)
+                        throw new Error(
+                            "Organizer registration was not created",
+                        );
+                    if (!samePass)
+                        await resolveRegistrationsForEvent(event.id, ctx);
+
+                    await ctx.db.insert(schema.eventRegistration).values({
+                        eventId: event.id,
+                        userId: prioritized.id,
+                        status: "pending",
+                        createdAt: new Date(forced.createdAt.getTime() + 1000),
+                    });
+                    await resolveRegistrationsForEvent(event.id, ctx);
+                    expect(
+                        (await registration(ctx, event.id, guest.id))?.status,
+                    ).toBe("registered");
+                    expect(
+                        (await registration(ctx, event.id, prioritized.id))
+                            ?.status,
+                    ).toBe("waitlisted");
+                    if (alreadyFull) {
+                        expect(
+                            (await registration(ctx, event.id, holder.id))
+                                ?.status,
+                        ).toBe("registered");
+                        const holderClient =
+                            await ctx.utils.clientForUser(holder);
+                        const cancellation = await holderClient.api.event[
+                            ":eventId"
+                        ].registration.$delete({
+                            param: { eventId: event.id },
+                        });
+                        expect(cancellation.status).toBe(200);
+                        // Removing the excess attendee does not free a place yet.
+                        expect(
+                            (await registration(ctx, event.id, prioritized.id))
+                                ?.status,
+                        ).toBe("waitlisted");
+                    }
+                },
+            );
+        }
     }
 
     integrationTest("returns 404 for a missing user", async ({ ctx }) => {

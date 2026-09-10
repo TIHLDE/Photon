@@ -578,6 +578,7 @@ export async function loadPrioritization(
 }
 
 interface Registration {
+    addedByOrganizer: boolean;
     userId: string;
     eventId: string;
     status: string;
@@ -588,7 +589,8 @@ interface Registration {
  * Find a non-prioritized user who can be swapped with a prioritized user
  *
  * Returns the most recently registered non-prioritized user with a spot,
- * or null if all registered users are prioritized.
+ * Organizer-added participants cannot be displaced.
+ * Returns null if no eligible participant can be swapped.
  */
 export async function findSwapTarget(
     registeredUsers: Registration[],
@@ -599,7 +601,7 @@ export async function findSwapTarget(
 ): Promise<Registration | null> {
     // Filter to only registered users and sort by createdAt DESC (most recent first)
     const registered = registeredUsers
-        .filter((r) => r.status === "registered")
+        .filter((r) => r.status === "registered" && !r.addedByOrganizer)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const isPrioritized = await loadPrioritization(
