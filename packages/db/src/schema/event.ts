@@ -233,10 +233,6 @@ export const eventRegistration = pgTable(
             .notNull()
             .references(() => user.id, { onDelete: "cascade" }),
         status: registrationStatus("status").notNull().default("registered"),
-        // Persist the organizer override for queued resolution and cron retries.
-        addedByOrganizer: boolean("added_by_organizer")
-            .notNull()
-            .default(false),
         waitlistPosition: integer("waitlist_position"),
         attendedAt: timestamp("attended_at"),
         /**

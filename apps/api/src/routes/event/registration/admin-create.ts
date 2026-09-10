@@ -1,9 +1,11 @@
 import { schema } from "@photon/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
-import { enqueueRegistrationResolve } from "~/lib/event/resolve-queue";
 import { requireEventAccess } from "~/lib/event/access";
+import { createPaymentObligations } from "~/lib/event/payment";
+import { env } from "~/lib/env";
+import { createDeferredNotifications } from "~/lib/notification/deferred";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
@@ -19,7 +21,7 @@ export const adminCreateRegistrationRoute = route().post(
         summary: "Add a user to an event (admin)",
         operationId: "adminCreateEventRegistration",
         description:
-            "Add a user on their behalf, including before registration opens or after it closes. Requires 'events:update' or 'events:manage', globally or for the arranging group. Bypasses registration timing (including strike delays), closed registration, event-rule acceptance, unanswered evaluations, institute and priority eligibility, and the user's events:registrations:create permission. Grants a confirmed place even above capacity, regardless of waitlist settings, and protects it from priority-based displacement. Payment obligations still apply. Events without sign-up and existing active registrations are rejected; cancelled registrations are reused. Returns pending while the background resolver confirms the place.",
+            "Add a confirmed participant and include them in the event's priority-user list, including before registration opens or after it closes. Requires events:update or events:manage globally or for the arranging group. Bypasses self-registration eligibility and strike delays, but requires available capacity; pending registrations reserve capacity too. Payment obligations still apply. Events without sign-up, full events and existing active registrations are rejected. Cancelled registrations are reused.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -33,7 +35,7 @@ export const adminCreateRegistrationRoute = route().post(
         .response({
             statusCode: 409,
             description:
-                "Event does not require sign-up, or the user is already registered",
+                "Event does not require sign-up, event is full, or user is already registered",
         })
         .build(),
     requireAuth,
@@ -43,103 +45,121 @@ export const adminCreateRegistrationRoute = route().post(
         const eventId = c.req.param("eventId");
         const userId = c.req.param("userId");
         const ctx = c.get("ctx");
-        const { db } = ctx;
         const body = c.req.valid("json");
+        const notifications = createDeferredNotifications();
 
-        const [event, user, existingRegistration, userSettings] =
-            await Promise.all([
-                db.query.event.findFirst({
-                    where: (event, { eq }) => eq(event.id, eventId),
-                }),
-                db.query.user.findFirst({
-                    where: (user, { eq }) => eq(user.id, userId),
+        const registration = await ctx.db.transaction(async (tx) => {
+            // Serialize capacity allocation with the resolver and waitlist promotion.
+            const [event] = await tx
+                .select()
+                .from(schema.event)
+                .where(eq(schema.event.id, eventId))
+                .for("update");
+            if (!event)
+                throw new HTTPException(404, { message: "Event not found" });
+            if (!event.requiresSigningUp) {
+                throw new HTTPException(409, {
+                    message: "Event does not require sign-up",
+                });
+            }
+            const [user, existing, settings] = await Promise.all([
+                tx.query.user.findFirst({
+                    where: (u, { eq }) => eq(u.id, userId),
                     columns: { id: true },
                 }),
-                db.query.eventRegistration.findFirst({
-                    where: (reg, { and, eq }) =>
-                        and(eq(reg.eventId, eventId), eq(reg.userId, userId)),
+                tx.query.eventRegistration.findFirst({
+                    where: (r, { and, eq }) =>
+                        and(eq(r.eventId, eventId), eq(r.userId, userId)),
                 }),
-                // Bare nødvendig når kallet ikke sier noe om bildesamtykke selv.
-                body.allowPhoto === undefined
-                    ? db.query.userSettings.findFirst({
-                          where: (settings, { eq }) =>
-                              eq(settings.userId, userId),
-                          columns: { allowsPhotosByDefault: true },
-                      })
-                    : undefined,
+                tx.query.userSettings.findFirst({
+                    where: (s, { eq }) => eq(s.userId, userId),
+                    columns: { allowsPhotosByDefault: true },
+                }),
             ]);
+            if (!user)
+                throw new HTTPException(404, { message: "User not found" });
+            if (existing && existing.status !== "cancelled") {
+                throw new HTTPException(409, {
+                    message: "User is already registered for this event",
+                });
+            }
+            if (event.capacity !== null) {
+                const occupied = await tx.$count(
+                    schema.eventRegistration,
+                    and(
+                        eq(schema.eventRegistration.eventId, eventId),
+                        inArray(schema.eventRegistration.status, [
+                            "pending",
+                            "registered",
+                            "attended",
+                            "no_show",
+                        ]),
+                    ),
+                );
+                if (occupied >= event.capacity) {
+                    throw new HTTPException(409, { message: "Event is full" });
+                }
+            }
 
-        if (!event) {
-            throw new HTTPException(404, { message: "Event not found" });
-        }
-        if (!user) {
-            throw new HTTPException(404, { message: "User not found" });
-        }
-
-        // Uten påmelding finnes ikke plassen å tvinge noen inn på: et
-        // arrangement uten påmelding er åpent for alle som møter opp.
-        if (!event.requiresSigningUp) {
-            throw new HTTPException(409, {
-                message: "Event does not require sign-up",
-            });
-        }
-
-        // En kansellert rad er ikke en påmelding — den kan gjenbrukes. Se
-        // registration/create.ts.
-        if (
-            existingRegistration &&
-            existingRegistration.status !== "cancelled"
-        ) {
-            throw new HTTPException(409, {
-                message: "User is already registered for this event",
-            });
-        }
-
-        const allowPhoto =
-            body.allowPhoto ?? userSettings?.allowsPhotosByDefault ?? true;
-
-        // The resolver confirms organizer additions even above capacity.
-        const [registration] = await db
-            .insert(schema.eventRegistration)
-            .values({
-                eventId,
-                userId,
-                status: "pending",
-                addedByOrganizer: true,
-                allowPhoto,
-            })
-            .onConflictDoUpdate({
-                target: [
-                    schema.eventRegistration.userId,
-                    schema.eventRegistration.eventId,
-                ],
-                set: {
-                    status: "pending",
-                    addedByOrganizer: true,
+            const allowPhoto =
+                body.allowPhoto ?? settings?.allowsPhotosByDefault ?? true;
+            const [created] = await tx
+                .insert(schema.eventRegistration)
+                .values({
+                    eventId,
+                    userId,
+                    status: "registered",
                     allowPhoto,
-                    waitlistPosition: null,
-                    attendedAt: null,
-                    createdAt: sql`now()`,
-                    updatedAt: sql`now()`,
+                })
+                .onConflictDoUpdate({
+                    target: [
+                        schema.eventRegistration.userId,
+                        schema.eventRegistration.eventId,
+                    ],
+                    set: {
+                        status: "registered",
+                        allowPhoto,
+                        waitlistPosition: null,
+                        attendedAt: null,
+                        createdAt: sql`now()`,
+                        updatedAt: sql`now()`,
+                    },
+                    setWhere: eq(schema.eventRegistration.status, "cancelled"),
+                })
+                .returning();
+            if (!created) {
+                throw new HTTPException(409, {
+                    message: "User is already registered for this event",
+                });
+            }
+            await tx
+                .insert(schema.eventPriorityUser)
+                .values({ eventId, userId })
+                .onConflictDoNothing();
+            await createPaymentObligations({ ...ctx, db: tx }, event, [userId]);
+            notifications.add({
+                userId,
+                title: `Du er påmeldt ${event.title}!`,
+                description: `Din påmelding til ${event.title} er bekreftet.`,
+                link: `${env.WEBSITE_URL}/arrangementer/${event.slug}`,
+                emailTemplate: {
+                    name: "RegistrationConfirmedEmail",
+                    props: {
+                        eventName: event.title,
+                        eventUrl: `${env.WEBSITE_URL}/arrangementer/${event.slug}`,
+                        logoUrl: `${env.WEBSITE_URL}/logo512.png`,
+                    },
                 },
-                setWhere: eq(schema.eventRegistration.status, "cancelled"),
-            })
-            .returning();
-
-        if (!registration) {
-            throw new HTTPException(409, {
-                message: "User is already registered for this event",
             });
-        }
-
-        await enqueueRegistrationResolve(eventId, ctx);
-
+            return created;
+        });
+        await notifications.flush(ctx);
         return c.json({
             eventId,
             userId,
-            status: "pending" as const,
+            status: "registered" as const,
             createdAt: registration.createdAt.toISOString(),
-            allowPhoto,
+            allowPhoto: registration.allowPhoto,
         });
     },
 );

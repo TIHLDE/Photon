@@ -222,7 +222,7 @@ describe("individually prioritized users", () => {
     );
 
     integrationTest(
-        "en prioritert bytter ut en med tre prikker på et fullt arrangement",
+        "en navngitt prioritert beholder plassen med tre prikker på et fullt arrangement",
         async ({ ctx }) => {
             await ctx.utils.setupEventCategories();
             await ctx.utils.setupGroups();
@@ -273,8 +273,8 @@ describe("individually prioritized users", () => {
                     and(eq(r.eventId, event.id), eq(r.userId, clean.id)),
             });
 
-            expect(cleanEnd?.status).toBe("registered");
-            expect(strikenEnd?.status).toBe("waitlisted");
+            expect(cleanEnd?.status).toBe("waitlisted");
+            expect(strikenEnd?.status).toBe("registered");
         },
         500_000,
     );

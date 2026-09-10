@@ -283,7 +283,6 @@ export const registerToEventRoute = route().post(
                 ],
                 set: {
                     status: "pending",
-                    addedByOrganizer: false,
                     allowPhoto,
                     waitlistPosition: null,
                     attendedAt: null,

@@ -422,6 +422,20 @@ export async function promoteFromWaitlist(
     ctx: AppContext,
     event: PaidEventLike,
 ): Promise<boolean> {
+    return ctx.db.transaction(async (tx) => {
+        await tx
+            .select({ id: schema.event.id })
+            .from(schema.event)
+            .where(eq(schema.event.id, event.id))
+            .for("update");
+        return promoteFromWaitlistWithLock({ ...ctx, db: tx }, event);
+    });
+}
+
+async function promoteFromWaitlistWithLock(
+    ctx: AppContext,
+    event: PaidEventLike,
+): Promise<boolean> {
     // A spot has to actually be free. Callers that just cancelled a
     // registration know one is; the unregister route calls this for every
     // cancellation, including ones that give up a waitlist place rather than a
@@ -884,6 +898,11 @@ export async function handlePaymentExpiration(
 
     await ctx.db.transaction(async (tx) => {
         const txCtx = { ...ctx, db: tx };
+        await tx
+            .select({ id: schema.event.id })
+            .from(schema.event)
+            .where(eq(schema.event.id, eventId))
+            .for("update");
 
         // 1. Claim the spot by cancelling it, conditional on it still being
         // held. The reads above happened outside this transaction — they have

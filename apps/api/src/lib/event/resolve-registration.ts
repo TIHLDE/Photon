@@ -39,10 +39,16 @@ export async function resolveRegistrationsForEvent(
     // Use database transaction to ensure atomic processing
     await ctx.db.transaction(async (tx) => {
         const txCtx = { ...ctx, db: tx };
+        // Organizer additions and waitlist promotions allocate under the same lock.
+        await tx
+            .select({ id: schema.event.id })
+            .from(schema.event)
+            .where(eq(schema.event.id, eventId))
+            .for("update");
 
         // Step 1: Fetch all pending registrations for this event with FOR UPDATE lock
         // This prevents concurrent processing of the same registrations
-        let pendingRegistrations = await tx
+        const pendingRegistrations = await tx
             .select()
             .from(schema.eventRegistration)
             .where(
@@ -76,11 +82,8 @@ export async function resolveRegistrationsForEvent(
 
         // Validate event is open for registration
         if (!event.requiresSigningUp || event.isRegistrationClosed) {
-            // Only organizer additions may resolve while registration is closed.
+            // Cancel all pending registrations since event is not accepting registrations
             for (const registration of pendingRegistrations) {
-                if (event.requiresSigningUp && registration.addedByOrganizer) {
-                    continue;
-                }
                 await tx
                     .update(schema.eventRegistration)
                     .set({ status: "cancelled" })
@@ -94,11 +97,7 @@ export async function resolveRegistrationsForEvent(
                         ),
                     );
             }
-            pendingRegistrations = pendingRegistrations.filter(
-                (registration) =>
-                    event.requiresSigningUp && registration.addedByOrganizer,
-            );
-            if (pendingRegistrations.length === 0) return;
+            return;
         }
 
         // Step 3: Calculate initial capacity state
@@ -171,7 +170,7 @@ export async function resolveRegistrationsForEvent(
                 !event.isPaidEvent,
             );
 
-            if (!registration.addedByOrganizer && !allowed) {
+            if (!allowed) {
                 // User is blocked due to strike timing
                 await tx
                     .update(schema.eventRegistration)
@@ -211,11 +210,7 @@ export async function resolveRegistrationsForEvent(
             let finalStatus: RegistrationStatus;
             let swappedUserId: string | null = null;
 
-            if (
-                registration.addedByOrganizer ||
-                isUnlimitedCapacity ||
-                availableSpots > 0
-            ) {
+            if (isUnlimitedCapacity || availableSpots > 0) {
                 // User gets a spot
                 finalStatus = "registered";
                 if (!isUnlimitedCapacity) {
@@ -495,7 +490,6 @@ export async function resolveRegistrationsForEvent(
                     updatedAt: new Date(),
                     attendedAt: null,
                     allowPhoto: registration.allowPhoto,
-                    addedByOrganizer: registration.addedByOrganizer,
                 });
             }
             if (swappedUserId) {
@@ -514,7 +508,6 @@ export async function resolveRegistrationsForEvent(
                             updatedAt: new Date(),
                             attendedAt: existing.attendedAt,
                             allowPhoto: existing.allowPhoto,
-                            addedByOrganizer: existing.addedByOrganizer,
                         };
                     }
                 }

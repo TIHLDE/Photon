@@ -11,7 +11,7 @@ const HOUR = 60 * 60 * 1000;
  * The admin add-registration route exists so an organizer can force-add
  * people — themselves or a co-organizer — to an event whose registration
  * window has not opened yet. It skips the checks that gate a member's own
- * sign-up and guarantees a place regardless of capacity or priority.
+ * sign-up and adds the participant to the priority-user list when capacity remains.
  */
 async function organizer(ctx: IntegrationTestContext) {
     const user = await ctx.utils.createTestUser();
@@ -45,14 +45,14 @@ describe("Admin add registration", () => {
 
             expect(res.status).toBe(200);
             const body = await res.json();
-            expect(body.status).toBe("pending");
+            expect(body.status).toBe("registered");
             expect(body.userId).toBe(guest.id);
 
             const rows = await ctx.db.query.eventRegistration.findMany({
                 where: (reg, { eq }) => eq(reg.eventId, event.id),
             });
             expect(rows).toHaveLength(1);
-            expect(rows[0]?.status).toBe("pending");
+            expect(rows[0]?.status).toBe("registered");
             expect(rows[0]?.userId).toBe(guest.id);
             await resolveRegistrationsForEvent(event.id, ctx);
             expect((await registration(ctx, event.id, guest.id))?.status).toBe(
@@ -168,7 +168,7 @@ function registration(
 }
 
 describe("Organizer registration resolution", () => {
-    for (const scenario of ["closed", "strikes", "full", "paid"] as const) {
+    for (const scenario of ["closed", "strikes", "paid"] as const) {
         integrationTest(
             `resolves an organizer addition when ${scenario}`,
             async ({ ctx }) => {
@@ -178,8 +178,8 @@ describe("Organizer registration resolution", () => {
                     registrationStart: new Date(Date.now() + 48 * HOUR),
                     registrationEnd: new Date(Date.now() + 72 * HOUR),
                     isRegistrationClosed: scenario === "closed",
-                    capacity: scenario === "full" ? 1 : 10,
-                    allowWaitlist: scenario !== "full",
+                    capacity: 10,
+                    allowWaitlist: true,
                     isPaidEvent: scenario === "paid",
                     priceMinor: scenario === "paid" ? 10000 : null,
                 });
@@ -198,7 +198,7 @@ describe("Organizer registration resolution", () => {
                 await ctx.db.insert(schema.eventRegistration).values({
                     eventId: event.id,
                     userId: ordinary.id,
-                    status: scenario === "full" ? "registered" : "pending",
+                    status: "pending",
                 });
                 const { client } = await organizer(ctx);
                 const res = await client.api.event[":eventId"].registration[
@@ -212,12 +212,6 @@ describe("Organizer registration resolution", () => {
                 expect(
                     (await registration(ctx, event.id, guest.id))?.status,
                 ).toBe("registered");
-                if (scenario === "full") {
-                    expect(
-                        (await registration(ctx, event.id, ordinary.id))
-                            ?.status,
-                    ).toBe("registered");
-                }
                 if (scenario === "closed" || scenario === "strikes") {
                     expect(
                         (await registration(ctx, event.id, ordinary.id))
@@ -238,85 +232,120 @@ describe("Organizer registration resolution", () => {
         );
     }
 
-    for (const samePass of [true, false]) {
-        for (const alreadyFull of [true, false]) {
-            integrationTest(
-                `protects a forced participant from priority displacement (same pass: ${samePass}, already full: ${alreadyFull})`,
-                async ({ ctx }) => {
-                    await ctx.utils.setupGroups();
-                    await ctx.utils.setupEventCategories();
-                    const event = await ctx.utils.createTestEvent({
-                        capacity: 1,
-                        allowWaitlist: true,
-                        onlyAllowPrioritized: true,
-                    });
-                    const guest = await ctx.utils.createTestUser();
-                    const prioritized = await ctx.utils.createTestUser();
-                    const holder = await ctx.utils.createTestUser();
-                    await ctx.db.insert(schema.eventPriorityUser).values([
-                        { eventId: event.id, userId: prioritized.id },
-                        { eventId: event.id, userId: holder.id },
-                    ]);
-                    if (alreadyFull) {
-                        await ctx.db.insert(schema.eventRegistration).values({
-                            eventId: event.id,
-                            userId: holder.id,
-                            status: "registered",
-                        });
-                    }
-                    const { client } = await organizer(ctx);
-                    const response = await client.api.event[
-                        ":eventId"
-                    ].registration[":userId"].$post({
-                        param: { eventId: event.id, userId: guest.id },
-                        json: {},
-                    });
-                    expect(response.status).toBe(200);
-                    const forced = await registration(ctx, event.id, guest.id);
-                    if (!forced)
-                        throw new Error(
-                            "Organizer registration was not created",
-                        );
-                    if (!samePass)
-                        await resolveRegistrationsForEvent(event.id, ctx);
+    for (const status of [
+        "registered",
+        "pending",
+        "attended",
+        "no_show",
+    ] as const) {
+        integrationTest(
+            `refuses a full event with a ${status} participant without adding priority`,
+            async ({ ctx }) => {
+                await ctx.utils.setupGroups();
+                await ctx.utils.setupEventCategories();
+                const event = await ctx.utils.createTestEvent({ capacity: 1 });
+                const holder = await ctx.utils.createTestUser();
+                const guest = await ctx.utils.createTestUser();
+                await ctx.db
+                    .insert(schema.eventRegistration)
+                    .values({ eventId: event.id, userId: holder.id, status });
+                const { client } = await organizer(ctx);
+                const response = await client.api.event[
+                    ":eventId"
+                ].registration[":userId"].$post({
+                    param: { eventId: event.id, userId: guest.id },
+                    json: {},
+                });
+                expect(response.status).toBe(409);
+                expect(
+                    await registration(ctx, event.id, guest.id),
+                ).toBeUndefined();
+                const priority = await ctx.db.query.eventPriorityUser.findMany({
+                    where: (p, { eq }) => eq(p.eventId, event.id),
+                });
+                expect(priority).toHaveLength(0);
+            },
+        );
+    }
 
-                    await ctx.db.insert(schema.eventRegistration).values({
-                        eventId: event.id,
-                        userId: prioritized.id,
-                        status: "pending",
-                        createdAt: new Date(forced.createdAt.getTime() + 1000),
-                    });
-                    await resolveRegistrationsForEvent(event.id, ctx);
-                    expect(
-                        (await registration(ctx, event.id, guest.id))?.status,
-                    ).toBe("registered");
-                    expect(
-                        (await registration(ctx, event.id, prioritized.id))
-                            ?.status,
-                    ).toBe("waitlisted");
-                    if (alreadyFull) {
-                        expect(
-                            (await registration(ctx, event.id, holder.id))
-                                ?.status,
-                        ).toBe("registered");
-                        const holderClient =
-                            await ctx.utils.clientForUser(holder);
-                        const cancellation = await holderClient.api.event[
-                            ":eventId"
-                        ].registration.$delete({
-                            param: { eventId: event.id },
-                        });
-                        expect(cancellation.status).toBe(200);
-                        // Removing the excess attendee does not free a place yet.
-                        expect(
-                            (await registration(ctx, event.id, prioritized.id))
-                                ?.status,
-                        ).toBe("waitlisted");
-                    }
+    integrationTest(
+        "adds priority atomically and protects the last place from later priority sign-ups",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            const event = await ctx.utils.createTestEvent({
+                capacity: 1,
+                onlyAllowPrioritized: true,
+                allowWaitlist: true,
+            });
+            const guest = await ctx.utils.createTestUser();
+            const newcomer = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.eventStrike).values({
+                eventId: event.id,
+                userId: guest.id,
+                count: 3,
+                reason: "Test strikes",
+            });
+            const { client } = await organizer(ctx);
+            const response = await client.api.event[":eventId"].registration[
+                ":userId"
+            ].$post({
+                param: { eventId: event.id, userId: guest.id },
+                json: {},
+            });
+            expect(response.status).toBe(200);
+            const priority = await ctx.db.query.eventPriorityUser.findMany({
+                where: (p, { eq }) => eq(p.eventId, event.id),
+            });
+            expect(priority.map((p) => p.userId)).toEqual([guest.id]);
+            await ctx.db
+                .insert(schema.eventPriorityUser)
+                .values({ eventId: event.id, userId: newcomer.id });
+            await ctx.utils.createPendingRegistration(event.id, newcomer.id);
+            await resolveRegistrationsForEvent(event.id, ctx);
+            expect((await registration(ctx, event.id, guest.id))?.status).toBe(
+                "registered",
+            );
+            expect(
+                (await registration(ctx, event.id, newcomer.id))?.status,
+            ).toBe("waitlisted");
+        },
+    );
+
+    integrationTest(
+        "only confirms one organizer addition for the last available place",
+        async ({ ctx }) => {
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            const event = await ctx.utils.createTestEvent({ capacity: 1 });
+            const first = await ctx.utils.createTestUser();
+            const second = await ctx.utils.createTestUser();
+            const { client } = await organizer(ctx);
+            const responses = await Promise.all(
+                [first, second].map((user) =>
+                    client.api.event[":eventId"].registration[":userId"].$post({
+                        param: { eventId: event.id, userId: user.id },
+                        json: {},
+                    }),
+                ),
+            );
+            expect(responses.map((response) => response.status).sort()).toEqual(
+                [200, 409],
+            );
+            const registrations = await ctx.db.query.eventRegistration.findMany(
+                {
+                    where: (r, { eq }) => eq(r.eventId, event.id),
                 },
             );
-        }
-    }
+            const priority = await ctx.db.query.eventPriorityUser.findMany({
+                where: (p, { eq }) => eq(p.eventId, event.id),
+            });
+            expect(registrations).toHaveLength(1);
+            expect(priority.map((p) => p.userId)).toEqual(
+                registrations.map((r) => r.userId),
+            );
+        },
+    );
 
     integrationTest("returns 404 for a missing user", async ({ ctx }) => {
         await ctx.utils.setupGroups();
@@ -333,7 +362,7 @@ describe("Organizer registration resolution", () => {
     });
 
     integrationTest(
-        "revives cancelled registrations and clears the override on self-registration",
+        "revives cancelled registrations while self-registration still enforces strike timing",
         async ({ ctx }) => {
             await ctx.utils.setupGroups();
             await ctx.utils.setupEventCategories();
@@ -355,7 +384,6 @@ describe("Organizer registration resolution", () => {
             });
             expect(res.status).toBe(200);
             expect(await registration(ctx, event.id, guest.id)).toMatchObject({
-                addedByOrganizer: true,
                 allowPhoto: false,
                 waitlistPosition: null,
                 attendedAt: null,
@@ -391,9 +419,6 @@ describe("Organizer registration resolution", () => {
                 json: {},
             });
             expect(self.status).toBe(200);
-            expect(
-                (await registration(ctx, event.id, guest.id))?.addedByOrganizer,
-            ).toBe(false);
             await resolveRegistrationsForEvent(event.id, ctx);
             expect((await registration(ctx, event.id, guest.id))?.status).toBe(
                 "cancelled",

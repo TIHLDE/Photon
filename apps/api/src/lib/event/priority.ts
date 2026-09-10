@@ -438,9 +438,8 @@ export function matchesPriorityRules({
  * nedprioritert by three or more prikker.
  *
  * The strike rule applies to named individuals too. Being singled out says the
- * organizer wants you ahead of the queue, not that prikkene dine er strøket —
- * and an event that enforces strikes would otherwise have a way to quietly not
- * enforce them.
+ * organizer wants you ahead of the queue, not that prikkene dine er strøket.
+ * Once a named individual holds a confirmed place, findSwapTarget protects it.
  */
 export function isUserPrioritized({
     strikeCount,
@@ -578,7 +577,6 @@ export async function loadPrioritization(
 }
 
 interface Registration {
-    addedByOrganizer: boolean;
     userId: string;
     eventId: string;
     status: string;
@@ -589,8 +587,7 @@ interface Registration {
  * Find a non-prioritized user who can be swapped with a prioritized user
  *
  * Returns the most recently registered non-prioritized user with a spot,
- * Organizer-added participants cannot be displaced.
- * Returns null if no eligible participant can be swapped.
+ * or null if all registered users are prioritized or named individually.
  */
 export async function findSwapTarget(
     registeredUsers: Registration[],
@@ -600,8 +597,13 @@ export async function findSwapTarget(
     now = new Date(),
 ): Promise<Registration | null> {
     // Filter to only registered users and sort by createdAt DESC (most recent first)
+    const protectedUsers = new Set(
+        event.priorityUsers.map((user) => user.userId),
+    );
     const registered = registeredUsers
-        .filter((r) => r.status === "registered" && !r.addedByOrganizer)
+        .filter(
+            (r) => r.status === "registered" && !protectedUsers.has(r.userId),
+        )
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const isPrioritized = await loadPrioritization(

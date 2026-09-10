@@ -688,11 +688,7 @@ const REGISTRATION_STATUS_VARIANTS: Record<
 };
 
 const REGISTRATION_FILTERS = [
-    {
-        value: "aktive",
-        label: "Påmeldte",
-        status: "registered,attended,no_show,pending",
-    },
+    { value: "aktive", label: "Påmeldte", status: undefined },
     { value: "venteliste", label: "Venteliste", status: "waitlisted" },
 ] as const;
 
@@ -883,19 +879,9 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
     const addRegistration = useMutation(adminAddRegistrationMutation);
     const [addError, setAddError] = useState<string | null>(null);
 
-    const registrationsQuery = useInfiniteQuery({
-        ...getEventRegistrationsInfiniteQuery(
-            eventId,
-            status ? { status } : {},
-        ),
-        staleTime: 0,
-        refetchInterval: (query) =>
-            query.state.data?.pages.some((page) =>
-                page.registeredUsers.some((user) => user.status === "pending"),
-            )
-                ? 2000
-                : false,
-    });
+    const registrationsQuery = useInfiniteQuery(
+        getEventRegistrationsInfiniteQuery(eventId, status ? { status } : {}),
+    );
     useLoadAllPages(registrationsQuery);
 
     const participants = useMemo(() => {
@@ -998,7 +984,7 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                             trigger: "Legg til deltaker",
                             title: "Legg til deltaker",
                             description:
-                                "Gir brukeren plass selv om arrangementet er fullt eller påmeldingen er stengt. Plassen beholdes uavhengig av prioritet. Vanlige betalingsfrister gjelder.",
+                                "Legger til brukeren som deltaker og prioritert bruker, også før påmeldingen åpner. Det må være ledig plass. Vanlige betalingsfrister gjelder.",
                             submit: "Legg til",
                             submitting: "Legger til …",
                         }}
