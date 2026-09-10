@@ -1,59 +1,25 @@
-import { Badge } from "@tihlde/ui/ui/badge";
-import { Card } from "@tihlde/ui/ui/card";
-import { ChevronRight, HandCoins } from "lucide-react";
+import { HandCoins, ShieldCheck } from "lucide-react";
 
 import type { Fine } from "#/lib/group";
 
-type GroupFineRowProps = {
-    fine: Fine;
-    onOpen: () => void;
-};
-
-export function GroupFineRow({ fine, onOpen }: GroupFineRowProps) {
+export function GroupFineRow({ fine }: { fine: Fine }) {
     return (
-        // Raden er et klikkbart kort, ikke en <button>, så den må selv si fra
-        // at den kan få tastaturfokus og svare på Enter/mellomrom. Uten dette
-        // var botlisten helt utilgjengelig med tastatur.
-        <Card
-            size="sm"
-            className="flex-row items-center gap-3 px-3 py-2 cursor-pointer"
-            onClick={onOpen}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onOpen();
-                }
-            }}
-        >
-            {/* Her sto radnummeret, som så ut som et antall. Nå står det som
-                faktisk betyr noe: hvor mange bøter personen fikk. */}
-            <Badge variant="secondary" className="min-w-16 justify-center">
-                {fine.amount} {Math.abs(fine.amount) === 1 ? "bot" : "bøter"}
-            </Badge>
+        <div className="flex flex-1 items-center gap-3 pr-3">
+            <span className="text-2xl font-medium">{fine.amount}</span>
             <div className="flex min-w-0 flex-1 flex-col">
                 {/* `truncate` hører hjemme på navnet, ikke på flex-raden:
                     text-overflow virker ikke på en flex-boks, så der ble
                     badgene bak navnet bare klippet midt av uten ellipse. */}
                 <span className="flex items-center gap-1 font-medium">
                     <span className="truncate">{fine.user}</span>
-                    {fine.approved ? (
-                        <Badge variant="outline">Godkjent</Badge>
-                    ) : null}
-                    {fine.paid ? (
-                        <Badge variant="secondary" className="gap-1">
-                            <HandCoins />
-                            Betalt
-                        </Badge>
-                    ) : null}
+                    {fine.approved ? <ShieldCheck className="size-4" /> : null}
+                    {fine.paid ? <HandCoins className="size-4" /> : null}
                 </span>
                 <span className="truncate text-sm text-muted-foreground">
                     {fine.paragraph ? `${fine.paragraph} - ` : ""}
                     {fine.title}
                 </span>
             </div>
-            <ChevronRight />
-        </Card>
+        </div>
     );
 }

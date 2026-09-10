@@ -11,10 +11,8 @@ import {
 } from "@tihlde/ui/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
 import { ChevronRight, X } from "lucide-react";
-import { useState } from "react";
 
-import { GroupFineDialog } from "#/components/group-fine-dialog";
-import { GroupFineRow } from "#/components/group-fine-row";
+import { GroupFineAccordion } from "#/components/group-fine-accordion";
 import { GroupFineStatCard } from "#/components/group-fine-stat-card";
 import { GroupPageHeader } from "#/components/group-page-header";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
@@ -128,8 +126,6 @@ export function GroupFinesTab({
     onSaveDefense,
     onSettleAllForUser,
 }: GroupFinesTabProps) {
-    const [openIndex, setOpenIndex] = useState<number | null>(null);
-
     const notApproved = statistics?.notApproved ?? 0;
     const approvedNotPaid = statistics?.approvedNotPaid ?? 0;
     const paid = statistics?.paid ?? 0;
@@ -202,7 +198,16 @@ export function GroupFinesTab({
                                 }
                             >
                                 <SelectTrigger className="w-56">
-                                    <SelectValue />
+                                    <SelectValue>
+                                        {(value) => {
+                                            const option = STATUS_OPTIONS.find(
+                                                (o) => o.value === value,
+                                            );
+                                            return option
+                                                ? statusLabel(option, grouping)
+                                                : null;
+                                        }}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                     {STATUS_OPTIONS.map((option) => (
@@ -237,8 +242,15 @@ export function GroupFinesTab({
 
                 {grouping === "alle" ? (
                     <FineList
+                        groupSlug={groupSlug}
                         fines={fines}
-                        onOpen={setOpenIndex}
+                        canManage={canManage && !ownFinesOnly}
+                        readOnly={ownFinesOnly}
+                        currentUserId={currentUserId}
+                        onApprove={onApprove}
+                        onMarkPaid={onMarkPaid}
+                        onDelete={onDelete}
+                        onSaveDefense={onSaveDefense}
                         hasMore={hasMore}
                         isLoadingMore={isLoadingMore}
                         onLoadMore={onLoadMore}
@@ -255,20 +267,6 @@ export function GroupFinesTab({
                     />
                 )}
             </div>
-
-            <GroupFineDialog
-                groupSlug={groupSlug}
-                fines={fines}
-                openIndex={openIndex}
-                onOpenChange={setOpenIndex}
-                canManage={canManage && !ownFinesOnly}
-                readOnly={ownFinesOnly}
-                currentUserId={currentUserId}
-                onApprove={onApprove}
-                onMarkPaid={onMarkPaid}
-                onDelete={onDelete}
-                onSaveDefense={onSaveDefense}
-            />
         </div>
     );
 }
@@ -295,19 +293,35 @@ function LoadMore({
     );
 }
 
-function FineList({
-    fines,
-    onOpen,
-    hasMore,
-    isLoadingMore,
-    onLoadMore,
-}: {
+type FineListProps = {
+    groupSlug: string;
     fines: Fine[];
-    onOpen: (index: number) => void;
+    canManage: boolean;
+    readOnly: boolean;
+    currentUserId?: string;
+    onApprove: (fine: Fine) => void;
+    onMarkPaid: (fine: Fine) => void;
+    onDelete: (fine: Fine) => void;
+    onSaveDefense: (fine: Fine, defense: string) => void;
     hasMore: boolean;
     isLoadingMore: boolean;
     onLoadMore: () => void;
-}) {
+};
+
+function FineList({
+    groupSlug,
+    fines,
+    canManage,
+    readOnly,
+    currentUserId,
+    onApprove,
+    onMarkPaid,
+    onDelete,
+    onSaveDefense,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+}: FineListProps) {
     if (fines.length === 0) {
         return (
             <Empty>
@@ -321,16 +335,17 @@ function FineList({
 
     return (
         <div className="flex flex-col gap-3">
-            <ul className="flex flex-col gap-2">
-                {fines.map((fine, index) => (
-                    <li key={fine.id}>
-                        <GroupFineRow
-                            fine={fine}
-                            onOpen={() => onOpen(index)}
-                        />
-                    </li>
-                ))}
-            </ul>
+            <GroupFineAccordion
+                groupSlug={groupSlug}
+                fines={fines}
+                canManage={canManage}
+                readOnly={readOnly}
+                currentUserId={currentUserId}
+                onApprove={onApprove}
+                onMarkPaid={onMarkPaid}
+                onDelete={onDelete}
+                onSaveDefense={onSaveDefense}
+            />
             <LoadMore
                 hasMore={hasMore}
                 isLoadingMore={isLoadingMore}

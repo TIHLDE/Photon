@@ -7,7 +7,7 @@ import type {
     Law as ApiLaw,
     GroupFormList,
 } from "@tihlde/sdk";
-import { formatInOslo } from "#/lib/date";
+import { formatInOslo, formatOsloDate } from "#/lib/date";
 
 type ApiFineUser = FineUserList["users"][number];
 
@@ -441,7 +441,16 @@ export function mapFine(fine: ApiFine): Fine {
         approved: fine.status === "approved" || fine.status === "paid",
         paid: fine.status === "paid",
         createdBy: fine.createdByUser?.name ?? "",
-        date: fine.createdAt ? formatGroupDate(fine.createdAt) : "",
+        date: fine.createdAt
+            ? formatOsloDate(fine.createdAt, {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "numeric",
+              })
+            : "",
         reason: fine.reason,
         defense: fine.defense ?? "",
         image: fine.image ?? undefined,
