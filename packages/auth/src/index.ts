@@ -22,6 +22,7 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { DbSchema } from "@photon/db";
 import { account, user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
+import { uniq } from "es-toolkit";
 import { env } from "@photon/core/env";
 import { getUserPermissions } from "./rbac/permissions";
 import {
@@ -363,7 +364,7 @@ export function createAuth(options: CreateAuthOptions) {
             { db: options.services.db },
             userId,
         );
-        return { permissions: [...new Set(permissions)] };
+        return { permissions: uniq(permissions) };
     };
 
     if (isProd && options.DANGEROUSLY_SET_INSECURE_HASHING_ALGORITHM === true) {
@@ -1008,7 +1009,7 @@ export function createAuth(options: CreateAuthOptions) {
                             !isFeideCheckCurrent(feideCheckedAt),
                     },
                     session,
-                    permissions: [...new Set(permissions)],
+                    permissions: uniq(permissions),
                     groups: groups.map((g) => ({
                         slug: g.groupSlug,
                         name: g.group.name,

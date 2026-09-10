@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -241,7 +242,7 @@ function FormTestPage() {
         },
         validators: { onDynamic: formTestSchema },
         async onSubmit({ value }) {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            await delay(1500);
             globalThis.console.log("Submitted form:", value);
         },
     });

@@ -44,6 +44,7 @@ import {
     currentAcademicYear,
     isMasterStudySlug,
 } from "@photon/auth/academic-year";
+import { countBy } from "es-toolkit";
 import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { env } from "~/lib/env";
@@ -183,12 +184,11 @@ async function main() {
         `${rows.length} rader uten startår. ${writable.length} kan fylles, ${skipped.length} hoppes over.\n`,
     );
 
-    const byProgramme = new Map<string, number>();
-    for (const r of writable) {
-        const key = `${r.candidate.programSlug} (${r.via})`;
-        byProgramme.set(key, (byProgramme.get(key) ?? 0) + 1);
-    }
-    for (const [key, count] of [...byProgramme].sort()) {
+    const byProgramme = countBy(
+        writable,
+        (r) => `${r.candidate.programSlug} (${r.via})`,
+    );
+    for (const [key, count] of Object.entries(byProgramme).sort()) {
         console.log(`  ${count.toString().padStart(4)}  ${key}`);
     }
 

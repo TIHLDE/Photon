@@ -19,6 +19,7 @@
         "@dotenvx/dotenvx": "catalog:backend",
         "@photon/email": "workspace:*",
         "bullmq": "catalog:backend",
+        "es-toolkit": "catalog:",
         "nodemailer": "^9.0.5",
         "redis": "^5.8.2",
         "zod": "catalog:"

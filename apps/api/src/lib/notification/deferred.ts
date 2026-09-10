@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { schema } from "@photon/db";
 import { inArray } from "drizzle-orm";
+import { uniq } from "es-toolkit";
 import type { AppContext } from "../ctx";
 import { env } from "../env";
 import { type SendNotificationOptions, sendNotification } from ".";
@@ -93,7 +94,7 @@ async function flushInBatch(
     const mailed = entries.filter((entry) => entry.channels.email);
 
     if (mailed.length > 0) {
-        const userIds = [...new Set(mailed.map((e) => e.options.userId))];
+        const userIds = uniq(mailed.map((e) => e.options.userId));
         const users = await ctx.db
             .select({
                 id: schema.user.id,

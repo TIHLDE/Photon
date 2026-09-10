@@ -8,6 +8,7 @@ import {
 } from "@photon/auth/academic-year";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
+import { uniq } from "es-toolkit";
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
@@ -29,7 +30,7 @@ export async function resolvePriorityUserIds(
     userIds: string[],
     db: NodePgDatabase<DbSchema>,
 ): Promise<string[]> {
-    const ids = [...new Set(userIds)];
+    const ids = uniq(userIds);
 
     if (ids.length === 0) {
         return [];
@@ -476,7 +477,7 @@ export async function loadPrioritization(
     db: NodePgDatabase<DbSchema>,
     now = new Date(),
 ): Promise<PrioritizationLookup> {
-    const ids = [...new Set(userIds)];
+    const ids = uniq(userIds);
 
     if (ids.length === 0) {
         return () => false;

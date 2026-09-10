@@ -24,6 +24,7 @@
         "@photon/email": "workspace:*",
         "better-auth": "catalog:backend",
         "drizzle-orm": "catalog:backend",
+        "es-toolkit": "catalog:",
         "jose": "catalog:backend",
         "zod": "catalog:"
     },

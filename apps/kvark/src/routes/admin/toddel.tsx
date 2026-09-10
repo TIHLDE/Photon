@@ -55,6 +55,7 @@ import {
     usePendingConfirm,
 } from "#/components/confirm-delete-dialog";
 import { todayInOslo } from "#/lib/date";
+import { maxBy } from "es-toolkit";
 import { errorStatus } from "#/lib/utils";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 
@@ -318,8 +319,7 @@ function IssueDialog({
 
     // The edition number is a running count, so the only sensible default for
     // a new issue is one past the highest one in the archive.
-    const nextEdition =
-        issues.reduce((max, i) => Math.max(max, i.edition), 0) + 1;
+    const nextEdition = (maxBy(issues, (i) => i.edition)?.edition ?? 0) + 1;
 
     const [edition, setEdition] = useState<number | null>(
         issue?.edition ?? nextEdition,

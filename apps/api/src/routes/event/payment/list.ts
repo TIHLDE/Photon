@@ -13,6 +13,7 @@ import {
     getPageOffset,
     getTotalPages,
 } from "~/middleware/pagination";
+import { sumBy } from "es-toolkit";
 import { eventPaymentListResponseSchema } from "../schema";
 
 const querySchema = PaginationSchema.extend({
@@ -99,9 +100,10 @@ export const listEventPaymentsRoute = route().get(
                 .length,
             failedCount: allPayments.filter((p) => p.status === "failed")
                 .length,
-            totalPaidMinor: allPayments
-                .filter((p) => p.status === "paid")
-                .reduce((sum, p) => sum + p.amountMinor, 0),
+            totalPaidMinor: sumBy(
+                allPayments.filter((p) => p.status === "paid"),
+                (p) => p.amountMinor,
+            ),
             flaggedCount: allPayments.filter((p) => p.flag !== null).length,
         };
 

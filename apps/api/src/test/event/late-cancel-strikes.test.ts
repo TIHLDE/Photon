@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { sumBy } from "es-toolkit";
 import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 import type { IntegrationTestContext } from "~/test/config/integration";
@@ -14,7 +15,7 @@ async function strikeTotal(
         where: (s, { and, eq }) =>
             and(eq(s.userId, userId), eq(s.eventId, eventId)),
     });
-    return rows.reduce((total, r) => total + r.count, 0);
+    return sumBy(rows, (r) => r.count);
 }
 
 describe("Late cancellation strikes", () => {

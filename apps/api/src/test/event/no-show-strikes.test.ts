@@ -1,4 +1,5 @@
 import { schema } from "@photon/db";
+import { sumBy } from "es-toolkit";
 import { describe, expect } from "vitest";
 import {
     processEventNoShows,
@@ -29,7 +30,7 @@ async function strikeTotal(
         where: (s, { and, eq }) =>
             and(eq(s.userId, userId), eq(s.eventId, eventId)),
     });
-    return rows.reduce((total, r) => total + r.count, 0);
+    return sumBy(rows, (r) => r.count);
 }
 
 async function statusOf(

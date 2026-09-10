@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
@@ -48,7 +49,7 @@ describe("waitlist promotion when a spot is freed", () => {
             // Holder tar den ene plassen, waiting havner på venteliste.
             await ctx.utils.createPendingRegistration(event.id, holder.id);
             await resolveRegistrationsForEvent(event.id, ctx);
-            await new Promise((r) => setTimeout(r, 10));
+            await delay(10);
             await ctx.utils.createPendingRegistration(event.id, waiting.id);
             await resolveRegistrationsForEvent(event.id, ctx);
 
@@ -100,7 +101,7 @@ describe("waitlist promotion when a spot is freed", () => {
             for (const user of [holder, first, second]) {
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
             }
 
             expect((await statusFor(ctx, event.id, first.id)).status).toBe(
@@ -201,7 +202,7 @@ describe("waitlist promotion when the capacity is raised", () => {
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
                 // Ventelisterekkefølgen avgjøres av påmeldingstidspunktet.
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
             }
 
             expect((await statusFor(ctx, event.id, first.id)).position).toBe(1);
@@ -261,7 +262,7 @@ describe("waitlist promotion when the capacity is raised", () => {
                 await ctx.utils.acceptEventRules(user.id);
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
                 users.push(user);
             }
 
@@ -306,7 +307,7 @@ describe("waitlist promotion when the capacity is raised", () => {
                 await ctx.utils.acceptEventRules(user.id);
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
             }
 
             // Skjemaet krever at kapasiteten nullstilles sammen med
@@ -355,7 +356,7 @@ describe("waitlist promotion when the capacity is raised", () => {
                 await ctx.utils.acceptEventRules(user.id);
                 await ctx.utils.createPendingRegistration(event.id, user.id);
                 await resolveRegistrationsForEvent(event.id, ctx);
-                await new Promise((r) => setTimeout(r, 10));
+                await delay(10);
             }
 
             // Både en urelatert endring og en senket kapasitet skal la

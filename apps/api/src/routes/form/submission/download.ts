@@ -1,3 +1,4 @@
+import { uniq } from "es-toolkit";
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -119,7 +120,7 @@ export const downloadSubmissionsRoute = route().get(
          * query rather than per row, and grouped here so the derivation stays
          * the shared one. These two columns shipped empty until now.
          */
-        const submitterIds = [...new Set(submissions.map((s) => s.userId))];
+        const submitterIds = uniq(submissions.map((s) => s.userId));
         const groupsByUser = await loadStudyGroupRows(
             { db, ...ctx },
             submitterIds,

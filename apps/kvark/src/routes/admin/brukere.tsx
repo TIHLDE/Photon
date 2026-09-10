@@ -85,6 +85,7 @@ import { extractErrorMessage } from "#/lib/api-error";
 import { formatOsloDate } from "#/lib/date";
 import { useDebounced } from "#/lib/use-debounced";
 import { initials } from "#/lib/utils";
+import { uniq } from "es-toolkit";
 
 import { avatarImageUrl } from "#/lib/assets";
 
@@ -1337,24 +1338,18 @@ function MembersTable({
     // ikke kan velge et studie eller et år som gir null treff.
     const studyOptions = useMemo(
         () =>
-            Array.from(
-                new Set(
-                    (members ?? [])
-                        .map((m) => m.user.studyProgram)
-                        .filter((p): p is string => Boolean(p)),
-                ),
+            uniq(
+                (members ?? [])
+                    .map((m) => m.user.studyProgram)
+                    .filter((p): p is string => Boolean(p)),
             ).sort((a, b) => a.localeCompare(b, "nb-NO")),
         [members],
     );
 
     const yearOptions = useMemo(
         () =>
-            Array.from(
-                new Set(
-                    (members ?? []).map((m) =>
-                        new Date(m.createdAt).getFullYear(),
-                    ),
-                ),
+            uniq(
+                (members ?? []).map((m) => new Date(m.createdAt).getFullYear()),
             ).sort((a, b) => b - a),
         [members],
     );

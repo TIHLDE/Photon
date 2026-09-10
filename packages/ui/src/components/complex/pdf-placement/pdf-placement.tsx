@@ -68,13 +68,12 @@ function topForPointer(atPct: number, hPct: number, anchor: Slot["anchor"]) {
     return atPct - (anchor === "bottom" ? hPct : hPct / 2);
 }
 
+import { clamp } from "es-toolkit";
+
 const SLOT_BY_KEY = Object.fromEntries(SLOTS.map((s) => [s.key, s])) as Record<
     FieldKey,
     Slot
 >;
-
-const clamp = (v: number, min: number, max: number) =>
-    Math.min(max, Math.max(min, v));
 
 type PdfPlacementProps = {
     /** URL of the PDF to place fields on. */

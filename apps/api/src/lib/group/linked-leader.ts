@@ -33,6 +33,7 @@
 
 import { schema } from "@photon/db";
 import { eq, inArray } from "drizzle-orm";
+import { uniq, union } from "es-toolkit";
 import type { AppContext } from "~/lib/ctx";
 
 /**
@@ -49,11 +50,6 @@ export async function getLinkedLeaderPosition(
         .where(eq(schema.groupPosition.linkedGroupSlug, groupSlug))
         .limit(1);
     return position ?? null;
-}
-
-/** Union, order-preserving and duplicate-free. */
-function union(a: string[] | null, b: string[] | null): string[] {
-    return [...new Set([...(a ?? []), ...(b ?? [])])];
 }
 
 /**
@@ -123,7 +119,10 @@ export async function readLeaderGlobalPermissions(
     groupSlug: string,
     stored: string[] | null,
 ): Promise<string[]> {
-    return union(stored, await permissionsFromLinkedPosition(ctx, groupSlug));
+    return union(
+        stored ?? [],
+        await permissionsFromLinkedPosition(ctx, groupSlug),
+    );
 }
 
 /**
@@ -139,7 +138,7 @@ export async function readLinkedPositionPermissions(
     },
 ): Promise<string[]> {
     return union(
-        position.permissions,
+        position.permissions ?? [],
         await permissionsFromLinkedGroup(ctx, position),
     );
 }
@@ -202,7 +201,7 @@ export async function readLinkedPositionPermissionsBatch(
     const linked = positions.filter(mirrors);
     if (linked.length === 0) return result;
 
-    const slugs = [...new Set(linked.map((p) => p.linkedGroupSlug as string))];
+    const slugs = uniq(linked.map((p) => p.linkedGroupSlug as string));
     const groups = await ctx.db
         .select({
             slug: schema.group.slug,
@@ -216,7 +215,7 @@ export async function readLinkedPositionPermissionsBatch(
         result.set(
             position.id,
             union(
-                position.permissions,
+                position.permissions ?? [],
                 bySlug.get(position.linkedGroupSlug as string) ?? [],
             ),
         );

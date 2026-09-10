@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DISABLED_TIMEOUTS, createDb, schema } from "@photon/db";
 import { eq, inArray, isNotNull } from "drizzle-orm";
+import { uniq } from "es-toolkit";
 import { resolveGroupSlug } from "./src/mappings";
 
 const commit = process.argv.includes("--commit");
@@ -54,7 +55,7 @@ const main = async () => {
     );
 
     // Resolve Lepton usernames -> Photon user ids
-    const usernames = [...new Set(withAdmin.map((g) => g.fines_admin_id!))];
+    const usernames = uniq(withAdmin.map((g) => g.fines_admin_id!));
     const users = await db
         .select({ id: schema.user.id, username: schema.user.username })
         .from(schema.user)

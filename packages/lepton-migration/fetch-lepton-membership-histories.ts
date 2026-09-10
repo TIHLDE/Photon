@@ -1,3 +1,4 @@
+import { delay } from "es-toolkit";
 /**
  * Fetches every group's *ended* memberships from Lepton into a local JSON
  * cache — the source for Photon's "Tidligere medlemmer" section.
@@ -27,8 +28,6 @@ type LeptonMembershipHistory = {
     start_date: string;
     end_date: string;
 };
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const get = async (path: string) => {
     const res = await fetch(`${BASE}${path}`, {
@@ -89,12 +88,12 @@ const main = async () => {
             rows.push(...data.results);
             if (!data.next) break;
             page++;
-            await sleep(DELAY_MS);
+            await delay(DELAY_MS);
         }
         histories[slug] = rows;
         total += rows.length;
         if (rows.length > 0) console.log(`  ${slug}: ${rows.length}`);
-        await sleep(DELAY_MS);
+        await delay(DELAY_MS);
     }
 
     const out = `${import.meta.dir}/data/lepton-membership-histories.json`;

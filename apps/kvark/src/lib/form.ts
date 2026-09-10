@@ -5,6 +5,7 @@ import type {
     UpdateForm,
 } from "@tihlde/sdk";
 import { formatInOslo } from "#/lib/date";
+import { uniqBy } from "es-toolkit";
 
 export type FormQuestionType =
     | "text_answer"
@@ -257,6 +258,7 @@ function countBy(
 
     for (const submission of submissions) {
         const value = valueOf(submission);
+        // Map keeps null keys; countBy would coerce them to the string "null".
         counts.set(value, (counts.get(value) ?? 0) + 1);
     }
 
@@ -340,10 +342,5 @@ function bucketOrder(value: string | null): number {
 
 /** Ett svar per person, det første i lista. */
 function uniqueByUser(submissions: FormSubmissionRow[]): FormSubmissionRow[] {
-    const seen = new Set<string>();
-    return submissions.filter((submission) => {
-        if (seen.has(submission.userId)) return false;
-        seen.add(submission.userId);
-        return true;
-    });
+    return uniqBy(submissions, (submission) => submission.userId);
 }

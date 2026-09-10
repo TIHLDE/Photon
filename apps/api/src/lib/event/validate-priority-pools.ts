@@ -4,6 +4,7 @@ import {
 } from "@photon/auth/academic-year";
 import type { DbSchema } from "@photon/db";
 import { schema } from "@photon/db";
+import { uniq } from "es-toolkit";
 import { inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
@@ -54,13 +55,11 @@ export async function validatePriorityPools(
 ): Promise<void> {
     if (!pools?.length) return;
 
-    const slugs = [
-        ...new Set(
-            pools
-                .map((pool) => pool.groupSlug)
-                .filter((slug): slug is string => slug !== null),
-        ),
-    ];
+    const slugs = uniq(
+        pools
+            .map((pool) => pool.groupSlug)
+            .filter((slug): slug is string => slug !== null),
+    );
 
     const groups = slugs.length
         ? await db
