@@ -104,6 +104,16 @@ export const ADMIN_SECTION_PERMISSIONS = {
         "api-keys:update",
         "api-keys:delete",
     ],
+    // Same for OAuth-klienter: the plugin's client endpoints check exactly
+    // these, and every client belongs to TIHLDE rather than to whoever
+    // created it.
+    "oauth-clients": [
+        "oauth-clients:view",
+        "oauth-clients:create",
+        "oauth-clients:update",
+        "oauth-clients:delete",
+        "oauth-clients:manage",
+    ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type AdminSection = keyof typeof ADMIN_SECTION_PERMISSIONS;
