@@ -13,7 +13,7 @@ import { Checkbox } from "@tihlde/ui/ui/checkbox";
 import { Field, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import { Label } from "@tihlde/ui/ui/label";
-import { SignatureInput } from "@tihlde/ui/ui/signature-input";
+import { SignatureInput } from "./-components/signature-input";
 import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -25,6 +25,8 @@ import {
 } from "#/api/queries/contracts";
 import { formatOsloDate } from "#/lib/date";
 
+import kontraktCss from "./kontrakt.css?url";
+
 // The signed PDF is a private asset streamed by the API, so it is linked
 // directly rather than fetched through the SDK. A top-level navigation carries
 // the session cookie, which is what the route authorizes against.
@@ -33,7 +35,10 @@ const SIGNED_PDF_URL = new URL(
     import.meta.env.VITE_API_URL ?? "https://photon.tihlde.org/",
 ).toString();
 
-export const Route = createFileRoute("/_app/kontrakt")({
+export const Route = createFileRoute("/_app/kontrakt/")({
+    head: () => ({
+        links: [{ rel: "stylesheet", href: kontraktCss }],
+    }),
     component: KontraktPage,
     beforeLoad: ({ location }) => authClientWithRedirect(location.href),
     loader: ({ context }) =>

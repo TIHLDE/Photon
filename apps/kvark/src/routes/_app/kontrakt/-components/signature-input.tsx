@@ -3,11 +3,11 @@
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { SignaturePad } from "#/components/ui/signature-pad";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
-import { cn } from "#/lib/utils";
+import { SignaturePad } from "@tihlde/ui/ui/signature-pad";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@tihlde/ui/ui/tabs";
+import { cn } from "@tihlde/ui/utils";
 
-/** Handwriting faces available for the typed signature (see styles.css). */
+/** Handwriting faces available for the typed signature. */
 const STYLES = [
     { id: "great-vibes", family: "Great Vibes", label: "Elegant" },
     { id: "dancing-script", family: "Dancing Script", label: "Flytende" },
