@@ -24,7 +24,7 @@ import { account, user } from "@photon/db/schema";
 import type { EmailService, CacheService } from "@photon/core/services";
 import { uniq } from "es-toolkit";
 import { env } from "@photon/core/env";
-import { getUserPermissions } from "./rbac/permissions";
+import { getUserPermissions, hasPermission } from "./rbac/permissions";
 import {
     feidePlugin,
     isFeideCheckCurrent,
@@ -34,6 +34,27 @@ import {
     syncFeideHook,
 } from "./feide";
 import { syncDeEldstesRaad } from "./de-eldstes-raad";
+
+/**
+ * Eieren av alle OAuth-klienter. Verdien i seg selv betyr ingenting utover å
+ * være den samme for hver rad — den skiller «TIHLDE sin klient» fra en rad en
+ * enkeltbruker eventuelt måtte eie selv.
+ */
+const OAUTH_CLIENT_REFERENCE = "tihlde";
+
+/** Hva plugin-ens klienthandlinger krever av tilganger. */
+const OAUTH_CLIENT_ACTION_PERMISSIONS: Record<
+    "create" | "read" | "list" | "update" | "rotate" | "delete",
+    string[]
+> = {
+    create: ["oauth-clients:create", "oauth-clients:manage"],
+    read: ["oauth-clients:view", "oauth-clients:manage"],
+    list: ["oauth-clients:view", "oauth-clients:manage"],
+    update: ["oauth-clients:update", "oauth-clients:manage"],
+    // Å rullere hemmeligheten endrer klienten, ikke hvem som finnes.
+    rotate: ["oauth-clients:update", "oauth-clients:manage"],
+    delete: ["oauth-clients:delete", "oauth-clients:manage"],
+};
 
 /**
  * Feide is a genuine third-party identity provider: it only works once a Feide
@@ -891,6 +912,39 @@ export function createAuth(options: CreateAuthOptions) {
                     ...preferredUsernameClaim(u),
                     ...(u ? await permissionClaims(u.id) : {}),
                 }),
+
+                /**
+                 * OAuth-klientene tilhører TIHLDE, ikke den som trykket «Ny
+                 * klient».
+                 *
+                 * Uten dette eier oppretteren raden alene: plugin-en lister
+                 * bare klienter med din egen `userId`, og nekter update,
+                 * delete og rotate til alle andre. Det gjorde
+                 * `oauth-clients:*` umulig å delegere — tilgangen kunne gis
+                 * bort, men lista var tom og knappene svarte 401.
+                 *
+                 * Med en felles referanse blir eierskapet organisasjonens, og
+                 * {@link clientPrivileges} er det eneste som avgjør hvem som
+                 * kommer til. Eksisterende rader flyttes over i
+                 * 0084_oauth_clients_owned_by_tihlde.
+                 */
+                clientReference: () => OAUTH_CLIENT_REFERENCE,
+
+                /**
+                 * Klientadministrasjon krever `oauth-clients:*`.
+                 *
+                 * Dette er den eneste kontrollen: uten den kunne enhver
+                 * innlogget bruker opprette en klient, fordi plugin-en ellers
+                 * bare spør om du har en sesjon.
+                 */
+                clientPrivileges: async ({ action, user: u }) =>
+                    u
+                        ? await hasPermission(
+                              { db: options.services.db },
+                              u.id,
+                              OAUTH_CLIENT_ACTION_PERMISSIONS[action],
+                          )
+                        : false,
 
                 prefix: {
                     clientSecret: "tihlde_cs_",

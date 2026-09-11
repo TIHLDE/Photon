@@ -143,6 +143,7 @@ describe("OAuth offline_access", () => {
         "issues a refresh token to a client that stores no scopes of its own",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["oauth-clients:create"]);
             const cookie = await signInAndGetCookie(ctx, user);
             const client = await createOAuthClient(ctx, cookie);
 
@@ -187,6 +188,7 @@ describe("OAuth offline_access", () => {
         "accepts every scope the discovery document advertises",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["oauth-clients:create"]);
             const cookie = await signInAndGetCookie(ctx, user);
             const client = await createOAuthClient(ctx, cookie);
 

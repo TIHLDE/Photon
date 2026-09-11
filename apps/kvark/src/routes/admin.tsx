@@ -224,7 +224,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "OAuth-klienter",
                 icon: ShieldCheckIcon,
                 link: linkOptions({ to: "/admin/oauth-clients" }),
-                permission: "root",
+                permission: ADMIN_SECTION_PERMISSIONS["oauth-clients"],
             },
             {
                 label: "Database Viewer",
