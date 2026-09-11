@@ -2,6 +2,8 @@ import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
+import { claimPrivateAssetUrls } from "~/lib/asset";
+import { enqueueAssetRelease } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
@@ -34,7 +36,7 @@ export const updateFineRoute = route().patch(
         const fineId = c.req.param("fineId");
         const groupSlug = c.req.param("groupSlug");
         const ctx = c.get("ctx");
-        const { db } = ctx;
+        const { db, bucket } = ctx;
         const user = c.get("user");
 
         if (!isValidUUID(fineId)) {
@@ -79,6 +81,15 @@ export const updateFineRoute = route().patch(
             }
         }
 
+        if (body.image !== undefined) {
+            if (!(await canUpdateFines(ctx, user.id, group))) {
+                throw new HTTPException(403, {
+                    message:
+                        "Only the fines admin or the group's leader can change the evidence picture",
+                });
+            }
+        }
+
         // `!== undefined`, not truthiness: clearing a defense by sending "" is
         // still writing to someone's fine, and must not skip the owner check.
         if (body.defense !== undefined) {
@@ -113,6 +124,7 @@ export const updateFineRoute = route().patch(
         const updateData: {
             updatedAt: Date;
             defense?: string;
+            image?: string | null;
             status?: "pending" | "approved" | "paid" | "rejected";
             approvedAt?: Date;
             approvedByUserId?: string;
@@ -123,6 +135,13 @@ export const updateFineRoute = route().patch(
 
         if (body.defense !== undefined) {
             updateData.defense = body.defense;
+        }
+
+        if (body.image !== undefined) {
+            // Uploaded pictures are staged until a row claims them, and the
+            // one a fine points at is private: it shows who was fined for what.
+            await claimPrivateAssetUrls(bucket, [body.image]);
+            updateData.image = body.image;
         }
 
         if (body.status !== undefined) {
@@ -141,6 +160,14 @@ export const updateFineRoute = route().patch(
             .update(schema.fine)
             .set(updateData)
             .where(eq(schema.fine.id, fineId));
+
+        if (
+            body.image !== undefined &&
+            fine.image &&
+            fine.image !== body.image
+        ) {
+            await enqueueAssetRelease([fine.image], ctx);
+        }
 
         return c.json({ message: "Fine updated successfully" }, 200);
     },
