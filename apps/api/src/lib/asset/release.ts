@@ -32,7 +32,7 @@ export async function enqueueAssetRelease(
     const keys = [
         ...new Set(
             urls
-                .map((url) => (url ? (assetKeyFromUrl(url) ?? url) : null))
+                .map((url) => (url ? ownAssetKey(url) : null))
                 .filter((key): key is string => Boolean(key)),
         ),
     ];
@@ -46,6 +46,22 @@ export async function enqueueAssetRelease(
     } catch (error) {
         console.error("Could not enqueue asset release:", error);
     }
+}
+
+/**
+ * The asset key a stored value names, or null when the value points somewhere
+ * we do not own.
+ *
+ * Columns hold two shapes: our own URL, and the raw key. Anything else is an
+ * external address — the Azure blobs the fines carry over from Lepton are the
+ * live example — and deleting by it would be a bucket call against a key that
+ * was never ours.
+ */
+function ownAssetKey(value: string): string | null {
+    const key = assetKeyFromUrl(value);
+    if (key) return key;
+
+    return URL.canParse(value) ? null : value;
 }
 
 /**

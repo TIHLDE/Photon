@@ -284,6 +284,41 @@ describe("deleting a fine releases its picture", () => {
     );
 
     integrationTest(
+        "a picture hosted somewhere else is left alone",
+        async ({ ctx }) => {
+            const { giver, group, fined } = await setupFine(ctx, {
+                slug: "fine-image-release-external",
+            });
+
+            const [legacy] = await ctx.db
+                .insert(schema.fine)
+                .values({
+                    userId: fined.id,
+                    groupSlug: group.slug,
+                    createdByUserId: giver.id,
+                    reason: "Migrated from Lepton",
+                    amount: 1,
+                    image: "https://tihlde.blob.core.windows.net/media/evidence.jpg",
+                    status: "pending",
+                })
+                .returning();
+
+            if (!legacy) throw new Error("Failed to create legacy fine");
+
+            const client = await ctx.utils.clientForUser(giver);
+            const response = await client.api.groups[":groupSlug"].fines[
+                ":fineId"
+            ].$delete({
+                param: { groupSlug: group.slug, fineId: legacy.id },
+            });
+
+            expect(response.status).toBe(204);
+            expect(await runQueuedAssetReleases(ctx)).toEqual([]);
+        },
+        500_000,
+    );
+
+    integrationTest(
         "a picture another fine still points at is kept",
         async ({ ctx }) => {
             const { giver, group, fined, fine, key, image } = await setupFine(
