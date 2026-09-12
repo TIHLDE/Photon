@@ -1,5 +1,6 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
+import { releaseAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { requireEventAccess } from "~/lib/event/access";
 import { isEventOwner } from "../../lib/event/middleware";
@@ -34,7 +35,8 @@ export const deleteRoute = route().delete(
     }),
     async (c) => {
         const { eventId } = c.req.param();
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         // Check if the event exists
         const event = await db
@@ -52,6 +54,8 @@ export const deleteRoute = route().delete(
         await db.transaction(async (tx) => {
             await tx.delete(schema.event).where(eq(schema.event.id, eventId));
         });
+
+        await releaseAssetUrls(ctx, [event.imageUrl]);
 
         return c.json(
             {

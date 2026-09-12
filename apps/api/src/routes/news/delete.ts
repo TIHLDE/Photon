@@ -8,6 +8,7 @@ import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { deleteNewsResponseSchema, newsIdParamSchema } from "./schema";
+import { releaseAssetUrls } from "~/lib/asset/release";
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -37,7 +38,8 @@ export const deleteRoute = route().delete(
         ownership: { param: "id", check: isNewsCreator },
     }),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const { id } = c.req.valid("param");
 
         // Fetch the news article to verify it exists
@@ -53,6 +55,8 @@ export const deleteRoute = route().delete(
 
         // Delete the news article
         await db.delete(schema.news).where(eq(schema.news.id, id));
+
+        await releaseAssetUrls(ctx, [newsArticle.imageUrl]);
 
         return c.json({ message: "News article deleted successfully" });
     },

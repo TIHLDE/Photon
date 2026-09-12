@@ -4,6 +4,7 @@ import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
@@ -61,6 +62,9 @@ export const updateRoute = route().put(
          */
         let capacityGrew = false;
 
+        /** Bildet raden pekte på før kallet. Ryddes opp etter commit. */
+        let previousImageUrl: string | null = null;
+
         const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event
             const existing = await tx
@@ -91,6 +95,8 @@ export const updateRoute = route().put(
              * avvist, også de som ikke rører prikker, og raden hadde vært
              * umulig å redigere seg ut av.
              */
+            previousImageUrl = event.imageUrl;
+
             const willBePaid = body.isPaidEvent ?? event.isPaidEvent;
 
             if (willBePaid) {
@@ -444,6 +450,18 @@ export const updateRoute = route().put(
 
             return slug;
         });
+
+        /**
+         * Et bilde ingen rad peker på lenger blir aldri ryddet av noe annet:
+         * opprydningsjobben ser bare assets som fortsatt står som «staged», og
+         * dette ble forfremmet da det ble tatt i bruk.
+         *
+         * Med vilje etter transaksjonen: sjekken av om noe annet bruker filen
+         * leser den lagrede raden.
+         */
+        await releaseReplacedAssetUrls(c.get("ctx"), [
+            [previousImageUrl, body.imageUrl],
+        ]);
 
         /**
          * Raising the capacity frees spots, and a freed spot belongs to the

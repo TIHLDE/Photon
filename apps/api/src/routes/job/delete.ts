@@ -7,6 +7,7 @@ import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { deleteJobResponseSchema } from "./schema";
+import { releaseAssetUrls } from "~/lib/asset/release";
 
 export const deleteRoute = route().delete(
     "/:id",
@@ -33,7 +34,8 @@ export const deleteRoute = route().delete(
         ownership: { param: "id", check: isJobCreator },
     }),
     async (c) => {
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
         const { id } = c.req.param();
 
         // Check if job exists
@@ -49,6 +51,8 @@ export const deleteRoute = route().delete(
 
         // Delete the job posting
         await db.delete(schema.jobPost).where(eq(schema.jobPost.id, id));
+
+        await releaseAssetUrls(ctx, [job.imageUrl]);
 
         return c.json({ message: "Job posting deleted successfully" });
     },

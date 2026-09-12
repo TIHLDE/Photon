@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { promoteAssetUrls } from "~/lib/asset";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -44,7 +45,8 @@ export const updateRoute = route().patch(
     validator("json", updateNewsSchema),
     async (c) => {
         const { archived, ...body } = c.req.valid("json");
-        const { db, bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db, bucket } = ctx;
         const { id } = c.req.valid("param");
 
         // Fetch the news article to verify it exists
@@ -82,6 +84,10 @@ export const updateRoute = route().patch(
             })
             .where(eq(schema.news.id, id))
             .returning();
+
+        await releaseReplacedAssetUrls(ctx, [
+            [newsArticle.imageUrl, body.imageUrl],
+        ]);
 
         return c.json(updatedNews);
     },

@@ -2,6 +2,7 @@ import { type DbSchema, schema } from "@photon/db";
 import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
+import { IMAGE_VARIANT_WIDTHS, imageVariantKey } from "./image";
 
 /**
  * Sized for Töddel: the archive's largest issue is just under 40 MB, so 50 MB
@@ -111,6 +112,12 @@ export async function deleteAsset(
     key: string,
 ): Promise<void> {
     await bucket.delete(key);
+
+    // Variantene har ingen asset-rad, så uten denne runden blir de liggende
+    // for alltid — og bøtta sperres på antall objekter, ikke størrelse.
+    for (const width of IMAGE_VARIANT_WIDTHS) {
+        await bucket.deleteObject(imageVariantKey(key, width));
+    }
 }
 
 /**
