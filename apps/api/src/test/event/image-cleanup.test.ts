@@ -118,4 +118,44 @@ describe("event image cleanup", () => {
         },
         500_000,
     );
+    integrationTest(
+        "an update that does not touch the image keeps the file",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const key = "uploads/2026/01/untouched_image.png";
+            await ctx.bucket.upload(key, Buffer.from("image bytes"), {
+                originalFilename: "image.png",
+                contentType: "image/png",
+                uploadedById: user.id,
+            });
+
+            const createResponse = await client.api.event.$post({
+                json: {
+                    ...baseEventBody,
+                    imageUrl: `https://photon.test/api/assets/${key}`,
+                },
+            });
+            expect(createResponse.status).toBe(201);
+            const { eventId } = await createResponse.json();
+
+            const updateResponse = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: { title: "Renamed event" },
+            });
+            expect(updateResponse.status).toBe(200);
+
+            expect(await ctx.bucket.exists(key)).toBe(true);
+            expect(await ctx.bucket.getAsset(key)).not.toBeNull();
+        },
+        500_000,
+    );
 });

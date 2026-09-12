@@ -78,6 +78,8 @@ export const updateRoute = route().put(
             }
             const event = existing[0];
 
+            previousImageUrl = event.imageUrl;
+
             /**
              * Reglene for betalte arrangementer leses på arrangementet slik
              * det blir *etter* oppdateringen, ikke bare på feltene kallet
@@ -95,8 +97,6 @@ export const updateRoute = route().put(
              * avvist, også de som ikke rører prikker, og raden hadde vært
              * umulig å redigere seg ut av.
              */
-            previousImageUrl = event.imageUrl;
-
             const willBePaid = body.isPaidEvent ?? event.isPaidEvent;
 
             if (willBePaid) {
