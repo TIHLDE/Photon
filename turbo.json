@@ -27,7 +27,15 @@
             "outputs": [".vercel/output/**", ".output/**", "dist/**"],
             // Vite inlines these at build time, so they belong to the cache
             // key. Turbo's strict env mode also withholds anything undeclared.
-            "env": ["SERVER_URL", "VITE_*"]
+            "env": ["SERVER_URL", "VITE_*"],
+            // Source map-opplastingen trenger disse, men de endrer ikke
+            // byggeresultatet — som `env` ville en nøkkelrullering bustet
+            // cachen uten grunn.
+            "passThroughEnv": [
+                "POSTHOG_CLI_API_KEY",
+                "POSTHOG_CLI_PROJECT_ID",
+                "POSTHOG_CLI_HOST"
+            ]
         },
         "start": {
             "dependsOn": ["build"],
