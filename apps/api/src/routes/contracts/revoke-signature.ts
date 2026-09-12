@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { enqueueAssetRelease } from "~/lib/asset/release";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -35,7 +36,8 @@ export const revokeSignatureRoute = route().delete(
     async (c) => {
         const groupSlug = c.req.param("groupSlug");
         const userId = c.req.param("userId");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         const membership = await db.query.groupMembership.findFirst({
             where: and(
@@ -71,6 +73,19 @@ export const revokeSignatureRoute = route().delete(
         if (deleted.length === 0) {
             throw new HTTPException(404, { message: "Signature not found" });
         }
+
+        /**
+         * A revoked signature leaves no record behind, so the signed PDF and
+         * the signature image must not outlive it: a document that still looks
+         * like proof of a signature nobody can verify any more.
+         */
+        await enqueueAssetRelease(
+            deleted.flatMap((signature) => [
+                signature.signatureFileKey,
+                signature.signedPdfKey,
+            ]),
+            ctx,
+        );
 
         return c.json({ message: "Signature revoked" }, 200);
     },

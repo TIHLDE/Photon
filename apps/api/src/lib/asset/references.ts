@@ -1,5 +1,13 @@
 import { type DbSchema, schema } from "@photon/db";
-import { type SQL, getTableName, inArray, like, or, sql } from "drizzle-orm";
+import {
+    type SQL,
+    getTableName,
+    inArray,
+    isNotNull,
+    like,
+    or,
+    sql,
+} from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import { assetKeyFromUrl } from "./index";
@@ -103,4 +111,38 @@ export async function findAssetReferences(
     }
 
     return found;
+}
+
+/**
+ * Every asset key the database points at, mapped to the column it was found
+ * in.
+ *
+ * The inverse of {@link findAssetReferences}: that one asks about a handful of
+ * keys and is right for a job releasing one row's pictures, but answering it
+ * for the whole table means a `LIKE` per key per column. This reads each
+ * column once instead, which is what a report over every asset needs.
+ *
+ * Matching is exact here, where {@link findAssetReferences} reads `_` in a key
+ * as a `LIKE` wildcard. The looser one can only ever over-report a reference,
+ * so a key this function calls unreferenced is one that one would agree about.
+ */
+export async function collectReferencedAssetKeys(
+    db: NodePgDatabase<DbSchema>,
+): Promise<Map<string, string>> {
+    const referenced = new Map<string, string>();
+
+    for (const { table, column, label } of ASSET_REFERENCE_COLUMNS) {
+        const rows = await db
+            .select({ value: sql<string>`${column}` })
+            .from(table)
+            .where(isNotNull(column));
+
+        for (const { value } of rows) {
+            if (!value) continue;
+            const key = assetKeyFromUrl(value) ?? value;
+            if (!referenced.has(key)) referenced.set(key, label);
+        }
+    }
+
+    return referenced;
 }

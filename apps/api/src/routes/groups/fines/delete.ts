@@ -1,6 +1,7 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { enqueueAssetRelease } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
@@ -65,6 +66,8 @@ export const deleteFineRoute = route().delete(
 
         // Delete the fine
         await db.delete(schema.fine).where(eq(schema.fine.id, fineId));
+
+        await enqueueAssetRelease([fine.image], ctx);
 
         return c.body(null, 204);
     },
