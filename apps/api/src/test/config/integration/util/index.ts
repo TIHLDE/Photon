@@ -9,6 +9,7 @@ import { createCreateTestUser } from "./create-test-user";
 import { createGetClient } from "./get-client";
 import { createGetClientForUser } from "./get-client-for-user";
 import { createGiveUserPermissions } from "./give-user-permission";
+import { createRunAssetReleases } from "./run-asset-releases";
 import { createSetupGroups } from "./setup-groups";
 
 export type TestUtilContext = TestAppContext & {
@@ -27,5 +28,6 @@ export const createTestUtils = (ctx: TestUtilContext) => {
         createPendingRegistration: createCreatePendingRegistration(ctx),
         giveUserPermissions: createGiveUserPermissions(ctx),
         acceptEventRules: createAcceptEventRules(ctx),
+        runAssetReleases: createRunAssetReleases(ctx),
     };
 };

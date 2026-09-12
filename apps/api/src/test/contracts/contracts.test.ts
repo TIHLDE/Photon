@@ -503,4 +503,86 @@ describe("contracts", () => {
             500_000,
         );
     });
+
+    describe("revoking a signature", () => {
+        integrationTest(
+            "deletes the signed PDF and the signature image with the row",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                const adminClient = await ctx.utils.clientForUser(admin);
+                await ctx.utils.giveUserPermissions(admin, [
+                    "contracts:create",
+                    "contracts:update",
+                    "contracts:manage",
+                ]);
+
+                const fileKey = "test/contract-revoke.pdf";
+                await ctx.bucket.upload(fileKey, await makeContractPdf(), {
+                    originalFilename: "contract.pdf",
+                    contentType: "application/pdf",
+                });
+
+                const created = await adminClient.api.contracts.$post({
+                    json: {
+                        title: "Kontrakt",
+                        version: "2026-01",
+                        fileKey,
+                        signaturePlacement: PLACEMENT,
+                    },
+                });
+                const contract = await created.json();
+                await adminClient.api.contracts[":id"].activate.$patch({
+                    param: { id: contract.id },
+                });
+
+                const group = await ctx.utils.createTestGroup({
+                    slug: "contract-revoke",
+                });
+                const member = await ctx.utils.createTestUser(
+                    "contract-revoke@test.com",
+                );
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: member.id,
+                    groupSlug: group.slug,
+                });
+
+                const memberClient = await ctx.utils.clientForUser(member);
+                const signed = await memberClient.api.contracts.sign.$post({
+                    json: {
+                        signedName: "Kari Nordmann",
+                        signatureDataUrl: SIGNATURE_DATA_URL,
+                    },
+                });
+                expect(signed.status).toBe(201);
+
+                const row = await ctx.db.query.contractSignature.findFirst({
+                    where: eq(schema.contractSignature.userId, member.id),
+                });
+                if (!row) throw new Error("Signature was not recorded");
+
+                const revoked = await adminClient.api.contracts.groups[
+                    ":groupSlug"
+                ].signatures[":userId"].$delete({
+                    param: { groupSlug: group.slug, userId: member.id },
+                });
+
+                expect(revoked.status).toBe(200);
+
+                const jobs = await ctx.utils.runAssetReleases();
+                expect(jobs).toEqual([
+                    { keys: [row.signatureFileKey, row.signedPdfKey] },
+                ]);
+
+                expect(await ctx.bucket.exists(row.signatureFileKey)).toBe(
+                    false,
+                );
+                expect(await ctx.bucket.exists(row.signedPdfKey)).toBe(false);
+                expect(await ctx.bucket.getAsset(row.signedPdfKey)).toBeNull();
+
+                // The contract the signature was made against is untouched.
+                expect(await ctx.bucket.exists(fileKey)).toBe(true);
+            },
+            500_000,
+        );
+    });
 });

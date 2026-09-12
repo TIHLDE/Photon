@@ -1,12 +1,7 @@
-import { ASSET_QUEUE_NAME } from "@photon/core/services/queue";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import { imageVariantKey } from "~/lib/asset/image";
-import {
-    type AssetReleaseJobData,
-    releaseAssetKeys,
-} from "~/lib/asset/release";
 import { removeUserFromGroup } from "~/lib/group";
 import {
     type IntegrationTestContext,
@@ -237,18 +232,6 @@ describe("fine images", () => {
     );
 });
 
-async function runQueuedAssetReleases(ctx: IntegrationTestContext) {
-    const jobs = await ctx.queue
-        .getQueue<AssetReleaseJobData>(ASSET_QUEUE_NAME)
-        .getJobs();
-
-    for (const job of jobs) {
-        await releaseAssetKeys(job.data.keys, ctx);
-    }
-
-    return jobs;
-}
-
 describe("deleting a fine releases its picture", () => {
     integrationTest(
         "the asset row, the object and its cached variants are gone",
@@ -269,8 +252,8 @@ describe("deleting a fine releases its picture", () => {
 
             expect(response.status).toBe(204);
 
-            const jobs = await runQueuedAssetReleases(ctx);
-            expect(jobs.map((job) => job.data.keys)).toEqual([[key]]);
+            const jobs = await ctx.utils.runAssetReleases();
+            expect(jobs).toEqual([{ keys: [key] }]);
 
             expect(await ctx.bucket.exists(key)).toBe(false);
             expect(await ctx.bucket.getObject(variantKey)).toBeNull();
@@ -313,7 +296,7 @@ describe("deleting a fine releases its picture", () => {
             });
 
             expect(response.status).toBe(204);
-            expect(await runQueuedAssetReleases(ctx)).toEqual([]);
+            expect(await ctx.utils.runAssetReleases()).toEqual([]);
         },
         500_000,
     );
@@ -345,7 +328,7 @@ describe("deleting a fine releases its picture", () => {
 
             expect(response.status).toBe(204);
 
-            await runQueuedAssetReleases(ctx);
+            await ctx.utils.runAssetReleases();
 
             expect(await ctx.bucket.exists(key)).toBe(true);
             expect(
@@ -385,7 +368,7 @@ describe("replacing a fine's picture", () => {
 
             expect(response.status).toBe(200);
 
-            await runQueuedAssetReleases(ctx);
+            await ctx.utils.runAssetReleases();
 
             expect(await ctx.bucket.exists(key)).toBe(false);
             expect(await ctx.bucket.exists(newKey)).toBe(true);
