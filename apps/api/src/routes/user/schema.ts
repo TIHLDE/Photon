@@ -13,6 +13,14 @@ import {
  */
 export const BASELINE_ROLES = ["member", "alumni"] as const;
 
+export const USER_LIST_ISSUES = [
+    "no-baseline-role",
+    "feide-inactive",
+    "alumni-mismatch",
+] as const;
+
+export type UserListIssue = (typeof USER_LIST_ISSUES)[number];
+
 // ===== RESPONSE SCHEMAS =====
 
 export const allergySchema = Schema(
@@ -337,6 +345,10 @@ export const userListItemSchema = Schema(
         baselineRole: z.enum(["member", "alumni"]).nullable().meta({
             description:
                 "The member/alumni baseline role the account holds, or null for an account holding neither — a stranger, or someone Feide has never confirmed either way. Only 'member' carries the right to register for events.",
+        }),
+        issues: z.array(z.enum(USER_LIST_ISSUES)).meta({
+            description:
+                "Account states an admin has to act on, none of which are visible from the other fields. 'no-baseline-role': holds neither member nor alumni, so every event registration is a 403 while the account otherwise looks healthy. 'feide-inactive': Feide reported the study programme as not enrolled, which demotes the account to alumni on the next login. 'alumni-mismatch': marked alumni while the cohort places them inside the programme. Empty for the overwhelming majority.",
         }),
         createdAt: z
             .string()

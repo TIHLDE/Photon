@@ -6187,6 +6187,8 @@ export interface components {
             email: string | null;
             /** @description The member/alumni baseline role the account holds, or null for an account holding neither — a stranger, or someone Feide has never confirmed either way. Only 'member' carries the right to register for events. */
             baselineRole: ("member" | "alumni") | null;
+            /** @description Account states an admin has to act on, none of which are visible from the other fields. 'no-baseline-role': holds neither member nor alumni, so every event registration is a 403 while the account otherwise looks healthy. 'feide-inactive': Feide reported the study programme as not enrolled, which demotes the account to alumni on the next login. 'alumni-mismatch': marked alumni while the cohort places them inside the programme. Empty for the overwhelming majority. */
+            issues: ("no-baseline-role" | "feide-inactive" | "alumni-mismatch")[];
             /** @description Account creation timestamp */
             createdAt: string;
         };

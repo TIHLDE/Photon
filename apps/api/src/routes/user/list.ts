@@ -16,6 +16,7 @@ import {
 } from "~/middleware/pagination";
 import {
     NO_STUDY_FILTER,
+    type UserListIssue,
     userListQuerySchema,
     userListResponseSchema,
 } from "./schema";
@@ -83,6 +84,11 @@ export const listUsersRoute = route().get(
                     number | null
                 >`${schema.studyProgramMembership.startYear}`.as(
                     "programme_start_year",
+                ),
+                feideActive: sql<
+                    boolean | null
+                >`${schema.studyProgramMembership.feideActive}`.as(
+                    "programme_feide_active",
                 ),
             })
             .from(schema.groupMembership)
@@ -219,6 +225,7 @@ export const listUsersRoute = route().get(
                 baselineRole: sql<
                     "member" | "alumni" | null
                 >`${baselineRole.name}`,
+                feideActive: studyProgram.feideActive,
             })
             .from(schema.user)
             .leftJoin(studyProgram, eq(studyProgram.userId, schema.user.id))
@@ -259,7 +266,7 @@ export const listUsersRoute = route().get(
             totalCount,
             pages: totalPages,
             nextPage: getNextPage(page, totalPages),
-            items: rows.map(({ banned, ...row }) => {
+            items: rows.map(({ banned, feideActive, ...row }) => {
                 const standing = computeClassStanding(
                     studyByUser.get(row.id) ?? [],
                 );
@@ -270,9 +277,44 @@ export const listUsersRoute = route().get(
                     // `banned` is nullable in Better Auth's schema; only an
                     // explicit true means deactivated.
                     isActive: banned !== true,
+                    issues: findIssues(row.baselineRole, feideActive, standing),
                     createdAt: row.createdAt.toISOString(),
                 };
             }),
         } satisfies z.infer<typeof userListResponseSchema>);
     },
 );
+
+/**
+ * The states an account can be in that the rest of the row hides.
+ *
+ * Each one costs the member something concrete and shows up nowhere else in
+ * the panel: an account with no baseline role renders as "Aktiv" and gets a
+ * 403 on every registration, and a programme Feide no longer reports as
+ * enrolled is one login away from being demoted to alumni. Eight members sat
+ * in the first state through August 2026 without a single screen saying so.
+ */
+function findIssues(
+    baselineRole: "member" | "alumni" | null,
+    feideActive: boolean | null,
+    standing: ReturnType<typeof computeClassStanding>,
+): UserListIssue[] {
+    const issues: UserListIssue[] = [];
+
+    if (baselineRole === null) issues.push("no-baseline-role");
+
+    if (feideActive === false && !standing.isAlumni) {
+        issues.push("feide-inactive");
+    }
+
+    /**
+     * `isAlumni` false is not the same as "still studying" — it is also what
+     * an unplaceable member gets. Only a concrete class level is evidence
+     * that the alumni role contradicts the cohort.
+     */
+    if (baselineRole === "alumni" && standing.classYear !== null) {
+        issues.push("alumni-mismatch");
+    }
+
+    return issues;
+}

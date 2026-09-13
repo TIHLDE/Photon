@@ -5,7 +5,7 @@ import {
     useQuery,
     useSuspenseQuery,
 } from "@tanstack/react-query";
-import { PlusIcon, Trash2, UsersIcon } from "lucide-react";
+import { PlusIcon, Trash2, TriangleAlertIcon, UsersIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@tihlde/ui/ui/avatar";
@@ -35,6 +35,7 @@ import {
     SelectValue,
 } from "@tihlde/ui/ui/select";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@tihlde/ui/ui/tooltip";
 import {
     Table,
     TableBody,
@@ -43,7 +44,7 @@ import {
     TableHeader,
     TableRow,
 } from "@tihlde/ui/ui/table";
-import type { Group, GroupMember } from "@tihlde/sdk";
+import type { Group, GroupMember, UserListItem } from "@tihlde/sdk";
 
 import {
     addGroupMemberMutation,
@@ -93,6 +94,47 @@ const ROLE_LABELS: Record<string, string> = {
     leader: "Leder",
     member: "Medlem",
 };
+
+type UserIssue = UserListItem["issues"][number];
+
+/**
+ * Kontotilstander som ellers er usynlige herfra, med hva de koster medlemmet.
+ *
+ * Teksten på merket sier tilstanden, tooltipen sier konsekvensen — en admin
+ * som ser «Ingen medlemsrolle» skal slippe å gjette hva den gjør.
+ */
+const ISSUE_LABELS: Record<UserIssue, string> = {
+    "no-baseline-role": "Ingen rolle",
+    "feide-inactive": "Inaktiv i Feide",
+    "alumni-mismatch": "Alumni-avvik",
+};
+
+const ISSUE_DESCRIPTIONS: Record<UserIssue, string> = {
+    "no-baseline-role":
+        "Kontoen har verken medlems- eller alumnirolle, og får 403 på alle påmeldinger. Gi rollen, eller be dem logge inn med Feide på nytt.",
+    "feide-inactive":
+        "Feide melder studiet som ikke aktivt. Neste innlogging gjør kontoen til alumni og fjerner påmeldingsretten.",
+    "alumni-mismatch":
+        "Kontoen er alumni, men kullet plasserer dem fortsatt i studieløpet.",
+};
+
+function UserIssueBadge({ issue }: { issue: UserIssue }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Badge variant="destructive" className="gap-1">
+                        <TriangleAlertIcon className="size-3" />
+                        {ISSUE_LABELS[issue]}
+                    </Badge>
+                }
+            />
+            <TooltipContent className="max-w-64">
+                {ISSUE_DESCRIPTIONS[issue]}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
 
 const MEMBER_SINCE_FORMAT = {
     day: "numeric",
@@ -475,31 +517,53 @@ function AllUsersTable({
                                                 {user.username ?? "—"}
                                             </TableCell>
                                             <TableCell>
-                                                {!user.isActive ? (
-                                                    <Badge variant="destructive">
-                                                        Arkivert
-                                                    </Badge>
-                                                ) : user.approvalStatus ===
-                                                  "pending" ? (
-                                                    <Badge variant="secondary">
-                                                        Venter
-                                                    </Badge>
-                                                ) : user.baselineRole ===
-                                                  "alumni" ? (
-                                                    /* Alumni er aktive
-                                                    medlemmer på alle måter
-                                                    unntatt én: de kan ikke
-                                                    melde seg på
-                                                    arrangementer. Det er verdt
-                                                    en egen merkelapp, ellers
-                                                    er forskjellen usynlig
-                                                    herfra. */
-                                                    <Badge variant="outline">
-                                                        Alumni
-                                                    </Badge>
-                                                ) : (
-                                                    "Aktiv"
-                                                )}
+                                                <div className="flex flex-col items-start gap-1">
+                                                    {!user.isActive ? (
+                                                        <Badge variant="destructive">
+                                                            Arkivert
+                                                        </Badge>
+                                                    ) : user.approvalStatus ===
+                                                      "pending" ? (
+                                                        <Badge variant="secondary">
+                                                            Venter
+                                                        </Badge>
+                                                    ) : user.baselineRole ===
+                                                      "alumni" ? (
+                                                        /* Alumni er aktive
+                                                        medlemmer på alle måter
+                                                        unntatt én: de kan ikke
+                                                        melde seg på
+                                                        arrangementer. Det er
+                                                        verdt en egen
+                                                        merkelapp, ellers er
+                                                        forskjellen usynlig
+                                                        herfra. */
+                                                        <Badge variant="outline">
+                                                            Alumni
+                                                        </Badge>
+                                                    ) : user.baselineRole ===
+                                                      null ? null : (
+                                                        /* Uten baseline-rolle
+                                                        er «Aktiv» direkte
+                                                        feil: kontoen får 403
+                                                        på hver påmelding.
+                                                        Merket under sier det i
+                                                        stedet. */
+                                                        "Aktiv"
+                                                    )}
+                                                    {/* kvark og API-et
+                                                    deployes hver for seg, så
+                                                    en ny frontend kan møte et
+                                                    svar uten feltet. */}
+                                                    {(user.issues ?? []).map(
+                                                        (issue) => (
+                                                            <UserIssueBadge
+                                                                key={issue}
+                                                                issue={issue}
+                                                            />
+                                                        ),
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 {formatStudy(
