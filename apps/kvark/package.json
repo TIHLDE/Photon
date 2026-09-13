@@ -7,7 +7,7 @@
     },
     "scripts": {
         "dev": "bun run scripts/copy-dictionary.ts && vite dev --port 3000",
-        "build": "bun run scripts/copy-dictionary.ts && vite build",
+        "build": "bun run scripts/copy-dictionary.ts && vite build && bun run scripts/upload-sourcemaps.ts",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit",
         "format": "oxfmt .",
