@@ -49,9 +49,7 @@ export const createRoute = route().post(
             })
             .returning();
 
-        // Etter lagringen med vilje: stemplingen tar filen ut av
-        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
-        // etterlate en fil som ingen rydder.
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
         await promoteAssetUrls(bucket, [body.imageUrl]);
 
         return c.json(newJob, 201);

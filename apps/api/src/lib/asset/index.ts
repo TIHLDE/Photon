@@ -75,6 +75,11 @@ export function assetKeyFromUrl(url: string): string | null {
  * so every URL a row stores has to be promoted or the picture vanishes from
  * the page a couple of days after someone set it. URLs that are not our own
  * assets are left alone.
+ *
+ * Kall den *etter* at raden er skrevet. Stemplingen tar filen ut av
+ * opprydningsjobbens rekkevidde, så en lagring som blir avvist etterpå ville
+ * etterlatt en fil ingen rydder. Rekkefølgen er trygg fordi jobben redder
+ * filer en rad peker på i stedet for å slette dem.
  */
 export async function promoteAssetUrls(
     bucket: StorageService,

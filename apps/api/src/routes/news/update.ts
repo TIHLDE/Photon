@@ -81,9 +81,7 @@ export const updateRoute = route().patch(
             .where(eq(schema.news.id, id))
             .returning();
 
-        // Etter lagringen med vilje: stemplingen tar filen ut av
-        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
-        // etterlate en fil som ingen rydder.
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
         await promoteAssetUrls(bucket, [body.imageUrl]);
 
         await releaseReplacedAssetUrls(ctx, [
