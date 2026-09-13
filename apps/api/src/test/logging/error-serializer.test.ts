@@ -61,6 +61,14 @@ describe("serializeError", () => {
         expect(JSON.stringify(serialized)).not.toContain("ola@eksempel.no");
     });
 
+    test("keeps the cause regardless of position in a mapped array", () => {
+        const withCause = () =>
+            new Error("outer", { cause: new Error("inner") });
+        const serialized = [0, 1, 2, 3, 4].map(withCause).map(serializeError);
+
+        for (const entry of serialized) expect(entry).toHaveProperty("cause");
+    });
+
     test("survives a circular cause chain", () => {
         const a = new Error("a");
         const b = new Error("b", { cause: a });

@@ -18,7 +18,7 @@ const LOGGED_ERROR_FIELDS = [
 
 const MAX_CAUSE_DEPTH = 3;
 
-export function serializeError(value: unknown, depth = 0): object {
+function serializeErrorAtDepth(value: unknown, depth: number): object {
     if (!(value instanceof Error)) {
         return { type: "NonError", message: format(value) };
     }
@@ -32,10 +32,16 @@ export function serializeError(value: unknown, depth = 0): object {
     }
 
     if (value.cause instanceof Error && depth < MAX_CAUSE_DEPTH) {
-        serialized.cause = serializeError(value.cause, depth + 1);
+        serialized.cause = serializeErrorAtDepth(value.cause, depth + 1);
     }
 
     return serialized;
+}
+
+// Exactly one parameter: callers pass this straight to `.map()`, which would
+// otherwise feed the array index in as the recursion depth.
+export function serializeError(value: unknown): object {
+    return serializeErrorAtDepth(value, 0);
 }
 
 // Read the runtime environment object: Bun replaces direct NODE_ENV accesses
