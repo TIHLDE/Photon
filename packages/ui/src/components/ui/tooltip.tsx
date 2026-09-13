@@ -23,6 +23,27 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
     return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
+/**
+ * Pilen skal lese som en tagg på boksen, ikke som en egen figur.
+ *
+ * Den ligger midt på kanten, halvparten innenfor: den innenfor-halvdelen
+ * dekker boksens egen ramme, og rammen på de to yttersidene fortsetter der
+ * boksens slutter. Derfor er rammen satt per side og ikke hele veien rundt —
+ * en ramme på alle fire kantene tegner to streker tvers over boksen.
+ *
+ * Rotasjonen går med klokka, så kantene bytter plass: `border-r`/`border-b`
+ * peker ned, `border-t`/`border-l` peker opp.
+ */
+const ARROW_CLASSES = [
+    "size-2.5 rotate-45 rounded-[2px] bg-popover border-foreground/10",
+    "data-[side=top]:-bottom-[5px] data-[side=top]:border-r data-[side=top]:border-b",
+    "data-[side=bottom]:-top-[5px] data-[side=bottom]:border-t data-[side=bottom]:border-l",
+    "data-[side=left]:-right-[5px] data-[side=left]:border-t data-[side=left]:border-r",
+    "data-[side=right]:-left-[5px] data-[side=right]:border-b data-[side=right]:border-l",
+    "data-[side=inline-start]:-right-[5px] data-[side=inline-start]:border-t data-[side=inline-start]:border-r",
+    "data-[side=inline-end]:-left-[5px] data-[side=inline-end]:border-b data-[side=inline-end]:border-l",
+].join(" ");
+
 function TooltipContent({
     className,
     side = "top",
@@ -54,7 +75,9 @@ function TooltipContent({
                     {...props}
                 >
                     {children}
-                    <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-popover fill-popover ring-1 ring-foreground/10 data-[side=bottom]:top-1 data-[side=inline-end]:top-1/2! data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2! data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2! data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2! data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:-bottom-2.5" />
+                    {/* Barn av popupen, så den tones ut sammen med den. Som
+                    søsken ble pilen stående igjen etter at boksen var borte. */}
+                    <TooltipPrimitive.Arrow className={ARROW_CLASSES} />
                 </TooltipPrimitive.Popup>
             </TooltipPrimitive.Positioner>
         </TooltipPrimitive.Portal>

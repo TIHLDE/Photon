@@ -1,8 +1,29 @@
+import { currentAcademicYear } from "@photon/auth/academic-year";
+import { assignUserRole, createTestingRole } from "@photon/auth/roles";
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
-import { integrationTest } from "~/test/config/integration";
+import {
+    type IntegrationTestContext,
+    integrationTest,
+} from "~/test/config/integration";
 
 describe("user list", () => {
+    /** The two baseline roles as production seeds them; a test db starts empty. */
+    async function seedBaselineRoles(ctx: IntegrationTestContext) {
+        await createTestingRole(ctx, {
+            name: "member",
+            description: "Baseline member role",
+            permissions: ["events:registrations:create"],
+            position: 2,
+        });
+        await createTestingRole(ctx, {
+            name: "alumni",
+            description: "Baseline alumni role",
+            permissions: [],
+            position: 1,
+        });
+    }
     integrationTest(
         "lists users with study/cohort projection and filters",
         async ({ ctx }) => {
@@ -260,6 +281,129 @@ describe("user list", () => {
             expect(listed?.studyProgram).toBe(
                 "Digital infrastruktur og cybersikkerhet",
             );
+        },
+    );
+
+    /**
+     * The three states the admin panel used to render as a healthy "Aktiv".
+     *
+     * An account with no baseline role is the one that cost us: it looks
+     * finished from every column in the list and answers 403 to every
+     * påmelding. The other two are the same failure one login away — Feide
+     * saying the programme is not active is what demotes a member to alumni,
+     * and an alumnus the cohort still places in 3. klasse is that demotion
+     * having already happened to the wrong person.
+     */
+    integrationTest(
+        "flags the accounts whose state the other columns hide",
+        async ({ ctx }) => {
+            await seedBaselineRoles(ctx);
+
+            const admin = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(admin, ["users:view"]);
+            const client = await ctx.utils.clientForUser(admin);
+
+            await ctx.utils.createTestGroup({
+                slug: "flagg-studie",
+                name: "Flaggingeniør",
+                type: "STUDY",
+            });
+            const [programme] = await ctx.db
+                .insert(schema.studyProgram)
+                .values({
+                    slug: "flagg-studie",
+                    feideCode: "BIDATA",
+                    displayName: "Flaggingeniør",
+                    type: "bachelor",
+                })
+                .returning({ id: schema.studyProgram.id });
+
+            /**
+             * Kullåret ruller i august, ikke i januar, og klassetrinnet
+             * regnes mot det. Kalenderåret ville gitt klassetrinn 0 fra
+             * nyttår til august, og da faller `alumni-mismatch` bort.
+             */
+            const currentYear = currentAcademicYear();
+
+            async function studentWith(
+                username: string,
+                options: {
+                    role?: "member" | "alumni";
+                    feideActive: boolean;
+                    approvalStatus?: "pending";
+                },
+            ) {
+                const created = await ctx.auth.api.createUser({
+                    body: {
+                        email: `${username}@test.com`,
+                        name: username,
+                        password: "test123!",
+                        data: { username },
+                    },
+                });
+                await ctx.db.insert(schema.groupMembership).values({
+                    userId: created.user.id,
+                    groupSlug: "flagg-studie",
+                    role: "member",
+                });
+                await ctx.db.insert(schema.studyProgramMembership).values({
+                    userId: created.user.id,
+                    studyProgramId: programme?.id as number,
+                    // First year, so the cohort places them well inside the
+                    // programme however the test happens to be dated.
+                    startYear: currentYear,
+                    startYearSource: "derived",
+                    feideActive: options.feideActive,
+                });
+                if (options.role) {
+                    await assignUserRole(ctx, created.user.id, options.role);
+                }
+                if (options.approvalStatus) {
+                    await ctx.db
+                        .update(schema.user)
+                        .set({ approvalStatus: options.approvalStatus })
+                        .where(eq(schema.user.id, created.user.id));
+                }
+                return created.user.id;
+            }
+
+            const healthy = await studentWith("friskfhs", {
+                role: "member",
+                feideActive: true,
+            });
+            const roleless = await studentWith("rollelos", {
+                feideActive: true,
+            });
+            const inactive = await studentWith("inaktivf", {
+                role: "member",
+                feideActive: false,
+            });
+            const wronglyAlumni = await studentWith("feilalum", {
+                role: "alumni",
+                feideActive: true,
+            });
+            /**
+             * Holder ingen rolle, akkurat som `roleless` — men den står i
+             * godkjenningskøen, der det å godkjenne er det som deler ut
+             * rollen. Ingenting er galt med den, og merket skal bety at noe
+             * er det.
+             */
+            const awaitingApproval = await studentWith("ventern", {
+                feideActive: true,
+                approvalStatus: "pending",
+            });
+
+            const res = await client.api.user.$get({ query: {} });
+            expect(res.status).toBe(200);
+            const body = await res.json();
+            const issuesFor = (id: string) =>
+                body.items.find((u) => u.id === id)?.issues;
+
+            expect(issuesFor(healthy)).toEqual([]);
+            expect(issuesFor(roleless)).toEqual(["no-baseline-role"]);
+            expect(issuesFor(inactive)).toEqual(["feide-inactive"]);
+            expect(issuesFor(wronglyAlumni)).toEqual(["alumni-mismatch"]);
+            expect(issuesFor(awaitingApproval)).toEqual([]);
         },
     );
 });
