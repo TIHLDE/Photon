@@ -52,10 +52,6 @@ export const updateRoute = route().put(
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
 
-        // Uploaded pictures are staged until a row claims them; without this
-        // the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         /**
          * Whether this update opened room that was not there before. Set
          * inside the transaction, acted on after it commits — see below.
@@ -450,6 +446,11 @@ export const updateRoute = route().put(
 
             return slug;
         });
+
+        // Etter lagringen med vilje: stemplingen tar filen ut av
+        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
+        // etterlate en fil som ingen rydder.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         /**
          * Et bilde ingen rad peker på lenger blir aldri ryddet av noe annet:

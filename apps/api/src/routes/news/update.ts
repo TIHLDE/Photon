@@ -60,10 +60,6 @@ export const updateRoute = route().patch(
             });
         }
 
-        // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         // Update the news article
         const [updatedNews] = await db
             .update(schema.news)
@@ -84,6 +80,11 @@ export const updateRoute = route().patch(
             })
             .where(eq(schema.news.id, id))
             .returning();
+
+        // Etter lagringen med vilje: stemplingen tar filen ut av
+        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
+        // etterlate en fil som ingen rydder.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         await releaseReplacedAssetUrls(ctx, [
             [newsArticle.imageUrl, body.imageUrl],

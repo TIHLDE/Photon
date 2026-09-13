@@ -76,11 +76,6 @@ export const updateRoute = route().patch(
             }
         }
 
-        // Gruppebilde and logo are uploaded before this call and are still
-        // staged, so the cleanup cron would delete them two days later and
-        // leave the group's «Om»-side pointing at a 404.
-        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
-
         await db
             .update(schema.group)
             .set({
@@ -88,6 +83,11 @@ export const updateRoute = route().patch(
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));
+
+        // Etter lagringen med vilje: stemplingen tar filen ut av
+        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
+        // etterlate en fil som ingen rydder.
+        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
 
         await releaseReplacedAssetUrls(ctx, [
             [previousGroup.imageUrl, body.imageUrl],

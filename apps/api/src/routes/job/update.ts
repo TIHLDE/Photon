@@ -113,15 +113,16 @@ export const updateRoute = route().patch(
             updateData.classEnd = classEnd as schema.UserClass;
         }
 
-        // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         const [updatedJob] = await db
             .update(schema.jobPost)
             .set(updateData)
             .where(eq(schema.jobPost.id, id))
             .returning();
+
+        // Etter lagringen med vilje: stemplingen tar filen ut av
+        // opprydningsjobbens rekkevidde, så en lagring som feiler skal ikke
+        // etterlate en fil som ingen rydder.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         await releaseReplacedAssetUrls(ctx, [[job.imageUrl, body.imageUrl]]);
 

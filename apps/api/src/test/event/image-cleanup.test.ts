@@ -158,4 +158,45 @@ describe("event image cleanup", () => {
         },
         500_000,
     );
+
+    integrationTest(
+        "a rejected update leaves the new image staged, so it cleans itself up",
+        async ({ ctx }) => {
+            const user = await ctx.utils.createTestUser();
+            const client = await ctx.utils.clientForUser(user);
+
+            await ctx.utils.setupGroups();
+            await ctx.utils.setupEventCategories();
+            await ctx.utils.giveUserPermissions(user, [
+                "events:create",
+                "events:update",
+            ]);
+
+            const created = await client.api.event.$post({
+                json: { ...baseEventBody, imageUrl: null },
+            });
+            expect(created.status).toBe(201);
+            const { eventId } = await created.json();
+
+            const key = "uploads/2026/01/rejected_update.png";
+            await ctx.bucket.upload(key, Buffer.from("image bytes"), {
+                originalFilename: "image.png",
+                contentType: "image/png",
+                uploadedById: user.id,
+            });
+
+            // Avvises inne i transaksjonen: kategorien finnes ikke.
+            const rejected = await client.api.event[":id"].$put({
+                param: { id: eventId },
+                json: {
+                    imageUrl: `https://photon.test/api/assets/${key}`,
+                    categorySlug: "finnes-ikke",
+                },
+            });
+            expect(rejected.status).toBe(400);
+
+            expect((await ctx.bucket.getAsset(key))?.status).toBe("staged");
+        },
+        500_000,
+    );
 });
