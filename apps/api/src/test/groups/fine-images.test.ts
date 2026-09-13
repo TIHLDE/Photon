@@ -264,10 +264,23 @@ describe("deleting a fine releases its picture", () => {
     );
 
     integrationTest(
-        "a picture hosted somewhere else is left alone",
+        "a picture hosted somewhere else is not read as a key of ours",
         async ({ ctx }) => {
-            const { giver, group, fined, key } = await setupFine(ctx, {
+            const { giver, group, fined } = await setupFine(ctx, {
                 slug: "fine-image-release-external",
+            });
+
+            /**
+             * Fines carried over from Lepton store the Azure address verbatim.
+             * The asset row below is a tripwire: it is keyed by that very
+             * string, so it only disappears if the release path gave up on
+             * reading the URL and passed it on as a key of ours.
+             */
+            const external =
+                "https://tihlde.blob.core.windows.net/media/evidence.jpg";
+            await ctx.bucket.upload(external, PICTURE, {
+                originalFilename: "evidence.jpg",
+                contentType: "image/jpeg",
             });
 
             const [legacy] = await ctx.db
@@ -278,7 +291,7 @@ describe("deleting a fine releases its picture", () => {
                     createdByUserId: giver.id,
                     reason: "Migrated from Lepton",
                     amount: 1,
-                    image: "https://tihlde.blob.core.windows.net/media/evidence.jpg",
+                    image: external,
                     status: "pending",
                 })
                 .returning();
@@ -293,8 +306,11 @@ describe("deleting a fine releases its picture", () => {
             });
 
             expect(response.status).toBe(204);
-            // Lepton-bildet ligger hos Azure, ikke hos oss.
-            expect(await ctx.bucket.exists(key)).toBe(true);
+            expect(
+                await ctx.db.query.asset.findFirst({
+                    where: eq(schema.asset.key, external),
+                }),
+            ).toBeDefined();
         },
         500_000,
     );

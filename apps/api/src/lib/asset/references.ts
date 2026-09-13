@@ -123,8 +123,10 @@ export async function findAssetReferences(
  * column once instead, which is what a report over every asset needs.
  *
  * Matching is exact here, where {@link findAssetReferences} reads `_` in a key
- * as a `LIKE` wildcard. The looser one can only ever over-report a reference,
- * so a key this function calls unreferenced is one that one would agree about.
+ * as a `LIKE` wildcard. That looser match can only ever over-report a
+ * reference, so anything this one calls unreferenced is unreferenced there
+ * too — which is what makes it safe to read a report from one and delete with
+ * the other.
  */
 export async function collectReferencedAssetKeys(
     db: NodePgDatabase<DbSchema>,
