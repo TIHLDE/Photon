@@ -24,7 +24,9 @@ function DefaultRouteError({ error }: ErrorComponentProps) {
     const router = useRouter();
 
     // Fanget av React, så den når aldri `window.onerror` og autocapture.
-    useEffect(() => captureException(error), [error]);
+    useEffect(() => {
+        captureException(error);
+    }, [error]);
 
     return (
         <RouteError
