@@ -49,6 +49,34 @@ export async function enqueueAssetRelease(
 }
 
 /**
+ * Release the pictures an update replaced.
+ *
+ * A PATCH that carries no `imageUrl` leaves the column alone, and releasing
+ * the current picture then would delete one the row still uses — so a `next`
+ * of `undefined` means "not touched" and is skipped. Everything else is the
+ * same rule: the value that was there, once something else took its place.
+ *
+ * Call after the row is written, so the release job sees the new state when it
+ * checks whether anything still points at the old file.
+ */
+export async function enqueueReplacedAssets(
+    replacements: Array<{
+        previous: string | null | undefined;
+        next: string | null | undefined;
+    }>,
+    ctx: AppContext,
+): Promise<void> {
+    const replaced = replacements
+        .filter(
+            ({ previous, next }) =>
+                next !== undefined && previous && previous !== next,
+        )
+        .map(({ previous }) => previous);
+
+    await enqueueAssetRelease(replaced, ctx);
+}
+
+/**
  * The asset key a stored value names, or null when the value points somewhere
  * we do not own.
  *

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { enqueueReplacedAssets } from "~/lib/asset/release";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -43,7 +44,8 @@ export const updateRoute = route().patch(
     async (c) => {
         const body = c.req.valid("json");
         const slug = c.req.param("slug");
-        const { db, bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db, bucket } = ctx;
 
         // Check if group exists
         const existingGroup = await db
@@ -85,6 +87,14 @@ export const updateRoute = route().patch(
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));
+
+        await enqueueReplacedAssets(
+            [
+                { previous: existingGroup[0]?.imageUrl, next: body.imageUrl },
+                { previous: existingGroup[0]?.logoUrl, next: body.logoUrl },
+            ],
+            ctx,
+        );
 
         return c.json({ message: "Group updated successfully" }, 200);
     },

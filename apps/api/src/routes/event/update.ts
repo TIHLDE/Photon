@@ -4,6 +4,7 @@ import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { enqueueReplacedAssets } from "~/lib/asset/release";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
@@ -49,7 +50,8 @@ export const updateRoute = route().put(
         const body = c.req.valid("json");
         const eventId = c.req.param("id");
         const userId = c.get("user").id;
-        const { db, bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db, bucket } = ctx;
 
         // Uploaded pictures are staged until a row claims them; without this
         // the cleanup cron deletes the file after two days.
@@ -60,6 +62,7 @@ export const updateRoute = route().put(
          * inside the transaction, acted on after it commits — see below.
          */
         let capacityGrew = false;
+        let previousImageUrl: string | null = null;
 
         const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event
@@ -73,6 +76,7 @@ export const updateRoute = route().put(
                 throw new HTTPException(404, { message: "Event not found" });
             }
             const event = existing[0];
+            previousImageUrl = event.imageUrl;
 
             /**
              * Reglene for betalte arrangementer leses på arrangementet slik
@@ -474,6 +478,11 @@ export const updateRoute = route().put(
                 }
             }
         }
+
+        await enqueueReplacedAssets(
+            [{ previous: previousImageUrl, next: body.imageUrl }],
+            ctx,
+        );
 
         return c.json({ eventId, slug: updatedSlug }, 200);
     },

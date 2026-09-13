@@ -9,6 +9,7 @@ import {
     serializeAlbum,
 } from "~/lib/gallery";
 import { claimPrivateAssetUrls } from "~/lib/asset";
+import { enqueueReplacedAssets } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -67,6 +68,11 @@ export const updateRoute = route().patch(
             eq(schema.galleryPicture.albumId, album.id),
         );
         const event = await findAlbumEvent(ctx, album.eventId);
+
+        await enqueueReplacedAssets(
+            [{ previous: existing.imageUrl, next: body.imageUrl }],
+            ctx,
+        );
 
         return c.json(serializeAlbum(album, pictureCount, event));
     },
