@@ -180,6 +180,7 @@ describe("requireAuth OAuth access tokens", () => {
         "hydrates the same user and session from an OAuth JWT as cookie auth",
         async ({ ctx }) => {
             const user = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(user, ["oauth-clients:create"]);
             const cookie = await signInAndGetCookie(ctx, user);
             const oauthClient = await createOAuthClient(ctx, cookie);
             const accessToken = await issueOAuthAccessToken(ctx, {
@@ -209,6 +210,9 @@ describe("requireAuth OAuth access tokens", () => {
         "prefers a valid OAuth bearer token over a different cookie session",
         async ({ ctx }) => {
             const oauthUser = await ctx.utils.createTestUser();
+            await ctx.utils.giveUserPermissions(oauthUser, [
+                "oauth-clients:create",
+            ]);
             const cookieUser = await ctx.utils.createTestUser();
             const oauthCookie = await signInAndGetCookie(ctx, oauthUser);
             const fallbackCookie = await signInAndGetCookie(ctx, cookieUser);
