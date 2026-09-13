@@ -4,7 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isNewsCreator } from "~/lib/news/middleware";
 import { promoteAssetUrls } from "~/lib/asset";
-import { enqueueReplacedAssets } from "~/lib/asset/release";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -60,10 +60,6 @@ export const updateRoute = route().patch(
             });
         }
 
-        // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         // Update the news article
         const [updatedNews] = await db
             .update(schema.news)
@@ -85,10 +81,12 @@ export const updateRoute = route().patch(
             .where(eq(schema.news.id, id))
             .returning();
 
-        await enqueueReplacedAssets(
-            [{ previous: newsArticle.imageUrl, next: body.imageUrl }],
-            ctx,
-        );
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
+
+        await releaseReplacedAssetUrls(ctx, [
+            [newsArticle.imageUrl, body.imageUrl],
+        ]);
 
         return c.json(updatedNews);
     },

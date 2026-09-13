@@ -10,6 +10,11 @@ import { nitro } from "nitro/vite";
 import { legacyRouteRules } from "./src/legacy-routes";
 
 const config = defineConfig({
+    build: {
+        // Uten dette peker hver stack trace i PostHog inn i minifisert output.
+        // Kildekoden ligger uansett åpent på GitHub, så kartene deles fritt.
+        sourcemap: true,
+    },
     resolve: {
         tsconfigPaths: true,
         // tslib 1.14.1 (pulled in transitively by @posthog/react) ships a UMD

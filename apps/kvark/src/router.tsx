@@ -4,11 +4,13 @@ import {
     createRouter as createTanStackRouter,
     useRouter,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Button } from "@tihlde/ui/ui/button";
 import { routeTree } from "./routeTree.gen";
 
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import * as TanstackQuery from "#/integrations/tanstack-query";
+import { captureException } from "#/integrations/posthog/capture";
 import { RouteError } from "#/components/route-error";
 import { RouteNotFound } from "#/components/route-not-found";
 
@@ -20,6 +22,11 @@ import { RouteNotFound } from "#/components/route-not-found";
  */
 function DefaultRouteError({ error }: ErrorComponentProps) {
     const router = useRouter();
+
+    // Fanget av React, så den når aldri `window.onerror` og autocapture.
+    useEffect(() => {
+        captureException(error);
+    }, [error]);
 
     return (
         <RouteError

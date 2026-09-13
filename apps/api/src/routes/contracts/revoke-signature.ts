@@ -1,7 +1,7 @@
 import { schema } from "@photon/db";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { enqueueAssetRelease } from "~/lib/asset/release";
+import { releaseAssetKeys } from "~/lib/asset/release";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -79,12 +79,12 @@ export const revokeSignatureRoute = route().delete(
          * the signature image must not outlive it: a document that still looks
          * like proof of a signature nobody can verify any more.
          */
-        await enqueueAssetRelease(
+        await releaseAssetKeys(
+            ctx,
             deleted.flatMap((signature) => [
                 signature.signatureFileKey,
                 signature.signedPdfKey,
             ]),
-            ctx,
         );
 
         return c.json({ message: "Signature revoked" }, 200);

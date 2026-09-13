@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { claimPrivateAssetUrls } from "~/lib/asset";
-import { enqueueAssetRelease } from "~/lib/asset/release";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { isValidUUID } from "~/lib/validation/uuid";
@@ -161,13 +161,7 @@ export const updateFineRoute = route().patch(
             .set(updateData)
             .where(eq(schema.fine.id, fineId));
 
-        if (
-            body.image !== undefined &&
-            fine.image &&
-            fine.image !== body.image
-        ) {
-            await enqueueAssetRelease([fine.image], ctx);
-        }
+        await releaseReplacedAssetUrls(ctx, [[fine.image, body.image]]);
 
         return c.json({ message: "Fine updated successfully" }, 200);
     },

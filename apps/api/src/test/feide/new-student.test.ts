@@ -113,7 +113,6 @@ const signInWithFeide = async (
         allowed,
         campusRejected,
         campus,
-        null,
         now,
     );
 };

@@ -59,13 +59,13 @@ export const createRoute = route().post(
             }
         }
 
-        // Both pictures are staged uploads until something claims them.
-        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
-
         const [newGroup] = await db
             .insert(schema.group)
             .values(body)
             .returning();
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
 
         return c.json(newGroup, 201);
     },

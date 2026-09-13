@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { claimPrivateAssetUrls } from "../asset";
-import { enqueueReplacedAssets } from "../asset/release";
+import { releaseReplacedAssetUrls } from "../asset/release";
 import type { AppContext } from "../ctx";
 
 export const UserAllergySchema = z.object({
@@ -351,10 +351,9 @@ export async function updateUserSettings(
         };
     });
 
-    await enqueueReplacedAssets(
-        [{ previous: previous?.imageUrl, next: updates.imageUrl }],
-        ctx,
-    );
+    await releaseReplacedAssetUrls(ctx, [
+        [previous?.imageUrl ?? null, updates.imageUrl],
+    ]);
 
     return result;
 }

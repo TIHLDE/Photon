@@ -252,9 +252,6 @@ describe("deleting a fine releases its picture", () => {
 
             expect(response.status).toBe(204);
 
-            const jobs = await ctx.utils.runAssetReleases();
-            expect(jobs).toEqual([{ keys: [key] }]);
-
             expect(await ctx.bucket.exists(key)).toBe(false);
             expect(await ctx.bucket.getObject(variantKey)).toBeNull();
             expect(
@@ -269,7 +266,7 @@ describe("deleting a fine releases its picture", () => {
     integrationTest(
         "a picture hosted somewhere else is left alone",
         async ({ ctx }) => {
-            const { giver, group, fined } = await setupFine(ctx, {
+            const { giver, group, fined, key } = await setupFine(ctx, {
                 slug: "fine-image-release-external",
             });
 
@@ -296,7 +293,8 @@ describe("deleting a fine releases its picture", () => {
             });
 
             expect(response.status).toBe(204);
-            expect(await ctx.utils.runAssetReleases()).toEqual([]);
+            // Lepton-bildet ligger hos Azure, ikke hos oss.
+            expect(await ctx.bucket.exists(key)).toBe(true);
         },
         500_000,
     );
@@ -327,8 +325,6 @@ describe("deleting a fine releases its picture", () => {
             });
 
             expect(response.status).toBe(204);
-
-            await ctx.utils.runAssetReleases();
 
             expect(await ctx.bucket.exists(key)).toBe(true);
             expect(
@@ -367,8 +363,6 @@ describe("replacing a fine's picture", () => {
             });
 
             expect(response.status).toBe(200);
-
-            await ctx.utils.runAssetReleases();
 
             expect(await ctx.bucket.exists(key)).toBe(false);
             expect(await ctx.bucket.exists(newKey)).toBe(true);

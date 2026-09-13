@@ -123,7 +123,6 @@ const signIn = async (
         allowed,
         campusRejected,
         campus,
-        null,
         now,
     );
 };

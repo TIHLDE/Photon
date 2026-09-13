@@ -1,6 +1,5 @@
 import { startQueuedEmailWorker } from "@photon/core/services/email";
 import cron from "node-cron";
-import { startAssetReleaseWorker } from "./asset/release";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
@@ -198,9 +197,6 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start asset cleanup cron
     startAssetCleanupCron(ctx);
-
-    // Start the worker that deletes assets nothing points at any more
-    startAssetReleaseWorker(ctx);
 
     // Start no-show strike cron
     startNoShowStrikeCron(ctx);

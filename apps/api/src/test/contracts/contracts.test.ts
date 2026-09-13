@@ -568,11 +568,6 @@ describe("contracts", () => {
 
                 expect(revoked.status).toBe(200);
 
-                const jobs = await ctx.utils.runAssetReleases();
-                expect(jobs).toEqual([
-                    { keys: [row.signatureFileKey, row.signedPdfKey] },
-                ]);
-
                 expect(await ctx.bucket.exists(row.signatureFileKey)).toBe(
                     false,
                 );

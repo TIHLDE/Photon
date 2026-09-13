@@ -10,7 +10,7 @@
  *
  * An upload lands as `staged` and the hourly cron deletes it two days later.
  * The moment a row claims it, it is promoted to `ready` — and until
- * `enqueueAssetRelease` existed, nothing ever took it back. A row deleted
+ * `releaseAssetUrls` existed, nothing ever took it back. A row deleted
  * afterwards left the file behind for good: invisible to the cron, still
  * costing one of the bucket's 120 000 objects, and in the case of a fine's
  * picture still showing who was fined for what.

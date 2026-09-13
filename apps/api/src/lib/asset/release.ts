@@ -1,142 +1,82 @@
-import {
-    ASSET_QUEUE_NAME,
-    type QueueJob,
-    type WorkerLike,
-} from "@photon/core/services/queue";
-import type { AppContext } from "~/lib/ctx";
+import type { DbSchema } from "@photon/db";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
+import type { StorageService } from "~/lib/storage";
 import { assetKeyFromUrl, deleteAsset } from "./index";
-import { IMAGE_VARIANT_WIDTHS, imageVariantKey } from "./image";
 import { findAssetReferences } from "./references";
 
-export type AssetReleaseJobData = {
-    keys: string[];
+type AssetContext = {
+    db: NodePgDatabase<DbSchema>;
+    bucket: StorageService;
 };
 
 /**
- * Hand back the assets a deleted row was the last owner of.
+ * Slett assets ingen rad peker på lenger.
  *
- * Uploads are promoted out of "staged" the moment a row points at them, which
- * puts them out of reach of the staged-asset cleanup for good — so nothing
- * removed the picture when the row itself went away. The bucket is capped on
- * object *count*, and a private picture outliving the row that justified it is
- * also a privacy problem: the fine image says who was fined for what.
+ * Må kalles *etter* at raden er lagret eller slettet: referansesjekken leser
+ * databasen, og en URL som fortsatt står i en annen rad skal overleve.
  *
- * Via the queue rather than a floating promise: background database work that
- * outlives the request keeps querying a torn-down database in the test suite
- * and hangs the run.
+ * Feiler aldri utad. Opprydningen er en bieffekt av et kall som allerede har
+ * gjort jobben sin, og en filsletting som ikke gikk gjennom skal ikke gi
+ * brukeren en feil på en endring som er lagret.
  */
-export async function enqueueAssetRelease(
+export async function releaseAssetUrls(
+    ctx: AssetContext,
     urls: (string | null | undefined)[],
-    ctx: AppContext,
+): Promise<void> {
+    await releaseAssetKeys(
+        ctx,
+        urls.map((url) => (url ? assetKeyFromUrl(url) : null)),
+    );
+}
+
+/**
+ * Som {@link releaseAssetUrls}, for kolonner som lagrer nøkkelen rå.
+ *
+ * Begge formene finnes: et bilde lagres som vår egen URL, mens en signert
+ * kontrakt lagres som `contracts/…` rett fra opplastingen. Sistnevnte gir
+ * ingenting gjennom `assetKeyFromUrl`, så en ordning som bare tar URL-er ville
+ * stilltiende latt dem ligge.
+ */
+export async function releaseAssetKeys(
+    ctx: AssetContext,
+    rawKeys: (string | null | undefined)[],
 ): Promise<void> {
     const keys = [
-        ...new Set(
-            urls
-                .map((url) => (url ? ownAssetKey(url) : null))
-                .filter((key): key is string => Boolean(key)),
-        ),
+        ...new Set(rawKeys.filter((key): key is string => Boolean(key))),
     ];
-
     if (keys.length === 0) return;
 
     try {
-        await ctx.queue
-            .getQueue<AssetReleaseJobData>(ASSET_QUEUE_NAME)
-            .add("release-assets", { keys });
-    } catch (error) {
-        console.error("Could not enqueue asset release:", error);
-    }
-}
+        const referenced = await findAssetReferences(ctx.db, keys);
 
-/**
- * Release the pictures an update replaced.
- *
- * A PATCH that carries no `imageUrl` leaves the column alone, and releasing
- * the current picture then would delete one the row still uses — so a `next`
- * of `undefined` means "not touched" and is skipped. Everything else is the
- * same rule: the value that was there, once something else took its place.
- *
- * Call after the row is written, so the release job sees the new state when it
- * checks whether anything still points at the old file.
- */
-export async function enqueueReplacedAssets(
-    replacements: Array<{
-        previous: string | null | undefined;
-        next: string | null | undefined;
-    }>,
-    ctx: AppContext,
-): Promise<void> {
-    const replaced = replacements
-        .filter(
-            ({ previous, next }) =>
-                next !== undefined && previous && previous !== next,
-        )
-        .map(({ previous }) => previous);
-
-    await enqueueAssetRelease(replaced, ctx);
-}
-
-/**
- * The asset key a stored value names, or null when the value points somewhere
- * we do not own.
- *
- * Columns hold two shapes: our own URL, and the raw key. Anything else is an
- * external address — the Azure blobs the fines carry over from Lepton are the
- * live example — and deleting by it would be a bucket call against a key that
- * was never ours.
- */
-function ownAssetKey(value: string): string | null {
-    const key = assetKeyFromUrl(value);
-    if (key) return key;
-
-    return URL.canParse(value) ? null : value;
-}
-
-/**
- * Delete the given keys, minus the ones another row still points at.
- *
- * The reference check is what makes this safe to call from a route that only
- * knows it dropped one row: the same picture can legitimately be shared, and
- * `ASSET_REFERENCE_COLUMNS` covers every column in the database that can hold
- * one. Cached variants carry no `asset` row, so they are removed by key.
- */
-export async function releaseAssetKeys(
-    keys: string[],
-    ctx: AppContext,
-): Promise<number> {
-    if (keys.length === 0) return 0;
-
-    const referenced = await findAssetReferences(ctx.db, keys);
-    let released = 0;
-
-    for (const key of keys) {
-        if (referenced.has(key)) continue;
-
-        await deleteAsset(ctx.bucket, key);
-        for (const width of IMAGE_VARIANT_WIDTHS) {
-            await ctx.bucket.delete(imageVariantKey(key, width));
+        for (const key of keys) {
+            if (referenced.has(key)) continue;
+            await deleteAsset(ctx.bucket, key);
         }
-        released++;
+    } catch (error) {
+        console.error(
+            `Failed to delete unreferenced assets ${keys.join(", ")}:`,
+            error,
+        );
     }
-
-    return released;
 }
 
-export function startAssetReleaseWorker(ctx: AppContext): WorkerLike {
-    const worker = ctx.queue.createWorker<AssetReleaseJobData, void>(
-        ASSET_QUEUE_NAME,
-        async (job: QueueJob<AssetReleaseJobData>) => {
-            await releaseAssetKeys(job.data.keys, ctx);
-        },
+/**
+ * Slett bildene en oppdatering erstatter.
+ *
+ * Hvert par er `[URL-en raden hadde, det kallet setter]`. `undefined` betyr at
+ * kallet lar feltet stå, og da skal filen bli liggende.
+ */
+export async function releaseReplacedAssetUrls(
+    ctx: AssetContext,
+    pairs: [string | null, string | null | undefined][],
+): Promise<void> {
+    await releaseAssetUrls(
+        ctx,
+        pairs
+            .filter(
+                ([previous, next]) => next !== undefined && next !== previous,
+            )
+            .map(([previous]) => previous),
     );
-
-    worker.on("failed", (job, err) => {
-        console.error(`❌ Asset release job ${job?.id} failed:`, err);
-    });
-
-    worker.on("error", (err) => {
-        console.error("Asset release worker error:", err);
-    });
-
-    return worker;
 }

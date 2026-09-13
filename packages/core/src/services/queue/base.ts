@@ -1,4 +1,4 @@
-export type QueueName = "registration" | "email" | "payment" | "push" | "asset";
+export type QueueName = "registration" | "email" | "payment" | "push";
 export const EMAIL_QUEUE_NAME = "email" satisfies QueueName;
 export const EMAIL_SEND_RATE_MS = 3000;
 
@@ -7,8 +7,6 @@ export const PAYMENT_QUEUE_NAME = "payment" satisfies QueueName;
 export const PUSH_QUEUE_NAME = "push" satisfies QueueName;
 
 export const REGISTRATION_QUEUE_NAME = "registration" satisfies QueueName;
-
-export const ASSET_QUEUE_NAME = "asset" satisfies QueueName;
 
 /** Options accepted when enqueueing a job. */
 export interface QueueAddOptions {

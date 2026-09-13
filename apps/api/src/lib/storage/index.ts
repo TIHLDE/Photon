@@ -39,6 +39,11 @@ export interface AssetStorageService {
      */
     getObject(key: string): Promise<Buffer | null>;
     putObject(key: string, body: Buffer, contentType: string): Promise<void>;
+    /**
+     * Delete an object without touching the `asset` table. For variants and
+     * other derived files, which have no row of their own.
+     */
+    deleteObject(key: string): Promise<void>;
     listAssets(options?: {
         uploadedById?: string;
         limit?: number;
@@ -137,6 +142,10 @@ export class DatabaseAssetStorageService implements AssetStorageService {
         contentType: string,
     ): Promise<void> {
         await this.objectStorage.put(key, body, { contentType });
+    }
+
+    async deleteObject(key: string): Promise<void> {
+        await this.objectStorage.delete(key);
     }
 
     async listAssets(options?: {

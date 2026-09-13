@@ -29,7 +29,8 @@ export const pinoLoggerMiddleware = every(
         const start = Date.now();
         await next();
         const elapsed = Date.now() - start;
-        logger
+        const finalLogger: LoggerType = c.get("logger");
+        finalLogger
             .child({ elapsedMs: elapsed, status: c.res.status })
             .info(`<-- ${method} ${url} (elapsed: ${elapsed}ms)`);
     },

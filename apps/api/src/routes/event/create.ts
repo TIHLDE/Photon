@@ -42,10 +42,6 @@ export const createRoute = route().post(
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
 
-        // Uploaded pictures are staged until a row claims them; without this
-        // the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         let createdEventId: string | undefined;
 
         await db.transaction(async (tx) => {
@@ -231,6 +227,9 @@ export const createRoute = route().post(
                 message: "Failed to create event",
             });
         }
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         return c.json({ eventId: createdEventId }, 201);
     },

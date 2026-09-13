@@ -16,7 +16,6 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSplatRouteImport } from './routes/_app/$'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
-import { Route as AppKontraktRouteImport } from './routes/_app/kontrakt'
 import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
 import { Route as AppOpptakRouteImport } from './routes/_app/opptak'
 import { Route as AppPersonvernRouteImport } from './routes/_app/personvern'
@@ -56,6 +55,7 @@ import { Route as AppGalleriSlugRouteImport } from './routes/_app/galleri.$slug'
 import { Route as AppGrupperIndexRouteImport } from './routes/_app/grupper.index'
 import { Route as AppGrupperSlugRouteImport } from './routes/_app/grupper.$slug'
 import { Route as AppKokebokStudyIdRouteImport } from './routes/_app/kokebok.$studyId'
+import { Route as AppKontraktIndexRouteImport } from './routes/_app/kontrakt/index'
 import { Route as AppNyheterIndexRouteImport } from './routes/_app/nyheter.index'
 import { Route as AppNyheterSlugRouteImport } from './routes/_app/nyheter.$slug'
 import { Route as AppPlaygroundMarkdownRouteImport } from './routes/_app/playground.markdown'
@@ -112,11 +112,6 @@ const AppSplatRoute = AppSplatRouteImport.update({
 const AppKokebokRoute = AppKokebokRouteImport.update({
   id: '/kokebok',
   path: '/kokebok',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppKontraktRoute = AppKontraktRouteImport.update({
-  id: '/kontrakt',
-  path: '/kontrakt',
   getParentRoute: () => AppRoute,
 } as any)
 const AppNyStudentRoute = AppNyStudentRouteImport.update({
@@ -313,6 +308,11 @@ const AppKokebokStudyIdRoute = AppKokebokStudyIdRouteImport.update({
   path: '/$studyId',
   getParentRoute: () => AppKokebokRoute,
 } as any)
+const AppKontraktIndexRoute = AppKontraktIndexRouteImport.update({
+  id: '/kontrakt/',
+  path: '/kontrakt/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNyheterIndexRoute = AppNyheterIndexRouteImport.update({
   id: '/nyheter/',
   path: '/nyheter/',
@@ -450,7 +450,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/$': typeof AppSplatRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
-  '/kontrakt': typeof AppKontraktRoute
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
@@ -500,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/bedrift/': typeof AppBedriftIndexRoute
   '/galleri/': typeof AppGalleriIndexRoute
   '/grupper/': typeof AppGrupperIndexRoute
+  '/kontrakt/': typeof AppKontraktIndexRoute
   '/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -519,7 +519,6 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/$': typeof AppSplatRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
-  '/kontrakt': typeof AppKontraktRoute
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
   '/personvern': typeof AppPersonvernRoute
@@ -568,6 +567,7 @@ export interface FileRoutesByTo {
   '/bedrift': typeof AppBedriftIndexRoute
   '/galleri': typeof AppGalleriIndexRoute
   '/grupper': typeof AppGrupperIndexRoute
+  '/kontrakt': typeof AppKontraktIndexRoute
   '/nyheter': typeof AppNyheterIndexRoute
   '/admin/arrangementer': typeof AdminArrangementerIndexRoute
   '/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -591,7 +591,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/_app/$': typeof AppSplatRoute
   '/_app/kokebok': typeof AppKokebokRouteWithChildren
-  '/_app/kontrakt': typeof AppKontraktRoute
   '/_app/ny-student': typeof AppNyStudentRoute
   '/_app/opptak': typeof AppOpptakRoute
   '/_app/personvern': typeof AppPersonvernRoute
@@ -643,6 +642,7 @@ export interface FileRoutesById {
   '/_app/bedrift/': typeof AppBedriftIndexRoute
   '/_app/galleri/': typeof AppGalleriIndexRoute
   '/_app/grupper/': typeof AppGrupperIndexRoute
+  '/_app/kontrakt/': typeof AppKontraktIndexRoute
   '/_app/nyheter/': typeof AppNyheterIndexRoute
   '/admin/arrangementer/': typeof AdminArrangementerIndexRoute
   '/_app/arrangementer/$slug/$title': typeof AppArrangementerSlugTitleRoute
@@ -665,7 +665,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/$'
     | '/kokebok'
-    | '/kontrakt'
     | '/ny-student'
     | '/opptak'
     | '/personvern'
@@ -715,6 +714,7 @@ export interface FileRouteTypes {
     | '/bedrift/'
     | '/galleri/'
     | '/grupper/'
+    | '/kontrakt/'
     | '/nyheter/'
     | '/admin/arrangementer/'
     | '/arrangementer/$slug/$title'
@@ -734,7 +734,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/kokebok'
-    | '/kontrakt'
     | '/ny-student'
     | '/opptak'
     | '/personvern'
@@ -783,6 +782,7 @@ export interface FileRouteTypes {
     | '/bedrift'
     | '/galleri'
     | '/grupper'
+    | '/kontrakt'
     | '/nyheter'
     | '/admin/arrangementer'
     | '/arrangementer/$slug/$title'
@@ -805,7 +805,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/_app/$'
     | '/_app/kokebok'
-    | '/_app/kontrakt'
     | '/_app/ny-student'
     | '/_app/opptak'
     | '/_app/personvern'
@@ -857,6 +856,7 @@ export interface FileRouteTypes {
     | '/_app/bedrift/'
     | '/_app/galleri/'
     | '/_app/grupper/'
+    | '/_app/kontrakt/'
     | '/_app/nyheter/'
     | '/admin/arrangementer/'
     | '/_app/arrangementer/$slug/$title'
@@ -929,13 +929,6 @@ declare module '@tanstack/react-router' {
       path: '/kokebok'
       fullPath: '/kokebok'
       preLoaderRoute: typeof AppKokebokRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/kontrakt': {
-      id: '/_app/kontrakt'
-      path: '/kontrakt'
-      fullPath: '/kontrakt'
-      preLoaderRoute: typeof AppKontraktRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/ny-student': {
@@ -1211,6 +1204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppKokebokStudyIdRouteImport
       parentRoute: typeof AppKokebokRoute
     }
+    '/_app/kontrakt/': {
+      id: '/_app/kontrakt/'
+      path: '/kontrakt'
+      fullPath: '/kontrakt/'
+      preLoaderRoute: typeof AppKontraktIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/nyheter/': {
       id: '/_app/nyheter/'
       path: '/nyheter'
@@ -1484,7 +1484,6 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute
   AppKokebokRoute: typeof AppKokebokRouteWithChildren
-  AppKontraktRoute: typeof AppKontraktRoute
   AppNyStudentRoute: typeof AppNyStudentRoute
   AppOpptakRoute: typeof AppOpptakRoute
   AppPersonvernRoute: typeof AppPersonvernRoute
@@ -1507,6 +1506,7 @@ interface AppRouteChildren {
   AppBedriftIndexRoute: typeof AppBedriftIndexRoute
   AppGalleriIndexRoute: typeof AppGalleriIndexRoute
   AppGrupperIndexRoute: typeof AppGrupperIndexRoute
+  AppKontraktIndexRoute: typeof AppKontraktIndexRoute
   AppNyheterIndexRoute: typeof AppNyheterIndexRoute
   AppSporreskjemaIdSvarRoute: typeof AppSporreskjemaIdSvarRoute
 }
@@ -1514,7 +1514,6 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
   AppKokebokRoute: AppKokebokRouteWithChildren,
-  AppKontraktRoute: AppKontraktRoute,
   AppNyStudentRoute: AppNyStudentRoute,
   AppOpptakRoute: AppOpptakRoute,
   AppPersonvernRoute: AppPersonvernRoute,
@@ -1537,6 +1536,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppBedriftIndexRoute: AppBedriftIndexRoute,
   AppGalleriIndexRoute: AppGalleriIndexRoute,
   AppGrupperIndexRoute: AppGrupperIndexRoute,
+  AppKontraktIndexRoute: AppKontraktIndexRoute,
   AppNyheterIndexRoute: AppNyheterIndexRoute,
   AppSporreskjemaIdSvarRoute: AppSporreskjemaIdSvarRoute,
 }
