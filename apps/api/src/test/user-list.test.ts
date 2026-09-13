@@ -1,3 +1,4 @@
+import { currentAcademicYear } from "@photon/auth/academic-year";
 import { assignUserRole, createTestingRole } from "@photon/auth/roles";
 import { schema } from "@photon/db";
 import { describe, expect } from "vitest";
@@ -316,7 +317,12 @@ describe("user list", () => {
                 })
                 .returning({ id: schema.studyProgram.id });
 
-            const currentYear = new Date().getUTCFullYear();
+            /**
+             * Kullåret ruller i august, ikke i januar, og klassetrinnet
+             * regnes mot det. Kalenderåret ville gitt klassetrinn 0 fra
+             * nyttår til august, og da faller `alumni-mismatch` bort.
+             */
+            const currentYear = currentAcademicYear();
 
             async function studentWith(
                 username: string,
