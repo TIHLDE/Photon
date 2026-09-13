@@ -398,7 +398,6 @@ describe("POST /api/user/register", () => {
                 [{ code: "BIDATA", startYear: real, active: true }],
                 [],
                 null,
-                null,
                 new Date(),
             );
 
