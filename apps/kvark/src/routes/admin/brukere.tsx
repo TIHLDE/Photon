@@ -101,7 +101,7 @@ type UserIssue = UserListItem["issues"][number];
  * Kontotilstander som ellers er usynlige herfra, med hva de koster medlemmet.
  *
  * Teksten på merket sier tilstanden, tooltipen sier konsekvensen — en admin
- * som ser «Ingen medlemsrolle» skal slippe å gjette hva den gjør.
+ * som ser «Ingen rolle» skal slippe å gjette hva den gjør.
  */
 const ISSUE_LABELS: Record<UserIssue, string> = {
     "no-baseline-role": "Ingen rolle",
