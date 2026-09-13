@@ -1,20 +1,14 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { authClientWithPermission } from "#/api/auth";
-
 /**
- * Gates the super-admin section (API keys, database, logs, OAuth clients).
+ * Groups the super-admin tools (API keys, database, logs, OAuth clients).
  *
- * These tools are root-level: an OAuth client secret or an API key grants
- * standing access to the API, so this requires `root` rather than any
- * per-domain grant.
+ * Deliberately ungated: each page requires exactly what its own endpoints
+ * require, so a grant handed out in Tilganger opens the page it names.
+ * Database and Logs stay on `root` because nothing in the panel grants them.
  */
 export const Route = createFileRoute("/admin/_super-admin")({
     component: RouteComponent,
-    async beforeLoad({ location }) {
-        const auth = await authClientWithPermission(location.href, "root");
-        return { auth };
-    },
 });
 
 function RouteComponent() {

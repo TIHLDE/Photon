@@ -41,6 +41,7 @@ import {
     type CreatedOAuthClient,
     type OAuthClientFull,
 } from "#/api/queries/oauth";
+import { authClientWithPermission } from "#/api/auth";
 import {
     ConfirmDeleteDialog,
     usePendingConfirm,
@@ -50,6 +51,9 @@ type RevealedSecret = { clientId: string; clientSecret: string };
 
 export const Route = createFileRoute("/admin/_super-admin/oauth-clients")({
     component: OAuthClientsPage,
+    beforeLoad: async ({ location }) => {
+        await authClientWithPermission(location.href, "root");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(oauthClientsQuery);
     },

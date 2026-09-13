@@ -49,10 +49,14 @@ import {
 } from "#/components/confirm-delete-dialog";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
+import { requireAdminSection } from "#/lib/admin-access";
 import { formatOsloDate } from "#/lib/date";
 
 export const Route = createFileRoute("/admin/_super-admin/api-keys")({
     component: ApiKeysPage,
+    beforeLoad: async ({ location }) => {
+        await requireAdminSection(location.href, "api-keys");
+    },
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(getApiKeysQuery(0));
         return { breadcrumbs: "API Nøkler" };

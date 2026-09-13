@@ -6,11 +6,15 @@ import { Card, CardContent } from "@tihlde/ui/ui/card";
 
 import { Stagger } from "@tihlde/ui/ui/motion";
 
+import { authClientWithPermission } from "#/api/auth";
 import { AdminEmptyState } from "#/components/admin-empty-state";
 import { AdminPageHeader } from "#/components/admin-page-header";
 
 export const Route = createFileRoute("/admin/_super-admin/database")({
     component: DatabaseViewerPage,
+    beforeLoad: async ({ location }) => {
+        await authClientWithPermission(location.href, "root");
+    },
     loader: () => ({ breadcrumbs: "Database Viewer" }),
 });
 

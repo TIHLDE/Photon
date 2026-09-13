@@ -95,6 +95,15 @@ export const ADMIN_SECTION_PERMISSIONS = {
     // Bedriftshenvendelser have their own page and their own grant, so
     // søknad-permissions do not unlock them.
     kontaktskjema: ["company-contact:view", "company-contact:manage"],
+    // Listed here rather than behind `root` because the API gates every
+    // api-key endpoint on exactly these: a grant that the panel hands out has
+    // to be the grant that opens the page.
+    "api-keys": [
+        "api-keys:view",
+        "api-keys:create",
+        "api-keys:update",
+        "api-keys:delete",
+    ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type AdminSection = keyof typeof ADMIN_SECTION_PERMISSIONS;

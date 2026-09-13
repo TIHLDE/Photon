@@ -218,7 +218,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 label: "API Nøkler",
                 icon: KeyIcon,
                 link: linkOptions({ to: "/admin/api-keys" }),
-                permission: "root",
+                permission: ADMIN_SECTION_PERMISSIONS["api-keys"],
             },
             {
                 label: "OAuth-klienter",
