@@ -37,10 +37,6 @@ export const createRoute = route().post(
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
 
-        // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         const [newJob] = await db
             .insert(schema.jobPost)
             .values({
@@ -52,6 +48,9 @@ export const createRoute = route().post(
                 createdById: userId,
             })
             .returning();
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
 
         return c.json(newJob, 201);
     },

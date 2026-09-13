@@ -11,6 +11,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
+import { releaseAssetUrls } from "~/lib/asset/release";
 
 export const deleteRoute = route().delete(
     "/:slug",
@@ -41,7 +42,8 @@ export const deleteRoute = route().delete(
     }),
     async (c) => {
         const slug = c.req.param("slug");
-        const { db } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db } = ctx;
 
         // Check if the group exists
         const group = await db
@@ -60,7 +62,6 @@ export const deleteRoute = route().delete(
         // Deleting a subgroup: its leaders lose the HS seat that came with
         // the leadership (the linked leder-verv is cascade-deleted with the
         // group). Collect them BEFORE the cascade wipes the memberships.
-        const ctx = c.get("ctx");
         const leaderIds = isSubgroupType(group.type)
             ? (await getGroupMembers(ctx, slug))
                   .filter((m) => m.role === "leader")
@@ -73,6 +74,8 @@ export const deleteRoute = route().delete(
         for (const leaderId of leaderIds) {
             await pruneHsMembershipIfUnwarranted(ctx, leaderId);
         }
+
+        await releaseAssetUrls(ctx, [group.imageUrl, group.logoUrl]);
 
         return c.body(null, 204);
     },

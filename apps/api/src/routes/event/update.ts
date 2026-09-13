@@ -4,6 +4,7 @@ import { validatePriorityPools } from "~/lib/event/validate-priority-pools";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { promoteFromWaitlist } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { canActOnEventsForGroup, requireEventAccess } from "~/lib/event/access";
@@ -51,15 +52,14 @@ export const updateRoute = route().put(
         const userId = c.get("user").id;
         const { db, bucket } = c.get("ctx");
 
-        // Uploaded pictures are staged until a row claims them; without this
-        // the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         /**
          * Whether this update opened room that was not there before. Set
          * inside the transaction, acted on after it commits — see below.
          */
         let capacityGrew = false;
+
+        /** Bildet raden pekte på før kallet. Ryddes opp etter commit. */
+        let previousImageUrl: string | null = null;
 
         const updatedSlug = await db.transaction(async (tx) => {
             // Fetch existing event
@@ -73,6 +73,8 @@ export const updateRoute = route().put(
                 throw new HTTPException(404, { message: "Event not found" });
             }
             const event = existing[0];
+
+            previousImageUrl = event.imageUrl;
 
             /**
              * Reglene for betalte arrangementer leses på arrangementet slik
@@ -444,6 +446,21 @@ export const updateRoute = route().put(
 
             return slug;
         });
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
+
+        /**
+         * Et bilde ingen rad peker på lenger blir aldri ryddet av noe annet:
+         * opprydningsjobben ser bare assets som fortsatt står som «staged», og
+         * dette ble forfremmet da det ble tatt i bruk.
+         *
+         * Med vilje etter transaksjonen: sjekken av om noe annet bruker filen
+         * leser den lagrede raden.
+         */
+        await releaseReplacedAssetUrls(c.get("ctx"), [
+            [previousImageUrl, body.imageUrl],
+        ]);
 
         /**
          * Raising the capacity frees spots, and a freed spot belongs to the

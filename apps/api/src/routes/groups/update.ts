@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { promoteAssetUrls } from "~/lib/asset";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { isGroupLeader } from "~/lib/group/middleware";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -43,7 +44,8 @@ export const updateRoute = route().patch(
     async (c) => {
         const body = c.req.valid("json");
         const slug = c.req.param("slug");
-        const { db, bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db, bucket } = ctx;
 
         // Check if group exists
         const existingGroup = await db
@@ -52,7 +54,8 @@ export const updateRoute = route().patch(
             .where(eq(schema.group.slug, slug))
             .limit(1);
 
-        if (existingGroup.length === 0) {
+        const previousGroup = existingGroup[0];
+        if (!previousGroup) {
             throw new HTTPException(404, {
                 message: `Group with slug "${slug}" not found`,
             });
@@ -73,11 +76,6 @@ export const updateRoute = route().patch(
             }
         }
 
-        // Gruppebilde and logo are uploaded before this call and are still
-        // staged, so the cleanup cron would delete them two days later and
-        // leave the group's «Om»-side pointing at a 404.
-        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
-
         await db
             .update(schema.group)
             .set({
@@ -85,6 +83,14 @@ export const updateRoute = route().patch(
                 updatedAt: new Date(),
             })
             .where(eq(schema.group.slug, slug));
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl, body.logoUrl]);
+
+        await releaseReplacedAssetUrls(ctx, [
+            [previousGroup.imageUrl, body.imageUrl],
+            [previousGroup.logoUrl, body.logoUrl],
+        ]);
 
         return c.json({ message: "Group updated successfully" }, 200);
     },

@@ -4,6 +4,7 @@ import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import { isJobCreator } from "~/lib/job/middleware";
 import { promoteAssetUrls } from "~/lib/asset";
+import { releaseReplacedAssetUrls } from "~/lib/asset/release";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAccess } from "~/middleware/access";
@@ -37,7 +38,8 @@ export const updateRoute = route().patch(
     validator("json", updateJobSchema),
     async (c) => {
         const body = c.req.valid("json");
-        const { db, bucket } = c.get("ctx");
+        const ctx = c.get("ctx");
+        const { db, bucket } = ctx;
         const { id } = c.req.param();
 
         // Fetch the job posting for validation
@@ -111,15 +113,16 @@ export const updateRoute = route().patch(
             updateData.classEnd = classEnd as schema.UserClass;
         }
 
-        // Uploaded pictures are staged until a row claims them; without
-        // this the cleanup cron deletes the file after two days.
-        await promoteAssetUrls(bucket, [body.imageUrl]);
-
         const [updatedJob] = await db
             .update(schema.jobPost)
             .set(updateData)
             .where(eq(schema.jobPost.id, id))
             .returning();
+
+        // Etter lagringen: se promoteAssetUrls for hvorfor rekkefølgen teller.
+        await promoteAssetUrls(bucket, [body.imageUrl]);
+
+        await releaseReplacedAssetUrls(ctx, [[job.imageUrl, body.imageUrl]]);
 
         return c.json(updatedJob);
     },

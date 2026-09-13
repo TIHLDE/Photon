@@ -2,6 +2,7 @@ import { type DbSchema, schema } from "@photon/db";
 import { and, eq, lt } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { StorageService } from "~/lib/storage";
+import { IMAGE_VARIANT_WIDTHS, imageVariantKey } from "./image";
 
 /**
  * Sized for Töddel: the archive's largest issue is just under 40 MB, so 50 MB
@@ -74,6 +75,11 @@ export function assetKeyFromUrl(url: string): string | null {
  * so every URL a row stores has to be promoted or the picture vanishes from
  * the page a couple of days after someone set it. URLs that are not our own
  * assets are left alone.
+ *
+ * Kall den *etter* at raden er skrevet. Stemplingen tar filen ut av
+ * opprydningsjobbens rekkevidde, så en lagring som blir avvist etterpå ville
+ * etterlatt en fil ingen rydder. Rekkefølgen er trygg fordi jobben redder
+ * filer en rad peker på i stedet for å slette dem.
  */
 export async function promoteAssetUrls(
     bucket: StorageService,
@@ -111,6 +117,12 @@ export async function deleteAsset(
     key: string,
 ): Promise<void> {
     await bucket.delete(key);
+
+    // Variantene har ingen asset-rad, så uten denne runden blir de liggende
+    // for alltid — og bøtta sperres på antall objekter, ikke størrelse.
+    for (const width of IMAGE_VARIANT_WIDTHS) {
+        await bucket.deleteObject(imageVariantKey(key, width));
+    }
 }
 
 /**
