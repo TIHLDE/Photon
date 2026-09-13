@@ -1,6 +1,18 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "globalDependencies": [".env"],
+    // Satt som prosjektvariabler på Vercel, men ingen byggesteg leser dem.
+    // Uten dette advarer Turbo om at de mangler i hver eneste task som ikke
+    // trenger dem. Ikke i cache-nøkkelen: `kvark#build` hasher selv de
+    // VITE_-verdiene Vite faktisk inliner.
+    "globalPassThroughEnv": [
+        "WEBSITE_URL",
+        "VITE_POSTHOG_KEY",
+        "VITE_POSTHOG_HOST",
+        "POSTHOG_CLI_API_KEY",
+        "POSTHOG_CLI_PROJECT_ID",
+        "POSTHOG_CLI_HOST"
+    ],
     "ui": "tui",
     "tasks": {
         "dev": {
