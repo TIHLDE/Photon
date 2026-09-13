@@ -2,11 +2,46 @@ import { format } from "node:util";
 import { writeSync } from "node:fs";
 import { pino, stdSerializers, destination } from "pino";
 
-export function serializeError(value: unknown) {
+/**
+ * Postgres puts the conflicting VALUES in `error.detail` ("Key (email)=(...)
+ * already exists"), and pino's serializer copies every own property of the
+ * error, so logging one whole would put a member's address in Loki. Hence an
+ * allowlist: fields not named here are dropped, including ones added later.
+ */
+const LOGGED_ERROR_FIELDS = [
+    "code",
+    "constraint",
+    "table",
+    "status",
+    "statusCode",
+] as const;
+
+const MAX_CAUSE_DEPTH = 3;
+
+function serializeErrorAtDepth(value: unknown, depth: number): object {
     if (!(value instanceof Error)) {
         return { type: "NonError", message: format(value) };
     }
-    return stdSerializers.err(value);
+
+    const { type, message, stack } = stdSerializers.err(value);
+    const serialized: Record<string, unknown> = { type, message, stack };
+
+    for (const field of LOGGED_ERROR_FIELDS) {
+        const fieldValue = (value as unknown as Record<string, unknown>)[field];
+        if (fieldValue !== undefined) serialized[field] = fieldValue;
+    }
+
+    if (value.cause instanceof Error && depth < MAX_CAUSE_DEPTH) {
+        serialized.cause = serializeErrorAtDepth(value.cause, depth + 1);
+    }
+
+    return serialized;
+}
+
+// Exactly one parameter: callers pass this straight to `.map()`, which would
+// otherwise feed the array index in as the recursion depth.
+export function serializeError(value: unknown): object {
+    return serializeErrorAtDepth(value, 0);
 }
 
 // Read the runtime environment object: Bun replaces direct NODE_ENV accesses
