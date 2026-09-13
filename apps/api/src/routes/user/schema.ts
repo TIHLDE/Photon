@@ -348,7 +348,7 @@ export const userListItemSchema = Schema(
         }),
         issues: z.array(z.enum(USER_LIST_ISSUES)).meta({
             description:
-                "Account states an admin has to act on, none of which are visible from the other fields. 'no-baseline-role': holds neither member nor alumni, so every event registration is a 403 while the account otherwise looks healthy. 'feide-inactive': Feide reported the study programme as not enrolled, which demotes the account to alumni on the next login. 'alumni-mismatch': marked alumni while the cohort places them inside the programme. Empty for the overwhelming majority.",
+                "Account states an admin has to act on, none of which are visible from the other fields. 'no-baseline-role': holds neither member nor alumni, so every event registration is a 403 while the account otherwise looks healthy — never set for an account still awaiting approval, which is meant to hold no role and is already on the approval list. 'feide-inactive': Feide reported the study programme as not enrolled, which demotes the account to alumni on the next login. 'alumni-mismatch': marked alumni while the cohort places them inside the programme. Empty for the overwhelming majority.",
         }),
         createdAt: z
             .string()

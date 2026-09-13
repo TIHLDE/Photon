@@ -277,7 +277,12 @@ export const listUsersRoute = route().get(
                     // `banned` is nullable in Better Auth's schema; only an
                     // explicit true means deactivated.
                     isActive: banned !== true,
-                    issues: findIssues(row.baselineRole, feideActive, standing),
+                    issues: findIssues(
+                        row.baselineRole,
+                        row.approvalStatus,
+                        feideActive,
+                        standing,
+                    ),
                     createdAt: row.createdAt.toISOString(),
                 };
             }),
@@ -296,12 +301,21 @@ export const listUsersRoute = route().get(
  */
 function findIssues(
     baselineRole: "member" | "alumni" | null,
+    approvalStatus: "pending" | "approved" | null,
     feideActive: boolean | null,
     standing: ReturnType<typeof computeClassStanding>,
 ): UserListIssue[] {
     const issues: UserListIssue[] = [];
 
-    if (baselineRole === null) issues.push("no-baseline-role");
+    /**
+     * An account waiting for approval is meant to hold no role yet — approving
+     * it is what hands one out. It is already on the "Venter" list with the
+     * button that fixes it, so flagging it says nothing new and spends the
+     * badge's meaning. The badge is for the accounts nobody is holding.
+     */
+    if (baselineRole === null && approvalStatus !== "pending") {
+        issues.push("no-baseline-role");
+    }
 
     if (feideActive === false && !standing.isAlumni) {
         issues.push("feide-inactive");

@@ -1,6 +1,7 @@
 import { currentAcademicYear } from "@photon/auth/academic-year";
 import { assignUserRole, createTestingRole } from "@photon/auth/roles";
 import { schema } from "@photon/db";
+import { eq } from "drizzle-orm";
 import { describe, expect } from "vitest";
 import {
     type IntegrationTestContext,
@@ -326,7 +327,11 @@ describe("user list", () => {
 
             async function studentWith(
                 username: string,
-                options: { role?: "member" | "alumni"; feideActive: boolean },
+                options: {
+                    role?: "member" | "alumni";
+                    feideActive: boolean;
+                    approvalStatus?: "pending";
+                },
             ) {
                 const created = await ctx.auth.api.createUser({
                     body: {
@@ -353,6 +358,12 @@ describe("user list", () => {
                 if (options.role) {
                     await assignUserRole(ctx, created.user.id, options.role);
                 }
+                if (options.approvalStatus) {
+                    await ctx.db
+                        .update(schema.user)
+                        .set({ approvalStatus: options.approvalStatus })
+                        .where(eq(schema.user.id, created.user.id));
+                }
                 return created.user.id;
             }
 
@@ -371,6 +382,16 @@ describe("user list", () => {
                 role: "alumni",
                 feideActive: true,
             });
+            /**
+             * Holder ingen rolle, akkurat som `roleless` — men den står i
+             * godkjenningskøen, der det å godkjenne er det som deler ut
+             * rollen. Ingenting er galt med den, og merket skal bety at noe
+             * er det.
+             */
+            const awaitingApproval = await studentWith("ventern", {
+                feideActive: true,
+                approvalStatus: "pending",
+            });
 
             const res = await client.api.user.$get({ query: {} });
             expect(res.status).toBe(200);
@@ -382,6 +403,7 @@ describe("user list", () => {
             expect(issuesFor(roleless)).toEqual(["no-baseline-role"]);
             expect(issuesFor(inactive)).toEqual(["feide-inactive"]);
             expect(issuesFor(wronglyAlumni)).toEqual(["alumni-mismatch"]);
+            expect(issuesFor(awaitingApproval)).toEqual([]);
         },
     );
 });
