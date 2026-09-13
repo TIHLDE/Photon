@@ -589,6 +589,13 @@
       "when": 1788729243621,
       "tag": "0083_vipps_webhook_in_db",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1788729243622,
+      "tag": "0084_drop_motetid_and_qr_code",
+      "breakpoints": true
     }
   ]
 }
