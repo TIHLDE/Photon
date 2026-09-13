@@ -10,6 +10,7 @@ if (typeof window !== "undefined" && import.meta.env.VITE_POSTHOG_KEY) {
         // TanStack Router navigerer via history API, så pageviews må fanges
         // på history-endringer og ikke bare ved full sidelast.
         capture_pageview: "history_change",
+        capture_exceptions: true,
         defaults: "2025-11-30",
         debug: import.meta.env.DEV,
         loaded: (ph) => {
