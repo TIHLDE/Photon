@@ -49,12 +49,9 @@ describe("campus rejection is not applied to existing members", () => {
             });
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(
-                    tx,
-                    user.id,
-                    [{ code: "BIDATA", startYear: 2023, active: true }],
-                    "testuser",
-                ),
+                keepExistingMemberships(tx, user.id, [
+                    { code: "BIDATA", startYear: 2023, active: true },
+                ]),
             );
 
             expect(kept.map((p) => p.code)).toEqual(["BIDATA"]);
@@ -77,12 +74,9 @@ describe("campus rejection is not applied to existing members", () => {
             });
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(
-                    tx,
-                    user.id,
-                    [{ code: "BIDATA", startYear: 2025, active: true }],
-                    "testuser",
-                ),
+                keepExistingMemberships(tx, user.id, [
+                    { code: "BIDATA", startYear: 2025, active: true },
+                ]),
             );
 
             expect(kept).toEqual([]);
@@ -103,12 +97,9 @@ describe("campus rejection is not applied to existing members", () => {
             });
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(
-                    tx,
-                    user.id,
-                    [{ code: "BIDATA", startYear: 2025, active: true }],
-                    "testuser",
-                ),
+                keepExistingMemberships(tx, user.id, [
+                    { code: "BIDATA", startYear: 2025, active: true },
+                ]),
             );
 
             expect(kept).toEqual([]);
@@ -122,12 +113,9 @@ describe("campus rejection is not applied to existing members", () => {
             await seedProgram(ctx.db, "BIDATA", "dataingenir");
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(
-                    tx,
-                    user.id,
-                    [{ code: "BIDATA", startYear: 2025, active: true }],
-                    "testuser",
-                ),
+                keepExistingMemberships(tx, user.id, [
+                    { code: "BIDATA", startYear: 2025, active: true },
+                ]),
             );
 
             expect(kept).toEqual([]);
@@ -153,15 +141,10 @@ describe("campus rejection is not applied to existing members", () => {
             });
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(
-                    tx,
-                    user.id,
-                    [
-                        { code: "BIDATA", startYear: 2023, active: true },
-                        { code: "BDIGSEC", startYear: 2025, active: true },
-                    ],
-                    "testuser",
-                ),
+                keepExistingMemberships(tx, user.id, [
+                    { code: "BIDATA", startYear: 2023, active: true },
+                    { code: "BDIGSEC", startYear: 2025, active: true },
+                ]),
             );
 
             expect(kept.map((p) => p.code)).toEqual(["BIDATA"]);
@@ -174,7 +157,7 @@ describe("campus rejection is not applied to existing members", () => {
             const user = await ctx.utils.createTestUser();
 
             const kept = await ctx.db.transaction((tx) =>
-                keepExistingMemberships(tx, user.id, [], "testuser"),
+                keepExistingMemberships(tx, user.id, []),
             );
 
             expect(kept).toEqual([]);

@@ -448,7 +448,6 @@ describe("fines in a study group", () => {
                 allowed,
                 campusRejected,
                 campus,
-                null,
             );
 
             const [row] = await ctx.db

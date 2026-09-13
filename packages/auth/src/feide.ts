@@ -342,10 +342,9 @@ export async function syncFeideForUser(
      * has multiple `account` rows, and only the Feide one carries the
      * Dataporten access token needed below.
      *
-     * The username comes along for the ride purely so the warnings further
-     * down can name who they are about — worth the join, because those
-     * warnings are the only trace of a member who was let in without a
-     * resolved campus.
+     * The username comes along only to decide whether it needs backfilling.
+     * It must never reach a log line: these warnings go to Loki, and a
+     * username names the member outright where an id does not.
      */
     const [feideAccount] = await db
         .select({ accessToken: account.accessToken, username: user.username })
@@ -365,10 +364,11 @@ export async function syncFeideForUser(
         throw new NoFeideAccountError();
     }
 
-    const username =
-        feideAccount.username ?? (await backfillUsername(db, userId, token));
+    if (feideAccount.username === null) {
+        await backfillUsername(db, userId, token);
+    }
 
-    const who = `user ${userId} (${username ?? "no username"})`;
+    const who = `user ${userId}`;
 
     const { programs, campus } = await fetchValidStudyPrograms(token, who);
     const { allowed, campusRejected } = partitionByCampus(programs, campus);
@@ -409,14 +409,7 @@ export async function syncFeideForUser(
         );
     }
 
-    await applyFeideStudyPrograms(
-        db,
-        userId,
-        allowed,
-        campusRejected,
-        campus,
-        username,
-    );
+    await applyFeideStudyPrograms(db, userId, allowed, campusRejected, campus);
 
     await queueForApprovalIfUnresolved(db, userId, who);
 }
@@ -557,7 +550,6 @@ export async function applyFeideStudyPrograms(
     allowed: StudyProgram[],
     campusRejected: StudyProgram[],
     campus: Campus | null,
-    username: string | null,
     now = new Date(),
 ): Promise<void> {
     // Add user to all valid study programs
@@ -570,12 +562,7 @@ export async function applyFeideStudyPrograms(
          */
         const groups = [
             ...allowed,
-            ...(await keepExistingMemberships(
-                tx,
-                userId,
-                campusRejected,
-                username,
-            )),
+            ...(await keepExistingMemberships(tx, userId, campusRejected)),
         ];
 
         /**
@@ -1026,7 +1013,6 @@ export async function keepExistingMemberships(
     tx: Transaction,
     userId: string,
     campusRejected: StudyProgram[],
-    username: string | null,
 ): Promise<StudyProgram[]> {
     if (campusRejected.length === 0) return [];
 
@@ -1050,8 +1036,8 @@ export async function keepExistingMemberships(
     for (const p of campusRejected) {
         console.warn(
             confirmedCodes.has(p.code)
-                ? `User ${userId} (${username ?? "no username"}) reads as another campus on ${p.code} but was confirmed in Trondheim earlier; keeping access.`
-                : `User ${userId} (${username ?? "no username"}) rejected from ${p.code}: studies at another campus, never confirmed in Trondheim.`,
+                ? `User ${userId} reads as another campus on ${p.code} but was confirmed in Trondheim earlier; keeping access.`
+                : `User ${userId} rejected from ${p.code}: studies at another campus, never confirmed in Trondheim.`,
         );
     }
 
@@ -2381,7 +2367,7 @@ async function backfillUsername(
     if (taken) {
         if (taken.id !== userId) {
             console.warn(
-                `Feide username ${username} already belongs to user ${taken.id}; leaving user ${userId} without one.`,
+                `The Feide username already belongs to user ${taken.id}; leaving user ${userId} without one.`,
             );
         }
         return null;
