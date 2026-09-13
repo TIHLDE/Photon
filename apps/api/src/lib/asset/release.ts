@@ -23,12 +23,26 @@ export async function releaseAssetUrls(
     ctx: AssetContext,
     urls: (string | null | undefined)[],
 ): Promise<void> {
+    await releaseAssetKeys(
+        ctx,
+        urls.map((url) => (url ? assetKeyFromUrl(url) : null)),
+    );
+}
+
+/**
+ * Som {@link releaseAssetUrls}, for kolonner som lagrer nøkkelen rå.
+ *
+ * Begge formene finnes: et bilde lagres som vår egen URL, mens en signert
+ * kontrakt lagres som `contracts/…` rett fra opplastingen. Sistnevnte gir
+ * ingenting gjennom `assetKeyFromUrl`, så en ordning som bare tar URL-er ville
+ * stilltiende latt dem ligge.
+ */
+export async function releaseAssetKeys(
+    ctx: AssetContext,
+    rawKeys: (string | null | undefined)[],
+): Promise<void> {
     const keys = [
-        ...new Set(
-            urls
-                .map((url) => (url ? assetKeyFromUrl(url) : null))
-                .filter((key): key is string => key !== null),
-        ),
+        ...new Set(rawKeys.filter((key): key is string => Boolean(key))),
     ];
     if (keys.length === 0) return;
 

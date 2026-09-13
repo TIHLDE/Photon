@@ -5191,6 +5191,8 @@ export interface components {
         UpdateFine: {
             /** @description User's defense text */
             defense?: string;
+            /** @description Evidence image URL. Null removes the picture. Only the fines admin or the group's leader may change it, and the picture it replaces is deleted. */
+            image?: string | null;
             /**
              * @description Fine status
              * @enum {string}

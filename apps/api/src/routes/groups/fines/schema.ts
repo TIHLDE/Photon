@@ -48,6 +48,10 @@ export const updateFineSchema = Schema(
             .string()
             .optional()
             .meta({ description: "User's defense text" }),
+        image: z.url().max(600).nullable().optional().meta({
+            description:
+                "Evidence image URL. Null removes the picture. Only the fines admin or the group's leader may change it, and the picture it replaces is deleted.",
+        }),
         status: fineStatusSchema.optional(),
     }),
 );

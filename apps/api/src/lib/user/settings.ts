@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { claimPrivateAssetUrls } from "../asset";
+import { releaseReplacedAssetUrls } from "../asset/release";
 import type { AppContext } from "../ctx";
 
 export const UserAllergySchema = z.object({
@@ -247,9 +248,14 @@ export async function updateUserSettings(
 ): Promise<StoredUserSettings> {
     const { db } = ctx;
 
+    const previous = await db.query.userSettings.findFirst({
+        where: (settings, { eq }) => eq(settings.userId, userId),
+        columns: { imageUrl: true },
+    });
+
     await claimPrivateAssetUrls(ctx.bucket, [updates.imageUrl]);
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
         // Separate allergies from other updates
         const { allergies, customAllergies, ...settingsUpdates } = updates;
 
@@ -344,6 +350,12 @@ export async function updateUserSettings(
                 updated.allergiesConfirmedAt?.toISOString() ?? null,
         };
     });
+
+    await releaseReplacedAssetUrls(ctx, [
+        [previous?.imageUrl ?? null, updates.imageUrl],
+    ]);
+
+    return result;
 }
 
 /**
