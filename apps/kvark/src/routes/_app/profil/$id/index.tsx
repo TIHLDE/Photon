@@ -174,11 +174,7 @@ function RouteComponent() {
 function ProfileTodos({
     evaluations,
 }: {
-    evaluations: {
-        formId: string;
-        eventTitle: string;
-        eventEndTime: string;
-    }[];
+    evaluations: { formId: string; eventTitle: string }[];
 }) {
     if (evaluations.length === 0) {
         return (
