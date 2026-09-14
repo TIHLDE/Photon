@@ -234,16 +234,20 @@ function AlreadyAnswered({
                 </>
             ) : (
                 <div className="flex flex-col gap-2 sm:flex-row">
+                    {/* `flex-1` i stedet for bare `w-full`: knappene har
+                        `shrink-0`, så to bredde-100 %-knapper på samme rad ga
+                        all plassen til den første og dyttet den andre ut av
+                        kortet. */}
                     <Button
                         variant="outline"
-                        className="w-full"
+                        className="w-full sm:flex-1"
                         render={<Link to="/" />}
                     >
                         Gå til forsiden
                     </Button>
                     <Button
                         variant="outline"
-                        className="w-full"
+                        className="w-full sm:flex-1"
                         render={<Link to="/profil/$id" params={{ id: "me" }} />}
                     >
                         Gå til profilen din
