@@ -489,6 +489,7 @@ export async function resolveRegistrationsForEvent(
                     createdAt: registration.createdAt,
                     updatedAt: new Date(),
                     attendedAt: null,
+                    evaluationReminderSentAt: null,
                     allowPhoto: registration.allowPhoto,
                 });
             }
@@ -507,6 +508,8 @@ export async function resolveRegistrationsForEvent(
                             createdAt: existing.createdAt,
                             updatedAt: new Date(),
                             attendedAt: existing.attendedAt,
+                            evaluationReminderSentAt:
+                                existing.evaluationReminderSentAt,
                             allowPhoto: existing.allowPhoto,
                         };
                     }

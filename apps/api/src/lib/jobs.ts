@@ -2,6 +2,7 @@ import { startQueuedEmailWorker } from "@photon/core/services/email";
 import cron from "node-cron";
 import { startAssetCleanupCron } from "./asset/worker";
 import type { AppContext } from "./ctx";
+import { sendEvaluationRemindersForEndedEvents } from "./event/evaluation-reminder";
 import { processNoShowStrikesForEndedEvents } from "./event/no-show";
 import { reviewPaymentsForStartedEvents } from "./event/payment-review";
 import { enforceExpiredPaymentDeadlines } from "./event/payment-sweep";
@@ -76,6 +77,23 @@ function startNoShowStrikeCron(ctx: AppContext): void {
     });
 
     console.log("⏰ No-show strike cron started (runs every 5 minutes)");
+}
+
+/**
+ * Start cron job that asks attendees to answer the evaluation once their event
+ * has ended. Runs every 5 minutes — an evaluation is not time-critical, it just
+ * has to reach the member before the registration gate does.
+ */
+function startEvaluationReminderCron(ctx: AppContext): void {
+    cron.schedule("*/5 * * * *", async () => {
+        try {
+            await sendEvaluationRemindersForEndedEvents(ctx);
+        } catch (error) {
+            console.error("Error in evaluation reminder cron:", error);
+        }
+    });
+
+    console.log("⏰ Evaluation reminder cron started (runs every 5 minutes)");
 }
 
 /**
@@ -203,6 +221,9 @@ export function startBackgroundJobs(ctx: AppContext): void {
 
     // Start registration-opening reminder cron
     startRegistrationReminderCron(ctx);
+
+    // Start the evaluation reminder cron
+    startEvaluationReminderCron(ctx);
 
     // Start the payments-without-a-spot review cron
     startPaymentReviewCron(ctx);

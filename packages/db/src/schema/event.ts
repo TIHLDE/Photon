@@ -241,6 +241,15 @@ export const eventRegistration = pgTable(
          * declined photos on individual registrations.
          */
         allowPhoto: boolean("allow_photo").default(true).notNull(),
+        /**
+         * Set once the member has been reminded to answer the event's
+         * evaluation. Idempotency marker for the reminder sweep, per
+         * registration rather than per event: attendance is often registered
+         * long after the doors closed, and a marker on the event would leave
+         * everyone checked in after the first sweep without a reminder — while
+         * the registration gate still blocks them.
+         */
+        evaluationReminderSentAt: timestamp("evaluation_reminder_sent_at"),
         ...timestamps,
     },
     (t) => [

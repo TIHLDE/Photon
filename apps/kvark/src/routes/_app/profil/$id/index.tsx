@@ -4,7 +4,10 @@ import {
     getMySignatureQuery,
 } from "#/api/queries/contracts";
 import { getMyUpcomingEventsQuery } from "#/api/queries/events";
-import { getUserProfileQuery } from "#/api/queries/user";
+import {
+    getUnansweredEvaluationsQuery,
+    getUserProfileQuery,
+} from "#/api/queries/user";
 import { ProfileLinksSection } from "#/components/profile-links-section";
 import { ProfileMembershipChips } from "#/components/profile-membership-chips";
 import { ProfileUpcomingEvents } from "#/components/profile-upcoming-events";
@@ -22,7 +25,12 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@tihlde/ui/ui/empty";
-import { FileSignature, ListTodo, UtensilsCrossed } from "lucide-react";
+import {
+    FileSignature,
+    HelpCircle,
+    ListTodo,
+    UtensilsCrossed,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_app/profil/$id/")({
     component: RouteComponent,
@@ -49,6 +57,10 @@ function RouteComponent() {
     });
     const { data: mySignature } = useQuery({
         ...getMySignatureQuery(),
+        enabled: isOwnProfile,
+    });
+    const { data: evaluations } = useQuery({
+        ...getUnansweredEvaluationsQuery(),
         enabled: isOwnProfile,
     });
 
@@ -143,22 +155,75 @@ function RouteComponent() {
 
                     <div className="flex flex-col gap-3">
                         <h3>Må gjøres</h3>
-                        <Empty>
-                            <EmptyHeader>
-                                <EmptyMedia variant="icon">
-                                    <ListTodo />
-                                </EmptyMedia>
-                                <EmptyTitle>Ingenting å gjøre</EmptyTitle>
-                                <EmptyDescription>
-                                    Oppgaver som spørreskjemaer og evalueringer
-                                    dukker opp her.
-                                </EmptyDescription>
-                            </EmptyHeader>
-                        </Empty>
+                        <ProfileTodos evaluations={evaluations ?? []} />
                     </div>
                 </>
             ) : null}
         </>
+    );
+}
+
+/**
+ * Evalueringene medlemmet skylder svar på.
+ *
+ * Seksjonen lovet før at «oppgaver som spørreskjemaer og evalueringer dukker
+ * opp her», men var hardkodet tom — så den som lette det mest nærliggende
+ * stedet fikk beskjed om at det ikke var noe å gjøre, mens påmeldingen deres
+ * sto sperret av nettopp en evaluering.
+ */
+function ProfileTodos({
+    evaluations,
+}: {
+    evaluations: { formId: string; eventTitle: string }[];
+}) {
+    if (evaluations.length === 0) {
+        return (
+            <Empty>
+                <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                        <ListTodo />
+                    </EmptyMedia>
+                    <EmptyTitle>Ingenting å gjøre</EmptyTitle>
+                    <EmptyDescription>
+                        Oppgaver som spørreskjemaer og evalueringer dukker opp
+                        her.
+                    </EmptyDescription>
+                </EmptyHeader>
+            </Empty>
+        );
+    }
+
+    return (
+        <ul className="flex flex-col gap-2">
+            {evaluations.map((evaluation) => (
+                <li key={evaluation.formId}>
+                    <Alert>
+                        <HelpCircle className="size-4" />
+                        <AlertTitle>
+                            Svar på evalueringen for {evaluation.eventTitle}
+                        </AlertTitle>
+                        <AlertDescription className="flex items-center justify-between gap-4">
+                            <span>
+                                Du må svare før du kan melde deg på flere
+                                arrangementer.
+                            </span>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                render={
+                                    <Link
+                                        to="/sporreskjema/$id"
+                                        params={{ id: evaluation.formId }}
+                                    />
+                                }
+                            >
+                                Svar nå
+                            </Button>
+                        </AlertDescription>
+                    </Alert>
+                </li>
+            ))}
+        </ul>
     );
 }
 

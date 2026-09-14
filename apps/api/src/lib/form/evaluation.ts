@@ -9,7 +9,7 @@ import type { AppContext } from "../ctx";
  * is not going to produce a useful answer, and holding the member hostage over
  * it forever only costs them the next bedpres.
  */
-const EVALUATION_BLOCK_DAYS = 30;
+export const EVALUATION_BLOCK_DAYS = 30;
 
 export type UnansweredEvaluation = {
     formId: string;

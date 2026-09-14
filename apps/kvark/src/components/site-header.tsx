@@ -158,7 +158,7 @@ export function SiteHeader({
                         aria-label={
                             user
                                 ? hasProfileTodo
-                                    ? "Gå til profil. Du mangler å svare på om du har allergier."
+                                    ? "Gå til profil. Du har noe som må gjøres."
                                     : "Gå til profil"
                                 : "Logg inn"
                         }
