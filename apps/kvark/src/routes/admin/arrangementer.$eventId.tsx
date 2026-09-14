@@ -24,6 +24,7 @@ import {
     CheckIcon,
     CircleHelpIcon,
     ClockFadingIcon,
+    CameraOffIcon,
     CopyIcon,
     GraduationCapIcon,
     UsersIcon,
@@ -1143,6 +1144,10 @@ function RegistrationsTab({ eventId }: { eventId: string }) {
                                                     </span>
                                                 ) : null}
                                                 {participant.name}
+                                                {participant.allowPhoto ===
+                                                false ? (
+                                                    <NoPhotoMark />
+                                                ) : null}
                                             </TableCell>
                                             <TableCell>
                                                 {participant.email ?? "—"}
@@ -1614,6 +1619,26 @@ function StudyVerificationMark({
                     <TeknologiministerMessage message={mark.explanation} />
                 </span>
             </TooltipContent>
+        </Tooltip>
+    );
+}
+
+function NoPhotoMark() {
+    const explanation = "Ønsker ikke å bli tatt bilde av";
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span
+                        className="ml-2 inline-flex align-middle"
+                        aria-label={explanation}
+                    >
+                        <CameraOffIcon className="size-3.5" />
+                    </span>
+                }
+            />
+            <TooltipContent>{explanation}</TooltipContent>
         </Tooltip>
     );
 }
