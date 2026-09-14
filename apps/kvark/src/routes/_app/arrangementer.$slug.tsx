@@ -47,6 +47,7 @@ import {
     unregisterFromEventMutation,
     updateFavoriteEventMutation,
 } from "#/api/queries/events";
+import { getUnansweredEvaluationsQuery } from "#/api/queries/user";
 import { DetailDateRange } from "#/components/detail-date-range";
 import { DetailField } from "#/components/detail-field";
 import { DetailHero } from "#/components/detail-hero";
@@ -57,6 +58,7 @@ import { EventQrDialog } from "#/components/event-qr-dialog";
 import { EventRegistrantsDialog } from "#/components/event-registrants-dialog";
 import { AllergyNudge } from "#/components/allergy-nudge";
 import { FeideRefreshNudge } from "#/components/feide-refresh-nudge";
+import { EventEvaluationNotice } from "#/components/event-evaluation-notice";
 import { EventRegistrationCard } from "#/components/event-registration-card";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { IconActionButton } from "#/components/icon-action-button";
@@ -224,6 +226,13 @@ function EventDetailPage() {
     // som uansett ligger i cachen fra profilen — avgjør det.
     const { data: favorites } = useQuery({
         ...getFavoriteEventsQuery(),
+        enabled: Boolean(session),
+    });
+    // Evalueringer man skylder svar på sperrer påmeldingen i API-et. Uten
+    // dette møtte medlemmet sperren som en feilmelding etter at de hadde
+    // trykket, uten lenke til skjemaet som løser den opp.
+    const { data: pendingEvaluations } = useQuery({
+        ...getUnansweredEvaluationsQuery(),
         enabled: Boolean(session),
     });
     const isFavorite = Boolean(
@@ -705,6 +714,14 @@ function EventDetailPage() {
                             <AllergyNudge
                                 eventId={event.id}
                                 hasPaid={event.registration?.hasPaid ?? false}
+                            />
+                        }
+                        hasUnansweredEvaluations={
+                            (pendingEvaluations?.length ?? 0) > 0
+                        }
+                        evaluationSlot={
+                            <EventEvaluationNotice
+                                evaluations={pendingEvaluations ?? []}
                             />
                         }
                         requiresEventRulesConsent={eventRules.mustAccept}

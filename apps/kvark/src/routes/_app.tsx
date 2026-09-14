@@ -2,6 +2,7 @@ import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { authQueryOptions } from "#/api/auth";
+import { getUnansweredEvaluationsQuery } from "#/api/queries/user";
 import { EventRulesConsent } from "#/components/event-rules-consent";
 import { FeedbackButton } from "#/components/feedback-button";
 import { NotificationBell } from "#/components/notification-bell";
@@ -39,6 +40,13 @@ function AppLayout() {
     // før noen har sagt ja. Det må stå et sted de faktisk ser det — og
     // medlemsmenyen skjules, siden hver side der svarer 403 for dem.
     const isPendingApproval = session?.user?.isPendingApproval === true;
+    // Evalueringer sperrer påmeldingen til de er besvart, men lå bare i en
+    // fane på profilen — så folk oppdaget dem først i det de ikke kom inn på
+    // neste bedpres. Prikken peker dit.
+    const { data: evaluations } = useQuery({
+        ...getUnansweredEvaluationsQuery(),
+        enabled: isAuthenticated && !isPendingApproval,
+    });
     // Allergispørsmålet er det eneste medlemmet kan bli sittende med ubesvart
     // uten å merke det, og arrangørene bestiller mat etter svarene. Prikken
     // blir stående til de har svart — også når svaret er «jeg har ingen».
@@ -46,7 +54,8 @@ function AppLayout() {
     const hasProfileTodo =
         isAuthenticated &&
         !isPendingApproval &&
-        session?.user.settings?.allergiesConfirmedAt == null;
+        (session?.user.settings?.allergiesConfirmedAt == null ||
+            (evaluations?.length ?? 0) > 0);
     const navItems = useSiteNavItems(isAuthenticated, !isPendingApproval);
 
     return (

@@ -85,6 +85,14 @@ type EventRegistrationCardProps = {
      */
     requiresEventRulesConsent?: boolean;
     eventRulesSlot?: ReactNode;
+    /**
+     * Satt når medlemmet skylder svar på en evaluering. API-et avviser
+     * påmeldingen deres uansett, så `evaluationSlot` erstatter knappen på
+     * samme måte som arrangementsreglene gjør — med lenka til skjemaet, som
+     * er det eneste som løser opp.
+     */
+    hasUnansweredEvaluations?: boolean;
+    evaluationSlot?: ReactNode;
     notEligibleReason?: string;
     waitlistPosition?: number;
     /** Satt mens en på-/avmelding er underveis, så knappen ikke kan dobbeltklikkes. */
@@ -112,7 +120,15 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
         (props.registrationState === "open" ||
             props.registrationState === "not-open" ||
             props.registrationState === "full");
-    const state = getStateRendering(props, blockedByEventRules);
+    const blockedByEvaluations =
+        props.hasUnansweredEvaluations === true &&
+        (props.registrationState === "open" ||
+            props.registrationState === "not-open" ||
+            props.registrationState === "full");
+    const state = getStateRendering(
+        props,
+        blockedByEventRules || blockedByEvaluations,
+    );
     // Uten påmelding er både tidslinjen og «0/∞ påmeldte» bare støy.
     const showRegistrationDetails = props.registrationState !== "no-signup";
 
@@ -148,6 +164,7 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                     </InfoRow>
                 ) : null}
                 {blockedByEventRules ? props.eventRulesSlot : null}
+                {blockedByEvaluations ? props.evaluationSlot : null}
                 {state.actions}
                 {props.actionError ? (
                     <Alert variant="destructive">
@@ -173,7 +190,8 @@ type StateRendering = {
 
 function getStateRendering(
     props: EventRegistrationCardProps,
-    blockedByEventRules: boolean,
+    /** Noe medlemmet må gjøre først står i veien — reglene eller en evaluering. */
+    blocked: boolean,
 ): StateRendering {
     const state = props.registrationState;
 
@@ -327,7 +345,7 @@ function getStateRendering(
                         : "Meld deg på ventelista, så får du plassen om noen melder seg av.",
                 // Ventelista går gjennom samme påmelding, så den er stengt av
                 // samme grunn — knappen ville bare gitt en avvisning.
-                actions: blockedByEventRules ? null : (
+                actions: blocked ? null : (
                     <Button
                         variant="outline"
                         className="w-full"
@@ -353,7 +371,7 @@ function getStateRendering(
         case "open":
             // Varselet forklarer hvorfor, og har handlingen som låser opp
             // påmeldingen. En knapp ved siden av ville bare blitt avvist.
-            if (blockedByEventRules) return {};
+            if (blocked) return {};
 
             return {
                 actions: (

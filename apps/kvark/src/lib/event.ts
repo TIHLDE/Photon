@@ -188,6 +188,12 @@ export function registrationErrorMessage(error: unknown): string {
     if (message.includes("accept the event rules")) {
         return "Du må godkjenne arrangementsreglene før du kan melde deg på. Huk av i varselet over.";
     }
+    // API-et navngir arrangementene i meldingen sin, men den er ren tekst.
+    // Skjemaene ligger i varselet over — og på profilen for den som kom hit
+    // fra en annen fane enn den sperren ble vist i.
+    if (message.includes("svare på evalueringen")) {
+        return `${message}. Skjemaene ligger i varselet over, og under Profil → Spørreskjemaer.`;
+    }
     if (message.includes("priority pool")) {
         return "Dette arrangementet er forbeholdt medlemmer i en prioritert gruppe.";
     }
