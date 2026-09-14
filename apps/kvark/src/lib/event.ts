@@ -38,7 +38,6 @@ export type EventRegistrant = {
     studyProgram?: string;
     classYear?: number;
     onWaitlist?: boolean;
-    allowPhoto?: boolean;
 };
 
 type ApiRegistration = {

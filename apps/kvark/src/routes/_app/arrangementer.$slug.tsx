@@ -358,7 +358,6 @@ function EventDetailPage() {
             name: u.name,
             image: u.image,
             isAnonymous: u.isAnonymous,
-            allowPhoto: u.allowPhoto,
         })),
     );
     const registrantsTotalCount = registrationPages?.pages[0]?.totalCount;
