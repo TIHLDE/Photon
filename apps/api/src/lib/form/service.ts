@@ -4,6 +4,10 @@ import { schema } from "@photon/db";
 import { and, count, eq, inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { HTTPException } from "hono/http-exception";
+import {
+    DEFAULT_STATUSES,
+    EVENT_ARRANGER_PERMISSIONS,
+} from "~/lib/event/access";
 import type {
     CreateAnswerInput,
     CreateFieldInput,
@@ -737,6 +741,39 @@ async function createAnswers(
 // ===== STATISTICS =====
 
 /**
+ * Brukerne hvis svar teller for et skjema, eller `null` når alle svar teller.
+ *
+ * Et arrangement-skjema tar bare med dem som faktisk hadde en plass:
+ * ventelista svarer på påmeldingsskjemaet uten å komme, og svarene deres er
+ * ikke arrangementets. Evalueringsskjemaet kan bare besvares av dem som er
+ * huket av som ankommet, så respondentene står som `attended` eller
+ * `no_show` — en sjekk på `registered` alene skjulte hvert eneste
+ * evalueringssvar. Samme sett som `registeredCount` teller.
+ */
+export async function submissionSpotHolders(
+    db: Database,
+    formId: string,
+): Promise<Set<string> | null> {
+    const eventForm = await db.query.formEventForm.findFirst({
+        where: eq(schema.formEventForm.formId, formId),
+    });
+
+    if (!eventForm) return null;
+
+    const registrations = await db
+        .select({ userId: schema.eventRegistration.userId })
+        .from(schema.eventRegistration)
+        .where(
+            and(
+                eq(schema.eventRegistration.eventId, eventForm.eventId),
+                inArray(schema.eventRegistration.status, [...DEFAULT_STATUSES]),
+            ),
+        );
+
+    return new Set(registrations.map((registration) => registration.userId));
+}
+
+/**
  * Calculate statistics for a form
  * Returns option counts and percentages for select-type fields
  */
@@ -747,11 +784,21 @@ export async function calculateFormStatistics(db: Database, formId: string) {
         throw new HTTPException(404, { message: "Form not found" });
     }
 
+    // Statistikken må telle det samme som svarlista viser, ellers spriker
+    // «N svar» og prosentene på det samme skjemaet.
+    const spotHolders = await submissionSpotHolders(db, formId);
+    const countsHere = spotHolders
+        ? and(
+              eq(schema.formSubmission.formId, formId),
+              inArray(schema.formSubmission.userId, [...spotHolders]),
+          )
+        : eq(schema.formSubmission.formId, formId);
+
     // Get total submissions count
     const [submissionCount] = await db
         .select({ count: count() })
         .from(schema.formSubmission)
-        .where(eq(schema.formSubmission.formId, formId));
+        .where(countsHere);
 
     const totalSubmissions = submissionCount?.count || 0;
 
@@ -790,7 +837,7 @@ export async function calculateFormStatistics(db: Database, formId: string) {
                                         schema.formAnswerOption.optionId,
                                         option.id,
                                     ),
-                                    eq(schema.formSubmission.formId, formId),
+                                    countsHere,
                                 ),
                             );
 
@@ -848,6 +895,12 @@ export async function calculateFormStatistics(db: Database, formId: string) {
  *
  * A form owned by no group — a standalone or template form — has no scope to
  * check against, so it stays global-only.
+ *
+ * Et arrangement-skjema følger i tillegg arrangementet: den som arrangerer
+ * eier svarene. Å opprette skjemaet krever `events:update`/`events:manage`,
+ * mens det å lese svarene krevde `forms:*` — og gruppenes medlemsrettigheter
+ * inneholder bare de første. Komiteen kunne altså lage evalueringsskjemaet
+ * uten noen gang å få se hva folk svarte.
  */
 export async function canManageForm(
     ctx: DbCtx,
@@ -856,7 +909,23 @@ export async function canManageForm(
 ): Promise<boolean> {
     const { db } = ctx;
 
-    const ownerGroupSlug = await formOwnerGroupSlug(db, formId);
+    const owner = await formOwner(db, formId);
+    const ownerGroupSlug = owner.groupSlug;
+
+    if (owner.isEventForm) {
+        const arrangesTheEvent = ownerGroupSlug
+            ? await hasScopedPermission(
+                  ctx,
+                  userId,
+                  [...EVENT_ARRANGER_PERMISSIONS],
+                  `group:${ownerGroupSlug}`,
+              )
+            : await hasPermission(ctx, userId, [...EVENT_ARRANGER_PERMISSIONS]);
+
+        if (arrangesTheEvent) {
+            return true;
+        }
+    }
 
     if (!ownerGroupSlug) {
         return await hasPermission(ctx, userId, "forms:manage");
@@ -885,24 +954,30 @@ export async function canManageForm(
 }
 
 /**
- * The slug of the group a form belongs to, or null for a form owned by none.
+ * Gruppen et skjema hører til — arrangørgruppen for et arrangement-skjema,
+ * gruppen selv for et gruppeskjema, og null for et skjema uten eier å scope
+ * mot. Om det henger på et arrangement avgjør i tillegg om arrangør-tilgangen
+ * gjelder.
  */
-async function formOwnerGroupSlug(
+async function formOwner(
     db: Database,
     formId: string,
-): Promise<string | null> {
+): Promise<{ isEventForm: boolean; groupSlug: string | null }> {
     const eventForm = await db.query.formEventForm.findFirst({
         where: eq(schema.formEventForm.formId, formId),
         with: { event: true },
     });
 
     if (eventForm) {
-        return eventForm.event.organizerGroupSlug ?? null;
+        return {
+            isEventForm: true,
+            groupSlug: eventForm.event.organizerGroupSlug ?? null,
+        };
     }
 
     const groupForm = await db.query.formGroupForm.findFirst({
         where: eq(schema.formGroupForm.formId, formId),
     });
 
-    return groupForm?.groupSlug ?? null;
+    return { isEventForm: false, groupSlug: groupForm?.groupSlug ?? null };
 }

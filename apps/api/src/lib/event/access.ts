@@ -28,6 +28,13 @@ type Variables = {
 };
 
 /**
+ * The statuses that count as "successfully registered". This is the default
+ * and must not change: it is what `registeredCount` on the event itself counts,
+ * and the two numbers have to agree.
+ */
+export const DEFAULT_STATUSES = ["registered", "attended", "no_show"] as const;
+
+/**
  * Permissions that make you the arrangør of a group's events.
  *
  * Whoever may edit a group's arrangementer runs them, and running an

@@ -4,7 +4,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
-import { canActOnEvent } from "~/lib/event/access";
+import { DEFAULT_STATUSES, canActOnEvent } from "~/lib/event/access";
 import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -21,13 +21,6 @@ import {
     getTotalPages,
 } from "~/middleware/pagination";
 import { eventRegistrationListResponseSchema } from "../schema";
-
-/**
- * The statuses that count as "successfully registered". This is the default
- * and must not change: it is what `registeredCount` on the event itself counts,
- * and the two numbers have to agree.
- */
-export const DEFAULT_STATUSES = ["registered", "attended", "no_show"] as const;
 
 const querySchema = PaginationSchema.extend({
     status: z

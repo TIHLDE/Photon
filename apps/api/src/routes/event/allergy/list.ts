@@ -1,12 +1,15 @@
 import { schema } from "@photon/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { EVENT_ARRANGER_PERMISSIONS, canActOnEvent } from "~/lib/event/access";
+import {
+    DEFAULT_STATUSES,
+    EVENT_ARRANGER_PERMISSIONS,
+    canActOnEvent,
+} from "~/lib/event/access";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import { eventAllergiesResponseSchema } from "../schema";
-import { DEFAULT_STATUSES } from "../registration/list";
 
 type SummaryEntry = { label: string; count: number; custom: boolean };
 

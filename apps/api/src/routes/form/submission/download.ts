@@ -1,8 +1,8 @@
 import { uniq } from "es-toolkit";
 import { schema } from "@photon/db";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { canManageForm } from "~/lib/form/service";
+import { canManageForm, submissionSpotHolders } from "~/lib/form/service";
 import { computeClassStanding } from "~/lib/event/priority";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
@@ -70,11 +70,6 @@ export const downloadSubmissionsRoute = route().get(
             });
         }
 
-        // Check if it's an event form - filter out waitlist
-        const eventForm = await db.query.formEventForm.findFirst({
-            where: eq(schema.formEventForm.formId, formId),
-        });
-
         // Get submissions
         let submissions = await db.query.formSubmission.findMany({
             where: eq(schema.formSubmission.formId, formId),
@@ -94,23 +89,11 @@ export const downloadSubmissionsRoute = route().get(
             orderBy: (submissions, { desc }) => [desc(submissions.createdAt)],
         });
 
-        // Filter out waitlist users for event forms
-        if (eventForm) {
-            const registrations = await db
-                .select()
-                .from(schema.eventRegistration)
-                .where(
-                    and(
-                        eq(schema.eventRegistration.eventId, eventForm.eventId),
-                        eq(schema.eventRegistration.status, "registered"),
-                    ),
-                );
+        const spotHolders = await submissionSpotHolders(db, formId);
 
-            const registeredUserIds = new Set(
-                registrations.map((r) => r.userId),
-            );
-            submissions = submissions.filter((s) =>
-                registeredUserIds.has(s.userId),
+        if (spotHolders) {
+            submissions = submissions.filter((submission) =>
+                spotHolders.has(submission.userId),
             );
         }
 
