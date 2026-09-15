@@ -75,10 +75,11 @@ export const updateRoute = route().patch(
         });
 
         // Spørsmålene kan endres selv om skjemaet har svar — det er bare det å
-        // fjerne noe noen har svart på som stoppes. Event forms are left alone
-        // here — organisers may edit a survey while registrations are open, and
-        // re-submitting replaces the old answer.
-        if (body.fields && groupForm) {
+        // fjerne noe noen har svart på som stoppes. Det gjelder også
+        // arrangement-skjemaer: å justere et påmeldingsskjema mens påmeldingen
+        // løper er greit, men et besvart spørsmål kan ikke ryddes vekk med
+        // svarene sine.
+        if (body.fields) {
             const problems = await findDestructiveFieldChanges(
                 db,
                 formId,
