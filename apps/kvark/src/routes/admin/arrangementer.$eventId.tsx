@@ -27,6 +27,7 @@ import {
     CameraOffIcon,
     CopyIcon,
     GraduationCapIcon,
+    ListChecksIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -1505,6 +1506,21 @@ function FormsTab({ eventId }: { eventId: string }) {
                                             }
                                         >
                                             Se skjema
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            render={
+                                                <Link
+                                                    to="/sporreskjema/$id/svar"
+                                                    params={{
+                                                        id: existing.id,
+                                                    }}
+                                                />
+                                            }
+                                        >
+                                            <ListChecksIcon className="size-4" />
+                                            Se svar
                                         </Button>
                                     </div>
                                 </>
