@@ -93,6 +93,12 @@ function FormSubmissionsPage() {
         () => mapFormStatistics(apiStatistics?.statistics ?? []),
         [apiStatistics],
     );
+    /**
+     * Arrangementets navn, ikke skjemaets. De importerte evalueringsskjemaene
+     * heter bare et tall, så tittelen sa ikke hvilken bedpres svarene gjaldt.
+     */
+    const heading = form.event?.title ?? form.title;
+
     const questions = useMemo(
         () =>
             form.fields.map((field) => ({ id: field.id, title: field.title })),
@@ -122,7 +128,7 @@ function FormSubmissionsPage() {
             );
             const link = document.createElement("a");
             link.href = url;
-            link.download = `${form.title}.csv`;
+            link.download = `${heading}.csv`;
             link.click();
             URL.revokeObjectURL(url);
         } finally {
@@ -138,9 +144,24 @@ function FormSubmissionsPage() {
             </Button>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">{form.title}</CardTitle>
+                    <CardTitle className="text-2xl">{heading}</CardTitle>
                     <CardDescription>
-                        {form.group ? (
+                        {form.event ? (
+                            <>
+                                {form.type === "evaluation"
+                                    ? "Evalueringsskjema"
+                                    : "Påmeldingsskjema"}{" "}
+                                ·{" "}
+                                <Link
+                                    to="/arrangementer/$slug"
+                                    params={{
+                                        slug: form.event.slug ?? form.event.id,
+                                    }}
+                                >
+                                    Se arrangementet
+                                </Link>
+                            </>
+                        ) : form.group ? (
                             <>
                                 Spørreskjema fra{" "}
                                 <Link
@@ -266,7 +287,7 @@ function FormSubmissionsPage() {
                 open={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
                 title="Sikker på at du vil slette alle svarene?"
-                description={`Alle ${submissions.length} svar på "${form.title}" blir slettet permanent dersom du fortsetter. Dette kan ikke angres.`}
+                description={`Alle ${submissions.length} svar på "${heading}" blir slettet permanent dersom du fortsetter. Dette kan ikke angres.`}
                 confirmLabel="Slett alle svar"
                 confirmationPhrase="Ja jeg vil slette svarene"
                 onConfirm={handleDeleteAllSubmissions}
