@@ -73,7 +73,11 @@
             "dependsOn": ["//#lint:fix"],
             "cache": false
         },
-        "test": { "dependsOn": ["^build"], "cache": false },
+        "test": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "passThroughEnv": ["MAX_TEST_WORKERS"]
+        },
         "db:push": {
             "dependsOn": ["@photon/docker#dev:up"],
             "cache": false,
