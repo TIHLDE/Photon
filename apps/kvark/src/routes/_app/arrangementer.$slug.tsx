@@ -30,7 +30,6 @@ import {
     PencilLine,
     QrCode,
     Star,
-    StarOff,
     UserRound,
     UsersRound,
 } from "lucide-react";
@@ -499,7 +498,8 @@ function EventDetailPage() {
                         <div className="flex items-center gap-1">
                             {session ? (
                                 <IconActionButton
-                                    icon={isFavorite ? StarOff : Star}
+                                    icon={Star}
+                                    variant={isFavorite ? "favorite" : "ghost"}
                                     // Favoritt er også påmeldingsvarselet, så
                                     // knappen sier hva den faktisk gjør.
                                     label={
