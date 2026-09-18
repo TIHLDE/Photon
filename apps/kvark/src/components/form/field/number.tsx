@@ -30,6 +30,7 @@ export function Number({
 
     return (
         <NumberFieldRoot
+            locale="nb-NO"
             {...rootProps}
             id={ctx.inputId}
             name={field.name}
