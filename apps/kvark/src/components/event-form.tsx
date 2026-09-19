@@ -34,6 +34,7 @@ import type { FormEvent, ReactNode } from "react";
 import type { AddressSuggestion } from "#/api/queries/address";
 import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
+import { NumberInput } from "#/components/number-input";
 import { richRegistry } from "#/components/markdown/directives/presets";
 import { ALL_EVENT_CATEGORIES } from "#/lib/event-categories";
 import { alignEventEnd } from "#/lib/event";
@@ -610,16 +611,13 @@ export function EventForm({
                                         <FieldLabel htmlFor="event-capacity">
                                             Kapasitet (valgfritt)
                                         </FieldLabel>
-                                        <Input
+                                        <NumberInput
                                             id="event-capacity"
-                                            type="number"
                                             min={1}
+                                            step={1}
                                             value={values.capacity}
-                                            onChange={(event) =>
-                                                onChange({
-                                                    capacity:
-                                                        event.target.value,
-                                                })
+                                            onValueChange={(capacity) =>
+                                                onChange({ capacity })
                                             }
                                         />
                                     </Field>
@@ -729,15 +727,13 @@ export function EventForm({
                                     <FieldLabel htmlFor="event-price">
                                         Pris (NOK)
                                     </FieldLabel>
-                                    <Input
+                                    <NumberInput
                                         id="event-price"
-                                        type="number"
                                         min={0}
+                                        step={1}
                                         value={values.price}
-                                        onChange={(event) =>
-                                            onChange({
-                                                price: event.target.value,
-                                            })
+                                        onValueChange={(price) =>
+                                            onChange({ price })
                                         }
                                     />
                                 </Field>
