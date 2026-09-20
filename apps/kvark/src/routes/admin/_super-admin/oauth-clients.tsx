@@ -1,6 +1,7 @@
+import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { Button } from "@tihlde/ui/ui/button";
 import {
@@ -20,7 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@tihlde/ui/ui/dialog";
-import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { Input } from "@tihlde/ui/ui/input";
 import {
     Table,
@@ -32,11 +33,13 @@ import {
 } from "@tihlde/ui/ui/table";
 import { Skeleton } from "@tihlde/ui/ui/skeleton";
 import { Stagger } from "@tihlde/ui/ui/motion";
+import { z } from "zod";
 
 import {
     createOAuthClientMutation,
     deleteOAuthClientMutation,
     oauthClientsQuery,
+    updateOAuthClientMutation,
     rotateOAuthClientSecretMutation,
     type CreatedOAuthClient,
     type OAuthClientFull,
@@ -48,6 +51,16 @@ import {
 import { requireAdminSection } from "#/lib/admin-access";
 
 type RevealedSecret = { clientId: string; clientSecret: string };
+
+const editOAuthClientSchema = z.object({
+    clientName: z.string(),
+    redirectUrisRaw: z
+        .string()
+        .refine(
+            (value) => value.split(/\r?\n/).some((uri) => uri.trim()),
+            "Minst én redirect URI er påkrevd.",
+        ),
+});
 
 export const Route = createFileRoute("/admin/_super-admin/oauth-clients")({
     component: OAuthClientsPage,
@@ -64,6 +77,7 @@ function OAuthClientsPage() {
     const [revealedSecret, setRevealedSecret] = useState<RevealedSecret | null>(
         null,
     );
+    const [editClient, setEditClient] = useState<OAuthClientFull | null>(null);
 
     const rotate = useMutation(rotateOAuthClientSecretMutation);
     const remove = useMutation(deleteOAuthClientMutation);
@@ -102,8 +116,14 @@ function OAuthClientsPage() {
                     removePending={remove.isPending}
                     onRotate={handleRotate}
                     onDelete={confirmDelete.request}
+                    onEdit={setEditClient}
                 />
             </Suspense>
+
+            <EditOAuthClientDialog
+                client={editClient}
+                onClose={() => setEditClient(null)}
+            />
 
             <CreateClientDialog
                 open={createOpen}
@@ -145,6 +165,7 @@ type ClientRowActions = {
     removePending: boolean;
     onRotate: (client: OAuthClientFull) => void;
     onDelete: (client: OAuthClientFull) => void;
+    onEdit: (client: OAuthClientFull) => void;
 };
 
 function ClientsTable(actions: ClientRowActions) {
@@ -200,6 +221,7 @@ function ClientRow({
     removePending,
     onRotate,
     onDelete,
+    onEdit,
 }: { client: OAuthClientFull } & ClientRowActions) {
     const isPublic = client.token_endpoint_auth_method === "none";
     return (
@@ -224,6 +246,14 @@ function ClientRow({
                         type="button"
                         variant="outline"
                         size="sm"
+                        onClick={() => onEdit(client)}
+                    >
+                        Rediger
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         disabled={rotatePending || isPublic}
                         onClick={() => onRotate(client)}
                     >
@@ -241,6 +271,176 @@ function ClientRow({
                 </div>
             </TableCell>
         </TableRow>
+    );
+}
+
+function EditOAuthClientDialog({
+    client,
+    onClose,
+}: {
+    client: OAuthClientFull | null;
+    onClose: () => void;
+}) {
+    const update = useMutation(updateOAuthClientMutation);
+    const form = useForm({
+        defaultValues: {
+            clientName: "",
+            redirectUrisRaw: "",
+        },
+        validators: { onChange: editOAuthClientSchema },
+        onSubmit: async ({ value }) => {
+            if (!client) return;
+            try {
+                await update.mutateAsync({
+                    clientId: client.client_id,
+                    update: {
+                        client_name: value.clientName.trim(),
+                        redirect_uris: value.redirectUrisRaw
+                            .split(/\r?\n/)
+                            .map((uri) => uri.trim())
+                            .filter(Boolean),
+                    },
+                });
+                onClose();
+            } catch (err) {
+                form.setErrorMap({
+                    onSubmit: {
+                        form: err instanceof Error ? err.message : String(err),
+                        fields: {},
+                    },
+                });
+            }
+        },
+    });
+
+    useEffect(() => {
+        form.reset({
+            clientName: client?.client_name ?? "",
+            redirectUrisRaw: client?.redirect_uris.join("\n") ?? "",
+        });
+    }, [client, form]);
+
+    return (
+        <Dialog
+            open={client != null}
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
+        >
+            <DialogContent>
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        void form.handleSubmit();
+                    }}
+                    className="flex flex-col gap-4"
+                >
+                    <DialogHeader>
+                        <DialogTitle>Rediger OAuth-klient</DialogTitle>
+                        <DialogDescription>
+                            Oppdater navnet og callback-adressene. Skriv én
+                            callback-adresse per linje; listen erstattes i sin
+                            helhet.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <FieldGroup>
+                        <form.Field name="clientName">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Navn
+                                    </FieldLabel>
+                                    <Input
+                                        id={field.name}
+                                        name={field.name}
+                                        type="text"
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(event) =>
+                                            field.handleChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="f.eks. TIHLDE Wiki"
+                                    />
+                                    <FieldError
+                                        errors={field.state.meta.errors}
+                                    />
+                                </Field>
+                            )}
+                        </form.Field>
+                        <form.Field name="redirectUrisRaw">
+                            {(field) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Redirect URIs
+                                    </FieldLabel>
+                                    <textarea
+                                        id={field.name}
+                                        name={field.name}
+                                        rows={6}
+                                        className="w-full rounded-md border px-3 py-2 text-sm"
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(event) =>
+                                            field.handleChange(
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
+                                    <FieldError
+                                        errors={field.state.meta.errors}
+                                    />
+                                </Field>
+                            )}
+                        </form.Field>
+                    </FieldGroup>
+                    <form.Subscribe
+                        selector={(state) => state.errorMap.onSubmit}
+                    >
+                        {(submitError) => {
+                            const error = (
+                                submitError as { form?: unknown } | undefined
+                            )?.form;
+                            return (
+                                <FieldError
+                                    errors={
+                                        error
+                                            ? [{ message: String(error) }]
+                                            : []
+                                    }
+                                />
+                            );
+                        }}
+                    </form.Subscribe>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                        >
+                            Avbryt
+                        </Button>
+                        <form.Subscribe
+                            selector={(state) => [
+                                state.canSubmit,
+                                state.isSubmitting,
+                            ]}
+                        >
+                            {([canSubmit, isSubmitting]) => (
+                                <Button
+                                    type="submit"
+                                    disabled={!canSubmit || isSubmitting}
+                                >
+                                    Lagre
+                                </Button>
+                            )}
+                        </form.Subscribe>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 
