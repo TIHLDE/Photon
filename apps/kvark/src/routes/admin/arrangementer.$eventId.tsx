@@ -342,10 +342,8 @@ function valuesFromEvent(
         instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
         isPaidEvent: event.isPaidEvent,
         canCauseStrikes: event.canCauseStrikes,
-        // payInfo.price er i øre, mens skjemaet redigerer hele kroner.
-        price: event.payInfo
-            ? String(Math.round(event.payInfo.price / 100))
-            : "",
+        // payInfo.price er i øre, mens skjemaet redigerer kroner.
+        price: event.payInfo ? String(event.payInfo.price / 100) : "",
         image: null,
         imageAlt: event.imageAlt ?? "",
         removeImage: false,

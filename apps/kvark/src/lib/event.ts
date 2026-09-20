@@ -255,7 +255,11 @@ export function formatEventPrice(
     if (!isPaidEvent || !priceMinor) {
         return { kind: "free" };
     }
-    return { kind: "paid", label: `kr ${Math.round(priceMinor / 100)}` };
+    const label = new Intl.NumberFormat("nb-NO", {
+        minimumFractionDigits: priceMinor % 100 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    }).format(priceMinor / 100);
+    return { kind: "paid", label: `kr ${label}` };
 }
 
 /**

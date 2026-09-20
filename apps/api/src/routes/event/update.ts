@@ -297,7 +297,7 @@ export const updateRoute = route().put(
             const nextPriceMinor = ((): number | null | undefined => {
                 if (body.isPaidEvent === false) return null;
                 if (body.price === undefined) return undefined;
-                return body.price ? body.price * 100 : null;
+                return body.price ? Math.round(body.price * 100) : null;
             })();
 
             const nextRegistrationStart = updateDateNullable(
