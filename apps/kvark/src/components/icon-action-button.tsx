@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 type IconActionButtonProps = {
     icon: LucideIcon;
     label: string;
+    variant?: "ghost" | "favorite";
     render?: ReactElement;
     onClick?: () => void;
 };
@@ -13,6 +14,7 @@ type IconActionButtonProps = {
 export function IconActionButton({
     icon: Icon,
     label,
+    variant = "ghost",
     render,
     onClick,
 }: IconActionButtonProps) {
@@ -21,7 +23,7 @@ export function IconActionButton({
             <TooltipTrigger
                 render={
                     <Button
-                        variant="ghost"
+                        variant={variant}
                         size="icon"
                         aria-label={label}
                         onClick={onClick}
