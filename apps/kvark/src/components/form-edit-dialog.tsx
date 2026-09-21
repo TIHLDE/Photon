@@ -634,7 +634,7 @@ function QuestionRow({
                     )}
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 sm:items-center">
+                <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
                     <editForm.AppField name={`questions[${index}].type`}>
                         {(field) => (
                             <field.Field>
@@ -654,16 +654,15 @@ function QuestionRow({
                     </editForm.AppField>
                     <editForm.AppField name={`questions[${index}].required`}>
                         {(field) => (
-                            // Bryteren hører til etiketten sin, ikke til den
-                            // andre kanten av raden: uten dette strekker
-                            // `horizontal` etiketten og skyver bryteren helt ut
-                            // til høyre, langt fra ordet den slår av og på.
-                            <field.Field
-                                orientation="horizontal"
-                                className="justify-start gap-3 *:data-[slot=field-label]:flex-none"
-                            >
+                            <field.Field>
                                 <field.Label>Påkrevd</field.Label>
-                                <field.Switch />
+                                {/* Et stående felt strekker barna sine over
+                                hele bredden, og en bryter som er 32 px bred
+                                skal ikke strekkes. Wrapperen tar bredden i
+                                stedet. */}
+                                <div>
+                                    <field.Switch />
+                                </div>
                             </field.Field>
                         )}
                     </editForm.AppField>
