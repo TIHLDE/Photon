@@ -246,36 +246,46 @@ export function NewFormDialog({
                                                         )}
                                                     </form.AppField>
 
-                                                    <form.AppField
-                                                        name={`questions[${index}].type`}
-                                                    >
-                                                        {(field) => (
-                                                            <field.Field>
-                                                                <field.Label>
-                                                                    Svartype
-                                                                </field.Label>
-                                                                <field.Select
-                                                                    options={[
-                                                                        ...QUESTION_TYPES,
-                                                                    ]}
-                                                                />
-                                                                <field.Error />
-                                                            </field.Field>
-                                                        )}
-                                                    </form.AppField>
+                                                    <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+                                                        <form.AppField
+                                                            name={`questions[${index}].type`}
+                                                        >
+                                                            {(field) => (
+                                                                <field.Field>
+                                                                    <field.Label>
+                                                                        Svartype
+                                                                    </field.Label>
+                                                                    <field.Select
+                                                                        options={[
+                                                                            ...QUESTION_TYPES,
+                                                                        ]}
+                                                                    />
+                                                                    <field.Error />
+                                                                </field.Field>
+                                                            )}
+                                                        </form.AppField>
 
-                                                    <form.AppField
-                                                        name={`questions[${index}].required`}
-                                                    >
-                                                        {(field) => (
-                                                            <field.Field orientation="horizontal">
-                                                                <field.Label>
-                                                                    Må besvares
-                                                                </field.Label>
-                                                                <field.Switch />
-                                                            </field.Field>
-                                                        )}
-                                                    </form.AppField>
+                                                        <form.AppField
+                                                            name={`questions[${index}].required`}
+                                                        >
+                                                            {(field) => (
+                                                                <field.Field>
+                                                                    <field.Label>
+                                                                        Må
+                                                                        besvares
+                                                                    </field.Label>
+                                                                    {/* Et stående felt strekker
+                                                                    barna sine over hele bredden,
+                                                                    og en bryter som er 32 px bred
+                                                                    skal ikke strekkes. Wrapperen
+                                                                    tar bredden i stedet. */}
+                                                                    <div>
+                                                                        <field.Switch />
+                                                                    </div>
+                                                                </field.Field>
+                                                            )}
+                                                        </form.AppField>
+                                                    </div>
 
                                                     {/* Svartypen leses via Subscribe,
                                                     ikke fra spørsmålsobjektet:

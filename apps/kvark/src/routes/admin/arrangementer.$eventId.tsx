@@ -28,6 +28,7 @@ import {
     CopyIcon,
     GraduationCapIcon,
     ListChecksIcon,
+    PencilIcon,
     UsersIcon,
     UtensilsCrossedIcon,
     WalletIcon,
@@ -106,6 +107,17 @@ import { usePriorityUserSearch } from "#/hooks/use-priority-user-search";
 import { GroupAddMemberDialog } from "#/components/group-add-member-dialog";
 import type { NewFormValues } from "#/components/new-form-dialog";
 import { NewFormDialog } from "#/components/new-form-dialog";
+import {
+    FormEditDialog,
+    type FormEditValues,
+} from "#/components/form-edit-dialog";
+import {
+    deleteFormMutation,
+    getFormByIdQuery,
+    getFormSubmissionsQuery,
+    updateFormMutation,
+} from "#/api/queries/forms";
+import { mapFormQuestions, toFormFieldsPayload } from "#/lib/form";
 import {
     useAnyScopePermission,
     useCanActForGroup,
@@ -1430,13 +1442,82 @@ const EVENT_FORM_KINDS = [
 function FormsTab({ eventId }: { eventId: string }) {
     const { data: forms, isPending } = useQuery(getEventFormsQuery(eventId));
     const createForm = useMutation(createEventFormMutation);
+    const updateForm = useMutation(updateFormMutation);
+    const deleteForm = useMutation(deleteFormMutation);
 
     const [creating, setCreating] = useState<"survey" | "evaluation" | null>(
         null,
     );
     const [error, setError] = useState<string | null>(null);
+    const [editingFormId, setEditingFormId] = useState<string | null>(null);
+    const [editError, setEditError] = useState<string | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const kind = EVENT_FORM_KINDS.find((k) => k.type === creating);
+
+    // Spørsmålene ligger bare i detaljsvaret, og svarene avgjør hva som kan
+    // endres. Begge hentes først når et skjema faktisk åpnes for redigering.
+    const { data: editingDetail } = useQuery({
+        ...getFormByIdQuery(editingFormId ?? ""),
+        enabled: editingFormId !== null,
+    });
+    const { data: editingSubmissions } = useQuery({
+        ...getFormSubmissionsQuery(editingFormId ?? "", 0),
+        enabled: editingFormId !== null,
+    });
+
+    // Et arrangementsskjema har ingen av gruppeinnstillingene, men dialogen
+    // deles med gruppeskjemaene. De sendes derfor aldri med i lagringen.
+    const editingForm =
+        editingFormId && editingDetail
+            ? {
+                  id: editingDetail.id,
+                  title: editingDetail.title,
+                  description: editingDetail.description ?? "",
+                  isOpen: false,
+                  opensAt: null,
+                  closesAt: null,
+                  isOpenNow: false,
+                  canSubmitMultiple: false,
+                  onlyForMembers: false,
+                  emailReceiver: "",
+              }
+            : null;
+
+    function openEditForm(formId: string | null) {
+        setEditError(null);
+        setDeleteError(null);
+        setEditingFormId(formId);
+    }
+
+    async function handleSaveForm(values: FormEditValues) {
+        if (!editingFormId) return;
+        setEditError(null);
+        try {
+            await updateForm.mutateAsync({
+                formId: editingFormId,
+                data: {
+                    title: values.title,
+                    description: values.description,
+                    fields: toFormFieldsPayload(values.questions),
+                },
+            });
+            setEditingFormId(null);
+        } catch (err) {
+            setEditError(await extractErrorMessage(err));
+        }
+    }
+
+    async function handleDeleteForm() {
+        if (!editingFormId) return;
+        setDeleteError(null);
+        try {
+            await deleteForm.mutateAsync({ formId: editingFormId });
+            setEditingFormId(null);
+        } catch (err) {
+            setDeleteError(await extractErrorMessage(err));
+        }
+    }
 
     async function handleCreate(values: NewFormValues) {
         if (!creating) return;
@@ -1522,6 +1603,16 @@ function FormsTab({ eventId }: { eventId: string }) {
                                             <ListChecksIcon className="size-4" />
                                             Se svar
                                         </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                openEditForm(existing.id)
+                                            }
+                                        >
+                                            <PencilIcon className="size-4" />
+                                            Rediger
+                                        </Button>
                                     </div>
                                 </>
                             ) : (
@@ -1554,6 +1645,25 @@ function FormsTab({ eventId }: { eventId: string }) {
                 title={kind?.dialogTitle ?? "Nytt skjema"}
                 description={kind?.description ?? ""}
                 submitLabel="Opprett skjema"
+                showGroupSettings={false}
+            />
+
+            <FormEditDialog
+                open={editingFormId !== null}
+                form={editingForm}
+                questions={
+                    editingDetail
+                        ? mapFormQuestions(editingDetail.fields)
+                        : null
+                }
+                answerCount={editingSubmissions?.length ?? 0}
+                onClose={() => openEditForm(null)}
+                onSubmit={handleSaveForm}
+                isSubmitting={updateForm.isPending}
+                error={editError}
+                onDelete={handleDeleteForm}
+                isDeleting={deleteForm.isPending}
+                deleteError={deleteError}
                 showGroupSettings={false}
             />
         </div>

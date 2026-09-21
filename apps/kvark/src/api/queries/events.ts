@@ -15,7 +15,7 @@ import type {
     UpdateFavoriteEvent,
 } from "@tihlde/sdk";
 
-const EventQueryKeys = {
+export const EventQueryKeys = {
     allergies: ["events", "allergies"] as const,
     listInfinite: ["events", "list-infinite"] as const,
     list: ["events", "list-paged"] as const,

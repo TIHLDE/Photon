@@ -63,9 +63,9 @@ import type { GroupEditValues } from "#/components/group-edit-dialog";
 import { GroupEventsTab } from "#/components/group-events-tab";
 import { GroupFinesTab } from "#/components/group-fines-tab";
 import {
-    GroupFormEditDialog,
-    type GroupFormEditValues,
-} from "#/components/group-form-edit-dialog";
+    FormEditDialog,
+    type FormEditValues,
+} from "#/components/form-edit-dialog";
 import { GroupFormsTab } from "#/components/group-forms-tab";
 import {
     GroupGiveFineDialog,
@@ -597,7 +597,7 @@ function GroupDetail() {
      * avviser bare endringene som ville tatt svar med seg — se
      * `findDestructiveFieldChanges`.
      */
-    async function handleSaveForm(values: GroupFormEditValues) {
+    async function handleSaveForm(values: FormEditValues) {
         if (!editingForm) return;
         setEditFormError(null);
         try {
@@ -956,7 +956,7 @@ function GroupDetail() {
                 error={formError}
             />
 
-            <GroupFormEditDialog
+            <FormEditDialog
                 open={editingForm !== null}
                 form={editingForm}
                 questions={editingQuestions}
