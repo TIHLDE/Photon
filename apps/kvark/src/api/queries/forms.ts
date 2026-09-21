@@ -4,6 +4,7 @@ import {
     queryOptions,
 } from "@tanstack/react-query";
 import { apiClient } from "#/api/api-client";
+import { EventQueryKeys } from "#/api/queries/events";
 import { GroupQueryKeys } from "#/api/queries/groups";
 import type { QueryParamsHelper } from "@tihlde/sdk/types";
 import type { CreateForm, UpdateForm, CreateSubmission } from "@tihlde/sdk";
@@ -104,9 +105,14 @@ export const updateFormMutation = mutationOptions({
             exact: false,
         });
         // Tittelen og innstillingene til et gruppeskjema vises i gruppas egen
-        // skjemaliste, som ligger under en helt annen nøkkel.
+        // skjemaliste, som ligger under en helt annen nøkkel. Det samme
+        // gjelder arrangementenes skjemaliste.
         ctx.client.invalidateQueries({
             queryKey: [...GroupQueryKeys.forms],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.forms],
             exact: false,
         });
     },
@@ -128,9 +134,14 @@ export const deleteFormMutation = mutationOptions({
             exact: false,
         });
         // Gruppeskjemaene ligger under gruppas egen nøkkel, så uten denne blir
-        // et slettet skjema stående i lista på gruppesiden.
+        // et slettet skjema stående i lista på gruppesiden. Arrangementenes
+        // skjemaliste ligger under sin egen, med samme fallgruve.
         ctx.client.invalidateQueries({
             queryKey: [...GroupQueryKeys.forms],
+            exact: false,
+        });
+        ctx.client.invalidateQueries({
+            queryKey: [...EventQueryKeys.forms],
             exact: false,
         });
     },
