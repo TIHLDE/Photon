@@ -105,11 +105,11 @@ export function useCanActOnResource(
  *
  * The scoped counterpart to {@link useCanActOnResource}, and what the API
  * actually asks for an event: `requireEventAccess` checks the permission
- * against the *arranging group*, lets the creator through, and falls back to
- * the global check when the resource has no group (events migrated from
- * Lepton have no organiser). Using the any-scope check here instead offered
- * Sosialen's members the edit form on Index' arrangementer, where saving
- * could only ever answer 403.
+ * against the *arranging group*, lets the creator through as long as they are
+ * still in that group, and falls back to the global check when the resource
+ * has no group (events migrated from Lepton have no organiser). Using the
+ * any-scope check here instead offered Sosialen's members the edit form on
+ * Index' arrangementer, where saving could only ever answer 403.
  *
  * Pass a module-level constant as `required` — the predicate's identity
  * depends on it.
@@ -123,10 +123,20 @@ export function useCanActOnGroupResource(
     const { data: session } = useQuery(authQueryOptions);
     const permissions = session?.permissions;
     const userId = session?.user?.id;
+    const groups = session?.groups;
 
     return useCallback(
         (groupSlug: string | null | undefined, createdById?: string | null) => {
-            if (createdById && createdById === userId) return true;
+            if (createdById && createdById === userId) {
+                // Having created it is not a standing right: once the creator
+                // is out of the arranging group, the API stops letting them
+                // through on ownership, and showing the controls anyway would
+                // only produce a 403 on save. See `isEventOwner`.
+                if (!groupSlug) return true;
+                if (groups?.some((group) => group.slug === groupSlug)) {
+                    return true;
+                }
+            }
             return groupSlug
                 ? sessionHasScopedPermission(
                       permissions,
@@ -135,7 +145,7 @@ export function useCanActOnGroupResource(
                   )
                 : sessionHasPermission(permissions, required);
         },
-        [permissions, userId, required],
+        [permissions, userId, groups, required],
     );
 }
 
