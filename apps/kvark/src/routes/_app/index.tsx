@@ -472,7 +472,7 @@ function Hero({ banners }: { banners?: ReactNode }) {
                 >
                     <TihldeLogo variant="full" className="h-14 w-auto" />
                 </div>
-                <p className="max-w-2xl text-balance">
+                <p className="max-w-2xl text-balance leading-relaxed text-black">
                     Linjeforeningen for Dataingeniør, Digital infrastruktur og
                     cybersikkerhet, Digital forretningsutvikling, Digital
                     transformasjon og Informasjonsbehandling ved NTNU.
