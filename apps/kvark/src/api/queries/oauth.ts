@@ -44,22 +44,16 @@ async function unwrap<T>(
     return result.data as T;
 }
 
-/**
- * Henter klienten både på server og klient.
- *
- * `/oauth2/get-client` krever sesjon, og samtykkesiden laster den i en loader
- * — som kjører server-side under SSR. Der følger ikke nettleserens
- * sesjonscookie med av seg selv, så forespørselen kom fram uautentisert og
- * Photon svarte 401. Samme mønster som `getAuthSession` i #/api/auth.
- */
 const fetchOAuthClient = createIsomorphicFn()
     .client(async (clientId: string) =>
-        clientAuthInstance.oauth2.getClient({
+        clientAuthInstance.$fetch("/oauth2/public-client", {
+            method: "GET",
             query: { client_id: clientId },
         }),
     )
     .server(async (clientId: string) =>
-        clientAuthInstance.oauth2.getClient({
+        clientAuthInstance.$fetch("/oauth2/public-client", {
+            method: "GET",
             query: { client_id: clientId },
             fetchOptions: { headers: getRequestHeaders() },
         }),
