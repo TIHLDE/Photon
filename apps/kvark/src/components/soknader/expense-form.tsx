@@ -130,7 +130,7 @@ export function ExpenseForm({
                                             minimumFractionDigits: 2,
                                             maximumFractionDigits: 2,
                                         }}
-                                        placeholder="0,00"
+                                        placeholder="1"
                                     />
                                     <field.Description>
                                         Øre skrives med komma, f.eks. 249,90

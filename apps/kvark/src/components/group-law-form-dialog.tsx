@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import type { Law } from "#/lib/group";
 
 import { ConfirmDeleteDialog } from "#/components/confirm-delete-dialog";
+import { NumberInput } from "#/components/number-input";
 
 export type LawFormValues = {
     paragraph: number;
@@ -156,11 +157,11 @@ export function GroupLawFormDialog({
                             <FieldLabel htmlFor="law-amount">
                                 Veiledende antall bøter
                             </FieldLabel>
-                            <Input
+                            <NumberInput
                                 id="law-amount"
-                                type="number"
+                                step={1}
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                onValueChange={setAmount}
                             />
                             <p className="text-xs text-muted-foreground">
                                 Brukes for å forhåndsutfylle antall bøter når

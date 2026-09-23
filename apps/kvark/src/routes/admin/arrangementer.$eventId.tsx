@@ -130,7 +130,7 @@ import {
     cn,
     formatStudyLabel,
 } from "#/lib/utils";
-import { EVENT_FORM_ERRORS } from "#/lib/event";
+import { EVENT_FORM_ERRORS, formatNokFromMinor } from "#/lib/event";
 import { countBy, sumBy, uniq } from "es-toolkit";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
@@ -358,10 +358,8 @@ function valuesFromEvent(
         instituteSlug: event.restrictedToInstitute?.slug ?? ALL_INSTITUTES,
         isPaidEvent: event.isPaidEvent,
         canCauseStrikes: event.canCauseStrikes,
-        // payInfo.price er i øre, mens skjemaet redigerer hele kroner.
-        price: event.payInfo
-            ? String(Math.round(event.payInfo.price / 100))
-            : "",
+        // payInfo.price er i øre, mens skjemaet redigerer kroner.
+        price: event.payInfo ? String(event.payInfo.price / 100) : "",
         image: null,
         imageAlt: event.imageAlt ?? "",
         removeImage: false,
@@ -2324,11 +2322,8 @@ function formatDateTime(iso: string) {
 }
 
 /** Minor units (øre) -> "1 234 kr" */
-/** Beløp i kroner, med norsk tusenskille — `Intl` gir samme utfall uansett hvor koden kjører. */
-const NOK_AMOUNT = new Intl.NumberFormat("nb-NO");
-
 function formatAmount(minor: number) {
-    return `${NOK_AMOUNT.format(minor / 100)} kr`;
+    return `${formatNokFromMinor(minor)} kr`;
 }
 
 /* ------------------------------- Allergier ------------------------------ */

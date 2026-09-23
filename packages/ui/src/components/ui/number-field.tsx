@@ -7,7 +7,15 @@ import { cn } from "#/lib/utils";
 import { InputGroupButton } from "#/components/ui/input-group";
 
 function NumberField(props: NumberFieldPrimitive.Root.Props) {
-    return <NumberFieldPrimitive.Root data-slot="number-field" {...props} />;
+    // Uten `locale` parser Base UI med nettleserens locale, og «491,30» blir
+    // 49 130 på en engelskspråklig nettleser.
+    return (
+        <NumberFieldPrimitive.Root
+            locale="nb-NO"
+            data-slot="number-field"
+            {...props}
+        />
+    );
 }
 
 function NumberFieldGroup({

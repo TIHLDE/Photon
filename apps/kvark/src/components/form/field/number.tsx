@@ -1,4 +1,6 @@
+import { useCallback } from "react";
 import { useFieldContext } from "#/hooks/form";
+import { limitFractionDigits } from "#/lib/fraction-digits";
 import { cn } from "#/lib/utils";
 import {
     NumberField as NumberFieldRoot,
@@ -27,6 +29,14 @@ export function Number({
 }: NumberProps) {
     const field = useFieldContext<number | null>();
     const ctx = useField();
+    const maxFractionDigits = rootProps.format?.maximumFractionDigits;
+    const inputRef = useCallback(
+        (input: HTMLInputElement | null) =>
+            input && maxFractionDigits !== undefined
+                ? limitFractionDigits(input, maxFractionDigits)
+                : undefined,
+        [maxFractionDigits],
+    );
 
     return (
         <NumberFieldRoot
@@ -43,6 +53,7 @@ export function Number({
             <NumberFieldGroup className={cn("w-32", className)}>
                 <NumberFieldDecrement />
                 <NumberFieldInput
+                    ref={inputRef}
                     placeholder={placeholder}
                     onBlur={field.handleBlur}
                     aria-invalid={ctx.isInvalid}

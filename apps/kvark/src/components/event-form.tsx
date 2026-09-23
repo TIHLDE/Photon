@@ -35,6 +35,7 @@ import type { AddressSuggestion } from "#/api/queries/address";
 import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { NumberInput } from "#/components/number-input";
 import { ALL_EVENT_CATEGORIES } from "#/lib/event-categories";
 import { alignEventEnd } from "#/lib/event";
 
@@ -610,16 +611,21 @@ export function EventForm({
                                         <FieldLabel htmlFor="event-capacity">
                                             Kapasitet (valgfritt)
                                         </FieldLabel>
-                                        <Input
+                                        <NumberInput
                                             id="event-capacity"
-                                            type="number"
                                             min={1}
+                                            step={1}
+                                            // Runder bort desimaler i feltet.
+                                            // Ellers blir det skjulte
+                                            // valideringsfeltet ugyldig, og
+                                            // nettleseren nekter å sende
+                                            // skjemaet uten å vise noe.
+                                            format={{
+                                                maximumFractionDigits: 0,
+                                            }}
                                             value={values.capacity}
-                                            onChange={(event) =>
-                                                onChange({
-                                                    capacity:
-                                                        event.target.value,
-                                                })
+                                            onValueChange={(capacity) =>
+                                                onChange({ capacity })
                                             }
                                         />
                                     </Field>
@@ -729,15 +735,21 @@ export function EventForm({
                                     <FieldLabel htmlFor="event-price">
                                         Pris (NOK)
                                     </FieldLabel>
-                                    <Input
+                                    <NumberInput
                                         id="event-price"
-                                        type="number"
                                         min={0}
+                                        // Ører er gyldige priser. Med `step={1}`
+                                        // blir det skjulte valideringsfeltet
+                                        // ugyldig, og da nekter nettleseren å
+                                        // sende skjemaet uten å vise noe.
+                                        step="any"
+                                        format={{
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }}
                                         value={values.price}
-                                        onChange={(event) =>
-                                            onChange({
-                                                price: event.target.value,
-                                            })
+                                        onValueChange={(price) =>
+                                            onChange({ price })
                                         }
                                     />
                                 </Field>

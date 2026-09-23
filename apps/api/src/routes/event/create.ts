@@ -153,7 +153,7 @@ export const createRoute = route().post(
                 capacity: body.capacity,
                 allowWaitlist: body.requiresSigningUp,
                 slug,
-                priceMinor: body.price ? body.price * 100 : null,
+                priceMinor: body.price ? Math.round(body.price * 100) : null,
                 isPaidEvent: body.isPaidEvent,
                 requiresSigningUp: body.requiresSigningUp,
                 registrationStart: body.registrationStart

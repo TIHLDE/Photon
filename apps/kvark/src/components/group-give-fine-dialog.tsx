@@ -10,12 +10,12 @@ import {
 } from "@tihlde/ui/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@tihlde/ui/ui/field";
 import { ImageDropzone } from "@tihlde/ui/ui/image-dropzone";
-import { Input } from "@tihlde/ui/ui/input";
 import { Separator } from "@tihlde/ui/ui/separator";
 import { Textarea } from "@tihlde/ui/ui/textarea";
 import { useEffect, useState } from "react";
 
 import { LawCombobox } from "#/components/law-combobox";
+import { NumberInput } from "#/components/number-input";
 import {
     MemberMultiCombobox,
     type ComboboxMember,
@@ -170,12 +170,11 @@ export function GroupGiveFineDialog({
                                 <FieldLabel htmlFor="fine-amount">
                                     Forslag til antall bøter *
                                 </FieldLabel>
-                                <Input
+                                <NumberInput
                                     id="fine-amount"
-                                    type="number"
                                     step={1}
                                     value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
+                                    onValueChange={setAmount}
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Sett 0 hvis boten skal registreres uten å
