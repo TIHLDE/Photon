@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
     useInfiniteQuery,
     useMutation,
@@ -479,7 +479,15 @@ function AllUsersTable({
                                     {users.map((user) => (
                                         <TableRow key={user.id}>
                                             <TableCell>
-                                                <div className="flex items-center gap-2">
+                                                <Link
+                                                    to="/profil/$id"
+                                                    params={{
+                                                        id:
+                                                            user.username ??
+                                                            user.id,
+                                                    }}
+                                                    className="group flex w-fit items-center gap-2"
+                                                >
                                                     <Avatar className="size-7">
                                                         <AvatarImage
                                                             src={avatarImageUrl(
@@ -495,7 +503,7 @@ function AllUsersTable({
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-medium">
+                                                        <span className="text-sm font-medium group-hover:underline">
                                                             {user.name}
                                                         </span>
                                                         {/* E-posten er den
@@ -511,7 +519,7 @@ function AllUsersTable({
                                                             </span>
                                                         )}
                                                     </div>
-                                                </div>
+                                                </Link>
                                             </TableCell>
                                             <TableCell>
                                                 {user.username ?? "—"}
@@ -1567,7 +1575,11 @@ function MembersTable({
                                 {filtered.map((member) => (
                                     <TableRow key={member.userId}>
                                         <TableCell>
-                                            <div className="flex items-center gap-2">
+                                            <Link
+                                                to="/profil/$id"
+                                                params={{ id: member.userId }}
+                                                className="group flex w-fit items-center gap-2"
+                                            >
                                                 <Avatar className="size-7">
                                                     <AvatarImage
                                                         src={avatarImageUrl(
@@ -1582,10 +1594,10 @@ function MembersTable({
                                                         )}
                                                     </AvatarFallback>
                                                 </Avatar>
-                                                <span className="text-sm font-medium">
+                                                <span className="text-sm font-medium group-hover:underline">
                                                     {member.user.name}
                                                 </span>
-                                            </div>
+                                            </Link>
                                         </TableCell>
                                         <TableCell>
                                             {formatStudy(
