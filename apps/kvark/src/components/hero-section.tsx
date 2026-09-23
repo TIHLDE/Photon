@@ -3,7 +3,6 @@ import {
     TILDE_PATH,
     TILDE_TRANSFORM,
 } from "#/components/icons/tihlde";
-import { useMediaQuery } from "#/hooks/use-media-query";
 import { cn } from "#/lib/utils";
 import React from "react";
 
@@ -24,27 +23,31 @@ const formatCoordinate = (value: number) => value.toFixed(1);
 const scrollLayerWidthPercent = (waveDrawEnd / svgWidth) * 100;
 const scrollLoopPercent = (waveLoopDistance / waveDrawEnd) * 100;
 
-// Electric blue: a saturated theme-primary (navy-500) halo around a bright,
-// near-white blue core line — reads as a neon/electric glow within the theme.
-const pulseGlowColor = "#1B61E4";
-const pulseCoreColor = "#9AC2FF";
-const pulseBandWidth = 900;
-const pulseBandWidthPercent = (pulseBandWidth / svgWidth) * 100;
-// The scroll layer nested inside the band, as a percentage of the *band* —
-// it still has to come out to `scrollLayerWidthPercent` of the hero itself.
-const bandScrollLayerWidthPercent =
-    (scrollLayerWidthPercent / pulseBandWidthPercent) * 100;
+// Animation fade on top and bottom edges.
+const edgeFadeTop = 0.22;
+const edgeFadeBottom = 0.82;
+const edgeFadeStops = 14;
 
-// Smooth Gaussian falloff for the glow band. Many closely-spaced stops avoid
-// the visible slope-change "bands" (Mach banding) that a few stops produce.
-const pulseBandMask = `linear-gradient(90deg, ${Array.from(
-    { length: 25 },
-    (_, i) => {
-        const offset = i / 24;
-        const opacity = Math.exp(-Math.pow((offset - 0.5) / 0.22, 2));
-        return `rgb(0 0 0 / ${opacity.toFixed(3)}) ${(offset * 100).toFixed(1)}%`;
-    },
-).join(", ")})`;
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
+
+const edgeFadeRamp = (from: number, to: number) =>
+    Array.from({ length: edgeFadeStops }, (_, i) => {
+        const t = i / (edgeFadeStops - 1);
+        return {
+            offset: from + (to - from) * t,
+            opacity: smoothstep(t),
+        };
+    });
+
+const edgeFadeMask = `linear-gradient(to bottom, ${[
+    ...edgeFadeRamp(0, edgeFadeTop),
+    ...edgeFadeRamp(1, edgeFadeBottom).reverse(),
+]
+    .map(
+        ({ offset, opacity }) =>
+            `rgb(0 0 0 / ${opacity.toFixed(3)}) ${(offset * 100).toFixed(1)}%`,
+    )
+    .join(", ")})`;
 
 // Tilde-en fra logoen står som et dempet felt i bølgene: linjene inne i den er
 // svakere enn resten, så formen trer fram som negativt rom idet pulsen skyller
@@ -76,14 +79,17 @@ const tildeMaskSvg = [
 // går ut over kanten, mens selve svingen ligger godt innenfor.
 const tildeMaskWidthPercent = 130;
 
-// Det dekkende laget ligger øverst og trekker tilde-laget fra seg selv, så
-// masken blir full overalt bortsett fra der tilde-en ligger.
+// Kantfallet ligger øverst og trekker tilde-laget fra seg selv, så masken er
+// full i midten, toner ut mot topp og bunn, og er dempet der tilde-en ligger.
+// Hele masken bygges her, inline: `mask-image` i stilarket blir uansett
+// overstyrt av `style`-attributtet, så to halve masker kan ikke leve side om
+// side — den ene ville stilltiende bli borte.
 //
 // Tilde-en får beholde sitt eget sideforhold (`auto` leser høyden ut av
 // viewBox-en) i stedet for å strekkes med heroen slik bølgene gjør — strukket
 // over en høy mobilskjerm ble den bare en diagonal klatt.
-const tildeMaskLayers = {
-    maskImage: `linear-gradient(black, black), url("data:image/svg+xml,${encodeURIComponent(tildeMaskSvg)}")`,
+const heroMaskLayers = {
+    maskImage: `${edgeFadeMask}, url("data:image/svg+xml,${encodeURIComponent(tildeMaskSvg)}")`,
     maskSize: `100% 100%, ${tildeMaskWidthPercent}% auto`,
     maskPosition: "center, center",
     maskRepeat: "no-repeat, no-repeat",
@@ -188,13 +194,6 @@ function WaveStrip({
 }
 
 export function HeroSectionBackground({ className }: { className?: string }) {
-    // Ingen bevegelse for de som har bedt om det. Pulslaget droppes helt i
-    // stedet for bare å stoppes: uten animasjonen ville glødebåndet blitt
-    // stående som en statisk stripe midt i bildet.
-    const prefersReducedMotion = useMediaQuery(
-        "(prefers-reduced-motion: reduce)",
-    );
-
     return (
         <div
             data-slot="hero-waves"
@@ -209,7 +208,7 @@ export function HeroSectionBackground({ className }: { className?: string }) {
             style={
                 {
                     "--hero-waves-loop": `${scrollLoopPercent}%`,
-                    ...tildeMaskLayers,
+                    ...heroMaskLayers,
                 } as React.CSSProperties
             }
             aria-hidden
@@ -227,54 +226,6 @@ export function HeroSectionBackground({ className }: { className?: string }) {
                     />
                 </div>
             </div>
-
-            {prefersReducedMotion ? null : (
-                <div
-                    data-slot="hero-waves-sweep"
-                    className="absolute inset-y-0 left-0"
-                    style={{
-                        width: `${pulseBandWidthPercent}%`,
-                        maskImage: pulseBandMask,
-                    }}
-                >
-                    <div
-                        data-slot="hero-waves-sweep-counter"
-                        className="absolute inset-0"
-                    >
-                        <div
-                            data-slot="hero-waves-drift"
-                            className="absolute inset-y-0 left-0"
-                            style={{
-                                width: `${bandScrollLayerWidthPercent}%`,
-                            }}
-                        >
-                            {/*
-                             * Softness comes from a CSS blur on this wrapper,
-                             * not an SVG filter. A filter inside the SVG is
-                             * re-run every frame the SVG moves; this one is
-                             * baked into the layer's raster once and then just
-                             * translated with it.
-                             */}
-                            <div
-                                className="absolute inset-0"
-                                style={{ filter: "blur(2px)" }}
-                            >
-                                <WaveStrip
-                                    keyPrefix="glow"
-                                    stroke={pulseGlowColor}
-                                    strokeWidth={7}
-                                    strokeOpacity={0.7}
-                                />
-                            </div>
-                            <WaveStrip
-                                keyPrefix="beat"
-                                stroke={pulseCoreColor}
-                                strokeWidth={1.6}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
