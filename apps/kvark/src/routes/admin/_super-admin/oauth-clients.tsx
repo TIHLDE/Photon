@@ -81,14 +81,22 @@ function OAuthClientsPage() {
 
     const rotate = useMutation(rotateOAuthClientSecretMutation);
     const remove = useMutation(deleteOAuthClientMutation);
+    const confirmRotate = usePendingConfirm<OAuthClientFull>();
     const confirmDelete = usePendingConfirm<OAuthClientFull>();
 
     async function handleRotate(client: OAuthClientFull) {
-        const result = await rotate.mutateAsync({ clientId: client.client_id });
-        setRevealedSecret({
-            clientId: result.client_id,
-            clientSecret: result.client_secret,
-        });
+        try {
+            const result = await rotate.mutateAsync({
+                clientId: client.client_id,
+            });
+            confirmRotate.clear();
+            setRevealedSecret({
+                clientId: result.client_id,
+                clientSecret: result.client_secret,
+            });
+        } catch {
+            // Keep the confirmation open and show the mutation error below.
+        }
     }
 
     return (
@@ -114,7 +122,10 @@ function OAuthClientsPage() {
                 <ClientsTable
                     rotatePending={rotate.isPending}
                     removePending={remove.isPending}
-                    onRotate={handleRotate}
+                    onRotate={(client) => {
+                        rotate.reset();
+                        confirmRotate.request(client);
+                    }}
                     onDelete={confirmDelete.request}
                     onEdit={setEditClient}
                 />
@@ -139,6 +150,32 @@ function OAuthClientsPage() {
             <SecretRevealDialog
                 secret={revealedSecret}
                 onClose={() => setRevealedSecret(null)}
+            />
+
+            <ConfirmDeleteDialog
+                open={confirmRotate.open}
+                onOpenChange={(open) => !open && confirmRotate.clear()}
+                title={`Rotere hemmeligheten til ${confirmRotate.shown?.client_name ?? confirmRotate.shown?.client_id}?`}
+                description={
+                    <>
+                        Den gamle OAuth-klienthemmeligheten slutter å virke
+                        umiddelbart. Produksjonsmiljøer som bruker den vil miste
+                        tilgangen til OAuth helt til de er oppdatert med den nye
+                        hemmeligheten. Dette kan ikke angres.
+                        {rotate.error && (
+                            <span className="mt-2 block text-destructive">
+                                {rotate.error.message}
+                            </span>
+                        )}
+                    </>
+                }
+                confirmLabel="Roter hemmelighet"
+                confirmationPhrase="yes i want to rotate the secrets, and break production"
+                isPending={rotate.isPending}
+                onConfirm={() => {
+                    if (!confirmRotate.pending || rotate.isPending) return;
+                    void handleRotate(confirmRotate.pending);
+                }}
             />
 
             <ConfirmDeleteDialog

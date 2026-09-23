@@ -72,7 +72,7 @@ export function ConfirmDeleteDialog({
                                 setConfirmation(event.target.value)
                             }
                             placeholder="Skriv inn teksten over"
-                            aria-label="Bekreft sletting"
+                            aria-label="Bekreft handling"
                             autoComplete="off"
                         />
                     </div>
