@@ -26,7 +26,6 @@ export const listRoute = route().get(
     requireAuth,
     requireAccess({
         permission: ["banners:view", "banners:manage"],
-        anyGroupScope: true,
     }),
     async (c) => {
         const { db } = c.get("ctx");

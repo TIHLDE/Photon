@@ -85,13 +85,13 @@ describe("subgroup leader / linked HS verv parity", () => {
                 param: { groupSlug: subgroup.slug },
                 json: {
                     permissions: [],
-                    globalPermissions: ["news:manage"],
+                    globalPermissions: ["forms:manage"],
                 },
             });
             expect(response.status).toBe(200);
 
             const position = await linkedPosition(ctx, subgroup.slug);
-            expect(position?.permissions).toEqual(["news:manage"]);
+            expect(position?.permissions).toEqual(["forms:manage"]);
         },
         500_000,
     );
@@ -106,7 +106,7 @@ describe("subgroup leader / linked HS verv parity", () => {
                 ":positionId"
             ].$patch({
                 param: { groupSlug: "hs", positionId: position!.id },
-                json: { permissions: ["news:manage"] },
+                json: { permissions: ["forms:manage"] },
             });
             expect(response.status).toBe(200);
 
@@ -116,7 +116,7 @@ describe("subgroup leader / linked HS verv parity", () => {
                 })
                 .from(schema.group)
                 .where(eq(schema.group.slug, subgroup.slug));
-            expect(group?.globalPermissions).toEqual(["news:manage"]);
+            expect(group?.globalPermissions).toEqual(["forms:manage"]);
         },
         500_000,
     );
@@ -136,11 +136,11 @@ describe("subgroup leader / linked HS verv parity", () => {
             // Drift, written straight to the rows as the old code left them.
             await ctx.db
                 .update(schema.group)
-                .set({ leaderGlobalPermissions: ["news:manage"] })
+                .set({ leaderGlobalPermissions: ["forms:manage"] })
                 .where(eq(schema.group.slug, subgroup.slug));
             await ctx.db
                 .update(schema.groupPosition)
-                .set({ permissions: ["jobs:manage"] })
+                .set({ permissions: ["events:manage"] })
                 .where(eq(schema.groupPosition.id, position!.id));
 
             const fromGroup = await client.api.groups[":groupSlug"][
@@ -148,8 +148,8 @@ describe("subgroup leader / linked HS verv parity", () => {
             ].$get({ param: { groupSlug: subgroup.slug } });
             expect(fromGroup.status).toBe(200);
             expect((await fromGroup.json()).globalPermissions.sort()).toEqual([
-                "jobs:manage",
-                "news:manage",
+                "events:manage",
+                "forms:manage",
             ]);
 
             const fromHs = await client.api.groups[":groupSlug"].positions.$get(
@@ -160,8 +160,8 @@ describe("subgroup leader / linked HS verv parity", () => {
                 (p: { id: string }) => p.id === position!.id,
             );
             expect(verv?.permissions.sort()).toEqual([
-                "jobs:manage",
-                "news:manage",
+                "events:manage",
+                "forms:manage",
             ]);
         },
         500_000,
@@ -184,17 +184,17 @@ describe("subgroup leader / linked HS verv parity", () => {
             // The group's leader list is set before anyone leads it.
             await ctx.db
                 .update(schema.group)
-                .set({ leaderGlobalPermissions: ["news:manage"] })
+                .set({ leaderGlobalPermissions: ["forms:manage"] })
                 .where(eq(schema.group.slug, subgroup.slug));
 
             await addUserToGroup(ctx, leader.id, subgroup.slug, "leader");
 
             const position = await linkedPosition(ctx, subgroup.slug);
-            expect(position?.permissions).toEqual(["news:manage"]);
+            expect(position?.permissions).toEqual(["forms:manage"]);
 
             // And the holder really has it, from one source or the other.
             expect(await getUserPermissions(ctx, leader.id)).toContain(
-                "news:manage",
+                "forms:manage",
             );
         },
         500_000,
@@ -214,7 +214,7 @@ describe("subgroup leader / linked HS verv parity", () => {
                 param: { groupSlug: group.slug },
                 json: {
                     name: "Økonomiansvarlig",
-                    permissions: ["news:manage"],
+                    permissions: ["forms:manage"],
                     scope: "group",
                 },
             });
@@ -225,11 +225,11 @@ describe("subgroup leader / linked HS verv parity", () => {
                 ":positionId"
             ].$patch({
                 param: { groupSlug: group.slug, positionId: position.id },
-                json: { permissions: ["jobs:manage"] },
+                json: { permissions: ["events:manage"] },
             });
             expect(response.status).toBe(200);
             expect((await response.json()).permissions).toEqual([
-                "jobs:manage",
+                "events:manage",
             ]);
 
             // Nothing leaked into the group's leader list.

@@ -57,7 +57,7 @@ describe("group member permissions", () => {
 
                 await ctx.db
                     .update(schema.group)
-                    .set({ memberGlobalPermissions: ["news:manage"] })
+                    .set({ memberGlobalPermissions: ["forms:manage"] })
                     .where(eq(schema.group.slug, group.slug));
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: member.id,
@@ -65,7 +65,7 @@ describe("group member permissions", () => {
                 });
 
                 expect(await getUserPermissions(ctx, member.id)).toContain(
-                    "news:manage",
+                    "forms:manage",
                 );
             },
             500_000,
@@ -104,6 +104,39 @@ describe("group member permissions", () => {
 
     describe("editing", () => {
         integrationTest(
+            "the scoped list refuses what cannot apply to a single group",
+            async ({ ctx }) => {
+                const admin = await ctx.utils.createTestUser();
+                await ctx.utils.giveUserPermissions(admin, ["root"]);
+                const client = await ctx.utils.clientForUser(admin);
+                const group = await ctx.utils.createTestGroup();
+
+                const refused = await client.api.groups[":groupSlug"][
+                    "member-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        permissions: ["galleries:manage"],
+                        globalPermissions: [],
+                    },
+                });
+                expect(refused.status).toBe(400);
+
+                const global = await client.api.groups[":groupSlug"][
+                    "member-permissions"
+                ].$patch({
+                    param: { groupSlug: group.slug },
+                    json: {
+                        permissions: [],
+                        globalPermissions: ["galleries:manage"],
+                    },
+                });
+                expect(global.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "a leader can set the scoped list from what they hold for the group",
             async ({ ctx }) => {
                 const leader = await ctx.utils.createTestUser();
@@ -115,21 +148,21 @@ describe("group member permissions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["forms:manage"]);
 
                 const response = await client.api.groups[":groupSlug"][
                     "member-permissions"
                 ].$patch({
                     param: { groupSlug: group.slug },
                     json: {
-                        permissions: ["news:manage"],
+                        permissions: ["forms:manage"],
                         globalPermissions: [],
                     },
                 });
 
                 expect(response.status).toBe(200);
                 const json = await response.json();
-                expect(json.permissions).toEqual(["news:manage"]);
+                expect(json.permissions).toEqual(["forms:manage"]);
                 expect(json.globalPermissions).toEqual([]);
             },
             500_000,
@@ -147,7 +180,7 @@ describe("group member permissions", () => {
 
                 await ctx.db
                     .update(schema.group)
-                    .set({ leaderPermissions: ["news:manage"] })
+                    .set({ leaderPermissions: ["forms:manage"] })
                     .where(eq(schema.group.slug, group.slug));
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: leader.id,
@@ -160,7 +193,7 @@ describe("group member permissions", () => {
                 ].$patch({
                     param: { groupSlug: group.slug },
                     json: {
-                        permissions: ["news:manage"],
+                        permissions: ["forms:manage"],
                         globalPermissions: [],
                     },
                 });
@@ -172,7 +205,7 @@ describe("group member permissions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         permissions: [],
-                        globalPermissions: ["news:manage"],
+                        globalPermissions: ["forms:manage"],
                     },
                 });
                 expect(global.status).toBe(403);
@@ -189,7 +222,7 @@ describe("group member permissions", () => {
 
                 await ctx.utils.giveUserPermissions(admin, [
                     "roles:create",
-                    "news:manage",
+                    "forms:manage",
                 ]);
 
                 const response = await client.api.groups[":groupSlug"][
@@ -198,13 +231,13 @@ describe("group member permissions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         permissions: [],
-                        globalPermissions: ["news:manage"],
+                        globalPermissions: ["forms:manage"],
                     },
                 });
 
                 expect(response.status).toBe(200);
                 expect((await response.json()).globalPermissions).toEqual([
-                    "news:manage",
+                    "forms:manage",
                 ]);
             },
             500_000,

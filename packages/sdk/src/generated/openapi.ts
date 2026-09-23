@@ -1016,7 +1016,7 @@ export interface paths {
         put?: never;
         /**
          * Refund an event payment
-         * @description Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund'.
+         * @description Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund', globally or for the arranging group.
          */
         post: operations["refundEventPayment"];
         delete?: never;
@@ -5396,7 +5396,7 @@ export interface components {
             title: string | null;
         };
         UpdateGroupLeaderPermissions: {
-            /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. */
+            /** @description Permissions the group's leader holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted. */
             permissions: string[];
             /** @description Permissions the group's leader holds across all of TIHLDE. Replaces the existing list. Requires holding each permission globally yourself. Omit to leave unchanged. */
             globalPermissions?: string[];
@@ -5410,7 +5410,7 @@ export interface components {
             globalPermissions: string[];
         };
         UpdateGroupMemberPermissions: {
-            /** @description Permissions every member of this group holds, scoped to this group. Replaces the existing list. */
+            /** @description Permissions every member of this group holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted. */
             permissions: string[];
             /** @description Permissions every member of this group holds across all of TIHLDE. Replaces the existing list. Requires holding each permission globally yourself. */
             globalPermissions: string[];
@@ -12168,7 +12168,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupLeaderPermissions"];
                 };
             };
-            /** @description Bad Request - Unknown permission */
+            /** @description Bad Request - Unknown permission, or one that cannot apply to a single group */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -12273,7 +12273,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupMemberPermissions"];
                 };
             };
-            /** @description Bad Request - Unknown permission */
+            /** @description Bad Request - Unknown permission, or one that cannot apply to a single group */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -1,4 +1,4 @@
-import { hasPermissionInAnyGroupScope } from "@photon/auth/rbac";
+import { hasPermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import type { AppContext } from "~/lib/ctx";
@@ -34,16 +34,11 @@ export const NEWS_ARCHIVE_PERMISSIONS = [
     "news:manage",
 ];
 
-/**
- * Whether this caller may see archived articles.
- *
- * News belongs to no group of its own, so a grant held for any single group
- * counts — the same rule the create and update routes use.
- */
+/** Whether this caller may see archived articles. */
 export const canSeeArchivedNews = async (
     ctx: AppContext,
     userId: string | undefined,
 ): Promise<boolean> => {
     if (!userId) return false;
-    return hasPermissionInAnyGroupScope(ctx, userId, NEWS_ARCHIVE_PERMISSIONS);
+    return hasPermission(ctx, userId, NEWS_ARCHIVE_PERMISSIONS);
 };

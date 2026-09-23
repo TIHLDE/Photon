@@ -1,3 +1,4 @@
+import { isGroupScopablePermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -17,7 +18,11 @@ import {
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { positionSchema, updatePositionSchema } from "./schema";
+import {
+    NOT_GROUP_SCOPABLE,
+    positionSchema,
+    updatePositionSchema,
+} from "./schema";
 
 export const updatePositionRoute = route().patch(
     "/:groupSlug/positions/:positionId",
@@ -93,6 +98,22 @@ export const updatePositionRoute = route().patch(
         // measured — everything else is already held by this very holder.
         const nextPermissions = body.permissions ?? position.permissions;
         const nextScope = body.scope ?? position.scope;
+
+        // Checked only when the list or scope changes, so renaming a verv that
+        // predates the rule does not force a cleanup first.
+        if (
+            nextScope === "group" &&
+            (body.permissions !== undefined || body.scope !== undefined)
+        ) {
+            const inert = nextPermissions.filter(
+                (permission) => !isGroupScopablePermission(permission),
+            );
+            if (inert.length > 0) {
+                throw new HTTPException(400, {
+                    message: `${NOT_GROUP_SCOPABLE}: ${inert.join(", ")}`,
+                });
+            }
+        }
         const added = addedBeyond(
             nextPermissions,
             await permissionsFromLinkedGroup(ctx, position),

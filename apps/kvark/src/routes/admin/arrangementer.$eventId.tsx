@@ -154,6 +154,7 @@ const EVENT_PAYMENT_VIEW_PERMISSIONS = [
     "events:manage",
     "events:update",
 ] as const;
+const EVENT_REFUND_PERMISSIONS = ["events:payments:refund"] as const;
 
 // Defaulted (not required) so plain links to the page need no search param,
 // while the tab stays deep-linkable and survives a bad value.
@@ -281,7 +282,10 @@ function EventAdminDetailPage() {
             {activeTab === "skjemaer" && <FormsTab eventId={eventId} />}
             {activeTab === "betalinger" && canSeePayments && (
                 <Suspense fallback={<TableSkeleton />}>
-                    <PaymentsTab eventId={eventId} />
+                    <PaymentsTab
+                        eventId={eventId}
+                        organizerSlug={organizerSlug}
+                    />
                 </Suspense>
             )}
             {activeTab === "allergier" && canManage && (
@@ -1873,12 +1877,21 @@ function groupPaymentsByUser(payments: EventPaymentAdmin[]): PaymentGroup[] {
         .sort((a, b) => a.user.name.localeCompare(b.user.name, "nb"));
 }
 
-function PaymentsTab({ eventId }: { eventId: string }) {
+function PaymentsTab({
+    eventId,
+    organizerSlug,
+}: {
+    eventId: string;
+    organizerSlug: string | null;
+}) {
     const paymentsQuery = useSuspenseInfiniteQuery(
         getEventPaymentsInfiniteQuery(eventId),
     );
     useLoadAllPages(paymentsQuery);
-    const canRefund = useAnyScopePermission(["events:payments:refund"]);
+    // No creator bypass here: the refund route has none either.
+    const canRefund = useCanActOnGroupResource(EVENT_REFUND_PERMISSIONS)(
+        organizerSlug,
+    );
     const [search, setSearch] = useState("");
 
     const payments = useMemo(

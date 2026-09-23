@@ -282,3 +282,47 @@ export function isPermission(name: string): name is Permission {
 export function getAllPermissions(): string[] {
     return [...PERMISSIONS];
 }
+
+/**
+ * Permissions that mean something when held for a single group: the rows they
+ * guard carry an owning group, and the API narrows against it.
+ *
+ * Anything else held `@group:x` is inert. News, job postings and the like have
+ * no owner, so a grant "for Promo" could only ever mean "for everyone" — and
+ * that is what the org-wide grant is for.
+ */
+export const GROUP_SCOPABLE_PERMISSIONS: readonly string[] = Object.freeze([
+    "events:create",
+    "events:update",
+    "events:delete",
+    "events:manage",
+    "events:registrations:view",
+    "events:registrations:create",
+    "events:payments:view",
+    "events:payments:refund",
+    "roles:view",
+    "roles:create",
+    "roles:update",
+    "roles:delete",
+    "roles:assign",
+    "forms:view",
+    "forms:create",
+    "forms:update",
+    "forms:delete",
+    "forms:manage",
+    "applications:expense:view",
+    "applications:expense:manage",
+    "applications:support:view",
+    "applications:support:manage",
+    "groups:view",
+    "groups:update",
+    "groups:manage",
+    "contracts:view",
+    "contracts:manage",
+]);
+
+const GROUP_SCOPABLE_SET = new Set<string>(GROUP_SCOPABLE_PERMISSIONS);
+
+export function isGroupScopablePermission(name: string): boolean {
+    return GROUP_SCOPABLE_SET.has(name);
+}

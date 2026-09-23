@@ -13,10 +13,12 @@
 
 // Registry and types
 export {
+    GROUP_SCOPABLE_PERMISSIONS,
     PERMISSION_REGISTRY,
     SPECIAL_PERMISSIONS,
     PERMISSIONS,
     PERMISSIONS_SET,
+    isGroupScopablePermission,
     isPermission,
     getAllPermissions,
     type Permission,

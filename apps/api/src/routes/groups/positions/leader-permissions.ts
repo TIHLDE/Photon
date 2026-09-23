@@ -133,7 +133,10 @@ export const updateLeaderPermissionsRoute = route().patch(
             schema: leaderPermissionsSchema,
             description: "Updated",
         })
-        .badRequest({ description: "Unknown permission" })
+        .badRequest({
+            description:
+                "Unknown permission, or one that cannot apply to a single group",
+        })
         .forbidden({
             description:
                 "Not authorized (the group's own leader may not edit this), or granting permissions you lack",

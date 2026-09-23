@@ -83,6 +83,7 @@ import {
     summarizeExtraPermissions,
     summarizeExtraPermissionsByScope,
     summarizePermissions,
+    onlyGroupScopable,
     toggleDomain,
 } from "#/lib/permission-domains";
 import { initials } from "#/lib/utils";
@@ -175,14 +176,14 @@ const EMPTY_DOMAINS: Set<string> = new Set();
 function PermissionDomainCheckboxes({
     value,
     onChange,
-    domains = PERMISSION_DOMAINS,
+    scoped = false,
     lockedDomains,
     lockedHint,
 }: {
     value: string[];
     onChange: (next: string[]) => void;
-    /** Which domains to offer. Defaults to all of them. */
-    domains?: typeof PERMISSION_DOMAINS;
+    /** A list held for this group only: offers just the boxes that can apply to one group. */
+    scoped?: boolean;
     /**
      * Domains the group already grants every member at this scope. They render
      * ticked and disabled: the access is real, but it is edited one level up,
@@ -191,6 +192,7 @@ function PermissionDomainCheckboxes({
     lockedDomains?: Set<string>;
     lockedHint?: string;
 }) {
+    const domains = scoped ? GROUP_SCOPABLE_DOMAINS : PERMISSION_DOMAINS;
     const present = domainsOf(value);
     const hasRoot = value.includes("root");
     const anyLocked = domains.some((d) => lockedDomains?.has(d.slug));
@@ -221,6 +223,7 @@ function PermissionDomainCheckboxes({
                                             value,
                                             domain.slug,
                                             next === true,
+                                            { scoped },
                                         ),
                                     )
                                 }
@@ -745,7 +748,7 @@ function MemberPermissionsDialog({
         try {
             await update.mutateAsync({
                 groupSlug,
-                permissions: scoped,
+                permissions: onlyGroupScopable(scoped),
                 globalPermissions: global,
             });
             onOpenChange(false);
@@ -771,7 +774,7 @@ function MemberPermissionsDialog({
                             <PermissionDomainCheckboxes
                                 value={scoped}
                                 onChange={setScoped}
-                                domains={GROUP_SCOPABLE_DOMAINS}
+                                scoped
                                 lockedDomains={globalDomains}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
@@ -986,7 +989,7 @@ function LeaderPermissionsDialog({
         try {
             await update.mutateAsync({
                 groupSlug,
-                permissions,
+                permissions: onlyGroupScopable(permissions),
                 // Left out entirely for someone who cannot write it — sending
                 // the list back unchanged would 403 them out of saving the
                 // group-scoped half they may edit.
@@ -1029,6 +1032,7 @@ function LeaderPermissionsDialog({
                             <PermissionDomainCheckboxes
                                 value={permissions}
                                 onChange={setPermissions}
+                                scoped
                                 lockedDomains={covered}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
@@ -1150,18 +1154,26 @@ function PositionDialog({
     async function handleSubmit() {
         setError(null);
         try {
+            const data = {
+                name,
+                permissions:
+                    scope === "group"
+                        ? onlyGroupScopable(permissions)
+                        : permissions,
+                scope,
+            };
             let positionId: string;
             if (position) {
                 await update.mutateAsync({
                     groupSlug,
                     positionId: position.id,
-                    data: { name, permissions, scope },
+                    data,
                 });
                 positionId = position.id;
             } else {
                 const created = await create.mutateAsync({
                     groupSlug,
-                    data: { name, permissions, scope },
+                    data,
                 });
                 positionId = created.id;
             }
@@ -1281,6 +1293,7 @@ function PositionDialog({
                             <PermissionDomainCheckboxes
                                 value={permissions}
                                 onChange={setPermissions}
+                                scoped={scope === "group"}
                                 lockedDomains={covered}
                                 lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
                             />

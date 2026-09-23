@@ -41,9 +41,16 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { authQueryOptions, sessionHasPermissionInAnyScope } from "#/api/auth";
+import {
+    authQueryOptions,
+    sessionHasPermission,
+    sessionHasPermissionInAnyScope,
+} from "#/api/auth";
 import { requireAdminPanel } from "#/lib/admin-access";
-import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
+import {
+    ADMIN_SECTION_PERMISSIONS,
+    GLOBAL_ONLY_ADMIN_SECTIONS,
+} from "#/lib/admin-sections";
 import { AdminLayoutHeader } from "#/components/AdminLayoutHeader";
 import { TihldeLogo } from "#/components/icons/tihlde";
 
@@ -90,6 +97,8 @@ type SidebarGroup = {
         permission?: string | readonly string[];
         /** Also show it to anyone who leads a group. */
         allowGroupLeader?: boolean;
+        /** Only a TIHLDE-wide grant counts — see `GLOBAL_ONLY_ADMIN_SECTIONS`. */
+        globalOnly?: boolean;
     }[];
 };
 
@@ -195,6 +204,7 @@ const sidebarMenuGroups: SidebarGroup[] = [
                 icon: FileUserIcon,
                 link: linkOptions({ to: "/admin/opptak" }),
                 permission: ADMIN_SECTION_PERMISSIONS.opptak,
+                globalOnly: GLOBAL_ONLY_ADMIN_SECTIONS.has("opptak"),
             },
             {
                 label: "Søknader",
@@ -257,7 +267,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             items: group.items.filter((item) => {
                 if (!item.permission) return true;
                 if (item.allowGroupLeader && isGroupLeader) return true;
-                return sessionHasPermissionInAnyScope(
+                const hasPermission = item.globalOnly
+                    ? sessionHasPermission
+                    : sessionHasPermissionInAnyScope;
+                return hasPermission(
                     session?.permissions,
                     item.permission as string | string[],
                 );

@@ -27,7 +27,6 @@ export const deleteRoute = route().delete(
     requireAuth,
     requireAccess({
         permission: ["banners:delete", "banners:manage"],
-        anyGroupScope: true,
     }),
     async (c) => {
         const { db } = c.get("ctx");

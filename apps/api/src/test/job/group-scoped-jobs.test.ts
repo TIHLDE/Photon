@@ -3,32 +3,42 @@ import { describe, expect } from "vitest";
 import { integrationTest } from "~/test/config/integration";
 
 /**
- * A job posting belongs to TIHLDE, not to a group, so there is no scope to
- * check a grant against. A verv in a group (NOKs "Annonsør") is still the way
- * the job is handed out, so a `group:`-scoped grant has to count here — while
- * a grant handed out for one single posting must stay limited to that one.
+ * A job posting belongs to TIHLDE, not to a group, so a grant held "for NoK"
+ * has nothing to narrow against. It counts for nothing; NoKs Annonsør holds
+ * the job globally instead. A grant for one single posting still opens that
+ * one.
  */
 describe("Group-scoped job permissions", () => {
     integrationTest(
-        "a group-scoped grant publishes and manages other people's postings",
+        "a group-scoped grant opens nothing, a TIHLDE-wide one opens every posting",
         async ({ ctx }) => {
             const admin = await ctx.utils.createTestUser();
+            const scopedHolder = await ctx.utils.createTestUser();
             const annonsor = await ctx.utils.createTestUser();
 
             await ctx.utils.giveUserPermissions(admin, ["jobs:manage"]);
 
-            // What a verv in NOK with the "Annonser" domain grants.
             await ctx.db.insert(schema.userPermission).values(
                 ["jobs:create", "jobs:update", "jobs:delete"].map(
                     (permission) => ({
-                        userId: annonsor.id,
+                        userId: scopedHolder.id,
                         permission,
                         scope: "group:nok",
                     }),
                 ),
             );
+            await ctx.db.insert(schema.userPermission).values(
+                ["jobs:create", "jobs:update", "jobs:delete"].map(
+                    (permission) => ({
+                        userId: annonsor.id,
+                        permission,
+                        scope: "*",
+                    }),
+                ),
+            );
 
             const adminClient = await ctx.utils.clientForUser(admin);
+            const scopedClient = await ctx.utils.clientForUser(scopedHolder);
             const annonsorClient = await ctx.utils.clientForUser(annonsor);
 
             const job = {
@@ -44,29 +54,31 @@ describe("Group-scoped job permissions", () => {
                 classEnd: "fifth" as const,
             };
 
-            // 1. The group-scoped grant is enough to publish.
+            const scopedCreate = await scopedClient.api.jobs.$post({
+                json: { ...job, title: "Should fail" },
+            });
+            expect(scopedCreate.status).toBe(403);
+
             const createResponse = await annonsorClient.api.jobs.$post({
                 json: { ...job, title: "Published by Annonsør" },
             });
             expect(createResponse.status).toBe(201);
 
-            // 2. ...and to fix somebody else's posting.
-            const adminJobResponse = await adminClient.api.jobs.$post({
-                json: { ...job, title: "Published by admin" },
+            const adminJob = await adminClient.api.jobs
+                .$post({ json: { ...job, title: "Published by admin" } })
+                .then((response) => response.json());
+
+            const scopedUpdate = await scopedClient.api.jobs[":id"].$patch({
+                param: { id: adminJob.id },
+                json: { title: "Should fail" },
             });
-            expect(adminJobResponse.status).toBe(201);
-            const adminJob = await adminJobResponse.json();
+            expect(scopedUpdate.status).toBe(403);
 
             const updateResponse = await annonsorClient.api.jobs[":id"].$patch({
                 param: { id: adminJob.id },
                 json: { title: "Corrected by Annonsør" },
             });
             expect(updateResponse.status).toBe(200);
-
-            const deleteResponse = await annonsorClient.api.jobs[":id"].$delete(
-                { param: { id: adminJob.id } },
-            );
-            expect(deleteResponse.status).toBe(200);
         },
     );
 

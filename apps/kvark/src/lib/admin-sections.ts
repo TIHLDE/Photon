@@ -119,6 +119,15 @@ export const ADMIN_SECTION_PERMISSIONS = {
 export type AdminSection = keyof typeof ADMIN_SECTION_PERMISSIONS;
 
 /**
+ * Sections that list all of TIHLDE's data, so a grant held for one group gives
+ * nothing to do there. Opptak lists every contract version; a group handles
+ * its own signatures from its Grupper page instead.
+ */
+export const GLOBAL_ONLY_ADMIN_SECTIONS: ReadonlySet<AdminSection> = new Set([
+    "opptak",
+]);
+
+/**
  * Every permission that unlocks at least one admin section.
  *
  * Note this includes view-only permissions: `users:view` alone gives a real

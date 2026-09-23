@@ -1,4 +1,4 @@
-import { PERMISSIONS_SET } from "@photon/auth/rbac";
+import { PERMISSIONS_SET, isGroupScopablePermission } from "@photon/auth/rbac";
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 
@@ -19,25 +19,53 @@ const permissionListSchema = z
             "Permissions granted to holders of this position. Must be valid permission names from the registry.",
     });
 
+export const NOT_GROUP_SCOPABLE =
+    "Only applies across all of TIHLDE and cannot be granted for a single group";
+
+const groupPermissionListSchema = z
+    .array(
+        z
+            .string()
+            .max(64)
+            .refine((p) => PERMISSIONS_SET.has(p), {
+                message: "Unknown permission",
+            })
+            .refine(isGroupScopablePermission, {
+                message: NOT_GROUP_SCOPABLE,
+            }),
+    )
+    .max(100);
+
 export const createPositionSchema = Schema(
     "CreateGroupPosition",
-    z.object({
-        name: z
-            .string()
-            .min(1)
-            .max(128)
-            .meta({ description: "Position name, e.g. 'Økonomiansvarlig'" }),
-        description: z
-            .string()
-            .max(1000)
-            .optional()
-            .meta({ description: "Optional description of the position" }),
-        permissions: permissionListSchema,
-        scope: z.enum(["group", "global"]).default("group").meta({
-            description:
-                "Whether permissions apply only within this group, or globally (global requires roles:create)",
+    z
+        .object({
+            name: z.string().min(1).max(128).meta({
+                description: "Position name, e.g. 'Økonomiansvarlig'",
+            }),
+            description: z
+                .string()
+                .max(1000)
+                .optional()
+                .meta({ description: "Optional description of the position" }),
+            permissions: permissionListSchema,
+            scope: z.enum(["group", "global"]).default("group").meta({
+                description:
+                    "Whether permissions apply only within this group, or globally (global requires roles:create)",
+            }),
+        })
+        .superRefine((body, issue) => {
+            if (body.scope !== "group") return;
+            body.permissions.forEach((permission, index) => {
+                if (!isGroupScopablePermission(permission)) {
+                    issue.addIssue({
+                        code: "custom",
+                        path: ["permissions", index],
+                        message: NOT_GROUP_SCOPABLE,
+                    });
+                }
+            });
         }),
-    }),
 );
 
 export const updatePositionSchema = Schema(
@@ -53,9 +81,9 @@ export const updatePositionSchema = Schema(
 export const updateLeaderPermissionsSchema = Schema(
     "UpdateGroupLeaderPermissions",
     z.object({
-        permissions: permissionListSchema.meta({
+        permissions: groupPermissionListSchema.meta({
             description:
-                "Permissions the group's leader holds, scoped to this group. Replaces the existing list.",
+                "Permissions the group's leader holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted.",
         }),
         globalPermissions: permissionListSchema.optional().meta({
             description:
@@ -71,9 +99,9 @@ export const updateLeaderPermissionsSchema = Schema(
 export const updateMemberPermissionsSchema = Schema(
     "UpdateGroupMemberPermissions",
     z.object({
-        permissions: permissionListSchema.meta({
+        permissions: groupPermissionListSchema.meta({
             description:
-                "Permissions every member of this group holds, scoped to this group. Replaces the existing list.",
+                "Permissions every member of this group holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted.",
         }),
         globalPermissions: permissionListSchema.meta({
             description:

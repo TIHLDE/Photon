@@ -25,7 +25,7 @@ import { getGroupsQuery } from "#/api/queries/groups";
 import { getJobsQuery } from "#/api/queries/jobs";
 import { getNewsQuery } from "#/api/queries/news";
 import { SectionError } from "#/components/section-error";
-import { useAnyScopePermission } from "#/hooks/use-permission";
+import { useAnyScopePermission, usePermission } from "#/hooks/use-permission";
 import { ADMIN_SECTION_PERMISSIONS } from "#/lib/admin-sections";
 import { formatInOslo } from "#/lib/date";
 
@@ -134,9 +134,7 @@ function StatsGrid() {
     const canNews = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.nyheter);
     const canJobs = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.annonser);
     const canGroups = useAnyScopePermission(ADMIN_SECTION_PERMISSIONS.grupper);
-    const canContracts = useAnyScopePermission(
-        ADMIN_SECTION_PERMISSIONS.opptak,
-    );
+    const canContracts = usePermission(ADMIN_SECTION_PERMISSIONS.opptak);
 
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -202,7 +200,7 @@ function QuickActions() {
         ADMIN_SECTION_PERMISSIONS.nyheter,
     );
     const canCreateJobs = useAnyScopePermission(["jobs:create", "jobs:manage"]);
-    const canUploadContract = useAnyScopePermission([
+    const canUploadContract = usePermission([
         "contracts:create",
         "contracts:manage",
     ]);

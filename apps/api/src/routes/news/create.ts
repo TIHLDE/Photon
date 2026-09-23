@@ -25,7 +25,6 @@ export const createRoute = route().post(
     requireAuth,
     requireAccess({
         permission: ["news:create", "news:manage"],
-        anyGroupScope: true,
     }),
     validator("json", createNewsSchema),
     async (c) => {

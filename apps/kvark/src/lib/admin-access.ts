@@ -2,12 +2,14 @@ import { redirect } from "@tanstack/react-router";
 
 import {
     authClientWithRedirect,
+    sessionHasPermission,
     sessionHasPermissionInAnyScope,
 } from "#/api/auth";
 import {
     ADMIN_SECTION_PERMISSIONS,
     ALL_ADMIN_SECTION_PERMISSIONS,
     type AdminSection,
+    GLOBAL_ONLY_ADMIN_SECTIONS,
 } from "#/lib/admin-sections";
 
 /**
@@ -49,7 +51,10 @@ export function canOpenAdminSection(
     options: { allowGroupLeader?: boolean } = {},
 ): boolean {
     if (options.allowGroupLeader && leadsAnyGroup(session)) return true;
-    return sessionHasPermissionInAnyScope(
+    const hasPermission = GLOBAL_ONLY_ADMIN_SECTIONS.has(section)
+        ? sessionHasPermission
+        : sessionHasPermissionInAnyScope;
+    return hasPermission(
         session.permissions ?? undefined,
         ADMIN_SECTION_PERMISSIONS[section],
     );

@@ -34,7 +34,6 @@ export const deleteRoute = route().delete(
     requireAccess({
         permission: ["news:delete", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
-        anyGroupScope: true,
         ownership: { param: "id", check: isNewsCreator },
     }),
     async (c) => {

@@ -24,6 +24,7 @@ import {
     matchesPermission,
     parsePermission,
 } from "../permission-parser";
+import { isGroupScopablePermission } from "./registry";
 
 type DbCtx = { db: NodePgDatabase<DbSchema> };
 
@@ -176,6 +177,9 @@ function permissionRows(ctx: DbCtx, userId: string) {
  * Everything a group grants is read live from the membership, so a grant
  * cannot outlive the job: leave the group, or step down as leader, and it is
  * gone on the next check.
+ *
+ * A grant held for one group only survives if it can mean something there —
+ * see {@link isGroupScopablePermission}.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
@@ -184,7 +188,13 @@ export async function getUserPermissions(
     const rows = await permissionRows(ctx, userId);
 
     return rows.flatMap((row) =>
-        (row.permissions ?? []).map((p) => formatPermission(p, row.scope)),
+        (row.permissions ?? [])
+            .filter(
+                (p) =>
+                    !row.scope.startsWith("group:") ||
+                    isGroupScopablePermission(p),
+            )
+            .map((p) => formatPermission(p, row.scope)),
     );
 }
 

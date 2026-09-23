@@ -87,19 +87,19 @@ describe("group leader permissions", () => {
 
                 await ctx.utils.giveUserPermissions(admin, [
                     "roles:create",
-                    "news:manage",
+                    "forms:manage",
                 ]);
 
                 const response = await client.api.groups[":groupSlug"][
                     "leader-permissions"
                 ].$patch({
                     param: { groupSlug: group.slug },
-                    json: { permissions: ["news:manage"] },
+                    json: { permissions: ["forms:manage"] },
                 });
 
                 expect(response.status).toBe(200);
                 const json = await response.json();
-                expect(json.permissions).toEqual(["news:manage"]);
+                expect(json.permissions).toEqual(["forms:manage"]);
             },
             500_000,
         );
@@ -125,7 +125,7 @@ describe("group leader permissions", () => {
                     groupSlug: group.slug,
                     role: "leader",
                 });
-                await ctx.utils.giveUserPermissions(leader, ["news:manage"]);
+                await ctx.utils.giveUserPermissions(leader, ["forms:manage"]);
 
                 const read = await client.api.groups[":groupSlug"][
                     "leader-permissions"
@@ -136,7 +136,7 @@ describe("group leader permissions", () => {
                     "leader-permissions"
                 ].$patch({
                     param: { groupSlug: group.slug },
-                    json: { permissions: ["news:manage"] },
+                    json: { permissions: ["forms:manage"] },
                 });
                 expect(write.status).toBe(403);
             },
@@ -202,7 +202,7 @@ describe("group leader permissions", () => {
 
                 await ctx.db
                     .update(schema.group)
-                    .set({ leaderGlobalPermissions: ["news:manage"] })
+                    .set({ leaderGlobalPermissions: ["forms:manage"] })
                     .where(eq(schema.group.slug, group.slug));
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: leader.id,
@@ -211,7 +211,7 @@ describe("group leader permissions", () => {
                 });
 
                 expect(await getUserPermissions(ctx, leader.id)).toContain(
-                    "news:manage",
+                    "forms:manage",
                 );
 
                 await updateGroupMemberRole(
@@ -222,7 +222,7 @@ describe("group leader permissions", () => {
                 );
 
                 expect(await getUserPermissions(ctx, leader.id)).not.toContain(
-                    "news:manage",
+                    "forms:manage",
                 );
             },
             500_000,
@@ -235,12 +235,12 @@ describe("group leader permissions", () => {
                 const client = await ctx.utils.clientForUser(editor);
                 const group = await ctx.utils.createTestGroup();
 
-                // May edit the row, but holds news:manage only for this group
+                // May edit the row, but holds forms:manage only for this group
                 // — through the group's own member permissions.
                 await ctx.utils.giveUserPermissions(editor, ["roles:create"]);
                 await ctx.db
                     .update(schema.group)
-                    .set({ memberPermissions: ["news:manage"] })
+                    .set({ memberPermissions: ["forms:manage"] })
                     .where(eq(schema.group.slug, group.slug));
                 await ctx.db.insert(schema.groupMembership).values({
                     userId: editor.id,
@@ -248,12 +248,12 @@ describe("group leader permissions", () => {
                     role: "member",
                 });
 
-                // Holds news:manage@group:<slug>, so the group list is fine…
+                // Holds forms:manage@group:<slug>, so the group list is fine…
                 const scoped = await client.api.groups[":groupSlug"][
                     "leader-permissions"
                 ].$patch({
                     param: { groupSlug: group.slug },
-                    json: { permissions: ["news:manage"] },
+                    json: { permissions: ["forms:manage"] },
                 });
                 expect(scoped.status).toBe(200);
 
@@ -263,8 +263,8 @@ describe("group leader permissions", () => {
                 ].$patch({
                     param: { groupSlug: group.slug },
                     json: {
-                        permissions: ["news:manage"],
-                        globalPermissions: ["news:manage"],
+                        permissions: ["forms:manage"],
+                        globalPermissions: ["forms:manage"],
                     },
                 });
                 expect(global.status).toBe(403);
@@ -281,7 +281,7 @@ describe("group leader permissions", () => {
 
                 await ctx.utils.giveUserPermissions(admin, [
                     "roles:create",
-                    "news:manage",
+                    "forms:manage",
                 ]);
 
                 const granted = await client.api.groups[":groupSlug"][
@@ -290,12 +290,12 @@ describe("group leader permissions", () => {
                     param: { groupSlug: group.slug },
                     json: {
                         permissions: [],
-                        globalPermissions: ["news:manage"],
+                        globalPermissions: ["forms:manage"],
                     },
                 });
                 expect(granted.status).toBe(200);
                 expect((await granted.json()).globalPermissions).toEqual([
-                    "news:manage",
+                    "forms:manage",
                 ]);
 
                 const untouched = await client.api.groups[":groupSlug"][
@@ -305,7 +305,7 @@ describe("group leader permissions", () => {
                     json: { permissions: [] },
                 });
                 expect((await untouched.json()).globalPermissions).toEqual([
-                    "news:manage",
+                    "forms:manage",
                 ]);
             },
             500_000,
