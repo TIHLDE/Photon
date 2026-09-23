@@ -615,6 +615,14 @@ export function EventForm({
                                             id="event-capacity"
                                             min={1}
                                             step={1}
+                                            // Runder bort desimaler i feltet.
+                                            // Ellers blir det skjulte
+                                            // valideringsfeltet ugyldig, og
+                                            // nettleseren nekter å sende
+                                            // skjemaet uten å vise noe.
+                                            format={{
+                                                maximumFractionDigits: 0,
+                                            }}
                                             value={values.capacity}
                                             onValueChange={(capacity) =>
                                                 onChange({ capacity })
@@ -730,7 +738,15 @@ export function EventForm({
                                     <NumberInput
                                         id="event-price"
                                         min={0}
-                                        step={1}
+                                        // Ører er gyldige priser. Med `step={1}`
+                                        // blir det skjulte valideringsfeltet
+                                        // ugyldig, og da nekter nettleseren å
+                                        // sende skjemaet uten å vise noe.
+                                        step="any"
+                                        format={{
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }}
                                         value={values.price}
                                         onValueChange={(price) =>
                                             onChange({ price })

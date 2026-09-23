@@ -12,7 +12,8 @@ type NumberInputProps = {
     onValueChange: (value: string) => void;
     min?: number;
     max?: number;
-    step?: number;
+    step?: number | "any";
+    format?: Intl.NumberFormatOptions;
     placeholder?: string;
     disabled?: boolean;
     className?: string;
@@ -25,6 +26,7 @@ export function NumberInput({
     min,
     max,
     step,
+    format,
     placeholder,
     disabled,
     className,
@@ -37,6 +39,7 @@ export function NumberInput({
             min={min}
             max={max}
             step={step}
+            format={format}
             disabled={disabled}
             value={Number.isFinite(parsed) ? parsed : null}
             onValueChange={(next) =>
