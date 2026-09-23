@@ -13,6 +13,27 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    changes:
+        name: Check backend changes
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: read
+        outputs:
+            backend: ${{ steps.filter.outputs.backend }}
+        steps:
+            - uses: actions/checkout@v3
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  # Only a PR/push changing exclusively apps/kvark can skip tests.
+                  predicate-quantifier: every
+                  filters: |
+                      backend:
+                        - '**'
+                        - '!apps/kvark/**'
+                        - '!README.md'
+                        - '!scripts/**'
     check:
         name: Check Code Quality
         runs-on: ubuntu-latest
@@ -42,7 +63,8 @@ jobs:
               run: bun run typecheck
     api-tests:
         name: API Tests (${{ matrix.shard }})
-        needs: check
+        needs: [check, changes]
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
         strategy:
             fail-fast: false
@@ -63,7 +85,8 @@ jobs:
 
     other-tests:
         name: Other Tests
-        needs: check
+        needs: [check, changes]
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
