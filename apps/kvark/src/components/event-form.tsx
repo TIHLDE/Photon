@@ -34,8 +34,8 @@ import type { FormEvent, ReactNode } from "react";
 import type { AddressSuggestion } from "#/api/queries/address";
 import { AddressCombobox } from "#/components/address-combobox";
 import { AdminImageField } from "#/components/admin-image-field";
-import { NumberInput } from "#/components/number-input";
 import { richRegistry } from "#/components/markdown/directives/presets";
+import { NumberInput } from "#/components/number-input";
 import { ALL_EVENT_CATEGORIES } from "#/lib/event-categories";
 import { alignEventEnd } from "#/lib/event";
 

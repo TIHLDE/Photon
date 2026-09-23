@@ -5,7 +5,6 @@ import {
     NumberFieldIncrement,
     NumberFieldInput,
 } from "@tihlde/ui/ui/number-field";
-import { cn } from "#/lib/utils";
 
 type NumberInputProps = {
     id?: string;
@@ -44,7 +43,7 @@ export function NumberInput({
                 onValueChange(next === null ? "" : String(next))
             }
         >
-            <NumberFieldGroup className={cn(className)}>
+            <NumberFieldGroup className={className}>
                 <NumberFieldDecrement />
                 <NumberFieldInput placeholder={placeholder} />
                 <NumberFieldIncrement />

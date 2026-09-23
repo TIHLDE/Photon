@@ -244,6 +244,19 @@ export function registrationErrorMessage(error: unknown): string {
 export const TICKET_RESALE_GROUP_URL =
     "https://www.facebook.com/groups/598608738731749/";
 
+const NOK_WHOLE = new Intl.NumberFormat("nb-NO", {
+    maximumFractionDigits: 0,
+});
+const NOK_ORE = new Intl.NumberFormat("nb-NO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
+/** Øre -> "1 234" eller "1 234,50". Ører vises bare når de finnes. */
+export function formatNokFromMinor(minor: number): string {
+    return (minor % 100 === 0 ? NOK_WHOLE : NOK_ORE).format(minor / 100);
+}
+
 /**
  * Build a price label from the API event's paid-event fields.
  * `priceMinor` is stored in minor units (øre).
@@ -255,11 +268,7 @@ export function formatEventPrice(
     if (!isPaidEvent || !priceMinor) {
         return { kind: "free" };
     }
-    const label = new Intl.NumberFormat("nb-NO", {
-        minimumFractionDigits: priceMinor % 100 === 0 ? 0 : 2,
-        maximumFractionDigits: 2,
-    }).format(priceMinor / 100);
-    return { kind: "paid", label: `kr ${label}` };
+    return { kind: "paid", label: `kr ${formatNokFromMinor(priceMinor)}` };
 }
 
 /**

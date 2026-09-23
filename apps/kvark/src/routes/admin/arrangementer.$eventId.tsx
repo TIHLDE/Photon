@@ -118,7 +118,7 @@ import {
     cn,
     formatStudyLabel,
 } from "#/lib/utils";
-import { EVENT_FORM_ERRORS } from "#/lib/event";
+import { EVENT_FORM_ERRORS, formatNokFromMinor } from "#/lib/event";
 import { countBy, sumBy, uniq } from "es-toolkit";
 import { isCohortGroupType } from "#/lib/group";
 import { useDebounced } from "#/lib/use-debounced";
@@ -2199,11 +2199,8 @@ function formatDateTime(iso: string) {
 }
 
 /** Minor units (øre) -> "1 234 kr" */
-/** Beløp i kroner, med norsk tusenskille — `Intl` gir samme utfall uansett hvor koden kjører. */
-const NOK_AMOUNT = new Intl.NumberFormat("nb-NO");
-
 function formatAmount(minor: number) {
-    return `${NOK_AMOUNT.format(minor / 100)} kr`;
+    return `${formatNokFromMinor(minor)} kr`;
 }
 
 /* ------------------------------- Allergier ------------------------------ */
