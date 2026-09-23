@@ -18,7 +18,7 @@ import { z } from "zod";
 import { Stagger } from "@tihlde/ui/ui/motion";
 
 import { requireAdminSection } from "#/lib/admin-access";
-import { authQueryOptions, sessionHasPermission } from "#/api/auth";
+import { authQueryOptions, sessionHasPermissionInAnyScope } from "#/api/auth";
 import {
     type ApplicationType,
     fetchApplicationAttachmentUrl,
@@ -104,7 +104,7 @@ function AdminApplicationsPage() {
         "applications:hs-case:manage",
     ]);
     const visibleTabs = TYPE_TABS.filter((tab) =>
-        sessionHasPermission(session?.permissions, tab.permissions),
+        sessionHasPermissionInAnyScope(session?.permissions, tab.permissions),
     );
 
     const activeType = search.type ?? visibleTabs[0]?.value;

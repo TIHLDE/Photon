@@ -38,7 +38,7 @@ export const listRoute = route().get(
         .forbidden()
         .build(),
     requireAuth,
-    requireAccess({ permission: ALL_VIEW_PERMISSIONS }),
+    requireAccess({ permission: ALL_VIEW_PERMISSIONS, anyGroupScope: true }),
     validator("query", listApplicationsQuerySchema),
     async (c) => {
         const query = c.req.valid("query");

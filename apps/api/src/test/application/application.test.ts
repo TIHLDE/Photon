@@ -343,6 +343,77 @@ describe("Søknader", () => {
     );
 
     integrationTest(
+        "expense: a group's member grant opens that group's utlegg and no one else's",
+        async ({ ctx }) => {
+            const group = await ctx.utils.createTestGroup({
+                slug: "utlegg-scope-eier",
+                type: "COMMITTEE",
+            });
+            const otherGroup = await ctx.utils.createTestGroup({
+                slug: "utlegg-scope-andre",
+                type: "COMMITTEE",
+            });
+            await ctx.db
+                .update(schema.group)
+                .set({
+                    memberPermissions: [
+                        "applications:expense:view",
+                        "applications:expense:manage",
+                    ],
+                })
+                .where(eq(schema.group.slug, group.slug));
+
+            const handler = await ctx.utils.createTestUser();
+            await ctx.db.insert(schema.groupMembership).values({
+                userId: handler.id,
+                groupSlug: group.slug,
+                role: "member",
+            });
+
+            const submitter = await ctx.utils.createTestUser();
+            const submitterClient = await ctx.utils.clientForUser(submitter);
+            const submitExpense = async (groupSlug: string) =>
+                submitterClient.api.applications.expense
+                    .$post({
+                        json: {
+                            contactName: "Test Testesen",
+                            contactEmail: "test@tihlde.org",
+                            amountNok: 100,
+                            expenseDate: "2026-07-20",
+                            groupSlug,
+                            budgetType: "group_budget",
+                            description: "Noe",
+                            accountNumber: "1234.56.78901",
+                            attachmentKeys: [
+                                await stageAttachment(ctx, submitter.id),
+                            ],
+                        },
+                    })
+                    .then((response) => response.json());
+
+            const own = await submitExpense(group.slug);
+            const foreign = await submitExpense(otherGroup.slug);
+
+            const handlerClient = await ctx.utils.clientForUser(handler);
+
+            const list = await handlerClient.api.applications.$get({
+                query: { type: "expense" },
+            });
+            expect(list.status).toBe(200);
+            const items = await list.json();
+            expect(items.map((item) => item.id)).toEqual([own.id]);
+
+            const approve = (id: string) =>
+                handlerClient.api.applications[":id"].status.$patch({
+                    param: { id },
+                    json: { status: "approved" },
+                });
+            expect((await approve(own.id)).status).toBe(200);
+            expect((await approve(foreign.id)).status).toBe(403);
+        },
+    );
+
+    integrationTest(
         "a member cannot read another member's søknad, its PDF or its attachments",
         async ({ ctx }) => {
             const group = await setupGroup(ctx);
