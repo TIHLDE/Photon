@@ -5,6 +5,8 @@ import {
     NumberFieldIncrement,
     NumberFieldInput,
 } from "@tihlde/ui/ui/number-field";
+import { useCallback } from "react";
+import { limitFractionDigits } from "#/lib/fraction-digits";
 
 type NumberInputProps = {
     id?: string;
@@ -32,6 +34,14 @@ export function NumberInput({
     className,
 }: NumberInputProps) {
     const parsed = value.trim() === "" ? Number.NaN : Number(value);
+    const maxFractionDigits = format?.maximumFractionDigits;
+    const inputRef = useCallback(
+        (input: HTMLInputElement | null) =>
+            input && maxFractionDigits !== undefined
+                ? limitFractionDigits(input, maxFractionDigits)
+                : undefined,
+        [maxFractionDigits],
+    );
 
     return (
         <NumberField
@@ -48,7 +58,7 @@ export function NumberInput({
         >
             <NumberFieldGroup className={className}>
                 <NumberFieldDecrement />
-                <NumberFieldInput placeholder={placeholder} />
+                <NumberFieldInput ref={inputRef} placeholder={placeholder} />
                 <NumberFieldIncrement />
             </NumberFieldGroup>
         </NumberField>
