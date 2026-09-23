@@ -19,6 +19,7 @@ import {
 import { LoadMoreButton } from "#/components/load-more-button";
 import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
+import { formatInOslo } from "#/lib/date";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
 import {
@@ -96,11 +97,20 @@ const searchSchema = z.object({
 // per side enn listen for ikke å ha hull i rutenettet.
 const CALENDAR_PAGE_SIZE = 100;
 
+function currentSemesterDescription(now: Date = new Date()) {
+    const [year, month] = formatInOslo(now, "yyyy-M")
+        .split("-")
+        .map(Number) as [number, number];
+    const semester = month <= 6 ? "våren" : "høsten";
+
+    return `Finn arrangementer for ${semester} ${year}`;
+}
+
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
     validateSearch: searchSchema,
-    loader: ({ context }) =>
-        context.queryClient.ensureInfiniteQueryData(
+    loader: async ({ context }) => {
+        await context.queryClient.ensureInfiniteQueryData(
             getEventsInfiniteQuery(
                 toEventListFilters(
                     DEFAULT_EVENT_FILTERS.query,
@@ -109,11 +119,15 @@ export const Route = createFileRoute("/_app/arrangementer/")({
                     DEFAULT_EVENT_FILTERS.openRegistration,
                 ),
             ),
-        ),
+        );
+
+        return { semesterDescription: currentSemesterDescription() };
+    },
 });
 
 function EventsPage() {
     const { visning } = Route.useSearch();
+    const { semesterDescription } = Route.useLoaderData();
     const navigate = useNavigate();
     const [tab, setTab] = useState<EventTab>("arrangementer");
     const [filters, setFilters] = useState<EventFiltersValue>(
@@ -187,7 +201,7 @@ function EventsPage() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <PageHeader
                 title="Arrangementer"
-                description="Finn arrangementer for våren 2026"
+                description={semesterDescription}
                 action={
                     canCreateEvent ? (
                         <Button render={<Link to="/admin/arrangementer/ny" />}>
