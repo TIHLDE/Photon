@@ -121,9 +121,10 @@ export const updateGroupMutation = mutationOptions({
 });
 
 export const deleteGroupMutation = mutationOptions({
-    mutationFn: ({ slug }: { slug: string }) =>
+    mutationFn: ({ slug, confirm }: { slug: string; confirm: string }) =>
         apiClient.delete("/api/groups/{slug}", {
             params: { slug },
+            searchParams: { confirm },
         }),
     onSuccess(_, vars, __, ctx) {
         ctx.client.invalidateQueries(getGroupBySlugQuery(vars.slug));

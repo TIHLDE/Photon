@@ -1585,7 +1585,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a group
-         * @description Delete a group by its slug. Requires being a group leader OR having 'groups:delete' permission (globally or scoped to this group). This action is irreversible and will remove all associated data, including memberships and fines.
+         * @description Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines, laws, forms and verv.
          */
         delete: operations["deleteGroup"];
         options?: never;
@@ -5350,6 +5350,7 @@ export interface components {
             permissions: string[];
             /** @enum {string} */
             scope: "group" | "global";
+            globalPermissions: string[];
             /** @description If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually. */
             linkedGroupSlug: string | null;
             /** @description Everyone holding this position. A verv may be shared by several people (issue #646); empty when nobody holds it. */
@@ -5371,6 +5372,11 @@ export interface components {
              * @enum {string}
              */
             scope: "group" | "global";
+            /**
+             * @description Held across all of TIHLDE by holders of this group-scoped verv, e.g. job postings for NoKs Annonsør. Requires holding each of them globally yourself. Must be empty on a global verv.
+             * @default []
+             */
+            globalPermissions: string[];
         };
         UpdateGroupPosition: {
             name?: string;
@@ -5379,6 +5385,8 @@ export interface components {
             permissions?: string[];
             /** @enum {string} */
             scope?: "group" | "global";
+            /** @description Held across all of TIHLDE by holders of this group-scoped verv, e.g. job postings for NoKs Annonsør. Requires holding each of them globally yourself. Must be empty on a global verv. */
+            globalPermissions?: string[];
         };
         GroupPositionMessage: {
             message: string;
@@ -10732,7 +10740,10 @@ export interface operations {
     };
     deleteGroup: {
         parameters: {
-            query?: never;
+            query: {
+                /** @description The group's slug, typed out again. Deleting cascades over memberships, fines, laws, forms and verv, so it must never happen by accident. */
+                confirm: string;
+            };
             header?: never;
             path: {
                 slug: string;
@@ -10743,6 +10754,13 @@ export interface operations {
         responses: {
             /** @description Group successfully deleted */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request - `confirm` does not repeat the group's slug */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -77,6 +77,21 @@ export const createPositionRoute = route().post(
             });
         }
 
+        if (
+            !(await canGrantPositionPermissions(
+                ctx,
+                user.id,
+                groupSlug,
+                body.globalPermissions,
+                "global",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only grant TIHLDE-wide permissions you hold globally yourself",
+            });
+        }
+
         // Duplicate names are allowed on purpose: a position has one holder,
         // so a second "Økonomiansvarlig" is simply a second position.
         const [position] = await db
@@ -87,6 +102,7 @@ export const createPositionRoute = route().post(
                 description: body.description,
                 permissions: body.permissions,
                 scope: body.scope,
+                globalPermissions: body.globalPermissions,
             })
             .returning();
 

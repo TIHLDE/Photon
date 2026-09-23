@@ -155,6 +155,7 @@ export async function canAssignPosition(
         groupSlug: string;
         permissions: string[];
         scope: "group" | "global";
+        globalPermissions: string[];
     },
 ): Promise<boolean> {
     if (
@@ -168,11 +169,20 @@ export async function canAssignPosition(
         return false;
     }
 
-    return await canGrantPositionPermissions(
-        ctx,
-        userId,
-        position.groupSlug,
-        position.permissions,
-        position.scope,
+    return (
+        (await canGrantPositionPermissions(
+            ctx,
+            userId,
+            position.groupSlug,
+            position.permissions,
+            position.scope,
+        )) &&
+        (await canGrantPositionPermissions(
+            ctx,
+            userId,
+            position.groupSlug,
+            position.globalPermissions,
+            "global",
+        ))
     );
 }

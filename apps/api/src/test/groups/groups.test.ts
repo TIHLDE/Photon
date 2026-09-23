@@ -178,6 +178,7 @@ describe("groups", () => {
 
                 const response = await client.api.groups[":slug"].$delete({
                     param: { slug: group.slug },
+                    query: { confirm: group.slug },
                 });
 
                 expect(response.status).toBe(204);
@@ -203,6 +204,7 @@ describe("groups", () => {
 
                 const response = await client.api.groups[":slug"].$delete({
                     param: { slug: group.slug },
+                    query: { confirm: group.slug },
                 });
 
                 expect(response.status).toBe(403);
@@ -220,9 +222,63 @@ describe("groups", () => {
 
                 const response = await client.api.groups[":slug"].$delete({
                     param: { slug: "non-existent" },
+                    query: { confirm: "non-existent" },
                 });
 
                 expect(response.status).toBe(404);
+            },
+            500_000,
+        );
+
+        integrationTest(
+            "the leader may delete their own group, but only by typing its slug",
+            async ({ ctx }) => {
+                const leader = await ctx.utils.createTestUser();
+                const member = await ctx.utils.createTestUser();
+                const group = await ctx.utils.createTestGroup({
+                    slug: "slettes",
+                });
+                await ctx.db.insert(schema.groupMembership).values([
+                    {
+                        userId: leader.id,
+                        groupSlug: group.slug,
+                        role: "leader",
+                    },
+                    {
+                        userId: member.id,
+                        groupSlug: group.slug,
+                        role: "member",
+                    },
+                ]);
+                const leaderClient = await ctx.utils.clientForUser(leader);
+                const memberClient = await ctx.utils.clientForUser(member);
+
+                const asMember = await memberClient.api.groups[":slug"].$delete(
+                    {
+                        param: { slug: group.slug },
+                        query: { confirm: group.slug },
+                    },
+                );
+                expect(asMember.status).toBe(403);
+
+                const mistyped = await leaderClient.api.groups[":slug"].$delete(
+                    {
+                        param: { slug: group.slug },
+                        query: { confirm: "slette" },
+                    },
+                );
+                expect(mistyped.status).toBe(400);
+
+                const stillThere = await ctx.db.query.group.findFirst({
+                    where: eq(schema.group.slug, group.slug),
+                });
+                expect(stillThere).toBeDefined();
+
+                const deleted = await leaderClient.api.groups[":slug"].$delete({
+                    param: { slug: group.slug },
+                    query: { confirm: group.slug },
+                });
+                expect(deleted.status).toBe(204);
             },
             500_000,
         );

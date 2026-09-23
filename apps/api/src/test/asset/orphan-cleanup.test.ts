@@ -207,6 +207,7 @@ describe("images are deleted with the row that used them", () => {
 
             const deleted = await client.api.groups[":slug"].$delete({
                 param: { slug: "image-committee" },
+                query: { confirm: "image-committee" },
             });
             expect(deleted.status).toBe(204);
 

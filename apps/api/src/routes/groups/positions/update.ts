@@ -19,6 +19,7 @@ import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
 import {
+    GLOBAL_LIST_ON_GLOBAL_VERV,
     NOT_GROUP_SCOPABLE,
     positionSchema,
     updatePositionSchema,
@@ -134,6 +135,32 @@ export const updatePositionRoute = route().patch(
             });
         }
 
+        const nextGlobalPermissions =
+            body.globalPermissions ?? position.globalPermissions;
+        if (nextScope === "global" && nextGlobalPermissions.length > 0) {
+            throw new HTTPException(400, {
+                message: GLOBAL_LIST_ON_GLOBAL_VERV,
+            });
+        }
+        const addedGlobal = nextGlobalPermissions.filter(
+            (permission) => !position.globalPermissions.includes(permission),
+        );
+        if (
+            addedGlobal.length > 0 &&
+            !(await canGrantPositionPermissions(
+                ctx,
+                user.id,
+                groupSlug,
+                addedGlobal,
+                "global",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only grant TIHLDE-wide permissions you hold globally yourself",
+            });
+        }
+
         const [updated] = await db
             .update(schema.groupPosition)
             .set({
@@ -145,6 +172,9 @@ export const updatePositionRoute = route().patch(
                     permissions: body.permissions,
                 }),
                 ...(body.scope !== undefined && { scope: body.scope }),
+                ...(body.globalPermissions !== undefined && {
+                    globalPermissions: body.globalPermissions,
+                }),
             })
             .where(eq(schema.groupPosition.id, positionId))
             .returning();
