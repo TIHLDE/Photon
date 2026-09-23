@@ -160,7 +160,12 @@ export function SupportForm({
                                     <field.Label>
                                         Totalt søknadsbeløp (NOK)
                                     </field.Label>
-                                    <field.Number min={1} placeholder="0" />
+                                    <field.Number
+                                        min={1}
+                                        step={1}
+                                        format={{ maximumFractionDigits: 0 }}
+                                        placeholder="0"
+                                    />
                                     <field.Error />
                                 </field.Field>
                             )}
