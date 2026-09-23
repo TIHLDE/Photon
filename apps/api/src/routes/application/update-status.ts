@@ -41,7 +41,7 @@ export const updateStatusRoute = route().patch(
         .build(),
     requireAuth,
     // Cheap gate; the type-specific check happens once the row is loaded.
-    requireAccess({ permission: ALL_MANAGE_PERMISSIONS }),
+    requireAccess({ permission: ALL_MANAGE_PERMISSIONS, anyGroupScope: true }),
     validator("json", updateApplicationStatusSchema),
     async (c) => {
         const body = c.req.valid("json");

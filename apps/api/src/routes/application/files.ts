@@ -137,7 +137,7 @@ export const regeneratePdfRoute = route().post(
         .forbidden()
         .build(),
     requireAuth,
-    requireAccess({ permission: ALL_MANAGE_PERMISSIONS }),
+    requireAccess({ permission: ALL_MANAGE_PERMISSIONS, anyGroupScope: true }),
     async (c) => {
         const ctx = c.get("ctx");
         const user = c.get("user");
