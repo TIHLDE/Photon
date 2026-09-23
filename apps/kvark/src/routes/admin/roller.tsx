@@ -515,6 +515,8 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 )}
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+                                {/* `?? []`: kvark deploys on merge, the API on
+                                    release, so an older API may omit the field. */}
                                 {canManage
                                     ? summarizeExtraPermissionsByScope([
                                           {
@@ -526,13 +528,14 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                           },
                                           {
                                               permissions:
-                                                  position.globalPermissions,
+                                                  position.globalPermissions ??
+                                                  [],
                                               covered: coveredForGlobalScope,
                                           },
                                       ])
                                     : summarizePermissions([
                                           ...position.permissions,
-                                          ...position.globalPermissions,
+                                          ...(position.globalPermissions ?? []),
                                       ])}
                             </TableCell>
                             <TableCell>
