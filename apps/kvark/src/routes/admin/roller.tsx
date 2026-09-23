@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { isGroupScopablePermission } from "@photon/auth/rbac/registry";
+import { union } from "es-toolkit";
 import type { Group, GroupPosition } from "@tihlde/sdk";
 import {
     Accordion,
@@ -80,9 +82,9 @@ import {
     GROUP_SCOPABLE_DOMAINS,
     PERMISSION_DOMAINS,
     domainsOf,
-    summarizeExtraPermissions,
     summarizeExtraPermissionsByScope,
     summarizePermissions,
+    onlyGroupScopable,
     toggleDomain,
 } from "#/lib/permission-domains";
 import { initials } from "#/lib/utils";
@@ -175,14 +177,14 @@ const EMPTY_DOMAINS: Set<string> = new Set();
 function PermissionDomainCheckboxes({
     value,
     onChange,
-    domains = PERMISSION_DOMAINS,
+    scoped = false,
     lockedDomains,
     lockedHint,
 }: {
     value: string[];
     onChange: (next: string[]) => void;
-    /** Which domains to offer. Defaults to all of them. */
-    domains?: typeof PERMISSION_DOMAINS;
+    /** A list held for this group only: offers just the boxes that can apply to one group. */
+    scoped?: boolean;
     /**
      * Domains the group already grants every member at this scope. They render
      * ticked and disabled: the access is real, but it is edited one level up,
@@ -191,6 +193,7 @@ function PermissionDomainCheckboxes({
     lockedDomains?: Set<string>;
     lockedHint?: string;
 }) {
+    const domains = scoped ? GROUP_SCOPABLE_DOMAINS : PERMISSION_DOMAINS;
     const present = domainsOf(value);
     const hasRoot = value.includes("root");
     const anyLocked = domains.some((d) => lockedDomains?.has(d.slug));
@@ -221,6 +224,7 @@ function PermissionDomainCheckboxes({
                                             value,
                                             domain.slug,
                                             next === true,
+                                            { scoped },
                                         ),
                                     )
                                 }
@@ -511,16 +515,28 @@ function PositionsTable({ groupSlug }: { groupSlug: string }) {
                                 )}
                             </TableCell>
                             <TableCell className="max-w-72 truncate text-sm text-muted-foreground">
+                                {/* `?? []`: kvark deploys on merge, the API on
+                                    release, so an older API may omit the field. */}
                                 {canManage
-                                    ? summarizeExtraPermissions(
-                                          position.permissions,
-                                          position.scope === "global"
-                                              ? coveredForGlobalScope
-                                              : coveredForGroupScope,
-                                      )
-                                    : summarizePermissions(
-                                          position.permissions,
-                                      )}
+                                    ? summarizeExtraPermissionsByScope([
+                                          {
+                                              permissions: position.permissions,
+                                              covered:
+                                                  position.scope === "global"
+                                                      ? coveredForGlobalScope
+                                                      : coveredForGroupScope,
+                                          },
+                                          {
+                                              permissions:
+                                                  position.globalPermissions ??
+                                                  [],
+                                              covered: coveredForGlobalScope,
+                                          },
+                                      ])
+                                    : summarizePermissions([
+                                          ...position.permissions,
+                                          ...(position.globalPermissions ?? []),
+                                      ])}
                             </TableCell>
                             <TableCell>
                                 {canManage ? (
@@ -745,7 +761,7 @@ function MemberPermissionsDialog({
         try {
             await update.mutateAsync({
                 groupSlug,
-                permissions: scoped,
+                permissions: onlyGroupScopable(scoped),
                 globalPermissions: global,
             });
             onOpenChange(false);
@@ -771,7 +787,7 @@ function MemberPermissionsDialog({
                             <PermissionDomainCheckboxes
                                 value={scoped}
                                 onChange={setScoped}
-                                domains={GROUP_SCOPABLE_DOMAINS}
+                                scoped
                                 lockedDomains={globalDomains}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
@@ -986,7 +1002,7 @@ function LeaderPermissionsDialog({
         try {
             await update.mutateAsync({
                 groupSlug,
-                permissions,
+                permissions: onlyGroupScopable(permissions),
                 // Left out entirely for someone who cannot write it — sending
                 // the list back unchanged would 403 them out of saving the
                 // group-scoped half they may edit.
@@ -1029,6 +1045,7 @@ function LeaderPermissionsDialog({
                             <PermissionDomainCheckboxes
                                 value={permissions}
                                 onChange={setPermissions}
+                                scoped
                                 lockedDomains={covered}
                                 lockedHint="Avhukede felt er allerede gitt for hele TIHLDE nedenfor."
                             />
@@ -1103,6 +1120,10 @@ function PositionDialog({
     const [permissions, setPermissions] = useState<string[]>(
         position?.permissions ?? [],
     );
+    const [globalPermissions, setGlobalPermissions] = useState<string[]>(
+        position?.globalPermissions ?? [],
+    );
+    const canGrantGlobally = useCanGrantGlobally();
     // Flere kan dele ett verv (#646), så dialogen redigerer en liste.
     const [holders, setHolders] = useState<UserSearchOption[]>(
         (position?.holders ?? []).map((holder) => ({
@@ -1116,6 +1137,7 @@ function PositionDialog({
     // Follows the verv's own scope: a group-scoped verv is covered by both of
     // the group's lists, a global one only by the global list.
     const covered = useGroupCoveredDomains(groupSlug, true, scope);
+    const coveredGlobally = useGroupCoveredDomains(groupSlug, true, "global");
     const isPending =
         create.isPending ||
         update.isPending ||
@@ -1150,18 +1172,40 @@ function PositionDialog({
     async function handleSubmit() {
         setError(null);
         try {
+            // A global verv has one list, and it already reaches all of TIHLDE.
+            const data =
+                scope === "global"
+                    ? {
+                          name,
+                          permissions: union(permissions, globalPermissions),
+                          scope,
+                          globalPermissions: [],
+                      }
+                    : {
+                          name,
+                          permissions: onlyGroupScopable(permissions),
+                          scope,
+                          // Left out for someone who cannot write it, like the
+                          // leader dialog does.
+                          globalPermissions: canGrantGlobally
+                              ? globalPermissions
+                              : undefined,
+                      };
             let positionId: string;
             if (position) {
                 await update.mutateAsync({
                     groupSlug,
                     positionId: position.id,
-                    data: { name, permissions, scope },
+                    data,
                 });
                 positionId = position.id;
             } else {
                 const created = await create.mutateAsync({
                     groupSlug,
-                    data: { name, permissions, scope },
+                    data: {
+                        ...data,
+                        globalPermissions: data.globalPermissions ?? [],
+                    },
                 });
                 positionId = created.id;
             }
@@ -1196,6 +1240,7 @@ function PositionDialog({
                 setName("");
                 setScope("group");
                 setPermissions([]);
+                setGlobalPermissions([]);
                 setHolders([]);
             }
             setHolderQuery("");
@@ -1277,23 +1322,71 @@ function PositionDialog({
                             </Field>
                         ) : null}
                         <Field>
-                            <FieldLabel>Tilganger</FieldLabel>
+                            <FieldLabel>
+                                {scope === "group"
+                                    ? "Gjelder denne gruppen"
+                                    : "Tilganger"}
+                            </FieldLabel>
                             <PermissionDomainCheckboxes
                                 value={permissions}
                                 onChange={setPermissions}
+                                scoped={scope === "group"}
                                 lockedDomains={covered}
                                 lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
                             />
                         </Field>
+                        {scope === "group" && canGrantGlobally ? (
+                            <Field>
+                                <FieldLabel>Gjelder hele TIHLDE</FieldLabel>
+                                <PermissionDomainCheckboxes
+                                    value={globalPermissions}
+                                    onChange={setGlobalPermissions}
+                                    lockedDomains={coveredGlobally}
+                                    lockedHint="Avhukede felt er allerede gitt til alle medlemmer av gruppen."
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    For det som ikke hører til én gruppe, som
+                                    annonser. Vervet blir i gruppen. Du kan bare
+                                    gi bort tilganger du selv har.
+                                </p>
+                            </Field>
+                        ) : null}
+                        {scope === "group" &&
+                        !canGrantGlobally &&
+                        globalPermissions.length > 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                Gjelder også hele TIHLDE:{" "}
+                                {summarizePermissions(globalPermissions)}
+                            </p>
+                        ) : null}
                         <Field>
                             <label className="flex items-center gap-2">
                                 <Checkbox
                                     checked={scope === "global"}
-                                    onCheckedChange={(next) =>
-                                        setScope(
-                                            next === true ? "global" : "group",
-                                        )
-                                    }
+                                    onCheckedChange={(next) => {
+                                        if (next === true) {
+                                            setScope("global");
+                                            return;
+                                        }
+                                        // Back to the group: what cannot apply to
+                                        // one group moves to its TIHLDE-wide list
+                                        // instead of being dropped on save.
+                                        setScope("group");
+                                        setGlobalPermissions((current) =>
+                                            union(
+                                                current,
+                                                permissions.filter(
+                                                    (p) =>
+                                                        !isGroupScopablePermission(
+                                                            p,
+                                                        ),
+                                                ),
+                                            ),
+                                        );
+                                        setPermissions(
+                                            onlyGroupScopable(permissions),
+                                        );
+                                    }}
                                 />
                                 <span className="text-sm">
                                     Gjelder hele TIHLDE (ikke bare denne

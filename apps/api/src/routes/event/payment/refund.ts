@@ -3,10 +3,10 @@ import { and, eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
 import { HTTPException } from "hono/http-exception";
 import z from "zod";
+import { requireEventAccess } from "~/lib/event/access";
 import { reverseEventPayment } from "~/lib/event/payment";
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
-import { requireAccess } from "~/middleware/access";
 import { requireAuth } from "~/middleware/auth";
 import { refundEventPaymentResponseSchema } from "../schema";
 
@@ -22,7 +22,7 @@ export const refundEventPaymentRoute = route().post(
         summary: "Refund an event payment",
         operationId: "refundEventPayment",
         description:
-            "Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund'.",
+            "Reverse a completed payment with the payment provider and mark it as refunded. The full remaining refundable amount is returned to the payer. This does not cancel the registration — free the spot separately if that is wanted. Requires 'events:payments:refund', globally or for the arranging group.",
     })
         .schemaResponse({
             statusCode: 200,
@@ -30,7 +30,10 @@ export const refundEventPaymentRoute = route().post(
             description: "Payment refunded",
         })
         .badRequest({ description: "Invalid event or payment id" })
-        .forbidden({ description: "Requires events:payments:refund" })
+        .forbidden({
+            description:
+                "Requires events:payments:refund, globally or for the arranging group",
+        })
         .notFound({ description: "Payment not found on this event" })
         .response({
             statusCode: 409,
@@ -42,10 +45,10 @@ export const refundEventPaymentRoute = route().post(
         })
         .build(),
     requireAuth,
-    // Deliberately no ownership bypass: moving money requires an explicit
-    // grant (the finance role), not merely having created the event.
-    requireAccess({ permission: ["events:payments:refund"] }),
     validator("param", paramSchema),
+    // Deliberately no ownership bypass: moving money requires an explicit
+    // grant, not merely having created the event.
+    requireEventAccess({ permission: ["events:payments:refund"] }),
     async (c) => {
         const ctx = c.get("ctx");
         const { db } = ctx;

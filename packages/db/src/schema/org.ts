@@ -506,6 +506,13 @@ export const groupPosition = pgTable("group_position", {
     permissions: text("permissions").array().notNull().default([]),
     scope: groupPositionScope("scope").notNull().default("group"),
     /**
+     * Held across all of TIHLDE by a verv that otherwise belongs to its group,
+     * like NoKs Annonsør: the group assigns it, but job postings have no group
+     * to narrow to. Always empty on a `global` verv, whose `permissions`
+     * already apply everywhere.
+     */
+    globalPermissions: text("global_permissions").array().notNull().default([]),
+    /**
      * Marks this position as THE leader-verv for another group (a subgroup).
      * When that group's leadership changes, the new leader is auto-added to
      * HS and auto-assigned this position (see syncSubgroupLeadership in

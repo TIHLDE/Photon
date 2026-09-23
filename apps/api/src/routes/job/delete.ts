@@ -30,7 +30,6 @@ export const deleteRoute = route().delete(
     requireAccess({
         permission: ["jobs:delete", "jobs:manage"],
         scope: (c) => `job-${c.req.param("id")}`,
-        anyGroupScope: true,
         ownership: { param: "id", check: isJobCreator },
     }),
     async (c) => {

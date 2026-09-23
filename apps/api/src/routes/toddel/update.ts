@@ -31,7 +31,6 @@ export const updateRoute = route().patch(
     requireAuth,
     requireAccess({
         permission: ["toddel:update", "toddel:manage"],
-        anyGroupScope: true,
     }),
     validator("json", updateToddelSchema),
     async (c) => {

@@ -28,7 +28,6 @@ export const deleteRoute = route().delete(
     requireAuth,
     requireAccess({
         permission: ["toddel:delete", "toddel:manage"],
-        anyGroupScope: true,
     }),
     async (c) => {
         const { db } = c.get("ctx");

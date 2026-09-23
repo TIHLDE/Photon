@@ -29,7 +29,6 @@ export const updateRoute = route().patch(
     requireAuth,
     requireAccess({
         permission: ["banners:update", "banners:manage"],
-        anyGroupScope: true,
     }),
     validator("json", updateBannerSchema),
     async (c) => {

@@ -282,6 +282,69 @@ describe("Event payment administration", () => {
         );
 
         integrationTest(
+            "a refund grant for one group reaches that group's arrangementer only",
+            async ({ ctx }) => {
+                const own = await ctx.utils.createTestGroup({
+                    slug: "refund-own",
+                });
+                const other = await ctx.utils.createTestGroup({
+                    slug: "refund-other",
+                });
+                const { event: ownEvent, payment: ownPayment } =
+                    await seedPaidPayment(ctx);
+                await ctx.db
+                    .update(schema.event)
+                    .set({ organizerGroupSlug: own.slug })
+                    .where(eq(schema.event.id, ownEvent.id));
+
+                const otherEvent = await ctx.utils.createTestEvent({
+                    slug: "refund-other-event",
+                    isPaidEvent: true,
+                    priceMinor: 7500,
+                    organizerGroupSlug: other.slug,
+                });
+                const [otherPayment] = await ctx.db
+                    .insert(schema.eventPayment)
+                    .values({
+                        eventId: otherEvent.id,
+                        userId: (await ctx.utils.createTestUser()).id,
+                        amountMinor: 7500,
+                        providerPaymentId: "vipps-ref-other",
+                        status: "paid",
+                    })
+                    .returning();
+                mockCaptured(7500);
+
+                const treasurer = await ctx.utils.createTestUser();
+                await ctx.db.insert(schema.userPermission).values({
+                    userId: treasurer.id,
+                    permission: "events:payments:refund",
+                    scope: `group:${own.slug}`,
+                });
+                const client = await ctx.utils.clientForUser(treasurer);
+
+                const refused = await client.api.event[":eventId"].payments[
+                    ":paymentId"
+                ].refund.$post({
+                    param: {
+                        eventId: otherEvent.id,
+                        paymentId: otherPayment?.id ?? "",
+                    },
+                });
+                expect(refused.status).toBe(403);
+                expect(vi.mocked(vipps.refundPayment)).not.toHaveBeenCalled();
+
+                const allowed = await client.api.event[":eventId"].payments[
+                    ":paymentId"
+                ].refund.$post({
+                    param: { eventId: ownEvent.id, paymentId: ownPayment.id },
+                });
+                expect(allowed.status).toBe(200);
+            },
+            500_000,
+        );
+
+        integrationTest(
             "is idempotent — a second refund is a 409 and does not call the provider",
             async ({ ctx }) => {
                 const { event, payment } = await seedPaidPayment(ctx, {

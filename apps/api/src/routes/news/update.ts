@@ -39,7 +39,6 @@ export const updateRoute = route().patch(
     requireAccess({
         permission: ["news:update", "news:manage"],
         scope: (c) => `news-${c.req.param("id")}`,
-        anyGroupScope: true,
         ownership: { param: "id", check: isNewsCreator },
     }),
     validator("json", updateNewsSchema),

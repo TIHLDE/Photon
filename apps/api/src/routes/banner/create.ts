@@ -26,7 +26,6 @@ export const createRoute = route().post(
     requireAuth,
     requireAccess({
         permission: ["banners:create", "banners:manage"],
-        anyGroupScope: true,
     }),
     validator("json", createBannerSchema),
     async (c) => {

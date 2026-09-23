@@ -1,6 +1,8 @@
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { validator } from "hono-openapi";
+import z from "zod";
 import {
     getGroupMembers,
     isSubgroupType,
@@ -20,11 +22,14 @@ export const deleteRoute = route().delete(
         summary: "Delete a group",
         operationId: "deleteGroup",
         description:
-            "Delete a group by its slug. Requires being a group leader OR having 'groups:delete' permission (globally or scoped to this group). This action is irreversible and will remove all associated data, including memberships and fines.",
+            "Delete a group by its slug. Requires being the group's leader OR holding 'groups:delete' for all of TIHLDE, and repeating the slug in `confirm`. This action is irreversible and will remove all associated data, including memberships, fines, laws, forms and verv.",
     })
         .response({
             statusCode: 204,
             description: "Group successfully deleted",
+        })
+        .badRequest({
+            description: "`confirm` does not repeat the group's slug",
         })
         .forbidden({
             description:
@@ -40,8 +45,22 @@ export const deleteRoute = route().delete(
         scope: (c) => `group:${c.req.param("slug")}`,
         ownership: { param: "slug", check: isGroupLeader },
     }),
+    validator(
+        "query",
+        z.object({
+            confirm: z.string().meta({
+                description:
+                    "The group's slug, typed out again. Deleting cascades over memberships, fines, laws, forms and verv, so it must never happen by accident.",
+            }),
+        }),
+    ),
     async (c) => {
         const slug = c.req.param("slug");
+        if (c.req.valid("query").confirm !== slug) {
+            throw new HTTPException(400, {
+                message: `Type the group's slug "${slug}" in confirm to delete it`,
+            });
+        }
         const ctx = c.get("ctx");
         const { db } = ctx;
 

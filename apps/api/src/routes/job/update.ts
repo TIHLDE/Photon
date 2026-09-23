@@ -32,7 +32,6 @@ export const updateRoute = route().patch(
     requireAccess({
         permission: ["jobs:update", "jobs:manage"],
         scope: (c) => `job-${c.req.param("id")}`,
-        anyGroupScope: true,
         ownership: { param: "id", check: isJobCreator },
     }),
     validator("json", updateJobSchema),

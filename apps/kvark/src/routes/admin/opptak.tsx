@@ -40,7 +40,7 @@ import { requireAdminSection } from "#/lib/admin-access";
 import { uploadAssetMutation } from "#/api/queries/assets";
 import { assetPublicUrl } from "#/lib/assets";
 import { AdminPageHeader } from "#/components/admin-page-header";
-import { useAnyScopePermission } from "#/hooks/use-permission";
+import { usePermission } from "#/hooks/use-permission";
 import {
     activateContractMutation,
     createContractMutation,
@@ -66,14 +66,8 @@ export const Route = createFileRoute("/admin/opptak")({
 function OpptakAdminPage() {
     const { data: contracts } = useSuspenseQuery(getContractListQuery());
     const activateContract = useMutation(activateContractMutation);
-    const canUpload = useAnyScopePermission([
-        "contracts:create",
-        "contracts:manage",
-    ]);
-    const canActivate = useAnyScopePermission([
-        "contracts:update",
-        "contracts:manage",
-    ]);
+    const canUpload = usePermission(["contracts:create", "contracts:manage"]);
+    const canActivate = usePermission(["contracts:update", "contracts:manage"]);
 
     return (
         <Stagger

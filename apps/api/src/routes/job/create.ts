@@ -24,12 +24,8 @@ export const createRoute = route().post(
         .badRequest({ description: "Invalid input" })
         .build(),
     requireAuth,
-    // A job posting has no group of its own, so there is no scope to check
-    // against — a verv like NOKs "Annonsør" grants `jobs:create@group:nok`,
-    // and that is exactly the arrangement this endpoint should honour.
     requireAccess({
         permission: ["jobs:create", "jobs:manage"],
-        anyGroupScope: true,
     }),
     validator("json", createJobSchema),
     async (c) => {

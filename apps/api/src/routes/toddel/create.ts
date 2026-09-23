@@ -34,7 +34,6 @@ export const createRoute = route().post(
     requireAuth,
     requireAccess({
         permission: ["toddel:create", "toddel:manage"],
-        anyGroupScope: true,
     }),
     validator("json", createToddelSchema),
     async (c) => {

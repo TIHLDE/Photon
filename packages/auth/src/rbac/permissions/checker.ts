@@ -24,6 +24,7 @@ import {
     matchesPermission,
     parsePermission,
 } from "../permission-parser";
+import { isGroupScopablePermission } from "./registry";
 
 type DbCtx = { db: NodePgDatabase<DbSchema> };
 
@@ -34,7 +35,7 @@ type DbCtx = { db: NodePgDatabase<DbSchema> };
 /**
  * Every way a user can hold a permission, as one query.
  *
- * The six branches were four separate round-trips until we measured what
+ * The branches were four separate round-trips until we measured what
  * `get-session` actually costs: seven queries per call, each holding its own
  * pool connection, four of them from here. The work itself is sub-millisecond
  * and every branch is index-covered — it was the round-trips that added up, so
@@ -86,6 +87,18 @@ function permissionRows(ctx: DbCtx, userId: string) {
                 when ${groupPosition.scope} = 'global' then cast(${GLOBAL_SCOPE} as text)
                 else 'group:' || ${groupPosition.groupSlug}
             end`.as("scope"),
+        })
+        .from(groupPositionHolder)
+        .innerJoin(
+            groupPosition,
+            eq(groupPositionHolder.positionId, groupPosition.id),
+        )
+        .where(eq(groupPositionHolder.userId, userId));
+
+    const fromPositionsGlobal = db
+        .select({
+            permissions: groupPosition.globalPermissions,
+            scope: globalScope.as("scope"),
         })
         .from(groupPositionHolder)
         .innerJoin(
@@ -162,6 +175,7 @@ function permissionRows(ctx: DbCtx, userId: string) {
         fromRoles,
         fromDirect,
         fromPositions,
+        fromPositionsGlobal,
         fromMembership,
         fromLeadership,
         fromLeadershipGlobal,
@@ -176,6 +190,9 @@ function permissionRows(ctx: DbCtx, userId: string) {
  * Everything a group grants is read live from the membership, so a grant
  * cannot outlive the job: leave the group, or step down as leader, and it is
  * gone on the next check.
+ *
+ * A grant held for one group only survives if it can mean something there —
+ * see {@link isGroupScopablePermission}.
  */
 export async function getUserPermissions(
     ctx: DbCtx,
@@ -184,7 +201,13 @@ export async function getUserPermissions(
     const rows = await permissionRows(ctx, userId);
 
     return rows.flatMap((row) =>
-        (row.permissions ?? []).map((p) => formatPermission(p, row.scope)),
+        (row.permissions ?? [])
+            .filter(
+                (p) =>
+                    !row.scope.startsWith("group:") ||
+                    isGroupScopablePermission(p),
+            )
+            .map((p) => formatPermission(p, row.scope)),
     );
 }
 

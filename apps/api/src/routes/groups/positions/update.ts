@@ -1,3 +1,4 @@
+import { isGroupScopablePermission } from "@photon/auth/rbac";
 import { schema } from "@photon/db";
 import { eq } from "drizzle-orm";
 import { validator } from "hono-openapi";
@@ -17,7 +18,12 @@ import {
 import { describeRoute } from "~/lib/openapi";
 import { route } from "~/lib/route";
 import { requireAuth } from "~/middleware/auth";
-import { positionSchema, updatePositionSchema } from "./schema";
+import {
+    GLOBAL_LIST_ON_GLOBAL_VERV,
+    NOT_GROUP_SCOPABLE,
+    positionSchema,
+    updatePositionSchema,
+} from "./schema";
 
 export const updatePositionRoute = route().patch(
     "/:groupSlug/positions/:positionId",
@@ -93,6 +99,22 @@ export const updatePositionRoute = route().patch(
         // measured — everything else is already held by this very holder.
         const nextPermissions = body.permissions ?? position.permissions;
         const nextScope = body.scope ?? position.scope;
+
+        // Checked only when the list or scope changes, so renaming a verv that
+        // predates the rule does not force a cleanup first.
+        if (
+            nextScope === "group" &&
+            (body.permissions !== undefined || body.scope !== undefined)
+        ) {
+            const inert = nextPermissions.filter(
+                (permission) => !isGroupScopablePermission(permission),
+            );
+            if (inert.length > 0) {
+                throw new HTTPException(400, {
+                    message: `${NOT_GROUP_SCOPABLE}: ${inert.join(", ")}`,
+                });
+            }
+        }
         const added = addedBeyond(
             nextPermissions,
             await permissionsFromLinkedGroup(ctx, position),
@@ -113,6 +135,32 @@ export const updatePositionRoute = route().patch(
             });
         }
 
+        const nextGlobalPermissions =
+            body.globalPermissions ?? position.globalPermissions;
+        if (nextScope === "global" && nextGlobalPermissions.length > 0) {
+            throw new HTTPException(400, {
+                message: GLOBAL_LIST_ON_GLOBAL_VERV,
+            });
+        }
+        const addedGlobal = nextGlobalPermissions.filter(
+            (permission) => !position.globalPermissions.includes(permission),
+        );
+        if (
+            addedGlobal.length > 0 &&
+            !(await canGrantPositionPermissions(
+                ctx,
+                user.id,
+                groupSlug,
+                addedGlobal,
+                "global",
+            ))
+        ) {
+            throw new HTTPException(403, {
+                message:
+                    "You can only grant TIHLDE-wide permissions you hold globally yourself",
+            });
+        }
+
         const [updated] = await db
             .update(schema.groupPosition)
             .set({
@@ -124,6 +172,9 @@ export const updatePositionRoute = route().patch(
                     permissions: body.permissions,
                 }),
                 ...(body.scope !== undefined && { scope: body.scope }),
+                ...(body.globalPermissions !== undefined && {
+                    globalPermissions: body.globalPermissions,
+                }),
             })
             .where(eq(schema.groupPosition.id, positionId))
             .returning();

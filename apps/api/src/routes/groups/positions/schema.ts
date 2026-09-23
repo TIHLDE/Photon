@@ -1,4 +1,4 @@
-import { PERMISSIONS_SET } from "@photon/auth/rbac";
+import { PERMISSIONS_SET, isGroupScopablePermission } from "@photon/auth/rbac";
 import z from "zod";
 import { Schema } from "~/lib/openapi";
 
@@ -19,25 +19,69 @@ const permissionListSchema = z
             "Permissions granted to holders of this position. Must be valid permission names from the registry.",
     });
 
+export const GLOBAL_LIST_ON_GLOBAL_VERV =
+    "A global verv already applies across TIHLDE; put the permissions in its main list";
+
+export const NOT_GROUP_SCOPABLE =
+    "Only applies across all of TIHLDE and cannot be granted for a single group";
+
+const groupPermissionListSchema = z
+    .array(
+        z
+            .string()
+            .max(64)
+            .refine((p) => PERMISSIONS_SET.has(p), {
+                message: "Unknown permission",
+            })
+            .refine(isGroupScopablePermission, {
+                message: NOT_GROUP_SCOPABLE,
+            }),
+    )
+    .max(100);
+
 export const createPositionSchema = Schema(
     "CreateGroupPosition",
-    z.object({
-        name: z
-            .string()
-            .min(1)
-            .max(128)
-            .meta({ description: "Position name, e.g. 'Økonomiansvarlig'" }),
-        description: z
-            .string()
-            .max(1000)
-            .optional()
-            .meta({ description: "Optional description of the position" }),
-        permissions: permissionListSchema,
-        scope: z.enum(["group", "global"]).default("group").meta({
-            description:
-                "Whether permissions apply only within this group, or globally (global requires roles:create)",
+    z
+        .object({
+            name: z.string().min(1).max(128).meta({
+                description: "Position name, e.g. 'Økonomiansvarlig'",
+            }),
+            description: z
+                .string()
+                .max(1000)
+                .optional()
+                .meta({ description: "Optional description of the position" }),
+            permissions: permissionListSchema,
+            scope: z.enum(["group", "global"]).default("group").meta({
+                description:
+                    "Whether permissions apply only within this group, or globally (global requires roles:create)",
+            }),
+            globalPermissions: permissionListSchema.default([]).meta({
+                description:
+                    "Held across all of TIHLDE by holders of this group-scoped verv, e.g. job postings for NoKs Annonsør. Requires holding each of them globally yourself. Must be empty on a global verv.",
+            }),
+        })
+        .superRefine((body, issue) => {
+            if (body.scope === "global") {
+                if (body.globalPermissions.length > 0) {
+                    issue.addIssue({
+                        code: "custom",
+                        path: ["globalPermissions"],
+                        message: GLOBAL_LIST_ON_GLOBAL_VERV,
+                    });
+                }
+                return;
+            }
+            body.permissions.forEach((permission, index) => {
+                if (!isGroupScopablePermission(permission)) {
+                    issue.addIssue({
+                        code: "custom",
+                        path: ["permissions", index],
+                        message: NOT_GROUP_SCOPABLE,
+                    });
+                }
+            });
         }),
-    }),
 );
 
 export const updatePositionSchema = Schema(
@@ -47,15 +91,19 @@ export const updatePositionSchema = Schema(
         description: z.string().max(1000).nullable().optional(),
         permissions: permissionListSchema.optional(),
         scope: z.enum(["group", "global"]).optional(),
+        globalPermissions: permissionListSchema.optional().meta({
+            description:
+                "Held across all of TIHLDE by holders of this group-scoped verv, e.g. job postings for NoKs Annonsør. Requires holding each of them globally yourself. Must be empty on a global verv.",
+        }),
     }),
 );
 
 export const updateLeaderPermissionsSchema = Schema(
     "UpdateGroupLeaderPermissions",
     z.object({
-        permissions: permissionListSchema.meta({
+        permissions: groupPermissionListSchema.meta({
             description:
-                "Permissions the group's leader holds, scoped to this group. Replaces the existing list.",
+                "Permissions the group's leader holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted.",
         }),
         globalPermissions: permissionListSchema.optional().meta({
             description:
@@ -71,9 +119,9 @@ export const updateLeaderPermissionsSchema = Schema(
 export const updateMemberPermissionsSchema = Schema(
     "UpdateGroupMemberPermissions",
     z.object({
-        permissions: permissionListSchema.meta({
+        permissions: groupPermissionListSchema.meta({
             description:
-                "Permissions every member of this group holds, scoped to this group. Replaces the existing list.",
+                "Permissions every member of this group holds, scoped to this group. Replaces the existing list. Only permissions that can apply to a single group are accepted.",
         }),
         globalPermissions: permissionListSchema.meta({
             description:
@@ -115,6 +163,7 @@ export const positionSchema = Schema(
         description: z.string().nullable(),
         permissions: z.array(z.string()),
         scope: z.enum(["group", "global"]),
+        globalPermissions: z.array(z.string()),
         linkedGroupSlug: z.string().nullable().meta({
             description:
                 "If set, this position is held automatically by the leader of the given subgroup and cannot be assigned manually.",

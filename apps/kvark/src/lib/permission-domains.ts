@@ -1,4 +1,7 @@
-import { PERMISSIONS } from "@photon/auth/rbac/registry";
+import {
+    PERMISSIONS,
+    isGroupScopablePermission,
+} from "@photon/auth/rbac/registry";
 import { union } from "es-toolkit";
 
 /**
@@ -23,15 +26,6 @@ export type PermissionDomain = {
     /** Stable key. Not a registry prefix — see the note above. */
     slug: string;
     label: string;
-    /**
-     * Whether granting this scoped to a single group means anything.
-     *
-     * True only where the rows carry an owning group AND the API narrows
-     * against it. Everything else would pass the coarse gate and then behave
-     * exactly like a global grant, so it is offered only under "hele TIHLDE"
-     * rather than as a checkbox that quietly lies.
-     */
-    groupScopable: boolean;
     /** Exactly the permissions this box grants. */
     permissions: readonly string[];
 };
@@ -93,147 +87,136 @@ export const PERMISSION_DOMAINS: PermissionDomain[] = [
     {
         slug: "events",
         label: "Arrangementer",
-        groupScopable: true,
         permissions: EVENT_PERMISSIONS,
     },
     {
         slug: "events-strikes",
         label: "Prikker",
-        // Prikker on your own group's arrangementer follow from arranging
-        // them, so a group-scoped box here would only repeat access the group
-        // already has. What is left is the cross-group job — the prikkeliste
-        // for all of TIHLDE — and that is global by nature.
-        groupScopable: false,
         permissions: EVENT_STRIKES,
     },
     {
         slug: "events-refund",
         label: "Refundering",
-        // The refund route accepts a global grant only, so offering this per
-        // group would be a checkbox that saves and then does nothing.
-        groupScopable: false,
         permissions: [EVENT_REFUND],
     },
     {
         slug: "roles",
         label: "Tilganger",
-        groupScopable: true,
         permissions: under("roles"),
     },
     {
         slug: "forms",
         label: "Spørreskjema",
-        groupScopable: true,
         permissions: under("forms"),
     },
     {
         slug: "applications-expense",
         label: "Utlegg",
-        groupScopable: true,
         permissions: under("applications:expense"),
     },
     {
         slug: "applications-support",
         label: "Støtte til HS",
-        groupScopable: true,
         permissions: under("applications:support"),
     },
     {
         slug: "applications-sports-support",
         label: "Søknader – idrettsstøtte",
-        groupScopable: false,
         permissions: under("applications:sports-support"),
     },
     {
         slug: "applications-hs-case",
         label: "Saker til HS",
-        groupScopable: false,
         permissions: under("applications:hs-case"),
     },
     {
         slug: "applications-all",
         label: "Søknader – alle typer",
-        groupScopable: false,
         permissions: ["applications:view", "applications:manage"],
     },
     {
         slug: "groups",
         label: "Grupper",
-        groupScopable: false,
         permissions: under("groups"),
     },
     {
         slug: "news",
         label: "Nyheter",
-        groupScopable: false,
         permissions: under("news"),
     },
     {
         slug: "jobs",
         label: "Annonser",
-        groupScopable: false,
         permissions: under("jobs"),
     },
     {
         slug: "contracts",
         label: "Kontrakter",
-        groupScopable: false,
         permissions: under("contracts"),
     },
     {
         slug: "banners",
         label: "Bannere",
-        groupScopable: false,
         permissions: under("banners"),
     },
     {
         slug: "toddel",
         label: "Töddel",
-        groupScopable: false,
         permissions: under("toddel"),
     },
     {
         slug: "galleries",
         label: "Galleri",
-        groupScopable: false,
         permissions: under("galleries"),
     },
     {
         slug: "feedback",
         label: "Tilbakemeldinger",
-        groupScopable: false,
         permissions: under("feedback"),
     },
     {
         slug: "company-contact",
         label: "Kontaktskjema",
-        groupScopable: false,
         permissions: under("company-contact"),
     },
     {
         slug: "users",
         label: "Brukere",
-        groupScopable: false,
         permissions: under("users"),
     },
     {
         slug: "api-keys",
         label: "API-nøkler",
-        groupScopable: false,
         permissions: under("api-keys"),
     },
     {
         slug: "oauth-clients",
         label: "OAuth-klienter",
-        groupScopable: false,
         permissions: under("oauth-clients"),
     },
 ];
 
-/** The boxes a group can hand to its members scoped to itself. */
+/**
+ * The part of a box that means something for a single group. "Grupper" for
+ * one group is editing that group and its members — creating or deleting
+ * groups can only be done for all of TIHLDE.
+ */
+export function scopedPermissionsOf(domain: PermissionDomain): string[] {
+    return domain.permissions.filter(isGroupScopablePermission);
+}
+
+/** The boxes that can be handed out for a single group. */
 export const GROUP_SCOPABLE_DOMAINS = PERMISSION_DOMAINS.filter(
-    (d) => d.groupScopable,
+    (d) => scopedPermissionsOf(d).length > 0,
 );
+
+/**
+ * Drops what cannot apply to a single group from a group-scoped list. Such
+ * leftovers grant nothing, and the API refuses to save them.
+ */
+export function onlyGroupScopable(permissions: string[]): string[] {
+    return permissions.filter(isGroupScopablePermission);
+}
 
 const DOMAIN_BY_SLUG = new Map(PERMISSION_DOMAINS.map((d) => [d.slug, d]));
 const DOMAIN_LABELS = new Map(PERMISSION_DOMAINS.map((d) => [d.slug, d.label]));
@@ -255,17 +238,24 @@ export function domainsOf(permissions: string[]): Set<string> {
     return slugs;
 }
 
-/** Toggle a whole box on/off in a permission list. */
+/**
+ * Toggle a whole box on/off in a permission list. A group-scoped list only
+ * receives the part of the box that can apply to a single group.
+ */
 export function toggleDomain(
     current: string[],
     domainSlug: string,
     checked: boolean,
+    options: { scoped?: boolean } = {},
 ): string[] {
     const domain = DOMAIN_BY_SLUG.get(domainSlug);
     if (!domain) return current;
 
     if (checked) {
-        return union(current, domain.permissions);
+        return union(
+            current,
+            options.scoped ? scopedPermissionsOf(domain) : domain.permissions,
+        );
     }
     // Removes exactly this box's permissions, so unticking "Arrangementer"
     // cannot take "Refusjon" with it just because they share a prefix.
