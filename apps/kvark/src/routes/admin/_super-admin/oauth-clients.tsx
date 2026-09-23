@@ -523,7 +523,7 @@ function CreateClientDialog({
                     token_endpoint_auth_method: isPublic
                         ? "none"
                         : "client_secret_basic",
-                    type: "web",
+                    type: isPublic ? "native" : "web",
                 },
             });
             onCreated(data);
