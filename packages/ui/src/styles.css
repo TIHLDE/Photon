@@ -286,9 +286,8 @@
    `@media (hover: hover)` is mandatory on hand-written rules. Tailwind wraps
    its own `hover:` utilities in this guard, but plain CSS gets no such help,
    and on a touch device an unguarded `:hover` sticks after a tap until the
-   user taps somewhere else. */
-:is(a, button)[data-slot="card"],
-[data-slot="list-card"] {
+   user taps somewhere else.*/
+:is(a, button)[data-slot="card"] {
     transition:
         translate 0.2s var(--ease-out),
         box-shadow 0.2s var(--ease-out);
@@ -299,8 +298,7 @@
        stack of `var(--tw-*)` slots. Feeding the elevation through `--tw-shadow`
        layers it *under* that ring; setting `box-shadow` here would drop the
        ring instead. */
-    :is(a, button)[data-slot="card"]:hover,
-    [data-slot="list-card"]:hover {
+    :is(a, button)[data-slot="card"]:hover {
         translate: 0 -2px;
         --tw-shadow: 0 10px 24px -14px oklch(0 0 0 / 0.45);
     }
@@ -308,10 +306,40 @@
 
 /* Press settles the card back down, faster than it rose — the system
    responding should always outpace the user deciding. */
-:is(a, button)[data-slot="card"]:active,
-[data-slot="list-card"]:active {
+:is(a, button)[data-slot="card"]:active {
     translate: 0 0;
     transition-duration: 0.1s;
+}
+
+/* ── List rows ──────────────────────────────────────────────────────────── */
+[data-slot="list-card"] {
+    padding-block: 0.25rem;
+}
+
+[data-slot="list-card"] + [data-slot="list-card"],
+li + li > [data-slot="list-card"] {
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
+}
+
+[data-slot="list-card"] h3 {
+    transition: color 0.15s var(--ease-out);
+}
+
+[data-slot="list-card"] img {
+    transition: filter 0.15s var(--ease-out);
+}
+
+@media (hover: hover) {
+    [data-slot="list-card"]:hover h3 {
+        color: var(--color-link);
+    }
+
+    /* Darken rather than fade: lowering opacity lets the pale `bg-muted`
+       frame wash through and reads as a light haze over the picture. */
+    [data-slot="list-card"]:hover img {
+        filter: brightness(0.8);
+    }
 }
 
 @layer base {

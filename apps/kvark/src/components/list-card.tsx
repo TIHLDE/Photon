@@ -35,15 +35,11 @@ export function ListCard({
     return useRender({
         render: render ?? <div />,
         props: {
-            // Hover/press motion for this row lives in @tihlde/ui's styles.css
-            // and is keyed off this slot, so it stays with the rest of the
-            // motion system instead of as animation classes in this app.
             "data-slot": "list-card",
-            // Same card surface as `Card` from @tihlde/ui — filled, rounded and
-            // outlined with `ring-card-border` — so an event or job row reads as
-            // a card next to the news cards instead of a borderless list row.
-            className:
-                "flex flex-col gap-3 overflow-hidden rounded-2xl bg-card ring-1 ring-card-border sm:flex-row sm:gap-3 sm:p-2 sm:transition-colors sm:hover:bg-muted/50",
+            // A flat row, not a card: no surface or outline. Stacked rows are
+            // separated by a hairline drawn in @tihlde/ui's styles.css, keyed
+            // off this slot.
+            className: "flex flex-col gap-3 sm:flex-row",
             children: (
                 <>
                     {/*
@@ -52,7 +48,7 @@ export function ListCard({
                      * making covers taller on cards with more meta rows.
                      */}
                     <div
-                        className={`relative ${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full shrink-0 overflow-hidden rounded-t-2xl bg-muted sm:w-52 sm:self-start sm:rounded-lg`}
+                        className={`relative ${IMAGE_PRESETS["cover-wide"].aspectClassName} w-full shrink-0 overflow-hidden rounded-lg bg-muted sm:w-52 sm:self-start`}
                     >
                         <img
                             {...assetImageProps(
@@ -70,7 +66,7 @@ export function ListCard({
                             </Badge>
                         ) : null}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-2 px-3 pb-3 sm:p-0">
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
                         {/*
                          * `line-clamp-1` over `truncate`: nowrap would let a
                          * long title set the row's max-content width and push
