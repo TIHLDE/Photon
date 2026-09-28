@@ -311,34 +311,31 @@
     transition-duration: 0.1s;
 }
 
-/* ── List rows ──────────────────────────────────────────────────────────── */
+/* ── List rows ────────────────────────────────────────────────────────────
+   `list-card` rows (events, jobs) are flat at rest — no surface, no dividers —
+   and a light card surface appears behind the row on hover. The padding gives
+   that surface room around the content, and the negative inline margin lets it
+   bleed outwards so the image and text still line up with the page.
+
+   Stacked rows touch, so the pointer never falls into a dead gap between two
+   of them. The list's own `gap` is zeroed here rather than in every list in
+   the app, and the rows' vertical padding carries that spacing instead: 0.875rem
+   is the 0.5rem inset plus half of the `gap-3` the lists used. Unlayered, so it
+   wins over the `gap-*` utility on the list. */
+:has(> [data-slot="list-card"], > li > [data-slot="list-card"]) {
+    row-gap: 0;
+}
+
 [data-slot="list-card"] {
-    padding-block: 0.25rem;
-}
-
-[data-slot="list-card"] + [data-slot="list-card"],
-li + li > [data-slot="list-card"] {
-    border-top: 1px solid var(--color-border);
-    padding-top: 1rem;
-}
-
-[data-slot="list-card"] h3 {
-    transition: color 0.15s var(--ease-out);
-}
-
-[data-slot="list-card"] img {
-    transition: filter 0.15s var(--ease-out);
+    margin-inline: -0.5rem;
+    padding: 0.875rem 0.5rem;
+    border-radius: var(--radius-xl);
+    transition: background-color 0.15s var(--ease-out);
 }
 
 @media (hover: hover) {
-    [data-slot="list-card"]:hover h3 {
-        color: var(--color-link);
-    }
-
-    /* Darken rather than fade: lowering opacity lets the pale `bg-muted`
-       frame wash through and reads as a light haze over the picture. */
-    [data-slot="list-card"]:hover img {
-        filter: brightness(0.8);
+    [data-slot="list-card"]:hover {
+        background-color: var(--color-muted);
     }
 }
 
