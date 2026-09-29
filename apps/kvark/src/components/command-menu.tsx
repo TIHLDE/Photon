@@ -88,6 +88,16 @@ const SECTIONS: CommandSection[] = [
                 action: { kind: "navigate", link: { to: "/grupper" } },
             },
             {
+                id: "interest-groups",
+                label: "Interessegrupper",
+                icon: <UsersIcon />,
+                keywords: ["interest groups"],
+                action: {
+                    kind: "navigate",
+                    link: { to: "/interessegrupper" },
+                },
+            },
+            {
                 id: "jobs",
                 label: "Stillinger",
                 icon: <BriefcaseIcon />,

@@ -51,6 +51,12 @@ export function useSiteNavItems(
                                 "Få oversikt over alle verv og grupper",
                         },
                         {
+                            kind: "internal",
+                            label: "Interessegrupper",
+                            link: linkOptions({ to: "/interessegrupper" }),
+                            description: "Se alle interessegrupper",
+                        },
+                        {
                             kind: "external",
                             label: "Fondet",
                             href: "https://fondet.tihlde.org",
