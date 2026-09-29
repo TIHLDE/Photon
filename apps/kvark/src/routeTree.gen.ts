@@ -15,6 +15,7 @@ import { Route as DevRouteImport } from './routes/_dev'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSplatRouteImport } from './routes/_app/$'
+import { Route as AppInteressegrupperRouteImport } from './routes/_app/interessegrupper'
 import { Route as AppKokebokRouteImport } from './routes/_app/kokebok'
 import { Route as AppNyStudentRouteImport } from './routes/_app/ny-student'
 import { Route as AppOpptakRouteImport } from './routes/_app/opptak'
@@ -107,6 +108,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppSplatRoute = AppSplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppInteressegrupperRoute = AppInteressegrupperRouteImport.update({
+  id: '/interessegrupper',
+  path: '/interessegrupper',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKokebokRoute = AppKokebokRouteImport.update({
@@ -449,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/$': typeof AppSplatRoute
+  '/interessegrupper': typeof AppInteressegrupperRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
@@ -518,6 +525,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/$': typeof AppSplatRoute
+  '/interessegrupper': typeof AppInteressegrupperRoute
   '/kokebok': typeof AppKokebokRouteWithChildren
   '/ny-student': typeof AppNyStudentRoute
   '/opptak': typeof AppOpptakRoute
@@ -590,6 +598,7 @@ export interface FileRoutesById {
   '/_dev': typeof DevRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/_app/$': typeof AppSplatRoute
+  '/_app/interessegrupper': typeof AppInteressegrupperRoute
   '/_app/kokebok': typeof AppKokebokRouteWithChildren
   '/_app/ny-student': typeof AppNyStudentRoute
   '/_app/opptak': typeof AppOpptakRoute
@@ -664,6 +673,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$'
+    | '/interessegrupper'
     | '/kokebok'
     | '/ny-student'
     | '/opptak'
@@ -733,6 +743,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/interessegrupper'
     | '/kokebok'
     | '/ny-student'
     | '/opptak'
@@ -804,6 +815,7 @@ export interface FileRouteTypes {
     | '/_dev'
     | '/admin'
     | '/_app/$'
+    | '/_app/interessegrupper'
     | '/_app/kokebok'
     | '/_app/ny-student'
     | '/_app/opptak'
@@ -922,6 +934,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof AppSplatRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/interessegrupper': {
+      id: '/_app/interessegrupper'
+      path: '/interessegrupper'
+      fullPath: '/interessegrupper'
+      preLoaderRoute: typeof AppInteressegrupperRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/kokebok': {
@@ -1483,6 +1502,7 @@ const AppProfilIdRouteWithChildren = AppProfilIdRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute
+  AppInteressegrupperRoute: typeof AppInteressegrupperRoute
   AppKokebokRoute: typeof AppKokebokRouteWithChildren
   AppNyStudentRoute: typeof AppNyStudentRoute
   AppOpptakRoute: typeof AppOpptakRoute
@@ -1513,6 +1533,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
+  AppInteressegrupperRoute: AppInteressegrupperRoute,
   AppKokebokRoute: AppKokebokRouteWithChildren,
   AppNyStudentRoute: AppNyStudentRoute,
   AppOpptakRoute: AppOpptakRoute,
