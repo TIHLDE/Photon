@@ -1,7 +1,7 @@
 # tihlde-wrapped — feature rules
 
 Applies to the `tihlde-wrapped` feature and every branch built for it.
-Delete this file once the feature is fully merged into `main`.
+Delete this file in the final `tihlde-wrapped` → `main` pull request.
 
 ## The feature
 
@@ -26,34 +26,36 @@ Everything reaching `main` is reviewed against the root `CLAUDE.md` and `apps/kv
 Never hardcode UI: use the `@tihlde/ui` component (`Button`, `Card`, ...). If the feature genuinely
 needs a new primitive, add it to `@tihlde/ui`, not to the app.
 
-## Stacked pull requests
+## Branching and pull requests
 
-The feature never lands as one large PR. It ships as a stack of small PRs via `gh stack`
-(<https://docs.github.com/en/pull-requests/how-tos/stacked-pull-requests>), each a discrete,
-reviewable change targeting the branch below it. The bottom one targets `main`.
+`tihlde-wrapped` is the feature's integration branch. Nobody commits to it directly.
 
-- `tihlde-wrapped` is the bottom layer: foundations (schema, migrations, shared types).
-  Higher layers depend on lower ones, never the reverse: API → kvark → tests/polish.
-- Start a new layer when switching concern, or when a PR passes ~400 changed lines
-  (excluding generated migrations and `bun.lock`).
-- Name layers `tihlde-wrapped-<topic>`, not `tihlde-wrapped/<topic>` — git can't hold both
-  a branch `x` and `x/y`.
-- Each merged layer ships with the next release tag, so nothing half-wired may be reachable by users.
+- Every new piece of work gets its own branch off `tihlde-wrapped`, named
+  `tihlde-wrapped-<topic>` (not `tihlde-wrapped/<topic>` — git can't hold both a branch `x` and `x/y`).
+- Pull requests always go **into `tihlde-wrapped`**, never into `main`. They are squash-merged.
+- Keep PRs small: split anything past ~400 changed lines (excluding generated migrations and
+  `bun.lock`) into a stack of PRs with `gh stack`
+  (<https://docs.github.com/en/pull-requests/how-tos/stacked-pull-requests>), based on `tihlde-wrapped`.
+- CI (`ci.yml`) only runs on PRs into `main`. Run `bun run typecheck`, `bun run lint`,
+  `bun run format` and the relevant tests locally before opening a PR into `tihlde-wrapped`.
+- Only the lead dev updates `tihlde-wrapped` from `main`, by merge — never rebase or force-push
+  the shared branch.
+- When the feature is done, `tihlde-wrapped` goes to `main` in one PR. Every commit in it is an
+  already-reviewed, squashed PR, so it can be reviewed commit by commit.
 
 ```shell
-gh extension install github/gh-stack   # once, needs gh >= 2.90
-gh stack checkout <pr-number>          # pick up the stack locally
-gh stack view                          # where am I
-gh stack add tihlde-wrapped-<topic>    # new layer on top of the current one
-gh stack submit                        # push all layers, create/update linked PRs
-gh stack sync                          # after main moves or a layer merges
+gh extension install github/gh-stack                      # once, needs gh >= 2.90
+git switch tihlde-wrapped && git pull                     # start from the latest integration branch
+gh stack init --base tihlde-wrapped tihlde-wrapped-<topic>  # new branch based on tihlde-wrapped
+gh stack add tihlde-wrapped-<next-topic>                  # optional: next layer when the PR grows too big
+gh stack submit                                           # push and open PR(s) into tihlde-wrapped
+gh stack sync                                             # after tihlde-wrapped moves or a PR merges
+gh stack checkout <pr-number>                             # pick up a teammate's branch or stack
 ```
 
-- Restack with `gh stack rebase` / `gh stack sync`. Never plain `git rebase` or `git push --force`
-  on a single layer — it breaks every layer above it.
+- Restack your own branches with `gh stack sync` / `gh stack rebase`, not plain `git rebase` +
+  `git push --force` — that breaks every layer above.
 - All branches live in `TIHLDE/Photon`; stacks can't cross forks.
-- Merge bottom-up. After a lower PR merges, the next one retargets `main` automatically.
-  Squash merging works; auto-merge is not supported for stacks.
 
-Before working on this feature: run `gh stack view`, put the change in the right layer, and
-propose a new layer instead of growing one past the size target.
+Before working on this feature: check the current branch, never commit to `tihlde-wrapped` itself,
+and create a `tihlde-wrapped-<topic>` branch for the work.
