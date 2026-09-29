@@ -19,7 +19,6 @@ import {
 import { LoadMoreButton } from "#/components/load-more-button";
 import { PageHeader } from "#/components/page-header";
 import { useDebouncedValue } from "#/hooks/use-debounced-value";
-import { formatInOslo } from "#/lib/date";
 import { useAnyScopePermission } from "#/hooks/use-permission";
 import { formatEventDateTime } from "#/lib/event";
 import {
@@ -100,7 +99,7 @@ const CALENDAR_PAGE_SIZE = 100;
 export const Route = createFileRoute("/_app/arrangementer/")({
     component: EventsPage,
     validateSearch: searchSchema,
-    loader: ({ context }) => {
+    loader: ({ context }) =>
         context.queryClient.ensureInfiniteQueryData(
             getEventsInfiniteQuery(
                 toEventListFilters(
@@ -110,8 +109,7 @@ export const Route = createFileRoute("/_app/arrangementer/")({
                     DEFAULT_EVENT_FILTERS.openRegistration,
                 ),
             ),
-        );
-    },
+        ),
 });
 
 function EventsPage() {
