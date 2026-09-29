@@ -187,7 +187,7 @@ function EventsPage() {
         <div className="container mx-auto flex w-full flex-col gap-6 px-4 py-8">
             <PageHeader
                 title="Arrangementer"
-                description="Finn arrangementer for våren 2026"
+                description="Finn kommende arrangementer"
                 action={
                     canCreateEvent ? (
                         <Button render={<Link to="/admin/arrangementer/ny" />}>
