@@ -79,6 +79,12 @@ type EventRegistrationCardProps = {
      */
     ticketResaleUrl?: string;
     /**
+     * Samme gruppe, sett fra den andre sida: satt når arrangementet er betalt
+     * og fullt, og medlemmet ikke har plass. Ventelista er én vei inn — en
+     * billett noen vil selge er den andre.
+     */
+    ticketPurchaseUrl?: string;
+    /**
      * Satt når medlemmet ikke har godkjent arrangementsreglene. Da vises
      * `eventRulesSlot` i stedet for påmeldingsknappen — også før påmeldingen
      * åpner, som er hele poenget: de skal oppdage det i god tid.
@@ -166,6 +172,22 @@ export function EventRegistrationCard(props: EventRegistrationCardProps) {
                 {blockedByEventRules ? props.eventRulesSlot : null}
                 {blockedByEvaluations ? props.evaluationSlot : null}
                 {state.actions}
+                {props.ticketPurchaseUrl ? (
+                    <Button
+                        variant="outline"
+                        className="w-full"
+                        render={
+                            <a
+                                href={props.ticketPurchaseUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                            />
+                        }
+                    >
+                        <Ticket />
+                        Sjekk om noen selger billett
+                    </Button>
+                ) : null}
                 {props.actionError ? (
                     <Alert variant="destructive">
                         <AlertCircle className="size-4" />

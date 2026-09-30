@@ -750,6 +750,18 @@ function EventDetailPage() {
                                 ? TICKET_RESALE_GROUP_URL
                                 : undefined
                         }
+                        // Og motsatt vei: er et betalt arrangement fullt, er en
+                        // billett noen selger den eneste veien inn utenom
+                        // ventelista — også etter at påmeldingen har stengt.
+                        ticketPurchaseUrl={
+                            event.isPaidEvent &&
+                            isFull &&
+                            (registrationState === "full" ||
+                                registrationState === "on-waitlist" ||
+                                registrationState === "closed")
+                                ? TICKET_RESALE_GROUP_URL
+                                : undefined
+                        }
                         headerSlot={
                             canSeeRegistrants ? (
                                 <EventRegistrantsDialog
