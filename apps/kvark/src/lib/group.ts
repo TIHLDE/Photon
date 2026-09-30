@@ -76,6 +76,7 @@ export type Fine = {
      * vise den samme teksten to ganger.
      */
     hasLaw: boolean;
+    lawId: string | null;
     amount: number;
     status: FineStatus;
     approved: boolean;
@@ -436,6 +437,7 @@ export function mapFine(fine: ApiFine): Fine {
         paragraph: fine.law ? formatParagraph(fine.law.paragraph) : "",
         title: fine.law?.title ?? fine.reason,
         hasLaw: fine.law != null,
+        lawId: fine.lawId,
         amount: fine.amount,
         status: (fine.status as FineStatus) ?? "pending",
         approved: fine.status === "approved" || fine.status === "paid",

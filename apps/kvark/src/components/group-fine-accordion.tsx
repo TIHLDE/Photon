@@ -19,7 +19,7 @@ import { Button } from "@tihlde/ui/ui/button";
 import { Card, CardContent } from "@tihlde/ui/ui/card";
 import { Label } from "@tihlde/ui/ui/label";
 import { Textarea } from "@tihlde/ui/ui/textarea";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MarkdownView } from "@tihlde/ui/complex/markdown";
 
@@ -80,6 +80,7 @@ type GroupFineDetailsProps = {
     onDefenseDraftChange: (draft: string | null) => void;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
     onSaveDefense: (fine: Fine, defense: string) => void;
 };
@@ -94,6 +95,7 @@ function GroupFineDetails({
     onDefenseDraftChange,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: GroupFineDetailsProps) {
@@ -241,8 +243,16 @@ function GroupFineDetails({
                     </Button>
                     <Button
                         size="sm"
-                        variant="destructive"
+                        variant="outline"
                         className="ml-auto"
+                        onClick={() => onEdit(fine)}
+                    >
+                        <Pencil />
+                        Rediger
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="destructive"
                         onClick={() => onDelete(fine)}
                     >
                         <Trash2 />
@@ -264,6 +274,7 @@ type GroupFineAccordionProps = {
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
     onSaveDefense: (fine: Fine, defense: string) => void;
 };
@@ -276,6 +287,7 @@ export function GroupFineAccordion({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: GroupFineAccordionProps) {
@@ -293,6 +305,7 @@ export function GroupFineAccordion({
                             currentUserId={currentUserId}
                             onApprove={onApprove}
                             onMarkPaid={onMarkPaid}
+                            onEdit={onEdit}
                             onDelete={onDelete}
                             onSaveDefense={onSaveDefense}
                         />
@@ -311,6 +324,7 @@ function GroupFineAccordionItem({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
 }: Omit<GroupFineAccordionProps, "fines"> & { fine: Fine }) {
@@ -333,6 +347,7 @@ function GroupFineAccordionItem({
                     onDefenseDraftChange={setDefenseDraft}
                     onApprove={onApprove}
                     onMarkPaid={onMarkPaid}
+                    onEdit={onEdit}
                     onDelete={onDelete}
                     onSaveDefense={onSaveDefense}
                 />

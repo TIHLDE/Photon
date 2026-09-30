@@ -75,6 +75,7 @@ type GroupFinesTabProps = {
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
     onSaveDefense: (fine: Fine, defense: string) => void;
     onSettleAllForUser: (userId: string, status: "approved" | "paid") => void;
@@ -122,6 +123,7 @@ export function GroupFinesTab({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
     onSettleAllForUser,
@@ -249,6 +251,7 @@ export function GroupFinesTab({
                         currentUserId={currentUserId}
                         onApprove={onApprove}
                         onMarkPaid={onMarkPaid}
+                        onEdit={onEdit}
                         onDelete={onDelete}
                         onSaveDefense={onSaveDefense}
                         hasMore={hasMore}
@@ -301,6 +304,7 @@ type FineListProps = {
     currentUserId?: string;
     onApprove: (fine: Fine) => void;
     onMarkPaid: (fine: Fine) => void;
+    onEdit: (fine: Fine) => void;
     onDelete: (fine: Fine) => void;
     onSaveDefense: (fine: Fine, defense: string) => void;
     hasMore: boolean;
@@ -316,6 +320,7 @@ function FineList({
     currentUserId,
     onApprove,
     onMarkPaid,
+    onEdit,
     onDelete,
     onSaveDefense,
     hasMore,
@@ -343,6 +348,7 @@ function FineList({
                 currentUserId={currentUserId}
                 onApprove={onApprove}
                 onMarkPaid={onMarkPaid}
+                onEdit={onEdit}
                 onDelete={onDelete}
                 onSaveDefense={onSaveDefense}
             />
