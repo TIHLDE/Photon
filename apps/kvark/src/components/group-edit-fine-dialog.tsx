@@ -16,10 +16,11 @@ import { LawCombobox } from "#/components/law-combobox";
 import { NumberInput } from "#/components/number-input";
 import type { Fine, Law } from "#/lib/group";
 
+/** Bare feltene botsjefen faktisk endret — resten sendes ikke. */
 export type EditFineValues = {
-    lawId: string | null;
-    amount: number;
-    reason: string;
+    lawId?: string | null;
+    amount?: number;
+    reason?: string;
 };
 
 type GroupEditFineDialogProps = {
@@ -46,6 +47,10 @@ export function GroupEditFineDialog({
     error,
 }: GroupEditFineDialogProps) {
     const [law, setLaw] = useState<Law | null>(null);
+    // Paragrafen sendes bare hvis den er rørt. Står lovverket fortsatt og
+    // laster (eller feilet) når dialogen åpnes, er `law` null selv om boten
+    // har en paragraf, og å sende det ville stille fjernet koblingen.
+    const [lawTouched, setLawTouched] = useState(false);
     const [amount, setAmount] = useState("");
     const [reason, setReason] = useState("");
 
@@ -56,32 +61,43 @@ export function GroupEditFineDialog({
     useEffect(() => {
         if (!fine) return;
         setLaw(laws.find((l) => l.id === fine.lawId) ?? null);
+        setLawTouched(false);
         setAmount(String(fine.amount));
         setReason(fine.reason);
     }, [fineId]);
 
     function handleLawChange(next: Law | null) {
         setLaw(next);
+        setLawTouched(true);
         if (next) setAmount(String(next.amount));
     }
 
     const parsedAmount = Number(amount);
     const amountValid =
         amount.trim().length > 0 && Number.isInteger(parsedAmount);
+    const trimmedReason = reason.trim();
+
+    const changes: EditFineValues = {};
+    if (fine) {
+        const lawId = law?.id ?? null;
+        if (lawTouched && lawId !== fine.lawId) changes.lawId = lawId;
+        if (amountValid && parsedAmount !== fine.amount) {
+            changes.amount = parsedAmount;
+        }
+        if (trimmedReason !== fine.reason) changes.reason = trimmedReason;
+    }
+
     const canSubmit =
         fine !== null &&
-        reason.trim().length > 0 &&
+        trimmedReason.length > 0 &&
         amountValid &&
+        Object.keys(changes).length > 0 &&
         !isSubmitting;
 
     function handleSubmit(event: React.FormEvent) {
         event.preventDefault();
         if (!fine || !canSubmit) return;
-        onSubmit(fine, {
-            lawId: law?.id ?? null,
-            amount: parsedAmount,
-            reason: reason.trim(),
-        });
+        onSubmit(fine, changes);
     }
 
     return (
@@ -114,7 +130,9 @@ export function GroupEditFineDialog({
                                             size="sm"
                                             variant="ghost"
                                             className="self-start"
-                                            onClick={() => setLaw(null)}
+                                            onClick={() =>
+                                                handleLawChange(null)
+                                            }
                                         >
                                             Fjern paragraf
                                         </Button>
